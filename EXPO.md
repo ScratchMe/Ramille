@@ -198,6 +198,12 @@ marge, et une frontière ne la compte qu'une fois.
   clé d'état incrémentée, l'effet qui la porte en dépendance, et un `cancelled` dans son nettoyage
   — seul le dernier lancé écrit, sans compteur de génération. Le rappel passé au hook de retour
   doit être stable (`useCallback`), sinon l'effet se réabonne à chaque rendu.
+- **Sur Android, le retour matériel d'un écran à phases recule d'une phase** — une étape, l'adresse
+  derrière le code, une confirmation ouverte —, sans quoi il quitte la route, et l'app quand la pile
+  est vide. Chez Ramille, un seul crochet le fait (`useRetourVersLaPhasePrecedente`, 01/10/2026) :
+  l'action déjà présente à l'écran, ou `null` pour laisser passer. **Un `Modal` visible prend le
+  retour avant lui** (`ReactModalHostView.kt` : la boîte de dialogue reçoit la touche et appelle
+  `onRequestClose`), donc un écran qui branche le crochet n'a pas à exclure ses feuilles.
 - **La barre d'onglets change de disposition toute seule au-delà de 768 px de large.**
   `shouldUseHorizontalLabels` (bottom-tabs) fait passer le libellé **à côté** de l'icône dès que
   la place suffit, sauf si `tabBarLabelPosition` est posé. Tout ce qui est dessiné dans le slot

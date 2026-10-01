@@ -338,7 +338,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
-| 09.1 | Ouvrir la restitution du **second** bilan (le plus récent) depuis le suivi | En bas, le lien **« Ce bilan ne me ressemble pas »** — un lien discret, jamais un bouton | |
+| 09.1 | Ouvrir la restitution du **second** bilan (le plus récent) depuis le suivi | Sous le total, sous « Comment ce chiffre est calculé » et à côté de « Un chiffre me semble faux » (depuis le 01/10/2026, `v1-33` D11), le lien **« Ce bilan ne me ressemble pas »** — un lien discret, jamais un bouton | |
 | 09.2 | Le toucher | Il laisse place à un encart : **« Retirer ce bilan ? »**, puis « **Il n'apparaîtra plus dans ton suivi, et ton plan repartira de ton bilan précédent.** », puis — parce qu'une action est engagée, avec l'échéance du 03.12 — « **L'action que tu suis — Faire une sortie sur trois à vélo à assistance électrique — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.** » (la forme sans moment, « … reste engagée si ton nouveau plan la propose encore … », ne s'affiche que pour une action sans intention lisible). Deux sorties : « **Annuler** » et « **Retirer ce bilan** » | |
 | 09.3 | « Annuler » | L'encart se referme, le lien revient. **Rien n'a été retiré** : le suivi montre toujours le même bilan (un par jour, cf. 08.5) | |
 | 09.4 | Rouvrir, puis « **Retirer ce bilan** » | Le bouton dit « **Retrait…** » le temps de l'appel. Puis la page dit **« Ce bilan a été retiré. »** et « **Il n'apparaît plus dans ton suivi, et son chiffre ne s'affiche plus ici.** », avec « **Revenir à mon suivi** ». **Aucun chiffre** du bilan à l'écran | |

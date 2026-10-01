@@ -198,6 +198,14 @@ sécable sur le plan. `ThemedText` réunit donc les chaînes et les nombres vois
 l'appliquer ; un texte imbriqué coupe la réunion et reçoit la règle pour lui-même
 (`src/components/themed-text.test.tsx`).
 
+**Et un nombre ne se sépare pas de son unité** (01/10/2026, `v1-33` Q-7, loi de Prägnanz). « 9,5
+tonnes en moyenne, 2 / tonnes visées en 2050 », dans le titre de la page 2 de l'onboarding, et « plus
+de 300 / km ? » se coupaient à la ligne : la règle ne liait que la ponctuation. L'espace entre un
+chiffre et `km`, `kg`, `t`, `tonne(s)`, `h`, `min`, `minute(s)` est insécable, posée au même endroit ;
+et celle entre `t` ou `kg` et « CO₂e » quand un nombre est devant. L'unité doit finir là : suivie
+d'une lettre, accentuée ou non, c'est un mot (« 2 trajets », « 5 hôtes »), et `\b` ne le voit pas —
+« é » et « ô » n'y sont pas des lettres, d'où une classe écrite.
+
 **Corollaire pour les tests** : un séparateur s'écrit par son **point de code** (`\u00a0`) et jamais
 collé en littéral. Trois assertions le portaient en clair, et leur échec affichait
 `Expected: "1 600"` / `Received: "1 600"` — deux chaînes rigoureusement identiques à l'œil. C'est
@@ -265,6 +273,15 @@ exactement ce qui avait laissé passer le mauvais caractère.
   étape. Être déjà sous le repère ne coupe pas la proposition : la marche reste offerte, dans un
   registre de contribution (« ce que tu n'émets pas laisse de la marge ailleurs ») et jamais
   d'exigence. **Le nombre de paliers restants ne s'affiche jamais.**
+  **La barre du palier est en `accentMuted`, comme les repères** (01/10/2026, `v1-33` R-8) : seul
+  « Toi » est en `accent`. En `accentText`, la marche était la barre la plus foncée de la carte, plus
+  que la personne. **Et le chiffre ne porte plus trois noms** (`v1-33` D12) : la barre dit « Ton
+  prochain palier » (une cible de total), la phrase « Ton cap pour cette saison : N de moins sur
+  l'année sur <poste> » (un écart sur un poste), comme la carte du plan juste après. Seules les deux
+  branches qui nomment le cap le disent ; « déjà sous le repère » (une marge) et « à ta portée » (une
+  distance au repère, sur le total) ne le mesurent pas. Tant que `rolling_quarter` est dormant,
+  « saison » est juste ; s'il se réveille, la carte du plan dira « période » et `palierNote` n'a pas
+  de paramètre de cadence.
 - **Le vocabulaire d'un poste vit dans `src/constants/postes.ts`, et il a quatre registres qu'il
   ne faut pas fusionner.** `POSTE_LABEL` est l'étiquette nue (« Trajet domicile-travail »),
   `POSTE_SUBJECT` / `POSTE_EN_PHRASE` le sujet d'une phrase de restitution, et **`FORME_INSERABLE`
@@ -298,8 +315,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `occasionnels` vient de `loisirsSontLeResiduel`, qui lit **la fréquence déclarée** d'abord. Les
   libellés figés ne suffisent pas : le serveur ne marque le résiduel que sur le poste dominant et
   sur celui de la boucle mensuelle, donc pas dans le cas courant de « rarement » avec un vol, où la
-  barre des loisirs de la restitution le montre pourtant. La restitution lit cette fréquence à part,
-  en tolérant l'échec ; le suivi l'embarque dans sa lecture de l'historique.
+  barre des loisirs de la restitution le montre pourtant. La restitution la lit avec son résultat,
+  dans le même aller-retour, en tolérant l'échec (`loadFrequenceDesLoisirs`) ; le suivi l'embarque
+  dans sa lecture de l'historique.
 - **La saison côté client vit dans `src/types/saison.ts`** (`saisonDe`, `recapDeSaison`), miroir
   exact de `public.season_bounds` : saisons **météorologiques**, décembre appartenant à l'hiver
   **qui commence**. Ne jamais la dériver de `plan_cycles` ni de la cadence — `rolling_quarter`
@@ -455,6 +473,11 @@ exactement ce qui avait laissé passer le mauvais caractère.
   référence ADEME, un code d'erreur, une clé de configuration —, jamais à une phrase adressée à la
   personne : « Ton mode n’est pas dans la liste ? Dis-le-nous. » en 12 px gris à chasse fixe se
   lisait comme une ligne de débogage (décision du 24/09/2026).
+- **Le message d'échec se lit à l'encre du texte, en graisse 600** (`MessageInline`, 01/10/2026,
+  `v1-33` T-11), corps `small` : sous « 8 chiffres, sans espace… », « Ce code ne marche pas : … »
+  avait la taille, la graisse et la couleur de l'aide, et ce qui change sous le geste ne se voyait
+  pas. Aucune couleur de verdict ; la graisse est celle de la ligne « Il manque encore … ». Le
+  succès qui passe par le même composant prend la même forme.
 - **Les espaces insécables de la ponctuation double sont posées par `ThemedText`, au rendu**
   (`src/types/typographie.ts`) : un texte les écrit avec une espace ordinaire, et un texte rendu
   hors de `ThemedText` (un `Text` nu, une carte de `api/`) ne les reçoit pas. Les dérivations de

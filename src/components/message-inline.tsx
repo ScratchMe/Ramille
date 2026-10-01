@@ -40,7 +40,10 @@ import { ThemedText } from '@/components/themed-text';
 // code refusé, « 8 chiffres, sans espace… » et « Ce code ne marche pas : … » étaient deux paragraphes
 // gris de même corps à 16 px l'un de l'autre. Ce qui change sous le geste doit se distinguer de ce qui
 // était déjà là, sinon on ne le voit pas. Il passe donc à `text` (l'aide est en `textSecondary`, les
-// mentions en `textTertiary`), graisse 500 écrite en toutes lettres, corps `small` inchangé.
+// mentions en `textTertiary`), corps `small` inchangé. **Et en graisse 600** : l'encre seule ne
+// tenait l'écart qu'à 1,7:1 (`#131612` contre `#39403B`), et sur la capture le message se lisait à
+// peine plus sombre que l'aide — la graisse est celle de la ligne « Il manque encore … » du
+// questionnaire, l'autre phrase qui dit ce qui ne va pas sans le juger.
 // **Rien d'un verdict** : pas de rouge, pas d'icône — le produit ne juge pas, et l'encre n'est pas une
 // couleur d'alerte. Le succès y passe aussi (l'export des données, `mon-compte.tsx` ; le lien copié) et
 // prend la même encre : c'est une nouvelle dite au même endroit, de la même façon.
@@ -68,7 +71,7 @@ export function MessageInline({
     <ThemedText
       type="small"
       themeColor="text"
-      weight={500}
+      weight={600}
       role="alert"
       // Web seulement : `aria-live` accompagne le rôle `alert` pour les changements de texte. Sur
       // natif, l'annonce est demandée ci-dessus, et une région vivante la doublerait.

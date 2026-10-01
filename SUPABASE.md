@@ -83,6 +83,16 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   du `select` l'attrape.
 - **Un `42501` vient soit du privilège, soit de la RLS**, et on ne le sait pas de l'extérieur —
   ce qui rend les tests de refus faciles à écrire pour rien (`TESTING-PGTAP.md` §1.7).
+- **Une lecture qui échoue est rejouée, par défaut, et rien ne le dit.** `@supabase/postgrest-js`
+  (2.116) rejoue tout `GET`, `HEAD` ou `OPTIONS` dont le `fetch` rejette, et ses `503` et `520`,
+  trois fois, à 1, 2 puis 4 s : hors ligne, l'erreur arrive après **sept secondes**, pendant
+  lesquelles l'écran dit « Chargement… ». `createClient` le règle par `db: { retry: false }`, que
+  `supabase-js` transmet. Chez Ramille, c'est le réglage depuis le 01/10/2026 (`v1-33` R-5, P-3) :
+  mesuré sur l'export hors ligne, le plan arrivait à son écran d'erreur à 7 989 ms, il y arrive à
+  613 ms, et chaque écran porte déjà son « Réessayer ». Le coût est assumé : un raté d'une seconde
+  n'est plus absorbé, les `503` et `520` non plus. Les écritures n'ont jamais été rejouées, la
+  seconde chance de `PGRST303` est une couche au-dessous (`fetchAvecSecondeChance`), et `auth-js` a
+  son propre régime. `src/lib/supabase.test.ts` garde le réglage et sa transmission.
 
 ### 1.4 Privilèges, policies et RPC
 

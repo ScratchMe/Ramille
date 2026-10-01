@@ -167,9 +167,10 @@ export const TypeScale = {
   /** Titre d'écran. */
   screen: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   /**
-   * Chiffre saillant d'une carte : total de la restitution, cap de la saison, écart entre deux
-   * bilans. Il reste **sous** la décision dominante (32) : ce que le produit met en tête, c'est
-   * le poste sur lequel agir, pas le total.
+   * Chiffre saillant d'une carte : total de la restitution, cap de la saison. Il reste **sous**
+   * la décision dominante (32) : ce que le produit met en tête, c'est le poste sur lequel agir, pas
+   * le total. L'écart entre deux bilans n'en est pas : il se dit dans une phrase en `body` sous les
+   * barres (`v1-14` §5, `v1-33` R-10), et ce commentaire le comptait parmi eux jusqu'au 01/10/2026.
    */
   salient: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   /** Titre de carte : intitulé d'une action, d'un check-in. */

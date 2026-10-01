@@ -60,8 +60,38 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   Paris compris. Deux règles d'avant C2.7 tiennent toujours : le prédécesseur se choisit sur
   `submitted_at` et jamais dans l'historique dédoublonné, et si le bilan affiché n'est pas le plus
   récent (une restitution rouverte depuis le suivi) on ne compare rien plutôt que de comparer à un
-  bilan postérieur. `loadBilanPrecedent` lit **dix** lignes, pour trouver un autre jour derrière
-  quelques corrections du jour ; au-delà, on ne compare rien, ce qui est le repli sûr.
+  bilan postérieur. Le précédent se choisit dans la lecture des bilans valides, celle qui donne aussi
+  la place du bilan (`lireLesBilansValides`, entière, du plus récent au plus ancien), par
+  `precedentDeLaRestitution` (`src/types/suivi.ts`), qui ne parcourt que les **dix** plus récents
+  (`BILANS_PARCOURUS_POUR_LE_PRECEDENT`) pour trouver un autre jour derrière quelques corrections du
+  jour ; au-delà, on ne compare rien, ce qui est le repli sûr. La borne vivait dans la requête
+  (`loadBilanPrecedent`) jusqu'au 01/10/2026 : la lecture ne peut plus la porter, la place d'un bilan
+  ancien exigeant la liste entière.
+- **La restitution lit tout en un aller-retour** (01/10/2026, `v1-33` R-4). Le résultat, les bilans
+  valides, le cycle courant (à la sortie du questionnaire seulement), la fréquence des loisirs et la
+  session (pour la bannière de compte) partent dans un seul `Promise.all` ; seul le cycle d'alors
+  vient en second, et il n'ajoute que « Le palier que tu visais est derrière toi. ». Les lectures
+  secondaires restent tolérantes, chacune avec son `.catch` : leur échec ôte ce qu'elles portent
+  (lien du retrait et comparaison, palier, nom du résiduel, bannière), jamais l'écran. Avant, la
+  barre « Ton bilan précédent » s'insérait au-dessus de « Toi » après le premier rendu, et la
+  bannière de compte, lue par un effet à part, décalait le total de 92 px une image après lui. Le
+  chargement et l'erreur gardent le cadre de l'état prêt (bande haute, `SafeAreaView` sans bord bas,
+  R-9). Garde : `src/tests/ecrans/restitution-du-bilan.test.tsx`, à réponses retenues.
+- **L'ordre de la restitution est une décision, et un test d'écran la garde** (01/10/2026, `v1-33` D9
+  et D11). Carte dominante, puis le total — « Estimation annuelle, tous déplacements », le chiffre,
+  « Comment ce chiffre est calculé » —, puis « Un chiffre me semble faux » et le lien du retrait avec
+  son encart, puis la répartition, « Où tu te situes » et la phrase du cap ; la fin de page ne garde
+  que « Partager mon bilan » et « Faire un nouveau bilan » (et « Revenir à mon suivi » en relecture).
+  Mesuré à 390 × 844, session anonyme, à la sortie du questionnaire : le chiffre était à 766–802 px,
+  sous le pied collant (758) ; il est à 526–562. **Le coût est décidé** : la lecture « les postes,
+  puis leur somme » disparaît, la répartition passe sous le pli, et la contestation, posée sous le
+  chiffre, peut se lire comme une invitation à douter — d'où la méthode d'abord. Le lien du retrait se
+  rend avec le résultat : un lien qui ne se rendrait qu'après une lecture déplacerait ce qui le suit.
+- **En relecture, la barre « Repère transport 2050 » reste, même au-dessus de la moyenne, et c'est
+  décidé** (01/10/2026, `v1-33` D10). Sans palier — toute relecture —, `montreBarreRepere2050` la
+  montre par `|| !palier` : le repère y sert d'horizon. L'audit l'avait relevée comme le « gouffre »
+  que le palier retire à la sortie du questionnaire, et la personne qui pilote a choisi de la garder.
+  Ce n'est donc pas un défaut à « corriger » au prochain passage.
 - **« Le palier que tu visais est derrière toi. » n'est dit que s'il est prouvable** (C2.7,
   `palierEstDerriere`). Le palier visé se recalcule depuis le cap **d'alors**, et ce cap est perdu
   quand les deux bilans tombent dans la même période : `generate_plan_cycle_for_user` réécrit le

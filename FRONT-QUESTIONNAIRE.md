@@ -131,3 +131,16 @@ voyage est en `FRONT.md` §1.
   séparateur est ignoré sans jeter ses chiffres. Et un « 0 » saisi n'est pas une distance — la
   colonne porte `check (commute_distance_km > 0)`, donc la complétude de l'étape et l'insert
   lisent la **même** définition, `distanceDomicileTravailKm`.
+- **Le retour matériel d'Android recule d'une étape** (`useRetourVersLaPhasePrecedente`, 01/10/2026,
+  `v1-33` Q-4) : la même action que « Retour » quand une étape visible est derrière ; `null` sur la
+  première étape et sur l'écran de reprise, où le retour passe à la navigation ; et **pendant le
+  calcul, l'appui est consommé sans rien faire** — le laisser passer reculerait la pile sous une
+  soumission qui continue. Une feuille ouverte garde son retour (`EXPO.md` §1.7). L'onboarding passe
+  par le même crochet.
+- **Une indication se lit avant les réponses**, entre le titre et les choix — B1.1 l'avait après
+  (`v1-33` Q-10). **Et le lien « Ton mode n'est pas dans la liste ? » se rend sous la liste qu'il
+  complète** (Q-8) : sous « Lequel ? » sur B1.6, et seulement sur « Oui » ; sous les modes et « Voir
+  les autres modes » sur les loisirs ; à 8, hors du bloc où mène « Il manque encore … ».
+- **Une forme par fonction** (`v1-33` Q-12, T-20) : deux séries de nombres prennent la même forme
+  (la pilule, pour les vols), et le tableau rayon / style est dans la fiche de `Chip` du kit. Le
+  sous-titre d'une question sous le titre d'étape lit `TypeScale.question` (22/28).
