@@ -104,8 +104,8 @@ describe('loadFrequenceDesLoisirs', () => {
  * 01/10/2026) : hors ligne — pas de réponse HTTP, `status: 0` — ou le serveur en échec. La phrase de
  * l'écran ne parle de connexion qu'au premier.
  *
- * Éprouvé en le cassant, le 01/10/2026 : le statut ignoré (`genre: 'serveur'` en dur dans
- * `genreDeLaLecture`) fait tomber « hors ligne, elle le dit », et lui seul.
+ * Éprouvé en le cassant, le 01/10/2026 : le statut ignoré (`'serveur'` en dur dans
+ * `genreDeLaLecture`) fait tomber « hors ligne, elle le dit » pour les deux lectures, et rien d'autre.
  */
 describe('les lectures du suivi disent le genre de leur échec', () => {
   /** Une liste PostgREST qui se résout au bout de son `order`. */

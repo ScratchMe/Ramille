@@ -21,6 +21,19 @@
  *   - la relance qui n'appelle plus que `rafraichir` (l'état d'avant) → 3, « inactif pendant » ;
  *   - le `finally` qui ne relâche plus la relance → 3, « relâché à la fin ».
  *
+ * **Et deux contrats de plus le 01/10/2026, la vague produit de `v1-33`** — des branches d'état que le
+ * parcours réel ne joue pas (il ne fait jamais échouer une lecture) :
+ *   4. **une erreur du serveur ne parle pas de la connexion** (D19) : le genre de l'échec se calcule sur
+ *      le statut de la lecture qui a échoué, et l'écran d'erreur comme la ligne de relecture le disent ;
+ *   5. **des rappels qui n'ont rien rendu ne remplacent pas la dernière lecture** (relevé par le
+ *      chantier B) : la carte d'attente reste, et la ligne de relecture s'allume.
+ * Quatre mutations, chacune faisant tomber la sienne et aucune autre :
+ *   - le bilan illisible toujours dit hors ligne (`echecDeLecture('horsLigne')`) → 4, « sur l'écran
+ *     d'erreur » ;
+ *   - les boucles illisibles toujours dites hors ligne → 4, « la relecture en échec du serveur » ;
+ *   - `setRappels(prefs)` sans condition (l'état d'avant) → 5 ;
+ *   - `prefs === null` retiré de la ligne de relecture → 5.
+ *
  * **Ce qu'il coûte** : douze modules doublés pour monter l'écran — le transport, le stockage local
  * de quatre marques, la navigation et ses deux contextes de pile, la mesure, et les composants qui
  * tirent `react-native-svg`. C'est le prix d'un écran qui lit dix sources ; le relevé de

@@ -19,6 +19,12 @@
  *   - les ancres non fournies (`ChampsDeContexte` hors de `ContexteDesAncres`, l'état d'avant) → « mène
  *     à ce qui manque », par le focus qui ne part plus.
  *
+ * **Et le 01/10/2026, D19 de `v1-33`** : une lecture en échec ne parle de connexion qu'hors ligne, et
+ * « Réessayer » dit le genre de **sa** lecture. Deux mutations, chacune faisant tomber la sienne :
+ *   - le genre de la première lecture ignoré (`'horsLigne'` en dur) → « ne parle pas de la connexion
+ *     quand le serveur a répondu en échec » ;
+ *   - le genre de la relecture ignoré, de même → « dit le genre de la relecture après « Réessayer » ».
+ *
  * Ce qu'il ne voit pas : le défilement jusqu'à la question, que seule une vraie mise en page mesure.
  * Il ne part d'ailleurs que si la question est hors de la zone : à 390 × 844, « Enregistrer » finit à
  * 720 px sous les quatre questions (relevé de l'audit du 01/10/2026, capture p1-53).
