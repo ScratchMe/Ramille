@@ -37,7 +37,8 @@ cron le ferait (`generate_commute_checkins()`, appelé en `service_role`) et ré
 « Toi » et sa ligne de canal (25/09/2026, §2.12) → l'écran des pistes, où l'on choisit une action
 « à la place » depuis la liste (29/09/2026, `v1-32` : le seul chemin qui passe le remplacement depuis
 cet écran), puis où l'ordre n'a pas bougé — le seul moment où ça se voit, l'action engagée n'étant
-plus au rang 1 → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
+plus au rang 1 → le contexte retiré puis remis depuis `/contexte`, où l'encart orphelin doit se taire
+au-dessus de l'action revenue (01/10/2026, `v1-13` §19) → suppression du compte, sans une ligne derrière. Après chaque écriture il relit la base **comme la personne**
 (PostgREST sous sa session, donc sous la RLS) : 4 231 kg, 1 920 kg sur le poste dominant, les
 pistes d'`ATTENDU`, toutes, dans l'ordre et au kilo près, l'engagement et ses jours, le point et sa question figée. Sur
 la base construite depuis `supabase/migrations/`, ces chiffres ne dépendent d'aucune
@@ -156,6 +157,29 @@ d'une session est **attendu**, l'app le rejoue, cf. `src/types/postgrest.ts`), l
 puis la capture, dont le chemin est imprimé (dossier temporaire). Un parcours local qui s'arrête laisse son compte anonyme
 dans la stack ; `supabase db reset` remet la base à neuf — seulement si personne d'autre ne s'en
 sert, d'autres copies de travail pouvant la partager. Le rejeu (`TESTING.md` §2.13), lui, la redémarre sous verrou.
+
+**En CI, la capture d'un échec est publiée en artefact depuis le 01/10/2026** (`parcours-reel-echec`,
+gardé sept jours) : elle restait sur le runner, parce que l'envoyer rouvrait ce que le passage en
+public avait vérifié fermé — aucun artefact téléchargeable (`docs/exploitation/depot-public.md`) —,
+et la personne qui pilote a décidé de rouvrir cette seule porte
+(`docs/architecture/v1-27-dette-technique.md` §12.26). L'ordre de lecture ne change pas : le journal
+d'abord, la capture ensuite.
+
+**Un clic se donne à un écran posé, pas à un écran qui charge** (CI du 30/09/2026). L'étape de la
+suppression cliquait « Supprimer mon compte » dès que le lien devenait visible — c'est-à-dire dès le
+HTML statique —, puis `/compte` grandissait de 412 px au-dessus de lui quand le compte et les rappels
+arrivaient. Un clic pris dans ce saut est **perdu sans erreur** : l'appui et le relâchement ne tombent
+pas sur le même élément, et le navigateur ne rend le `click` qu'à leur ancêtre commun. La garde a
+rougi une fois, la confirmation jamais ouverte ; cinq parcours complets et seize clics isolés ne
+l'ont pas reproduit, et c'est en **retenant les deux lectures pendant l'appui** que le mécanisme est
+sorti — deux fois sur deux, contre un témoin qui ouvre la confirmation deux fois sur deux. Un écran
+qui charge après son HTML statique s'attend donc sur ce qui arrive **avec** ses données (ici le
+groupe « Les rappels »), jamais sur ce que le HTML porte déjà. **L'écran, lui, garde la place depuis
+le 01/10/2026** (décision de la personne qui pilote,
+[#305](https://github.com/ScratchMe/Ramille/issues/305)) : le lien ne bouge plus à la largeur du
+parcours, sur web, et l'étape le mesure image par image depuis le rendu statique — un relevé démarré
+avant le premier script de la page, sur l'onglet du parcours, pour qu'un échec s'y capture. L'attente
+reste : ailleurs, un reste de saut est accepté.
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
@@ -389,6 +413,10 @@ passage croit la dérive attrapée. La garde a été écrite plutôt que la phra
    aucun clic ne doit plus rien confirmer — et il n'était éprouvé que dans le seul travail exigeant
    Docker.
 
+**Et une quatrième depuis le 01/10/2026**, pour le seul rattachement : « Si ce n'est pas toi, ne fais
+rien » vient **avant** le code (jugement 05.2, `v1-13` §19). Un ordre ne se voit pas dans une égalité
+de textes : la phrase remise en bas des deux côtés passe l'assertion 1, et la mutation l'a montré.
+
 **Ce qui lui échappe**, et c'est structurel : `GABARITS` est une liste **déclarée**, comme `MIROIRS`,
 donc un gabarit que personne n'y déclare lui reste invisible — aucune garde déclarative ne s'annonce
 exhaustive. *Confirm signup* et *Reset Password* sont traduits dans le document et ne vivent **que**
@@ -560,6 +588,18 @@ Les règles, chacune payée pendant l'écriture :
    jours et une distance vides eux aussi, le seul à faire tomber celle de la seconde. Le premier essai partait de `?etape=context` sur un questionnaire vierge, et ne prouvait
    rien : l'étape d'avant, les longs trajets, y est complète — c'est la mutation « la demande ne
    retombe pas en changeant d'étape » qui l'a montré, en ne le faisant pas tomber (29/09/2026).
+9. **Le repos ne commence pas à l'apparition : une référence se mesure immobile.** La hauteur que la
+   garde du retour sur le plan compare (point 6) était lue dès que la question du point devenait
+   visible ; la CI du 30/09/2026 l'a lue à 840 px — l'écran entier — et a accusé une carte immobile
+   de regrandir. Relevé image par image en local : pendant les **deux premières images** où la
+   carte existe, `HauteurSuivie` n'a pas encore reçu son premier `onLayout`, donc pas encore de
+   découpe, et `decoupe` remonte jusqu'à l'écran ; puis 153. La course se gagne presque toujours,
+   en CI comme en local. Une référence se prend donc par `mesurerAuRepos` (la même
+   mesure, immobile pendant 600 ms), et la mutation qu'elle garde tombe comme avant. **Le repos se
+   compte en temps, pas en images** : une première version attendait dix images identiques,
+   environ 170 ms, et une découpe posée 300 ms après le premier `onLayout` — un runner lent — lui
+   aurait fait prendre les 840 px pour le repos. La fenêtre dépasse la plus longue durée des jetons
+   de mouvement (320 ms).
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
 

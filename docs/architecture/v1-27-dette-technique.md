@@ -594,6 +594,11 @@ le jour venu.
   cycliste refait le sien en voiture —, mais ni la reconduction d'une saison, ni l'encart orphelin
   (le cycliste n'a rien engagé), ni le contexte corrigé depuis `/contexte`.
 
+  *Note du 01/10/2026* : deux de ces trois-là sont désormais joués, par une étape du premier profil
+  (« contexte — retiré puis remis », `v1-13` §19) : le contexte corrigé depuis `/contexte`, aller et
+  retour, et l'encart orphelin de raison `contexte`, qui doit se taire au-dessus de l'action revenue.
+  Restent la reconduction d'une saison et l'encart de raison `rebilan`.
+
 ### 12.6 La contre-lecture de la contre-lecture (20/09/2026, le soir)
 
 La contre-lecture de la journée avait corrigé six affirmations fausses. **Relue à son tour, elle en
@@ -1601,3 +1606,37 @@ point (« Le point reste là… ») d'après le poste du **cycle** (`felicitatio
 où les autres textes lisent les boucles. Les deux s'accordent en régime normal ; elles divergent
 seulement si le cycle est en retard sur le dernier bilan (génération du plan échouée, rattrapée par
 le cron de la nuit).
+
+### 12.26 La capture d'un échec du parcours réel ne sort pas de la CI (30/09/2026)
+
+> **Fait le 01/10/2026, sur décision de la personne qui pilote** : la capture d'un échec est publiée
+> en artefact, sept jours — détail en fin de section.
+
+**Relevé sur la CI de [#299](https://github.com/ScratchMe/Ramille/pull/299).** L'étape de la
+suppression du compte a rougi une fois, et le journal disait l'étape, les requêtes refusées et le
+texte visible — pas ce que le clic avait touché. La capture que le script prend sur un échec, dans le
+dossier temporaire, reste sur le runner : rien ne l'envoie
+en artefact. Il a fallu cinq parcours complets, seize clics isolés puis une expérience ciblée pour
+trouver ce qu'elle aurait peut-être montré d'une image — le lien 412 px plus bas que là où le clic
+était parti (`TESTING-GARDES.md` §2.6).
+
+**Pourquoi ce n'est pas fait** : `ci.yml` promet en tête qu'aucune étape « ne publie quoi que ce
+soit », et le passage en public a vérifié qu'aucun artefact n'est téléchargeable
+(`docs/exploitation/depot-public.md`) — le dépôt est public, ses artefacts le sont aussi. La capture
+ne montrerait qu'une page de test sur une stack locale aux clés de démonstration, mais rouvrir la
+porte des artefacts se décide ; ça ne se glisse pas dans la PR d'une recette.
+
+**La direction, si on y revient** : une étape `actions/upload-artifact` sous `if: failure()` sur le
+seul travail « Parcours réel », une rétention courte, `if-no-files-found: ignore`, et l'en-tête de
+`ci.yml` comme `depot-public.md` corrigés dans le même geste. À décider avec la personne qui pilote.
+
+**Décidé et fait le 01/10/2026** : la personne qui pilote a choisi de la publier, sur échec, sept
+jours. L'étape est dans `ci.yml`, sous `if: failure()`, et l'en-tête du fichier comme
+`docs/exploitation/depot-public.md` le disent. Un écart à la direction ci-dessus :
+`if-no-files-found: warn` et non `ignore` — un chemin devenu faux doit se lire dans le journal, pas
+se taire. Le chemin est relevé dans le journal de l'échec du 30/09 (« Capture :
+/tmp/ramille-parcours-reel-echec.png »). **Ce qui ne s'éprouve qu'à la prochaine CI rouge** : le
+dépôt de l'artefact lui-même. Une PR verte ne dépose rien, et rougir la CI exprès pour le voir serait
+une mutation sur la CI de tout le monde. **La référence `actions/upload-artifact@v7`, elle, est
+éprouvée** : une action se télécharge à la préparation du travail, que son étape tourne ou non, et le
+travail « Parcours réel » est passé vert sur `0899229`, le premier commit qui la porte.

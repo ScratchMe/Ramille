@@ -199,15 +199,16 @@ export function canalPreselectionne(
 // ─────────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Quelle boucle nomme le jour que Ramille annonce. Hebdomadaire dès qu'un poste
- * domicile-travail existe (le point du lundi est alors généré), mensuelle sinon — et, pour la carte
- * d'attente seulement, **aucune** quand la mensuelle ne tourne pas non plus (`BoucleAVenir`).
+ * Quelle boucle nomme le jour que Ramille annonce : hebdomadaire ou mensuelle — et, pour la carte
+ * d'attente seulement, **aucune** quand aucune ne tourne (`BoucleAVenir`). Pour la carte, c'est celle
+ * du rendez-vous le plus proche depuis le 01/10/2026 (`boucleAVenir`) ; pour la feuille, celle du
+ * poste de l'action (`boucleDeLAction`).
  *
  * **Deux questions distinctes s'y répondent, et elles n'ont pas la même source** (relevé en
  * recette le 14/09/2026). La **carte d'attente** annonce le prochain contact, quel qu'en soit le
- * sujet : elle se dérive de la personne — a-t-elle un poste domicile-travail, donc un point le
- * lundi, et sinon une boucle mensuelle qui tourne ; le serveur le dit depuis le 30/09/2026
- * (`mes_boucles_a_venir`, résumée par `boucleAVenir`). La **feuille ouverte après « C'est noté »**, elle, promet un contact *sur l'action qu'on
+ * sujet : elle se dérive de la personne — les boucles qui tournent pour elle, que le serveur dit
+ * depuis le 30/09/2026 (`mes_boucles_a_venir`), et, quand il y en a deux, celle dont le point vient le
+ * premier (`boucleAVenir`). La **feuille ouverte après « C'est noté »**, elle, promet un contact *sur l'action qu'on
  * vient d'engager* (« Lundi, je reviens te demander si tu l'as faite ») : elle se dérive du
  * **poste de cette action**, par `boucleDeLAction`.
  *
@@ -274,15 +275,58 @@ export function lireLesBouclesAVenir(valeur: unknown): LoopType[] | null {
 }
 
 /**
- * Ce que la carte d'attente annonce, d'après les boucles qui tournent : **la boucle hebdomadaire
- * passe devant**, parce que c'est le prochain contact — le lundi vient avant le premier du mois.
- * C'était la règle de `ma_boucle_a_venir` côté serveur ; elle vit ici depuis que le serveur rend
- * les boucles une par une, et c'est une règle d'affichage, pas de génération.
+ * Ce que la carte d'attente annonce, d'après les boucles qui tournent : **le rendez-vous le plus
+ * proche**, quelle que soit sa boucle (décision du 01/10/2026, #304).
+ *
+ * La règle était « la boucle hebdomadaire passe devant, parce que le lundi vient avant le premier
+ * du mois » — vrai la plupart des jours, faux jusqu'à six jours par mois : ceux où le 1er tombe avant
+ * le lundi qui vient. Vu sur la production : le mercredi 30/09, « On se retrouve ici lundi. », et le
+ * point mensuel est arrivé le jeudi 1er (recette du 01/10/2026, `v1-13` §19). Ces jours-là, la carte
+ * dit sa phrase mensuelle, « au début du mois prochain », qui existe déjà.
+ *
+ * Les deux rendez-vous se comptent **après aujourd'hui**, parce qu'un lundi ou un 1er qui est
+ * aujourd'hui a déjà son point — **sauf un lundi avant 6 h UTC**, heure de la génération : le point du
+ * jour n'existe pas encore, et c'est lui le plus proche (contre-lecture du 01/10/2026 ; sans cette
+ * exception, un lundi matin des derniers jours du mois, la carte annonçait le 1er à la place du point
+ * de l'après-midi). Le 1er avant 6 h n'a pas d'exception : la phrase mensuelle dit « au début du mois
+ * prochain », qui serait fausse ce jour-là. Le 1er qui tombe un lundi rend `hebdo` — les deux points
+ * arrivent ce jour-là, et « lundi » est vrai. Les dates sont **locales**, comme le pied d'un point
+ * répondu : c'est un jour qu'une personne lit ; l'heure de la génération, elle, est celle du serveur.
+ *
+ * C'est une règle d'affichage, pas de génération : les boucles viennent du serveur
+ * (`mes_boucles_a_venir`), le jour de la carte vient d'ici.
  */
-export function boucleAVenir(boucles: readonly LoopType[]): BoucleAVenir {
-  if (boucles.includes('commute')) return 'hebdo';
-  if (boucles.includes('extras')) return 'mensuel';
+export function boucleAVenir(boucles: readonly LoopType[], maintenant: Date = new Date()): BoucleAVenir {
+  const hebdo = boucles.includes('commute');
+  const mensuel = boucles.includes('extras');
+  if (hebdo && mensuel) return joursAvantLePremier(maintenant) < joursAvantLundi(maintenant) ? 'mensuel' : 'hebdo';
+  if (hebdo) return 'hebdo';
+  if (mensuel) return 'mensuel';
   return 'aucune';
+}
+
+/**
+ * Jours jusqu'au lundi qui vient : de 1 (un dimanche) à 7 (un lundi après la génération), et 0 un lundi
+ * avant 6 h UTC, quand le point du jour reste à venir.
+ */
+function joursAvantLundi(maintenant: Date): number {
+  const joursDepuisLundi = (maintenant.getDay() + 6) % 7;
+  if (joursDepuisLundi === 0 && maintenant.getUTCHours() < HEURE_DE_GENERATION_UTC) return 0;
+  return 7 - joursDepuisLundi;
+}
+
+/** L'heure UTC à laquelle les crons génèrent les points (`generate_commute_checkins`, lundi 6 h). */
+const HEURE_DE_GENERATION_UTC = 6;
+
+/**
+ * Jours jusqu'au 1er du mois qui vient, jamais aujourd'hui. Compté sur les jours du calendrier et pas
+ * en millisecondes : un changement d'heure entre les deux ferait perdre ou gagner une heure, et un
+ * arrondi par défaut, un jour.
+ */
+function joursAvantLePremier(maintenant: Date): number {
+  const aujourdHui = Date.UTC(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
+  const premier = Date.UTC(maintenant.getFullYear(), maintenant.getMonth() + 1, 1);
+  return Math.round((premier - aujourdHui) / 86_400_000);
 }
 
 /**

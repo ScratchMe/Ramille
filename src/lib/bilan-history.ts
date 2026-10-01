@@ -297,6 +297,17 @@ export async function loadCycleCouvrant(jourIso: string): Promise<CycleDeCePour 
  * Le mapping est direct — `BilanAnswers` est un miroir des colonnes de la table (v1-05 §3).
  */
 export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
+  // **Sans session, on n'interroge pas la base** (29/09/2026, recette `v1-13` §17). `/bilan` ouvert
+  // par son adresse dans un navigateur neuf arrive ici avant que la session anonyme n'existe : la
+  // requête partait avec la seule clé `anon`, qui n'a aucun privilège sur `assessments`, et le
+  // serveur répondait 42501. Sans effet à l'écran — une session qui n'existe pas encore n'a aucun
+  // bilan à préremplir —, c'est la forme que la racine s'interdit déjà (C4.5, `CLAUDE.md`) : une
+  // lecture sans session ne dit rien des données de la personne.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+
   const { data: assessment } = await supabase
     .from('assessments')
     .select('id')

@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
 import { revenirOu } from '@/lib/navigation';
@@ -35,6 +36,28 @@ import { type CanalPrefere, type FenetreDeLaVeille } from '@/types/rappels';
 //
 // Cet écran vit **hors du groupe (tabs)** : il s'ouvre par-dessus, sans barre. C'est un
 // détour, pas un troisième lieu.
+
+/**
+ * La place que le compte et les rappels prennent une fois lus, gardée pendant qu'ils se lisent
+ * (décision du 01/10/2026, #305). L'écran rendait d'abord « Mes données » et « Supprimer mon
+ * compte », puis insérait au-dessus le compte et « Les rappels » à leur arrivée : le lien descendait
+ * de **412 px**, en deux temps, et un toucher pris dans ce saut se perdait sans erreur — ou tombait
+ * sur ce qui avait pris sa place. **Attendre les lectures avant de rendre « Mes données » a été
+ * écarté** : hors ligne, ou sur une lecture en échec, « Supprimer mon compte » ne s'afficherait pas,
+ * et c'est le chemin que Google Play exige.
+ *
+ * **Mesurée, pas calculée, et sur web** : 412 px de saut pour un compte anonyme, à 390 comme à 420
+ * de large, moins l'écart de 16 px que le bloc ajoute en existant. Ce n'est vrai qu'à ces largeurs,
+ * pour ce compte et sur web : à 360, le texte passe sur une ligne de plus et il reste 20 px ; sur un
+ * écran large, il en manque 44 ; un compte rattaché ne dit pas la même phrase ; et **sur un téléphone
+ * le réglage des rappels est plus haut** — trois lignes de canal au lieu de deux, la porte des
+ * réglages, le mot de la veille —, donc le lien descend encore de la différence (`v1-13` §11.25). Un
+ * saut peut donc rester, et c'est le risque accepté avec la décision. Le parcours réel mesure le reste
+ * à chaque PR (« suppression du compte ») : une phrase allongée ici le fera tomber, et c'est le moment
+ * de remesurer.
+ */
+const HAUTEUR_DU_COMPTE_EN_LECTURE = 396;
+
 export default function Compte() {
   useTrackView('compte_view');
 
@@ -45,6 +68,8 @@ export default function Compte() {
   const [fenetre, setFenetre] = useState<FenetreDeLaVeille | null>(null);
   const [messageCanal, setMessageCanal] = useState<string | null>(null);
   const [cle, setCle] = useState(0);
+  // Un « Réessayer » : sa ligne de chargement se dit tout de suite (`useChargementVisible`).
+  const [relance, setRelance] = useState(false);
   const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
   const [erreurDeconnexion, setErreurDeconnexion] = useState<string | null>(null);
   // **Après la suppression, l'écran ne montre plus que sa confirmation** (recette du 28/09/2026,
@@ -55,23 +80,35 @@ export default function Compte() {
   // pages légales et l'adresse de contact, elles, restent en bas de l'écran.
   const [supprime, setSupprime] = useState(false);
 
+  // **Les lectures arrivent ensemble, ou pas du tout** (#305, contre-lecture du 01/10/2026). Chacune
+  // posait son état à son arrivée : l'écran grandissait en deux ou trois temps au-dessus de « Supprimer
+  // mon compte », la place gardée ne pouvait couvrir que la première lecture, et des rappels lus **sans
+  // session** — `loadReminderPrefs` rend alors ses valeurs par défaut, sans le dire — pouvaient
+  // s'afficher le temps que la lecture suivante arrive (`FRONT.md` §1.2). Le compte, les rappels et,
+  // sur natif, la fenêtre du mot de la veille sont donc posés ensemble ; les rappels ne le sont que si
+  // le compte a pu être lu, puisque l'écran ne les montre pas sinon.
+  //
+  // `etat` n'est remis à `null` que par « Réessayer » : le rappel de `SIGNED_IN`, plus bas, revient à
+  // chaque retour sur l'onglet (`_onVisibilityChanged` d'auth-js), et vider l'écran à chaque fois le
+  // ferait clignoter. Une relecture garde donc l'écran tel qu'il était jusqu'à ce qu'elle revienne.
   useEffect(() => {
     let annule = false;
-    lireEtatDuRattachement()
-      .then((e) => !annule && setEtat(e))
+    void Promise.allSettled([
+      lireEtatDuRattachement(),
+      loadReminderPrefs(),
+      // Sur web, le mot de la veille n'existe pas : rien à lire.
+      Platform.OS === 'web' ? Promise.resolve(null) : lireLaFenetreDuMotDeLaVeille(),
+    ]).then(([lu, prefs, fenetreLue]) => {
+      if (annule) return;
       // **Jamais `local` sur un échec** (A6-8) : c'est l'état le plus affirmatif, celui qui dit
       // « tu n'as pas de compte » et propose d'en créer un. `lireEtatDuRattachement` rend
       // désormais `indisponible` sans lever, et ce repli couvre le cas où elle lève quand même.
-      .catch(() => !annule && setEtat({ kind: 'indisponible' }));
-    loadReminderPrefs()
-      .then((p) => !annule && setRappels(p))
-      .catch(() => undefined);
-    // Sur web, le mot de la veille n'existe pas : rien à lire.
-    if (Platform.OS !== 'web') {
-      lireLaFenetreDuMotDeLaVeille()
-        .then((f) => !annule && setFenetre(f))
-        .catch(() => undefined);
-    }
+      const compte: EtatRattachement = lu.status === 'fulfilled' ? lu.value : { kind: 'indisponible' };
+      setEtat(compte);
+      setRelance(false);
+      if (prefs.status === 'fulfilled' && compte.kind !== 'indisponible') setRappels(prefs.value);
+      if (fenetreLue.status === 'fulfilled') setFenetre(fenetreLue.value);
+    });
     return () => {
       annule = true;
     };
@@ -101,6 +138,7 @@ export default function Compte() {
   // second échec rend exactement le même écran et le bouton a l'air mort.
   const reessayer = () => {
     setEtat(null);
+    setRelance(true);
     setCle((n) => n + 1);
   };
 
@@ -153,6 +191,13 @@ export default function Compte() {
     setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
   };
 
+  // **La place est gardée tant que les lectures ne sont pas revenues** (#305) : elles arrivent
+  // ensemble, donc `etat` suffit à le dire.
+  const enLecture = etat === null;
+  // Muette les 300 premières millisecondes, comme les onglets — la place suffit à tenir l'écran, et une
+  // phrase qui clignote une image ne dit rien —, sauf après « Réessayer » : hors ligne, l'échec revient
+  // bien sous ce délai, et sans la ligne le bouton aurait l'air mort (`FRONT.md` §1.2).
+  const chargementVisible = useChargementVisible(enLecture, relance);
 
   return (
     <ThemedView style={styles.container}>
@@ -172,7 +217,12 @@ export default function Compte() {
             <ThemedText type="screenTitle">Toi</ThemedText>
 
             {!supprime && (
-              <>
+              <View style={[styles.compteEtRappels, enLecture && styles.enLecture]}>
+                {chargementVisible && (
+                  <ThemedText type="small" themeColor="textTertiary">
+                    Chargement de ton compte…
+                  </ThemedText>
+                )}
                 {/* Trois états et pas deux (issue #62). Entre `updateUser({ email })` et la saisie du
                     code, la ligne porte déjà l'adresse alors que le compte n'est pas rattaché : cet
                     écran proposait alors de « rattacher un compte », comme si la demande n'avait jamais
@@ -297,7 +347,7 @@ export default function Compte() {
                     <MessageInline message={messageCanal} />
                   </>
                 )}
-              </>
+              </View>
             )}
 
             <MonCompte onSupprime={() => setSupprime(true)} />
@@ -366,6 +416,10 @@ const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.three },
   retour: { alignSelf: 'flex-start' },
   bouton: { marginTop: Spacing.one },
+  // Le même écart que la page entre ses blocs : envelopper le compte et les rappels ne doit rien
+  // déplacer une fois l'écran posé.
+  compteEtRappels: { gap: Spacing.three },
+  enLecture: { minHeight: HAUTEUR_DU_COMPTE_EN_LECTURE },
   liens: { gap: Spacing.one, marginTop: Spacing.two },
   contact: { marginTop: Spacing.two },
 });

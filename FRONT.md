@@ -100,6 +100,16 @@ la fait disparaître une fraction de seconde chez **tout le monde**, à chaque c
 démarrer à « visible » ne coûte qu'un transitoire à ceux qui doivent la voir disparaître.
 **Mesuré plutôt que supposé** : dix à dix-sept millisecondes, une image au plus.
 
+**Et il garde la place de ce qui arrive**, quand ce qui est déjà là se touche. Un écran qui insère
+ses données **au-dessus** d'un lien rendu tout de suite le fait sauter, et un toucher pris dans le
+saut se perd sans erreur — ou tombe sur ce qui a pris sa place. Attendre les données avant de rendre
+le lien n'est pas la parade quand ce lien doit rester atteignable hors ligne : on réserve la hauteur
+attendue, mesurée, et on accepte un reste là où elle varie. **Et les lectures se posent ensemble** :
+une hauteur réservée ne couvre que ce qui n'est pas encore là, donc des données qui arrivent en trois
+temps la feraient tomber au premier. Payé chez Ramille sur « Toi », où « Supprimer mon compte »
+descendait de 412 px sur web (décision du 01/10/2026, #305, `HAUTEUR_DU_COMPTE_EN_LECTURE` ; mesurée
+sur web, le natif est en `v1-13` §11.25).
+
 ### 1.4 Accessibilité : le libellé annoncé *est* le texte affiché
 
 - **un texte cliquable passe par un composant dédié**, jamais par un `Pressable` enveloppant un
@@ -176,10 +186,17 @@ du point de code.
 
 **Et la ponctuation double ne se coupe pas de son mot.** Une question finissait par un « ? » seul en
 début de ligne dès que la phrase remplissait la largeur — sur la carte du point, la plus lue du
-produit. L'espace qui précède `?`, `!`, `:` et `;`, et celles qui bordent l'intérieur des guillemets,
+produit. L'espace qui précède `?`, `!`, `:`, `;` et `%` — ce dernier depuis le 30/09/2026, un
+« % » seul en début de ligne relevé à la recette —, celle qui suit un `+` ou un `−` posé devant un
+nombre, et celles qui bordent l'intérieur des guillemets,
 sont insécables, **posées au rendu en un seul endroit** et jamais à la main dans chaque texte : une
 règle que chaque texte doit se rappeler finit oubliée par le suivant. Même mesure que ci-dessus :
-U+00A0 et non l'espace fine, trop étroite dans cette police.
+U+00A0 et non l'espace fine, trop étroite dans cette police. **Et la règle voit le texte entier,
+pas ses morceaux** (30/09/2026) : `− {formatKg(capKg)} kg` rend trois enfants, et appliquée à
+chacun elle ne voyait jamais le nombre qui suit le signe — le « − » du cap et des gains restait
+sécable sur le plan. `ThemedText` réunit donc les chaînes et les nombres voisins avant de
+l'appliquer ; un texte imbriqué coupe la réunion et reçoit la règle pour lui-même
+(`src/components/themed-text.test.tsx`).
 
 **Corollaire pour les tests** : un séparateur s'écrit par son **point de code** (`\u00a0`) et jamais
 collé en littéral. Trois assertions le portaient en clair, et leur échec affichait

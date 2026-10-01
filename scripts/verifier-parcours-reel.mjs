@@ -291,6 +291,11 @@
 // Ce que la fenêtre de repos ne voit pas : une découpe qui arriverait plus de 600 ms après la
 // question serait prise pour le repos, et la garde retomberait de la même façon.
 //
+// La même chute a été relevée le même jour sur la PR de la recette du 29/09 (#299), **image par
+// image** : 840, 840, puis 153 — deux images d'environ 20 ms en tout, sur un poste sans charge. Sa
+// première version du repos attendait dix images identiques, environ 170 ms : R l'aurait trompée
+// (raisonné, pas rejoué), et c'est la fenêtre de 600 ms qui est restée à la fusion.
+//
 // ── Ce que la recette web du 28/09/2026 a trouvé (`v1-13` §15) ─────────────────────────────────
 //
 // Trois gardes neuves, pour trois constats qu'aucune suite ne voyait : un « Retour » ouvert sans pile
@@ -396,6 +401,24 @@
 // Ce qu'aucune ne peut voir : `laBoucleDuPointTourne` dans l'écran du plan — aucun profil n'a de point
 // répondu dont la boucle s'est arrêtée. La carte qui la reçoit est gardée par
 // `src/components/checkin-card.test.tsx`, l'appel de l'écran par rien.
+//
+// **Et une le 01/10/2026, sur l'encart orphelin** (`v1-13` §19, recette du jour) : l'étape « contexte
+// — retiré puis remis » garde l'**appel** d'`orphelinAAnnoncer`, que `plan.test.ts` ne voit pas.
+// L'écran muté passe un plan vide au lieu de ses gabarits — l'encart d'avant la correction — : le
+// parcours s'arrête à cette étape, sur « l'encart … se rend alors que « Passer deux trajets sur cinq
+// en train » est revenue dans le plan », et à elle seule — toutes les étapes d'avant passent. Le
+// témoin, sur le même commit, passe de bout en bout sur les trois profils. **Rejoués tous deux après
+// la contre-lecture du même jour**, qui a fait relire la base et attendre le titre exact de la carte
+// avant l'assertion (l'encart cite le libellé, donc une sous-chaîne pouvait se satisfaire de lui) :
+// même témoin vert, même chute, les deux préconditions passées sous la mutation.
+//
+// **Et une le même jour, sur « Toi »** (#305) : l'étape « suppression du compte » suit « Supprimer mon
+// compte » image par image depuis le rendu statique. La place réservée mise à zéro
+// (`HAUTEUR_DU_COMPTE_EN_LECTURE = 0`) : le parcours s'arrête à cette étape, sur « bouge de 396 px
+// (365 → 527 → 761) », et à elle seule. Le témoin, sur le même arbre, passe de bout en bout. **Rejouée
+// après la contre-lecture du même jour**, qui a fait poser les trois lectures de l'écran ensemble et
+// démarrer le relevé sur l'onglet du parcours : même chute, en un seul saut (365 → 761), et l'échec
+// capturé sur `/compte` — il l'était sur le plan, l'écran d'un autre onglet.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1588,6 +1611,61 @@ try {
     `« ${TITRE_OUVERT_AU_DESSUS} », engagée, se touche encore : sa rangée ne doit pas être un bouton`
   );
 
+  // ── 8 quinquies. Le contexte retiré puis remis : l'encart orphelin se tait au-dessus de l'action revenue
+  //
+  // **Trouvé sur la production, à la recette du 01/10/2026** (`v1-13` §19) : corriger son contexte
+  // emporte l'action engagée qu'il rend impossible, l'encart le dit — « « … » n’y est plus » —, et
+  // remettre le contexte comme avant rend l'action au plan **sans** l'engagement. L'archive garde sa
+  // ligne `contexte`, donc l'encart restait, au-dessus de l'action même qu'il disait partie, tant que
+  // personne n'avait touché « Compris » sur l'appareil — et sur tout appareil neuf. On ne le touche
+  // pas ici : c'est l'état de cet appareil neuf. `orphelinAAnnoncer` a son test ; ce qui se garde ici
+  // est son **appel**, avec les gabarits du plan — la famille « le test garde la fonction, jamais ses
+  // appels ».
+  etape('contexte — retiré puis remis, l’encart se tait au-dessus de l’action revenue');
+  // L'engagement repasse sur le train, la seule piste de ce profil que l'accès aux transports retire.
+  await ouvrirLesPistes();
+  await rangee(ATTENDU.pistes[0][0]).click();
+  await attendreTexte('Quels jours ?');
+  await choisir('mardi');
+  await bouton('C’est noté');
+  await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
+  await attendreTexte('TON ENGAGEMENT');
+  const enregistrerLeContexte = async (acces) => {
+    await page.goto(`${base}/contexte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.getByRole('radio', { name: acces, exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+    await choisir(acces);
+    await bouton('Enregistrer');
+    await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
+  };
+  const ENCART = 'Ton plan a changé avec tes nouvelles réponses de contexte.';
+  await enregistrerLeContexte('Inexistant');
+  await attendreTexte(ENCART);
+  await enregistrerLeContexte('Limité');
+  // **Le titre de la carte, au mot près, et pas une sous-chaîne** (contre-lecture du 01/10/2026) :
+  // l'encart cite lui-même le libellé du train, donc `attendreTexte` pouvait se satisfaire de l'encart
+  // d'un écran pas encore relu — et l'assertion d'en dessous aurait accusé `orphelinAAnnoncer` d'un
+  // train qui ne serait jamais revenu. La base le dit d'abord, l'écran ensuite.
+  const lesPistesRevenues = await lire('plan_actions?select=action_templates(action_text)', jeton);
+  assurer(
+    lesPistesRevenues.some((piste) => piste.action_templates?.action_text === ATTENDU.pistes[0][0]),
+    `« ${ATTENDU.pistes[0][0]} » n’est pas revenue dans le plan avec l’accès « Limité » : l’étape ne peut pas conclure`
+  );
+  try {
+    await page.getByText(ATTENDU.pistes[0][0], { exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
+  } catch {
+    throw new Ecart(`la carte « ${ATTENDU.pistes[0][0]} » n’est pas revenue à l’écran du plan, alors que la base la porte`);
+  }
+  const archivesDuContexte = await lire('plan_action_commitments_archive?select=action_text&released_reason=eq.contexte', jeton);
+  assurer(
+    archivesDuContexte.length === 1 && archivesDuContexte[0].action_text === ATTENDU.pistes[0][0],
+    `le train n’a pas été archivé une fois en « contexte » — l’encart n’aurait rien à taire : ${JSON.stringify(archivesDuContexte)}`
+  );
+  assurer(
+    !(await page.evaluate(() => document.body.innerText)).includes(ENCART),
+    `l’encart « ${ENCART} … n’y est plus » se rend alors que « ${ATTENDU.pistes[0][0]} » est revenue dans le plan` +
+      ' (`orphelinAAnnoncer`, appelé avec les gabarits du plan)'
+  );
+
   // ── 9. La suppression du compte, par l'écran, et rien derrière ─────────────────────────────
   //
   // **Par « Toi », et plus par le RPC** (28/09/2026). C'est le chemin que Google Play exige, et aucun
@@ -1597,7 +1675,46 @@ try {
   // supprimé — son adresse, « Me déconnecter », le rappel par email coché. Les pages légales, elles,
   // restent : la moitié positive est vérifiée aussi, pour qu'un masquage trop large ne passe pas vert.
   etape('suppression du compte');
+  // **Et « Supprimer mon compte » ne bouge plus pendant que « Toi » se lit** (décision du 01/10/2026,
+  // #305) : l'écran garde la place du compte et des rappels (`HAUTEUR_DU_COMPTE_EN_LECTURE`,
+  // `src/app/compte/index.tsx`). Le relevé image par image démarre **avant le premier script** de la
+  // page qui suit — la seule façon de voir la première image, celle du rendu statique, où le lien était
+  // à 335 px avant de descendre à 747. Il passe par le relevé que le contexte pose déjà dans chaque
+  // document, et ne le démarre qu'une fois celui-ci là : l'ordre des scripts d'initialisation d'un
+  // contexte et d'une page n'est pas garanti (contre-lecture du 01/10/2026), et tous ont tourné avant le
+  // premier `setTimeout`. Sur l'onglet du parcours, et pas sur un second : un échec se capture sur
+  // l'écran qui a échoué. Ce profil est anonyme, à 420 de large, sur web — la largeur, le compte et la
+  // plateforme où la place a été mesurée, donc il ne doit rester **rien** ; ailleurs, un reste est le
+  // risque accepté avec la décision.
+  await page.addInitScript(
+    ({ mesures, duree }) => {
+      const demarrer = () => (window.__releve ? window.__releve.demarrer(mesures, duree) : setTimeout(demarrer, 0));
+      demarrer();
+    },
+    { mesures: { lien: ['texte', 'Supprimer mon compte'] }, duree: 15_000 }
+  );
   await page.goto(`${base}/compte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  // **L'écran posé d'abord, le clic ensuite** (CI du 30/09/2026). `/compte` rend « Supprimer mon
+  // compte » dès son HTML statique, puis grandit au-dessus du lien quand le compte et les rappels
+  // arrivent — 412 px. Un clic pris dans ce saut est perdu : l'appui et le relâchement ne tombent
+  // pas sur le même élément, et le navigateur ne rend le `click` qu'à leur ancêtre commun.
+  // Reproduit en retenant ces deux lectures pendant l'appui : le lien passe de 335 à 747 px et la
+  // confirmation ne s'ouvre pas, deux fois sur deux, quand le témoin l'ouvre deux fois sur deux. Le
+  // groupe « Les rappels » arrive avec elles — l'étape de la ligne de canal l'attend déjà. **Depuis le
+  // 01/10/2026, l'écran garde la place** et le lien ne bouge plus à cette largeur (gardé juste
+  // au-dessus) ; l'attente reste, parce qu'ailleurs un reste de saut est accepté.
+  await page.getByRole('radiogroup', { name: 'Les rappels', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+  await page.waitForTimeout(600);
+  const positionsDuLien = ((await echantillons(page)) ?? []).map((e) => e.lien?.haut).filter((h) => typeof h === 'number');
+  assurer(positionsDuLien.length > 0, '« Supprimer mon compte » introuvable pendant la lecture de « Toi » : la mesure ne peut pas conclure');
+  const finale = positionsDuLien[positionsDuLien.length - 1];
+  const saut = Math.max(...positionsDuLien.map((h) => Math.abs(h - finale)));
+  assurer(
+    saut <= 8,
+    `« Supprimer mon compte » bouge de ${Math.round(saut)} px pendant que « Toi » se lit ` +
+      `(${[...new Set(positionsDuLien.map(Math.round))].join(' → ')}) : la place du compte et des rappels n'est plus ` +
+      'gardée — `HAUTEUR_DU_COMPTE_EN_LECTURE`, src/app/compte/index.tsx, à remesurer si une phrase a changé'
+  );
   await bouton('Supprimer mon compte');
   await bouton('Supprimer définitivement');
   await attendreTexte('C’est fait.');

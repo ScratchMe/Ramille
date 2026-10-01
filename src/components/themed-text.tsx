@@ -56,12 +56,29 @@ export type ThemedTextProps = TextProps & {
 };
 
 // Les chaînes d'un texte reçoivent leurs espaces insécables ici, au rendu, et nulle part ailleurs
-// (`src/types/typographie.ts` dit pourquoi). Un enfant qui n'est pas une chaîne — un nombre, un
-// `ThemedText` imbriqué, qui fera de même pour ses propres chaînes — passe tel quel.
+// (`src/types/typographie.ts` dit pourquoi). Un `ThemedText` imbriqué passe tel quel : il fera de
+// même pour ses propres chaînes.
+//
+// **Les chaînes et les nombres voisins sont d'abord réunis** (contre-lecture du 30/09/2026). Le JSX
+// `− {formatKg(capKg)} kg` rend trois enfants, `['− ', '384', ' kg']`, et la règle appliquée à
+// chacun ne voyait jamais le nombre qui suit le signe : le « − » du cap et du gain restait sécable
+// sur le plan, pendant que les tests de `espacesInsecables` passaient sur la phrase entière.
 function avecEspacesInsecables(enfants: ReactNode): ReactNode {
   if (typeof enfants === 'string') return espacesInsecables(enfants);
   if (!Array.isArray(enfants)) return enfants;
-  return Children.map(enfants, (enfant) => (typeof enfant === 'string' ? espacesInsecables(enfant) : enfant));
+  const morceaux: ReactNode[] = [];
+  let texte: string | null = null;
+  for (const enfant of Children.toArray(enfants)) {
+    if (typeof enfant === 'string' || typeof enfant === 'number') {
+      texte = (texte ?? '') + String(enfant);
+      continue;
+    }
+    if (texte !== null) morceaux.push(espacesInsecables(texte));
+    texte = null;
+    morceaux.push(enfant);
+  }
+  if (texte !== null) morceaux.push(espacesInsecables(texte));
+  return morceaux.length === 1 ? morceaux[0] : morceaux;
 }
 
 export function ThemedText({

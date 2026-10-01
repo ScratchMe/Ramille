@@ -201,6 +201,19 @@ Ce que l'agent apporte en plus d'une personne : il **relit la base** après une 
 §7.1), et il mesure au lieu de juger à l'œil (une hauteur de bouton, un caractère de séparation).
 Ce qu'il n'apporte pas : un doigt, un vrai téléphone, un lecteur d'écran.
 
+### 1.10 Ce qu'une marque locale referme, un appareil neuf le rouvre
+
+Un écran qui ne montre une chose **qu'une fois** la garde dans le stockage de l'appareil : une
+annonce, une carte d'ouverture, une explication. La séance qui la voit puis la referme ne la revoit
+plus — et conclut « conforme » sur l'appareil où elle l'a refermée. Mais la personne en a d'autres,
+et chacun repart sans marque. **Une ligne qui regarde ce qu'un écran tait après un changement se
+rejoue donc aussi dans une fenêtre neuve**, sur le même compte.
+
+Payé chez Ramille le 01/10/2026 (`v1-13` §19) : l'encart « … n'y est plus », refermé la veille, se
+taisait dans le navigateur de la séance ; retrouvé dans un navigateur neuf, il se rendait au-dessus de
+l'action même qu'il disait partie. Le défaut était là depuis la veille, et seule une connexion faite
+pour une autre ligne l'a montré.
+
 ---
 
 ## 2. Propre à Ramille
@@ -258,8 +271,9 @@ destination légitime, et elle se note comme telle.
 | Séance | Document (la mémoire) | Artefact (l'outil) |
 |---|---|---|
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
-| Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09, **jouée le 28/09 par l'agent** — constats en `v1-13` §15 ; blocs 12 et 14.3 le 1er octobre) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
-| Ce qui reste après la séance du 28/09/2026 — les correctifs de la soirée revus sur la production, le suivi sur deux jours, les jugements qui reviennent à la personne qui pilote | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | https://claude.ai/artifact/39KtxfEBam38o9HB4rcn53 |
+| Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09, **jouée le 28/09 par l'agent** — constats en `v1-13` §15 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
+| Ce qui reste après la séance du 28/09/2026 — les correctifs de la soirée revus sur la production, le suivi sur deux jours, les jugements qui reviennent à la personne qui pilote (**blocs 00 et 01 joués le 29/09 par l'agent**, `v1-13` §16 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | https://claude.ai/artifact/39KtxfEBam38o9HB4rcn53 |
+| **Tout ce qui reste à recetter au 29/09/2026 — la seule feuille ouverte** : l'écran du mode (`v1-31`) et « Toutes les pistes » (`v1-32`) sur la production, `/contexte` (§11.W.8), deux bilans de deux jours, le point du 1er octobre, les jugements, et un bloc final qui attend le build natif (**blocs 00 à 02 joués le 29/09 au soir, bloc 03 le 30/09, blocs 04 et 06 le 1er octobre, par l'agent** — `v1-13` §17 à §19 ; le bloc 05 tranché le 1er octobre par la personne qui pilote ; reste le bloc 07, au build natif) | `docs/recette/ce-qui-reste-apres-le-29-septembre.md` | https://claude.ai/artifact/4pWwnbinxhigiR7jJW4puR |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
@@ -286,7 +300,10 @@ savoir pour la prochaine fois :
   parcours, `["ref", "faire", "attendre"]` dans les deux autres — une comparaison qui n'en lit
   qu'une compte l'autre artefact comme vide. Et une fois les blancs, les balises et les guillemets
   normalisés, il reste des différences qui n'en sont pas : l'italique `*…*` du `.md` devant un `<em>`,
-  un lien Markdown devant un numéro nu. Relire chaque écart restant, ne pas viser zéro ;
+  un lien Markdown devant un numéro nu. Relire chaque écart restant, ne pas viser zéro. **La
+  quatrième feuille, celle du 29/09, a une troisième forme** : ses lignes sont dans un bloc JSON
+  (`<script id="donnees">`, blocs puis lignes `[ref, faire, attendre]`) et sa base est
+  `{meta, lignes}` ; elle ne se compare pas, elle se régénère (plus bas) ;
 - **un artefact se republie depuis sa version en ligne**, lue en entier dans la session qui publie.
   Le fichier sauvé par une session précédente ne compte pas : la publication est refusée, rend la
   version en ligne, et ne passe qu'une fois les modifications posées dessus.
@@ -315,6 +332,26 @@ laisse quelque chose : une feuille courte, datée, qui dit dans son en-tête **�
 a un sens — ici, une fois la PR des correctifs déployée, et sa ligne 00.2 vérifie que c'est le cas
 avant qu'on joue quoi que ce soit.
 
+**La quatrième, écrite le 29/09/2026, est la seule feuille ouverte** : elle rassemble tout ce qui
+reste à recetter, lu dans les documents **et dans les bases des artefacts** — une ligne muette dans
+une base est une ligne non jouée, même quand son document ne le dit pas. Trois feuilles portaient
+encore des lignes jamais jouées, et deux écrans livrés **après** la dernière séance avaient réécrit
+des lignes déjà cochées conformes sur l'écran d'avant : une ligne réécrite est une ligne neuve. Les
+anciennes feuilles le disent en tête, et leurs artefacts gardent leurs bases, qui sont la mémoire
+de ce qui a été joué. Deux choses de forme, à reprendre : **un calendrier en tête**, parce que ses
+blocs ne se jouent pas le même jour et que c'est la date qui décide de l'ordre ; et **un bloc final
+« après le build natif » qui ne se joue pas au navigateur**, pour que ce qui attend un appareil soit
+dans la même liste que le reste au lieu de vivre seulement dans `v1-13` §11. **Et ses données
+sont extraites du `.md` par un script**, non recopiées : c'est la réponse au décrochage relevé le
+25/09 plus haut, et la comparaison en dix lignes devient inutile tant qu'on régénère plutôt que de
+retoucher la page à la main. Le script est `scripts/extraire-une-feuille-de-recette.mjs` — versé
+dans le dépôt le 30/09/2026, parce qu'il vivait dans le dossier de travail d'une session et qu'un
+conteneur qui redémarre l'emporte : la page publiée se relit en entier (`Artifact`, action `read`),
+ses données sont un seul bloc JSON (`<script type="application/json" id="donnees">`), et
+`--page <page.html>` remplace ce bloc et rien d'autre. Ses tableaux se trouvent par leur **ancre**,
+propre à chaque feuille : une ancre absente le fait échouer en la nommant, plutôt que de rendre une
+page à laquelle il manque un tableau.
+
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est
 exactement ce que ce format existe pour ne plus reproduire.
@@ -332,9 +369,24 @@ La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit 
 - **Le magasin de certificats du Chromium était vide.** Chaque page rendait
   `ERR_CERT_AUTHORITY_INVALID` alors que `curl` passait : le proxy de sortie réécrit le TLS, et son
   autorité n'était pas dans `sql:$HOME/.pki/nssdb`. La parade, qui ne coupe aucune vérification :
-  installer `libnss3-tools`, puis ajouter en `C,,` chaque certificat « Anthropic » de
-  `/root/.ccr/ca-bundle.crt` avec `certutil -A`. Le proxy peut aussi changer de port en cours de
-  session : on lit toujours `$HTTPS_PROXY`, jamais un port recopié.
+  installer `libnss3-tools` — **après un `sudo apt-get update`**, sans quoi l'installation échoue en
+  404 (29/09/2026) —, créer la base par `certutil -N` si elle n'existe pas, puis ajouter en `C,,`
+  chaque certificat « Anthropic » de `/root/.ccr/ca-bundle.crt` avec `certutil -A` (il y en avait
+  six). Le proxy peut aussi changer de port en cours de session : on lit toujours `$HTTPS_PROXY`,
+  jamais un port recopié. **Le conteneur ne survit pas d'un jour à l'autre** : une séance sur
+  plusieurs jours remonte tout ceci à chaque reprise, `npm ci` compris.
+- **Un 502 n'est pas forcément la production** (29/09/2026) : trois l'étaient du proxy de sortie —
+  pas d'en-tête `server` ni `x-vercel-id`, `text/plain`, et un corps qui était le début du vrai
+  fichier, coupé. Un 502 de Vercel porte `x-vercel-id`. Relire les en-têtes avant d'en faire un
+  constat.
+- **React Navigation garde les écrans précédents dans le DOM** : un libellé peut exister deux fois,
+  dont une cachée (« Rattacher un compte » vit aussi sur le plan, derrière « Toi »). Le pilote clique
+  toujours l'élément **visible** — et « visible » au sens de Playwright ne suffit pas (30/09/2026) :
+  l'écran d'onglet resté monté derrière garde une boîte non nulle, et son bouton du compte, visé en
+  premier, est masqué par celui de l'écran au premier plan. On clique l'élément que
+  `document.elementFromPoint` rend au centre de sa boîte. Et le nom accessible d'une puce n'est pas toujours son libellé :
+  les réponses du télétravail s'affichent « Aucun », « Un jour », « Deux ou plus », et se nomment
+  « Aucun jour », « Un jour par semaine », « Deux jours par semaine ou plus ».
 - **Les adresses** : des alias de la boîte de la personne qui pilote (`…+ramille-p1@gmail.com`,
   `…+ramille-p2@…`), avec son accord, et les codes lus par le connecteur Gmail. C'est ce qui a permis
   de jouer le bloc du code « avec une vraie messagerie » — l'objet, le corps, l'absence de lien, le
@@ -349,3 +401,13 @@ La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit 
 - **Supprimer ce qu'on a créé** : le compte du profil 1 en fin de séance, par l'écran, puis vérifié
   en base (`auth.users`). Et régler les rappels sur « Sans rappel » pour tout profil gardé, sans quoi
   un vrai message partirait (§2.3).
+- **Consigner dans la base de l'artefact** : un `set` du document entier `{meta, lignes}`, depuis un
+  fichier JSON (`file_path`), épinglé par `if_version`. La page réécrit `{meta, lignes}` à chaque
+  coche : **un champ ajouté hors de ces deux clés serait perdu** à la coche suivante. Ce que l'agent
+  a vu hors feuille va donc dans une clé **de `meta`** (`agent-hors-feuille`, 29/09/2026).
+- **Une étape du pilote qui échoue perd le résultat de tout ce qu'elle a fait avant l'échec**
+  (30/09/2026) : une écriture a pu avoir lieu sans qu'aucune trace n'en revienne. Relire la base
+  avant de rejouer, et noter dans la ligne ce qui a été vu en base plutôt qu'à l'écran ; une ligne
+  dont la lecture s'est perdue se rejoue, elle ne se déduit pas.
+- **Une capture de jugement s'envoie dès qu'elle est prise** : le répertoire temporaire disparaît
+  avec le conteneur, et le 29/09 toutes les captures sauf une ont été perdues ainsi.

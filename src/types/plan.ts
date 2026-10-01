@@ -668,6 +668,48 @@ export function phraseDeLOrphelin(raison: string, actionText: string): string {
   return `Ton plan a changé ${cause}. « ${actionText} » n’y est plus ; elle reste dans ton suivi.`;
 }
 
+/**
+ * L'engagement emporté que le plan peut encore annoncer — ou rien, **quand l'action est revenue
+ * dans le plan, ou quand la perte date d'un autre cycle** (recette du 01/10/2026, `v1-13` §19).
+ *
+ * L'encart dit « « … » n’y est plus » : c'est sa prémisse, et rien ne la vérifiait. Corriger son
+ * contexte puis le remettre comme avant rend l'action au plan — sans l'engagement, que la
+ * personne n'a pas repris —, et l'archive garde la ligne `contexte`. La marque « vu » étant locale,
+ * l'appareil où l'encart avait été refermé se taisait, mais **un appareil neuf** l'affichait
+ * au-dessus de l'action même qu'il disait partie, première carte du plan (vu sur la production :
+ * « Passer deux trajets sur cinq en métro ou en tram », ligne d'archive et action au rang 1 du même
+ * cycle) — comme le ferait le premier appareil tant que personne n'y a touché « Compris ». Un
+ * re-bilan qui rend une action qu'un précédent avait emportée tombe dans le même cas.
+ *
+ * L'appariement se fait sur le **gabarit**, jamais sur le libellé : l'archive fige `action_text`
+ * (C2.2), et un gabarit reformulé depuis (C3.8) ne se reconnaîtrait plus à son texte — l'encart
+ * redirait faux, en silence. **On tait, et on ne réécrit pas** — décision de la personne qui pilote,
+ * 01/10/2026 (#312) : l'encart a déjà parlé sur l'appareil où le contexte a changé, puisque
+ * l'enregistrement ramène au plan, et le redire sur chaque appareil répéterait un événement annoncé.
+ *
+ * **Et seulement pour une perte du cycle affiché** (même décision). Sans borne, l'encart annonçait la
+ * dernière perte quelle que soit sa date — un engagement emporté par un bilan de mars s'annonçait en
+ * décembre sur un téléphone neuf, « avec ton nouveau bilan » —, et un encart tu ici, jamais marqué
+ * « vu », reparaissait **d'une saison à l'autre** avec son ancienne cause dès que l'action quittait de
+ * nouveau le plan sans nouvelle perte annonçable. Les deux raisons annoncées archivent le cycle
+ * **courant**, qu'un re-bilan ou un contexte corrigé reconstruit sans en créer un autre
+ * (`generate_plan_cycle_for_user`). Une ligne dont le cycle a disparu (`on delete set null`, qu'aucun
+ * chemin ne produit aujourd'hui) se tait.
+ *
+ * **Ce que la borne ne ferme pas**, relevé à la contre-lecture du 01/10/2026 : **dans une même saison**,
+ * une action emportée par un re-bilan, rendue sans engagement par un second, puis retirée de nouveau
+ * par un contexte corrigé — sans engagement, donc sans ligne neuve — fait reparaître l'ancienne ligne
+ * sur un appareil qui ne l'a pas refermée, « avec ton nouveau bilan ». Trois gestes dans la saison, et
+ * la phrase reste vraie sur l'essentiel : l'action n'y est plus.
+ */
+export function orphelinAAnnoncer<
+  O extends { action_template_id: string; plan_cycle_id: string | null },
+>(orphelin: O | null, plan: { cycle: string; gabarits: readonly string[] }): O | null {
+  if (orphelin === null) return null;
+  if (orphelin.plan_cycle_id !== plan.cycle) return null;
+  return plan.gabarits.includes(orphelin.action_template_id) ? null : orphelin;
+}
+
 // ── L'encart de contexte du plan (C5.5, écarts 9 et 10) ────────────────────────────────────────
 
 /**

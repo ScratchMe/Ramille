@@ -203,18 +203,31 @@ export async function effacerLesMarquesLocales(): Promise<void> {
  * L'ordre est l'inverse de la suppression, et c'est voulu : **`signOut` d'abord, effacement
  * ensuite**. Effacer avant aurait laissé, si le `signOut` échouait, une session ouverte sans ses
  * marques locales — donc une personne toujours connectée à qui l'app reposerait la feuille des
- * rappels et le brouillon d'une autre. Ici le pire cas est l'inverse, et il est bénin : la session
- * est bien fermée, des marques traînent, et la prochaine session anonyme les relit comme les
- * siennes — ce qu'elle fait déjà aujourd'hui pour tout appareil jamais rattaché.
+ * rappels et le brouillon d'une autre. Et un `signOut` en erreur n'est un échec que si la session
+ * est encore là : `auth-js` ferme la session locale même quand le serveur ne répond pas, et des
+ * marques gardées à tort seraient relues par la session anonyme suivante comme les siennes.
  *
  * Les données, elles, restent sur le compte : c'est exactement ce que l'écran dit, et c'est vrai —
  * tout ce qui compte vit en base, rattaché au `user_id`, et `/connexion/retrouver` y ramène.
+ *
+ * **`scope: 'local'`, et le bouton le promet** (29/09/2026). `signOut()` sans argument est en portée
+ * **globale** dans `auth-js` : le serveur ferme alors toutes les sessions du compte, et les autres
+ * appareils perdaient la leur au premier rafraîchissement de jeton — l'écran de session refusée,
+ * puis un code à redemander, sur le téléphone qu'on n'avait pas touché. « De cet appareil » veut
+ * dire celui-ci seulement.
  */
 export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
 
+  // **Une erreur ne veut pas dire « encore connecté »** (contre-lecture du 30/09/2026). Quand le
+  // serveur ne répond pas, `auth-js` ferme **quand même** la session locale, puis rend l'erreur :
+  // l'écran annonçait alors un échec à quelqu'un qui venait d'être déconnecté, et gardait ses
+  // marques pour la session suivante. Seule une session encore là est un échec.
   if (error) {
-    return { ok: false, message: 'La déconnexion n’a pas abouti. Réessaie dans un instant.' };
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      return { ok: false, message: 'La déconnexion n’a pas abouti. Réessaie dans un instant.' };
+    }
   }
 
   await effacerLesMarquesLocales();
@@ -233,6 +246,13 @@ export async function deleteMyAccount(): Promise<CompteResult> {
   // La session pointe désormais sur un utilisateur qui n'existe plus : la fermer explicitement
   // évite que le client rejoue un jeton mort à la première requête suivante. L'échec du
   // signOut n'est pas bloquant — le compte, lui, est bien supprimé.
-  await supabase.auth.signOut().catch(() => undefined);
+  //
+  // **En portée locale, comme la déconnexion** (29/09/2026), et le 403 qui suit est attendu : les
+  // sessions du serveur sont déjà parties avec `auth.users` (`sessions` et `refresh_tokens` s'y
+  // rattachent en cascade), mais `auth-js` appelle `/logout` **quelle que soit la portée**, avec le
+  // jeton d'un utilisateur qui n'existe plus. Le serveur répond 403, qu'`auth-js` avale avant de
+  // vider le stockage — relevé à la recette du 29/09 (`v1-13` §16) en portée globale, et il reste
+  // en locale (contre-lecture du 30/09).
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
   return { ok: true };
 }

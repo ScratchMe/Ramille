@@ -18,6 +18,7 @@ import {
   isIntentionComplete,
   ligneDuGain,
   motsDuContexte,
+  orphelinAAnnoncer,
   phraseDeLOrphelin,
   phraseDesPistesSuffisantes,
   RAISONS_ANNONCABLES,
@@ -813,6 +814,50 @@ describe('l’encart orphelin', () => {
       expect(phrase).toContain('« Faire un trajet sur cinq à vélo. »');
       expect(phrase).toContain('elle reste dans ton suivi');
     }
+  });
+
+  // **« n’y est plus » est la prémisse de l'encart, et elle peut devenir fausse** (recette du
+  // 01/10/2026, `v1-13` §19) : le contexte remis comme avant rend l'action au plan, et un appareil
+  // neuf affichait l'encart au-dessus d'elle. L'appariement se fait sur le gabarit et non sur le
+  // libellé, que l'archive fige (la troisième assertion).
+  //
+  // **Éprouvé en le cassant le 01/10/2026** (`TESTING.md` §1.1), deux mutations de la dérivation, ce
+  // test seul tombant à chaque fois : `orphelin` rendu sans condition (« Expected: null », sur la
+  // première assertion) ; puis l'appariement sur `action_text` au lieu du gabarit (la même). Depuis la
+  // borne au cycle, ajoutée le même jour, la première fait aussi tomber le test suivant. L'appel de
+  // l'écran est gardé par le parcours réel, étape « contexte — retiré puis remis ».
+  const orphelin = {
+    id: 'archive-1',
+    action_template_id: 'gabarit-metro',
+    plan_cycle_id: 'cycle-automne',
+    action_text: 'Passer deux trajets sur cinq en métro ou en tram',
+    released_reason: 'contexte',
+  };
+  const plan = (gabarits: string[], cycle = 'cycle-automne') => ({ cycle, gabarits });
+
+  it('se tait quand l’action qu’il dit partie est revenue dans le plan', () => {
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-metro', 'gabarit-train']))).toBeNull();
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-covoiturage', 'gabarit-velo']))).toBe(orphelin);
+    // Un gabarit reformulé depuis l'archive (C3.8) : même gabarit, autre libellé — revenu quand même.
+    expect(
+      orphelinAAnnoncer({ ...orphelin, action_text: 'Faire deux trajets sur cinq en métro' }, plan(['gabarit-metro']))
+    ).toBeNull();
+    // Un plan à zéro action ne peut rien avoir repris.
+    expect(orphelinAAnnoncer(orphelin, plan([]))).toBe(orphelin);
+    expect(orphelinAAnnoncer(null, plan(['gabarit-metro']))).toBeNull();
+  });
+
+  // **Borné à la saison affichée** (décision du 01/10/2026, #312) : une perte d'un autre cycle ne
+  // s'annonce plus — ni un bilan de mars sur un téléphone neuf en décembre, ni un encart tu qui
+  // reviendrait avec son ancienne cause. Une ligne dont le cycle a disparu (`on delete set null`) se
+  // tait aussi.
+  //
+  // **Éprouvé en le cassant le 01/10/2026** : la condition sur le cycle retirée, ce test seul tombe,
+  // sur sa première assertion (« Expected: null »).
+  it('ne parle que d’une perte du cycle affiché', () => {
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-velo'], 'cycle-hiver'))).toBeNull();
+    expect(orphelinAAnnoncer({ ...orphelin, plan_cycle_id: null }, plan(['gabarit-velo']))).toBeNull();
+    expect(orphelinAAnnoncer(orphelin, plan(['gabarit-velo']))).toBe(orphelin);
   });
 });
 

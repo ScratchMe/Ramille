@@ -579,8 +579,9 @@ export function sortiesDeLouverture(plan: {
  * « Ton premier plan » réapparaîtrait à quelqu'un qui connaît déjà la règle du jeu.
  *
  * C'est aussi pourquoi la lecture de l'archive que l'écran fait **déjà** ne peut pas servir ici :
- * celle de l'encart orphelin (C2.2) filtre sur `released_reason = 'rebilan'`, parce qu'elle annonce
- * un effet de bord que la personne n'a pas choisi. Élargir ce filtre casserait l'encart — la
+ * celle de l'encart orphelin (C2.2) filtre sur les raisons annonçables (`RAISONS_ANNONCABLES` :
+ * `rebilan`, et `contexte` depuis C6.4), parce qu'elle annonce un effet de bord que la personne n'a
+ * pas choisi. Élargir ce filtre casserait l'encart — la
  * question du premier plan demande donc sa propre lecture.
  *
  * **Le trait de temps suit ce même signal**, et le canvas l'écrit
