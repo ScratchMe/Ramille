@@ -18,14 +18,21 @@
  * C'est ce qui rend visible un aller-retour — une lecture partie trop tard n'est pas dans la liste
  * des requêtes en attente au moment où les premières répondent.
  *
- * **Éprouvé en le cassant, le 01/10/2026** (TESTING.md §1.1) — chacune fait tomber la sienne :
+ * **Éprouvé en le cassant, le 01/10/2026** (TESTING.md §1.1), sur un fichier égal au commit et
+ * restauré depuis sa copie :
  *   - le cycle courant attendu après le résultat (l'état d'avant, pour lui seul) → « toutes les
- *     lectures partent au montage… » ;
- *   - le précédent remis en second temps, après le premier rendu → la même, sur la barre ;
- *   - la chaîne de chargement d'avant R-9 (sans bande haute) → la même, sur la bande ;
- *   - le `.catch` de la lecture des bilans valides retiré → « une lecture tolérante qui lève… » ;
- *   - le `.catch` de la fréquence des loisirs retiré → la même ;
- *   - le cycle lu aussi en relecture → « en relecture, le cycle n'est pas lu… ».
+ *     lectures partent au montage… », sur la liste des requêtes en vol ; et « une lecture tolérante
+ *     qui échoue ou lève… », dont la libération du cycle ne trouve alors aucune requête en vol ;
+ *   - le précédent absent du premier rendu prêt (`precedent: null`, la barre d'avant) → « toutes les
+ *     lectures partent au montage… », seul, sur « Ton bilan précédent · juin » ;
+ *   - le chargement sans la bande haute (l'état d'avant R-9) → la même, seule, sur la bande ;
+ *   - le `.catch` de la lecture des bilans valides retiré → « une lecture tolérante qui échoue ou
+ *     lève… », seul : l'écran d'erreur prend la place ;
+ *   - le `.catch` de la fréquence des loisirs retiré → la même, seule ;
+ *   - le cycle lu aussi en relecture → « en relecture, le cycle n'est pas lu… », seul.
+ *
+ * **Ce qu'il coûte, mesuré le même jour** : 3 tests, 4 modules doublés, ≈ 0,15 s de tests sur
+ * ≈ 2,5 s pour le fichier (le chargement de l'écran et de ses dépendances fait le reste).
  */
 import { act, render, screen } from '@testing-library/react-native';
 import React from 'react';
@@ -38,7 +45,12 @@ import { APP_NAME } from '@/constants/produit';
 // Quatre modules : le transport, la navigation, la mesure (qui partirait vers le transport), et la
 // marque locale (AsyncStorage) — reanimated l'est déjà pour toute la suite.
 
-type Requete = { table: string; filtres: unknown[][]; repondre: (r: unknown) => void; lever: (e: unknown) => void };
+type Requete = {
+  table: string;
+  filtres: unknown[][];
+  repondre: (reponse: unknown) => void;
+  lever: (exception: unknown) => void;
+};
 const mockEnAttente: Requete[] = [];
 let mockParams: { id?: string; nouveau?: string } = {};
 
@@ -112,6 +124,10 @@ function liberer(table: string, issue: { reponse: unknown } | { exception: unkno
 
 const ok = (data: unknown) => ({ reponse: { data, error: null } });
 
+/** Ce que rend la lecture du résultat : le résultat, avec le statut et la date de son bilan. */
+const resultatLu = (soumisLe: string, champs: Partial<typeof RESULTAT> = {}) =>
+  ok({ ...RESULTAT, ...champs, assessments: { status: 'completed', submitted_at: soumisLe } });
+
 beforeEach(() => {
   mockEnAttente.length = 0;
 });
@@ -127,10 +143,15 @@ describe('la restitution d’un re-bilan', () => {
     expect(screen.getByText(APP_NAME)).toBeTruthy();
     // Un seul aller-retour : le résultat, les bilans valides, le cycle courant et la fréquence des
     // loisirs sont tous en vol avant que le premier ne réponde.
-    expect(tablesEnAttente()).toEqual(['assessment_answers', 'assessment_results', 'assessments', 'plan_cycles']);
+    expect(tablesEnAttente()).toEqual([
+      'assessment_answers',
+      'assessment_results',
+      'assessments',
+      'plan_cycles',
+    ]);
 
     await act(async () => {
-      liberer('assessment_results', ok({ ...RESULTAT, assessments: { status: 'completed', submitted_at: '2026-10-01T09:00:00Z' } }));
+      liberer('assessment_results', resultatLu('2026-10-01T09:00:00Z'));
       liberer('assessments', ok(BILANS_VALIDES));
       liberer('plan_cycles', ok({ id: 'cycle-oct', baseline_co2_kg_year: 1920, target_reduction_pct: 20 }));
       liberer('assessment_answers', ok({ leisure_frequency: 'souvent' }));
@@ -161,7 +182,7 @@ describe('la restitution d’un re-bilan', () => {
     await act(async () => {});
 
     await act(async () => {
-      liberer('assessment_results', ok({ ...RESULTAT, assessments: { status: 'completed', submitted_at: '2026-10-01T09:00:00Z' } }));
+      liberer('assessment_results', resultatLu('2026-10-01T09:00:00Z'));
       // Les bilans valides et la fréquence **lèvent** — ce que PostgREST ne fait pas aujourd'hui, et
       // que le `.catch` de chacune garde ; le cycle rend son échec comme une valeur, ce qu'il fait.
       liberer('assessments', { exception: new TypeError('Network request failed') });
@@ -192,7 +213,7 @@ describe('la restitution d’un re-bilan', () => {
     await act(async () => {
       liberer(
         'assessment_results',
-        ok({ ...RESULTAT, assessment_id: 'b1', total_co2_kg_year: 4700, assessments: { status: 'completed', submitted_at: '2026-06-02T08:00:00Z' } })
+        resultatLu('2026-06-02T08:00:00Z', { assessment_id: 'b1', total_co2_kg_year: 4700 })
       );
       liberer('assessments', ok(BILANS_VALIDES));
       liberer('assessment_answers', ok({ leisure_frequency: 'souvent' }));
