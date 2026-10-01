@@ -402,6 +402,13 @@
 // répondu dont la boucle s'est arrêtée. La carte qui la reçoit est gardée par
 // `src/components/checkin-card.test.tsx`, l'appel de l'écran par rien.
 //
+// **Et une le 01/10/2026, sur l'encart orphelin** (`v1-13` §19, recette du jour) : l'étape « contexte
+// — retiré puis remis » garde l'**appel** d'`orphelinAAnnoncer`, que `plan.test.ts` ne voit pas.
+// L'écran muté passe un plan vide au lieu de ses gabarits — l'encart d'avant la correction — : le
+// parcours s'arrête à cette étape, sur « l'encart … se rend alors que « Passer deux trajets sur cinq
+// en train » est revenue dans le plan », et à elle seule — toutes les étapes d'avant passent. Le
+// témoin, sur le même commit, passe de bout en bout sur les trois profils.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
