@@ -72,6 +72,9 @@ export default function SuppressionCompte() {
   }, []);
 
   const demanderLeCode = async () => {
+    // Entrée part du champ, que le bouton désactivé ne garde pas : un second appui pendant l'envoi
+    // ferait partir une seconde demande (01/10/2026, audit T-3).
+    if (busy) return;
     setMessage(null);
     if (!adresseSemblePlausible(email)) {
       setMessage('Cette adresse semble incomplète.');
@@ -114,7 +117,9 @@ export default function SuppressionCompte() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Recevoir un
+            code » ne servait qu'à le fermer, le défaut de React Native. */}
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.page}>
             <ThemedText type="small" themeColor="textTertiary">
               {APP_NAME}
@@ -141,6 +146,7 @@ export default function SuppressionCompte() {
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     placeholder="toi@exemple.fr"
+                    onSubmitEditing={() => void demanderLeCode()}
                   />
                   <Button
                     title={busy ? 'Envoi…' : 'Recevoir un code'}

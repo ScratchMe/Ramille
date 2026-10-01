@@ -103,7 +103,15 @@ export default function Feedback() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Envoyer » ne
+            servait qu'à le fermer — le défaut de React Native —, et l'envoi avait l'air ignoré. La
+            touche d'action du clavier, elle, reste un retour à la ligne : le champ est multiligne,
+            et lui faire envoyer le message interdirait d'écrire un second paragraphe. */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Un retour à nous faire ?

@@ -51,7 +51,12 @@ function Cadre({ children }: { children: ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.page}>{children}</ScrollView>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur un bouton ne
+            servait qu'à le fermer — le défaut de React Native (`never`) —, et « Recevoir un code »
+            avait l'air de ne pas avoir pris le geste. */}
+        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -275,6 +280,7 @@ export default function ConnexionEmail() {
             onChangeText={setEmail}
             keyboardType="email-address"
             placeholder="camille@exemple.fr"
+            onSubmitEditing={() => void demander()}
           />
           <MessageInline message={message} />
           <TextLink

@@ -18,3 +18,5 @@ saisi est en Spline Sans, graisse normale : sans elle, le champ prenait la polic
 `keyboardType="email-address"` suffit à ce que le champ annonce qu'il attend une adresse : le
 remplissage automatique (`autoComplete`) s'en déduit. `rightActionLabel` existe (il pose un
 `TextLink` dans le champ) mais aucun écran ne s’en sert aujourd’hui.
+
+**La touche d'action du clavier envoie** (01/10/2026) : avec `onSubmitEditing`, elle dit « Envoyer » (`enterKeyHint="send"`) et Entrée fait partir l'action de l'écran — « Recevoir un code » sur les trois écrans d'adresse —, sans fermer le clavier ni quitter le champ, pour qu'une adresse incomplète se corrige sur place. Une adresse ne passe pas par le correcteur du clavier (`autoCorrect` coupé).

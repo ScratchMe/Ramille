@@ -26,6 +26,7 @@ export function TextField({
   placeholder,
   helperText,
   autoComplete,
+  onSubmitEditing,
 }: {
   label: string;
   value: string;
@@ -42,6 +43,21 @@ export function TextField({
    * l'appelant ne dit rien** : un champ d'adresse (`email-address`) reçoit `email`.
    */
   autoComplete?: TextInputProps['autoComplete'];
+  /**
+   * L'envoi de l'écran, **branché sur la touche d'action du clavier** — et sur Entrée côté web, que
+   * react-native-web traduit en `onSubmitEditing` sur un champ d'une ligne (01/10/2026, audit T-3).
+   * Les trois écrans qui demandent une adresse y passent « Recevoir un code » : sans elle, Entrée
+   * n'envoyait rien (mesuré, zéro requête), et il fallait fermer le clavier pour atteindre un bouton
+   * posé jusqu'à 468 px plus bas.
+   *
+   * Quand il est là, la touche dit **« Envoyer »** (`enterKeyHint="send"`) et non « OK » ou
+   * « Aller » : elle fait partir un e-mail, c'est le mot juste, et c'est le seul geste que les trois
+   * appelants y branchent. Un quatrième dont l'action ne serait pas un envoi devra la passer en prop.
+   * Et le champ **garde le clavier et le focus** (`blurOnSubmit={false}`, lu par React Native comme
+   * par react-native-web) : sur une adresse incomplète, la phrase arrive sous un champ qu'on corrige
+   * sans le retoucher ; sur un envoi réussi, l'écran du code le remplace.
+   */
+  onSubmitEditing?: () => void;
 }) {
   const theme = useTheme();
   const accented = value.length > 0 || !!rightActionLabel;
@@ -51,6 +67,9 @@ export function TextField({
   // trois écrans qui en demandent une, dont `/compte/suppression`. La déduire ici plutôt que de
   // l'écrire dans chaque écran, c'est qu'un quatrième champ d'adresse l'aura sans y penser.
   const remplissage = autoComplete ?? (keyboardType === 'email-address' ? 'email' : undefined);
+  // Une adresse ne se corrige pas en mots : sans ceci, le clavier proposait de remplacer
+  // « camille.martin » par « Camille Martin » (01/10/2026, audit T-3).
+  const adresse = keyboardType === 'email-address';
 
   return (
     <View style={styles.container}>
@@ -77,6 +96,10 @@ export function TextField({
           keyboardType={keyboardType}
           autoComplete={remplissage}
           autoCapitalize={autoCapitalize}
+          autoCorrect={adresse ? false : undefined}
+          onSubmitEditing={onSubmitEditing ? () => onSubmitEditing() : undefined}
+          enterKeyHint={onSubmitEditing ? 'send' : undefined}
+          blurOnSubmit={onSubmitEditing ? false : undefined}
           placeholder={placeholder}
           placeholderTextColor={theme.textTertiary}
           style={[styles.input, { color: theme.text }]}

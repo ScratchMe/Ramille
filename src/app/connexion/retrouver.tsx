@@ -89,7 +89,12 @@ function Cadre({ children }: { children: ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.page}>{children}</ScrollView>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur un bouton ne
+            servait qu'à le fermer — le défaut de React Native (`never`) —, et « Recevoir un code »
+            avait l'air de ne pas avoir pris le geste. */}
+        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -164,6 +169,9 @@ export default function RetrouverMonCompte() {
   }, []);
 
   const envoyerLeLien = async () => {
+    // Entrée part du champ, que le bouton désactivé ne garde pas : un second appui pendant l'envoi
+    // ferait partir une seconde demande (01/10/2026, audit T-3).
+    if (busy) return;
     setMessage(null);
     // **Cette phrase n'était jamais dite** (relevé le 24/09/2026) : le bouton était désactivé tant que
     // l'adresse ne semblait pas plausible, donc cette branche était inatteignable — l'écran restait
@@ -293,6 +301,7 @@ export default function RetrouverMonCompte() {
             onChangeText={setEmail}
             keyboardType="email-address"
             placeholder="toi@exemple.fr"
+            onSubmitEditing={() => void envoyerLeLien()}
           />
           <MessageInline message={message} />
           <Button
