@@ -618,14 +618,15 @@ export default function Plan() {
    * la bande. Deux cas, deux dérivations testées :
    *  - **à l'ouverture du sélecteur** (`defilementPourMontrer`, la règle de la liste) : la carte
    *    grandit vers le bas sous le doigt, on la fait monter jusqu'à « C'est noté », jamais redescendre ;
-   *  - **après la relecture d'un engagement** (`defilementVersLaCarte`) : la carte a changé de place
-   *    sans geste sur elle, on l'amène où qu'elle soit — y compris vers le haut.
+   *  - **quand elle a changé de place sans geste sur elle** (`defilementVersLaCarte`) — après la
+   *    relecture d'un engagement, ou la carte de saison refermée par « Choisir une action » (D16) : on
+   *    l'amène où qu'elle soit, y compris vers le haut.
    * Les mesures se prennent dans la fenêtre de défilement, comme sur la liste : l'ancrage du défilement
    * de Chrome compense ce qui change de taille au-dessus, et une position dans la page bougerait sans
    * que rien ne bouge à l'œil (`TESTING-GARDES.md` §2.14).
    */
   const amenerDansLaFenetre = useCallback(
-    (id: string, cas: 'ouverture' | 'relecture') => {
+    (id: string, cas: 'ouverture' | 'deplacee') => {
       const carte = cartes.current.get(id);
       // La fenêtre de défilement elle-même — le nœud qui défile, et non l'instance du composant.
       const ecran = defilement.current?.getNativeScrollRef();
@@ -706,7 +707,7 @@ export default function Plan() {
     if (!carteEngageeAMontrer.current) return;
     carteEngageeAMontrer.current = false;
     if (idEngage === null) return;
-    amenerDansLaFenetre(idEngage, 'relecture');
+    amenerDansLaFenetre(idEngage, 'deplacee');
     if (ouvertureDeFeuille !== null) {
       focusApresLaFeuille.current = true;
       return;
@@ -718,6 +719,24 @@ export default function Plan() {
     focusApresLaFeuille.current = false;
     if (idEngage !== null) donnerLeFocus(blocs.current.get(idEngage));
   }, [ouvertureDeFeuille, idEngage]);
+
+  /**
+   * **La première piste, amenée quand « Choisir une action » referme la carte de saison** (D16 de
+   * `v1-33`, 01/10/2026 ; audit P-14). Posée au geste (`refermerLouverture`), consommée par l'effet qui
+   * suit le rendu où la carte n'est plus : la mesure se prend sur la mise en page d'après — la carte
+   * d'action a remonté de la hauteur de la carte refermée, et la carte d'attente a pu se rendre
+   * au-dessus d'elle. Par la dérivation de la carte engagée relue, et pour la même raison : elle a
+   * changé de place sans geste sur elle (`defilementVersLaCarte`, qui achève `defilementPourMontrer`).
+   * Le défilement de la plateforme, posé sous « réduire les animations » ; le focus est déjà parti, au
+   * geste.
+   */
+  const premiereAMontrer = useRef<string | null>(null);
+  useEffect(() => {
+    const id = premiereAMontrer.current;
+    if (id === null || ouverture !== null) return;
+    premiereAMontrer.current = null;
+    amenerDansLaFenetre(id, 'deplacee');
+  }, [ouverture, amenerDansLaFenetre]);
 
   // **La confirmation passe par la boîte de réception** : la personne y lit son code, le tape, et
   // arrive ici avec `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la boucle
@@ -1523,17 +1542,18 @@ export default function Plan() {
     nombreDActions: actionsCount,
   });
 
-  // Les quatre sorties referment la carte, et **deux d'entre elles font quelque chose de plus** :
-  // « Choisir une action » et « Choisir une autre » déplient les pistes en refermant, sans quoi elles
-  // reposent le plan tel qu'il était et ne se distinguent pas de « Reprendre la même action » —
-  // c'est-à-dire que le bouton ne fait rien de ce que son libellé annonce. La clé était transmise
-  // par le composant et jetée ici, sous un commentaire qui annonçait au futur ce que C4.6 allait
-  // ajouter alors que C4.6 est livré dans la même vague (relevé par cinq constats de l'audit, le
-  // 14/09/2026).
+  // Les quatre sorties referment la carte, et **deux d'entre elles font quelque chose de plus**, sans
+  // quoi elles reposeraient le plan tel qu'il était et ne se distingueraient pas de « Reprendre la même
+  // action » — c'est-à-dire que le bouton ne ferait rien de ce que son libellé annonce (relevé par cinq
+  // constats de l'audit, le 14/09/2026) :
+  //  - **« Choisir une action » amène la première piste du plan** (D16 de `v1-33`, 01/10/2026). Elle
+  //    menait à la liste complète, dix lignes, alors que les deux cartes que le plan a choisies sont
+  //    juste dessous : le bouton le plus saillant de l'écran contournait la sélection que le plan existe
+  //    pour faire (audit P-14). La liste reste derrière « Voir toutes les pistes · N » ;
+  //  - **« Choisir une autre » mène à la liste**, où l'on change d'action : la bascule d'engagement se
+  //    joue sur la carte d'action elle-même, où `commit_plan_action` libère et archive la précédente.
   //
-  // « Reprendre la même action » n'a effectivement rien à faire : C2.2 a déjà reconduit l'engagement.
-  // Et la bascule d'engagement se joue sur la carte d'action elle-même, où `commit_plan_action`
-  // libère et archive la précédente — d'où le dépli, qui amène simplement ces cartes sous les yeux.
+  // « Reprendre la même action » n'a rien à faire : C2.2 a déjà reconduit l'engagement.
   //
   // **Ce qui reste à faire est la mémoire de saison** (écart 7 de `v1-14` §10, moitié « affichage ») :
   // rapatrier l'engagement libéré du cycle courant pour le rappeler à côté du choix. Elle n'est pas
@@ -1552,11 +1572,21 @@ export default function Plan() {
   };
 
   const refermerLouverture = (cle?: string) => {
-    // **Le bouton mène là où l'on choisit** (C5.2). Il dépliait les pistes sous la carte ; depuis
-    // qu'elles ont leur écran, il y conduit. C'est la même intention, avec une destination qui
-    // existe : une sortie nommée « Choisir une action » qui laisse la personne sur le même écran
-    // devant les deux mêmes cartes ne tiendrait pas sa promesse.
-    if (cle === 'choisir' || cle === 'choisir_une_autre') router.push('/plan/pistes');
+    // **« Choisir une autre » mène là où l'on change d'action** (C5.2) : la liste, où chaque piste se
+    // choisit à la place de celle qu'on suit.
+    if (cle === 'choisir_une_autre') router.push('/plan/pistes');
+    // **« Choisir une action » referme la carte et amène la première piste** (D16) — la première des
+    // cartes du plan, rien n'étant engagé quand ce bouton se rend (`sortiesDeLouverture`). Le focus part
+    // **au geste**, sur le bloc qui l'annonce par son titre : le bouton touché sort de l'écran avec sa
+    // carte, et le focus retomberait sur le document. Le défilement, lui, attend le rendu qui referme
+    // (`premiereAMontrer`, plus haut).
+    if (cle === 'choisir') {
+      const premiere = pistes.enAvant[0];
+      if (premiere) {
+        donnerLeFocus(blocs.current.get(premiere.id));
+        premiereAMontrer.current = premiere.id;
+      }
+    }
     void marquerLouvertureDeSaisonVue(cycle.id);
     setOuverture(null);
   };

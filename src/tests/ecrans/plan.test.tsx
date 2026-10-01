@@ -40,7 +40,9 @@
  * `plan-pistes.test.tsx` en dit le reste.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import React from 'react';
+import { AccessibilityInfo } from 'react-native';
 
 import Plan from '@/app/(tabs)/plan/index';
 
@@ -94,9 +96,12 @@ jest.mock('@/lib/connexion-prefs', () => ({
   aVuEngagementOrphelin: async () => true,
   marquerEngagementOrphelinVu: async () => {},
 }));
+/** La carte d'ouverture de saison a-t-elle été vue sur cet appareil ? Vue, sauf où un test dit non. */
+const mockVuLaSaison = jest.fn<Promise<boolean>, [string]>();
+const mockMarquerLaSaison = jest.fn<Promise<void>, [string]>();
 jest.mock('@/lib/saison-prefs', () => ({
-  aVuLouvertureDeSaison: async () => true,
-  marquerLouvertureDeSaisonVue: async () => {},
+  aVuLouvertureDeSaison: (cycle: string) => mockVuLaSaison(cycle),
+  marquerLouvertureDeSaisonVue: (cycle: string) => mockMarquerLaSaison(cycle),
 }));
 jest.mock('@/lib/premier-parcours', () => ({ aVuLePremierPlan: async () => true, marquerLePremierPlanVu: async () => {} }));
 jest.mock('@/lib/compte', () => ({ lireEtatDuRattachement: async () => ({ kind: 'local' }) }));
@@ -162,6 +167,9 @@ const PREFS = {
 beforeEach(() => {
   mockLire.mockReset();
   mockPrefs.mockReset().mockResolvedValue(PREFS);
+  mockVuLaSaison.mockReset().mockResolvedValue(true);
+  mockMarquerLaSaison.mockReset().mockResolvedValue(undefined);
+  (router.push as jest.Mock).mockClear();
 });
 
 describe('Plan — l’ordre des états, les deux premières lectures parties ensemble', () => {
@@ -260,5 +268,84 @@ describe('Plan — des rappels qui n’ont rien rendu ne remplacent pas la derni
     await waitFor(() => expect(screen.getByRole('button', { name: 'Réessayer' }).props.accessibilityState?.disabled).toBe(false));
     expect(screen.getByText(/reviens quand tu veux/)).toBeTruthy();
     expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
+  });
+});
+
+/**
+ * **« Choisir une action » de la carte de saison amène la première piste du plan** (D16 de `v1-33`,
+ * 01/10/2026 ; audit P-14). Le parcours réel ne joue jamais une ouverture de saison — il lui faudrait un
+ * cycle précédent et un jour dans les deux premières semaines du cycle —, donc ce câblage n'est vu
+ * qu'ici : la carte se referme, la liste ne s'ouvre pas, et le focus part au geste sur le bloc de la
+ * première carte, qui l'annonce par son titre. Le défilement, lui, demande une vraie mise en page.
+ *
+ * Éprouvé en le cassant, le 01/10/2026, chacune faisant tomber la sienne et aucune autre :
+ *   - « Choisir une action » qui pousse encore `/plan/pistes` (l'état d'avant) → « referme la carte… » ;
+ *   - le focus jamais donné (`donnerLeFocus` retiré du geste) → la même, sur le focus ;
+ *   - « Choisir une autre » qui n'ouvre plus la liste → « « Choisir une autre » mène toujours… ».
+ */
+describe('Plan — la carte de saison, « Choisir une action »', () => {
+  /** Aujourd'hui en `YYYY-MM-DD` local : la carte ne vit que les deux premières semaines du cycle. */
+  const jour = (decalageEnMois = 0) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + decalageEnMois);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const action = (id: string, rang: number, texte: string, engagee = false) => ({
+    id,
+    action_template_id: `g${rang}`,
+    saving_kg_year: 600 - rang * 100,
+    saving_share_percent: 10,
+    detail_text: null,
+    first_step: null,
+    rank: rang,
+    committed_at: engagee ? '2026-09-02T10:00:00Z' : null,
+    intention_days: engagee ? [2] : null,
+    intention_timing: null,
+    carried_over_from: null,
+    action_templates: { action_text: texte, poste: 'commute' },
+  });
+  const cycles = (engagee: boolean) => [
+    {
+      ...CYCLE,
+      id: 'c2',
+      period_start: jour(),
+      period_end: jour(3),
+      baseline_co2_kg_year: 1000,
+      plan_actions: [
+        action('a1', 1, 'Passer deux trajets sur cinq en train', engagee),
+        action('a2', 2, 'Faire un trajet sur cinq à vélo'),
+      ],
+    },
+    { ...CYCLE, id: 'c1', period_start: jour(-3), period_end: jour(-1) },
+  ];
+
+  let focus: jest.SpyInstance;
+  beforeEach(() => {
+    focus = jest.spyOn(AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
+    mockVuLaSaison.mockResolvedValue(false);
+  });
+  afterEach(() => focus.mockRestore());
+
+  it('referme la carte et amène la première piste, sans ouvrir la liste', async () => {
+    lectures({ plan_cycles: async () => ({ data: cycles(false), error: null }) });
+    render(<Plan />);
+    const choisir = await screen.findByRole('button', { name: 'Choisir une action' });
+
+    fireEvent.press(choisir);
+
+    expect(router.push).not.toHaveBeenCalledWith('/plan/pistes');
+    expect(screen.queryByRole('button', { name: 'Choisir une action' })).toBeNull();
+    expect(mockMarquerLaSaison).toHaveBeenCalledWith('c2');
+    const vise = focus.mock.calls.filter(([, evenement]) => evenement === 'focus').at(-1)?.[0] as
+      | { props?: { accessibilityLabel?: string } }
+      | undefined;
+    expect(vise?.props?.accessibilityLabel).toMatch(/^Passer deux trajets sur cinq en train\./);
+  });
+
+  it('« Choisir une autre » mène toujours à la liste, où l’on change d’action', async () => {
+    lectures({ plan_cycles: async () => ({ data: cycles(true), error: null }) });
+    render(<Plan />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Choisir une autre' }));
+    expect(router.push).toHaveBeenCalledWith('/plan/pistes');
   });
 });
