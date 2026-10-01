@@ -455,6 +455,51 @@ describe('chiffresDuCode', () => {
     // Un collé plus long est tronqué, donc plausible : c'est voulu, les chiffres sont là.
     expect(codeSemblePlausible('84792469 merci')).toBe(true);
   });
+
+  /**
+   * **Un collé garde la suite de huit chiffres, pas les huit premiers chiffres** (01/10/2026, audit
+   * T-16). Le cas mesuré : « 01108479 », vérifié aussitôt et refusé comme expiré.
+   *
+   * Éprouvé en le cassant le 01/10/2026 (TESTING.md §1.1), une mutation à la fois, le module
+   * recopié depuis sa sauvegarde entre deux :
+   *   - le filtre seul, l'état d'avant → « garde la suite… » et « garde la dernière suite… », seuls ;
+   *   - la première suite gardée au lieu de la dernière → « garde la dernière suite… », seul ;
+   *   - la passe d'un seul tenant retirée (séparateurs admis d'emblée) → « préfère une suite d'un
+   *     seul tenant… », seul ;
+   *   - une longueur au moins égale au lieu d'exacte (`>=`) → « ne prend pas un morceau… », « une
+   *     saisie de moins de huit chiffres… » et « tronque à la longueur attendue… » : un morceau
+   *     trop long passait pour un code, jusqu'au neuvième chiffre tapé.
+   */
+  it('garde la suite de huit chiffres d’un collé, même quand d’autres chiffres la précèdent', () => {
+    expect(chiffresDuCode('Le 01/10, ton code : 84792469')).toBe('84792469');
+    expect(chiffresDuCode('Voici ton code : 847 924 69 — il vaut une heure.')).toBe('84792469');
+    expect(chiffresDuCode('Appelle le 06 12 34 56 78, ton code : 84792469')).toBe('84792469');
+  });
+
+  it('préfère une suite d’un seul tenant à huit chiffres qu’il faudrait recoller', () => {
+    // Une date dont on admet les tirets compte huit chiffres — ici après le code, là où la règle de
+    // « la dernière suite » la prendrait.
+    expect(chiffresDuCode('Ton code : 84792469, envoyé le 01-10-2026')).toBe('84792469');
+  });
+
+  it('garde la dernière suite : le code vient après l’adresse dans l’e-mail de rattachement', () => {
+    expect(
+      chiffresDuCode("L'adresse camille12345678@exemple.fr vient d'être saisie. Voici le code : 84792469")
+    ).toBe('84792469');
+  });
+
+  it('ne prend pas un morceau d’une suite plus longue, et retombe alors sur les premiers chiffres', () => {
+    // Dix chiffres groupés par deux : un numéro de téléphone, pas un code — et rien d'autre ici.
+    expect(chiffresDuCode('06 12 34 56 78')).toBe('06123456');
+  });
+
+  it('une saisie de moins de huit chiffres rend ses chiffres : la frappe passe par ici', () => {
+    expect(chiffresDuCode('8479')).toBe('8479');
+    expect(chiffresDuCode('847 9')).toBe('8479');
+    expect(chiffresDuCode('')).toBe('');
+    // Un neuvième chiffre tapé au bout d'un code complet est ignoré, comme avant.
+    expect(chiffresDuCode('847924691')).toBe('84792469');
+  });
 });
 
 describe('suiteDeLaDemandeDeCode', () => {

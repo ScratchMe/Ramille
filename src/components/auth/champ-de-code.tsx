@@ -17,7 +17,8 @@ import { chiffresDuCode, LONGUEUR_DU_CODE } from '@/types/connexion';
  * (cf. `TextField`).
  *
  * **La normalisation n'est pas ici mais dans `chiffresDuCode`** (module pur, testé) : une espace
- * collée avec le code est retirée et non refusée, et un collé trop long garde ses chiffres utiles.
+ * collée avec le code est retirée et non refusée, un collé trop long garde ses chiffres utiles, et
+ * un collé qui porte d'autres chiffres garde la suite de huit — pas les huit premiers (01/10/2026).
  * Faire ce travail dans le composant le rendrait invérifiable par la suite Jest.
  *
  * La taille des chiffres (24/30, interlettrage 6) est hors échelle typographique et reste en dur

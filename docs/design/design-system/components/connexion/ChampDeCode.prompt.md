@@ -4,7 +4,7 @@ Le champ du code reçu par email — huit chiffres, qui remplacent le lien des d
 <ChampDeCode value={code} onChangeText={setCode} />
 ```
 
-**Huit chiffres, pas six** : c'est une valeur de sécurité, pas un réglage d'interface. Le champ ne garde que les chiffres et coupe à huit, donc un code collé avec des espaces ou un tiret entre tel quel.
+**Huit chiffres, pas six** : c'est une valeur de sécurité, pas un réglage d'interface. Le champ ne garde que le code : un code collé avec des espaces ou un tiret entre tel quel, et un collé qui porte d'autres chiffres — une date, l'adresse que l'e-mail de rattachement nomme avant le code — garde **la suite de huit chiffres**, pas les huit premiers chiffres (`chiffresDuCode`, 01/10/2026). Une saisie plus courte garde ses chiffres, et un neuvième chiffre tapé est ignoré.
 
 **Il a la forme de `TextField`** — contour `fieldBorder` au repos, accent dès qu'il y a une saisie, à la même épaisseur — mais le code se lit en grand (24/30), centré, espacé, à chiffres tabulaires, pour qu'on le compare à l'email d'un coup d'œil. Clavier numérique, remplissage automatique du code à usage unique. Jamais de cases séparées par chiffre : un collage y échoue.
 
