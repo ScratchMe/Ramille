@@ -297,7 +297,7 @@ dominant (**512,1 kg**), le cap vaut **− 102 kg**, et **quatre pistes** appara
 |---|---|---|---|
 | 06.1 | Fermer la fenêtre privée du bloc 05, en ouvrir une dans le **navigateur B**, puis depuis l'accueil de l'onboarding : « **J'ai déjà un compte** » | On arrive sur `/connexion/retrouver` | |
 | 06.2 | Saisir une adresse **inconnue** | **Le même écran** qu'un envoi réussi. Si l'écran dit que l'adresse est inconnue, c'est un moyen de savoir qui utilise Ramille — **écart** | |
-| 06.3 | Saisir l'adresse du bloc 04, puis le code reçu | Le compte revient **entier** : le bilan, le plan, l'action engagée au 03.12. C'est le seul chemin vers un compte existant depuis un appareil neuf | |
+| 06.3 | Saisir l'adresse du bloc 04, puis le code reçu | Le compte revient **entier** : le bilan, le plan, l'action engagée au 03.12. C'est le seul chemin délibéré vers un compte existant depuis un appareil neuf | |
 
 ## Bloc 07 — `/contexte` : corriger sans resoumettre
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Ignored Build Step de Vercel (`ignoreCommand` dans `vercel.json`) — cf. VERCEL.md §1.6.
+# Ignored Build Step de Vercel (`ignoreCommand` dans `vercel.json`) — cf. VERCEL.md §1.3.
 #
 # Vercel lit le code de sortie : **0 est la seule valeur qui saute le build** ; 1 ou plus
 # construit. Un crash du script, une erreur git, une variable absente : tout vaut ≥ 1, donc

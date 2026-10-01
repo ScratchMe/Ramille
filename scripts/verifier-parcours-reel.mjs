@@ -1040,7 +1040,7 @@ try {
   await verifierLesGroupes('la feuille d’engagement');
 
   // **« mardi » se coche au clavier** (25/09/2026) — c'était alors la seule case à cocher du produit ;
-// la case du mot de la veille (C4.2, 28/09/2026) en est une seconde.
+  // la case du mot de la veille (C4.2, 28/09/2026) en est une seconde.
   // react-native-web n'active par Espace qu'un bouton : depuis que les jours sont des `checkbox`, Espace
   // n'y cochait plus rien et faisait défiler le plan (`src/lib/barre-d-espace.ts`). Trois gestes, et
   // chacun garde une moitié différente de la règle — c'est une case à cocher qui les rend visibles, là

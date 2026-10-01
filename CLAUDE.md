@@ -213,9 +213,10 @@ Les réglages des comptes tiers ne vivent pas ici mais dans `docs/exploitation/`
 qui les rend vérifiables — rien dans le code ni dans la CI ne les voit. Deux d'entre eux pèsent sur
 le **rythme de travail** et méritent d'être connus avant de planifier quoi que ce soit : le quota de
 builds EAS (§3.3) et les budgets d'API GitHub (§3.8 — GraphQL et REST sont deux compteurs
-distincts, donc `issue_write` peut être refusé pendant que tout le reste passe). Le troisième est
-le compteur Functions Storage de Vercel (§3.2), dont la règle vit dans `VERCEL.md` parce qu'elle
-est portable : c'est le seul des trois que le dépôt peut alléger lui-même, par l'Ignored Build Step.
+distincts, donc `issue_write` peut être refusé pendant que tout le reste passe). Le compteur
+Functions Storage de Vercel (§3.2) en était un troisième jusqu'au 25/09/2026, date à laquelle son
+budget a été levé : il ne reste qu'une mesure avant chaque fusion de code, et sa règle vit dans
+`VERCEL.md` parce qu'elle est portable.
 
 ### Les plug-ins s'installent à la main, dans le dépôt
 
@@ -406,7 +407,7 @@ local est parfait — `VERCEL.md` §1.5. **Il ne se déploie plus de prévisuali
 trois pièges dont `"**"` et jamais `"*"` — §1.4), la vérification visuelle du web se fait localement
 par `expo export --platform web` puis Playwright sur `dist/`. **Et chaque fusion sur `main` est un
 déploiement qui coûte ≈ 1,8 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
-convention de cadence en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
+convention de fusion en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
 `scripts/vercel-ignorer-le-build.sh` (§1.3), dont la liste blanche dit ce que le build ne lit pas.
 
 **`api/`** : Vercel Functions, détectées automatiquement par la plateforme (dossier `/api` à
@@ -448,8 +449,9 @@ Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboa
 `/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
 restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),
 deux provenances que la mesure distingue — et depuis `/compte` (`compte`).
-`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant — la branche « adresse
-prise » de `/connexion/email` y ramène aussi, sans le dire, depuis le 21/09/2026 —, s'atteint depuis les provenances
+`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant — depuis le 21/09/2026,
+un code demandé sur `/connexion/email` pour une adresse déjà prise rouvre aussi ce compte, sans que
+l'écran dise quelle branche est partie —, s'atteint depuis les provenances
 que `SOURCES_RETROUVER` (`src/types/analytics.ts`) énumère — la liste est la source, et
 `COMPTE.md` §2 dit d'où vient chacune et pourquoi quatre d'entre elles ont longtemps été muettes. Le
 compte s'ouvre par son icône (`CompteBouton`), pas par un onglet.
@@ -599,7 +601,7 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
   spécialisé rappelé en direct ;
 - les facteurs sont l'**ACV complète** (endpoint `ecv`), jamais la seule phase d'usage, et un mode
   ajouté au produit impose sa ligne dans `emission_factor_sources` ;
-- `assessment_results` fige le bilan au moment de la soumission : jamais recalculé côté client ;
+- `assessment_results` est figé côté serveur, jamais recalculé côté client ;
 - ajouter un mode de la catégorie vélo-marche, ou une réponse de voyage, touche aussi la boucle —
   un complément de maintien, une ligne dans `a_des_voyages_declares` (`BOUCLE.md` §1) ; et la
   question du télétravail se gouverne par `teletravailSePose` (`PLAN.md` §1) ;

@@ -66,9 +66,11 @@ lisible dans la console et par un appel direct, et rien dans GoTrue ne la masque
   l'état de l'adresse, et l'atteindre demande une course que seul celui qui a pris l'adresse peut
   provoquer. Sur
 natif, un lien de connexion arrivait hors de l'app (messagerie) et remontait par `Linking.useURL()`
-dans `_layout.tsx` ; depuis le 20/09/2026 il n'y a plus de lien, et ce chemin ne sert plus qu'au
-retour OAuth de Google sur natif — c'est pour lui que le scheme `ramille://` figure encore dans les
-Redirect URLs Supabase, qui ne servent plus qu'à Google (plus bas).
+dans `_layout.tsx`. Depuis le 20/09/2026 il n'y a plus de lien : cette branche n'est plus qu'un
+filet, qui refuse nommément une URL à jetons injectée (plus bas, PKCE). Le scheme `ramille://` reste
+dans les Redirect URLs Supabase pour le retour de Google sur natif, qui ne passe pas par elle :
+`linkGoogleIdentity` reçoit l'URL de `openAuthSessionAsync` et appelle lui-même
+`createSessionFromUrl`.
 
 **Le flux est en PKCE depuis le 20/09/2026, et le lien ne s'ouvre plus que là où il a été
 demandé.** Le défaut d'`auth-js` est `implicit` : tout lien livrait alors `access_token` **et**
@@ -144,9 +146,10 @@ rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept 
   `supabase stop && start` ne fait rien — et la garde reste verte pour la mauvaise raison.
 - **Les Redirect URLs ne servent plus qu'à Google.** `emailRedirectTo` a disparu des deux appels :
   il ne remplissait que `{{ .ConfirmationURL }}`, que plus aucun gabarit n'emprunte. Le chemin de
-  lien profond (`Linking.useURL()`, le scheme `ramille://`, `createSessionFromUrl`) est resté le
-  20/09/2026 comme **filet** pour un lien parti avant le changement — expiré depuis, la validité
-  étant d'une heure — et sert désormais au seul retour OAuth sur natif.
+  lien profond (`Linking.useURL()` dans `_layout.tsx`) est resté le 20/09/2026 comme **filet** pour
+  un lien parti avant le changement — expiré depuis, la validité étant d'une heure — et ne fait
+  plus que refuser une URL à jetons injectée. Le scheme `ramille://` et `createSessionFromUrl`
+  servent, eux, au retour OAuth de Google sur natif, qui revient par `openAuthSessionAsync`.
 
 **`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève
 `AuthRetryableFetchError` pour chacun d'eux : `SUPABASE.md` §2.4.

@@ -840,9 +840,9 @@ périmerait en silence au prochain passage :
 - **Une API de module natif appelée pendant le rendu emporte toute l'app sur web** — page blanche
   sur toutes les routes, HTML servi en 200 ; d'où `RetourDeNotification` monté sous
   `{estNatif && …}` et `scripts/verifier-rendu-export.mjs` : `EXPO.md` §2.2.
-- **Le lien du rappel ouvre l'app grâce à `public/.well-known/assetlinks.json`, pas grâce à
-  l'app** — revendication volontairement étroite (`/plan` seul), et l'empreinte de Play
-  s'**ajoute** à la publication : `EXPO.md` §2.3.
+- **Le lien du rappel ouvre l'app grâce à `public/.well-known/assetlinks.json`**, qui autorise le
+  paquet pour tout le domaine ; c'est le `pathPrefix` `/plan` d'`app.json` qui rend la revendication
+  volontairement étroite, et l'empreinte de Play s'**ajoute** à la publication : `EXPO.md` §2.3.
 - **Une dépendance native nouvelle impose un build**, et rien dans le code ne le dit :
   `EXPO.md` §2.3.
 - **Un « Retour » ne s'écrit jamais en `router.back()` nu : il passe par `revenirOu(repli)`**

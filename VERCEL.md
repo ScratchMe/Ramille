@@ -58,7 +58,7 @@ ne fait ni l'un ni l'autre — et reste un **plancher**, puisqu'un retrait peut 
 Corollaire de cadence : **le compteur retarde**, souvent d'une nuit ; on le relit le lendemain, pas
 dix minutes après la fusion. C'est ainsi que Ramille a découvert que son coût réel était 10 % plus
 élevé que ce que l'export du tableau de bord attribuait à sa fonction (§2.1) — un écart qui n'est
-toujours pas expliqué, et qu'on budgète tel qu'il est mesuré.
+toujours pas expliqué, et qu'on retient tel qu'il est mesuré.
 
 > ⚠️ **Point non réconcilié, à ne pas présenter comme un fait.** Chez Tour de Growth, l'export
 > local donnait 428,9 Mo par déploiement, soit 66 Go sur 154 déploiements, quand le compteur
@@ -328,9 +328,9 @@ l'expliquer. »* Ce qui reste :
    tu n'as pas fait de bêtise et que le chiffre n'augmente pas soudainement sans qu'on s'en rende
    compte »*. Ce n'est donc **pas** une remesure du coût unitaire — il est connu, il a été mesuré
    deux fois, et le remesurer quinze fois est précisément ce qui a été reproché le même jour. C'est
-   une **garde de non-régression** : le chiffre attendu est stable (4,33 Mo de disque le 15/09,
-   4,16 Mio le 21/09 — ≈ 1,5 Mio retenus —, puis 4 366 425 octets à l'identique le 29/09), donc ce
-   qu'on cherche est l'**écart**, pas la valeur. **Un écart s'explique dans la PR avant de
+   une **garde de non-régression** : le chiffre attendu est stable — le relevé de référence est en
+   §2.1, et c'est là seulement qu'il se met à jour —, donc ce qu'on cherche est l'**écart**, pas la
+   valeur. **Un écart s'explique dans la PR avant de
    fusionner** : un saut veut dire qu'une dépendance est entrée dans `api/`, et c'est le seul moment
    où on peut le voir avant de le payer trente jours. Deux traces à nettoyer après coup, sans quoi
    elles partent dans la PR : `.vercel/` (ignoré par git, mais présent) et `api/package-lock.json`,

@@ -378,8 +378,8 @@ libellé ensemble** : ce serait casser le motif sur la cible réelle, qui est un
 
 ### 2.3 Android : App Links et build natif
 
-**Le lien du rappel ouvre l'app grâce à un fichier servi par le site, pas par l'app.**
-`public/.well-known/assetlinks.json` (recopié tel quel dans l'export) délègue à `fr.ramille.app`
+**Le lien du rappel ouvre l'app quand deux moitiés s'accordent : un fichier servi par le site, et
+l'`intentFilter` de l'app.** `public/.well-known/assetlinks.json` (recopié tel quel dans l'export) délègue à `fr.ramille.app`
 **tout** `www.ramille.fr` — `delegate_permission/common.handle_all_urls` est la seule relation
 qu'Android accepte pour un App Link —, et c'est l'`intentFilter` `autoVerify` d'`app.json`, par son
 `pathPrefix` `/plan` **et lui seul**, qui borne ce que l'app revendique (`COMPTE.md` §1 ; ce fichier

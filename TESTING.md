@@ -258,8 +258,8 @@ bout (§2.9), et quelques écrans leur test (§2.10) :
   Des modules de `src/lib` sont testés en place — la liste se lit en listant `src/lib/*.test.ts` —,
   et deux conditions les y gardent : `format.ts` reste pur (il est importé par
   `src/types/resultat.ts`, donc une dépendance ajoutée là ferait tomber toute la suite qui en
-  dépend, par un lien que rien n'affiche), et les autres doublent exactement ce qu'ils éprouvent —
-  AsyncStorage pour `bilan-draft.ts` et les préférences locales, le client pour `auth.test.ts`.
+  dépend, par un lien que rien n'affiche), et les autres doublent exactement ce qu'ils éprouvent,
+  selon la règle écrite plus haut — leurs `jest.mock` en font la liste, qui ne se recopie pas ici.
 - **pgTAP** (`supabase/tests/database/*.sql`, numérotés, un fichier par sujet — l'inventaire se
   lit dans le répertoire) sur les fonctions SQL de calcul, sur les policies RLS (isolation
   stricte par utilisateur en lecture/écriture, verrouillage des tables à écriture serveur-only,
@@ -684,16 +684,19 @@ jour touchait ses trois branches d'un coup.
 `scripts/verifier-code-de-connexion.mjs` — il portait le mot « lien » dans son nom jusqu'au passage
 au code, le 20/09/2026, et a été renommé avec son sujet — demande un code **par l'écran**, lit l'e-mail réellement reçu, et
 éprouve ce qui suit — les deux premières assertions sont des chemins heureux, les autres gardent
-un refus, une absence ou une indistinction. La liste fait foi dans l'en-tête du script ; elle est recopiée ici pour être lue :
+un refus, une absence ou une indistinction, et la 6 vérifie aussi qu'on arrive au compte. La liste
+fait foi dans l'en-tête du script ; elle est recopiée ici, dans son ordre, pour être lue :
 
-1. le code rattache une adresse — jusqu'à une session non anonyme, et la base relue derrière ;
+1. le code rattache une adresse — jusqu'à une session non anonyme, et la base relue derrière — **en
+   passant par la reprise depuis « Toi »**, c'est-à-dire en quittant l'écran de code entre l'envoi
+   et la saisie ;
 2. il rouvre un compte depuis un **navigateur neuf**, c'est-à-dire le cas que le lien ne pouvait
-   pas faire (en PKCE il ne valait que là où il avait été demandé) ;
+   pas faire (en PKCE il ne valait que là où il avait été demandé) ; et une adresse **sans compte**
+   y ouvre quand même la saisie du code (la non-divulgation, nommée plutôt que subie : sans elle,
+   le défaut se manifestait par un timeout) ;
 3. un code d'un flux **ne vaut pas** dans l'autre — c'est ce qui rend sûr de montrer le même écran
    de code dans les deux contextes ;
-4. une adresse **sans compte** ouvre quand même la saisie du code (la non-divulgation, nommée
-   plutôt que subie : sans cette assertion, le défaut se manifestait par un timeout) et aucun des
-   deux e-mails ne porte de lien ;
+4. aucun des deux e-mails ne porte de lien ;
 5. une URL portant des jetons valides ne fait pas basculer de compte (celle-là garde PKCE, pas le
    code) ;
 6. les deux branches de `/connexion/email` — adresse libre, adresse déjà prise — sont
