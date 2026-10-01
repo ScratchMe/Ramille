@@ -8,19 +8,36 @@ import {
 } from '@/types/premier-parcours';
 
 describe('etatDuPremierParcours', () => {
-  // La table en entier, quatre lignes : c'est une machine à trois états plus l'absence, et chaque
-  // ligne décide de deux choses. L'écrire en toutes lettres vaut mieux qu'un test par cas — ce
-  // qu'on veut voir d'un coup d'œil, c'est qu'aucune combinaison n'a été oubliée.
-  const table: [EtapeDuPremierParcours | null, boolean, boolean][] = [
-    // étape, barre visible, carte des deux lieux
-    [null, true, false],
-    ['questionnaire', false, false],
-    ['barre', true, true],
-    ['fait', true, false],
+  // La table en entier, huit lignes : c'est une machine à trois états plus l'absence, croisée avec la
+  // visite en cours, et chaque ligne décide de deux choses. L'écrire en toutes lettres vaut mieux qu'un
+  // test par cas — ce qu'on veut voir d'un coup d'œil, c'est qu'aucune combinaison n'a été oubliée.
+  //
+  // **La carte des deux lieux, vue une fois puis partie** (01/10/2026, `v1-33` §6) : notée `fait` à
+  // l'instant où elle se rend, elle reste le temps de la visite (`fait`, vue dans la visite), puis ne
+  // revient pas (`fait`, visite suivante). Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1) :
+  //   - la visite ignorée (`etape === 'barre'` seul, l'état d'avant) → la ligne `fait` vue dans la
+  //     visite, et elle seule : la carte disparaîtrait sous les yeux à l'instant où elle se note vue ;
+  //   - la visite retenue à toute étape (`etape === 'barre' || vueDansLaVisite`) → les lignes `null` et
+  //     `questionnaire` vues dans la visite, qu'aucun chemin ne produit mais qu'une table doit dire.
+  const table: [EtapeDuPremierParcours | null, boolean, boolean, boolean][] = [
+    // étape, vue dans la visite, barre visible, carte des deux lieux
+    [null, false, true, false],
+    [null, true, true, false],
+    ['questionnaire', false, false, false],
+    ['questionnaire', true, false, false],
+    ['barre', false, true, true],
+    ['barre', true, true, true],
+    ['fait', false, true, false],
+    ['fait', true, true, true],
   ];
 
-  it.each(table)('%p → barre %p, carte %p', (etape, barreVisible, carteDesDeuxLieux) => {
-    expect(etatDuPremierParcours(etape)).toEqual({ barreVisible, carteDesDeuxLieux });
+  it.each(table)('%p, vue dans la visite %p → barre %p, carte %p', (etape, vue, barreVisible, carteDesDeuxLieux) => {
+    expect(etatDuPremierParcours(etape, vue)).toEqual({ barreVisible, carteDesDeuxLieux });
+  });
+
+  // Le layout lit l'étape seule, pour la barre : sans visite, c'est la visite qui ne retient rien.
+  it('sans visite, rien n’est retenu', () => {
+    expect(etatDuPremierParcours('fait')).toEqual(etatDuPremierParcours('fait', false));
   });
 
   // **Le cas qu'il ne faut pas rater**, et il vaut une assertion à lui : appareil neuf d'un compte

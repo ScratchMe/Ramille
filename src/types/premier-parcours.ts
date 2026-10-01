@@ -32,12 +32,15 @@ export type EtapeDuPremierParcours =
 
 export type EtatDuPremierParcours = {
   barreVisible: boolean;
-  /** La carte « Plan et Suivi », qui prend la place de la carte d'attente le temps d'un « Compris ». */
+  /**
+   * La carte « Plan et Suivi », qui prend la place de la carte d'attente — **à la première visite du
+   * plan où elle est due, et à elle seule** (décision du 01/10/2026, `v1-33` §6).
+   */
   carteDesDeuxLieux: boolean;
 };
 
 /**
- * Ce que l'étape lue sur cet appareil dit de l'écran.
+ * Ce que l'étape lue sur cet appareil dit de l'écran — et ce que la **visite** du plan en cours y ajoute.
  *
  * `null` recouvre deux situations qui appellent la même réponse — la marque n'a pas encore été lue,
  * et il n'y a jamais eu de premier parcours ici — et c'est **la barre visible** dans les deux cas.
@@ -45,11 +48,26 @@ export type EtatDuPremierParcours = {
  * ferait disparaître la barre une fraction de seconde à chaque ouverture, pour tout le monde, et sur
  * web à chaque chargement de page (la règle d'hydratation d'`EXPO.md` §2.2 : l'état de départ est
  * celui du rendu statique).
+ *
+ * **La carte des deux lieux est vue une fois, puis partie, « Compris » touché ou non** (tension
+ * tranchée le 01/10/2026, `v1-33` §6 ; audit P, T-3). Elle se fermait par son « Compris » seul (HANDOFF
+ * `v1-17`) : tant qu'on ne le touchait pas, elle occupait un bon tiers de la fenêtre à chaque visite et
+ * repoussait le point sous le pli. Elle passe donc à `fait` **à l'instant où elle se rend** — c'est
+ * l'écran qui le signale (`lesDeuxLieuxSontVus`), et la marque garde ses trois états, sans booléen de
+ * plus — et `vueDansLaVisite` la retient **le temps de cette visite** : elle ne disparaît pas sous les
+ * yeux de qui la lit, et ne revient ni au focus suivant de l'écran ni au lancement suivant. Une visite
+ * n'est pas une marque : rien ne la stocke, elle finit quand l'écran perd le focus.
+ *
+ * `vueDansLaVisite` ne vaut qu'à `fait` : il ne peut être vrai qu'après qu'elle a été rendue à `barre`,
+ * donc notée vue, et une autre étape n'a rien à retenir.
  */
-export function etatDuPremierParcours(etape: EtapeDuPremierParcours | null): EtatDuPremierParcours {
+export function etatDuPremierParcours(
+  etape: EtapeDuPremierParcours | null,
+  vueDansLaVisite = false
+): EtatDuPremierParcours {
   return {
     barreVisible: etape !== 'questionnaire',
-    carteDesDeuxLieux: etape === 'barre',
+    carteDesDeuxLieux: etape === 'barre' || (etape === 'fait' && vueDansLaVisite),
   };
 }
 
@@ -77,8 +95,9 @@ export function ouvreUnPremierParcours(
 /**
  * « Deux endroits, pas plus. » — la carte qui nomme la barre au moment où elle arrive.
  *
- * Elle ne se rend qu'une fois, à la place de la carte d'attente, et elle dit **ce qu'on trouve où**
- * plutôt que ce qu'il faut faire : les deux lieux existent déjà, il n'y a rien à décider ici.
+ * Elle ne se rend qu'une visite, à la place de la carte d'attente (`etatDuPremierParcours`), et elle
+ * dit **ce qu'on trouve où** plutôt que ce qu'il faut faire : les deux lieux existent déjà, il n'y a
+ * rien à décider ici.
  *
  * Aucun chiffre, aucun poste : comme celle du premier plan, elle décrit le produit et non ce
  * plan-ci — un total ou un nom de poste en ferait une seconde description des cartes posées dessous.

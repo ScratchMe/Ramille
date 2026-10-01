@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams, useScrollToTop } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -356,6 +356,21 @@ const VIDE_DE_CONTEXTE: ReponsesDeContexte = {
  */
 const MARGE_DE_DEFILEMENT = Spacing.three;
 
+/**
+ * **La carte des deux lieux, et l'instant où elle est vue : rendue, l'écran au premier plan** (décision
+ * du 01/10/2026, `v1-33` §6). Un composant à part pour que l'instant soit le sien — son montage —, et
+ * par `useFocusEffect` plutôt qu'un effet de montage : une relecture au retour de l'app peut la rendre
+ * sur un plan resté derrière un autre onglet, et ce n'est pas une carte vue. Le focus suivant la
+ * notera. `onRendue` doit être stable : l'effet de focus se réabonne à chaque identité nouvelle.
+ */
+function CarteDesDeuxLieux({
+  onRendue,
+  ...carte
+}: ComponentProps<typeof CarteDOuverture> & { onRendue: () => void }) {
+  useFocusEffect(onRendue);
+  return <CarteDOuverture {...carte} />;
+}
+
 export default function Plan() {
   // **Émis au focus et non au montage** : dans une barre d'onglets, react-navigation garde
   // l'écran monté quand on passe à l'autre. Avec `useTrackView`, l'événement ne partirait
@@ -447,8 +462,26 @@ export default function Plan() {
    * et il rend la carte qui nomme la barre au moment où elle arrive.
    */
   const premierParcours = usePremierParcours();
-  const { laBarreArrive } = premierParcours;
-  const { carteDesDeuxLieux } = etatDuPremierParcours(premierParcours.etape);
+  const { laBarreArrive, lesDeuxLieuxSontVus } = premierParcours;
+  /**
+   * **La carte des deux lieux, vue une fois puis partie** (décision du 01/10/2026, `v1-33` §6). Elle
+   * passe à `fait` à l'instant où elle se rend, l'écran au premier plan (`CarteDesDeuxLieux`, plus bas) ;
+   * ce drapeau la retient **le temps de la visite**, pour qu'elle ne disparaisse pas sous les yeux de
+   * qui la lit, et retombe quand l'écran perd le focus — elle ne revient alors ni au focus suivant ni
+   * au lancement suivant. Une visite et non une marque : rien ne la stocke, et la marque garde ses trois
+   * états (`PLAN.md` §4).
+   */
+  const [deuxLieuxDansLaVisite, setDeuxLieuxDansLaVisite] = useState(false);
+  useFocusEffect(useCallback(() => () => setDeuxLieuxDansLaVisite(false), []));
+  const lesDeuxLieuxSeRendent = useCallback(() => {
+    setDeuxLieuxDansLaVisite(true);
+    lesDeuxLieuxSontVus();
+  }, [lesDeuxLieuxSontVus]);
+  const refermerLesDeuxLieux = useCallback(() => {
+    setDeuxLieuxDansLaVisite(false);
+    lesDeuxLieuxSontVus();
+  }, [lesDeuxLieuxSontVus]);
+  const { carteDesDeuxLieux } = etatDuPremierParcours(premierParcours.etape, deuxLieuxDansLaVisite);
   /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
    * plan à montrer, il n'y a rien à expliquer — la personne est au bon endroit.
@@ -1938,12 +1971,13 @@ export default function Plan() {
               actions : les deux étaient dues le même jour. Relevé le 27/09/2026 en sortant la
               décision du rendu ; le premier plan passe devant, décidé par la personne qui pilote. */
           affichage.carteDOuverture === 'deuxLieux' && deuxLieux ? (
-            <CarteDOuverture
+            <CarteDesDeuxLieux
               ouverture={deuxLieux.ouverture}
               sorties={SORTIE_DES_DEUX_LIEUX}
               ligne={deuxLieux.ligne}
               visage="calm"
-              onSortie={premierParcours.lesDeuxLieuxSontVus}
+              onSortie={refermerLesDeuxLieux}
+              onRendue={lesDeuxLieuxSeRendent}
             />
           ) : null}
 

@@ -33,9 +33,10 @@ const ENTREE = 320;
  * **Elles ne s'affichent jamais ensemble, mais une seule des deux exclusions est structurelle**
  * (corrigé par la contre-lecture du lot 5). L'ouverture de saison exige un cycle précédent et le
  * premier plan exige qu'il n'y en ait pas : celles-là ne peuvent pas se croiser. Celle des deux
- * lieux, en revanche, reste due tant que son « Compris » n'a pas eu lieu — donc quelqu'un qui
- * referme le premier plan puis ne revient qu'après la bascule suivante les devrait toutes les
- * deux le même jour. C'est l'**écran** qui tranche, et la carte de saison passe devant. Toutes
+ * lieux, en revanche, reste due tant qu'elle ne s'est pas rendue — vue une fois, puis partie, depuis
+ * le 01/10/2026 (`etatDuPremierParcours`) — et rien ne garantit qu'elle se rende avant la bascule
+ * suivante : il suffit que les boucles n'aient pas pu être lues. C'est l'**écran** qui tranche, et la
+ * carte de saison passe devant. Toutes
  * trois prennent la place de la **carte d'attente**, jamais celle d'un point en attente (C2.8).
  *
  * **L'effet « nouveau départ » était perdu quatre fois par an** (constat A13-6) : à la bascule, le
