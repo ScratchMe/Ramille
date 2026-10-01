@@ -628,14 +628,26 @@ export default function BilanResultat() {
     setState({ status: 'retire', submittedAt, vientDeRetirer: true });
   };
 
+  // **Le chargement et l'erreur gardent le cadre de l'écran prêt** (01/10/2026, audit R-9) : la même
+  // `SafeAreaView` sans bord bas, la bande haute, puis une zone centrée — la forme de
+  // `suivi/index.tsx`. Ils n'avaient qu'un texte centré : la bande arrivait avec le contenu, d'un
+  // saut de 52 px, et la ligne se posait plus haut que celle du suivi. À la sortie du questionnaire,
+  // trois mises en page se suivaient pour une seule arrivée.
+  //
+  // **La ligne reste immédiate** : cet écran n'attend pas le délai de `useChargementVisible`, et
+  // c'est décidé (`v1-30` §5.8) — le HTML statique la porte, et la garde D de
+  // `verifier-etats-export.mjs` la lit.
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
-              lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
-              écran ne fait que le relire, y compris juste après le questionnaire (A3-16). */}
-          <ThemedText themeColor="textSecondary">Chargement de ton bilan…</ThemedText>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
+                lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
+                écran ne fait que le relire, y compris juste après le questionnaire (A3-16). */}
+            <ThemedText themeColor="textSecondary">Chargement de ton bilan…</ThemedText>
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -650,16 +662,19 @@ export default function BilanResultat() {
   if (state.status === 'error') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
-            Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
-          </ThemedText>
-          <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
-          <TextLink
-            label="Revenir à mon suivi"
-            onPress={() => router.replace('/suivi')}
-            role="link"
-          />
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+          <BandeHaute />
+          <View style={styles.centered}>
+            <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
+              Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
+            </ThemedText>
+            <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
+            <TextLink
+              label="Revenir à mon suivi"
+              onPress={() => router.replace('/suivi')}
+              role="link"
+            />
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -965,6 +980,12 @@ export default function BilanResultat() {
                   28/09/2026, constat 10.2, décidé le même jour). La phrase ne proposait plus rien
                   depuis le 25/09, et la barre montrait encore « Ton prochain palier — 47 kg » : 20 %
                   d'un poste que le calcul suppose et que la personne n'a pas déclaré. */}
+              {/* **Le remplissage des repères, et plus `accentText`** (01/10/2026, audit R-8). La barre
+                  du palier était la plus foncée de la carte, plus que « Toi » (1,42:1 entre les deux
+                  verts, sur des longueurs voisines) : ce qui ressortait était la marche, pas la
+                  personne. Le kit ne connaît que deux remplissages — l'accent pour ce qui est à soi,
+                  `accentMuted` pour le contexte —, et aucun document ne demande au palier de ressortir
+                  par la couleur : sa place juste sous « Toi » et son libellé le distinguent. */}
               {palier && !posteSuppose && (
                 <CompareRow
                   label={palier.isTarget2050 ? 'Repère transport 2050' : 'Ton prochain palier'}
@@ -977,7 +998,7 @@ export default function BilanResultat() {
                       : formatTonnesShort(palier.targetKg / 1000)
                   }
                   percent={barPercent(palier.targetKg / 1000)}
-                  accentColor={theme.accentText}
+                  accentColor={theme.accentMuted}
                 />
               )}
               {montreMoyenne && (
@@ -1007,9 +1028,14 @@ export default function BilanResultat() {
                 recalcule depuis le cap qui était en vigueur à l'époque, et ce cap est perdu quand les
                 deux bilans tombent dans la même période (le cycle est réécrit à chaque soumission).
                 On ne dit alors rien plutôt que de l'affirmer avec le cap d'aujourd'hui, qui est plus
-                petit et rendrait la phrase trop facile. */}
+                petit et rendrait la phrase trop facile.
+
+                **En `body`, pas en `small`** (01/10/2026, audit R-10) : c'est ce que la planche E du
+                canvas validé demande (`v1-14` §5, « la phrase de variation sous les barres en
+                `body` »), et c'est le pic d'un re-bilan — elle était la ligne la moins saillante de
+                la carte, au rang de la source. Les autres phrases de la carte restent en `small`. */}
             {precedent && (
-              <ThemedText type="small" themeColor="textSecondary">
+              <ThemedText type="body" themeColor="textSecondary">
                 {variationDepuisLeBilanPrecedent(precedent, results.total_co2_kg_year)}
                 {palierFranchi ? ' Le palier que tu visais est derrière toi.' : ''}
               </ThemedText>
