@@ -11,7 +11,7 @@ Le cadre d'une feuille du bas : voile, feuille, poignée et titre. Ce que la feu
 
 **Le titre est obligatoire, et c'est lui qui nomme le dialogue** : sans nom, un lecteur d'écran entre dans « dialogue » sans savoir lequel. Il s'affiche en en-tête de niveau 2 — la feuille s'ouvre par-dessus un écran qui porte déjà son titre. **Nommer n'oblige pas à afficher** : `enTete={false}` quand le canvas ne dessine pas d'en-tête (la feuille des rappels), le titre continue de nommer le dialogue.
 
-**Le geste de retour referme toujours** (`onFerme`, Échap sur web) : une feuille qu'on ne peut pas fermer n'est plus une proposition.
+**Le geste de retour referme toujours** (`onFerme`, Échap sur web) : une feuille qu'on ne peut pas fermer n'est plus une proposition. **Toucher le voile aussi** (01/10/2026) : c'est le geste d'Android pour une feuille modale, et il passe par la même fermeture que le retour — même sortie, même `onFerme`, donc la feuille des rappels se marque vue comme sur un retour. Le voile n'est ni un arrêt de tabulation ni annoncé au lecteur d'écran. La poignée se dessine mais ne se tire pas encore : un glissé se juge au doigt, sur appareil.
 
 Le voile (`--color-scrim`) est l'une des deux seules transparences du produit. Dans l'app, la feuille est une fenêtre qui recouvre l'écran ; le kit la rend en place, dans son voile, pour qu'elle se pose au bas d'un écran de maquette sans en sortir (`voile={false}` : la feuille seule). Poignée 40 × 4, rayon de carte en haut, filet `border`, marges 24, bas 64.
 
