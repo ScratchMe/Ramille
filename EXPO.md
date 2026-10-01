@@ -81,6 +81,12 @@ relais au rendu suivant.
 
 ### 1.5 `react-native-web` : ce qui ne se comporte pas comme sur natif
 
+- **La touche d'action du clavier s'écrit `enterKeyHint`, pas `returnKeyType`** : react-native-web
+  0.21 avertit que `returnKeyType` est déprécié, et React Native 0.86 traduit `enterKeyHint` sur
+  natif. Et **`blurOnSubmit={false}`**, pas `submitBehavior` : react-native-web ne lit que le premier.
+- **Une `ScrollView` qui porte un champ prend `keyboardShouldPersistTaps="handled"`** : au défaut
+  (`never`), clavier ouvert, le premier toucher sur un bouton ne fait que fermer le clavier.
+
 - **Un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0` explicite** pour pouvoir
   rétrécir sous sa largeur intrinsèque, sinon un texte voisin est recouvert ou coupé. Même famille
   pour tout enfant flex qui doit pouvoir se comprimer.
@@ -176,6 +182,14 @@ sur l'espace restant mais sur sa taille max-content. Une page qui gère son prop
 `minHeight`, dans une `ScrollView` à `flexGrow: 1`. Et une illustration au `viewBox` carré
 réclame sa largeur en hauteur sur tous les téléphones : la plafonner à une **part** de la page,
 pas à un nombre de pixels.
+
+**Un écran plein se met dans une `ScrollView` à `contentContainerStyle: { flexGrow: 1,
+justifyContent: … }`** : il garde sa mise en page à la taille courante et défile quand le contenu
+déborde. Chez Ramille, `/connexion`, `/connexion/email`, `/connexion/retrouver`, l'échec du
+démarrage, la page introuvable et `SessionRefusee` étaient centrés dans une boîte fixe et
+débordaient des deux côtés à 320 × 568, la mascotte au-dessus du haut de l'écran (`v1-33` T-2,
+01/10/2026, comparé image par image à 390 × 844 : rien n'a bougé). Un écran à phases remonte son
+cadre à chaque phase (`key`), pour que la phase qui arrive s'ouvre en haut.
 
 **En Yoga les marges ne fusionnent pas**, contrairement à CSS. Deux voisins qui portent chacun
 leur marge donnent la **somme**, pas le maximum : une `marginVertical` posée sur chaque élément

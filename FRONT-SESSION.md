@@ -142,6 +142,12 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   désactive rien — fenêtre de transition assumée et commentée dans `src/lib/rappels.ts`, sans
   conséquence tant que `push_tokens` est vide.
 
+- **`loadReminderPrefs` rend `null` quand rien n'a été lu** (01/10/2026, `v1-33` T-6) — pas de
+  session, profil illisible, jeton de cet appareil illisible. « Toi » passe à son état
+  `indisponible`, dont la phrase existe déjà ; le plan n'ouvre pas la feuille des rappels et ne la
+  marque donc pas vue. Et le plan garde sa dernière lecture réussie plutôt que de l'écraser par
+  `null` — sans quoi la carte d'attente se tairait sans que la ligne de relecture s'allume.
+
 ### 2.7 bis Le champ de code, et pourquoi il n'y a pas huit cases
 
 Depuis le 20/09/2026, les deux e-mails du produit portent un **code à huit chiffres** et plus aucun
@@ -163,7 +169,13 @@ périmerait en silence au prochain passage :
 - **La normalisation est dans la dérivation, pas dans le composant** (`chiffresDuCode`, testé) : une
   espace collée avec le code est **retirée et non refusée** — les messageries en insèrent, et refuser
   un collé qui contient le bon code ferait chercher une faute qui n'existe pas. Un collé trop long
-  garde ses chiffres utiles.
+  garde ses chiffres utiles — **et un collé qui porte d'autres chiffres garde la suite de huit, pas
+  les huit premiers** (01/10/2026, `v1-33` T-16) : « Le 01/10, ton code : 84792469 » donnait
+  « 01108479 », refusé comme expiré, et l'e-mail de rattachement nomme l'adresse — qui porte souvent
+  des chiffres — avant le code. `chiffresDuCode` cherche une suite d'exactement huit chiffres d'un
+  seul tenant, puis avec une espace ou un tiret entre deux chiffres, et garde **la dernière** ; le
+  filtre d'avant ne sert qu'à défaut, et c'est lui que suit la frappe. Sans assertion arrière
+  (`(?<!…)`) : rien ici n'éprouve Hermes.
 - **Au dernier chiffre, la vérification part d'elle-même**, et le bouton reste — pour qui colle,
   corrige, ou lit l'écran avec un lecteur d'écran. **Et l'écran le dit avant** (arbitrage du
   27/09/2026, WCAG 3.2.2) : le texte d'aide du champ ajoute « Il est vérifié dès le dernier

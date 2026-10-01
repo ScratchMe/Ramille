@@ -187,6 +187,11 @@ savoir avant de chercher ailleurs, dont le fait que ce code couvre aussi l'expir
 configuration** — jamais de joker sur un domaine qu'on ne possède pas, et une entrée morte se
 retire : `SUPABASE.md` §1.2 et §2.5.
 
+**Un flux de compte terminé vide la pile** (`terminerLeFlux`, 01/10/2026) : `FRONT.md` §2.8. **Et
+l'échec de Google ne colle plus le message de Supabase dans la phrase** (`v1-33` T-17) : « La
+connexion avec Google n'a pas abouti. » seule dans le message — c'est elle que le lecteur d'écran
+annonce —, le texte de Supabase dessous en chasse fixe tertiaire, recopiable.
+
 ## 2. Retrouver un compte existant
 
 `/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **huit**

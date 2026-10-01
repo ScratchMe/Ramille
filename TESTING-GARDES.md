@@ -181,6 +181,14 @@ parcours, sur web, et l'étape le mesure image par image depuis le rendu statiqu
 avant le premier script de la page, sur l'onglet du parcours, pour qu'un échec s'y capture. L'attente
 reste : ailleurs, un reste de saut est accepté.
 
+**Depuis le 01/10/2026, le troisième profil rattache son compte par code** (étape « le compte
+rattaché par code, et rien derrière », `v1-33` T-1). Depuis le plan : « Toi » → « Rattacher un
+compte » → l'adresse envoyée par **Entrée** → le focus sur « Regarde tes emails » → le code lu dans
+Mailpit (comme `verifier-code-de-connexion.mjs`) → la base relue (même utilisateur, plus anonyme, à
+cette adresse) → **le retour quitte l'app** ; puis « Me déconnecter » et le même retour. Tout se joue
+sur un onglet neuf. **Il envoie un e-mail par passage**, sur un plafond local de 30 par heure
+partagé avec `verifier-code-de-connexion.mjs` et tout passage simultané.
+
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
 **Le code recopie une contrainte de la base en bien plus d'endroits qu'on ne le croit** — une puce

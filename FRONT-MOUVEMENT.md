@@ -71,6 +71,11 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   (`display: none`), où `onLayout` rend zéro. `HauteurSuivie` l'ignore ; tenue, elle faisait
   regrandir la carte du point sous les yeux à chaque retour sur le plan. Toute mesure prise dans
   `onLayout` pour animer pose la même question.
+- **Toucher le voile ferme la feuille, comme le retour** (01/10/2026, `v1-33` T-7) : même `fermer()`,
+  donc même sortie animée et même `onFerme` — la feuille des rappels se marque vue comme sur un
+  retour. La place au-dessus de la feuille est en `pointerEvents: 'box-none'` ; le voile n'est ni un
+  arrêt de tabulation ni un nœud du lecteur d'écran. **La poignée ne se tire toujours pas** : un
+  glissé se juge au doigt, sur appareil.
 - **Une feuille qui redescend peut encore recevoir un choix** : la fermeture part au geste de
   retour, et un choix validé après un `await` arrive pendant la sortie — ou juste après. `fermer(apres)`
   remplace alors le rappel en attente, ou l'appelle aussitôt si la sortie est finie — ignoré, le

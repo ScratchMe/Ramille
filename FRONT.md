@@ -87,7 +87,8 @@ Quatre règles qui en découlent, et qui se sont toutes payées :
   revenait sans un mot — le même bouton mort, par une autre porte (`useChargementVisible`) ;
 - **une valeur par défaut posée sur un échec est du même mensonge.** Ce qu'on ne sait pas vaut
   `null`, et l'élément ne s'affiche pas — plutôt que de nommer le mauvais jour, le mauvais canal
-  ou le mauvais rythme.
+  ou le mauvais rythme. C'était le cas de `loadReminderPrefs` jusqu'au 01/10/2026 (`v1-33` T-6) :
+  un profil illisible rendait « Par email », coché sur « Toi » comme un réglage lu.
 
 ### 1.3 Un état de chargement n'affirme rien non plus
 
@@ -466,6 +467,20 @@ exactement ce qui avait laissé passer le mauvais caractère.
   il retombe sur le document et la tabulation repart du haut de la page (25/09/2026).
   `MessageInline` s'annonce lui-même sur natif (`announceForAccessibility`), une région vivante
   n'annonçant pas son apparition sur Android.
+  **Les écrans de compte suivent la règle depuis le 01/10/2026** (`v1-33` T-4) : la saisie du code
+  prend le focus sur « Regarde tes emails » quand elle arrive après « Recevoir un code » — prop
+  `apresUnGeste` de `SaisieDuCode`, **obligatoire**, fausse pour la reprise depuis « Toi » —,
+  l'adresse revenue par « Utiliser une autre adresse » sur son titre, `/connexion/retrouver` sur le
+  titre de la phase qui arrive (jamais à la première lecture), `/compte/suppression` sur la première
+  phrase de ce qui arrive, et `MonCompte` sur la phrase de la confirmation, puis sur « C'est fait. ».
+  Gardé par la section L de `verifier-etats-export.mjs` et deux étapes du parcours réel ; les phases
+  de `/compte/suppression` et le code de `/connexion/retrouver` ne sont gardés par rien.
+- **Le focus d'un champ est une forme, pas une couleur** (01/10/2026, `v1-33` Q-12, `cadreDuChamp`
+  dans `src/components/auth/text-field.tsx`). La bordure passe à l'accent au focus comme au
+  remplissage, à la même épaisseur (`Stroke.field`) — mais gris contre vert, le changement ne tient
+  que 1,78:1, et il est nul sur un champ déjà rempli. L'anneau du navigateur reste donc et **change
+  de place** : l'`<input>` le perd, le cadre arrondi le porte (`outline: auto`). Mesuré : 21:1 sur la
+  page, 18,5:1 sur le fond du champ ; aucune boîte ne bouge. `NumericField` l'importe de là.
 - **Un bouton secondaire posé sur une carte grise ou teintée prend `onPanel`** : fond de l'écran et
   filet, au lieu du gris des panneaux. Gris sur gris, « Oui » et « Non » de la carte du point se
   lisaient comme du texte.
@@ -550,6 +565,17 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `canGoBack()` est vrai. Et un écran qui dépose quelque chose pour l'écran d'arrivée doit supposer
   que celui-ci se monte **à neuf** : c'est ce qu'a oublié le premier correctif, et le plan perdait la
   feuille des rappels (`useReprendreLEngagement`).
+- **Une sortie de flux ne s'écrit jamais en `router.replace` nu : elle passe par
+  `terminerLeFlux(destination)`** (`src/lib/navigation.ts`, `v1-33` T-1, 01/10/2026). `replace` ne
+  remplace que le sommet de la pile : après un rattachement par code, le retour ramenait à « Ton
+  bilan, d'un appareil à l'autre » — la proposition de rattacher le compte qu'on venait de
+  rattacher —, puis à « Toi », puis à un second plan ; après « Me déconnecter », au plan de la session
+  quittée. `terminerLeFlux` vide la pile (`canDismiss` puis `dismissAll`) puis remplace : c'est la
+  règle de l'onboarding (`v1-11` §9.4), écrite une fois. Six sorties l'appellent — Google, les deux
+  branches du code de `/connexion/email`, `/connexion/retrouver`, « Me déconnecter » et « Revenir au
+  début ». **Un « Retour » remonte d'où l'on vient (`revenirOu`), une sortie de flux va là où le flux
+  mène.** Le parcours réel joue le retour après le rattachement et après la déconnexion. Sur le web,
+  le retour suit l'historique du navigateur : la garde se joue donc sur un onglet neuf.
 
 ### 2.11 Les écrans d'onglet : navigation, concurrence, états et mise en page
 
