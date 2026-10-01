@@ -1977,7 +1977,7 @@ try {
   const tailleDuParcours = page.viewportSize();
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto(`${base}/bilan?etape=commute_mode`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await attendreTexte('Tes réponses précédentes sont pré-remplies.');
+  await attendreTexte('Tes réponses précédentes sont préremplies.');
   await page.getByRole('radio', { name: 'Mécanique', exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
   // Le temps d'un défilement de la plateforme, s'il était parti.
   await page.waitForTimeout(1_500);
@@ -2013,7 +2013,7 @@ try {
   // bandeau qui le dit — sans lui, `suivant()` toucherait le « Suivant » de la première étape avant
   // que le préremplissage n'arrive : il est en attente depuis `v1-31`, donc il agit, et le parcours
   // s'arrêterait sur « Il manque encore une réponse. » au lieu de nommer la vraie cause.
-  await attendreTexte('Tes réponses précédentes sont pré-remplies.');
+  await attendreTexte('Tes réponses précédentes sont préremplies.');
   await suivant();
   await suivant();
   await choisir('Voiture (seul)');

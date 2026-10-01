@@ -85,7 +85,7 @@ export function CommuteDaysDistanceStep({ answers, update }) {
         <div ref={blocDeLaDistance} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <IntituleDuChamp type="subtitle" weight={600} style={SOUS_TITRE} marque={distanceMarquee}>{QUESTION_TRANCHE}</IntituleDuChamp>
           <ThemedText type="small" themeColor="textTertiary">
-            Une estimation suffit. Tu pourras donner un chiffre plus précis en refaisant ton bilan : tes réponses seront
+            Une estimation suffit. Tu pourras donner un chiffre plus précis dans un nouveau bilan : tes réponses seront
             préremplies.
           </ThemedText>
           <GroupeDeChoix question={QUESTION_TRANCHE} style={{ gap: 10 }}>

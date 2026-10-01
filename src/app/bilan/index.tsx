@@ -96,6 +96,16 @@ export default function BilanQuestionnaire() {
   // attend, cf. son commentaire plus bas.
   const [repriseResolue, setRepriseResolue] = useState(false);
 
+  // **L'étape d'entrée de la visite** (01/10/2026, `v1-33` D3) : celle que la personne voit en arrivant,
+  // retenue au premier rendu après la lecture du brouillon — qui a posé l'étape où l'on s'était arrêté,
+  // ou celle que demande `?etape=`. Le bandeau du re-bilan ne se rend qu'à elle : répété sur les neuf
+  // étapes, il devenait un bandeau qu'on ne lit plus, et ses 76 px faisaient passer la liste des modes
+  // sous le pied. Ce qu'on accepte en échange : qui reprend un re-bilan au milieu ne le relit pas — il
+  // voit ses réponses cochées. Retenue au rendu et non dans un effet, comme la demande de `StepShell` :
+  // un effet laisserait une image sans bandeau.
+  const [etapeDEntree, setEtapeDEntree] = useState<BilanStepId | null>(null);
+  if (draftLoaded && etapeDEntree === null) setEtapeDEntree(step);
+
   // Deux raisons de tenir ces deux drapeaux hors de l'état : ils décident d'écritures, pas
   // d'affichage, et ils doivent être lus par des effets sans relancer de rendu.
   //
@@ -336,6 +346,8 @@ export default function BilanQuestionnaire() {
     // elle se pose (`v1-30` §5.6) — y calculer un sens la ferait entrer par la gauche au montage.
     setSens(null);
     setStep('commute_has_trip');
+    // L'entrée de la visite est désormais celle-ci : c'est là que le bandeau dit le préremplissage.
+    setEtapeDEntree('commute_has_trip');
     setPrefilled(true);
     setMontrerLaReprise(false);
   };
@@ -714,7 +726,13 @@ export default function BilanQuestionnaire() {
       // branches mortes, et c'est le verrou `soumissionEnCours` qui garde la double soumission.
       nextLabel={isLastStep ? 'Voir mon bilan' : 'Suivant'}
       manque={manqueDeLEtape(step, answers)}
-      notice={prefilled ? 'Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé.' : undefined}
+      // À l'étape d'entrée seulement (`etapeDEntree`, plus haut) ; « préremplies » s'écrit d'une seule
+      // façon dans le produit (01/10/2026, `v1-33` D3).
+      notice={
+        prefilled && step === etapeDEntree
+          ? 'Tes réponses précédentes sont préremplies. Modifie ce qui a changé.'
+          : undefined
+      }
       message={message}
       detail={detail}
     >
