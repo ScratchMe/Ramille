@@ -33,7 +33,14 @@ import {
   estNatif,
   preparerLesCanauxAndroid,
 } from '@/lib/rappels';
-import { configurationSupabase, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
+import {
+  configurationSupabase,
+  ecouterLeRefus,
+  ensureSession,
+  etatDeLaSession,
+  repartirSurCetAppareil,
+  supabase,
+} from '@/lib/supabase';
 import { appErrorCategory, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
 import { estVerifieurManquant, lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
 
@@ -212,6 +219,12 @@ export default function RootLayout() {
   // promesse qui attend le retour du rappel. Le garde met ce cas hors de portée — un
   // rafraîchissement ne change pas d'utilisateur, donc il sort avant de toucher au réseau — et
   // l'écriture ne part pas dans le fil du rappel.
+  // **Un refus se montre quand il arrive, pas seulement au démarrage** (02/10/2026, `v1-27` §12.27) :
+  // un rafraîchissement refusé en cours de route, ou un écran qui rappelle `ensureSession()` alors que
+  // la personne a quitté `/connexion/retrouver` sans se reconnecter. Le refus tient tant qu'elle n'a
+  // pas choisi (`src/lib/supabase.ts`) : l'écran revient donc avec lui.
+  useEffect(() => ecouterLeRefus(() => setSessionRefusee(true)), []);
+
   useEffect(() => {
     if (!configurationSupabase.complete) return;
     const { data } = supabase.auth.onAuthStateChange((_evenement, session) => {
@@ -397,6 +410,8 @@ export default function RootLayout() {
               }}
               onCommencer={() => {
                 setSessionRefusee(false);
+                // Le refus est levé : le questionnaire ouvrira la session anonyme qu'il lui faut.
+                repartirSurCetAppareil();
                 router.replace('/onboarding');
               }}
             />

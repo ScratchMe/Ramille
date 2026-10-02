@@ -441,7 +441,8 @@ relevés : la décision fixait l'intention, la phrase a été écrite pendant la
 
 **Des constats techniques, chacun pour une PR à part** :
 
-- **L'écran « session refusée » ne s'atteint probablement jamais au démarrage** (mesuré sur l'export
+- **L'écran « session refusée » ne s'atteint probablement jamais au démarrage** — **corrigé le
+  02/10/2026**, en premier après cette PR, sur décision de la personne qui pilote (mesuré sur l'export
   par le chantier du compte) : sur un jeton d'accès expiré dont le rafraîchissement est refusé
   (`400 refresh_token_not_found`), `auth-js` 2.116 supprime la session pendant son initialisation ;
   `getSession` voit alors « pas de session, pas d'erreur », et l'app crée une session anonyme — le

@@ -38,8 +38,12 @@ fonctions et les incidents propres à Ramille, et ne voyage pas. L'histoire comp
   plus, ne rien reprocher, réessayer au prochain lancement). **Mais pas au démarrage, mesuré le
   01/10/2026** (`auth-js` 2.116) : sur un jeton d'accès déjà expiré dont le rafraîchissement est
   refusé, l'initialisation retire elle-même la session (`_callRefreshToken`, `_removeSession`) avant
-  le premier `getSession()`, qui ne voit alors ni session ni erreur. Le refus s'écoute donc à
-  l'initialisation, pas à la lecture — Ramille : `v1-27` §12.27, ouvert.
+  le premier `getSession()`, qui ne voit alors ni session ni erreur. **Le refus s'écoute donc à
+  l'événement, pas à la lecture** : `auth-js` émet `SIGNED_OUT` en retirant la session, avant
+  `INITIAL_SESSION` et avant toute lecture ; une écoute posée juste après `createClient` le reçoit,
+  puisque l'initialisation ne retire rien avant son premier `await`. Une déconnexion voulue émet le
+  même événement : elle se déclare. Ramille : `pendantUnDepartVolontaire` (`src/lib/supabase.ts`),
+  corrigé le 02/10/2026, `v1-27` §12.27.
 - **La création de session est un « lis puis écris », donc elle s'enveloppe dans un
   partage de promesse en vol.** Deux appels lancés dans le même rendu lisent tous les deux « pas
   de session » avant que l'un n'ait écrit : deux comptes anonymes, dont un orphelin qui consomme
@@ -548,8 +552,13 @@ ses points sont intacts côté serveur. Le troisième cas, une **panne de transp
 création (on fabriquerait le même compte orphelin pour une cause passagère) ni reproche — le
 prochain lancement réessaie, et rien ne s'affiche. La distinction est possible parce qu'`auth-js`
 remonte l'erreur de rafraîchissement dans `getSession()` (relevé dans `GoTrueClient.__loadSession`) :
-les quatre états sont atteignables, aucun n'est décoratif — **sauf `refusee` au démarrage, que la
-mesure du 01/10/2026 n'a jamais obtenu** (§1, et `v1-27` §12.27). L'écran `SessionRefusee` est une
+les quatre états sont atteignables, aucun n'est décoratif — **et `refusee` ne l'était pas au
+démarrage jusqu'au 02/10/2026** : l'initialisation d'`auth-js` retire elle-même la session refusée,
+et `getSession()` ne voit plus rien (§1). Le refus se lit depuis à l'événement `SIGNED_OUT` qu'aucun
+départ voulu n'a déclaré (`pendantUnDepartVolontaire`), il **tient** jusqu'à ce que la personne
+choisisse — une connexion, ou « Commencer un bilan sur cet appareil » (`repartirSurCetAppareil`) —, et
+l'écran revient avec lui, au démarrage comme en cours de route (`ecouterLeRefus`). Le client réel le
+garde, stockage et réseau doublés : `src/lib/session-refusee.test.ts`. L'écran `SessionRefusee` est une
 **surcouche** du `Stack` et non un remplacement, à la différence de `ConfigurationManquante` : ses
 deux boutons sont des navigations, et un écran rendu à la place du navigateur n'aurait aucune route
 où aller.

@@ -1643,6 +1643,9 @@ travail « Parcours réel » est passé vert sur `0899229`, le premier commit qu
 
 ### 12.27 L'écran « session refusée » ne s'atteint probablement jamais au démarrage (01/10/2026)
 
+> **Fait le 02/10/2026**, en premier après la PR #314, sur décision de la personne qui pilote —
+> détail en fin de section.
+
 **Relevé par le chantier du compte de la vague `v1-33`, en mesurant autre chose.** Sur l'export, une
 session stockée avec un jeton d'accès expiré, puis un rafraîchissement refusé
 (`400 refresh_token_not_found`) : l'app a créé une session anonyme (`POST /auth/v1/signup`). Avec huit
@@ -1669,3 +1672,30 @@ fait tomber un test, comme toujours (`TESTING.md` §1.1). Le commentaire de `ses
 décrivent l'intention, et c'est elle que la correction doit rétablir : ils ne bougent pas avant.
 `SUPABASE.md`, lui, affirmait le comportement d'`auth-js` ; ses deux passages portent depuis le
 01/10/2026 la réserve du démarrage.
+
+**Fait le 02/10/2026.** Le défaut a d'abord été **reproduit** sur le client réel, stockage et réseau
+doublés (`src/lib/session-refusee.test.ts`) : une session au jeton expiré, le rafraîchissement refusé
+en `400 refresh_token_not_found`, et l'app créait une session anonyme. Relu sur ce client, l'ordre
+des événements est `SIGNED_OUT`, puis `INITIAL_SESSION`, puis la lecture de l'app. La correction suit
+la direction ci-dessus, par l'événement :
+
+- `src/lib/supabase.ts` écoute `onAuthStateChange` juste après `createClient`. Un `SIGNED_OUT` qu'aucun
+  départ voulu n'a déclaré est un refus, au démarrage comme en cours de route ;
+- les deux départs voulus du produit se déclarent par `pendantUnDepartVolontaire` : « Me déconnecter »,
+  et la suppression du compte **entière**, pas seulement son `signOut`, parce qu'un rafraîchissement
+  peut échouer entre l'effacement et le `signOut` ;
+- le refus **tient** jusqu'à ce que la personne choisisse : une connexion (`SIGNED_IN`), ou « Commencer
+  un bilan sur cet appareil » (`repartirSurCetAppareil`). Entre-temps, aucun `ensureSession()` n'ouvre
+  de session anonyme ;
+- l'écran revient avec le refus (`ecouterLeRefus`) : en cours de route, ou quand on quitte
+  `/connexion/retrouver` sans s'être reconnecté ;
+- `etatDeSession` prend un troisième argument, `sessionRetiree`.
+
+Trois mutations sur le client réel et une sur la dérivation pure, consignées en tête des tests.
+
+**Ce qui change pour la personne, et ce n'est que l'intention de C2.11 enfin tenue** : un téléphone
+rouvert après des semaines sur un compte dont le jeton est révoqué montre « Reconnecte-toi pour
+retrouver ton bilan » au lieu d'un questionnaire vide. Un autre onglet du même navigateur qui se
+déconnecte fait de même dans celui-ci, et c'est vrai : la session n'y est plus.
+
+**Ce qui reste à voir sur appareil** : le démarrage réel d'Android, AsyncStorage compris (`v1-13` §11.26).

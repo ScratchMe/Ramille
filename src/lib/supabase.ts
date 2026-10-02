@@ -163,6 +163,76 @@ export const supabase = configurationSupabase.complete
 let dernierEtatDeSession: EtatDeSession = 'absente';
 
 /**
+ * **Un jeton refusé se lit à l'initialisation du client, pas dans `getSession()`** (02/10/2026,
+ * `v1-27` §12.27). C2.11 lisait le refus dans l'erreur de `getSession()`, et la version installée
+ * d'`auth-js` (2.116) ne la rend pas là au démarrage : sur un jeton d'accès déjà expiré dont le
+ * rafraîchissement est refusé, c'est son initialisation qui retire la session (`_callRefreshToken`,
+ * puis `_removeSession`), avant la première lecture de l'app. `getSession()` voyait ensuite « pas de
+ * session, pas d'erreur », et `ensureSession()` ouvrait une session anonyme vide à quelqu'un qui a un
+ * compte — le défaut même que C2.11 devait fermer, qu'aucune mesure n'avait jamais vu fermé.
+ *
+ * Ce qu'`auth-js` émet en retirant une session, c'est `SIGNED_OUT`. **Une session retirée sans
+ * qu'on l'ait demandé est donc un refus** — au démarrage comme plus tard, quand le rafraîchissement
+ * automatique échoue en cours de route. L'écoute est posée ici, au chargement du module, juste après
+ * la création du client : son initialisation ne retire rien avant son premier `await`, donc avant
+ * que l'écoute existe. Une déconnexion **voulue** émet le même événement : elle se déclare par
+ * `pendantUnDepartVolontaire`. Un autre onglet du même navigateur qui se déconnecte émet aussi
+ * `SIGNED_OUT` ici, sans l'avoir déclaré — cet onglet-ci propose alors de se reconnecter, et c'est vrai.
+ *
+ * Le refus **tient** jusqu'à ce que la personne choisisse : une connexion (`SIGNED_IN`, celle de
+ * `/connexion/retrouver`), ou « Commencer un bilan sur cet appareil » (`repartirSurCetAppareil`).
+ * Entre-temps, aucun appel à `ensureSession()` n'ouvre de session anonyme — un écran qui s'ouvre sous
+ * l'écran de reconnexion couvrirait sinon le compte en silence.
+ */
+let sessionRetireeSansDemande = false;
+let departsVolontaires = 0;
+const ecouteursDuRefus = new Set<() => void>();
+
+function signalerLeRefus() {
+  for (const ecouteur of ecouteursDuRefus) ecouteur();
+}
+
+if (configurationSupabase.complete) {
+  supabase.auth.onAuthStateChange((evenement) => {
+    if (evenement === 'SIGNED_OUT' && departsVolontaires === 0) {
+      sessionRetireeSansDemande = true;
+      dernierEtatDeSession = 'refusee';
+      signalerLeRefus();
+    } else if (evenement === 'SIGNED_IN') {
+      sessionRetireeSansDemande = false;
+    }
+  });
+}
+
+/**
+ * Une déconnexion **voulue** — « Me déconnecter », la suppression du compte : la session retirée
+ * pendant `action` n'est pas un refus, et la session suivante s'ouvre normalement.
+ */
+export async function pendantUnDepartVolontaire<T>(action: () => Promise<T>): Promise<T> {
+  departsVolontaires += 1;
+  try {
+    return await action();
+  } finally {
+    departsVolontaires -= 1;
+  }
+}
+
+/** « Commencer un bilan sur cet appareil », sur l'écran de reconnexion : le refus est levé. */
+export function repartirSurCetAppareil(): void {
+  sessionRetireeSansDemande = false;
+  dernierEtatDeSession = 'absente';
+}
+
+/**
+ * Être prévenu d'un refus — au démarrage, en cours de route, ou de nouveau quand un écran rappelle
+ * `ensureSession()` sans que la personne ait choisi. Rend de quoi se désabonner.
+ */
+export function ecouterLeRefus(ecouteur: () => void): () => void {
+  ecouteursDuRefus.add(ecouteur);
+  return () => ecouteursDuRefus.delete(ecouteur);
+}
+
+/**
  * Le dernier état observé par `ensureSession()`. Lu par le layout racine pour afficher l'écran de
  * reconnexion sur un jeton refusé — et **seulement** dans ce cas : une panne de transport ne se
  * reproche pas à la personne.
@@ -177,9 +247,10 @@ export const ensureSession = uneSeuleFois(async () => {
     error,
   } = await supabase.auth.getSession();
 
-  dernierEtatDeSession = etatDeSession(Boolean(session), error);
+  dernierEtatDeSession = etatDeSession(Boolean(session), error, sessionRetireeSansDemande);
 
   if (session) return session;
+  if (dernierEtatDeSession === 'refusee') signalerLeRefus();
   if (!doitOuvrirUneSessionAnonyme(dernierEtatDeSession)) return null;
 
   const { data, error: erreurCreation } = await supabase.auth.signInAnonymously();

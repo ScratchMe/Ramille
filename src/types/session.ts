@@ -22,10 +22,15 @@
 //     une cause qui disparaîtra d'elle-même ; et dire « reconnecte-toi » reprocherait à la personne
 //     ce que le réseau a fait. On ne fait donc **rien**, et le prochain lancement réessaie.
 //
-// La distinction est possible parce qu'`auth-js` remonte l'erreur : `getSession()` appelle
-// `_callRefreshToken` quand la session stockée est expirée, et rend `{ session: null, error }`
-// quand le rafraîchissement échoue pour de bon (relevé dans `GoTrueClient.__loadSession`, version
-// installée). Les quatre états sont donc atteignables — aucun n'est décoratif.
+// **Le refus a deux formes, et la première version n'en lisait qu'une** (02/10/2026, `v1-27` §12.27).
+// `getSession()` peut rendre l'erreur d'un rafraîchissement refusé (`GoTrueClient.__loadSession`) ;
+// mais au démarrage, sur un jeton d'accès déjà expiré, c'est l'initialisation d'`auth-js` qui le
+// rafraîchit, essuie le refus et **retire la session elle-même**, avant toute lecture : `getSession()`
+// ne voit plus ni session ni erreur. Ce cas-là — le plus courant, un téléphone rouvert après des
+// semaines — se lit à l'événement `SIGNED_OUT` qu'`auth-js` émet en retirant la session, quand
+// personne ne l'a demandé (`src/lib/supabase.ts`) : c'est `sessionRetiree`. Mesuré sur l'export, puis
+// reproduit sur le client réel par `src/lib/session-refusee.test.ts`. Les quatre états sont donc
+// atteignables — aucun n'est décoratif.
 
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
 
@@ -42,12 +47,15 @@ export type EtatDeSession =
 /**
  * Ce que rend `supabase.auth.getSession()`, traduit en décision.
  *
+ * `sessionRetiree` : `auth-js` a retiré la session sans qu'on le lui demande — au démarrage, un
+ * jeton refusé pendant son initialisation (voir l'en-tête). C'est un refus, même sans erreur.
+ *
  * `aUneSession` plutôt que la session elle-même : ce module ne doit rien savoir du type `Session`
  * d'`auth-js`, et la seule chose qui compte ici est qu'il y en ait une.
  */
-export function etatDeSession(aUneSession: boolean, error: ErreurAuth): EtatDeSession {
+export function etatDeSession(aUneSession: boolean, error: ErreurAuth, sessionRetiree: boolean): EtatDeSession {
   if (aUneSession) return 'presente';
-  if (!error) return 'absente';
+  if (!error) return sessionRetiree ? 'refusee' : 'absente';
   return estPanneDeTransport(error) ? 'indisponible' : 'refusee';
 }
 

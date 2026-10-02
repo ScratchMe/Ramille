@@ -156,7 +156,11 @@ rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept 
 
 **« Pas de session » recouvre trois situations, et une seule appelle une création** (C2.11,
 `src/types/session.ts`) — un jeton refusé n'en est pas une, sans quoi on donne un compte vide à
-quelqu'un qui en a un : `SUPABASE.md` §2.4.
+quelqu'un qui en a un : `SUPABASE.md` §2.4. **Et au démarrage, le refus ne se voyait pas** jusqu'au
+02/10/2026 (`v1-27` §12.27) : `auth-js` retire la session pendant son initialisation, et l'app créait
+une session anonyme. **Toute déconnexion voulue se déclare** par `pendantUnDepartVolontaire` — « Me
+déconnecter » et la suppression du compte le font —, sans quoi elle se lirait comme un refus, et
+l'écran de reconnexion s'ouvrirait sur un départ choisi.
 
 **Le lien du rappel porte `?rappel=1`, et le chemin ne doit pas bouger** (C2.11). L'email ne portait
 que `/plan` : ouvert sur un ordinateur ou un téléphone neuf, il tombait sur la session anonyme que

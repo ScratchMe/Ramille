@@ -28,6 +28,8 @@ const mockGetSession = jest.fn();
 const mockStock = new Map<string, string>();
 
 jest.mock('@/lib/supabase', () => ({
+  // Le départ volontaire se déclare autour de l'appel ; ici, il le laisse passer tel quel.
+  pendantUnDepartVolontaire: <T,>(action: () => Promise<T>) => action(),
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
     auth: {
