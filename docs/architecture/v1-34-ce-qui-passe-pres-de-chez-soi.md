@@ -232,6 +232,21 @@ on s'en fiche. sinon OK ».
   Ce qu'on accepte : les plans de test perdent ces actions à leur prochaine génération, jusqu'à une
   réponse donnée dans l'écran « Contexte » ou dans un nouveau bilan.
 
+**Le 03/10/2026, sur la capture de l'étape** (D8), deux décisions de plus.
+
+- **La question de la zone reste.** Posée par la personne qui pilote en voyant la capture : « pourquoi
+  on garde la première question ? […] Ça ne fait pas double emploi ? ». La question remplacée était
+  celle de l'accès, pas celle de la zone, et la zone ne décide plus aucune action (§4). Mais elle reste
+  la seule à distinguer la campagne de la banlieue pour une même réponse « bus seul », et c'est ce qui
+  décide de la comparaison à la moyenne française (`mobility_constrained` : rural **et** accès limité).
+  La retirer imposait une nouvelle règle, et les deux possibles cassaient chacune quelque chose :
+  « contraint » seulement sur « Rien de tout ça » montrait la moyenne à qui vit à la campagne avec une
+  gare TER ; « contraint » sans métro, tram ni RER la cachait à toute banlieue desservie en bus.
+  Réponse : « on garde la question de la zone par contre, tu as raison ».
+- **La capture ne suffit pas : Claude Design intervient**, comme D8 le prévoyait. « Faisons intervenir
+  Claude Design. Ne serait-ce que pour savoir comment bien afficher l'aide. Ça commence à prendre de
+  la place. » Le brief : [`docs/design/v1-34-l-etape-du-contexte/BRIEF.md`](../design/v1-34-l-etape-du-contexte/BRIEF.md).
+
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 
 **Livré le 03/10/2026**, dans une PR (migration `ce_qui_passe_pres_de_chez_soi`, test pgTAP `44`).
