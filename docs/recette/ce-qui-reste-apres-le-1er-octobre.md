@@ -20,6 +20,9 @@
 >   [#313](https://github.com/ScratchMe/Ramille/issues/313)) ;
 > - **la moitié web de `v1-13` §11.27**, ouverte par #315 : la session refusée au démarrage.
 >
+> **Jouée le 02/10/2026 de 12 h 34 à 13 h 48** par l'agent (`v1-13` §20) : 40 lignes sur 40, toutes
+> conformes, et un constat hors feuille ([#319](https://github.com/ScratchMe/Ramille/issues/319)).
+>
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **en une journée** — mais le bloc 03
 > attend au moins une heure entre son début et sa fin.
 
