@@ -1,23 +1,31 @@
-import { StyleSheet, View } from 'react-native';
+import type { RefObject } from 'react';
+import { StyleSheet, View, type TextInput } from 'react-native';
 
 import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
+import { ChampDuPlafond } from '@/components/bilan/champ-du-plafond';
+import { ChoixOuvrant } from '@/components/bilan/choix-ouvrant';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { NumericField } from '@/components/bilan/numeric-field';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
 import { Spacing, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKm } from '@/lib/format';
-import { decompteDesLongsCourriers, volsCourtsApresTotal, type BilanAnswers } from '@/types/bilan';
+import {
+  CHOIX_DE_COMPTE,
+  decompteDesLongsCourriers,
+  PLAFOND_DE_COMPTE,
+  volsCourtsApresTotal,
+  type BilanAnswers,
+} from '@/types/bilan';
 import { optionCible } from '@/types/demande';
 
-// "N+" stocke N — simplification assumée (pas de borne haute en base pour ces champs,
-// cf. v1-05), cohérente avec le traitement déjà appliqué à la taille de covoiturage.
-const TOTAL_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-/** La dernière puce vaut « ce nombre ou plus » : dérivée de la liste, comme dans `long-trips.tsx`. */
-const MAX_VOLS = TOTAL_CHOICES[TOTAL_CHOICES.length - 1];
+// « 10+ » stockait 10 — simplification de `v1-05`, levée le 02/10/2026 (`v1-33` §6) : la puce ouvre un
+// champ, réclamé (`ChampDuPlafond`, `plafondChoisi`). La liste et son plafond sont ceux des longs trajets
+// (`CHOIX_DE_COMPTE`, `src/types/bilan.ts`).
+const MAX_VOLS = PLAFOND_DE_COMPTE;
 
 /**
  * La question écrite une fois pour ses deux usages : le titre de l'étape et le nom de la série de
@@ -30,24 +38,42 @@ const QUESTION_TOTAL = 'Combien de vols prends-tu dans une année type ?';
 export function FlightsStep({
   answers,
   update,
+  plafond,
+  choisirLePlafond,
 }: {
   answers: BilanAnswers;
   update: (patch: Partial<BilanAnswers>) => void;
+  /** « 10+ » est la réponse du total (`plafondChoisi`) : le champ est ouvert. */
+  plafond: boolean;
+  /** « 10+ » touché, ou une autre puce : l'écran du questionnaire tient le drapeau (`HorsColonnes`). */
+  choisirLePlafond: (choisi: boolean) => void;
 }) {
   const theme = useTheme();
   // **Sans réponse, le total ne vaut rien, pas zéro** (01/10/2026, `v1-33` D1) : aucune puce n'arrive
   // cochée, et l'étape le réclame. Les lectures chiffrées ci-dessous ne servent qu'une fois un total
   // choisi — la seconde question ne se rend qu'à partir d'un vol.
   const total = answers.flights_total_per_year ?? 0;
-  const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
+  // **Au-delà de dix vols, la part de vols courts se saisit aussi** (décidé le 02/10/2026) : la rangée
+  // de 0 au total ferait vingt-six puces pour vingt-cinq vols. Même question, un champ borné au total.
+  const courtsSaisis = total > PLAFOND_DE_COMPTE;
+  const shortChoices = courtsSaisis ? [] : Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (answers.flights_short_per_year ?? 0), 0);
   const questionCourts = `Sur ces ${total}, combien sont courts ?`;
   // Où mène « Il manque encore le nombre de vols » (`v1-31` §2.5) : la question du titre, qui ne se
   // marque jamais (`seMarque`), et la puce choisie ou la première.
   const { bloc: blocDuTotal, cible: cibleDuTotal } = useAncreDuChamp('flights_total_per_year');
-  const iCibleDuTotal = optionCible(TOTAL_CHOICES.map((n) => answers.flights_total_per_year === n));
-  // Où mène « Il manque encore la part de vols courts » : le sous-titre se marque.
-  const { bloc, cible, marque } = useAncreDuChamp('flights_short_per_year');
+  const iCibleDuTotal = optionCible(
+    CHOIX_DE_COMPTE.map((n) => (n === MAX_VOLS ? plafond : !plafond && answers.flights_total_per_year === n))
+  );
+  // Et, sous « 10+ », le champ du nombre : il manque quand « 10+ » est touché et le champ vide.
+  const {
+    bloc: blocDuNombre,
+    cible: cibleDuNombre,
+    marque: nombreMarque,
+  } = useAncreDuChamp<TextInput>('nombre_de_vols', { saisie: true });
+  // Où mène « Il manque encore la part de vols courts » : le sous-titre se marque, et le focus va à la
+  // puce, ou au champ au-delà de dix vols — un seul champ logique, l'ancre suit ce qui est à l'écran.
+  const { bloc, cible, marque } = useAncreDuChamp<unknown>('flights_short_per_year', { saisie: courtsSaisis });
   const iCible = optionCible(shortChoices.map((n) => answers.flights_short_per_year === n));
 
   return (
@@ -67,25 +93,67 @@ export function FlightsStep({
         <ThemedText type="small" themeColor="textTertiary">
           Un aller-retour compte pour deux vols.
         </ThemedText>
-        <GroupeDeChoix question={QUESTION_TOTAL} style={styles.chipsWrap}>
-          {TOTAL_CHOICES.map((n, i) => (
-            <Chip
-              key={n}
-              ref={i === iCibleDuTotal ? cibleDuTotal : undefined}
-              label={n === MAX_VOLS ? `${MAX_VOLS}+` : String(n)}
-              // Ce qu'un lecteur d'écran entend là où l'œil lit « 10+ » (A2-9).
-              accessibilityLabel={n === MAX_VOLS ? `${MAX_VOLS} vols ou plus` : undefined}
-              role="radio"
-              selected={answers.flights_total_per_year === n}
-              onPress={() =>
-                update({
-                  flights_total_per_year: n,
-                  flights_short_per_year: volsCourtsApresTotal(answers, n),
-                })
-              }
+        {/* Les puces et le champ qu'ouvre « 10+ », enveloppés ensemble : le haut de la rangée est la borne
+            que l'écran ne fait pas passer au-dessus du bord en remontant pour montrer le champ. */}
+        <ChoixOuvrant>
+          <GroupeDeChoix question={QUESTION_TOTAL} style={styles.chipsWrap}>
+            {CHOIX_DE_COMPTE.map((n, i) => (
+              <Chip
+                key={n}
+                ref={i === iCibleDuTotal ? cibleDuTotal : undefined}
+                label={n === MAX_VOLS ? `${MAX_VOLS}+` : String(n)}
+                // Ce qu'un lecteur d'écran entend là où l'œil lit « 10+ » (A2-9).
+                accessibilityLabel={n === MAX_VOLS ? `${MAX_VOLS} vols ou plus` : undefined}
+                role="radio"
+                selected={n === MAX_VOLS ? plafond : !plafond && answers.flights_total_per_year === n}
+                onPress={() => {
+                  if (n === MAX_VOLS) {
+                    // Le champ s'ouvre vide, à remplir — sauf sur un nombre déjà au-delà, qu'on garde. La
+                    // part de vols courts suit la règle d'un total qui change.
+                    choisirLePlafond(true);
+                    if (!plafond)
+                      update({
+                        flights_total_per_year: null,
+                        flights_short_per_year: volsCourtsApresTotal(answers, MAX_VOLS),
+                      });
+                    return;
+                  }
+                  choisirLePlafond(false);
+                  update({
+                    flights_total_per_year: n,
+                    flights_short_per_year: volsCourtsApresTotal(answers, n),
+                  });
+                }}
+              />
+            ))}
+          </GroupeDeChoix>
+          {plafond && (
+            <ChampDuPlafond
+              refDuBloc={blocDuNombre}
+              refDuChamp={cibleDuNombre}
+              marque={nombreMarque}
+              valeur={answers.flights_total_per_year}
+              // **Toute frappe dit « 10+ »** (contre-lecture du 02/10/2026) : le champ relu d'un re-bilan
+              // ou d'un brouillon n'a pas de drapeau, et corriger 14 en 16 passe par « 1 » — sans lui, le
+              // nombre seul refermait le champ sous le doigt, clavier compris.
+              //
+              // **La part de vols courts ne suit pas la frappe** : la ramener sous chaque valeur tapée
+              // perdait la réponse pendant qu'on retape le total (« 20 » → « 2 » → « 25 »). Une part
+              // devenue plus grande que le total se réclame (`manqueDeLEtape`). Seul un total nul la
+              // pose à zéro, comme sa puce — et la repose à vide quand il en repart : ce zéro n'était pas
+              // une réponse (`volsCourtsApresTotal`).
+              onChange={(valeur) => {
+                choisirLePlafond(true);
+                if (valeur === 0) update({ flights_total_per_year: 0, flights_short_per_year: 0 });
+                else if (answers.flights_total_per_year === 0)
+                  update({ flights_total_per_year: valeur, flights_short_per_year: null });
+                else update({ flights_total_per_year: valeur });
+              }}
+              unite="vols"
+              label="Nombre de vols sur une année"
             />
-          ))}
-        </GroupeDeChoix>
+          )}
+        </ChoixOuvrant>
       </View>
 
       {total > 0 && (
@@ -102,19 +170,36 @@ export function FlightsStep({
                 nombres sur un même écran répondent à la même fonction — choisir un nombre —, donc elles
                 prennent le même rayon, la pilule du défaut de `Chip`. Celle-ci était à `Radius.chip` : des
                 ronds au-dessus, des carrés arrondis dessous, pour rien qui se dise. */}
-            <GroupeDeChoix question={questionCourts} style={styles.row}>
-              {shortChoices.map((n, i) => (
-                <Chip
-                  key={n}
-                  ref={i === iCible ? cible : undefined}
-                  label={String(n)}
-                  role="radio"
-                  selected={answers.flights_short_per_year === n}
-                  onPress={() => update({ flights_short_per_year: n })}
-                />
-              ))}
-            </GroupeDeChoix>
-            {answers.flights_short_per_year !== null && (
+            {courtsSaisis ? (
+              // Borné au total pendant la saisie : 30 tapé sous 25 vols s'affiche 25, sans phrase de plus
+              // — le décompte des long-courriers, juste dessous, dit ce qu'il en reste.
+              <NumericField
+                ref={cible as RefObject<TextInput | null>}
+                value={answers.flights_short_per_year}
+                onChange={(valeur) =>
+                  update({ flights_short_per_year: valeur === null ? null : Math.min(valeur, total) })
+                }
+                unit="vols"
+                label="Nombre de vols courts"
+                entier
+              />
+            ) : (
+              <GroupeDeChoix question={questionCourts} style={styles.row}>
+                {shortChoices.map((n, i) => (
+                  <Chip
+                    key={n}
+                    ref={i === iCible ? (cible as RefObject<View | null>) : undefined}
+                    label={String(n)}
+                    role="radio"
+                    selected={answers.flights_short_per_year === n}
+                    onPress={() => update({ flights_short_per_year: n })}
+                  />
+                ))}
+              </GroupeDeChoix>
+            )}
+            {/* Seulement quand la part tient sous le total : au-dessus, l'étape la réclame, et « Aucun vol
+                long-courrier ne sera compté » dirait le contraire. */}
+            {answers.flights_short_per_year !== null && answers.flights_short_per_year <= total && (
               <ThemedText type="small">{decompteDesLongsCourriers(longCount)}</ThemedText>
             )}
           </View>

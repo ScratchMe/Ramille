@@ -11,5 +11,10 @@ export interface NumericFieldProps {
    * kit, rendu sous React 18, retrouve le champ dans le DOM.
    */
   ref?: React.Ref<HTMLInputElement>;
+  /**
+   * Un compte et non une mesure (`v1-33` §6, 02/10/2026) : clavier sans décimale, partie entière de ce qui est tapé
+   * (« 12,5 » vaut 12, jamais 125), et le libellé annoncé seul — l'unité est le nom compté (`ChampDuPlafond`).
+   */
+  entier?: boolean;
 }
 export declare function NumericField(props: NumericFieldProps): JSX.Element;

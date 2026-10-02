@@ -28,6 +28,11 @@ import {
   compteursApresLaReponse,
   reponseAuxLongsTrajets,
   RIEN_HORS_COLONNES,
+  COMPTE_A_RELIRE,
+  compteARelire,
+  plafondChoisi,
+  saisieVersEntier,
+  type CompteAPlafond,
   type HorsColonnes,
   REPONSES_FREQUENCE_DES_LOISIRS,
   teletravailSePose,
@@ -61,7 +66,15 @@ function answers(overrides: Partial<BilanAnswers>): BilanAnswers {
 // **Ce que l'écran a reçu hors colonnes** (`HorsColonnes`, 01/10/2026) est exigé par les trois
 // dérivations — l'écran ne peut pas l'oublier. Les tests qui ne portent pas sur lui passent « rien » :
 // le « Oui » aux longs trajets que les compteurs ne disent pas est éprouvé là où il compte.
-const UN_OUI_AUX_LONGS_TRAJETS: HorsColonnes = { ouiAuxLongsTrajets: true };
+const UN_OUI_AUX_LONGS_TRAJETS: HorsColonnes = { ouiAuxLongsTrajets: true, plafondsChoisis: [] };
+/** « 10+ » touché sur ces compteurs, le « Oui » aux longs trajets donné (`v1-33` §6, 02/10/2026). */
+const plafonds = (...comptes: CompteAPlafond[]): HorsColonnes => ({ ouiAuxLongsTrajets: true, plafondsChoisis: comptes });
+const TOUS_LES_PLAFONDS = plafonds(
+  'flights_total_per_year',
+  'train_long_trips_per_year',
+  'coach_long_trips_per_year',
+  'car_long_trips_per_year'
+);
 const manqueDeLEtape = (etape: BilanStepId, r: BilanAnswers, horsColonnes = RIEN_HORS_COLONNES) =>
   manqueDeLEtapeAvecLEcran(etape, r, horsColonnes);
 const isStepComplete = (etape: BilanStepId, r: BilanAnswers, horsColonnes = RIEN_HORS_COLONNES) =>
@@ -595,6 +608,91 @@ describe('isStepComplete', () => {
         })
       )
     ).toBe(true);
+  });
+
+  // **« 10+ » ouvre un champ, réclamé** (`v1-33` §6, décidé le 02/10/2026 avec la personne qui pilote).
+  // Elle enregistrait 10 : vingt vols comptaient pour dix. Éprouvé le même jour (TESTING.md §1.1), la
+  // suite Jest entière sous `TZ=Europe/Paris`, une mutation à la fois — ce qui tombe hors de ce fichier est
+  // dans `le-champ-sous-10-plus.test.tsx` :
+  //   - `plafondChoisi` sans le drapeau (le nombre seul) → trois tests de ce bloc, les quatre phrases
+  //     épinglées des nouveaux champs, « chaque champ déclaré est réclamé », et six des sept tests d'écran ;
+  //   - le seuil `>= 10` passé à `> 10` → « un nombre de dix ou plus dit 10+ de lui-même », seul ;
+  //   - la part de vols courts plus grande que le total acceptée → « plus de vols courts que de vols »,
+  //     et sa phrase épinglée ;
+  //   - les séries vérifiées seulement quand aucune ne déclare de trajet → « une série sous 10+, champ
+  //     vide… », la phrase épinglée de la voiture, et deux tests d'écran (la voiture, « Oui » retouché) ;
+  //   - les séries vérifiées **après** « au moins un trajet » (rejouée le soir même, sur la contre-lecture :
+  //     la description d'avant nommait cette mutation-ci et en avait joué une autre) → les deux phrases
+  //     épinglées du train et de l'autocar, seules — ce sont elles qui gardent l'ordre ;
+  //   - `compteARelire` à `>=` → « au-delà de cinquante… », ici et à l'écran ;
+  //   - `saisieVersEntier` sans `Math.trunc` → « la partie entière… », seul.
+  describe('le champ sous « 10+ »', () => {
+    it('10+ touché, champ vide : le champ manque, pas la question', () => {
+      const vols = plafonds('flights_total_per_year');
+      expect(plafondChoisi('flights_total_per_year', null, vols)).toBe(true);
+      expect(plafondChoisi('flights_total_per_year', null, RIEN_HORS_COLONNES)).toBe(false);
+      expect(manqueDeLEtape('flights', EMPTY_BILAN_ANSWERS, vols)).toEqual({
+        champ: 'nombre_de_vols',
+        phrase: 'le nombre de vols',
+      });
+      expect(manqueDeLEtape('flights', EMPTY_BILAN_ANSWERS)?.champ).toBe('flights_total_per_year');
+    });
+
+    it('un nombre de dix ou plus dit « 10+ » de lui-même — un re-bilan, un brouillon, un bilan d’avant', () => {
+      expect(plafondChoisi('flights_total_per_year', 10, RIEN_HORS_COLONNES)).toBe(true);
+      expect(plafondChoisi('car_long_trips_per_year', 25, RIEN_HORS_COLONNES)).toBe(true);
+      expect(plafondChoisi('flights_total_per_year', 9, RIEN_HORS_COLONNES)).toBe(false);
+      // Un nombre plus petit tapé dans le champ : le drapeau le garde ouvert.
+      expect(plafondChoisi('flights_total_per_year', 5, plafonds('flights_total_per_year'))).toBe(true);
+    });
+
+    it('le nombre saisi complète l’étape, au-delà de dix comme en dessous', () => {
+      const vols = plafonds('flights_total_per_year');
+      expect(isStepComplete('flights', answers({ flights_total_per_year: 25, flights_short_per_year: 4 }), vols)).toBe(
+        true
+      );
+      expect(isStepComplete('flights', answers({ flights_total_per_year: 0 }), vols)).toBe(true);
+    });
+
+    it('plus de vols courts que de vols se réclame comme une part manquante', () => {
+      expect(manqueDeLEtape('flights', answers({ flights_total_per_year: 12, flights_short_per_year: 15 }))).toEqual({
+        champ: 'flights_short_per_year',
+        phrase: 'la part de vols courts',
+      });
+      expect(isStepComplete('flights', answers({ flights_total_per_year: 12, flights_short_per_year: 12 }))).toBe(true);
+    });
+
+    it('une série sous « 10+ », champ vide, se réclame avant « au moins un trajet » — même si une autre en déclare', () => {
+      // Sans cette branche, la voiture vide valait zéro dès que le train comptait deux trajets : le « 10+ »
+      // de la voiture passait pour aucun trajet.
+      expect(
+        manqueDeLEtape('long_trips', answers({ train_long_trips_per_year: 2 }), plafonds('car_long_trips_per_year'))
+      ).toEqual({ champ: 'trajets_en_voiture', phrase: 'le nombre de trajets en voiture' });
+      expect(
+        isStepComplete(
+          'long_trips',
+          answers({ train_long_trips_per_year: 2, car_long_trips_per_year: 14, car_long_trips_engine: 'thermique', car_long_trips_occupancy: 2 }),
+          plafonds('car_long_trips_per_year')
+        )
+      ).toBe(true);
+      // Sous « Non », les séries ne se posent pas : un drapeau resté ne réclame rien.
+      const non = answers({ train_long_trips_per_year: 0, coach_long_trips_per_year: 0, car_long_trips_per_year: 0 });
+      expect(manqueDeLEtape('long_trips', non, { ouiAuxLongsTrajets: false, plafondsChoisis: ['train_long_trips_per_year'] })).toBeNull();
+    });
+
+    it('au-delà de cinquante, une relecture — jamais à cinquante, jamais sans nombre', () => {
+      expect(COMPTE_A_RELIRE).toBe(50);
+      expect(compteARelire(51)).toBe(true);
+      expect(compteARelire(50)).toBe(false);
+      expect(compteARelire(null)).toBe(false);
+    });
+
+    it('la partie entière de ce qui est tapé : « 12,5 » vaut 12, jamais 125', () => {
+      expect(saisieVersEntier('12,5')).toBe(12);
+      expect(saisieVersEntier('25')).toBe(25);
+      expect(saisieVersEntier('')).toBeNull();
+      expect(saisieVersEntier(',')).toBeNull();
+    });
   });
 
   it('context : les 3 champs sont requis, et le télétravail dès deux jours de trajet', () => {
@@ -1560,13 +1658,13 @@ const DOMAINES: { [K in keyof BilanAnswers]: readonly BilanAnswers[K][] } = {
   leisure_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
   leisure_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
   leisure_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
-  flights_total_per_year: [null, 0, 1, 4],
-  flights_short_per_year: [null, 0, 1, 3],
-  train_long_trips_per_year: [null, 0, 2],
-  car_long_trips_per_year: [null, 0, 3],
+  flights_total_per_year: [null, 0, 1, 4, 25],
+  flights_short_per_year: [null, 0, 1, 3, 30],
+  train_long_trips_per_year: [null, 0, 2, 12],
+  car_long_trips_per_year: [null, 0, 3, 12],
   car_long_trips_engine: [null, ...CAR_ENGINE_OPTIONS.map((o) => o.value)],
   car_long_trips_occupancy: [null, ...OCCUPATIONS_LONG_TRAJET],
-  coach_long_trips_per_year: [null, 0, 2],
+  coach_long_trips_per_year: [null, 0, 2, 12],
   zone_type: [null, 'urbain_dense', 'periurbain', 'rural'],
   tc_access: [null, 'bon', 'limite', 'inexistant'],
   transports_proches: [null, ['bus'], ['metro_tram', 'rer'], ['aucun']],
@@ -1690,7 +1788,7 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
   // l'ordre de l'écran — c'est aussi l'ordre des réclamations.
   const voiture = { commute_has_regular_trip: true, commute_days_per_week: 5, commute_distance_km: 20 };
   const sortie = { leisure_frequency: 'weekly' as const };
-  const PHRASES: [BilanStepId, Partial<BilanAnswers>, ChampDuBilan, string][] = [
+  const PHRASES: [BilanStepId, Partial<BilanAnswers>, ChampDuBilan, string, HorsColonnes?][] = [
     ['commute_has_trip', {}, 'commute_has_regular_trip', 'une réponse'],
     ['commute_days_distance', {}, 'commute_days_per_week', 'le nombre de jours par semaine'],
     ['commute_days_distance', { commute_days_per_week: 3 }, 'distance_du_trajet', 'la distance'],
@@ -1760,6 +1858,19 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
     // trajet qu'un « Oui » annonce — un « 0 » sous « Oui » laisse les deux autres séries vides.
     ['flights', {}, 'flights_total_per_year', 'le nombre de vols'],
     ['flights', { flights_total_per_year: 2 }, 'flights_short_per_year', 'la part de vols courts'],
+    // 02/10/2026, `v1-33` §6 : sous « 10+ », c'est le champ qui manque — il porte la même phrase que la
+    // question, et mène ailleurs ; et une part de vols courts plus grande que le total se réclame.
+    ['flights', {}, 'nombre_de_vols', 'le nombre de vols', plafonds('flights_total_per_year')],
+    ['flights', { flights_total_per_year: 25, flights_short_per_year: 30 }, 'flights_short_per_year', 'la part de vols courts'],
+    ['long_trips', {}, 'trajets_en_train', 'le nombre de trajets en train', plafonds('train_long_trips_per_year')],
+    ['long_trips', {}, 'trajets_en_autocar', 'le nombre de trajets en autocar', plafonds('coach_long_trips_per_year')],
+    [
+      'long_trips',
+      { train_long_trips_per_year: 2 },
+      'trajets_en_voiture',
+      'le nombre de trajets en voiture',
+      plafonds('car_long_trips_per_year'),
+    ],
     ['long_trips', {}, 'fait_des_longs_trajets', 'une réponse'],
     ['long_trips', { train_long_trips_per_year: 0 }, 'nombre_de_longs_trajets', 'le nombre de trajets'],
     ['long_trips', { car_long_trips_per_year: 2 }, 'car_long_trips_engine', 'la motorisation'],
@@ -1783,8 +1894,10 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
     ],
   ];
 
-  it.each(PHRASES)('%s, avec %j, réclame %s : « %s »', (etape, patch, champ, phrase) => {
-    expect(manqueDeLEtape(etape, answers(patch))).toEqual({ champ, phrase });
+  // L'état hors colonnes en paramètre de reste : un cinquième paramètre nommé, Jest le prendrait pour le
+  // rappel `done` des lignes qui n'en portent que quatre.
+  it.each(PHRASES)('%s, avec %j, réclame %s : « %s »', (etape, patch, champ, phrase, ...horsColonnes) => {
+    expect(manqueDeLEtape(etape, answers(patch), horsColonnes[0])).toEqual({ champ, phrase });
   });
 
   // Chaque champ de la table est atteint par au moins une ligne de la table des phrases : sans
@@ -1809,10 +1922,12 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
     return reponses as BilanAnswers;
   });
 
-  // Sous les deux états de l'écran (`HorsColonnes`, 01/10/2026) : le « Oui » aux longs trajets que les
-  // compteurs ne disent pas change ce que l'étape réclame, donc il fait partie du tirage.
+  // Sous les états de l'écran (`HorsColonnes`, 01/10/2026) : le « Oui » aux longs trajets que les
+  // compteurs ne disent pas change ce que l'étape réclame, et les « 10+ » touchés aussi (02/10/2026) —
+  // ils font partie du tirage.
+  const ETATS_HORS_COLONNES = [RIEN_HORS_COLONNES, UN_OUI_AUX_LONGS_TRAJETS, TOUS_LES_PLAFONDS];
   it('le champ réclamé appartient toujours à la table de son étape', () => {
-    for (const horsColonnes of [RIEN_HORS_COLONNES, UN_OUI_AUX_LONGS_TRAJETS]) {
+    for (const horsColonnes of ETATS_HORS_COLONNES) {
       for (const reponses of TIRAGES) {
         for (const etape of BILAN_STEP_ORDER) {
           const manque = manqueDeLEtape(etape, reponses, horsColonnes);
@@ -1829,7 +1944,9 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
   it('chaque champ déclaré est réclamé par au moins un tirage', () => {
     for (const etape of BILAN_STEP_ORDER) {
       const reclames = new Set(
-        TIRAGES.map((r) => manqueDeLEtape(etape, r)?.champ).filter((c): c is ChampDuBilan => c !== undefined)
+        ETATS_HORS_COLONNES.flatMap((horsColonnes) =>
+          TIRAGES.map((r) => manqueDeLEtape(etape, r, horsColonnes)?.champ)
+        ).filter((c): c is ChampDuBilan => c !== undefined)
       );
       expect([...reclames].sort()).toEqual([...CHAMPS_DE_L_ETAPE[etape]].sort());
     }

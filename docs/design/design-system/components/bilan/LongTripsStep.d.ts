@@ -1,6 +1,6 @@
 /** La part de `BilanAnswers` (src/types/bilan.ts) que l'étape « trajets de plus de 300 km » lit ou écrit. `null` = pas encore répondu. */
 export interface LongTripsStepAnswers {
-  /** Trajets en train sur une année type : 0 à 10, la dernière puce affichant « 10+ », que le lecteur d’écran dit « 10 trajets ou plus » ; `null` tant que rien n’est coché — une série laissée vide sous « Oui » vaut zéro. */
+  /** Trajets en train sur une année type : de 0 à 9 par les puces, et au-delà par le champ qu’ouvre « 10+ » (que le lecteur d’écran dit « 10 trajets ou plus ») ; `null` tant que rien n’est coché — une série laissée vide sous « Oui » vaut zéro, sauf sous « 10+ », où le champ vide se réclame. */
   train_long_trips_per_year: number | null;
   /** Trajets en autocar, même plage ; pas de question de suivi. */
   coach_long_trips_per_year: number | null;
@@ -20,5 +20,9 @@ export interface LongTripsStepProps {
   reponse: boolean | null;
   /** « Oui » ou « Non » touché : « Non » met les trois compteurs à 0, « Oui » les vide pour qu’aucune puce n’arrive cochée (`compteursApresLaReponse`). */
   repondre: (oui: boolean) => void;
+  /** « 10+ » est-elle la réponse de cette série ? Un nombre de dix ou plus le dit de lui-même. */
+  plafond?: (compte: 'train_long_trips_per_year' | 'coach_long_trips_per_year' | 'car_long_trips_per_year') => boolean;
+  /** « 10+ » touché (`true`), ou une autre puce de la série (`false`) : le dépôt en tient le drapeau hors des colonnes. */
+  choisirLePlafond?: (compte: 'train_long_trips_per_year' | 'coach_long_trips_per_year' | 'car_long_trips_per_year', choisi: boolean) => void;
 }
 export declare function LongTripsStep(props: LongTripsStepProps): JSX.Element;

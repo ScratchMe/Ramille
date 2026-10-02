@@ -93,6 +93,8 @@ const VARIABLES_INOFFENSIVES = {
   TRACE_LIEN: 'imprime des identifiants de diagnostic, sans rien changer au contrôle',
   HTTPS_PROXY:
     'lue par le pilote de recette (RECETTE.md §2.6), que le rejeu ne lance pas ; elle désigne une sortie réseau, pas une cible',
+  VERCEL_ENV:
+    'lue par le contrôle du build de production (verifier-origine-supabase-de-la-csp.mjs), que le build Vercel lance et le rejeu non',
 };
 const estEcartee = (nom) =>
   VARIABLES_ECARTEES.noms.includes(nom) || VARIABLES_ECARTEES.prefixes.some((p) => nom.startsWith(p));
@@ -250,8 +252,8 @@ function plan(ctx) {
         ...[
           ['verifier-titres-export', {}],
           ['verifier-configuration-export', FACTICE],
-          ['verifier-rendu-export', {}],
-          ['verifier-etats-export', {}],
+          ['verifier-rendu-export', FACTICE],
+          ['verifier-etats-export', FACTICE],
           ['verifier-assetlinks-export', {}],
         ].map(([s, env]) => ({
           nom: s,
