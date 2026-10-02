@@ -346,8 +346,8 @@ et ce que la vague a relevé en chemin est en §9.
   vraie. **La contre-lecture du même soir en a trouvé trois défauts côté base**, corrigés avant la
   fusion : « Le mois prochain » redit le mois suivant passait pour identique, alors qu'il vise un autre
   mois ; une modification posait la date du mot de la veille sur un cycle reconduit ; et la vue
-  d'analyse la comptait comme un gabarit quitté. **Une décision de produit y a été prise** : le
-  préremplissage redit le même mois — « Le mois prochain » choisi en septembre se rouvre en octobre sur
+  d'analyse la comptait comme un gabarit quitté. **Une décision de produit y a été prise, avec la
+  personne qui pilote, le 02/10/2026** : le préremplissage redit le même mois — « Le mois prochain » choisi en septembre se rouvre en octobre sur
   « Ce mois-ci ».
 - **D16 — « Choisir une action » de la carte de saison mène à la liste complète** (P-14), alors que les
   deux cartes choisies par le plan sont juste dessous. **Recommandation** : refermer la carte et

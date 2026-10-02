@@ -1,5 +1,5 @@
 -- Tests pgTAP : modifier l'intention sans libérer l'engagement (`v1-33` D15, migration
--- `20261002220000_modifier_l_intention_sans_liberer.sql`).
+-- `20261002220916_modifier_l_intention_sans_liberer.sql`).
 --
 -- « Modifier les jours » et « Modifier l'échéance » rappellent `commit_plan_action` sur l'action déjà
 -- engagée. Ce fichier garde ce que ce second appel fait, et ce qu'il ne fait pas :

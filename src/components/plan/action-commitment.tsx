@@ -131,9 +131,15 @@ export function ActionCommitment({
    * « Modifier les jours » ou « Modifier l'échéance » rappellent `commit_plan_action` sur la même
    * action, qui archive l'intention remplacée sans libérer (`modification`). Trois choses changent
    * par rapport à un engagement : le choix part de l'intention en place, la carte se referme à la
-   * lecture qui suit et non au premier rendu engagé — elle l'était déjà, et montrerait l'ancienne
-   * intention le temps de la relecture —, et la feuille des rappels ne s'ouvre pas (`onEngage`) : ce
-   * n'est pas un nouvel engagement.
+   * lecture qui rend l'intention envoyée et non au premier rendu engagé — elle l'était déjà, et
+   * montrerait l'ancienne intention le temps de la relecture ; une lecture en échec rend le
+   * sélecteur actif —, et la feuille des rappels ne s'ouvre pas (`onEngage`) : ce n'est pas un
+   * nouvel engagement.
+   *
+   * **Une lecture réussie qui arrive plus tard ne la referme pas** (assumé, contre-lecture du
+   * 02/10/2026) : après une lecture en échec, le sélecteur est rendu à la personne, actif ; le
+   * refermer à la lecture suivante le ferait disparaître sous son doigt. Il reste ouvert sur une
+   * carte qui dit déjà la nouvelle intention, et « C'est noté » retouché n'écrit rien et le referme.
    */
   const [modification, setModification] = useState(false);
   /**
@@ -202,13 +208,21 @@ export function ActionCommitment({
     // un autre appareil l'a engagée. Il restait ouvert, « C'est noté » à la place de « Changer
     // d'avis », et ne pouvait plus envoyer qu'une modification que l'écran aurait prise pour un
     // engagement. Il se referme sur la carte engagée.
+    // L'échec de l'envoi précédent part avec lui : la carte relue dit « Action engagée », et la
+    // phrase « Ton choix n'a pas été enregistré » resterait dessous — un engagement écrit dont la
+    // réponse s'était perdue, ou pris sur un autre appareil.
     setPicking(false);
     setDemande(false);
+    setError(null);
     setDays([]);
     setTiming(null);
   } else if (lectureAttendue === null && !committed && modification) {
     // Et l'inverse : l'action a été libérée ailleurs pendant qu'on la modifiait. Le sélecteur reste
     // ouvert, sa sélection gardée, mais c'est désormais un engagement — la feuille des rappels suivra.
+    // **Pas pendant l'aller-retour** : un envoi parti en modification garde ce traitement au retour
+    // (`onModifie`, pas de feuille), même si la base l'a pris pour un engagement. Il faut une
+    // libération sur un autre appareil pendant ces quelques centaines de millisecondes ; c'est
+    // consigné, pas traité.
     setModification(false);
     setEnvoyee(null);
   }

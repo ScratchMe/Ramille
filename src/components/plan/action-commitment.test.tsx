@@ -146,6 +146,21 @@ describe('ActionCommitment — jusqu’à la relecture', () => {
     }
   });
 
+  // L'engagement écrit dont la réponse s'est perdue : la carte affichait l'échec, puis une lecture la
+  // relit engagée — la phrase restait sous « Action engagée » (seconde contre-lecture du 02/10/2026).
+  it('la carte relue engagée efface l’échec de l’envoi qui l’avait engagée', async () => {
+    mockEngager.mockResolvedValue({ ok: false, message: 'Ton choix n’a pas été enregistré.' });
+    const { rerender } = render(carte());
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+    expect(await screen.findByText('Ton choix n’a pas été enregistré.')).toBeTruthy();
+
+    rerender(carte({ committed: true, intentionDays: [2], lectures: 4 }));
+    expect(screen.getByText('Changer d’avis')).toBeTruthy();
+    expect(screen.queryByText('Ton choix n’a pas été enregistré.')).toBeNull();
+  });
+
   // Une lecture partie avant le toucher — un retour de l'app au premier plan — se termine pendant
   // l'aller-retour de l'engagement : ce n'est pas « la lecture qui suit ».
   it('une lecture terminée pendant l’aller-retour ne relâche pas « C’est noté »', async () => {
@@ -294,10 +309,10 @@ describe('ActionCommitment — « C’est noté » en attente', () => {
  *   - la modification refermée à toute lecture terminée, sans reconnaître l'intention envoyée → « après
  *     une lecture en échec, le sélecteur redevient actif… » (de ce bloc) ;
  *   - le sélecteur d'engagement qui ne se remet pas à zéro sur une action relue engagée → « après une
- *     lecture en échec, la carte relue engagée… » (du premier bloc), par le focus : la carte s'affiche,
- *     mais le sélecteur caché reste ouvert, et le rouvrir ne porte plus le focus sur la question. Une
- *     première version affichait aussi la carte engagée sur `committed && !modification` : redondante
- *     avec la remise à zéro, aucune mutation ne la distinguait, et elle est retirée ;
+ *     lecture en échec, la carte relue engagée… » (du premier bloc) : le sélecteur reste, et « Changer
+ *     d'avis » n'est pas là. Une première version affichait aussi la carte engagée sur `committed &&
+ *     !modification` : redondante avec la remise à zéro, aucune mutation ne la distinguait, et elle est
+ *     retirée — le test garde depuis, par le focus, que le sélecteur est refermé et non caché ;
  *   - la modification gardée sur une action libérée ailleurs → « une action relue libérée… » ;
  *   - l'échec gardé par « Annuler » → « « Annuler » efface l'échec… » ;
  *   - le focus rendu au bouton après « Annuler » → « « Annuler » le rend au lien… » ;
@@ -305,6 +320,11 @@ describe('ActionCommitment — « C’est noté » en attente', () => {
  *   - `onModifie` jamais appelé → « envoie la même action… » ;
  *   - le focus rendu au lien à toute fermeture d'une modification (la version d'avant) → « une
  *     modification écrite ne le rend pas au lien… ».
+ *
+ * **Et deux de plus, sur la seconde contre-lecture** : l'échec gardé quand la carte est relue engagée
+ * → « la carte relue engagée efface l'échec… », seul ; les jours comparés sans tri dans
+ * `cleDeLIntention` → « reconnaît les jours envoyés dans un autre ordre… », seul. Aucun test ne gardait
+ * ni l'un ni l'autre.
  */
 describe('ActionCommitment — modifier l’intention sans libérer (D15)', () => {
   it('rouvre le choix prérempli, à côté de « Changer d’avis »', () => {
@@ -333,6 +353,23 @@ describe('ActionCommitment — modifier l’intention sans libérer (D15)', () =
 
     rerender(carte({ committed: true, intentionDays: [2], lectures: 4 }));
     expect(screen.getByText('Modifier les jours')).toBeTruthy();
+    expect(screen.queryByText('C’est noté')).toBeNull();
+  });
+
+  // Prérempli « mardi et jeudi », mardi décoché puis recoché : l'écran envoie [4, 2], la base
+  // reconnaît la même intention et garde [2, 4]. La lecture rend [2, 4], et c'est bien l'intention
+  // envoyée — sans le tri de `cleDeLIntention`, le sélecteur redevenait actif sans que rien ait échoué.
+  it('reconnaît les jours envoyés dans un autre ordre, et se referme', async () => {
+    const { rerender } = render(carte({ committed: true, intentionDays: [2, 4] }));
+    fireEvent.press(screen.getByText('Modifier les jours'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+    expect(mockEngager).toHaveBeenCalledWith('a1', { days: [4, 2] }, false);
+
+    rerender(carte({ committed: true, intentionDays: [2, 4], lectures: 4 }));
+    expect(screen.getByText('Changer d’avis')).toBeTruthy();
     expect(screen.queryByText('C’est noté')).toBeNull();
   });
 

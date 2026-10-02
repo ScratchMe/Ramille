@@ -7,7 +7,8 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/plan/action-commitment.tsx — trois états : bouton « Je m'y engage », sélecteur d'intention, et
 // la carte engagée, qui porte deux liens : « Modifier les jours » (ou « Modifier l'échéance ») et « Changer d'avis ». Le
 // premier rouvre le sélecteur **prérempli**, sans libérer l'action (`v1-33` D15, 02/10/2026) : c'est `state="picking"`
-// avec les jours ou l'échéance en place ; dans le dépôt, il se referme à la lecture qui suit, sans feuille des rappels.
+// avec les jours ou l'échéance en place — une échéance relative au mois qu'elle vise ; dans le dépôt, il se referme à la
+// lecture qui rend l'intention envoyée (une lecture en échec le rend actif), sans feuille des rappels.
 // `relecture` (01/10/2026, audit P-1) : « C'est noté » a abouti et l'écran relit le plan — le sélecteur reste, son
 // bouton inactif, jusqu'à la carte engagée ; dans le dépôt, c'est `lectures` qui le dit.
 // `demande` (01/10/2026, D13 de `v1-33`) : « C'est noté » a été touché sur une intention incomplète. Il n'est pas

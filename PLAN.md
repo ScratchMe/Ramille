@@ -187,7 +187,7 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   **figé** : C3.8 reformule plusieurs gabarits, et relire le libellé courant réécrirait ce que la
   personne a lu en choisissant.
 - **Modifier l'intention ne libère pas, et laisse sa trace** (`v1-33` D15, 02/10/2026,
-  `20261002220000_modifier_l_intention_sans_liberer.sql`, test `44`). « Modifier les jours » et
+  `20261002220916_modifier_l_intention_sans_liberer.sql`, test `44`). « Modifier les jours » et
   « Modifier l'échéance » rouvrent le sélecteur prérempli et rappellent `commit_plan_action` sur
   l'action **déjà engagée** : l'intention remplacée s'archive (raison `modification`), une intention
   identique ne réécrit rien — les jours comparés comme un ensemble, une échéance relative identique

@@ -272,8 +272,9 @@ begin
 
   select pg_get_constraintdef(oid) into v_contrainte
     from pg_constraint where conname = 'plan_action_commitments_archive_released_reason_check';
-  if v_contrainte is null or position('''modification''' in v_contrainte) = 0
-     or position('''retrait''' in v_contrainte) = 0 then
+  if v_contrainte is null or exists (
+       select 1 from unnest(array['rebilan', 'saison', 'changement', 'contexte', 'retrait', 'modification']) r
+        where position('''' || r || '''' in v_contrainte) = 0) then
     raise exception 'CONTROLE: l''archive n''admet pas ses six raisons (%)', v_contrainte;
   end if;
 
