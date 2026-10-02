@@ -148,7 +148,9 @@ select is(
 -- les colonnes, la RLS raisonnant par ligne et jamais par colonne.
 --
 -- Le point de C est passé à `expired` comme le fait la génération de la période suivante
--- (20260904180000) : il sert de second refus, à côté du point déjà répondu de A.
+-- (20260904180000) : il sert de refus. Le point de A, répondu, se corrige depuis le 02/10/2026 tant
+-- que sa période court (`v1-33` §6) ; le refus d'un point répondu dont la période est passée est
+-- gardé par le fichier `46`.
 
 update public.engagement_checkins
 set status = 'expired'
@@ -193,10 +195,12 @@ select results_eq(
   'répondre ne touche ni les libellés snapshotés ni la clé d''idempotence de la génération'
 );
 
-select throws_ok(
+-- **Une seconde réponse est une correction depuis le 02/10/2026** (`v1-33` §6) : ce point est celui de
+-- la semaine interrogée, donc il se corrige jusqu'au point suivant. Le refus d'un point répondu dont la
+-- période est passée, et ce que la correction ne touche pas, sont gardés par le fichier `46`.
+select lives_ok(
   $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, 'non') $stmt$,
-  '22023', null,
-  'un point déjà répondu n''accepte pas une seconde réponse'
+  'un point répondu de la période interrogée se corrige (v1-33 §6)'
 );
 
 -- Même sous la session du propriétaire, un ordre direct est refusé par le privilège (42501) avant

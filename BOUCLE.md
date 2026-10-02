@@ -286,7 +286,8 @@ douze devenaient une suite de « Non ». Six points à connaître :
   plus écrire `status = 'answered'` sans genre** (cinq fichiers corrigés), ce qui est une bonne
   chose — une fixture qui écrit un état que la production ne peut pas produire éprouve une fiction.
 - **Le backfill passe sous le trigger, pas à travers.** `prevent_answered_checkin_update` lève sur
-  toute mise à jour d'une ligne déjà répondue (C1.12) : le rattrapage des points historiques le
+  toute mise à jour d'une ligne déjà répondue (C1.12) — sauf, depuis le 02/10/2026, la correction
+  annoncée par le RPC, plus bas : le rattrapage des points historiques le
   désactive le temps de l'écriture et le réarme ensuite, et la contrainte n'est posée **qu'après** —
   l'ordre inverse ferait échouer l'`alter` sur les lignes pas encore rattrapées. Un contrôle de la
   migration vérifie que le trigger est bien réarmé : l'oublier défairait C1.12 en silence.
@@ -329,12 +330,40 @@ snapshotés qui existent précisément pour qu'un re-bilan ne réécrive pas un 
 + `on conflict do nothing`), dont la réécriture bloque ou duplique la période suivante ; `status`,
 qui accepte `expired` — un point en attente pouvait disparaître de la carte du plan sans avoir été
 répondu ; et `responded_at`, qui venait de l'horloge du téléphone. Le RPC pose les trois seules
-colonnes d'une réponse, avec `now()` du serveur, et refuse un point déjà répondu ou clos. C'est
+colonnes d'une réponse, avec `now()` du serveur, et refuse un point clos — et un point déjà répondu
+dont la période est passée (voir la correction, juste après). C'est
 aussi le seul endroit où la forme d'une réponse change. **C'est arrivé dès le lendemain** : la
 troisième réponse (« pas de trajet cette période ») est livrée depuis C2.4, et `p_reponse boolean`
 ne pouvant pas porter un troisième état, ce fut bien une migration et non un paramètre de plus —
 la signature est `repondre_au_checkin(uuid, text)`, la version booléenne **supprimée**, et le
 raisonnement complet est au paragraphe de C2.4, plus haut.
+
+**La réponse se corrige jusqu'au point suivant** (`v1-33` §6, décidé le 02/10/2026 avec la personne
+qui pilote, `20261002234720_la_reponse_au_point_se_corrige.sql`, test `46`). « Non » et « Oui » sont à
+8 px l'un de l'autre, et un toucher erroné était définitif. La carte répondue offre « Modifier ma
+réponse », qui rouvre les trois réponses sous « Ta réponse : oui. » (`phraseDeLaReponseEnPlace`) ; la
+réplique est celle de la nouvelle réponse, et « deux fois de suite » la suit, puisqu'il se dérive à la
+lecture. Ce qu'il faut en savoir :
+
+- **La borne est celle de l'affichage.** `repondre_au_checkin` réécrit un point répondu tant que son
+  `period_start` est celui de la période interrogée — la formule des deux générateurs, et celle de
+  `debutDePeriodeInterrogee` qui borne la carte répondue côté client : **les trois se touchent
+  ensemble**. Elle tombe à minuit UTC le lundi (ou le 1er), et non à l'arrivée du point suivant, à
+  6 h — qui n'arrive jamais quand la boucle s'est arrêtée. Au-delà, le refus est celui d'un point clos
+  (`22023`, « déjà répondu, et sa période est passée »).
+- **C1.12 tient pour tout le reste.** Le trigger n'accepte la réécriture d'une ligne répondue que sur
+  une annonce du RPC — `ramille.correction_du_point`, un réglage local à la transaction, posé juste
+  avant l'`update` et retiré aussitôt — et alors **seules les trois colonnes d'une réponse** changent
+  (`response_kind`, `response`, `responded_at`), le reste comparé en bloc. Un backfill qui réécrit une
+  ligne répondue passe toujours par le désarmement du trigger, pas par cette annonce.
+- **`responded_at` repart à maintenant** : c'est l'heure de la dernière réponse, que le pied date
+  (« Répondu mercredi. ») et que lisent la purge pour inactivité et l'administration — une correction
+  est une activité. Elle **remplace** la première : un point du mois corrigé trois semaines plus tard
+  change la semaine « a répondu » de `analytics.retention_par_cohorte`, celle d'une semaine révolue
+  pouvant baisser après coup. Le statut reste `answered`, donc les rappels ne repartent pas.
+- **Côté carte, la réponse donnée ici ne vaut que tant que la ligne n'a pas bougé** (`geste`,
+  `checkin-card.tsx`) : une correction faite sur un autre appareil se relit sur une carte restée
+  montée, et l'état local la masquait pour toujours.
 
 **Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
 (C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement

@@ -109,8 +109,9 @@ select is(
 -- rappel ou en doublerait un.
 
 -- Un cinquième profil plutôt que de ressusciter A : `prevent_answered_checkin_update`
--- interdit de modifier un check-in déjà répondu, et c'est une bonne règle — une réponse est
--- définitive. Ce trigger n'apparaît qu'en rejouant le fichier **en entier** : la première
+-- interdit de modifier un check-in déjà répondu, et c'est une bonne règle — une réponse ne se
+-- réécrit pas, sauf par la correction de `repondre_au_checkin`, le temps de sa période et sur ses
+-- trois colonnes seules (`v1-33` §6, 02/10/2026) ; remettre A à `pending` n'en est pas une. Ce trigger n'apparaît qu'en rejouant le fichier **en entier** : la première
 -- version de ce bloc remettait A à `pending` et n'a échoué qu'en CI.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous) values
   ('ba111111-1111-1111-1111-111111111115', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-etalement@test.local', 'x', now(), now(), now(), false);

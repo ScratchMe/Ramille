@@ -14,6 +14,7 @@ import {
   genreDeReponse,
   joursDeLaQuestion,
   libelleSansObjet,
+  phraseDeLaReponseEnPlace,
   moisFrancais,
   periodePrecedente,
   phraseDeSecondRenforcement,
@@ -585,6 +586,22 @@ describe('genreDeReponse', () => {
   // point non répondu, jamais une réponse inventée.
   it.each([null, undefined, '', 'true', 'peut-être'])('%s ne traverse pas', (valeur) => {
     expect(genreDeReponse(valeur)).toBeNull();
+  });
+});
+
+// **La réponse en place, dans les mots des boutons** (`v1-33` §6, 02/10/2026). Éprouvé le même jour :
+// la majuscule du libellé gardée → « sans objet… », seul ; le point final oublié → les trois, seuls.
+describe('phraseDeLaReponseEnPlace', () => {
+  it('dit « oui » et « non » comme les boutons', () => {
+    expect(phraseDeLaReponseEnPlace(point(), 'oui')).toBe('Ta réponse : oui.');
+    expect(phraseDeLaReponseEnPlace(point(), 'non')).toBe('Ta réponse : non.');
+  });
+
+  it('dit « sans objet » avec le libellé du lien, sa période comprise, en minuscule après les deux-points', () => {
+    expect(phraseDeLaReponseEnPlace(point(), 'sans_objet')).toBe('Ta réponse : pas de trajet la semaine dernière.');
+    expect(
+      phraseDeLaReponseEnPlace(point({ loop_type: 'extras', poste: 'travel', period_start: '2026-09-01' }), 'sans_objet')
+    ).toBe('Ta réponse : pas de voyage en septembre.');
   });
 });
 
