@@ -13,7 +13,7 @@
 // ce qui compare deux artefacts vit à côté du code, pas dedans.
 //
 // **Pourquoi la dernière migration et pas la première.** `recompute_assessment_results` a été
-// réécrite six fois ; la base porte la version de la dernière migration qui la redéfinit, dans
+// réécrite bien des fois ; la base porte la version de la dernière migration qui la redéfinit, dans
 // l'ordre des versions. Lire `20260824180200` donnerait les valeurs d'origine, dont plusieurs ont
 // changé depuis (les facteurs avion, le train longue distance).
 
@@ -29,6 +29,8 @@ const PAIRES = [
   ['semainesDomicileTravail', 'weeks_per_year_commute'],
   ['semainesLoisirs', 'weeks_per_year_standard'],
   ['rarement', 'leisure_freq_rarely'],
+  // Ajoutée le 02/10/2026 avec la quatrième fréquence des loisirs (`v1-33` D5).
+  ['deuxOuTroisParMois', 'leisure_freq_multiple_monthly'],
   ['hebdomadaire', 'leisure_freq_weekly'],
   ['plusieurs', 'leisure_freq_multiple'],
   ['distanceSortieParDefautKm', 'leisure_default_distance'],

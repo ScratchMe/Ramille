@@ -50,7 +50,7 @@ export const HYPOTHESES = {
   /** Semaines par an pour les loisirs — l'année entière, eux ne s'arrêtent pas. */
   semainesLoisirs: 52,
   /** Sorties par semaine selon la fréquence déclarée. */
-  sortiesParSemaine: { rarement: 0.25, hebdomadaire: 1, plusieurs: 3 },
+  sortiesParSemaine: { rarement: 0.25, deuxOuTroisParMois: 0.6, hebdomadaire: 1, plusieurs: 3 },
   /** Distance d'une sortie quand la personne répond « rarement » et ne donne rien d'autre. */
   distanceSortieParDefautKm: 15,
   /** Distance retenue pour un vol court ou moyen-courrier. */
@@ -127,7 +127,7 @@ export function sectionsDeMethode(dateDuBilan: string | null): SectionDeMethode[
       lignes: [
         `Ton trajet domicile-travail compte ${nombre(h.semainesDomicileTravail)} semaines par an — 52 moins les congés, les jours fériés et les absences.`,
         `Un second mode déclaré sans sa part du trajet en prend la moitié (${nombre(h.partDuSecondMode * 100)} %) : c’était le cas de tous les bilans faits avant qu’on pose la question.`,
-        `« Rarement » vaut ${nombre(h.sortiesParSemaine.rarement)} sortie par semaine, « une fois par semaine » ${nombre(h.sortiesParSemaine.hebdomadaire)}, « plusieurs fois » ${nombre(h.sortiesParSemaine.plusieurs)} — sur ${nombre(h.semainesLoisirs)} semaines.`,
+        `« Rarement » vaut ${nombre(h.sortiesParSemaine.rarement)} sortie par semaine, « deux ou trois fois par mois » ${nombre(h.sortiesParSemaine.deuxOuTroisParMois)}, « une fois par semaine » ${nombre(h.sortiesParSemaine.hebdomadaire)}, « plusieurs fois » ${nombre(h.sortiesParSemaine.plusieurs)} — sur ${nombre(h.semainesLoisirs)} semaines.`,
         `Sans distance déclarée, une sortie compte ${nombre(h.distanceSortieParDefautKm)} km.`,
         `Un vol compte ${nombre(h.volCourtKm)} km s’il est court ou moyen-courrier, ${nombre(h.volLongKm)} km s’il est long-courrier — un aller, pas un aller-retour.`,
         // **Un aller, comme un vol** (01/10/2026, `v1-33` D2) : `recompute_assessment_results` multiplie

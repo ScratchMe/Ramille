@@ -5,7 +5,7 @@ export interface ContextStepAnswers {
   /** Jours de trajet par semaine : la question du télétravail les nomme, et ne se pose qu'à partir de deux. Lue seulement. */
   commute_days_per_week: number | null;
   /** Fréquence des sorties du week-end : « rarement » change la seconde phrase de l'introduction. Lue seulement. */
-  leisure_frequency: 'rarely' | 'weekly' | 'multiple_weekly' | null;
+  leisure_frequency: 'rarely' | 'multiple_monthly' | 'weekly' | 'multiple_weekly' | null;
   /** « Dans quel type de zone vis-tu ? » : Urbain dense, Périurbain, Rural. */
   zone_type: 'urbain_dense' | 'periurbain' | 'rural' | null;
   /** « Comment sont les transports en commun près de chez toi ? » : Bon, Limité, Inexistant. */

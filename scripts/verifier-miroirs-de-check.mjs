@@ -167,6 +167,15 @@ const MIROIRS = [
     module: 'src/types/bilan.ts',
     colonne: 'assessment_answers.teletravail',
   },
+  // La fréquence des loisirs manquait à la liste depuis le premier jour — un miroir parmi « les plus
+  // anciens » de TESTING-GARDES.md §2.7. Déclarée le 02/10/2026 en lui ajoutant sa quatrième réponse
+  // (`v1-33` D5) : c'est ce contrôle qui voit une réponse admise par la base et absente de l'écran.
+  {
+    genre: 'valeurs',
+    constante: 'REPONSES_FREQUENCE_DES_LOISIRS',
+    module: 'src/types/bilan.ts',
+    colonne: 'assessment_answers.leisure_frequency',
+  },
   // Le poste dominant : la base le borne aussi, et `POSTES` est la liste que l'app lit partout.
   {
     genre: 'valeurs',
@@ -196,6 +205,12 @@ const MIROIRS = [
     constante: 'LeisureDistanceBracket',
     module: 'src/types/bilan.ts',
     colonne: 'assessment_answers.leisure_distance_bracket',
+  },
+  {
+    genre: 'type',
+    constante: 'LeisureFrequency',
+    module: 'src/types/bilan.ts',
+    colonne: 'assessment_answers.leisure_frequency',
   },
   {
     genre: 'type',

@@ -29,6 +29,7 @@ import {
   reponseAuxLongsTrajets,
   RIEN_HORS_COLONNES,
   type HorsColonnes,
+  REPONSES_FREQUENCE_DES_LOISIRS,
   teletravailSePose,
   memesReponses,
   nettoyerSaisieNumerique,
@@ -116,6 +117,8 @@ describe('isStepVisible', () => {
   it('masque leisure_detail seulement si leisure_frequency === "rarely"', () => {
     expect(isStepVisible('leisure_detail', answers({ leisure_frequency: 'rarely' }))).toBe(false);
     expect(isStepVisible('leisure_detail', answers({ leisure_frequency: 'weekly' }))).toBe(true);
+    // La quatrième réponse (02/10/2026, `v1-33` D5) est une sortie déclarée : son détail se demande.
+    expect(isStepVisible('leisure_detail', answers({ leisure_frequency: 'multiple_monthly' }))).toBe(true);
     expect(isStepVisible('leisure_detail', answers({ leisure_frequency: null }))).toBe(true);
   });
 
@@ -1536,7 +1539,7 @@ const DOMAINES: { [K in keyof BilanAnswers]: readonly BilanAnswers[K][] } = {
   commute_two_wheeler_type: [null, ...TWO_WHEELER_TYPE_OPTIONS.map((o) => o.value)],
   commute_train_type: [null, ...TRAIN_TYPE_OPTIONS.map((o) => o.value)],
   commute_velo_type: [null, ...VELO_TYPE_OPTIONS.map((o) => o.value)],
-  leisure_frequency: [null, 'rarely', 'weekly', 'multiple_weekly'],
+  leisure_frequency: [null, ...REPONSES_FREQUENCE_DES_LOISIRS.map((r) => r.value)],
   leisure_mode: [null, ...MODES],
   leisure_distance_bracket: [null, 'lt_5', '5_15', '15_30', '30_plus'],
   leisure_distance_km: [null, 12, 120],

@@ -62,6 +62,7 @@ describe('sectionsDeMethode', () => {
     expect(texte).toContain('45 semaines');
     expect(texte).toContain('52 semaines');
     expect(texte).toContain('0,25 sortie');
+    expect(texte).toContain('« deux ou trois fois par mois » 0,6,');
     expect(texte).toContain('15 km');
     expect(texte).toContain('1\u00a0500 km');
     expect(texte).toContain('9\u00a0000 km');

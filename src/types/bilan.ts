@@ -5,7 +5,7 @@ import type { TransportModeId } from '@/constants/transport-modes';
 
 export type DistanceBracket = 'lt_5' | '5_15' | '15_30' | '30_50' | '50_plus';
 export type LeisureDistanceBracket = 'lt_5' | '5_15' | '15_30' | '30_plus';
-export type LeisureFrequency = 'rarely' | 'weekly' | 'multiple_weekly';
+export type LeisureFrequency = 'rarely' | 'multiple_monthly' | 'weekly' | 'multiple_weekly';
 export type ZoneType = 'urbain_dense' | 'periurbain' | 'rural';
 export type TcAccess = 'bon' | 'limite' | 'inexistant';
 export type HouseholdVehicles = '0' | '1' | '2_plus';
@@ -263,6 +263,25 @@ export const PARTS_DU_SECOND_MODE: { value: number; label: string }[] = [
   { value: 0.25, label: 'Un quart environ' },
   { value: 0.5, label: 'La moitié environ' },
   { value: 0.75, label: 'Les trois quarts environ' },
+];
+
+/**
+ * Les quatre réponses à B2.1, dans l'ordre de l'écran.
+ *
+ * **« Deux ou trois fois par mois » est la quatrième depuis le 02/10/2026** (`v1-33` D5) : entre
+ * « Rarement » (0,25 sortie par semaine) et « Une fois par semaine » (1), il n'y avait rien, et qui
+ * sort deux ou trois fois par mois se trompait d'un facteur 2 environ. Elle vaut 0,6 sortie par
+ * semaine (`HYPOTHESES.sortiesParSemaine`), et elle se comporte comme une sortie déclarée : seule
+ * « Rarement » saute le détail des sorties et passe sur le résiduel.
+ *
+ * Miroir du `check` de `assessment_answers.leisure_frequency`, comparé à la base
+ * (`scripts/verifier-miroirs-de-check.mjs`), comme l'union `LeisureFrequency`.
+ */
+export const REPONSES_FREQUENCE_DES_LOISIRS: { value: LeisureFrequency; label: string }[] = [
+  { value: 'rarely', label: 'Rarement — une fois par mois ou moins' },
+  { value: 'multiple_monthly', label: 'Deux ou trois fois par mois' },
+  { value: 'weekly', label: 'Une fois par semaine' },
+  { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
 ];
 
 /**

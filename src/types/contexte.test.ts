@@ -8,6 +8,7 @@ import {
   phraseDuCalculDuContexte,
   type ChoixDeContexte,
 } from '@/types/contexte';
+import { REPONSES_FREQUENCE_DES_LOISIRS } from '@/types/bilan';
 
 const choix = (surcharge: Partial<ChoixDeContexte> = {}): ChoixDeContexte => ({
   zone_type: 'periurbain',
@@ -121,7 +122,9 @@ describe('phraseDuCalculDuContexte', () => {
   });
 
   it('dit la règle à tous les autres', () => {
-    for (const frequence of ['weekly', 'multiple_weekly', null]) {
+    const autres = REPONSES_FREQUENCE_DES_LOISIRS.map((r) => r.value).filter((f) => f !== 'rarely');
+    expect(autres).toHaveLength(3); // « Deux ou trois fois par mois » comprise (02/10/2026, `v1-33` D5)
+    for (const frequence of [...autres, null]) {
       expect(phraseDuCalculDuContexte(frequence)).toBe(
         'Elles n’entrent pas dans le calcul de ton bilan.'
       );

@@ -74,7 +74,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         mot="À peu près, c’est déjà bien. Je ne vérifie rien, et personne ne relit."
         rendre={(a, u) => <CommuteHasTripStep answers={a} update={u} />} />
       <Etape etape="leisure_frequency" section="Loisirs du week-end" step={5} depart={{ commute_has_regular_trip: true }}
-        mot="Pense à une semaine ordinaire, pas à la meilleure ni à la pire."
+        mot="Pense à un mois ordinaire, pas au meilleur ni au pire."
         rendre={(a, u) => <LeisureFrequencyStep answers={a} update={u} />} />
       <Etape etape="flights" section="Voyages longue distance" step={7} depart={{ commute_has_regular_trip: true }}
         mot="De mémoire, sans aller chercher. C’est l’ordre de grandeur qui compte."
