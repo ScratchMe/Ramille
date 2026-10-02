@@ -133,17 +133,22 @@ export function FlightsStep({
               refDuChamp={cibleDuNombre}
               marque={nombreMarque}
               valeur={answers.flights_total_per_year}
+              // **Toute frappe dit « 10+ »** (contre-lecture du 02/10/2026) : le champ relu d'un re-bilan
+              // ou d'un brouillon n'a pas de drapeau, et corriger 14 en 16 passe par « 1 » — sans lui, le
+              // nombre seul refermait le champ sous le doigt, clavier compris.
+              //
               // **La part de vols courts ne suit pas la frappe** : la ramener sous chaque valeur tapée
               // perdait la réponse pendant qu'on retape le total (« 20 » → « 2 » → « 25 »). Une part
               // devenue plus grande que le total se réclame (`manqueDeLEtape`). Seul un total nul la
-              // pose à zéro, comme sa puce.
-              onChange={(valeur) =>
-                update(
-                  valeur === 0
-                    ? { flights_total_per_year: 0, flights_short_per_year: 0 }
-                    : { flights_total_per_year: valeur }
-                )
-              }
+              // pose à zéro, comme sa puce — et la repose à vide quand il en repart : ce zéro n'était pas
+              // une réponse (`volsCourtsApresTotal`).
+              onChange={(valeur) => {
+                choisirLePlafond(true);
+                if (valeur === 0) update({ flights_total_per_year: 0, flights_short_per_year: 0 });
+                else if (answers.flights_total_per_year === 0)
+                  update({ flights_total_per_year: valeur, flights_short_per_year: null });
+                else update({ flights_total_per_year: valeur });
+              }}
               unite="vols"
               label="Nombre de vols sur une année"
             />
@@ -192,7 +197,9 @@ export function FlightsStep({
                 ))}
               </GroupeDeChoix>
             )}
-            {answers.flights_short_per_year !== null && (
+            {/* Seulement quand la part tient sous le total : au-dessus, l'étape la réclame, et « Aucun vol
+                long-courrier ne sera compté » dirait le contraire. */}
+            {answers.flights_short_per_year !== null && answers.flights_short_per_year <= total && (
               <ThemedText type="small">{decompteDesLongsCourriers(longCount)}</ThemedText>
             )}
           </View>

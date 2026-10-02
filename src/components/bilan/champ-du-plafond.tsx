@@ -6,7 +6,7 @@ import { NumericField } from '@/components/bilan/numeric-field';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { Depliage } from '@/lib/mouvement';
-import { compteARelire } from '@/types/bilan';
+import { COMPTE_MAXIMUM, compteARelire } from '@/types/bilan';
 
 /**
  * Le champ qu'ouvre la puce « 10+ » d'un compte — les vols, et chaque série des longs trajets (`v1-33`
@@ -52,7 +52,15 @@ export function ChampDuPlafond({
         <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>
           Environ combien, sur une année ?
         </IntituleDuChamp>
-        <NumericField ref={refDuChamp} value={valeur} onChange={onChange} unit={unite} label={label} entier />
+        {/* Borné à la colonne, un `smallint` : au-delà, l'insert échouerait sans dire où (`COMPTE_MAXIMUM`). */}
+        <NumericField
+          ref={refDuChamp}
+          value={valeur}
+          onChange={(nombre) => onChange(nombre === null ? null : Math.min(nombre, COMPTE_MAXIMUM))}
+          unit={unite}
+          label={label}
+          entier
+        />
         {compteARelire(valeur) && (
           <ThemedText type="small" themeColor="textSecondary">
             C’est beaucoup pour une année : vérifie le chiffre.

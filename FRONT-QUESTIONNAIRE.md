@@ -67,7 +67,10 @@ voyage est en `FRONT.md` §1.
   - **un nombre de dix ou plus dit « 10+ » de lui-même** (`plafondChoisi`) — un re-bilan, un brouillon,
     un bilan d'avant où « 10+ » valait 10 ; ce que la colonne ne sait pas dire, « 10+ » touché et le champ
     vide, ou un nombre plus petit tapé dedans, est un drapeau de `HorsColonnes` (`plafondsChoisis`),
-    hors du brouillon comme le « Oui ». Le champ vide se réclame par **son** champ (`nombre_de_vols`,
+    hors du brouillon comme le « Oui ». **Et toute frappe dans le champ le pose** : corriger un 14 relu
+    en 16 passe par « 1 », et le nombre seul refermait le champ sous le doigt (contre-lecture du
+    02/10/2026). Un nombre plus petit tapé dans le champ — 3, ou 0 — laisse « 10+ » cochée : c'est
+    encore le champ qui répond, et une autre puce le referme. Le champ vide se réclame par **son** champ (`nombre_de_vols`,
     `trajets_en_train`…), dont l'intitulé se marque, et une série sous « 10+ » se réclame **avant**
     « au moins un trajet » : une série vide vaut zéro ;
   - **au-delà de dix vols, la part de vols courts se saisit**, même question, un champ borné au total
@@ -76,7 +79,9 @@ voyage est en `FRONT.md` §1.
     manquante ;
   - **un compte est entier** (`NumericField` `entier`) : la virgule reste affichée et « 12,5 » vaut 12,
     jamais 125 ; et l'unité étant le nom compté, le libellé s'annonce seul. Au-delà de cinquante, une
-    ligne de relecture (`compteARelire`), jamais un blocage, sur le motif de la distance domicile-travail.
+    ligne de relecture (`compteARelire`), jamais un blocage, sur le motif de la distance domicile-travail ;
+    et le champ s'arrête à la borne de la colonne, un `smallint` (`COMPTE_MAXIMUM`, 32 767) — au-delà,
+    l'insert échouait sans dire où.
   Vider le champ de la voiture fait reposer sa motorisation et son nombre de personnes : un compte vide
   les efface, et c'est `normaliserReponses` seule qui efface.
 - **Une précision s'ouvre sous l'option qu'elle décrit, et la dernière exception est tombée**

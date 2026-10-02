@@ -619,8 +619,11 @@ describe('isStepComplete', () => {
   //   - le seuil `>= 10` passé à `> 10` → « un nombre de dix ou plus dit 10+ de lui-même », seul ;
   //   - la part de vols courts plus grande que le total acceptée → « plus de vols courts que de vols »,
   //     et sa phrase épinglée ;
-  //   - les séries vérifiées après « au moins un trajet » → « une série sous 10+, champ vide… », la
-  //     phrase épinglée de la voiture, et le test d'écran de la voiture ;
+  //   - les séries vérifiées seulement quand aucune ne déclare de trajet → « une série sous 10+, champ
+  //     vide… », la phrase épinglée de la voiture, et deux tests d'écran (la voiture, « Oui » retouché) ;
+  //   - les séries vérifiées **après** « au moins un trajet » (rejouée le soir même, sur la contre-lecture :
+  //     la description d'avant nommait cette mutation-ci et en avait joué une autre) → les deux phrases
+  //     épinglées du train et de l'autocar, seules — ce sont elles qui gardent l'ordre ;
   //   - `compteARelire` à `>=` → « au-delà de cinquante… », ici et à l'écran ;
   //   - `saisieVersEntier` sans `Math.trunc` → « la partie entière… », seul.
   describe('le champ sous « 10+ »', () => {

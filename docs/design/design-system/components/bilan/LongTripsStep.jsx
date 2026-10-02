@@ -90,7 +90,7 @@ export function LongTripsStep({ answers, update, reponse, repondre, plafond: pla
       </GroupeDeChoix>
       {plafond(compte) && (
         <ChampDuPlafond valeur={answers[compte]} unite="trajets" label={'Nombre de trajets ' + intitule.toLowerCase() + ' sur une année'}
-          onChange={(v) => update({ [compte]: v })} />
+          onChange={(v) => { choisirLePlafond(compte, true); update({ [compte]: v }); }} />
       )}
     </>
   );

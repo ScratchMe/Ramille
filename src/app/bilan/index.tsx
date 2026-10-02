@@ -379,7 +379,8 @@ export default function BilanQuestionnaire() {
   // **Et les « 10+ » touchés** (`v1-33` §6, 02/10/2026) : la puce ouvre un champ vide, et rien dans la
   // colonne ne distingue alors « 10+ » d'une question pas encore répondue — ni un nombre plus petit tapé
   // dans le champ d'un nombre choisi par sa puce. Même régime que le « Oui » : à côté des réponses, hors
-  // du brouillon, et sans perte — un nombre de 10 ou plus dit « 10+ » de lui-même (`plafondChoisi`).
+  // du brouillon. Un nombre de 10 ou plus dit « 10+ » de lui-même (`plafondChoisi`) ; seul un champ
+  // laissé vide se perd au brouillon relu, ce que `HorsColonnes` détaille.
   const [plafondsChoisis, setPlafondsChoisis] = useState<readonly CompteAPlafond[]>([]);
   const horsColonnes: HorsColonnes = { ouiAuxLongsTrajets, plafondsChoisis };
   const choisirLePlafond = (compte: CompteAPlafond, choisi: boolean) =>
@@ -388,12 +389,15 @@ export default function BilanQuestionnaire() {
     );
   const plafond = (compte: CompteAPlafond) => plafondChoisi(compte, answers[compte], horsColonnes);
   // Les deux ensemble, et par `update` : c'est une réponse donnée, qui arme le défilement à
-  // l'ouverture des séries (`reponsesDonnees`) et la sauvegarde du brouillon. « Oui » comme « Non »
-  // réécrivent les trois séries : leurs « 10+ » partent avec.
+  // l'ouverture des séries (`reponsesDonnees`) et la sauvegarde du brouillon. Quand la réponse
+  // réécrit les trois séries — « Non », ou « Oui » sans aucun trajet —, leurs « 10+ » partent avec ;
+  // « Oui » retouché sur des trajets déjà déclarés ne réécrit rien, et les garde.
   const repondreAuxLongsTrajets = (oui: boolean) => {
+    const series = compteursApresLaReponse(answers, oui);
     setOuiAuxLongsTrajets(oui);
-    setPlafondsChoisis((avant) => avant.filter((c) => c === 'flights_total_per_year'));
-    update(compteursApresLaReponse(answers, oui));
+    if (Object.keys(series).length > 0)
+      setPlafondsChoisis((avant) => avant.filter((c) => c === 'flights_total_per_year'));
+    update(series);
   };
   // **Toucher une série, c'est répondre « Oui »** : les séries ne se voient que sous lui. Sans le
   // drapeau, un « Oui » relu des compteurs — un re-bilan prérempli de deux trajets en train, un

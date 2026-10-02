@@ -8,7 +8,7 @@ export interface FlightsStepAnswers {
 /** Étape du questionnaire — le nombre de vols d'une année type, puis la part des courts. */
 export interface FlightsStepProps {
   answers: FlightsStepAnswers;
-  /** Écrit les réponses touchées ; changer le total ramène les courts sous lui, dans le même appel — et passer de zéro vol à plusieurs repose la question à vide. */
+  /** Écrit les réponses touchées. Par les puces, changer le total ramène les courts sous lui, dans le même appel ; par le champ, le total ne les ramène pas — une part restée au-dessus se réclame. Passer de zéro vol à plusieurs repose la question à vide, par les puces comme par le champ. */
   update: (patch: Partial<FlightsStepAnswers>) => void;
   /** « 10+ » est la réponse, le champ encore vide ou un nombre plus petit tapé dedans ; un total de dix ou plus le dit de lui-même. */
   plafond?: boolean;

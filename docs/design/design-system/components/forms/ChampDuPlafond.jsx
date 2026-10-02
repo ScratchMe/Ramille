@@ -10,14 +10,16 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // en `small` `textSecondary` — jamais un blocage, jamais une alerte : soixante vols par an existent, ce qu'on attrape
 // est le 250 tapé au lieu de 25. Dans le dépôt, il s'ouvre dans un `Depliage` suivi à l'ouverture ; rien ne se dessine.
 
-// `COMPTE_A_RELIRE` (src/types/bilan.ts), recopiée.
+// `COMPTE_A_RELIRE` et `COMPTE_MAXIMUM` (src/types/bilan.ts), recopiées : la seconde est la borne de la colonne, un
+// `smallint`, à laquelle le champ s'arrête.
 const COMPTE_A_RELIRE = 50;
+const COMPTE_MAXIMUM = 32767;
 
 export function ChampDuPlafond({ marque = false, valeur = null, onChange, unite = 'vols', label = 'Nombre de vols sur une année' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
       <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>Environ combien, sur une année ?</IntituleDuChamp>
-      <NumericField value={valeur} onChange={onChange} unit={unite} label={label} entier />
+      <NumericField value={valeur} onChange={(n) => onChange && onChange(n === null ? null : Math.min(n, COMPTE_MAXIMUM))} unit={unite} label={label} entier />
       {valeur !== null && valeur > COMPTE_A_RELIRE && (
         <ThemedText type="small" themeColor="textSecondary">C’est beaucoup pour une année : vérifie le chiffre.</ThemedText>
       )}

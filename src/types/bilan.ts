@@ -855,7 +855,8 @@ export function volsCourtsApresTotal(
  * Une réponse d'écran sans colonne vit donc à côté, ici, tenue par l'écran du questionnaire — et
  * `manqueDeLEtape` la reçoit, pour rester la seule source de « ce qui manque ».
  *
- * **Une seule aujourd'hui : le « Oui » aux longs trajets, quand les compteurs ne le disent pas.**
+ * **Deux aujourd'hui** : les « 10+ » touchés (`plafondsChoisis`, plus bas), et **le « Oui » aux longs
+ * trajets, quand les compteurs ne le disent pas.**
  * « Oui » laisse les trois séries sans puce cochée ; sans ce drapeau, un « Oui » qu'on vient de
  * toucher ne se distinguerait pas d'une question qu'on n'a pas encore vue. Il n'est **pas** écrit dans
  * le brouillon (sa forme est celle de `src/lib/bilan-draft.ts`) : un questionnaire quitté sur « Oui »
@@ -866,9 +867,12 @@ export type HorsColonnes = {
   ouiAuxLongsTrajets: boolean;
   /**
    * Les compteurs dont la puce « 10+ » est la réponse choisie (`v1-33` §6, 02/10/2026) — voir
-   * `plafondChoisi`. Ni dans le brouillon ni dans le re-bilan, et c'est sans perte : un nombre saisi
-   * de 10 ou plus dit « 10+ » de lui-même, et un champ laissé vide se relit comme une question à
-   * reposer.
+   * `plafondChoisi`. Ni dans le brouillon ni dans le re-bilan. Un nombre saisi de 10 ou plus dit
+   * « 10+ » de lui-même, donc seul un champ **laissé vide** se perd au brouillon relu, et pas de la même
+   * façon partout (contre-lecture du 02/10/2026) : le total des vols redevient vide, et la question se
+   * repose ; une série des longs trajets redevient vide aussi, mais une série vide vaut zéro — si une
+   * autre déclare un trajet, l'étape passe, la série sans puce cochée. C'est la tolérance des séries
+   * laissées vides sous « Oui » (D1), pas une perte de nombre : aucun n'avait été saisi.
    */
   plafondsChoisis: readonly CompteAPlafond[];
 };
@@ -897,7 +901,8 @@ export type CompteAPlafond =
  * « Environ combien, sur une année ? », **réclamé** comme la distance sous « Plus de 30 km » — un
  * nombre par défaut serait le motif que D1 a retiré des vols, une réponse qu'on n'a pas donnée.
  *
- * **La colonne porte le nombre saisi, et rien d'autre** : la base admettait déjà tout compte positif.
+ * **La colonne porte le nombre saisi, et rien d'autre** : la base admettait déjà tout compte positif
+ * jusqu'à la borne d'un `smallint` (`COMPTE_MAXIMUM`).
  * Un nombre de 10 ou plus dit « 10+ » de lui-même — un re-bilan prérempli, un brouillon relu, un bilan
  * d'avant où « 10+ » enregistrait 10. Ce que la colonne ne sait pas dire, c'est « 10+ » touché et le
  * champ encore vide, ou un nombre plus petit tapé dedans : c'est le drapeau (`HorsColonnes`).
@@ -913,6 +918,14 @@ export function plafondChoisi(compte: CompteAPlafond, valeur: number | null, hor
  * (`COMMUTE_DISTANCE_A_RELIRE_KM`).
  */
 export const COMPTE_A_RELIRE = 50;
+
+/**
+ * La borne des quatre colonnes de compte, des `smallint` (contre-lecture du 02/10/2026) : au-delà, l'insert
+ * échoue en 22003, et chaque nouvel essai échoue de même sans que rien ne désigne l'étape. Une faute de
+ * frappe à cinq chiffres s'y arrête donc, au champ, et la ligne de relecture la signale. Une borne plus
+ * basse serait un blocage, et se déciderait avec la personne qui pilote.
+ */
+export const COMPTE_MAXIMUM = 32767;
 
 export function compteARelire(valeur: number | null): boolean {
   return valeur !== null && valeur > COMPTE_A_RELIRE;
@@ -986,6 +999,11 @@ export function distanceDomicileTravailARelire(reponses: BilanAnswers): boolean 
  * `fait_des_longs_trajets`, la question d'entrée (« Oui / Non »), qu'aucune colonne ne porte — elle se
  * dérive des compteurs (`reponseAuxLongsTrajets`) ; et `nombre_de_longs_trajets`, le trajet qu'un
  * « Oui » réclame, et que trois colonnes peuvent donner — la même raison que la distance du trajet.
+ *
+ * **Et les champs qu'ouvre « 10+ » en ajoutent quatre** (02/10/2026, `v1-33` §6) : `nombre_de_vols` et
+ * `trajets_en_train`, `trajets_en_autocar`, `trajets_en_voiture`. La colonne est celle de la puce,
+ * mais la question est autre — « Environ combien, sur une année ? », sous les puces —, donc un champ
+ * à elle, dont l'intitulé se marque.
  */
 export type ChampDuBilan =
   | 'commute_has_regular_trip'
@@ -1143,8 +1161,9 @@ export function seMarque(etape: BilanStepId, champ: ChampDuBilan): boolean {
  * avance sur une étape incomplète, ou une ligne qui réclame un champ déjà rempli.
  *
  * **`horsColonnes` est obligatoire, et c'est voulu** (01/10/2026) : c'est ce que l'écran a reçu sans
- * colonne pour l'écrire — le « Oui » aux longs trajets. Un appel qui l'oublierait réclamerait « une
- * réponse » sous un « Oui » coché ; le typecheck est ce qui empêche de l'oublier.
+ * colonne pour l'écrire — le « Oui » aux longs trajets, et depuis le 02/10/2026 les « 10+ » touchés.
+ * Un appel qui l'oublierait réclamerait « une réponse » sous un « Oui » coché, et laisserait passer un
+ * « 10+ » sans nombre ; le typecheck est ce qui empêche de l'oublier.
  */
 export function manqueDeLEtape(
   step: BilanStepId,

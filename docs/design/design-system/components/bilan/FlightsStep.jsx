@@ -89,7 +89,14 @@ export function FlightsStep({ answers, update, plafond: plafondTouche = false, c
         </GroupeDeChoix>
         {plafond && (
           <ChampDuPlafond valeur={answers.flights_total_per_year} unite="vols" label="Nombre de vols sur une année"
-            onChange={(v) => update(v === 0 ? { flights_total_per_year: 0, flights_short_per_year: 0 } : { flights_total_per_year: v })} />
+            onChange={(v) => {
+              // Toute frappe dit « 10+ » : corriger 14 en 16 passe par « 1 ». Un total nul pose la part à zéro, et en
+              // repartant la repose à vide ; sinon, la part ne suit pas la frappe.
+              choisirLePlafond(true);
+              if (v === 0) update({ flights_total_per_year: 0, flights_short_per_year: 0 });
+              else if (answers.flights_total_per_year === 0) update({ flights_total_per_year: v, flights_short_per_year: null });
+              else update({ flights_total_per_year: v });
+            }} />
         )}
       </div>
 
@@ -109,7 +116,7 @@ export function FlightsStep({ answers, update, plafond: plafondTouche = false, c
                 ))}
               </GroupeDeChoix>
             )}
-            {courts !== null && (
+            {courts !== null && courts <= total && (
               <ThemedText type="small">
                 {decompteDesLongsCourriers(longCount)}
               </ThemedText>

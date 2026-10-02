@@ -153,6 +153,12 @@ export function LongTripsStep({
     choisirLePlafond(compte, false);
     update({ [compte]: n, ...patch });
   };
+  // **Toute frappe dit « 10+ »** (contre-lecture du 02/10/2026) : une série relue à 14 n'a pas de
+  // drapeau, et la corriger en 16 passe par « 1 » — le nombre seul refermait le champ sous le doigt.
+  const saisir = (compte: CompteAPlafond, valeur: number | null) => {
+    choisirLePlafond(compte, true);
+    update({ [compte]: valeur });
+  };
 
   return (
     <View style={styles.container}>
@@ -203,7 +209,7 @@ export function LongTripsStep({
                   champ="trajets_en_train"
                   valeur={answers.train_long_trips_per_year}
                   plafond={plafond('train_long_trips_per_year')}
-                  saisir={(valeur) => update({ train_long_trips_per_year: valeur })}
+                  saisir={(valeur) => saisir('train_long_trips_per_year', valeur)}
                 >
                   {/* Le groupe ferme la série, et **c'est son nom qui la distingue, pas son rôle** (A2-9) :
                       les séries de l'étape sont rigoureusement identiques — la même rangée, de « 0 » au
@@ -251,7 +257,7 @@ export function LongTripsStep({
                   champ="trajets_en_autocar"
                   valeur={answers.coach_long_trips_per_year}
                   plafond={plafond('coach_long_trips_per_year')}
-                  saisir={(valeur) => update({ coach_long_trips_per_year: valeur })}
+                  saisir={(valeur) => saisir('coach_long_trips_per_year', valeur)}
                 >
                   <GroupeDeChoix question={nomDeLaSerie(EN_AUTOCAR)} style={styles.chipsWrap}>
                     {COUNT_CHOICES.map((n) => (
@@ -278,14 +284,15 @@ export function LongTripsStep({
                     **Sous « 10+ », la boîte attend le nombre** : elle tient à un compte non nul, et
                     `normaliserReponses` efface ses deux réponses sous un compte vide. Toucher « 10+ » après
                     trois trajets, ou vider le champ pour le retaper, les fait donc reposer — un effacement
-                    qui ne vit que là, la règle de `FRONT-QUESTIONNAIRE.md` §2.6. */}
+                    qui ne vit que là, la règle de `FRONT-QUESTIONNAIRE.md` §2.6. Corriger un nombre sans
+                    vider le champ (« 14 » → « 16 ») passe par « 1 », un compte non nul : rien ne se perd. */}
                 <SerieDeTrajets
                   intitule={EN_VOITURE}
                   marqueDeLIntitule={seriesMarquees}
                   champ="trajets_en_voiture"
                   valeur={answers.car_long_trips_per_year}
                   plafond={plafond('car_long_trips_per_year')}
-                  saisir={(valeur) => update({ car_long_trips_per_year: valeur })}
+                  saisir={(valeur) => saisir('car_long_trips_per_year', valeur)}
                   apres={
                     /* La précision s'ouvre sous les puces qui la déclenchent — cf. `precision-mode.tsx`.
                        **Une seule boîte pour les deux** (`v1-31` §2.2) : elles décrivent la même voiture.

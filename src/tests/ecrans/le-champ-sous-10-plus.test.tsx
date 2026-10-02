@@ -16,6 +16,15 @@
  *   - la part de vols courts sans borne → « au-delà de dix vols… », seul ;
  *   - la puce « 3 » qui ne retire pas le drapeau → « une autre puce referme le champ », seul ;
  *   - « Oui » ou « Non » qui gardent les drapeaux des séries → « Non retire les 10+ des séries », seul.
+ *
+ * **Et le soir même, sur la contre-lecture**, sept de plus, chacune ne fait tomber qu'un test :
+ *   - la frappe dans le champ des vols qui ne pose pas le drapeau → « corriger un nombre relu… » ;
+ *   - la même dans une série → « corriger une série relue… » ;
+ *   - un total qui repart de zéro sans reposer la part → « un total tapé 0 puis remonté… » ;
+ *   - « Oui » retouché qui efface toujours les drapeaux des séries → « retoucher Oui… » ;
+ *   - le décompte rendu même quand la part dépasse le total → « retaper le total… » ;
+ *   - le total qui ramène la part à chaque frappe (`volsCourtsApresTotal`) → « retaper le total… » ;
+ *   - le champ sans la borne du `smallint` → « le champ s'arrête à la borne… ».
  */
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
@@ -135,6 +144,51 @@ describe('les vols', () => {
     expect(screen.queryByLabelText('Nombre de vols sur une année')).toBeNull();
   });
 
+  // **Corriger un nombre relu passe par un nombre plus petit** (contre-lecture du 02/10/2026) : sans
+  // drapeau, « 1 » — la frappe qui mène de 14 à 16 — refermait le champ sous le doigt, clavier compris.
+  // La frappe est jouée chiffre à chiffre : un `changeText('16')` d'un coup est un collé (TESTING.md §1.9).
+  test('corriger un nombre relu garde le champ ouvert, même en passant sous dix', async () => {
+    await ouvrirSur('flights', { ...AUX_VOLS, flights_total_per_year: 14, flights_short_per_year: 2 }, QUESTION_DES_VOLS);
+    taper('Nombre de vols sur une année', '1');
+    expect(coche('10 vols ou plus')).toBe(true);
+    taper('Nombre de vols sur une année', '16');
+    expect(coche('10 vols ou plus')).toBe(true);
+    expect(screen.getByLabelText('Nombre de vols sur une année').props.value).toBe('16');
+  });
+
+  // Un total nul pose la part à zéro ; en repartir la repose à vide — ce zéro n'était pas une réponse.
+  test('un total tapé « 0 » puis remonté repose la part de vols courts à vide', async () => {
+    await ouvrirSur('flights', AUX_VOLS, QUESTION_DES_VOLS);
+    fireEvent.press(screen.getByRole('radio', { name: '10 vols ou plus' }));
+    taper('Nombre de vols sur une année', '0');
+    taper('Nombre de vols sur une année', '15');
+    expect(screen.getByLabelText('Nombre de vols courts').props.value).toBe('');
+    expect(screen.queryByText(/(sera|seront) comptés?\.$/)).toBeNull();
+  });
+
+  // **Le total ne ramène pas la part** : la ramener à chaque frappe perdait la réponse pendant qu'on
+  // retape le total. Plus grande qu'un total redescendu, elle se tait — ni puce cochée, ni décompte — et
+  // revient quand le total remonte.
+  test('retaper le total en passant sous la part ne la perd pas', async () => {
+    await ouvrirSur('flights', AUX_VOLS, QUESTION_DES_VOLS);
+    fireEvent.press(screen.getByRole('radio', { name: '10 vols ou plus' }));
+    taper('Nombre de vols sur une année', '25');
+    taper('Nombre de vols courts', '20');
+    taper('Nombre de vols sur une année', '2');
+    expect(screen.queryByText(/(sera|seront) comptés?\.$/)).toBeNull();
+    taper('Nombre de vols sur une année', '25');
+    expect(screen.getByLabelText('Nombre de vols courts').props.value).toBe('20');
+    expect(screen.getByText('5 vols long-courriers seront comptés.')).toBeTruthy();
+  });
+
+  // La colonne est un `smallint` : au-delà, l'insert échouait sans dire où.
+  test('le champ s’arrête à la borne de la colonne', async () => {
+    await ouvrirSur('flights', AUX_VOLS, QUESTION_DES_VOLS);
+    fireEvent.press(screen.getByRole('radio', { name: '10 vols ou plus' }));
+    taper('Nombre de vols sur une année', '40000');
+    expect(screen.getByLabelText('Nombre de vols sur une année').props.value).toBe('32767');
+  });
+
   test('un nombre déjà au-delà de dix — un re-bilan, un bilan d’avant — dit « 10+ » et se relit dans le champ', async () => {
     await ouvrirSur('flights', { ...AUX_VOLS, flights_total_per_year: 14, flights_short_per_year: 2 }, QUESTION_DES_VOLS);
     expect(coche('10 vols ou plus')).toBe(true);
@@ -156,6 +210,29 @@ describe('les longs trajets', () => {
     taper('Nombre de trajets en voiture sur une année', '14');
     // La boîte de la voiture attendait le nombre : elle s'ouvre avec lui.
     expect(screen.getByText('Quelle motorisation ?')).toBeTruthy();
+  });
+
+  test('corriger une série relue garde son champ, et la boîte de la voiture avec ses réponses', async () => {
+    await ouvrirSur(
+      'long_trips',
+      { ...AUX_LONGS_TRAJETS, car_long_trips_per_year: 14, car_long_trips_engine: 'thermique', car_long_trips_occupancy: 2 },
+      QUESTION_DES_LONGS_TRAJETS
+    );
+    taper('Nombre de trajets en voiture sur une année', '1');
+    taper('Nombre de trajets en voiture sur une année', '16');
+    expect(coche('10 trajets ou plus', 2)).toBe(true);
+    expect(screen.getByLabelText('Nombre de trajets en voiture sur une année').props.value).toBe('16');
+    expect(coche('Thermique')).toBe(true);
+  });
+
+  // « Oui » retouché sur des trajets déjà déclarés ne réécrit rien : il garde les « 10+ » des séries.
+  test('retoucher « Oui » garde le « 10+ » d’une série et son champ vide, réclamé', async () => {
+    await ouvrirSur('long_trips', AUX_LONGS_TRAJETS, QUESTION_DES_LONGS_TRAJETS);
+    fireEvent.press(screen.getAllByRole('radio', { name: '10 trajets ou plus' })[1]);
+    fireEvent.press(screen.getByRole('radio', { name: 'Oui' }));
+    expect(coche('10 trajets ou plus', 1)).toBe(true);
+    fireEvent.press(screen.getByRole('button', { name: 'Suivant' }));
+    expect(screen.getByText('Il manque encore le nombre de trajets en autocar.')).toBeTruthy();
   });
 
   test('« Non » retire les « 10+ » des séries : rouvertes par « Oui », elles ne réclament rien d’office', async () => {
