@@ -1,6 +1,12 @@
 /** Feuille après « C’est noté » — dialogue nommé « Les rappels », sans en-tête visible ; Ramille explique, puis le choix du canal de rappel. */
 export interface FeuilleRappelsProps {
   boucle?: 'hebdo' | 'mensuel';
+  /**
+   * Boucle mensuelle, action choisie pour « Le mois prochain » : le mois du premier point qui l'interroge,
+   * en minuscules (« décembre »). Ramille dit alors « Début décembre, … » au lieu de « Au début du mois
+   * prochain, … » (`v1-33` D14, 02/10/2026).
+   */
+  moisNomme?: string | null;
   /** La permission système de l'appareil : elle écrit le détail de la ligne « notification » et le libellé du bouton. */
   permission?: 'demandable' | 'accordee' | 'fermee';
   /** Les lignes de `lignesDeReglage` ; par défaut, un appareil sans compte. */

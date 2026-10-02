@@ -1,19 +1,23 @@
 import { Stack } from 'expo-router';
 import { createContext, useContext, useMemo, useRef } from 'react';
 
+import type { EngagementPris } from '@/types/rappels';
+
 // Pile de l'onglet Plan : l'écran lui-même, et la liste complète des pistes (`plan/pistes`).
 // Même forme que `suivi/_layout.tsx`, et pour la même raison — une pile imbriquée dans un
 // onglet garde la barre visible avec cet onglet actif, ce qui est la seule façon d'avoir la
 // barre sur l'écran des pistes sans dupliquer un composant de barre.
 
 /**
- * Ce qu'un engagement pris sur l'écran des pistes laisse au plan (C5.2, décidé en `v1-17` §7.3).
+ * Ce qu'un engagement pris sur l'écran des pistes laisse au plan (C5.2, décidé en `v1-17` §7.3) : un
+ * `EngagementPris` (`src/types/rappels.ts`).
  *
  * **Un drapeau local, jamais `?engagee=1`.** Trois raisons, et la première est la plus forte : ce
- * n'est pas un booléen qui doit voyager mais le **poste**, parce que la feuille des rappels promet
- * un contact *sur l'action qu'on vient d'engager* (`boucleDeLAction`, constat n°1 de la recette du
- * 14/09/2026 — quelqu'un qui a un trajet domicile-travail et s'engage sur un vol s'entendait
- * promettre le lundi). Un paramètre d'URL porterait donc une valeur publique de plus à valider, et
+ * n'est pas un booléen qui doit voyager mais le **poste** — et depuis le 02/10/2026 l'**échéance**
+ * (`v1-33` D14) —, parce que la feuille des rappels promet un contact *sur l'action qu'on vient
+ * d'engager* (`boucleDeLAction`, constat n°1 de la recette du 14/09/2026 — quelqu'un qui a un trajet
+ * domicile-travail et s'engage sur un vol s'entendait promettre le lundi), et nomme son mois pour
+ * « Le mois prochain » (`ligneDAttenteDeLaFeuille`). Un paramètre d'URL porterait donc une valeur publique de plus à valider, et
  * une valeur fautive recréerait à la main le défaut qu'on vient de corriger. Ensuite : les deux
  * paramètres d'URL du produit (`?rappel=1`, `?nouveau=1`) existent parce que leur émetteur est
  * **hors** de l'app, alors qu'ici les deux écrans sont dans le même processus et la même pile. Et
@@ -27,7 +31,6 @@ import { createContext, useContext, useMemo, useRef } from 'react';
  * Une `ref` et non un `useState` : le déposer ne doit pas déclencher de rendu sur l'écran qu'on
  * quitte, et le plan le lit dans un effet, pas pendant son rendu.
  */
-type EngagementPris = { poste: string | null };
 
 type Passage = {
   /** Déposé par l'écran des pistes **avant** d'en revenir (`revenirOu`), jamais après ni sous

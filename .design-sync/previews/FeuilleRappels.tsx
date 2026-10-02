@@ -21,6 +21,14 @@ export const BoucleMensuelle = () => (
 );
 
 /**
+ * Une action de sorties choisie pour « Le mois prochain » : le point du mois suivant ne l'interroge
+ * pas, c'est celui d'après — Ramille nomme donc son mois (`v1-33` D14, 02/10/2026).
+ */
+export const LeMoisProchain = () => (
+  <FeuilleRappels boucle="mensuel" moisNomme="décembre" permission="accordee" canal="push" />
+);
+
+/**
  * Les notifications fermées dans les réglages du téléphone : la ligne le dit et porte le lien vers
  * les réglages, et c'est la seule situation où on l'affirme — une absence de jeton, à elle seule,
  * n'accuse personne. Les lignes sont celles que la feuille dérive elle-même : ne pas les réécrire

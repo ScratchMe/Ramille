@@ -95,7 +95,12 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   n'interrogeait pas (les sorties quand les voyages pèsent plus, ou l'inverse). La boucle suit
   désormais l'action (`v1-27` §12.25), donc la phrase n'a pas bougé — c'est le serveur qui la rend
   vraie, tant que le dernier bilan ouvre une boucle mensuelle : un bilan plus récent qui n'en ouvre
-  plus (sorties rares, aucun voyage) la laisse sans point, par la règle de §12.21.
+  plus (sorties rares, aucun voyage) la laisse sans point, par la règle de §12.21. **Et depuis le
+  02/10/2026 elle suit aussi l'échéance** (`v1-33` D14) : une action de sorties choisie pour « Le mois
+  prochain » n'est interrogée qu'au point d'après, et Ramille nomme son mois — « Début décembre, je
+  reviens te demander si tu l'as faite » (`ligneDAttenteDeLaFeuille`, paire avec
+  `generate_extras_checkins`, `BOUCLE.md` §2). L'échéance voyage avec le poste
+  (`EngagementPris`), par `onEngage` et par le passage de la pile.
 - **Une phrase qui dit quoi faire donne le moyen de le faire, et la porte se rend sous la ligne qui
   la porte** (13.4, recette web du 16/09/2026). « Rattache un compte pour recevoir le mot par
   email. » était un `ThemedView` nu sur le plan : le seul chemin était l'icône de compte en haut à

@@ -287,6 +287,12 @@ export const RAMILLE = {
   engagementAttenteHebdo: 'Je te laisse mener ton action. Lundi, je reviens te demander si tu l’as faite.',
   engagementAttenteMensuel:
     'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.',
+  /**
+   * La variante d'une action de sorties choisie pour « Le mois prochain » (`v1-33` D14, décidée le
+   * 02/10/2026) : le point du mois suivant ne l'interroge pas — elle n'était pas encore à faire —,
+   * c'est celui d'après. `{mois}` est le mois où il part, nommé : jamais un délai, le moment lui-même.
+   */
+  engagementAttenteMoisNomme: 'Je te laisse mener ton action. Début {mois}, je reviens te demander si tu l’as faite.',
 
   /** La question de la feuille — le choix du canal vient après, et il est du produit. */
   choixCanal: 'Comment tu préfères que je te fasse signe ?',

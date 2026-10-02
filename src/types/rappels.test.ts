@@ -4,6 +4,7 @@ import {
   affichageDeLaVeille,
   boucleAVenir,
   boucleDeLAction,
+  ligneDAttenteDeLaFeuille,
   CANAUX_ANDROID,
   canalEffectif,
   canalPreselectionne,
@@ -637,6 +638,41 @@ describe('laBoucleDuPointTourne', () => {
   it('sans réponse du serveur, la boucle est tenue pour tournante', () => {
     expect(laBoucleDuPointTourne(null, 'commute')).toBe(true);
     expect(laBoucleDuPointTourne(null, 'extras')).toBe(true);
+  });
+});
+
+describe('ligneDAttenteDeLaFeuille', () => {
+  // **« Le mois prochain » ne revient pas au début du mois prochain** (`v1-33` D14, 02/10/2026). Une
+  // action choisie en octobre pour novembre n'est pas interrogée par le point du 1er novembre, qui
+  // porte sur octobre : le serveur lui pose la question générique (test pgTAP `43`). C'est le point
+  // du 1er décembre qui la demande, et la feuille le nomme. Le mois se compte depuis le jour de
+  // l'engagement, en heure locale — Jest tourne en `Europe/Paris`.
+  //
+  // Éprouvé en le cassant, le 02/10/2026 (TESTING.md §1.1) : `+ 1` au lieu de `+ 2` → les deux
+  // premiers ; le modulo retiré → « passe l'année », seul ; la branche ouverte à toute échéance →
+  // « les autres échéances gardent… », seul.
+  const oct = new Date(2026, 9, 15, 12);
+
+  it('nomme le mois d’après le suivant pour « Le mois prochain »', () => {
+    expect(ligneDAttenteDeLaFeuille('mensuel', 'le_mois_prochain', oct)).toBe(
+      'Je te laisse mener ton action. Début décembre, je reviens te demander si tu l’as faite.'
+    );
+  });
+
+  it('passe l’année : choisie en novembre, c’est début janvier ; en décembre, début février', () => {
+    expect(ligneDAttenteDeLaFeuille('mensuel', 'le_mois_prochain', new Date(2026, 10, 30, 23, 30))).toContain(
+      'Début janvier,'
+    );
+    expect(ligneDAttenteDeLaFeuille('mensuel', 'le_mois_prochain', new Date(2026, 11, 1, 0, 30))).toContain(
+      'Début février,'
+    );
+  });
+
+  it('les autres échéances gardent « Au début du mois prochain », et la semaine son lundi', () => {
+    for (const echeance of ['ce_mois', 'prochaine_occasion', 'au_prochain_voyage', 'avant_le_prochain_bilan', null] as const) {
+      expect(ligneDAttenteDeLaFeuille('mensuel', echeance, oct)).toBe(RAMILLE.engagementAttenteMensuel);
+    }
+    expect(ligneDAttenteDeLaFeuille('hebdo', null, oct)).toBe(RAMILLE.engagementAttenteHebdo);
   });
 });
 

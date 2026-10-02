@@ -64,12 +64,14 @@ describe('engagementDeLaPeriodeCourante', () => {
     });
   });
 
-  it('lit aussi une intention en échéance fermée', () => {
+  // Une échéance relative se relit au mois qu'elle vise depuis le 02/10/2026 (`formatIntention`,
+  // contre-lecture de `v1-33` D14) : « Ce mois-ci », choisi en septembre, se dit « en septembre ».
+  it('lit aussi une intention en échéance fermée, au mois qu’elle vise', () => {
     const c = cycle({
       actions: [action({ committed_at: '2026-09-10T08:00:00Z', intention_timing: 'ce_mois' })],
     });
 
-    expect(engagementDeLaPeriodeCourante(c, '2026-09-18')?.intention).toBe('ce mois-ci');
+    expect(engagementDeLaPeriodeCourante(c, '2026-09-18')?.intention).toBe('en septembre');
   });
 
   it('rend l’action sans intention quand la ligne n’en porte pas', () => {

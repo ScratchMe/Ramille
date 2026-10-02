@@ -110,6 +110,29 @@ describe('formatIntentionTiming', () => {
     expect(formatIntentionTiming('au_prochain_voyage')).toBe('à mon prochain projet de voyage');
     expect(formatIntentionTiming('avant_le_prochain_bilan')).toBe('avant mon prochain bilan');
   });
+
+  // **Une échéance relative se relit au mois qu'elle vise** (02/10/2026, contre-lecture de `v1-33`
+  // D14) : « le mois prochain », choisi en octobre, se lisait « décembre » en novembre. Le mois se
+  // compte depuis l'engagement, en heure de Paris — `moisEnHeureDeParis`, éprouvé sous d'autres
+  // fuseaux dans `checkin.test.ts`. Éprouvé le même jour : le décalage de « Le mois prochain » ramené
+  // à 0 → « vise le mois suivant… », seul.
+  it('vise le mois suivant pour « Le mois prochain », le mois du choix pour « Ce mois-ci »', () => {
+    expect(formatIntentionTiming('le_mois_prochain', '2026-10-15T10:00:00Z')).toBe('en novembre');
+    expect(formatIntentionTiming('ce_mois', '2026-10-15T10:00:00Z')).toBe('en octobre');
+    expect(formatIntentionTiming('le_mois_prochain', '2026-12-20T10:00:00Z')).toBe('en janvier');
+  });
+
+  it('lit le mois en heure de Paris : le 31 octobre à 23 h 30 UTC, c’est déjà novembre', () => {
+    expect(formatIntentionTiming('ce_mois', '2026-10-31T23:30:00Z')).toBe('en novembre');
+    expect(formatIntentionTiming('ce_mois', '2026-07-31T21:30:00Z')).toBe('en juillet');
+    expect(formatIntentionTiming('ce_mois', '2026-07-31T22:30:00Z')).toBe('en août');
+  });
+
+  it('garde le libellé du choix sans date d’engagement, ou pour une échéance qui ne vise pas un mois', () => {
+    expect(formatIntentionTiming('le_mois_prochain')).toBe('le mois prochain');
+    expect(formatIntentionTiming('le_mois_prochain', 'pas une date')).toBe('le mois prochain');
+    expect(formatIntentionTiming('prochaine_occasion', '2026-10-15T10:00:00Z')).toBe('à ma prochaine occasion');
+  });
 });
 
 describe('formatIntention', () => {

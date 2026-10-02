@@ -46,6 +46,7 @@ import {
   phraseDesPistesSuffisantes,
   pistesDuPlan,
   RAISONS_ANNONCABLES,
+  type IntentionTiming,
   type ReponsesDeContexte,
 } from '@/types/plan';
 import { daysSince, regimeDeRebilan, titreDuRebilan } from '@/types/suivi';
@@ -119,6 +120,7 @@ import {
   lireLesBouclesAVenir,
   ouvertureDeLaFeuille,
   type CanalPrefere,
+  type EngagementPris,
   type OuvertureDeLaFeuille,
   type Permission,
   type ReponseALaVeille,
@@ -500,6 +502,8 @@ export default function Plan() {
    * le poste `commute` (C2.1) et ne lui demandera jamais rien sur son vol.
    */
   const [posteEngage, setPosteEngage] = useState<string | null>(null);
+  /** Son échéance, pour la même feuille : « Le mois prochain » lui fait nommer un autre mois (D14). */
+  const [echeanceEngagee, setEcheanceEngagee] = useState<IntentionTiming | null>(null);
 
   // Appelée quand un engagement vient d'être pris — y compris « Choisir celle-ci à la place », qui
   // en prend un —, jamais quand on le libère. La feuille entière ne s'ouvre qu'une fois par appareil :
@@ -523,9 +527,10 @@ export default function Plan() {
       };
     }, [])
   );
-  const proposerLesRappels = useCallback(async (poste: string | null) => {
+  const proposerLesRappels = useCallback(async ({ poste, echeance }: EngagementPris) => {
     if (!rappels) return;
     setPosteEngage(poste);
+    setEcheanceEngagee(echeance);
     const [feuilleDejaVue, veilleDejaProposee] = await Promise.all([
       aDejaVuLaFeuilleDeRappel(),
       aDejaProposeLaVeille(),
@@ -715,9 +720,9 @@ export default function Plan() {
   const carteEngageeAMontrer = useRef(false);
   const focusApresLaFeuille = useRef(false);
   const surEngagement = useCallback(
-    (poste: string | null) => {
+    (engagement: EngagementPris) => {
       engagementAMontrer.current = true;
-      void proposerLesRappels(poste);
+      void proposerLesRappels(engagement);
     },
     [proposerLesRappels]
   );
@@ -1818,6 +1823,7 @@ export default function Plan() {
           <FeuilleRappels
             prefs={rappels}
             boucle={boucleDeLAction(posteEngage)}
+            echeance={echeanceEngagee}
             permission={permission}
             ouverture={ouvertureDeFeuille}
             onFerme={fermerLaFeuille}

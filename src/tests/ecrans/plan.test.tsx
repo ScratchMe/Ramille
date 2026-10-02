@@ -84,9 +84,17 @@ jest.mock('@/lib/supabase', () => {
   };
 });
 
+/**
+ * Le focus de l'écran, éteint sauf où un test l'allume : la feuille des rappels ne s'ouvre que sur un
+ * plan au premier plan (`auPremierPlan`), que seul un focus pose.
+ */
+let mockFocus = false;
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
-  useFocusEffect: () => {},
+  useFocusEffect: (effet: () => void | (() => void)) => {
+    const { useEffect } = jest.requireActual('react');
+    useEffect(() => (mockFocus ? effet() : undefined), [effet]);
+  },
   useLocalSearchParams: () => ({}),
   useScrollToTop: () => {},
 }));
@@ -123,9 +131,11 @@ jest.mock('@/lib/premier-parcours', () => ({ aVuLePremierPlan: async () => true,
 jest.mock('@/lib/compte', () => ({ lireEtatDuRattachement: () => mockEtatDuRattachement() }));
 /** Les réglages de rappel lus — `null` quand rien n'a été lu (`loadReminderPrefs`, T-6). */
 const mockPrefs = jest.fn<Promise<unknown>, []>();
+/** La feuille des rappels déjà vue sur cet appareil ? Vue, sauf où un test dit non. */
+let mockFeuilleVue = true;
 jest.mock('@/lib/notification-prefs', () => ({
   loadReminderPrefs: () => mockPrefs(),
-  aDejaVuLaFeuilleDeRappel: async () => true,
+  aDejaVuLaFeuilleDeRappel: async () => mockFeuilleVue,
   aDejaProposeLaVeille: async () => true,
   lireLaFenetreDuMotDeLaVeille: async () => null,
 }));
@@ -135,7 +145,14 @@ jest.mock('@/lib/rappels', () => ({ lirePermission: async () => 'fermee' }));
 jest.mock('@/components/bande-haute', () => ({ BandeHaute: () => null }));
 jest.mock('@/components/mascot', () => ({ Mascot: () => null }));
 jest.mock('@/components/illustrations/empty-state-illustration', () => ({ EmptyStateIllustration: () => null }));
-jest.mock('@/components/plan/feuille-rappels', () => ({ FeuilleRappels: () => null }));
+/** Ce que la feuille des rappels reçoit, quand elle s'ouvre. */
+const mockFeuille = jest.fn();
+jest.mock('@/components/plan/feuille-rappels', () => ({
+  FeuilleRappels: (props: unknown) => {
+    mockFeuille(props);
+    return null;
+  },
+}));
 
 // ── Les lectures ──────────────────────────────────────────────────────────────────────────────
 
@@ -191,6 +208,9 @@ beforeEach(() => {
   mockVuLaSaison.mockReset().mockResolvedValue(true);
   mockMarquerLaSaison.mockReset().mockResolvedValue(undefined);
   (router.push as jest.Mock).mockClear();
+  mockFocus = false;
+  mockFeuilleVue = true;
+  mockFeuille.mockReset();
 });
 
 describe('Plan — l’ordre des états, les deux premières lectures parties ensemble', () => {
@@ -482,5 +502,47 @@ describe('Plan — un rattachement se compte, une reconnexion non (`v1-27` §12.
     await waitFor(() => expect(mockReconnexion).toHaveBeenCalled());
     await act(async () => {});
     expect(succes()).toEqual([]);
+  });
+});
+
+describe('Plan — la feuille des rappels reçoit l’échéance (`v1-33` D14)', () => {
+  // **La phrase de la feuille dépend de l'échéance** (`ligneDAttenteDeLaFeuille`, 02/10/2026) : pour
+  // « Le mois prochain », Ramille nomme le mois du premier point qui interroge l'action. La dérivation
+  // est testée seule ; ce test garde le **fil** — la carte qui l'émet, le plan qui la transmet —, qu'un
+  // `echeance={null}` écrit dans le plan couperait sans qu'aucun autre test ne tombe (contre-lecture
+  // du 02/10/2026). Éprouvé le même jour : l'échéance remise à `null` dans le plan → ce test, seul.
+  const sortie = {
+    id: 'a1',
+    action_template_id: 'g1',
+    saving_kg_year: 300,
+    saving_share_percent: 10,
+    detail_text: null,
+    first_step: null,
+    rank: 1,
+    committed_at: null,
+    intention_days: null,
+    intention_timing: null,
+    carried_over_from: null,
+    action_templates: { action_text: 'Faire une sortie sur trois à vélo', poste: 'leisure' },
+  };
+
+  it('transmet « Le mois prochain » à la feuille, avec la boucle mensuelle', async () => {
+    mockFocus = true;
+    mockFeuilleVue = false;
+    lectures({
+      plan_cycles: async () => ({
+        data: [{ ...CYCLE, poste: 'leisure', trip_label: 'Loisirs du week-end', baseline_co2_kg_year: 900, plan_actions: [sortie] }],
+        error: null,
+      }),
+    });
+    render(<Plan />);
+
+    fireEvent.press(await screen.findByText('Je m’y engage'));
+    fireEvent.press(screen.getByText('Le mois prochain'));
+    fireEvent.press(screen.getByText('C’est noté'));
+
+    await waitFor(() =>
+      expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ boucle: 'mensuel', echeance: 'le_mois_prochain' }))
+    );
   });
 });

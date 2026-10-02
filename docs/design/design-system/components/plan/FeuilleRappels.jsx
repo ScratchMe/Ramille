@@ -13,7 +13,7 @@ import { LigneDeCanal } from '../forms/LigneDeCanal.jsx';
 // `libelleBouton` (src/types/rappels.ts) : le bouton n'annonce un dialogue système que s'il va s'en ouvrir un.
 const libelleBouton = (canal, permission) =>
   canal === 'none' ? 'Continuer sans rappel' : canal === 'email' ? 'C’est bon' : permission === 'demandable' ? 'Autoriser les notifications' : 'C’est bon';
-export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style, etape = 'canal', detailVeille = 'Par notification, jusqu’au 15 novembre.', onRepondreALaVeille }) {
+export function FeuilleRappels({ boucle = 'hebdo', moisNomme = null, permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style, etape = 'canal', detailVeille = 'Par notification, jusqu’au 15 novembre.', onRepondreALaVeille }) {
   // La seconde étape (C4.2) : le mot de la veille, posé une fois la notification choisie et reçue — ou seule,
   // quand la feuille se rouvre une fois au premier engagement de trajet où elle peut être posée
   // (`ouvertureDeLaFeuille`). Le contenu change sous le doigt, d'où `TitreDArrivee` ; la ligne du produit
@@ -37,9 +37,13 @@ export function FeuilleRappels({ boucle = 'hebdo', permission = 'demandable', li
     demandable: 'À activer en une fois.',
     fermee: 'Coupées dans les réglages du téléphone — c’est là que ça se rouvre.',
   };
+  // `ligneDAttenteDeLaFeuille` (src/types/rappels.ts) : une action choisie pour « Le mois prochain » n'est
+  // interrogée qu'au point d'après, et la ligne nomme son mois (`v1-33` D14, 02/10/2026).
   const ligneRamille = boucle === 'hebdo'
     ? 'Je te laisse mener ton action. Lundi, je reviens te demander si tu l’as faite.'
-    : 'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.';
+    : moisNomme
+      ? `Je te laisse mener ton action. Début ${moisNomme}, je reviens te demander si tu l’as faite.`
+      : 'Je te laisse mener ton action. Au début du mois prochain, je reviens te demander si tu l’as faite.';
   const question = 'Comment tu préfères que je te fasse signe ?';
   // `lignesDeReglage` (src/types/rappels.ts), sur un appareil sans compte : l'email n'y est pas choisissable.
   const items = lignes || [

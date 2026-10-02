@@ -190,6 +190,31 @@ export const MOIS_FRANCAIS = [
   'décembre',
 ] as const;
 
+/** Le jour du dernier dimanche d'un mois (0 à 11), en UTC. */
+function dernierDimanche(annee: number, mois: number): number {
+  const dernierJour = new Date(Date.UTC(annee, mois + 1, 0));
+  return dernierJour.getUTCDate() - dernierJour.getUTCDay();
+}
+
+/**
+ * Le mois (0 à 11) d'un instant **en heure de Paris**, quel que soit le fuseau du téléphone.
+ *
+ * Le serveur lit le mois d'un engagement en heure de Paris (`generate_extras_checkins`, `v1-33` D14) ;
+ * le client doit lire le même, sans quoi un engagement pris aux Antilles le 31 octobre à 21 h —
+ * le 1er novembre à 2 h à Paris — se verrait promettre un autre mois que celui que le serveur
+ * interroge (contre-lecture de D14, 02/10/2026). Sans `Intl` : Hermes peut être construit sans ICU
+ * complet (même raison que `MOIS_FRANCAIS`). La règle de l'heure d'été est celle de l'Union
+ * européenne : du dernier dimanche de mars au dernier dimanche d'octobre, à 1 h UTC.
+ */
+export function moisEnHeureDeParis(instant: Date): number {
+  const annee = instant.getUTCFullYear();
+  const debutEte = Date.UTC(annee, 2, dernierDimanche(annee, 2), 1);
+  const finEte = Date.UTC(annee, 9, dernierDimanche(annee, 9), 1);
+  const t = instant.getTime();
+  const heures = t >= debutEte && t < finEte ? 2 : 1;
+  return new Date(t + heures * 3_600_000).getUTCMonth();
+}
+
 /**
  * Le nom du mois d'une date ISO, lu sur ses caractères et non sur un `Date`.
  *

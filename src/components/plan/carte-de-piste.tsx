@@ -4,6 +4,7 @@ import type { View } from 'react-native';
 import { ActionCard } from '@/components/plan/action-card';
 import { ActionCommitment } from '@/components/plan/action-commitment';
 import { etatDeLaPiste, formatIntention } from '@/types/plan';
+import type { EngagementPris } from '@/types/rappels';
 
 /**
  * Ce qu'une carte de piste lit d'une ligne `plan_actions`.
@@ -39,8 +40,8 @@ type Props = {
    * une règle en vigueur (24/09/2026, `v1-29`).
    */
   committedActionId: string | null;
-  /** Appelée quand un engagement vient d'être pris, avec le poste de l'action (C2.1). */
-  onEngage: (poste: string | null) => void;
+  /** Appelée quand un engagement vient d'être pris, avec le poste de l'action (C2.1) et son échéance (D14). */
+  onEngage: (engagement: EngagementPris) => void;
   /** Appelée après toute écriture réussie : l'écran relit. */
   onChanged: () => void;
   /** Le refus `RM001` de `commit_plan_action` — l'état a changé depuis l'affichage (C4.6). */
@@ -101,7 +102,7 @@ export function CarteDePiste({
       gainKg={action.saving_kg_year}
       partPercent={action.saving_share_percent}
       detail={action.detail_text}
-      intention={formatIntention(action.intention_days, action.intention_timing)}
+      intention={formatIntention(action.intention_days, action.intention_timing, action.committed_at)}
       premierPas={action.first_step}
       engagee={action.committed_at !== null}
       reconduite={action.carried_over_from !== null}

@@ -27,6 +27,7 @@ import {
   affichageDeLaVeille,
   canalPreselectionne,
   libelleBouton,
+  ligneDAttenteDeLaFeuille,
   lignesDeReglage,
   REPONSES_DE_LA_PROPOSITION,
   type Boucle,
@@ -36,6 +37,7 @@ import {
   type Permission,
   type ReponseALaVeille,
 } from '@/types/rappels';
+import type { IntentionTiming } from '@/types/plan';
 
 /** Ce que la première étape a enregistré, pour que la seconde referme la feuille sur le bon état. */
 type Retenu = { canal: CanalPrefere; jetonActif: boolean };
@@ -93,12 +95,15 @@ const CONSTAT_D_ECHEC = 'Ton choix n’a pas été enregistré.';
 export function FeuilleRappels({
   prefs,
   boucle,
+  echeance,
   permission,
   ouverture,
   onFerme,
 }: {
   prefs: ReminderPrefs;
   boucle: Boucle;
+  /** L'échéance de l'action engagée : « Le mois prochain » fait nommer un autre mois (`v1-33` D14). */
+  echeance: IntentionTiming | null;
   permission: Permission;
   /** L'étape où la feuille s'ouvre : le choix du canal, ou la seule question de la veille. */
   ouverture: OuvertureDeLaFeuille;
@@ -109,6 +114,12 @@ export function FeuilleRappels({
   onFerme: (canal: CanalPrefere, jetonActif: boolean, reponseALaVeille: ReponseALaVeille | null) => void;
 }) {
   const plateforme = Platform.OS === 'web' ? 'web' : 'natif';
+  // Le contact promis, lu sur le jour de l'ouverture : elle suit l'engagement de quelques secondes —
+  // le temps d'une lecture des préférences quand on revient des pistes —, donc seul un engagement
+  // pris dans les toutes dernières secondes du mois pourrait se voir annoncer un mois de trop.
+  // Calculé une fois, comme la présélection : un rendu passé minuit le dernier jour du mois ne doit
+  // pas changer la phrase sous les yeux.
+  const [ligneDAttente] = useState(() => ligneDAttenteDeLaFeuille(boucle, echeance, new Date()));
 
   // Présélection dérivée, jamais une ligne grisée : la préférence si elle est choisissable,
   // la notification sinon sur natif (`canalPreselectionne`, module pur et testé). Calculée une
@@ -277,7 +288,7 @@ export function FeuilleRappels({
       }}
     >
       <RamilleDit
-        ligne={boucle === 'hebdo' ? RAMILLE.engagementAttenteHebdo : RAMILLE.engagementAttenteMensuel}
+        ligne={ligneDAttente}
         mood="calm"
         size={44}
         themeColor="text"

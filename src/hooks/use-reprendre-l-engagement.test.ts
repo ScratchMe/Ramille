@@ -17,6 +17,8 @@
  */
 import { renderHook } from '@testing-library/react-native';
 
+import type { EngagementPris } from '@/types/rappels';
+
 import { useReprendreLEngagement } from './use-reprendre-l-engagement';
 
 // `useFocusEffect` rejoue son effet quand le rappel change, l'écran étant au premier plan : c'est ce
@@ -28,7 +30,7 @@ jest.mock('expo-router', () => {
 
 /** Le passage de la pile, tel que `plan/_layout.tsx` le construit : lu-et-effacé. */
 function unPassage(poste: string | null) {
-  let enAttente: { poste: string | null } | null = { poste };
+  let enAttente: EngagementPris | null = { poste, echeance: null };
   const reprendre = jest.fn(() => {
     const engagement = enAttente;
     enAttente = null;
@@ -43,7 +45,7 @@ describe('useReprendreLEngagement', () => {
     const proposer = jest.fn();
     renderHook(() => useReprendreLEngagement(passage.reprendre, true, proposer));
     expect(proposer).toHaveBeenCalledTimes(1);
-    expect(proposer).toHaveBeenCalledWith('commute');
+    expect(proposer).toHaveBeenCalledWith({ poste: 'commute', echeance: null });
   });
 
   it('sur une pile neuve, le drapeau attend la lecture des préférences, puis est proposé', () => {
@@ -58,7 +60,7 @@ describe('useReprendreLEngagement', () => {
 
     rerender({ pret: true });
     expect(proposer).toHaveBeenCalledTimes(1);
-    expect(proposer).toHaveBeenCalledWith('travel');
+    expect(proposer).toHaveBeenCalledWith({ poste: 'travel', echeance: null });
   });
 
   it('une seule fois : un rechargement qui relit les préférences ne rouvre pas la feuille', () => {

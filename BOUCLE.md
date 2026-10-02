@@ -229,6 +229,26 @@ vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à conna�
   **avant** C2.1, dont `committed_question` est nul — d'où `questionDuPoint`, qui préfère toujours la
   question figée.
 
+**Une action choisie pour « Le mois prochain » n'est pas interrogée avant ce mois-là** (`v1-33` D14,
+02/10/2026, `20261002210553_la_question_du_mois_attend_le_mois_choisi.sql`, test `43`). Choisie en
+octobre, elle vise novembre : le point du 1er novembre, qui interroge octobre, lui demandait « En
+octobre, as-tu fait… ? », dont la seule réponse honnête est « Non ». Tant que le mois interrogé n'est
+pas **postérieur** au mois du choix, le point pose la question générique et ne retient pas l'action
+(`committed_*` nuls) ; le poste, lui, suit toujours l'action. Trois bornes à ne pas défaire :
+« postérieur » et non « différent », parce que `action_engagee_de_la_periode` ne borne pas
+`committed_at` (une action choisie le 1er à 0 h 30, avant le passage de 6 h, est retrouvée par le
+point qui interroge le mois d'avant) ; le mois du choix lu en **heure de Paris** ; et `committed_at`
+recopié à la reconduction, qui garde la règle d'une saison à l'autre. **C'est une paire** : la
+feuille ouverte après « C'est noté » nomme le mois du premier point qui interroge l'action (« Début
+décembre, je reviens te demander si tu l'as faite », `ligneDAttenteDeLaFeuille`,
+`src/types/rappels.ts`). Toucher à l'une sans l'autre refait une promesse fausse. **Et la règle lit
+`committed_at` comme le jour où l'échéance a été choisie** — vrai tant que `commit_plan_action` le
+remet à `now()` à chaque engagement, et que changer d'échéance oblige à libérer puis réengager. Le
+chantier D15 (« Modifier l'échéance » sans libérer) devra le garder vrai, ou dater l'échéance à part :
+sinon « Ce mois-ci » choisi en septembre, changé en « Le mois prochain » en octobre, serait interrogé
+le 1er novembre sur octobre. La carte engagée et le suivi lisent la même date pour dire le mois visé
+(« en novembre », `formatIntention`).
+
 **Quand deux points sont ouverts, l'accent de la carte va à celui qui porte la question de l'action
 engagée** (tension tranchée le 01/10/2026, `v1-33` §6) — son genre, `engagement` ou `occasion`, figé à
 la génération, **et l'action suivie aujourd'hui** (`committed_action_text`) : une question composée sur
