@@ -523,7 +523,8 @@ l'endroit où il vit.
 
 Deux nuances du fichier des redirections qu'il ne faut pas réécrire à l'envers — le suffixe de
 compte resserre un motif de preview sans le fermer, et `ramille.vercel.app` se retire le jour où
-le projet Vercel est renommé : `SUPABASE.md` §2.5.
+le projet Vercel est renommé : `SUPABASE.md` §2.5. Depuis le 02/10/2026, la liste n'a plus aucune
+entrée `vercel.app` : elles valent pour qui voudrait en remettre une.
 
 ### Modèle d'authentification (à connaître avant de toucher à l'auth ou au bilan)
 

@@ -665,3 +665,6 @@ alloué d'après le nom de projet, choisi librement, donc un tiers qui nomme son
 aucune entrée de preview, sinon l'hôte exact retiré après usage, sinon le motif faute de mieux) ;
 et `https://ramille.vercel.app/**` est bien notre projet aujourd'hui, mais c'est un nom dans
 l'espace global `vercel.app`, donc **il se retire le jour où le projet Vercel est renommé**.
+*Depuis le 02/10/2026, la liste ne porte plus aucune entrée `vercel.app`* (relue par l'API de
+management, `docs/exploitation/redirect-urls.md` §3.1 bis) : ces deux nuances valent pour qui
+voudrait en remettre une.
