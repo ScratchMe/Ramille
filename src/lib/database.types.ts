@@ -85,6 +85,46 @@ export type Database = {
           },
         ]
       }
+      // L'alerte d'exploitation (20261002203259) — serveur seulement, aucun privilège client
+      alertes_d_exploitation: {
+        Row: {
+          actives: boolean
+          derniere_verification: string
+          dernier_envoi: string | null
+          dernier_passage: string | null
+          dernier_resume: string | null
+          envois_du_jour: number
+          id: boolean
+          jour_des_envois: string
+          plafond_par_jour: number
+          rappels_bloques_vus: number
+        }
+        Insert: {
+          actives?: boolean
+          derniere_verification?: string
+          dernier_envoi?: string | null
+          dernier_passage?: string | null
+          dernier_resume?: string | null
+          envois_du_jour?: number
+          id?: boolean
+          jour_des_envois?: string
+          plafond_par_jour?: number
+          rappels_bloques_vus?: number
+        }
+        Update: {
+          actives?: boolean
+          derniere_verification?: string
+          dernier_envoi?: string | null
+          dernier_passage?: string | null
+          dernier_resume?: string | null
+          envois_du_jour?: number
+          id?: boolean
+          jour_des_envois?: string
+          plafond_par_jour?: number
+          rappels_bloques_vus?: number
+        }
+        Relationships: []
+      }
       assessment_answers: {
         Row: {
           assessment_id: string
@@ -1146,6 +1186,11 @@ export type Database = {
           question_template: string
         }[]
       }
+      // L'alerte d'exploitation (20261002203259)
+      alerte_a_dire: {
+        Args: { p_rappels_bloques_vus: number; p_releve: Json }
+        Returns: boolean
+      }
       archiver_engagement: {
         Args: {
           p_action_template_id: string
@@ -1311,6 +1356,8 @@ export type Database = {
         Args: { p_loop_type: string; p_user_id: string }
         Returns: string
       }
+      // L'alerte d'exploitation (20261002203259)
+      releve_des_alertes: { Args: { p_depuis: string }; Returns: Json }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
         Returns: undefined
@@ -1369,11 +1416,18 @@ export type Database = {
       }
       send_pending_reminders: { Args: never; Returns: number }
       sync_emission_factors: { Args: never; Returns: undefined }
+      // L'alerte d'exploitation (20261002203259)
+      texte_de_l_alerte: {
+        Args: { p_depuis: string; p_rappels_bloques_vus: number; p_releve: Json }
+        Returns: string
+      }
       tranche_de_semaines_tenues: {
         Args: { p_semaines: number }
         Returns: string
       }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
+      // L'alerte d'exploitation (20261002203259)
+      verifier_les_alertes: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

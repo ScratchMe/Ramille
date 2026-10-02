@@ -8,7 +8,7 @@
 import { Platform, Share } from 'react-native';
 
 import { noterUneReconnexion } from '@/lib/connexion-prefs';
-import { concilierLesMarques, effacerLesMarquesLocales } from '@/lib/marques-locales';
+import { concilierLesMarques, effacerLesMarquesDuCompte, effacerLesMarquesLocales } from '@/lib/marques-locales';
 import { pendantUnDepartVolontaire, supabase } from '@/lib/supabase';
 import { APP_NAME } from '@/constants/produit';
 import { etatDuCompte, type EtatSuppression } from '@/types/compte-suppression';
@@ -167,7 +167,7 @@ export async function apresUneReconnexion(): Promise<void> {
   const { data } = await supabase.auth.getSession();
   const userId = data.session?.user.id;
   if (userId) await concilierLesMarques(userId, 'balayer');
-  else await effacerLesMarquesLocales();
+  else await effacerLesMarquesDuCompte();
   await noterUneReconnexion();
 }
 

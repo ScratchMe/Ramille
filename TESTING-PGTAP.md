@@ -130,6 +130,13 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
   celles par semaine d'arrivée croiseraient alors de vrais comptes. Reculer les dates ne suffit pas :
   au-delà de douze mois, la purge des `app_open` rend toute la cohorte « borne basse », et
   l'assertion 7 ne garde plus rien.
+- `42_l_alerte_d_exploitation` **est rejouable, et c'est une construction, pas une chance** : il
+  appelle `verifier_les_alertes()`, qui sur le distant a ses trois secrets Vault et enverrait un vrai
+  e-mail au premier « du neuf » — et du neuf peut être validé pendant le rejeu, la panne d'un testeur
+  ou un cron en échec. Ses montages posent donc `plafond_par_jour = 0` : ce neuf-là donne « Plafond… »,
+  un test rouge, jamais un envoi. Le seul montage au plafond libre, celui du destinataire manquant, se
+  saute là où le secret existe. **Un montage ajouté au plafond libre rouvrirait l'envoi** (relevé par
+  la contre-lecture du 02/10/2026, quand le fichier ne posait pas encore le plafond).
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.

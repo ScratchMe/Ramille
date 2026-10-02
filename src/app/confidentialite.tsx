@@ -146,6 +146,13 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // La page déclare plutôt trop que pas assez. La réécriture de l'adresse IP d'une session à chaque
 // renouvellement, elle, est mesurée (stack locale, GoTrue v2.196, 02/10/2026 : `203.0.113.10` puis
 // `198.51.100.20` après un rafraîchissement).
+//
+// **02/10/2026 : la file d'attente locale des erreurs** (`src/types/erreurs-en-attente.ts`). La page
+// écrivait que les repères de parcours « n'écrivent rien de plus sur ton appareil », et la file y garde
+// désormais une panne qui n'a pas pu partir — le type de l'erreur, l'écran et l'heure, trente jours au
+// plus. Relevé par la contre-lecture de la file ; la phrase a été validée par la personne qui pilote
+// le même jour (« OK pour corriger la phrase »), comme chaque phrase de cette page. La date suit la
+// mise en ligne, heure de Paris.
 const UPDATED_AT = '2 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -487,10 +494,11 @@ const SECTIONS: LegalSection[] = [
           'sur ton appareil est strictement nécessaire au fonctionnement : il conserve ta session, le brouillon du ' +
           'questionnaire en cours, l’adresse email de ta dernière demande de code — pour ne pas te la faire retaper ' +
           'si tu reviens saisir ce code plus tard — et quelques préférences d’affichage. Tout cela reste sur cet appareil, et part avec ' +
-          'la suppression de ton compte. Les repères de parcours décrits plus haut ' +
-          'n’écrivent rien de plus sur ton appareil : ils sont enregistrés côté serveur, rattachés à la session que le ' +
-          'produit a déjà besoin de conserver. C’est la raison pour laquelle aucune bannière de consentement ne t’est ' +
-          'présentée : il n’y a rien à consentir.',
+          'la suppression de ton compte. Les repères de parcours décrits plus haut sont enregistrés côté serveur, ' +
+          'rattachés à la session que le produit a déjà besoin de conserver, à une exception près : quand un écran n’a ' +
+          'pas réussi à s’afficher et que ce repère n’a pas pu partir tout de suite — hors connexion, par exemple —, le ' +
+          'type de l’erreur et l’écran concerné attendent sur ton appareil, trente jours au plus, de pouvoir partir. ' +
+          'C’est la raison pour laquelle aucune bannière de consentement ne t’est présentée : il n’y a rien à consentir.',
       },
     ],
   },

@@ -79,6 +79,12 @@ const MARQUES_DE_L_ANONYME_PURGE: [string, string][] = [
   ['traceverte.bilan_draft.v1', '{"answers":{},"step":"context"}'],
 ];
 
+/** Une panne gardée sur l'appareil (`src/types/erreurs-en-attente.ts`) : elle appartient à l'appareil, pas au compte. */
+const FILE_DES_ERREURS: [string, string] = [
+  'traceverte.erreurs_en_attente.v1',
+  '[{"category":"type","route":"/plan","noteeLe":1759406400000}]',
+];
+
 const json = (statut: number, corps: unknown) =>
   new Response(JSON.stringify(corps), { status: statut, headers: { 'content-type': 'application/json' } });
 
@@ -404,6 +410,45 @@ describe('une session refusée', () => {
     for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
     expect(await AsyncStorage.getItem(PROPRIETAIRE)).toBe('compte-reel');
   });
+
+  // ── La file des erreurs appartient à l'appareil (contre-lecture du 02/10/2026) ───────────────
+
+  it('la file des erreurs survit à la session anonyme refusée : ses pannes partiront sous la suivante', async () => {
+    const { ensureSession } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionAnonymePurgee(dans(-3600)))],
+      [PROPRIETAIRE, 'anonyme-purge'],
+      ...MARQUES_DE_L_ANONYME_PURGE,
+      FILE_DES_ERREURS,
+    ]);
+
+    await ensureSession();
+
+    for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
+    expect(await AsyncStorage.getItem(FILE_DES_ERREURS[0])).toBe(FILE_DES_ERREURS[1]);
+  });
+
+  it('la file des erreurs survit à une reconnexion, même sans session relue', async () => {
+    await nouveauLancement([...MARQUES_DE_L_ANONYME_PURGE, FILE_DES_ERREURS]);
+    const { apresUneReconnexion } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+
+    await apresUneReconnexion();
+
+    for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
+    expect(await AsyncStorage.getItem(FILE_DES_ERREURS[0])).toBe(FILE_DES_ERREURS[1]);
+  });
+
+  it('une déconnexion voulue emporte la file des erreurs avec le reste', async () => {
+    const { ensureSession } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+      FILE_DES_ERREURS,
+    ]);
+    await ensureSession();
+    const { seDeconnecterDeCetAppareil } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+
+    expect(await seDeconnecterDeCetAppareil()).toEqual({ ok: true });
+
+    expect(await AsyncStorage.getItem(FILE_DES_ERREURS[0])).toBeNull();
+  });
 });
 
 /*
@@ -440,4 +485,13 @@ describe('une session refusée', () => {
  *   | le propriétaire plus reconnu (`rien` retiré) | « les marques du propriétaire restent… » et « une reconnexion du même compte… » |
  *   | la reconnexion qui note sans balayer | « une reconnexion sans propriétaire noté balaie… », seul |
  *   | la reconnexion qui ne se note pas (`v1-27` §12.28) | « une reconnexion du même compte… » et « une reconnexion à un autre compte… » |
+ *
+ * **Et trois pour la file des erreurs** (contre-lecture du 02/10/2026 : la conciliation la balayait avec les
+ * marques, avant que ses pannes partent), jouées sur `src/lib/marques-locales.ts` et `src/lib/compte.ts` :
+ *
+ *   | Ce qu'on casse | Ce qui tombe |
+ *   |---|---|
+ *   | la conciliation qui balaie tout (`effacerLesMarquesLocales`) | « la file des erreurs survit à la session anonyme refusée… », seul |
+ *   | la reconnexion sans session relue qui balaie tout | « la file des erreurs survit à une reconnexion… », seul |
+ *   | la déconnexion qui garde la file (`effacerLesMarquesDuCompte`) | « une déconnexion voulue emporte la file… », seul |
  */

@@ -5,6 +5,7 @@
 // La décision de balayer est pure et vit dans `src/types/marques-locales.ts`.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { CLE_DE_LA_FILE } from '@/types/erreurs-en-attente';
 import { conciliationDesMarques, type SiProprietaireInconnu } from '@/types/marques-locales';
 
 /**
@@ -29,23 +30,38 @@ import { conciliationDesMarques, type SiProprietaireInconnu } from '@/types/marq
  * Best-effort et **après** le succès du RPC : un AsyncStorage indisponible ne doit pas faire
  * échouer une suppression déjà effectuée côté serveur.
  *
- * **Ses appelants** : les deux sorties de cet appareil (suppression de compte et déconnexion,
- * `src/lib/compte.ts`), « Commencer un bilan sur cet appareil » depuis l'écran de reconnexion, et
- * depuis le 02/10/2026 l'arrivée d'une session d'un **autre** compte que le propriétaire des marques
- * (`concilierLesMarques`, ci-dessous) — dont la reconnexion par code, qui balayait sans condition
- * jusque-là. Ce qui part avec, et qu'il faut savoir : le brouillon de questionnaire. C'est le bon
- * choix quand on change de compte — le brouillon appartenait à l'autre session — et c'est déjà ce que
- * fait la déconnexion.
+ * **Ses appelants** : les deux sorties de cet appareil, suppression de compte et déconnexion
+ * (`src/lib/compte.ts`). Les changements de compte — l'arrivée d'une session d'un **autre** compte que
+ * le propriétaire des marques (`concilierLesMarques`, ci-dessous), dont la reconnexion par code, et
+ * « Commencer un bilan sur cet appareil » depuis l'écran de reconnexion — appellent
+ * `effacerLesMarquesDuCompte`, qui garde la file des erreurs. Ce qui part avec, et qu'il faut savoir :
+ * le brouillon de questionnaire. C'est le bon choix quand on change de compte — le brouillon
+ * appartenait à l'autre session — et c'est déjà ce que fait la déconnexion.
  *
  * Déplacée ici depuis `src/lib/compte.ts` le 02/10/2026 : le client Supabase l'appelle désormais, et
  * `compte.ts` importe le client.
  */
 const PREFIXE_CLES_LOCALES = 'traceverte.';
 
-export async function effacerLesMarquesLocales(): Promise<void> {
+export function effacerLesMarquesLocales(): Promise<void> {
+  return effacer(() => true);
+}
+
+/**
+ * Les marques du compte, sans ce qui appartient à l'appareil — **la file des erreurs**
+ * (`CLE_DE_LA_FILE`, 02/10/2026). Une panne n'est pas une marque du compte : elle part sous la session
+ * suivante, quelle qu'elle soit. Et le changement de compte le plus fréquent — un jeton refusé, une
+ * session neuve — est celui où la file a des pannes à rendre : balayée là, elle les perdait toutes
+ * avant leur envoi (contre-lecture du 02/10/2026).
+ */
+export function effacerLesMarquesDuCompte(): Promise<void> {
+  return effacer((cle) => cle !== CLE_DE_LA_FILE);
+}
+
+async function effacer(aussi: (cle: string) => boolean): Promise<void> {
   try {
     const cles = await AsyncStorage.getAllKeys();
-    const aEffacer = cles.filter((cle) => cle.startsWith(PREFIXE_CLES_LOCALES));
+    const aEffacer = cles.filter((cle) => cle.startsWith(PREFIXE_CLES_LOCALES) && aussi(cle));
     if (aEffacer.length > 0) await AsyncStorage.multiRemove(aEffacer);
   } catch {
     // Au pire, un brouillon survit sur cet appareil — jamais un échec annoncé à tort.
@@ -103,7 +119,7 @@ export function concilierLesMarques(userId: string, siInconnu: SiProprietaireInc
   const tour = file.then(async () => {
     const decision = conciliationDesMarques(await lireLeProprietaire(), userId, siInconnu);
     if (decision === 'rien') return;
-    if (decision === 'balayer') await effacerLesMarquesLocales();
+    if (decision === 'balayer') await effacerLesMarquesDuCompte();
     await noterLeProprietaire(userId);
   });
   // Un tour qui lève ne doit pas bloquer les suivants : chacune de ses étapes est déjà best-effort.

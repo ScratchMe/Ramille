@@ -24,10 +24,10 @@ import { RetourDeNotification } from '@/components/retour-de-notification';
 import { SessionRefusee } from '@/components/session-refusee';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
-import { track } from '@/lib/analytics';
+import { envoyerLesErreursEnAttente, track } from '@/lib/analytics';
 import { createSessionFromUrl } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
-import { effacerLesMarquesLocales } from '@/lib/marques-locales';
+import { effacerLesMarquesDuCompte } from '@/lib/marques-locales';
 import {
   afficherLesNotificationsAuPremierPlan,
   enregistrerLeJeton,
@@ -173,6 +173,9 @@ export default function RootLayout() {
           ouvertureDejaComptee = true;
           track('app_open', { origine: 'demarrage' });
         }
+        // Les pannes gardées faute de session ou de réseau partent maintenant qu'il y a une session
+        // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Sans session — un refus —, rien ne part.
+        void envoyerLesErreursEnAttente();
         void preparerLesCanauxAndroid();
         return enregistrerLeJetonPour(session?.user.id ?? null);
       })
@@ -214,7 +217,12 @@ export default function RootLayout() {
     const abonnement = AppState.addEventListener('change', (etat) => {
       const suite = suivreLEtatDeLApp(sejour, etat, Date.now());
       sejour = suite.sejour;
-      if (suite.ouverture) track('app_open', { origine: 'retour' });
+      if (suite.ouverture) {
+        track('app_open', { origine: 'retour' });
+        // Le retour au premier plan est l'autre moment où le réseau revient (un rappel ouvert dans le
+        // métro) : les pannes gardées partent aussi.
+        void envoyerLesErreursEnAttente();
+      }
     });
 
     // `?.` et pas un appel sec, bien que l'effet sorte désormais hors natif : la garde coûte un
@@ -432,12 +440,14 @@ export default function RootLayout() {
               onCommencer={() => {
                 // **Repartir, c'est changer de propriétaire** : les marques du compte quitté — son
                 // brouillon, sa marque de bilan, l'étape de son premier parcours — seraient relues par
-                // la session anonyme suivante comme les siennes (la règle de `seDeconnecterDeCetAppareil`).
+                // la session anonyme suivante comme les siennes (la règle de `seDeconnecterDeCetAppareil`)
+                // — toutes sauf la file des erreurs, qui appartient à l'appareil et partira sous la
+                // session neuve.
                 // Puis le refus est levé, et le questionnaire ouvrira la session qu'il lui faut.
                 // **La navigation d'abord** : levé avant elle, le refus découvrait l'écran d'en
                 // dessous — un plan sans session — le temps d'une image.
                 router.replace('/onboarding');
-                void effacerLesMarquesLocales().then(repartirSurCetAppareil);
+                void effacerLesMarquesDuCompte().then(repartirSurCetAppareil);
               }}
             />
           )}
@@ -474,10 +484,12 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const route = usePathname();
 
   // Remontée minimale, et volontairement pauvre : une catégorie dérivée du type de l'exception
-  // et la route, jamais le message ni la pile (cf. `src/types/analytics.ts`). Son défaut est
-  // connu et assumé — `track()` renonce sans session, or une panne au démarrage est justement
-  // le moment où la session peut manquer. C'est un filet partiel, pas une garantie :
-  // `docs/exploitation/remontee-erreurs.md` dit ce qu'il faudrait pour aller plus loin.
+  // et la route, jamais le message ni la pile (cf. `src/types/analytics.ts`). Une panne au
+  // démarrage est justement le moment où la session peut manquer : sans elle, ou sans réseau,
+  // `track()` la garde sur l'appareil, et elle part au prochain démarrage qui a une session
+  // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Ce qui reste hors d'atteinte — la panne de
+  // configuration, et celle où notre code ne tourne plus — est dit dans
+  // `docs/exploitation/remontee-erreurs.md` §3 bis.
   useTrackView('app_error', { category: appErrorCategory(error), route });
 
   // `retry` rend une promesse qu'un bouton n'attend pas.
