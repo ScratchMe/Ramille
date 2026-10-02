@@ -18,8 +18,10 @@
  *
  * **Le critère de `TESTING.md` §2.10** : sous le rendu natif, `tabIndex` n'est pas un attribut et aucun
  * piège ne déplace le focus — `feuille-du-bas.test.tsx` reste vert sous les deux premières mutations
- * ci-dessous ; le parcours réel ne voit que la feuille du re-bilan, et la ferme toujours par Échap.
- * Ce fichier tient le cadre, donc les deux feuilles, et le clic du voile tel que le web le reçoit.
+ * ci-dessous ; le parcours réel ne voit que la feuille du re-bilan. Ce fichier tient le cadre, donc les
+ * deux feuilles, et le clic que react-native-web livre au voile. **Pas ce qui est sous le doigt** :
+ * jsdom ne met rien en page, donc ni `elementFromPoint` ni `pointer-events` — c'est l'étape « un
+ * toucher sur le voile » du parcours réel qui le demande au navigateur.
  *
  * **Le doublage** : `react-native` est react-native-web pour ce seul fichier ; reanimated et
  * `react-native-worklets`, que leur double officiel ne laisse pas charger sur react-native-web, sont
