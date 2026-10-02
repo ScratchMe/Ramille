@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 import type { Database } from '@/lib/database.types';
+import { noterUnCompteRattache, oublierLeCompteRattache, porteUnCompteRattache } from '@/lib/marque-de-compte';
 import { decrireProbleme, lireConfigurationSupabase } from '@/types/configuration';
 import { fetchAvecSecondeChance } from '@/types/postgrest';
 import {
@@ -163,9 +164,107 @@ export const supabase = configurationSupabase.complete
 let dernierEtatDeSession: EtatDeSession = 'absente';
 
 /**
- * Le dernier état observé par `ensureSession()`. Lu par le layout racine pour afficher l'écran de
- * reconnexion sur un jeton refusé — et **seulement** dans ce cas : une panne de transport ne se
- * reproche pas à la personne.
+ * **Un jeton refusé ne se lit plus dans `getSession()` : il se déduit d'une marque** (02/10/2026,
+ * `v1-27` §12.27). C2.11 lisait le refus dans l'erreur de `getSession()`, et la version installée
+ * d'`auth-js` (2.116) ne la rend pas là au démarrage : sur un jeton d'accès déjà expiré dont le
+ * rafraîchissement est refusé, son initialisation retire elle-même la session (`_callRefreshToken`,
+ * puis `_removeSession`) avant la première lecture de l'app. `getSession()` voyait ensuite « pas de
+ * session, pas d'erreur », et `ensureSession()` ouvrait une session anonyme vide à quelqu'un qui a un
+ * compte — le défaut même que C2.11 devait fermer.
+ *
+ * **Le refus, c'est : plus de session, alors que l'appareil porte un compte rattaché**
+ * (`src/lib/marque-de-compte.ts`). La marque se pose **à chaque** session non anonyme vue, et les
+ * départs voulus l'effacent — une reconnexion aussi, qui balaie les marques de l'ancien propriétaire
+ * (`/connexion/retrouver`, `/connexion/email`) : c'est la session suivante, celle que la racine relit
+ * aussitôt, qui la repose. La première version de cette correction déduisait le refus de tout
+ * `SIGNED_OUT` non déclaré, et elle se trompait deux fois (contre-lecture de la PR #315) : une session
+ * **anonyme** purgée au bout de 90 jours est refusée de la même façon, et se voyait dire « Reconnecte-toi
+ * pour retrouver ton bilan » ; et le drapeau, en mémoire, ne survivait ni à un rechargement ni à une app
+ * tuée par le système — la session anonyme vide revenait au lancement suivant.
+ *
+ * `SIGNED_OUT` reste écouté, pour **montrer** un refus en cours de route — le rafraîchissement
+ * automatique qui échoue pendant qu'on se sert de l'app. Une déconnexion voulue émet le même
+ * événement, et se déclare par `pendantUnDepartVolontaire` : sans quoi l'écran de reconnexion
+ * s'ouvrirait le temps que le départ efface la marque.
+ *
+ * Le refus **tient** tant que la marque est là et qu'aucune session ne revient : une connexion
+ * (`SIGNED_IN`, celle de `/connexion/retrouver`) le lève, « Commencer un bilan sur cet appareil »
+ * aussi (`repartirSurCetAppareil`, qui efface la marque). Entre-temps, aucun `ensureSession()` n'ouvre
+ * de session anonyme.
+ */
+let departsVolontaires = 0;
+const ecouteursDuRefus = new Set<() => void>();
+
+function changerDEtat(etat: EtatDeSession) {
+  const changeLeRefus = (etat === 'refusee') !== (dernierEtatDeSession === 'refusee');
+  dernierEtatDeSession = etat;
+  if (changeLeRefus) for (const ecouteur of ecouteursDuRefus) ecouteur();
+}
+
+/**
+ * **À chaque session non anonyme vue, sans cache** (contre-lecture de la PR #315) : une première version
+ * ne l'écrivait qu'une fois par session, et une reconnexion par code — qui pose la marque au
+ * `SIGNED_IN`, puis balaie toutes les marques de l'ancien propriétaire — la laissait effacée jusqu'au
+ * lancement suivant, donc le défaut d'origine rouvert. Une écriture par rafraîchissement de jeton, une
+ * fois l'heure, ne coûte rien.
+ */
+function noterLaSession(session: Session | null) {
+  if (!session || session.user.is_anonymous) return;
+  void noterUnCompteRattache();
+}
+
+if (configurationSupabase.complete) {
+  // Synchrone, et ne rappelle pas le client : `auth-js` déconseille un rappel asynchrone ici.
+  supabase.auth.onAuthStateChange((evenement, session) => {
+    if (evenement === 'SIGNED_OUT') {
+      if (departsVolontaires > 0) return;
+      void porteUnCompteRattache().then((porte) => {
+        if (porte) changerDEtat('refusee');
+      });
+      return;
+    }
+    noterLaSession(session);
+    if (session && dernierEtatDeSession === 'refusee') changerDEtat('presente');
+  });
+}
+
+/**
+ * Une déconnexion **voulue** — « Me déconnecter », la suppression du compte : la session retirée
+ * pendant `action` n'est pas un refus.
+ */
+export async function pendantUnDepartVolontaire<T>(action: () => Promise<T>): Promise<T> {
+  departsVolontaires += 1;
+  try {
+    return await action();
+  } finally {
+    departsVolontaires -= 1;
+  }
+}
+
+/**
+ * « Commencer un bilan sur cet appareil », sur l'écran de reconnexion : la marque du compte est
+ * effacée, et le refus levé — la prochaine écriture ouvrira la session anonyme qu'il lui faut. Les
+ * autres marques de l'appareil, celles du compte quitté, sont à l'appelant (`effacerLesMarquesLocales`).
+ */
+export async function repartirSurCetAppareil(): Promise<void> {
+  await oublierLeCompteRattache();
+  changerDEtat('absente');
+}
+
+/**
+ * Être prévenu quand le refus commence ou finit — au démarrage, en cours de route, à la connexion,
+ * au choix de repartir. Rend de quoi se désabonner. L'état se lit par `etatDeLaSession()`.
+ */
+export function ecouterLeRefus(ecouteur: () => void): () => void {
+  ecouteursDuRefus.add(ecouteur);
+  return () => ecouteursDuRefus.delete(ecouteur);
+}
+
+/**
+ * Le dernier état connu de la session — par `ensureSession()`, ou par l'écoute de `auth-js` pour un
+ * refus en cours de route et une session revenue. Lu par le layout racine pour afficher l'écran de
+ * reconnexion sur un refus — et **seulement** dans ce cas : une panne de transport ne se reproche pas
+ * à la personne.
  */
 export function etatDeLaSession(): EtatDeSession {
   return dernierEtatDeSession;
@@ -177,13 +276,18 @@ export const ensureSession = uneSeuleFois(async () => {
     error,
   } = await supabase.auth.getSession();
 
-  dernierEtatDeSession = etatDeSession(Boolean(session), error);
-
-  if (session) return session;
+  if (session) {
+    noterLaSession(session);
+    changerDEtat('presente');
+    return session;
+  }
+  // La marque ne se lit que sans session, et seulement sans erreur : c'est le seul cas où elle décide.
+  const porteUnCompte = error ? false : await porteUnCompteRattache();
+  changerDEtat(etatDeSession(false, error, porteUnCompte));
   if (!doitOuvrirUneSessionAnonyme(dernierEtatDeSession)) return null;
 
   const { data, error: erreurCreation } = await supabase.auth.signInAnonymously();
   if (erreurCreation) throw erreurCreation;
-  dernierEtatDeSession = 'presente';
+  changerDEtat('presente');
   return data.session;
 });

@@ -1643,6 +1643,9 @@ travail « Parcours réel » est passé vert sur `0899229`, le premier commit qu
 
 ### 12.27 L'écran « session refusée » ne s'atteint probablement jamais au démarrage (01/10/2026)
 
+> **Fait le 02/10/2026**, en premier après la PR #314, sur décision de la personne qui pilote —
+> détail en fin de section.
+
 **Relevé par le chantier du compte de la vague `v1-33`, en mesurant autre chose.** Sur l'export, une
 session stockée avec un jeton d'accès expiré, puis un rafraîchissement refusé
 (`400 refresh_token_not_found`) : l'app a créé une session anonyme (`POST /auth/v1/signup`). Avec huit
@@ -1669,3 +1672,68 @@ fait tomber un test, comme toujours (`TESTING.md` §1.1). Le commentaire de `ses
 décrivent l'intention, et c'est elle que la correction doit rétablir : ils ne bougent pas avant.
 `SUPABASE.md`, lui, affirmait le comportement d'`auth-js` ; ses deux passages portent depuis le
 01/10/2026 la réserve du démarrage.
+
+**Fait le 02/10/2026.** Le défaut a d'abord été **reproduit** sur le client réel, stockage et réseau
+doublés (`src/lib/session-refusee.test.ts`) : une session au jeton expiré, le rafraîchissement refusé
+en `400 refresh_token_not_found`, et l'app créait une session anonyme.
+
+**La première correction s'est trompée, et la contre-lecture l'a arrêtée avant la fusion.** Elle
+déduisait le refus de tout `SIGNED_OUT` qu'aucun départ voulu n'avait déclaré. Deux défauts :
+
+- une session **anonyme** refusée — purgée au bout de 90 jours par `purge_stale_anonymous_accounts`,
+  ou révoquée — produit exactement le même refus, et se voyait dire « Reconnecte-toi pour retrouver ton
+  bilan », « J'ai déjà un compte », à propos d'un compte qu'elle n'a jamais eu ;
+- le drapeau, en mémoire, ne survivait ni à un rechargement ni à une app tuée par le système pendant
+  qu'on va chercher son code : au lancement suivant, `auth-js` avait déjà effacé la session, et la
+  session anonyme vide revenait.
+
+**La correction retenue déduit le refus d'une marque** — « cet appareil porte un compte rattaché »
+(`src/lib/marque-de-compte.ts`, clé `traceverte.compte_rattache.v1`) :
+
+- elle se pose quand une session **non anonyme** est vue (`src/lib/supabase.ts`) ; les départs voulus
+  l'effacent avec les autres marques (`effacerLesMarquesLocales`), et « Commencer un bilan sur cet
+  appareil » aussi ;
+- **sans session, sans erreur, avec la marque : c'est un refus**, au démarrage comme après un
+  redémarrage. Sans la marque, c'est une première ouverture — l'anonyme purgé compris ;
+- `SIGNED_OUT` reste écouté pour **montrer** un refus en cours de route ; les deux départs voulus du
+  produit se déclarent par `pendantUnDepartVolontaire` (« Me déconnecter », et la suppression **entière**,
+  parce qu'un rafraîchissement peut échouer entre l'effacement et le `signOut`) ;
+- une session qui revient lève le refus ; l'écran de reconnexion **se déduit** de l'état et de la route
+  (`lEcranDeReconnexionSePose`) : il s'efface sur `/connexion/…` et sur les surfaces publiques et de
+  service, revient si l'on ressort de `/connexion/retrouver` sans s'être reconnecté, et cache le reste au
+  lecteur d'écran ;
+- « Commencer » efface les marques du compte quitté (son brouillon, sa marque de bilan, son premier
+  parcours) ; la racine ne lit plus la base en état refusé.
+
+Gardé sur le client réel (`src/lib/session-refusee.test.ts`, « Me déconnecter » passant par son vrai
+appelant), par `src/lib/compte.test.ts` pour les deux départs déclarés, et par le relevé des mutations
+au pied du premier.
+
+**Et la seconde contre-lecture a trouvé cinq choses de plus, corrigées avant la fusion** : la marque
+n'était écrite qu'une fois par session, et une reconnexion par code — qui balaie les marques de
+l'ancien propriétaire juste après le `SIGNED_IN` — la laissait effacée jusqu'au lancement suivant (elle
+s'écrit désormais à chaque session non anonyme vue, et la racine que la reconnexion rejoint la repose) ;
+trois mutations survivaient aux tests (le refus en cours de route, l'état levé par « Commencer », ce
+cache), et ont chacune leur test ; `/feedback` était exempté de l'écran alors qu'il écrit sous la
+session ; sur web, `aria-hidden` ne retirait pas l'écran caché de la tabulation (`inert` le fait) ; et
+la racine, rendue sans router, restait figée si le refus se levait sans la quitter.
+
+**Ce qui reste, et c'est su** :
+
+- les comptes rattachés d'avant le 02/10/2026 reçoivent la marque à leur premier lancement suivant ;
+  seul un refus survenu **avant** ce lancement retombe encore sur une session anonyme ;
+- un compte **supprimé depuis un autre appareil** porte encore la marque ici : l'écran de reconnexion
+  s'y affiche — sa phrase « rattachés à ton compte » y est fausse, « J'ai déjà un compte » n'y mène à
+  rien — et seul « Commencer » en sort. **Accepté le 02/10/2026** par la personne qui pilote : le serveur
+  refuse ce jeton exactement comme celui d'un compte vivant, l'app ne peut pas les distinguer, et c'est
+  le cas courant que la correction devait servir ;
+- `track()` renonce sans session : les vues de `/connexion/retrouver` venues d'un refus ne
+  s'enregistrent pas (`src/types/analytics.ts`) ;
+- une reconnexion par `/connexion/retrouver` efface les marques locales (« on change d'utilisateur
+  ici ») alors qu'au sortir d'un refus, c'est le même compte qui revient : le brouillon d'un re-bilan
+  commencé part avec elles ;
+- un autre onglet du même navigateur qui se déconnecte peut faire apparaître l'écran ici, s'il lit la
+  marque avant que l'autre onglet ne l'efface — la session de cet onglet est bel et bien partie, et
+  l'écran s'en va à la première session rouverte.
+
+**Ce qui reste à voir sur appareil** : `v1-13` §11.27.

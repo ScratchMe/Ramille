@@ -8,7 +8,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Share } from 'react-native';
 
-import { supabase } from '@/lib/supabase';
+import { pendantUnDepartVolontaire, supabase } from '@/lib/supabase';
 import { APP_NAME } from '@/constants/produit';
 import { etatDuCompte, type EtatSuppression } from '@/types/compte-suppression';
 import { etatDuRattachement, type EtatRattachement } from '@/types/compte';
@@ -217,7 +217,9 @@ export async function effacerLesMarquesLocales(): Promise<void> {
  * dire celui-ci seulement.
  */
 export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
-  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  // **Un départ voulu, déclaré comme tel** (02/10/2026, `v1-27` §12.27) : la session qu'`auth-js` retire
+  // ici n'est pas un refus, et la session anonyme suivante doit s'ouvrir (`src/lib/supabase.ts`).
+  const { error } = await pendantUnDepartVolontaire(() => supabase.auth.signOut({ scope: 'local' }));
 
   // **Une erreur ne veut pas dire « encore connecté »** (contre-lecture du 30/09/2026). Quand le
   // serveur ne répond pas, `auth-js` ferme **quand même** la session locale, puis rend l'erreur :
@@ -235,6 +237,14 @@ export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
 }
 
 export async function deleteMyAccount(): Promise<CompteResult> {
+  // **Tout le départ est déclaré, pas seulement le `signOut`** (02/10/2026, `v1-27` §12.27) : une fois
+  // le compte effacé, le rafraîchissement automatique peut échouer avant le `signOut` qui suit, et
+  // `auth-js` retirerait alors la session de lui-même — ce qui se lirait comme un refus, et ouvrirait
+  // l'écran de reconnexion sur un compte qu'on vient de supprimer.
+  return pendantUnDepartVolontaire(supprimerLeCompte);
+}
+
+async function supprimerLeCompte(): Promise<CompteResult> {
   const { error } = await supabase.rpc('delete_my_account');
 
   if (error) {

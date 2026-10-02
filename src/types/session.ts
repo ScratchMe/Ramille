@@ -22,10 +22,18 @@
 //     une cause qui disparaîtra d'elle-même ; et dire « reconnecte-toi » reprocherait à la personne
 //     ce que le réseau a fait. On ne fait donc **rien**, et le prochain lancement réessaie.
 //
-// La distinction est possible parce qu'`auth-js` remonte l'erreur : `getSession()` appelle
-// `_callRefreshToken` quand la session stockée est expirée, et rend `{ session: null, error }`
-// quand le rafraîchissement échoue pour de bon (relevé dans `GoTrueClient.__loadSession`, version
-// installée). Les quatre états sont donc atteignables — aucun n'est décoratif.
+// **Le refus a deux formes, et la première version n'en lisait qu'une** (02/10/2026, `v1-27` §12.27).
+// `getSession()` peut rendre l'erreur d'un rafraîchissement refusé (`GoTrueClient.__loadSession`) ;
+// mais au démarrage, sur un jeton d'accès déjà expiré, c'est l'initialisation d'`auth-js` qui le
+// rafraîchit, essuie le refus et **retire la session elle-même**, avant toute lecture : `getSession()`
+// ne voit plus ni session ni erreur, exactement comme à une première ouverture. Ce qui les sépare,
+// c'est que l'appareil **portait un compte rattaché** — une marque locale que seuls les départs voulus
+// effacent (`src/lib/marque-de-compte.ts`) : c'est `porteUnCompte`. Une session **anonyme** refusée
+// (purgée au bout de 90 jours, révoquée) ne la porte pas, et reste une première ouverture : elle n'a
+// aucun compte à retrouver — **dans la forme du démarrage**. Quand c'est `getSession()` qui rend
+// l'erreur (un processus resté vivant, rare : une lecture passe d'ordinaire avant lui), le refus se
+// dit sans consulter la marque, anonyme compris. Mesuré sur l'export, puis reproduit sur le client réel par
+// `src/lib/session-refusee.test.ts`. Les quatre états sont donc atteignables — aucun n'est décoratif.
 
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
 
@@ -40,14 +48,18 @@ export type EtatDeSession =
   | 'indisponible';
 
 /**
- * Ce que rend `supabase.auth.getSession()`, traduit en décision.
+ * Ce que rend `supabase.auth.getSession()`, et ce que l'appareil sait du compte qu'il portait, traduit en décision.
+ *
+ * `porteUnCompte` : l'appareil portait un compte rattaché, et aucun départ voulu ne l'a quitté (voir
+ * l'en-tête). Sans session, c'est un refus, même sans erreur — le seul argument qui ne vient pas de
+ * `getSession()`.
  *
  * `aUneSession` plutôt que la session elle-même : ce module ne doit rien savoir du type `Session`
  * d'`auth-js`, et la seule chose qui compte ici est qu'il y en ait une.
  */
-export function etatDeSession(aUneSession: boolean, error: ErreurAuth): EtatDeSession {
+export function etatDeSession(aUneSession: boolean, error: ErreurAuth, porteUnCompte: boolean): EtatDeSession {
   if (aUneSession) return 'presente';
-  if (!error) return 'absente';
+  if (!error) return porteUnCompte ? 'refusee' : 'absente';
   return estPanneDeTransport(error) ? 'indisponible' : 'refusee';
 }
 
@@ -60,4 +72,34 @@ export function etatDeSession(aUneSession: boolean, error: ErreurAuth): EtatDeSe
  */
 export function doitOuvrirUneSessionAnonyme(etat: EtatDeSession): boolean {
   return etat === 'absente';
+}
+
+/**
+ * Les routes où l'écran de reconnexion **ne se pose pas**, même pendant un refus (02/10/2026,
+ * contre-lecture de la PR #315).
+ *
+ *   * **`/connexion/…`** : c'est là que la personne va se reconnecter. L'écran s'efface quand elle y
+ *     part, et revient si elle en ressort sans session — sans quoi un « Retour » vers le plan la
+ *     laissait devant un plan illisible, sans rien pour le dire ;
+ *   * **les surfaces publiques et de service** — `/compte/suppression` (exigée par Google Play),
+ *     `/rappels/stop` (le lien de désinscription d'un e-mail), `/confidentialite`, `/conditions`,
+ *     `/status` : elles ne demandent pas de compte, et la surcouche cachait la confirmation d'une
+ *     désinscription déjà partie. **`/feedback` n'en est pas** : il écrit un retour rattaché à la
+ *     session (`sendFeedback`), et sans elle « Envoyer » répondrait sans fin « Ta session n'est pas
+ *     prête » — l'écran de reconnexion y dit mieux ce qui manque.
+ *
+ * Écrit comme une liste, et non comme « les routes qui ont besoin du compte » : une route neuve se
+ * couvre par défaut, et c'est le cas sûr — l'écran dit vrai partout où un compte manque.
+ */
+const CHEMINS_SANS_ECRAN_DE_RECONNEXION = [
+  '/compte/suppression',
+  '/rappels/stop',
+  '/confidentialite',
+  '/conditions',
+  '/status',
+] as const;
+
+export function lEcranDeReconnexionSePose(chemin: string): boolean {
+  if (chemin === '/connexion' || chemin.startsWith('/connexion/')) return false;
+  return !(CHEMINS_SANS_ECRAN_DE_RECONNEXION as readonly string[]).includes(chemin);
 }
