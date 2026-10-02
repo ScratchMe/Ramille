@@ -372,7 +372,7 @@ et ce que la vague a relevé en chemin est en §9.
 
 | La décision | La loi | L'argument neuf | Tranché le 01/10/2026 |
 |---|---|---|---|
-| « 10+ » enregistre 10 (`v1-05`, simplification assumée) | Pareto, Postel | Le plafond frappe précisément les plus gros émetteurs : 20 vols comptent pour 10, soit la moitié du poste le plus lourd. Le cas jumeau (« Plus de 30 km ») ouvre déjà un champ | **Un champ sous « 10+ »**, pour les vols et les trois séries des longs trajets — chantier à part, avec D1 côté écran |
+| « 10+ » enregistre 10 (`v1-05`, simplification assumée) | Pareto, Postel | Le plafond frappe précisément les plus gros émetteurs : 20 vols comptent pour 10, soit la moitié du poste le plus lourd. Le cas jumeau (« Plus de 30 km ») ouvre déjà un champ | **Un champ sous « 10+ »**, pour les vols et les trois séries des longs trajets — chantier à part, avec D1 côté écran. **Livré le 02/10/2026**, sans migration — la base admettait déjà tout compte positif. Précisé ce jour-là avec la personne qui pilote : le champ est **réclamé** ; au-delà de dix vols, la part de vols courts devient un champ, même question, borné au total ; au-delà de cinquante, une ligne de relecture, jamais un blocage ; libellé « Environ combien, sur une année ? » (`FRONT-QUESTIONNAIRE.md` §2.6) |
 | La feuille « Ton plan va être recalculé » à la soumission d'un re-bilan (`v1-19` D4) | Peak-End | Elle arrive au terme de neuf étapes et dit « ton bilan actuel est toujours juste » : la fin colore l'effort entier | **La dire avant de commencer**, au toucher de « Faire un nouveau bilan » — vague produit |
 | « Faire un nouveau bilan » sur la restitution (`v1-19` D1) | Mental Model | Depuis l'arbitrage du 28/09/2026 (« la correction gagne »), un bilan refait le même jour **remplace** le précédent dans le suivi : le lien dit « nouveau » pour une correction | **Pas encore posée** : elle touche au rythme des bilans (`v1-19`) et se pose avec la prochaine décision sur ce sujet |
 | L'accent de la carte du point suit le poste dominant (27/08/2026) | Selective Attention | Depuis le 30/09/2026, la question du mois suit l'action engagée : celle qui referme l'engagement peut être la grise | **L'accent sur la question de l'engagement** quand deux points sont ouverts — vague produit |
@@ -411,7 +411,7 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
    suivi, le plan et le contexte —, puis les surfaces de service.
 3. **Les chantiers à part**, un par un, chacun avec sa migration, ses tests pgTAP recalculés par
    requête et sa contre-lecture : la quatrième fréquence des loisirs (D5, livrée le 02/10/2026), la question générique le
-   mois du choix (D14, livrée le 02/10/2026), « Modifier les jours » (D15, livré le 02/10/2026), le champ sous « 10+ », et la réponse au point
+   mois du choix (D14, livrée le 02/10/2026), « Modifier les jours » (D15, livré le 02/10/2026), le champ sous « 10+ » (livré le 02/10/2026), et la réponse au point
    corrigeable dans sa période.
 
 Puis les reports techniques de §4.2, en commençant par T-5 (les liens), qui touche trente et un

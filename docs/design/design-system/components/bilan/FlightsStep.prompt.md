@@ -13,4 +13,10 @@ L'étape qui ouvre la section « Voyages longue distance » : « Combien de vols
 
 **La répartition n'apparaît qu'à partir d'un vol**, sous un filet `border` : « Sur ces 4, combien sont courts ? » en sous-titre 22/28, « Europe, moins de 3 h. Le reste est compté comme long-courrier. », puis des puces de 0 au total, en pilule comme celles du total. Rien ne dit qu’il manque la part avant le toucher du « Suivant » en attente : alors seulement, « Il manque encore la part de vols courts. » apparaît au-dessus des boutons, le focus va sur « 0 » (ou la puce cochée) et le sous-titre passe en `accentText` 600. Changer le total ramène les courts sous lui ; passer de zéro vol à plusieurs repose la question à vide, le 0 posé d’office n’étant pas une réponse. Une fois répondu, le produit dit ce qu'il comptera : « 1 vol long-courrier sera compté. », « 4 vols long-courriers seront comptés. », et à zéro, en mots : « Aucun vol long-courrier ne sera compté. »
 
+**« 10+ » ouvre un champ, réclamé** (02/10/2026, `v1-33` §6, `ChampDuPlafond`) : « Environ combien, sur une année ? », sous les puces. La puce enregistrait 10 — vingt vols comptaient pour dix, chez ceux qui émettent le plus. Le champ vide se réclame : « Il manque encore le nombre de vols. » y mène, et son intitulé se marque. Au-delà de cinquante, une ligne de relecture, jamais un blocage. **Au-delà de dix vols, la part de vols courts se saisit aussi**, même question, un champ borné au total — 30 tapé sous 25 vols s'affiche 25 ; une part restée plus grande qu'un total redescendu se réclame comme manquante.
+
+```jsx
+<FlightsStep answers={{ flights_total_per_year: 25, flights_short_per_year: 4 }} update={update} plafond />
+```
+
 **Les distances supposées s'affichent en bas**, comme sur l'étape des longs trajets : « Distances moyennes par défaut · 1 500 km court et moyen-courrier, 9 000 km long-courrier ». Elles sont interpolées depuis les hypothèses du calcul, jamais réécrites, en Spline Sans `small` tertiaire — une phrase adressée à la personne, pas un code.

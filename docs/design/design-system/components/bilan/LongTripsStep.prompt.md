@@ -15,4 +15,11 @@ L'étape des trajets de plus de 300 km, après les vols dans la section « Voyag
 
 **Seule la voiture ouvre des précisions, et elles suivent le groupe sans y entrer** : dès un trajet, « Quelle motorisation ? » (`PrecisionMode`) puis « Vous êtes combien dans la voiture ? » (`PrecisionChiffres`, de 1 à « 5+ »), **dans une seule `BoiteDePrecision`**, 8 sous les puces, à 16 l’une de l’autre (29/09/2026 — elles avaient chacune leur boîte). Elles dépendent d'un compte non nul, pas d'une option : il n'y a pas de puce sous laquelle les ranger. Le nombre de personnes commence à 1, qui est une réponse — partir à trois divise l'empreinte par trois. Revenir à 0 efface la motorisation. Au toucher du « Suivant » en attente, « la motorisation » ou « le nombre de personnes dans la voiture » mène à la précision, dont l’intitulé passe en `accentText` 600.
 
+**« 10+ » ouvre un champ dans chaque série, réclamé** (02/10/2026, `v1-33` §6, `ChampDuPlafond`) : « Environ combien, sur une année ? », sous les puces de la série — et, pour la voiture, avant la boîte, qui attend le nombre. La puce enregistrait 10. Le champ vide se réclame avant « au moins un trajet » : « Il manque encore le nombre de trajets en voiture. », même quand le train compte deux trajets — une série vide vaut zéro, et sans cela le « 10+ » de la voiture passait pour aucun trajet. « Oui » comme « Non » retirent les « 10+ » des séries. Vider le champ de la voiture pour le retaper fait reposer la motorisation et le nombre de personnes : un compte vide les efface, et c'est `normaliserReponses` seule qui efface.
+
+```jsx
+<LongTripsStep answers={{ train_long_trips_per_year: 2, coach_long_trips_per_year: 0, car_long_trips_per_year: null }} reponse
+  plafond={(compte) => compte === 'car_long_trips_per_year'} update={update} repondre={repondre} />
+```
+
 **L'autocar n'a pas de question de suivi** : la personne ne choisit ni la motorisation ni le remplissage d'un autocar, ce n'est pas son véhicule. Il a la même plage que le train et la voiture. En bas, sous « Oui » comme sous « Non », les distances supposées, en `small` tertiaire : « Distances moyennes par défaut · 800 km train, 700 km autocar et voiture ».

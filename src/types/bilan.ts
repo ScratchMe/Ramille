@@ -754,6 +754,18 @@ export function saisieVersNombre(saisie: string): number | null {
   return Number.isFinite(nombre) ? nombre : null;
 }
 
+/**
+ * Un compte saisi : la partie entière de ce qui est tapé (`v1-33` §6, 02/10/2026).
+ *
+ * **La virgule reste une virgule** (`nettoyerSaisieNumerique`) : la jeter ferait de « 12,5 » un 125, le
+ * facteur dix que le champ de distance a déjà coûté. Un compte n'a pas de décimale, donc « 12,5 » vaut
+ * 12 — le clavier numérique d'un téléphone n'en propose de toute façon pas.
+ */
+export function saisieVersEntier(saisie: string): number | null {
+  const nombre = saisieVersNombre(saisie);
+  return nombre === null ? null : Math.trunc(nombre);
+}
+
 /** Une valeur numérique telle qu'un champ de saisie français doit l'afficher. */
 export function afficherNombreSaisi(valeur: number | null): string {
   return valeur === null ? '' : String(valeur).replace('.', ',');
@@ -850,8 +862,61 @@ export function volsCourtsApresTotal(
  * sans aucun trajet se rouvre sur la question, à reposer — rien n'y est perdu, puisqu'aucun compteur
  * n'était rempli.
  */
-export type HorsColonnes = { ouiAuxLongsTrajets: boolean };
-export const RIEN_HORS_COLONNES: HorsColonnes = { ouiAuxLongsTrajets: false };
+export type HorsColonnes = {
+  ouiAuxLongsTrajets: boolean;
+  /**
+   * Les compteurs dont la puce « 10+ » est la réponse choisie (`v1-33` §6, 02/10/2026) — voir
+   * `plafondChoisi`. Ni dans le brouillon ni dans le re-bilan, et c'est sans perte : un nombre saisi
+   * de 10 ou plus dit « 10+ » de lui-même, et un champ laissé vide se relit comme une question à
+   * reposer.
+   */
+  plafondsChoisis: readonly CompteAPlafond[];
+};
+export const RIEN_HORS_COLONNES: HorsColonnes = { ouiAuxLongsTrajets: false, plafondsChoisis: [] };
+
+/**
+ * Les nombres d'une série de puces de compte — vols, et les trois séries des longs trajets —, de 0 au
+ * plafond. La dernière puce vaut « ce nombre ou plus » et ouvre un champ (`plafondChoisi`).
+ */
+export const CHOIX_DE_COMPTE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const PLAFOND_DE_COMPTE = CHOIX_DE_COMPTE[CHOIX_DE_COMPTE.length - 1];
+
+/** Les quatre compteurs qui finissent par « 10+ ». */
+export type CompteAPlafond =
+  | 'flights_total_per_year'
+  | 'train_long_trips_per_year'
+  | 'coach_long_trips_per_year'
+  | 'car_long_trips_per_year';
+
+/**
+ * La puce « 10+ » est-elle la réponse de ce compteur (`v1-33` §6, décidé le 01/10/2026, précisé le
+ * 02/10/2026 avec la personne qui pilote) ?
+ *
+ * **« 10+ » enregistrait 10**, simplification de `v1-05` : vingt vols comptaient pour dix, la moitié
+ * du poste le plus lourd, et précisément chez ceux qui émettent le plus. Elle ouvre désormais un champ,
+ * « Environ combien, sur une année ? », **réclamé** comme la distance sous « Plus de 30 km » — un
+ * nombre par défaut serait le motif que D1 a retiré des vols, une réponse qu'on n'a pas donnée.
+ *
+ * **La colonne porte le nombre saisi, et rien d'autre** : la base admettait déjà tout compte positif.
+ * Un nombre de 10 ou plus dit « 10+ » de lui-même — un re-bilan prérempli, un brouillon relu, un bilan
+ * d'avant où « 10+ » enregistrait 10. Ce que la colonne ne sait pas dire, c'est « 10+ » touché et le
+ * champ encore vide, ou un nombre plus petit tapé dedans : c'est le drapeau (`HorsColonnes`).
+ */
+export function plafondChoisi(compte: CompteAPlafond, valeur: number | null, horsColonnes: HorsColonnes): boolean {
+  return horsColonnes.plafondsChoisis.includes(compte) || (valeur !== null && valeur >= PLAFOND_DE_COMPTE);
+}
+
+/**
+ * Au-delà de quoi un compte saisi mérite une relecture — **jamais un blocage** (décidé le 02/10/2026) :
+ * soixante vols par an existent. Ce qu'on attrape, c'est le 250 tapé au lieu de 25, dix fois trop lourd
+ * sur le poste le plus lourd, que rien ne signalait. Le motif est celui du trajet domicile-travail
+ * (`COMMUTE_DISTANCE_A_RELIRE_KM`).
+ */
+export const COMPTE_A_RELIRE = 50;
+
+export function compteARelire(valeur: number | null): boolean {
+  return valeur !== null && valeur > COMPTE_A_RELIRE;
+}
 
 /** Les trois compteurs des longs trajets, dans l'ordre de l'écran — train, autocar, voiture. */
 function compteursDesLongsTrajets(
@@ -945,8 +1010,12 @@ export type ChampDuBilan =
   | 'leisure_distance_bracket'
   | 'leisure_distance_km'
   | 'flights_total_per_year'
+  | 'nombre_de_vols'
   | 'flights_short_per_year'
   | 'fait_des_longs_trajets'
+  | 'trajets_en_train'
+  | 'trajets_en_autocar'
+  | 'trajets_en_voiture'
   | 'nombre_de_longs_trajets'
   | 'car_long_trips_engine'
   | 'car_long_trips_occupancy'
@@ -954,6 +1023,16 @@ export type ChampDuBilan =
   | 'tc_access'
   | 'household_vehicles'
   | 'teletravail';
+
+/**
+ * Les séries des longs trajets, dans l'ordre de l'écran, avec le champ qu'ouvre leur « 10+ » et la
+ * phrase qui le réclame.
+ */
+const SERIES_A_PLAFOND: readonly [CompteAPlafond, ChampDuBilan, string][] = [
+  ['train_long_trips_per_year', 'trajets_en_train', 'le nombre de trajets en train'],
+  ['coach_long_trips_per_year', 'trajets_en_autocar', 'le nombre de trajets en autocar'],
+  ['car_long_trips_per_year', 'trajets_en_voiture', 'le nombre de trajets en voiture'],
+];
 
 /** Ce qui manque encore à une étape : le champ, pour y mener, et la phrase, pour le dire. */
 export type CeQuiManque = { champ: ChampDuBilan; phrase: string };
@@ -998,8 +1077,16 @@ export const CHAMPS_DE_L_ETAPE: Record<BilanStepId, readonly ChampDuBilan[]> = {
     'leisure_distance_bracket',
     'leisure_distance_km',
   ],
-  flights: ['flights_total_per_year', 'flights_short_per_year'],
-  long_trips: ['fait_des_longs_trajets', 'nombre_de_longs_trajets', 'car_long_trips_engine', 'car_long_trips_occupancy'],
+  flights: ['flights_total_per_year', 'nombre_de_vols', 'flights_short_per_year'],
+  long_trips: [
+    'fait_des_longs_trajets',
+    'trajets_en_train',
+    'trajets_en_autocar',
+    'trajets_en_voiture',
+    'nombre_de_longs_trajets',
+    'car_long_trips_engine',
+    'car_long_trips_occupancy',
+  ],
   context: ['zone_type', 'tc_access', 'household_vehicles', 'teletravail'],
 };
 
@@ -1166,8 +1253,19 @@ export function manqueDeLEtape(
     case 'flights':
       // **Réclamé, et non plus supposé à zéro** (01/10/2026, `v1-33` D1) : c'est la question du titre,
       // donc elle ne se marque pas (`seMarque`), mais elle se demande comme les autres.
-      if (answers.flights_total_per_year === null) return manque('flights_total_per_year', 'le nombre de vols');
-      if (answers.flights_total_per_year > 0 && answers.flights_short_per_year === null)
+      // Sous « 10+ », c'est le champ qui manque, pas la question : il mène au champ, dont l'intitulé se
+      // marque (`v1-33` §6, 02/10/2026).
+      if (answers.flights_total_per_year === null)
+        return plafondChoisi('flights_total_per_year', null, horsColonnes)
+          ? manque('nombre_de_vols', 'le nombre de vols')
+          : manque('flights_total_per_year', 'le nombre de vols');
+      // **Plus de vols courts que de vols** se réclame comme une part manquante : au-delà de dix vols, les
+      // deux se saisissent, et le total peut descendre sous la part déjà donnée sans qu'on l'efface — le
+      // ramener à chaque frappe perdait la réponse pendant qu'on retape le total (« 20 » → « 2 » → « 25 »).
+      if (
+        answers.flights_total_per_year > 0 &&
+        (answers.flights_short_per_year === null || answers.flights_short_per_year > answers.flights_total_per_year)
+      )
         return manque('flights_short_per_year', 'la part de vols courts');
       return null;
     case 'long_trips': {
@@ -1175,6 +1273,14 @@ export function manqueDeLEtape(
       // au moins un, sur l'une des trois séries : une série laissée vide vaut zéro.
       const reponse = reponseAuxLongsTrajets(answers, horsColonnes);
       if (reponse === null) return manque('fait_des_longs_trajets', 'une réponse');
+      // Une série sous « 10+ » dont le champ est vide, avant « au moins un trajet » : une série vide
+      // vaut zéro, donc sans cette branche le « 10+ » d'une série passait pour aucun trajet dès qu'une
+      // autre en déclarait un (`v1-33` §6, 02/10/2026).
+      if (reponse) {
+        for (const [compte, champ, phrase] of SERIES_A_PLAFOND) {
+          if (answers[compte] === null && plafondChoisi(compte, null, horsColonnes)) return manque(champ, phrase);
+        }
+      }
       if (reponse && !compteursDesLongsTrajets(answers).some((n) => n !== null && n > 0))
         return manque('nombre_de_longs_trajets', 'le nombre de trajets');
       const enVoiture = answers.car_long_trips_per_year ?? 0;

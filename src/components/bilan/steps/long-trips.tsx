@@ -1,7 +1,9 @@
-import { StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { StyleSheet, View, type TextInput } from 'react-native';
 
 import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { BoiteDePrecision } from '@/components/bilan/boite-de-precision';
+import { ChampDuPlafond } from '@/components/bilan/champ-du-plafond';
 import { ChoixOuvrant } from '@/components/bilan/choix-ouvrant';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -14,14 +16,22 @@ import { Radius, Spacing } from '@/constants/theme';
 import { CAR_ENGINE_OPTIONS } from '@/constants/transport-modes';
 import { formatKm } from '@/lib/format';
 import { Depliage } from '@/lib/mouvement';
-import { OCCUPATIONS_LONG_TRAJET, type BilanAnswers } from '@/types/bilan';
+import {
+  CHOIX_DE_COMPTE,
+  OCCUPATIONS_LONG_TRAJET,
+  PLAFOND_DE_COMPTE,
+  type BilanAnswers,
+  type ChampDuBilan,
+  type CompteAPlafond,
+} from '@/types/bilan';
 import { optionCible } from '@/types/demande';
 
-// Même plage que les vols (`flights.tsx`, `TOTAL_CHOICES`) : l'écart à la spec §5 était que
-// celle-ci s'arrêtait à 6, ce qui plafonnait les trajets longue distance d'un grand rouleur ou
+// Même plage que les vols (`CHOIX_DE_COMPTE`, `src/types/bilan.ts`) : l'écart à la spec §5 était
+// que celle-ci s'arrêtait à 6, ce qui plafonnait les trajets longue distance d'un grand rouleur ou
 // d'un habitué du train à un chiffre inférieur à la réalité — et dans le sens qui allège
-// l'empreinte. Un re-bilan prérempli à « 6 » continue d'afficher 6 : rien ne se perd.
-const COUNT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// l'empreinte. Un re-bilan prérempli à « 6 » continue d'afficher 6 : rien ne se perd. Et depuis le
+// 02/10/2026 (`v1-33` §6), « 10+ » ne plafonne plus : elle ouvre un champ (`ChampDuPlafond`).
+const COUNT_CHOICES = CHOIX_DE_COMPTE;
 
 /**
  * Dernière puce de la série, qui vaut « ce nombre ou plus » — dérivée de `COUNT_CHOICES` et
@@ -30,7 +40,7 @@ const COUNT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
  * 10 sans rien retoucher ailleurs : une valeur recopiée aurait fait annoncer « 6 trajets ou
  * plus » sur une puce qui n'est plus le plafond.
  */
-const MAX_TRAJETS = COUNT_CHOICES[COUNT_CHOICES.length - 1];
+const MAX_TRAJETS = PLAFOND_DE_COMPTE;
 
 /**
  * Ce qu'un lecteur d'écran entend sur la puce de plafond, là où l'œil lit « 10+ » (A2-9).
@@ -80,7 +90,7 @@ const OPTIONS_OCCUPATION = OCCUPATIONS_LONG_TRAJET.map((n) => ({
     n === PLAFOND_OCCUPATION ? `${n} personnes ou plus` : `${n} personne${n > 1 ? 's' : ''}`,
 }));
 
-// B3.3 / B3.4 — la dernière puce stocke sa valeur nominale, même simplification que flights.tsx.
+// B3.3 / B3.4 — la dernière puce ouvre un champ, comme celle des vols (`v1-33` §6, 02/10/2026).
 //
 // Trois séries depuis C4.4, toutes trois rendues depuis `COUNT_CHOICES` : l'autocar a la même
 // plage que le train et la voiture, parce que rien ne justifie qu'on plafonne plus bas le mode
@@ -99,6 +109,8 @@ export function LongTripsStep({
   update,
   reponse,
   repondre,
+  plafond,
+  choisirLePlafond,
 }: {
   answers: BilanAnswers;
   update: (patch: Partial<BilanAnswers>) => void;
@@ -106,6 +118,10 @@ export function LongTripsStep({
   reponse: boolean | null;
   /** « Oui » ou « Non » touché : les compteurs et le « Oui » que l'écran retient, ensemble. */
   repondre: (oui: boolean) => void;
+  /** « 10+ » est-elle la réponse de cette série (`plafondChoisi`) ? */
+  plafond: (compte: CompteAPlafond) => boolean;
+  /** « 10+ » touché, ou une autre puce de la série : l'écran du questionnaire tient le drapeau. */
+  choisirLePlafond: (compte: CompteAPlafond, choisi: boolean) => void;
 }) {
   // Où mène « Il manque encore une réponse » (`v1-31` §2.5) : la question du titre, qui ne se marque
   // jamais (`seMarque`), et « Oui » ou la réponse déjà donnée.
@@ -118,7 +134,25 @@ export function LongTripsStep({
     cible: cibleDesSeries,
     marque: seriesMarquees,
   } = useAncreDuChamp('nombre_de_longs_trajets');
-  const iCibleDesSeries = optionCible(COUNT_CHOICES.map((n) => answers.train_long_trips_per_year === n));
+  const iCibleDesSeries = optionCible(
+    COUNT_CHOICES.map((n) =>
+      n === MAX_TRAJETS
+        ? plafond('train_long_trips_per_year')
+        : !plafond('train_long_trips_per_year') && answers.train_long_trips_per_year === n
+    )
+  );
+  // Ce que touche une puce d'une série, et ce que saisit son champ — le même chemin pour les trois.
+  // « 10+ » ouvre le champ vide, sauf sur un nombre déjà au-delà, qu'on garde.
+  const choisir = (compte: CompteAPlafond, n: number, patch: Partial<BilanAnswers> = {}) => {
+    if (n === MAX_TRAJETS) {
+      const dejaAuDela = plafond(compte);
+      choisirLePlafond(compte, true);
+      if (!dejaAuDela) update({ [compte]: null, ...patch });
+      return;
+    }
+    choisirLePlafond(compte, false);
+    update({ [compte]: n, ...patch });
+  };
 
   return (
     <View style={styles.container}>
@@ -163,10 +197,14 @@ export function LongTripsStep({
           {reponse === true && (
             <Depliage suivieALOuverture style={styles.depli}>
               <View ref={blocDesSeries} style={styles.series}>
-                <View style={styles.field}>
-                  <IntituleDuChamp type="small" themeColor="textTertiary" marque={seriesMarquees}>
-                    {EN_TRAIN}
-                  </IntituleDuChamp>
+                <SerieDeTrajets
+                  intitule={EN_TRAIN}
+                  marqueDeLIntitule={seriesMarquees}
+                  champ="trajets_en_train"
+                  valeur={answers.train_long_trips_per_year}
+                  plafond={plafond('train_long_trips_per_year')}
+                  saisir={(valeur) => update({ train_long_trips_per_year: valeur })}
+                >
                   {/* Le groupe ferme la série, et **c'est son nom qui la distingue, pas son rôle** (A2-9) :
                       les séries de l'étape sont rigoureusement identiques — la même rangée, de « 0 » au
                       plafond, rendue depuis la même liste — et l'intitulé qui les qualifie est un frère
@@ -189,12 +227,12 @@ export function LongTripsStep({
                         label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
                         accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
                         role="radio"
-                        selected={answers.train_long_trips_per_year === n}
-                        onPress={() => update({ train_long_trips_per_year: n })}
+                        selected={estChoisie(n, answers.train_long_trips_per_year, plafond('train_long_trips_per_year'))}
+                        onPress={() => choisir('train_long_trips_per_year', n)}
                       />
                     ))}
                   </GroupeDeChoix>
-                </View>
+                </SerieDeTrajets>
 
                 {/* C4.4 — le troisième compteur, entre les deux modes collectifs et la voiture. B3.4 ne
                     proposait que l'avion, le train et la voiture, donc un Paris-Lyon en car était
@@ -207,10 +245,14 @@ export function LongTripsStep({
                     Ce que ce compteur ne raconte pas, c'est une histoire flatteuse : l'autocar émet
                     0,037560 kg/km, soit **plus qu'un TER** et douze fois un TGV. C'est précisément pour
                     ça qu'il fallait le poser. */}
-                <View style={styles.field}>
-                  <IntituleDuChamp type="small" themeColor="textTertiary" marque={seriesMarquees}>
-                    {EN_AUTOCAR}
-                  </IntituleDuChamp>
+                <SerieDeTrajets
+                  intitule={EN_AUTOCAR}
+                  marqueDeLIntitule={seriesMarquees}
+                  champ="trajets_en_autocar"
+                  valeur={answers.coach_long_trips_per_year}
+                  plafond={plafond('coach_long_trips_per_year')}
+                  saisir={(valeur) => update({ coach_long_trips_per_year: valeur })}
+                >
                   <GroupeDeChoix question={nomDeLaSerie(EN_AUTOCAR)} style={styles.chipsWrap}>
                     {COUNT_CHOICES.map((n) => (
                       <Chip
@@ -218,52 +260,42 @@ export function LongTripsStep({
                         label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
                         accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
                         role="radio"
-                        selected={answers.coach_long_trips_per_year === n}
-                        onPress={() => update({ coach_long_trips_per_year: n })}
+                        selected={estChoisie(n, answers.coach_long_trips_per_year, plafond('coach_long_trips_per_year'))}
+                        onPress={() => choisir('coach_long_trips_per_year', n)}
                       />
                     ))}
                   </GroupeDeChoix>
-                </View>
+                </SerieDeTrajets>
 
-                <View style={styles.field}>
-                  <IntituleDuChamp type="small" themeColor="textTertiary" marque={seriesMarquees}>
-                    {EN_VOITURE}
-                  </IntituleDuChamp>
-                  {/* Les deux précisions de la voiture suivent le groupe sans y entrer, à la différence
-                      de celles d'un mode : elles dépendent d'un **compte** non nul, pas d'une option —
-                      il n'y a pas de puce sous laquelle les ranger. La série et sa boîte sont
-                      enveloppées ensemble, pour que la boîte s'ouvre à 8 sous les puces comme sous un
-                      mode, et non à l'écart de l'intitulé — et le haut de la série est la borne que
-                      l'écran ne fait pas passer au-dessus du bord quand il remonte pour montrer la
-                      boîte (`ChoixOuvrant` : le plus proche l'emporte sur celui du « Oui »). */}
-                  <ChoixOuvrant>
-                    <GroupeDeChoix question={nomDeLaSerie(EN_VOITURE)} style={styles.chipsWrap}>
-                      {COUNT_CHOICES.map((n) => (
-                        <Chip
-                          key={n}
-                          label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
-                          accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
-                          role="radio"
-                          selected={answers.car_long_trips_per_year === n}
-                          onPress={() =>
-                            update({
-                              car_long_trips_per_year: n,
-                              car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null,
-                            })
-                          }
-                        />
-                      ))}
-                    </GroupeDeChoix>
+                {/* Les deux précisions de la voiture suivent le groupe sans y entrer, à la différence de
+                    celles d'un mode : elles dépendent d'un **compte** non nul, pas d'une option — il n'y
+                    a pas de puce sous laquelle les ranger. La série, son champ et sa boîte sont enveloppés
+                    ensemble (`SerieDeTrajets`), pour que la boîte s'ouvre à 8 sous les puces comme sous un
+                    mode, et non à l'écart de l'intitulé — et le haut de la série est la borne que l'écran
+                    ne fait pas passer au-dessus du bord quand il remonte pour montrer la boîte
+                    (`ChoixOuvrant` : le plus proche l'emporte sur celui du « Oui »).
 
-                    {/* La précision s'ouvre sous les puces qui la déclenchent — cf. `precision-mode.tsx`.
-                        **Une seule boîte pour les deux** (`v1-31` §2.2) : elles décrivent la même voiture.
+                    **Sous « 10+ », la boîte attend le nombre** : elle tient à un compte non nul, et
+                    `normaliserReponses` efface ses deux réponses sous un compte vide. Toucher « 10+ » après
+                    trois trajets, ou vider le champ pour le retaper, les fait donc reposer — un effacement
+                    qui ne vit que là, la règle de `FRONT-QUESTIONNAIRE.md` §2.6. */}
+                <SerieDeTrajets
+                  intitule={EN_VOITURE}
+                  marqueDeLIntitule={seriesMarquees}
+                  champ="trajets_en_voiture"
+                  valeur={answers.car_long_trips_per_year}
+                  plafond={plafond('car_long_trips_per_year')}
+                  saisir={(valeur) => update({ car_long_trips_per_year: valeur })}
+                  apres={
+                    /* La précision s'ouvre sous les puces qui la déclenchent — cf. `precision-mode.tsx`.
+                       **Une seule boîte pour les deux** (`v1-31` §2.2) : elles décrivent la même voiture.
 
-                        C3.5 — le calcul supposait « seul » sur 700 km, sans jamais le demander, alors que
-                        c'est le trajet qu'on partage le plus : partir à trois divise l'empreinte par
-                        trois. La question suit la motorisation parce qu'elle décrit la même voiture, et
-                        elle apparaît sous la même condition — déclarer des longs trajets en voiture,
-                        c'est en déclarer deux choses. */}
-                    {(answers.car_long_trips_per_year ?? 0) > 0 && (
+                       C3.5 — le calcul supposait « seul » sur 700 km, sans jamais le demander, alors que
+                       c'est le trajet qu'on partage le plus : partir à trois divise l'empreinte par
+                       trois. La question suit la motorisation parce qu'elle décrit la même voiture, et
+                       elle apparaît sous la même condition — déclarer des longs trajets en voiture,
+                       c'est en déclarer deux choses. */
+                    (answers.car_long_trips_per_year ?? 0) > 0 && (
                       <BoiteDePrecision>
                         <PrecisionMode
                           champ="car_long_trips_engine"
@@ -280,9 +312,26 @@ export function LongTripsStep({
                           onChange={(value) => update({ car_long_trips_occupancy: value })}
                         />
                       </BoiteDePrecision>
-                    )}
-                  </ChoixOuvrant>
-                </View>
+                    )
+                  }
+                >
+                  <GroupeDeChoix question={nomDeLaSerie(EN_VOITURE)} style={styles.chipsWrap}>
+                    {COUNT_CHOICES.map((n) => (
+                      <Chip
+                        key={n}
+                        label={n === MAX_TRAJETS ? `${MAX_TRAJETS}+` : String(n)}
+                        accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
+                        role="radio"
+                        selected={estChoisie(n, answers.car_long_trips_per_year, plafond('car_long_trips_per_year'))}
+                        onPress={() =>
+                          choisir('car_long_trips_per_year', n, {
+                            car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null,
+                          })
+                        }
+                      />
+                    ))}
+                  </GroupeDeChoix>
+                </SerieDeTrajets>
               </View>
             </Depliage>
           )}
@@ -303,6 +352,67 @@ export function LongTripsStep({
         Distances moyennes par défaut · {formatKm(HYPOTHESES.trainLongKm)} train,{' '}
         {formatKm(HYPOTHESES.autocarLongKm)} autocar et voiture
       </ThemedText>
+    </View>
+  );
+}
+
+/**
+ * La puce de rang `n` est-elle cochée ? « 10+ » quand c'est la réponse de la série (`plafondChoisi`) ;
+ * une autre puce quand c'est son nombre, et que « 10+ » ne l'est pas — un « 5 » tapé dans le champ de
+ * « 10+ » ne coche pas la puce « 5 » : c'est encore le champ qui répond.
+ */
+function estChoisie(n: number, valeur: number | null, plafond: boolean): boolean {
+  return n === MAX_TRAJETS ? plafond : !plafond && valeur === n;
+}
+
+/**
+ * Une série des longs trajets : son intitulé, ses puces, le champ qu'ouvre « 10+ », et ce qui suit (la
+ * boîte de la voiture) — enveloppés dans un `ChoixOuvrant`, dont le haut est la borne du défilement à
+ * l'ouverture du champ comme de la boîte. Le champ a son ancre, à lui (`trajets_en_train`…) : « Il
+ * manque encore le nombre de trajets en train » y mène, et marque l'intitulé du champ, pas celui de la
+ * série.
+ */
+function SerieDeTrajets({
+  intitule,
+  marqueDeLIntitule,
+  champ,
+  valeur,
+  plafond,
+  saisir,
+  apres,
+  children,
+}: {
+  intitule: string;
+  marqueDeLIntitule: boolean;
+  champ: ChampDuBilan;
+  valeur: number | null;
+  plafond: boolean;
+  saisir: (valeur: number | null) => void;
+  apres?: ReactNode;
+  /** Les puces de la série. */
+  children: ReactNode;
+}) {
+  const { bloc, cible, marque } = useAncreDuChamp<TextInput>(champ, { saisie: true });
+  return (
+    <View style={styles.field}>
+      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marqueDeLIntitule}>
+        {intitule}
+      </IntituleDuChamp>
+      <ChoixOuvrant>
+        {children}
+        {plafond && (
+          <ChampDuPlafond
+            refDuBloc={bloc}
+            refDuChamp={cible}
+            marque={marque}
+            valeur={valeur}
+            onChange={saisir}
+            unite="trajets"
+            label={`Nombre de trajets ${intitule.toLowerCase()} sur une année`}
+          />
+        )}
+        {apres}
+      </ChoixOuvrant>
     </View>
   );
 }

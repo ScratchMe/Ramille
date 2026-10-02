@@ -47,9 +47,11 @@ import {
   memesReponses,
   normaliserReponses,
   previousStep,
+  plafondChoisi,
   reponseAuxLongsTrajets,
   type BilanAnswers,
   type BilanStepId,
+  type CompteAPlafond,
   type HorsColonnes,
   visibleSteps,
   STATUT_DE_BILAN,
@@ -374,11 +376,23 @@ export default function BilanQuestionnaire() {
   // comme à l'étape. Il ne survit pas à l'écran, et c'est sans perte : quitté sur « Oui » sans aucun
   // trajet, le questionnaire rouvre la question, à reposer.
   const [ouiAuxLongsTrajets, setOuiAuxLongsTrajets] = useState(false);
-  const horsColonnes: HorsColonnes = { ouiAuxLongsTrajets };
+  // **Et les « 10+ » touchés** (`v1-33` §6, 02/10/2026) : la puce ouvre un champ vide, et rien dans la
+  // colonne ne distingue alors « 10+ » d'une question pas encore répondue — ni un nombre plus petit tapé
+  // dans le champ d'un nombre choisi par sa puce. Même régime que le « Oui » : à côté des réponses, hors
+  // du brouillon, et sans perte — un nombre de 10 ou plus dit « 10+ » de lui-même (`plafondChoisi`).
+  const [plafondsChoisis, setPlafondsChoisis] = useState<readonly CompteAPlafond[]>([]);
+  const horsColonnes: HorsColonnes = { ouiAuxLongsTrajets, plafondsChoisis };
+  const choisirLePlafond = (compte: CompteAPlafond, choisi: boolean) =>
+    setPlafondsChoisis((avant) =>
+      choisi ? (avant.includes(compte) ? avant : [...avant, compte]) : avant.filter((c) => c !== compte)
+    );
+  const plafond = (compte: CompteAPlafond) => plafondChoisi(compte, answers[compte], horsColonnes);
   // Les deux ensemble, et par `update` : c'est une réponse donnée, qui arme le défilement à
-  // l'ouverture des séries (`reponsesDonnees`) et la sauvegarde du brouillon.
+  // l'ouverture des séries (`reponsesDonnees`) et la sauvegarde du brouillon. « Oui » comme « Non »
+  // réécrivent les trois séries : leurs « 10+ » partent avec.
   const repondreAuxLongsTrajets = (oui: boolean) => {
     setOuiAuxLongsTrajets(oui);
+    setPlafondsChoisis((avant) => avant.filter((c) => c === 'flights_total_per_year'));
     update(compteursApresLaReponse(answers, oui));
   };
   // **Toucher une série, c'est répondre « Oui »** : les séries ne se voient que sous lui. Sans le
@@ -826,13 +840,22 @@ export default function BilanQuestionnaire() {
       {step === 'commute_extra' && <CommuteExtraStep answers={answers} update={update} />}
       {step === 'leisure_frequency' && <LeisureFrequencyStep answers={answers} update={update} />}
       {step === 'leisure_detail' && <LeisureDetailStep answers={answers} update={update} />}
-      {step === 'flights' && <FlightsStep answers={answers} update={update} />}
+      {step === 'flights' && (
+        <FlightsStep
+          answers={answers}
+          update={update}
+          plafond={plafond('flights_total_per_year')}
+          choisirLePlafond={(choisi) => choisirLePlafond('flights_total_per_year', choisi)}
+        />
+      )}
       {step === 'long_trips' && (
         <LongTripsStep
           answers={answers}
           update={mettreAJourLesSeries}
           reponse={reponseAuxLongsTrajets(answers, horsColonnes)}
           repondre={repondreAuxLongsTrajets}
+          plafond={plafond}
+          choisirLePlafond={choisirLePlafond}
         />
       )}
       {step === 'context' && <ContextStep answers={answers} update={update} />}

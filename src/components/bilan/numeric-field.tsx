@@ -5,7 +5,7 @@ import { cadreDuChamp, SANS_ANNEAU_DE_L_INPUT } from '@/components/cadre-du-cham
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, FontFamily, Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersNombre } from '@/types/bilan';
+import { afficherNombreSaisi, nettoyerSaisieNumerique, saisieVersEntier, saisieVersNombre } from '@/types/bilan';
 
 // Champ numérique encadré (B1.2/B1.3 "Quelle distance pour un aller ?").
 //
@@ -29,6 +29,7 @@ export function NumericField({
   unit,
   label,
   ref,
+  entier = false,
 }: {
   value: number | null;
   onChange: (value: number | null) => void;
@@ -42,6 +43,13 @@ export function NumericField({
    * bruit. Sur natif, c'est son `focus()` qui ouvre le clavier.
    */
   ref?: Ref<TextInput>;
+  /**
+   * Un compte et non une mesure (`v1-33` §6, 02/10/2026) : le clavier sans décimale, et la partie
+   * entière de ce qui est tapé (`saisieVersEntier`) — la virgule reste affichée, pour ne pas faire
+   * de « 12,5 » un 125. Et le libellé s'annonce seul : l'unité d'un compte est le nom de ce qu'on
+   * compte (« vols »), que le libellé dit déjà — « Nombre de vols sur une année, en vols » bégayait.
+   */
+  entier?: boolean;
 }) {
   const theme = useTheme();
 
@@ -75,15 +83,15 @@ export function NumericField({
         value={saisie}
         onChangeText={(texte) => {
           const nettoye = nettoyerSaisieNumerique(texte);
-          const valeur = saisieVersNombre(nettoye);
+          const valeur = entier ? saisieVersEntier(nettoye) : saisieVersNombre(nettoye);
           setSaisie(nettoye);
           setValeurConnue(valeur);
           onChange(valeur);
         }}
         // `decimal-pad` et non `number-pad` : le clavier doit porter le séparateur décimal
         // qu'on accepte désormais, sinon la virgule reste hors de portée sur mobile.
-        keyboardType="decimal-pad"
-        accessibilityLabel={`${label}, en ${unit}`}
+        keyboardType={entier ? 'number-pad' : 'decimal-pad'}
+        accessibilityLabel={entier ? label : `${label}, en ${unit}`}
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         style={[styles.input, { color: theme.text }, SANS_ANNEAU_DE_L_INPUT]}

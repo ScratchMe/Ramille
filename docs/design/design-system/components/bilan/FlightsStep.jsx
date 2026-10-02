@@ -2,6 +2,8 @@ import React from 'react';
 import { Chip } from '../forms/Chip.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { IntituleDuChamp, useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
+import { ChampDuPlafond } from '../forms/ChampDuPlafond.jsx';
+import { NumericField } from '../forms/NumericField.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/bilan/steps/flights.tsx — le nombre de vols d'une année type, puis combien sont courts.
 // La question dit qu'un aller-retour compte pour deux vols : sans elle, le facteur 2 était laissé au hasard, sur le
@@ -13,8 +15,12 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // « Il manque encore la part de vols courts » mène à la seconde question, dont le sous-titre passe en `accentText`.
 // **Les deux séries de nombres prennent la même forme, la pilule** (22, le défaut de `Chip` ; 01/10/2026, `v1-33`,
 // Q-12) : la série des courts était à `Radius.chip`, des carrés arrondis sous des ronds, pour une même fonction.
+// **« 10+ » ouvre un champ, réclamé** (02/10/2026, `v1-33` §6, `ChampDuPlafond`) : elle enregistrait 10. Au-delà de dix
+// vols, la part de vols courts devient elle aussi un champ, borné au total — vingt-six puces pour vingt-cinq vols ne
+// tiendraient pas. `plafond` dit que « 10+ » est la réponse ; dans le dépôt, l'écran du questionnaire tient ce drapeau
+// (`HorsColonnes`), et un nombre de dix ou plus le dit de lui-même.
 
-// `TOTAL_CHOICES` de la source, recopiée : « N+ » stocke N.
+// `CHOIX_DE_COMPTE` de la source (src/types/bilan.ts), recopiée.
 const TOTAL_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const MAX_VOLS = TOTAL_CHOICES[TOTAL_CHOICES.length - 1];
 const QUESTION_TOTAL = 'Combien de vols prends-tu dans une année type ?';
@@ -50,11 +56,13 @@ const SOUS_TITRE = {
   letterSpacing: 'var(--type-question-tracking)',
 };
 
-export function FlightsStep({ answers, update }) {
+export function FlightsStep({ answers, update, plafond: plafondTouche = false, choisirLePlafond = () => {} }) {
   // Sans réponse, le total ne vaut rien, pas zéro : aucune puce cochée, et la seconde question attend un vol.
   const total = answers.flights_total_per_year ?? 0;
   const courts = answers.flights_short_per_year;
-  const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
+  const plafond = plafondTouche || (answers.flights_total_per_year !== null && answers.flights_total_per_year >= MAX_VOLS);
+  const courtsSaisis = total > MAX_VOLS;
+  const shortChoices = courtsSaisis ? [] : Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (courts === null ? 0 : courts), 0);
   const questionCourts = 'Sur ces ' + total + ', combien sont courts ?';
   const { bloc, marque } = useAncreDuChamp('flights_short_per_year');
@@ -67,13 +75,22 @@ export function FlightsStep({ answers, update }) {
         <GroupeDeChoix question={QUESTION_TOTAL} style={PUCES}>
           {TOTAL_CHOICES.map((n) => (
             <Chip key={n} label={n === MAX_VOLS ? MAX_VOLS + '+' : String(n)} accessibilityLabel={n === MAX_VOLS ? MAX_VOLS + ' vols ou plus' : undefined}
-              role="radio" selected={answers.flights_total_per_year === n}
-              onPress={() => update({
-                flights_total_per_year: n,
-                flights_short_per_year: volsCourtsApresTotal(answers, n),
-              })} />
+              role="radio" selected={n === MAX_VOLS ? plafond : !plafond && answers.flights_total_per_year === n}
+              onPress={() => {
+                if (n === MAX_VOLS) {
+                  choisirLePlafond(true);
+                  if (!plafond) update({ flights_total_per_year: null, flights_short_per_year: volsCourtsApresTotal(answers, MAX_VOLS) });
+                  return;
+                }
+                choisirLePlafond(false);
+                update({ flights_total_per_year: n, flights_short_per_year: volsCourtsApresTotal(answers, n) });
+              }} />
           ))}
         </GroupeDeChoix>
+        {plafond && (
+          <ChampDuPlafond valeur={answers.flights_total_per_year} unite="vols" label="Nombre de vols sur une année"
+            onChange={(v) => update(v === 0 ? { flights_total_per_year: 0, flights_short_per_year: 0 } : { flights_total_per_year: v })} />
+        )}
       </div>
 
       {total > 0 && (
@@ -82,11 +99,16 @@ export function FlightsStep({ answers, update }) {
           <div ref={bloc} style={{ ...COLONNE, gap: 16 }}>
             <IntituleDuChamp type="subtitle" weight={600} style={SOUS_TITRE} marque={marque}>{questionCourts}</IntituleDuChamp>
             <ThemedText type="small" themeColor="textTertiary">Europe, moins de 3 h. Le reste est compté comme long-courrier.</ThemedText>
-            <GroupeDeChoix question={questionCourts} style={PUCES}>
-              {shortChoices.map((n) => (
-                <Chip key={n} label={String(n)} role="radio" selected={courts === n} onPress={() => update({ flights_short_per_year: n })} />
-              ))}
-            </GroupeDeChoix>
+            {courtsSaisis ? (
+              <NumericField value={courts} unit="vols" label="Nombre de vols courts" entier
+                onChange={(v) => update({ flights_short_per_year: v === null ? null : Math.min(v, total) })} />
+            ) : (
+              <GroupeDeChoix question={questionCourts} style={PUCES}>
+                {shortChoices.map((n) => (
+                  <Chip key={n} label={String(n)} role="radio" selected={courts === n} onPress={() => update({ flights_short_per_year: n })} />
+                ))}
+              </GroupeDeChoix>
+            )}
             {courts !== null && (
               <ThemedText type="small">
                 {decompteDesLongsCourriers(longCount)}
