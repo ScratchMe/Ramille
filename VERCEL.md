@@ -97,6 +97,14 @@ La mesure juste, en une phrase : *pour chaque `.func` non-symlink, sommer les fi
 qu'il contient **et** les fichiers listés dans son `filePathMap`, sans compter deux fois.* Pour le
 poids facturé, multiplier ensuite chaque bundle par le nombre de routes qui pointent dessus.
 
+**Et la mesure dépend de l'endroit d'où on la lance, de quelques octets** (relevé le 02/10/2026). Les
+sourcemaps du build portent le **chemin absolu** de leur source : mesurer depuis une copie de travail
+(`.claude/worktrees/<nom>/`) au lieu de la racine du dépôt ajoute la longueur de ce préfixe une fois
+par fichier qui le porte — deux aujourd'hui, la carte de `share-card` et le bundle de `partage`. Ce
+jour-là, +52 octets depuis `.claude/worktrees/erreurs/` (26 caractères, deux fois), et `main` mesuré
+au même endroit donnait le même contenu. Un écart de quelques dizaines d'octets se compare donc à
+`main` mesuré **au même endroit**, avant de chercher une cause dans le code.
+
 **Et le tableau de bord compte l'archive, pas le disque.** L'export d'un déploiement (*Deployment
 → Source/Output*, ou l'export CSV) donne par fonction la taille que Vercel retient ; chez Ramille
 c'est 1 595 453 octets pour un bundle qui pèse 4,33 Mo sur disque, soit **37 %** — un `.zip` local
