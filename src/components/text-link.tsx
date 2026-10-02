@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import type { Ref } from 'react';
+import { Pressable, StyleSheet, type StyleProp, type TextStyle, type View, type ViewStyle } from 'react-native';
 
 import { ThemedText, type ThemedTextProps } from '@/components/themed-text';
 import { ControlHeight, Radius } from '@/constants/theme';
@@ -28,6 +29,7 @@ import { useTheme } from '@/hooks/use-theme';
 // « l'app n'a pas pris mon geste » que la décision n° 6 ferme. La cible prend `backgroundPressed`,
 // la teinte des surfaces neutres sous le doigt ; le texte ne bouge pas.
 export function TextLink({
+  ref,
   label,
   onPress,
   disabled,
@@ -38,6 +40,8 @@ export function TextLink({
   style,
   ...textProps
 }: {
+  /** Pour y rendre le focus après un geste qui l'avait fait disparaître (« Modifier les jours », D15). */
+  ref?: Ref<View>;
   label: string;
   onPress: () => void;
   disabled?: boolean;
@@ -63,6 +67,7 @@ export function TextLink({
 
   return (
     <Pressable
+      ref={ref}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole={role}

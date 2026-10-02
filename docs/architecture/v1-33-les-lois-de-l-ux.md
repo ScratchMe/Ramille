@@ -340,6 +340,10 @@ et ce que la vague a relevé en chemin est en §9.
   l'échéance a été choisie. Modifier l'échéance en gardant `committed_at` les ferait mentir toutes les
   deux — « Ce mois-ci » choisi en septembre, changé en « Le mois prochain » en octobre, serait
   interrogé le 1er novembre sur octobre (`BOUCLE.md` §2).
+  **Livré le 02/10/2026** (`PLAN.md`) : « Modifier les jours » ou « Modifier l'échéance » précède
+  « Changer d'avis » sur la carte engagée et rouvre le sélecteur prérempli ; l'intention remplacée
+  s'archive (raison `modification`), et `committed_at` repart à maintenant — la règle de D14 reste
+  vraie.
 - **D16 — « Choisir une action » de la carte de saison mène à la liste complète** (P-14), alors que les
   deux cartes choisies par le plan sont juste dessous. **Recommandation** : refermer la carte et
   amener la première piste dans la fenêtre ; la liste reste derrière « Voir toutes les pistes ».
@@ -402,7 +406,7 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
    suivi, le plan et le contexte —, puis les surfaces de service.
 3. **Les chantiers à part**, un par un, chacun avec sa migration, ses tests pgTAP recalculés par
    requête et sa contre-lecture : la quatrième fréquence des loisirs (D5, livrée le 02/10/2026), la question générique le
-   mois du choix (D14, livrée le 02/10/2026), « Modifier les jours » (D15), le champ sous « 10+ », et la réponse au point
+   mois du choix (D14, livrée le 02/10/2026), « Modifier les jours » (D15, livré le 02/10/2026), le champ sous « 10+ », et la réponse au point
    corrigeable dans sa période.
 
 Puis les reports techniques de §4.2, en commençant par T-5 (les liens), qui touche trente et un

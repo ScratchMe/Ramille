@@ -244,8 +244,9 @@ décembre, je reviens te demander si tu l'as faite », `ligneDAttenteDeLaFeuille
 `src/types/rappels.ts`). Toucher à l'une sans l'autre refait une promesse fausse. **Et la règle lit
 `committed_at` comme le jour où l'échéance a été choisie** — vrai tant que `commit_plan_action` le
 remet à `now()` à chaque engagement, et que changer d'échéance oblige à libérer puis réengager. Le
-chantier D15 (« Modifier l'échéance » sans libérer) devra le garder vrai, ou dater l'échéance à part :
-sinon « Ce mois-ci » choisi en septembre, changé en « Le mois prochain » en octobre, serait interrogé
+chantier D15 (« Modifier l'échéance » sans libérer, livré le même jour) le garde vrai : une vraie
+modification remet `committed_at` à maintenant, une intention identique ne le touche pas (`PLAN.md`).
+Sinon « Ce mois-ci » choisi en septembre, changé en « Le mois prochain » en octobre, serait interrogé
 le 1er novembre sur octobre. La carte engagée et le suivi lisent la même date pour dire le mois visé
 (« en novembre », `formatIntention`).
 

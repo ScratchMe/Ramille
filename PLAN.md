@@ -186,6 +186,15 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   deux chemins clients passent par `archiver_engagement_de_laction`, qui délègue. `action_text` y est
   **figé** : C3.8 reformule plusieurs gabarits, et relire le libellé courant réécrirait ce que la
   personne a lu en choisissant.
+- **Modifier l'intention ne libère pas, et laisse sa trace** (`v1-33` D15, 02/10/2026,
+  `20261002220000_modifier_l_intention_sans_liberer.sql`, test `44`). « Modifier les jours » et
+  « Modifier l'échéance » rouvrent le sélecteur prérempli et rappellent `commit_plan_action` sur
+  l'action **déjà engagée** : l'intention remplacée s'archive (raison `modification`), une intention
+  identique ne réécrit rien — les jours comparés comme un ensemble —, et `committed_at` repart à
+  maintenant, parce que c'est le jour du choix de l'échéance que la question du mois lit (D14,
+  `BOUCLE.md` §2). Ni `premier_engagement_le` ni `carried_over_from` ne bougent, et la raison n'est
+  pas annonçable (`RAISONS_ANNONCABLES`). Côté écran, la carte se referme à la lecture qui suit et
+  n'ouvre pas la feuille des rappels : ce n'est pas un nouvel engagement.
 - **Le re-bilan reprend l'engagement, le changement de saison le reconduit.** Les deux situations
   s'excluent dans `generate_plan_cycle_for_user` (le cycle existe déjà / il est neuf), et la capture
   précède l'upsert parce que le `delete` est irréversible. Une reconduction pose

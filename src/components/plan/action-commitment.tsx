@@ -111,6 +111,27 @@ export function ActionCommitment({
   const kind = intentionKindForPoste(poste);
 
   const [picking, setPicking] = useState(surLeChoix);
+  /**
+   * Le sélecteur rouvert sur l'action **déjà engagée**, prérempli (`v1-33` D15, 02/10/2026) :
+   * « Modifier les jours » ou « Modifier l'échéance » rappellent `commit_plan_action` sur la même
+   * action, qui archive l'intention remplacée sans libérer (`modification`). Trois choses changent
+   * par rapport à un engagement : le choix part de l'intention en place, la carte se referme à la
+   * lecture qui suit et non au premier rendu engagé — elle l'était déjà, et montrerait l'ancienne
+   * intention le temps de la relecture —, et la feuille des rappels ne s'ouvre pas (`onEngage`) : ce
+   * n'est pas un nouvel engagement.
+   */
+  const [modification, setModification] = useState(false);
+  /**
+   * Le geste qui vient d'ouvrir ou de refermer le sélecteur, lu par l'effet du focus plus bas — et
+   * déclaré ici parce que la fermeture d'une modification se décide au rendu, juste en dessous.
+   */
+  const geste = useRef<'ouvrir' | 'annuler' | null>(surLeChoix ? 'ouvrir' : null);
+  /**
+   * Une modification a été ouverte depuis la carte engagée : quand le sélecteur se referme — annulé,
+   * ou refermé à la lecture qui suit —, le focus revient au lien qui l'a ouvert. Posé au geste, lu et
+   * effacé dans l'effet du focus : jamais écrit pendant le rendu, où la fermeture se décide.
+   */
+  const modificationOuverte = useRef(false);
   const [days, setDays] = useState<IntentionDay[]>([]);
   const [timing, setTiming] = useState<IntentionTiming | null>(null);
   const [busy, setBusy] = useState(false);
@@ -142,7 +163,7 @@ export function ActionCommitment({
   useEffect(() => {
     lecturesCourantes.current = lectures;
   }, [lectures]);
-  if (lectureAttendue !== null && committed) {
+  if (lectureAttendue !== null && committed && !modification) {
     setLectureAttendue(null);
     setBusy(false);
     setPicking(false);
@@ -151,6 +172,14 @@ export function ActionCommitment({
   } else if (lectureAttendue !== null && lectures !== undefined && lectures > lectureAttendue) {
     setLectureAttendue(null);
     setBusy(false);
+    // Une modification se referme à la lecture qui suit, que celle-ci ait réussi ou non : le RPC a
+    // répondu, l'intention est écrite, et c'est la ligne de relecture de l'écran qui dit un échec.
+    if (modification) {
+      setModification(false);
+      setPicking(false);
+      setDays([]);
+      setTiming(null);
+    }
   }
 
   // La question écrite une fois pour ses deux usages : le texte au-dessus des puces et le nom de
@@ -182,11 +211,18 @@ export function ActionCommitment({
    */
   const laQuestion = useRef<unknown>(null);
   const leBouton = useRef<View>(null);
-  const geste = useRef<'ouvrir' | 'annuler' | null>(surLeChoix ? 'ouvrir' : null);
+  // Et, sur la carte engagée, le lien qui rouvre le sélecteur (D15) : « Annuler » et la fin d'une
+  // modification y rendent le focus, le bouton « Je m'y engage » n'étant pas là.
+  const leLienModifier = useRef<View>(null);
   useEffect(() => {
     const vient = geste.current;
     geste.current = null;
     if (vient === 'ouvrir' && picking) donnerLeFocus(laQuestion.current);
+    if (!picking && modificationOuverte.current) {
+      modificationOuverte.current = false;
+      donnerLeFocus(leLienModifier.current);
+      return;
+    }
     if (vient === 'annuler' && !picking) donnerLeFocus(leBouton.current);
   }, [picking]);
 
@@ -262,7 +298,9 @@ export function ActionCommitment({
     // carte. Sur le plan, jusqu'à la lecture qui suit (`lectureAttendue`, audit P-1).
     if (lecturesCourantes.current !== undefined) setLectureAttendue(lecturesCourantes.current);
     onChanged();
-    onEngage?.({ poste, echeance: kind === 'days' ? null : timing });
+    // Une modification n'est pas un nouvel engagement : la feuille des rappels, cérémonie du premier,
+    // ne s'ouvre pas, et l'écran n'a pas à amener une carte qui est déjà là.
+    if (!modification) onEngage?.({ poste, echeance: kind === 'days' ? null : timing });
   };
 
   const release = async () => {
@@ -281,9 +319,32 @@ export function ActionCommitment({
   // L'engagement se lit désormais sur la carte elle-même — bordure, fond, étiquette et
   // intention (cf. `action-card.tsx`, v1-11 lot 1). Ce composant ne garde donc que ce qu'il
   // est seul à pouvoir faire ici : rendre la main.
-  if (committed) {
+  //
+  // **Et, depuis le 02/10/2026, la modifier** (`v1-33` D15) : changer ses jours ou son échéance
+  // obligeait à libérer, rouvrir, recocher et confirmer, et laissait une archive « changement » pour
+  // une action qu'on n'avait pas quittée. Le lien rouvre le sélecteur prérempli.
+  if (committed && !picking) {
     return (
-      <View style={styles.footer}>
+      <View style={[styles.footer, styles.liensDeLaCarteEngagee]}>
+        <TextLink
+          ref={leLienModifier}
+          label={kind === 'days' ? 'Modifier les jours' : 'Modifier l’échéance'}
+          hint="Rouvre le choix, sans libérer cette action"
+          onPress={() => {
+            geste.current = 'ouvrir';
+            modificationOuverte.current = true;
+            setError(null);
+            setDays(((intentionDays ?? []) as IntentionDay[]).slice());
+            setTiming((intentionTiming as IntentionTiming | null) ?? null);
+            setModification(true);
+            setPicking(true);
+            onOuvert?.();
+          }}
+          disabled={busy}
+          type="small"
+          themeColor="textTertiary"
+          style={styles.link}
+        />
         <TextLink
           label="Changer d’avis"
           hint="Libère cette action ; tu pourras en choisir une autre"
@@ -389,7 +450,7 @@ export function ActionCommitment({
         <TextLink
           label="Annuler"
           onPress={() => {
-            if (onAnnuler) {
+            if (onAnnuler && !modification) {
               onAnnuler();
               return;
             }
@@ -397,6 +458,12 @@ export function ActionCommitment({
             // La demande appartient au sélecteur qu'on referme : rouvert, il ne redit rien d'office.
             setDemande(false);
             setPicking(false);
+            // Une modification annulée laisse l'intention en place, et le sélecteur sans reste.
+            if (modification) {
+              setModification(false);
+              setDays([]);
+              setTiming(null);
+            }
           }}
           disabled={busy}
           type="small"
@@ -418,4 +485,5 @@ const styles = StyleSheet.create({
   timingColumn: { gap: Spacing.two },
   pickerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
   link: { textDecorationLine: 'underline' },
+  liensDeLaCarteEngagee: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: Spacing.four },
 });

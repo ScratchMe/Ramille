@@ -4,7 +4,10 @@ import { Chip } from '../forms/Chip.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { TextLink } from '../core/TextLink.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
-// Source : src/components/plan/action-commitment.tsx — trois états : bouton « Je m'y engage », sélecteur d'intention, lien « Changer d'avis ».
+// Source : src/components/plan/action-commitment.tsx — trois états : bouton « Je m'y engage », sélecteur d'intention, et
+// la carte engagée, qui porte deux liens : « Modifier les jours » (ou « Modifier l'échéance ») et « Changer d'avis ». Le
+// premier rouvre le sélecteur **prérempli**, sans libérer l'action (`v1-33` D15, 02/10/2026) : c'est `state="picking"`
+// avec les jours ou l'échéance en place ; dans le dépôt, il se referme à la lecture qui suit, sans feuille des rappels.
 // `relecture` (01/10/2026, audit P-1) : « C'est noté » a abouti et l'écran relit le plan — le sélecteur reste, son
 // bouton inactif, jusqu'à la carte engagée ; dans le dépôt, c'est `lectures` qui le dit.
 // `demande` (01/10/2026, D13 de `v1-33`) : « C'est noté » a été touché sur une intention incomplète. Il n'est pas
@@ -23,9 +26,14 @@ const DAYS = [[1, 'L', 'lundi'], [2, 'M', 'mardi'], [3, 'M', 'mercredi'], [4, 'J
 const TIMINGS_LOISIRS = [['ce_mois', 'Ce mois-ci'], ['le_mois_prochain', 'Le mois prochain'], ['prochaine_occasion', 'À ma prochaine occasion']];
 const TIMINGS_VOYAGES = [['au_prochain_voyage', 'À mon prochain projet de voyage'], ['avant_le_prochain_bilan', 'Avant mon prochain bilan']];
 const SOULIGNE = { textDecoration: 'underline' };
-export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etatDemande = 'idle', days = [], timing = null, otherActionCommitted, surLeChoix = false, onAnnuler, relecture = false, demande = false, onEngage, onPick, onToggleDay, onTiming, onCancel, onSubmit, onRelease }) {
+export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etatDemande = 'idle', days = [], timing = null, otherActionCommitted, surLeChoix = false, onAnnuler, relecture = false, demande = false, onEngage, onPick, onToggleDay, onTiming, onCancel, onSubmit, onRelease, onModify }) {
   const state = surLeChoix && etatDemande === 'idle' ? 'picking' : etatDemande;
-  if (state === 'committed') return <div style={{ marginTop: 16 }}><TextLink label="Changer d’avis" hint="Libère cette action ; tu pourras en choisir une autre" onPress={onRelease} type="small" themeColor="textTertiary" style={SOULIGNE} /></div>;
+  if (state === 'committed') return (
+    <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 24 }}>
+      <TextLink label={kind === 'days' ? 'Modifier les jours' : 'Modifier l’échéance'} hint="Rouvre le choix, sans libérer cette action" onPress={onModify} type="small" themeColor="textTertiary" style={SOULIGNE} />
+      <TextLink label="Changer d’avis" hint="Libère cette action ; tu pourras en choisir une autre" onPress={onRelease} type="small" themeColor="textTertiary" style={SOULIGNE} />
+    </div>
+  );
   if (state === 'idle') return <div style={{ marginTop: 16 }}><Button title={otherActionCommitted ? 'Choisir celle-ci à la place' : 'Je m’y engage'} variant="secondary" onPress={onPick || onEngage} /></div>;
   const complete = kind === 'days' ? days.length > 0 : !!timing;
   // Ce qui manque, mot pour mot (`ceQuiManqueALIntention`), et seulement tant qu'il manque quelque chose.

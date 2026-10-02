@@ -44,13 +44,21 @@ const onChanged = jest.fn();
 const onEngage = jest.fn();
 
 /** Un trajet domicile-travail : l'intention se dit en jours — sauf `poste` qui dit autre chose. */
-const carte = (surcharge: { committed?: boolean; lectures?: number; poste?: string } = {}) => (
+const carte = (
+  surcharge: {
+    committed?: boolean;
+    lectures?: number;
+    poste?: string;
+    intentionDays?: number[] | null;
+    intentionTiming?: string | null;
+  } = {}
+) => (
   <ActionCommitment
     actionId="a1"
     poste={surcharge.poste ?? 'commute'}
     committed={surcharge.committed ?? false}
-    intentionDays={null}
-    intentionTiming={null}
+    intentionDays={surcharge.intentionDays ?? null}
+    intentionTiming={surcharge.intentionTiming ?? null}
     otherActionCommitted={false}
     onChanged={onChanged}
     onEngage={onEngage}
@@ -228,5 +236,85 @@ describe('ActionCommitment — « C’est noté » en attente', () => {
     fireEvent.press(screen.getByRole('checkbox', { name: 'jeudi' }));
     fireEvent.press(screen.getByText('C’est noté'));
     await waitFor(() => expect(mockEngager).toHaveBeenCalledWith('a1', { days: [4] }, false));
+  });
+});
+
+/**
+ * **Modifier l'intention sans libérer** (`v1-33` D15, 02/10/2026). La carte engagée n'offrait que
+ * « Changer d'avis » : changer ses jours coûtait quatre gestes et une archive « changement ». Le lien
+ * rouvre le sélecteur prérempli, et « C'est noté » rappelle le RPC sur la même action — c'est la
+ * base qui archive l'intention remplacée (test pgTAP `44`). Ce que ce fichier garde, c'est la carte :
+ * le préremplissage, l'appel, l'absence de cérémonie, et la fermeture à la lecture qui suit.
+ *
+ * Éprouvé en le cassant, le 02/10/2026 (TESTING.md §1.1) :
+ *   - la fermeture au premier rendu engagé (la condition `!modification` retirée) → « envoie la même
+ *     action… », seul — le sélecteur se refermait avant la relecture, sur l'ancienne intention ;
+ *   - la feuille des rappels ouverte sur une modification (`onEngage` sans condition) → le même, seul ;
+ *   - le préremplissage retiré → « rouvre le choix prérempli », « l'échéance des sorties », et
+ *     « envoie la même action… », dont le décochage de jeudi part alors d'un choix vide ;
+ *   - « Annuler » qui garde la modification ouverte (`setModification(false)` retiré) → « après une
+ *     modification annulée… », seul. Le premier essai de ce fichier ne le voyait pas : le drapeau
+ *     resté levé ne change rien à l'écran tant qu'on ne s'engage pas de nouveau.
+ */
+describe('ActionCommitment — modifier l’intention sans libérer (D15)', () => {
+  it('rouvre le choix prérempli, à côté de « Changer d’avis »', () => {
+    render(carte({ committed: true, intentionDays: [2, 4] }));
+    expect(screen.getByText('Changer d’avis')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Modifier les jours'));
+
+    expect(coche('mardi')).toBe(true);
+    expect(coche('jeudi')).toBe(true);
+    expect(coche('lundi')).toBe(false);
+  });
+
+  it('envoie la même action, sans remplacement ni cérémonie, et se referme à la lecture qui suit', async () => {
+    const { rerender } = render(carte({ committed: true, intentionDays: [2, 4] }));
+    fireEvent.press(screen.getByText('Modifier les jours'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'jeudi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+
+    expect(mockEngager).toHaveBeenCalledWith('a1', { days: [2] }, false);
+    expect(onEngage).not.toHaveBeenCalled();
+    // La carte était déjà engagée : elle ne se referme pas sur l'ancienne intention avant la relecture.
+    expect(inactif('C’est noté')).toBe(true);
+
+    rerender(carte({ committed: true, intentionDays: [2], lectures: 4 }));
+    expect(screen.getByText('Modifier les jours')).toBeTruthy();
+    expect(screen.queryByText('C’est noté')).toBeNull();
+  });
+
+  it('« Annuler » laisse l’intention en place, sans rien envoyer', () => {
+    render(carte({ committed: true, intentionDays: [2, 4] }));
+    fireEvent.press(screen.getByText('Modifier les jours'));
+    fireEvent.press(screen.getByText('Annuler'));
+
+    expect(screen.getByText('Modifier les jours')).toBeTruthy();
+    expect(screen.queryByText('C’est noté')).toBeNull();
+    expect(mockEngager).not.toHaveBeenCalled();
+  });
+
+  it('après une modification annulée, un nouvel engagement ouvre bien la feuille des rappels', async () => {
+    const { rerender } = render(carte({ committed: true, intentionDays: [2, 4] }));
+    fireEvent.press(screen.getByText('Modifier les jours'));
+    fireEvent.press(screen.getByText('Annuler'));
+    fireEvent.press(screen.getByText('Changer d’avis'));
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+
+    rerender(carte({ committed: false, lectures: 4 }));
+    // Les gestes de `sEngager`, sans son attente : `onChanged` compte déjà la libération.
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(2));
+    expect(onEngage).toHaveBeenCalledWith({ poste: 'commute', echeance: null });
+  });
+
+  it('dit « Modifier l’échéance » sur les sorties, prérempli de l’échéance en place', () => {
+    render(carte({ committed: true, poste: 'leisure', intentionTiming: 'ce_mois' }));
+    fireEvent.press(screen.getByText('Modifier l’échéance'));
+
+    expect(screen.getByRole('radio', { name: 'Ce mois-ci' }).props.accessibilityState?.checked).toBe(true);
   });
 });

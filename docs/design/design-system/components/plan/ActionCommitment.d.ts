@@ -35,5 +35,10 @@ export interface ActionCommitmentProps {
   onCancel?: () => void;
   onSubmit?: () => void;
   onRelease?: () => void;
+  /**
+   * « Modifier les jours » / « Modifier l'échéance » (`v1-33` D15, 02/10/2026) : rouvre le sélecteur prérempli, sans
+   * libérer l'action. Dans le dépôt, « C'est noté » rappelle le même RPC, qui archive l'intention remplacée.
+   */
+  onModify?: () => void;
 }
 export declare function ActionCommitment(props: ActionCommitmentProps): JSX.Element;

@@ -1886,5 +1886,5 @@ novembre. D14 a fermé le cas de « Le mois prochain » (le point ne retient pas
 mois interrogé ou après) ; les deux autres échéances gardent la fenêtre de quelques heures par mois.
 **Pas corrigé** : la fenêtre est étroite, et la correction — borner la recherche sur `committed_at` —
 touche aussi `engagement_de_la_veille` et la boucle hebdomadaire, qui appellent la même fonction et
-n'ont pas le même calendrier. À reprendre avec D15, qui touchera de toute façon au sens de
-`committed_at` (`BOUCLE.md` §2).
+n'ont pas le même calendrier. D15, livré le même soir, n'y a pas touché : il garde `committed_at`
+comme le jour du dernier choix d'intention (`BOUCLE.md` §2), ce qui laisse cette fenêtre telle quelle.

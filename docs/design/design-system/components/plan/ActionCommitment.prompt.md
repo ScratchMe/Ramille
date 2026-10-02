@@ -8,7 +8,9 @@ S’insère en enfant d’ActionCard. L’intention est obligatoire : jours ou �
 
 **Les échéances** (autres postes) : des `radio` en colonne, rayon 16 (`Radius.field`, nommé depuis le 01/10/2026), en contour, `nestedBackground`. Elles dépendent du poste — « Ce mois-ci » n'est pas une échéance pour un vol.
 
-Aucune notion d’échec : « Changer d’avis » libère sans rien compter. Ses liens (« Changer d’avis », « Annuler ») sont soulignés au repos.
+Aucune notion d’échec : « Changer d’avis » libère sans rien compter. Ses liens (« Modifier les jours », « Changer d’avis », « Annuler ») sont soulignés au repos.
+
+**La carte engagée se modifie sans se libérer** (`v1-33` D15, 02/10/2026) : « Modifier les jours » — « Modifier l’échéance » sur les sorties et les voyages — précède « Changer d’avis », sur la même ligne. Il rouvre le sélecteur **prérempli** de l’intention en place (`state="picking"` avec ses `days` ou son `timing`) ; « Annuler » la laisse telle quelle. Changer ses jours coûtait jusque-là quatre gestes — libérer, rouvrir, recocher, confirmer — et une archive « changement » pour une action qu’on n’avait pas quittée.
 
 **Ouvert sur la question** (`surLeChoix`, `v1-32`, 29/09/2026) : sur « Toutes les pistes », le sélecteur est là d'emblée — la pastille « Choisir » a déjà dit « Je m’y engage ». Son contenu ne change pas : rien de coché, « C’est noté » en attente tant que rien n’est choisi. « Annuler » y appelle `onAnnuler` et rend la carte à sa ligne. Le plan ne passe ni l’un ni l’autre.
 
