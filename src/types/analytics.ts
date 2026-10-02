@@ -115,6 +115,10 @@ export type SourceConnexion = (typeof SOURCES_CONNEXION)[number];
 // `session_refusee` n'est pas une porte comme les autres : c'est un **état de panne** (un jeton
 // refusé, C2.11), et le compter comme une arrivée volontaire mélangerait un incident à une
 // intention. Il vaut mieux qu'elle ait son nom et qu'on la soustraie, que de ne pas la voir.
+// **Mais elle compte zéro par construction, et c'est su** (02/10/2026, `v1-27` §12.27) : `track()`
+// renonce sans session, et un refus, c'est justement l'absence de session — `retrouver_view` et
+// `retrouver_send` partis de cet écran ne s'enregistrent pas. Seul `retrouver_success` peut porter la
+// source, une fois la session revenue. Ne pas lire un zéro ici comme « aucun refus ».
 export const SOURCES_RETROUVER = [
   'onboarding',
   'email',

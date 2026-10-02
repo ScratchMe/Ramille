@@ -1,4 +1,4 @@
-import { doitOuvrirUneSessionAnonyme, etatDeSession } from '@/types/session';
+import { doitOuvrirUneSessionAnonyme, etatDeSession, lEcranDeReconnexionSePose } from '@/types/session';
 
 describe('etatDeSession', () => {
   it('une session présente se reconnaît avant tout le reste', () => {
@@ -34,6 +34,20 @@ describe('etatDeSession', () => {
   });
 
   /**
+   * **Le refus du démarrage n'a pas d'erreur** (02/10/2026, `v1-27` §12.27) : l'initialisation
+   * d'`auth-js` a déjà retiré la session, et `getSession()` ne voit plus rien. Ce qui le sépare d'une
+   * première ouverture, c'est la marque d'un compte rattaché (`porteUnCompte`) ; sans elle — une
+   * session anonyme purgée —, c'est bien une première ouverture. Éprouvé : la branche réduite à
+   * `return 'absente'` → ce test, seul (le client réel le voit aussi, `src/lib/session-refusee.test.ts`).
+   */
+  it('sans session ni erreur, un appareil qui portait un compte est un refus', () => {
+    expect(etatDeSession(false, null, true)).toBe('refusee');
+    expect(etatDeSession(false, null, false)).toBe('absente');
+    // Une session présente gagne toujours : une connexion a eu lieu depuis.
+    expect(etatDeSession(true, null, true)).toBe('presente');
+  });
+
+  /**
    * Et la panne de transport n'est ni l'un ni l'autre. La même erreur lue comme un refus
    * reprocherait à la personne ce que le réseau a fait ; lue comme une absence, elle lui
    * fabriquerait un compte orphelin pour une cause qui disparaît d'elle-même.
@@ -42,18 +56,6 @@ describe('etatDeSession', () => {
    * n'a pas abouti » dans tout le produit, et elle couvre les 5xx volontairement (cf.
    * `src/types/connexion.ts`).
    */
-  /**
-   * **Le refus du démarrage n'a pas d'erreur** (02/10/2026, `v1-27` §12.27) : l'initialisation
-   * d'`auth-js` a déjà retiré la session, et `getSession()` ne voit plus rien. Sans `sessionRetiree`,
-   * c'était une première ouverture, et une session anonyme vide. Éprouvé : la branche réduite à
-   * `return 'absente'` → ce test, seul (le client réel le voit aussi, `src/lib/session-refusee.test.ts`).
-   */
-  it('une session retirée sans qu’on le demande est un refus, même sans erreur', () => {
-    expect(etatDeSession(false, null, true)).toBe('refusee');
-    // Une session présente gagne toujours : une connexion a eu lieu depuis.
-    expect(etatDeSession(true, null, true)).toBe('presente');
-  });
-
   it('une panne de transport n’est ni un refus ni une absence', () => {
     expect(etatDeSession(false, { name: 'AuthRetryableFetchError' }, false)).toBe('indisponible');
     expect(etatDeSession(false, { name: 'AuthApiError', status: 503 }, false)).toBe('indisponible');
@@ -75,5 +77,30 @@ describe('doitOuvrirUneSessionAnonyme', () => {
     ['indisponible'],
   ])('n’ouvre rien quand l’état est %s', (etat) => {
     expect(doitOuvrirUneSessionAnonyme(etat)).toBe(false);
+  });
+});
+
+/**
+ * Où l'écran de reconnexion se pose (02/10/2026, contre-lecture de la PR #315). Éprouvé : la garde de
+ * `/connexion/` retirée → « s'efface sur la reconnexion… », seul ; la liste vidée → « laisse les
+ * surfaces publiques… », seul.
+ */
+describe('lEcranDeReconnexionSePose', () => {
+  it('se pose sur les écrans qui demandent le compte, et sur une route neuve', () => {
+    for (const chemin of ['/', '/plan', '/plan/pistes', '/suivi', '/suivi/bilan', '/compte', '/bilan', '/onboarding', '/contexte', '/une-route-neuve']) {
+      expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: true });
+    }
+  });
+
+  it('s’efface sur la reconnexion, où la personne va justement', () => {
+    for (const chemin of ['/connexion', '/connexion/retrouver', '/connexion/email']) {
+      expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: false });
+    }
+  });
+
+  it('laisse les surfaces publiques et de service, qui ne demandent pas de compte', () => {
+    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/feedback', '/status']) {
+      expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: false });
+    }
   });
 });

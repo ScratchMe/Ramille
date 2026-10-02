@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
-import { ensureSession, supabase } from '@/lib/supabase';
+import { ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
 import { destinationDuDemarrage, lireLeBilan, type LectureDuBilan } from '@/types/demarrage';
@@ -56,6 +56,11 @@ export default function Index() {
           if (!estPanneDeTransport(erreurDeSession as ErreurAuth)) throw erreurDeSession;
           coupureALaSession = true;
         }
+        // **Un refus ne lit rien et ne route nulle part** (02/10/2026, `v1-27` §12.27) : sans session,
+        // la lecture partirait en `anon`, qui n'a aucun privilège, et l'écran technique d'une « erreur
+        // serveur » se poserait sous l'écran de reconnexion — le piège décrit ci-dessus, par un autre
+        // chemin. La racine attend : c'est l'écran de reconnexion, posé par le layout, qui décide.
+        if (etatDeLaSession() === 'refusee') return;
 
         // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-10). Quelqu'un qui a
         // interrompu son questionnaire repartait de la racine, donc de l'onboarding : quatre

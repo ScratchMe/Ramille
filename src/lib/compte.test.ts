@@ -19,21 +19,44 @@
  * le quatrième, et lui seul. Le 30/09/2026, les quatre rejouées : la relecture de `getSession()`
  * retirée après une erreur fait tomber le troisième, et lui seul ; une erreur toujours prise pour une
  * sortie, le deuxième, et lui seul.
+ *
+ * **Et le 02/10/2026, les deux départs déclarés** (`v1-27` §12.27) : une session retirée sans départ
+ * déclaré se lit comme un refus, et ouvre l'écran de reconnexion. Le double de
+ * `pendantUnDepartVolontaire` lève un indicateur pendant l'action, et chaque appel au serveur note s'il
+ * l'a trouvé levé. Éprouvé : l'enveloppe retirée de `seDeconnecterDeCetAppareil` → « ne ferme que la
+ * session… », seul ; de `deleteMyAccount` → « ferme la session de cet appareil… », seul (la contre-lecture
+ * de la PR #315 relevait que rien ne gardait ces deux appels).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const mockRpc = jest.fn();
 const mockSignOut = jest.fn();
 const mockGetSession = jest.fn();
+// Un départ est-il déclaré au moment de l'appel ? Chaque appel au serveur le note.
+let mockDepartDeclare = false;
+const mockDeclare: { appel: string; declare: boolean }[] = [];
 const mockStock = new Map<string, string>();
 
 jest.mock('@/lib/supabase', () => ({
-  // Le départ volontaire se déclare autour de l'appel ; ici, il le laisse passer tel quel.
-  pendantUnDepartVolontaire: <T,>(action: () => Promise<T>) => action(),
+  // Le départ volontaire se déclare autour de l'appel : l'indicateur est levé pendant l'action.
+  pendantUnDepartVolontaire: async <T,>(action: () => Promise<T>) => {
+    mockDepartDeclare = true;
+    try {
+      return await action();
+    } finally {
+      mockDepartDeclare = false;
+    }
+  },
   supabase: {
-    rpc: (...args: unknown[]) => mockRpc(...args),
+    rpc: (...args: unknown[]) => {
+      mockDeclare.push({ appel: 'rpc', declare: mockDepartDeclare });
+      return mockRpc(...args);
+    },
     auth: {
-      signOut: (...args: unknown[]) => mockSignOut(...args),
+      signOut: (...args: unknown[]) => {
+        mockDeclare.push({ appel: 'signOut', declare: mockDepartDeclare });
+        return mockSignOut(...args);
+      },
       getSession: () => mockGetSession(),
     },
   },
@@ -56,6 +79,7 @@ const { deleteMyAccount, seDeconnecterDeCetAppareil } = require('./compte') as t
 beforeEach(() => {
   mockRpc.mockReset();
   mockSignOut.mockReset();
+  mockDeclare.length = 0;
   mockGetSession.mockReset();
   mockStock.clear();
   mockStock.set('traceverte.a_un_bilan.v1', '1');
@@ -76,6 +100,8 @@ describe('seDeconnecterDeCetAppareil', () => {
     expect(mockSignOut).toHaveBeenCalledTimes(1);
     expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
     expect(await marques()).toEqual(['autre.cle']);
+    // Un départ déclaré : la session retirée n'est pas un refus.
+    expect(mockDeclare).toEqual([{ appel: 'signOut', declare: true }]);
   });
 
   it('garde les marques locales quand la déconnexion échoue et que la session est encore là', async () => {
@@ -110,6 +136,11 @@ describe('deleteMyAccount', () => {
     expect(mockRpc).toHaveBeenCalledWith('delete_my_account');
     expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
     expect(await marques()).toEqual(['autre.cle']);
+    // Tout le départ est déclaré, l'effacement du compte compris — pas seulement le `signOut`.
+    expect(mockDeclare).toEqual([
+      { appel: 'rpc', declare: true },
+      { appel: 'signOut', declare: true },
+    ]);
   });
 
   it('annonce la suppression même si la déconnexion échoue : le compte, lui, est parti', async () => {

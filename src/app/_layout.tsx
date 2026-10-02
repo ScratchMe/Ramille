@@ -16,7 +16,7 @@ import {
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, StyleSheet, View } from 'react-native';
 
 import { ConfigurationManquante } from '@/components/configuration-manquante';
 import { ErreurInattendue } from '@/components/erreur-inattendue';
@@ -26,7 +26,7 @@ import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
 import { createSessionFromUrl } from '@/lib/auth';
-import { lireEtatDuRattachement } from '@/lib/compte';
+import { effacerLesMarquesLocales, lireEtatDuRattachement } from '@/lib/compte';
 import {
   afficherLesNotificationsAuPremierPlan,
   enregistrerLeJeton,
@@ -43,6 +43,7 @@ import {
 } from '@/lib/supabase';
 import { appErrorCategory, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
 import { estVerifieurManquant, lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
+import { lEcranDeReconnexionSePose } from '@/types/session';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -98,18 +99,20 @@ export default function RootLayout() {
   });
 
   /**
-   * Le jeton stocké a été refusé (C2.11). Posé par le démarrage ci-dessous, et **abaissé par les
-   * deux gestes de l'écran avant qu'ils ne naviguent** — ce n'est pas optionnel, c'est ce qui rend
-   * les boutons vivants. `SessionRefusee` est une **surcouche** du `Stack`, pas un remplacement
-   * (il n'aurait sinon aucune route où aller) : un `router.replace` seul naviguerait *dessous*
-   * pendant que la surcouche resterait au-dessus, cachant la destination. Retirer les
-   * `setSessionRefusee(false)` en croyant les simplifier rendrait les deux boutons inertes — la
-   * panne même que cette surcouche existe pour éviter.
+   * Le jeton stocké a été refusé (C2.11, `v1-27` §12.27). **L'écran de reconnexion se déduit, il ne
+   * se pose plus** (02/10/2026) : il est là tant que le refus tient (`refus`, suivi ci-dessous) **et**
+   * que la route demande un compte (`lEcranDeReconnexionSePose`). « J'ai déjà un compte » mène à
+   * `/connexion/retrouver`, où il s'efface de lui-même ; en ressortir sans s'être reconnecté le fait
+   * revenir — la première version l'abaissait à la main avant de naviguer, et un « Retour » laissait
+   * alors la personne devant un plan illisible. Il disparaît pour de bon quand une session revient, ou
+   * quand la personne choisit de repartir sur cet appareil.
    *
-   * Rien ne le repose à vrai ensuite : `ensureSession` ne tourne qu'une fois par chargement du
-   * bundle, et rien dans cette session ne peut rendre ce jeton valide.
+   * `SessionRefusee` est une **surcouche** du `Stack`, pas un remplacement (il n'aurait sinon aucune
+   * route où aller) ; le `Stack` dessous est caché au lecteur d'écran tant qu'elle est posée.
    */
-  const [sessionRefusee, setSessionRefusee] = useState(false);
+  const [refus, setRefus] = useState(false);
+  const chemin = usePathname();
+  const ecranDeReconnexion = refus && lEcranDeReconnexionSePose(chemin);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -153,7 +156,7 @@ export default function RootLayout() {
         // tout — et chaque onglet dirait « tu n'as rien » à quelqu'un qui a tout. La panne de
         // transport, elle, n'affiche rien : elle n'est pas de la faute de la personne et le
         // prochain lancement réessaie.
-        if (etatDeLaSession() === 'refusee') setSessionRefusee(true);
+        if (etatDeLaSession() === 'refusee') setRefus(true);
 
         if (!ouvertureDejaComptee) {
           ouvertureDejaComptee = true;
@@ -209,6 +212,11 @@ export default function RootLayout() {
     return () => abonnement?.remove();
   }, []);
 
+  // **Le refus se suit, il ne se pose pas une fois** (02/10/2026, `v1-27` §12.27) : il commence au
+  // démarrage ou en cours de route (un rafraîchissement refusé), et finit à une connexion ou au choix
+  // de repartir — `src/lib/supabase.ts` prévient à chaque changement.
+  useEffect(() => ecouterLeRefus(() => setRefus(etatDeLaSession() === 'refusee')), []);
+
   // **Le jeton se réenregistre à chaque changement d'utilisateur**, et cette écoute est ce qui
   // couvre tous les `setSession` réussis sans avoir à y penser appel par appel : le lien de
   // connexion traité juste en dessous, le retour Google natif de `/connexion`, et le passage d'une
@@ -219,12 +227,6 @@ export default function RootLayout() {
   // promesse qui attend le retour du rappel. Le garde met ce cas hors de portée — un
   // rafraîchissement ne change pas d'utilisateur, donc il sort avant de toucher au réseau — et
   // l'écriture ne part pas dans le fil du rappel.
-  // **Un refus se montre quand il arrive, pas seulement au démarrage** (02/10/2026, `v1-27` §12.27) :
-  // un rafraîchissement refusé en cours de route, ou un écran qui rappelle `ensureSession()` alors que
-  // la personne a quitté `/connexion/retrouver` sans se reconnecter. Le refus tient tant qu'elle n'a
-  // pas choisi (`src/lib/supabase.ts`) : l'écran revient donc avec lui.
-  useEffect(() => ecouterLeRefus(() => setSessionRefusee(true)), []);
-
   useEffect(() => {
     if (!configurationSupabase.complete) return;
     const { data } = supabase.auth.onAuthStateChange((_evenement, session) => {
@@ -394,25 +396,34 @@ export default function RootLayout() {
           l'app s'arrête net, et elle le dit. */}
       {configurationSupabase.complete ? (
         <>
-          <Stack screenOptions={{ headerShown: false }} />
+          {/* **Caché au lecteur d'écran sous l'écran de reconnexion** (02/10/2026) : sans cela,
+              TalkBack ou la tabulation atteignaient l'écran d'en dessous. */}
+          <View
+            style={styles.pile}
+            importantForAccessibility={ecranDeReconnexion ? 'no-hide-descendants' : 'auto'}
+            aria-hidden={ecranDeReconnexion || undefined}
+          >
+            <Stack screenOptions={{ headerShown: false }} />
+          </View>
           {/* **Posé par-dessus le navigateur, qui reste monté** : les deux gestes de cet écran sont
               des navigations, et un écran rendu *à la place* du `Stack` n'aurait eu aucune route où
-              aller. Le drapeau se lève avant de partir, sinon la surcouche masquerait la
-              destination. */}
-          {sessionRefusee && (
+              aller. */}
+          {ecranDeReconnexion && (
             <SessionRefusee
               onRetrouver={() => {
-                setSessionRefusee(false);
                 // `session_refusee` et non le repli muet sur `onboarding` : c'est un état de
                 // panne (un jeton refusé), et le compter comme une découverte mêlerait un
-                // incident à une intention.
+                // incident à une intention. La route efface l'écran d'elle-même.
                 router.replace({ pathname: '/connexion/retrouver', params: { source: 'session_refusee' } });
               }}
               onCommencer={() => {
-                setSessionRefusee(false);
-                // Le refus est levé : le questionnaire ouvrira la session anonyme qu'il lui faut.
-                repartirSurCetAppareil();
-                router.replace('/onboarding');
+                // **Repartir, c'est changer de propriétaire** : les marques du compte quitté — son
+                // brouillon, sa marque de bilan, l'étape de son premier parcours — seraient relues par
+                // la session anonyme suivante comme les siennes (la règle de `seDeconnecterDeCetAppareil`).
+                // Puis le refus est levé, et le questionnaire ouvrira la session qu'il lui faut.
+                void effacerLesMarquesLocales()
+                  .then(repartirSurCetAppareil)
+                  .finally(() => router.replace('/onboarding'));
               }}
             />
           )}
@@ -458,3 +469,9 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   // `retry` rend une promesse qu'un bouton n'attend pas.
   return <ErreurInattendue erreur={error} reessayer={() => void retry()} />;
 }
+
+const styles = StyleSheet.create({
+  // La pile prend toute la place, comme sans enveloppe : l'enveloppe n'existe que pour la cacher au
+  // lecteur d'écran sous l'écran de reconnexion.
+  pile: { flex: 1 },
+});

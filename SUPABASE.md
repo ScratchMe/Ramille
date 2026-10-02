@@ -38,12 +38,13 @@ fonctions et les incidents propres à Ramille, et ne voyage pas. L'histoire comp
   plus, ne rien reprocher, réessayer au prochain lancement). **Mais pas au démarrage, mesuré le
   01/10/2026** (`auth-js` 2.116) : sur un jeton d'accès déjà expiré dont le rafraîchissement est
   refusé, l'initialisation retire elle-même la session (`_callRefreshToken`, `_removeSession`) avant
-  le premier `getSession()`, qui ne voit alors ni session ni erreur. **Le refus s'écoute donc à
-  l'événement, pas à la lecture** : `auth-js` émet `SIGNED_OUT` en retirant la session, avant
-  `INITIAL_SESSION` et avant toute lecture ; une écoute posée juste après `createClient` le reçoit,
-  puisque l'initialisation ne retire rien avant son premier `await`. Une déconnexion voulue émet le
-  même événement : elle se déclare. Ramille : `pendantUnDepartVolontaire` (`src/lib/supabase.ts`),
-  corrigé le 02/10/2026, `v1-27` §12.27.
+  le premier `getSession()`, qui ne voit alors ni session ni erreur — **exactement comme une première
+  ouverture**. Rien de ce que rend `auth-js` ne les sépare : il faut que l'app sache, par une marque
+  à elle, que l'appareil portait un compte. **Et l'événement ne suffit pas** : `SIGNED_OUT` part bien
+  au retrait (mis en file pendant l'initialisation — `_pendingInitNotifications` — puis délivré une
+  fois `initializePromise` résolue, avant la suite de `getSession()`), mais une session **anonyme**
+  refusée — purgée, révoquée — le déclenche à l'identique, et l'événement, tenu en mémoire, ne survit
+  pas à un redémarrage. Ramille : `src/lib/marque-de-compte.ts`, corrigé le 02/10/2026, `v1-27` §12.27.
 - **La création de session est un « lis puis écris », donc elle s'enveloppe dans un
   partage de promesse en vol.** Deux appels lancés dans le même rendu lisent tous les deux « pas
   de session » avant que l'un n'ait écrit : deux comptes anonymes, dont un orphelin qui consomme
@@ -554,11 +555,16 @@ prochain lancement réessaie, et rien ne s'affiche. La distinction est possible 
 remonte l'erreur de rafraîchissement dans `getSession()` (relevé dans `GoTrueClient.__loadSession`) :
 les quatre états sont atteignables, aucun n'est décoratif — **et `refusee` ne l'était pas au
 démarrage jusqu'au 02/10/2026** : l'initialisation d'`auth-js` retire elle-même la session refusée,
-et `getSession()` ne voit plus rien (§1). Le refus se lit depuis à l'événement `SIGNED_OUT` qu'aucun
-départ voulu n'a déclaré (`pendantUnDepartVolontaire`), il **tient** jusqu'à ce que la personne
-choisisse — une connexion, ou « Commencer un bilan sur cet appareil » (`repartirSurCetAppareil`) —, et
-l'écran revient avec lui, au démarrage comme en cours de route (`ecouterLeRefus`). Le client réel le
-garde, stockage et réseau doublés : `src/lib/session-refusee.test.ts`. L'écran `SessionRefusee` est une
+et `getSession()` ne voit plus rien (§1). Le refus se déduit depuis d'une **marque** — « cet appareil
+porte un compte rattaché » (`src/lib/marque-de-compte.ts`), posée quand une session non anonyme est
+vue, effacée par les départs voulus : sans session, sans erreur, avec la marque, c'est un refus ; sans
+elle, une première ouverture, l'anonyme purgé compris. Il **tient** jusqu'à ce que la personne choisisse
+— une connexion, ou « Commencer un bilan sur cet appareil » (`repartirSurCetAppareil`) — et survit à un
+redémarrage. `SIGNED_OUT` reste écouté pour le montrer en cours de route, et les départs voulus se
+déclarent (`pendantUnDepartVolontaire`). L'écran se déduit de l'état et de la route
+(`lEcranDeReconnexionSePose`, `src/types/session.ts`). Le client réel le garde, stockage et réseau
+doublés, les départs passant par leurs vrais appelants : `src/lib/session-refusee.test.ts`. L'écran
+`SessionRefusee` est une
 **surcouche** du `Stack` et non un remplacement, à la différence de `ConfigurationManquante` : ses
 deux boutons sont des navigations, et un écran rendu à la place du navigateur n'aurait aucune route
 où aller.
