@@ -313,6 +313,7 @@
 //   | Q4 — la feuille qui ne s'ouvre plus à l'entrée (la lecture de l'engagement ignorée) | la même étape : « ne s'est pas ouverte à l'entrée du re-bilan » |
 //   | P2 rejouée — la feuille se démonte sans sortie | la même étape, à Échap : elle « disparaît d'un coup » — l'étape réécrite garde ce que l'ancienne gardait |
 //   | Q5 — le voile de la feuille redevenu un `Pressable` (01/10/2026, l'arbre intégré de `7032f1c`) | la même étape : « la feuille ouverte n'a pas le focus sur « Commencer » : {"nom":"DIV","dansLaFeuille":true} » |
+//   | Q6 — la place de la feuille redevenue la vue animée, `box-none` dans ses styles (01/10/2026) | « re-bilan — un toucher sur le voile… » : « au-dessus de la feuille (210, 231), le toucher tombe sur DIV « css-g5y9jx » et pas sur le voile » |
 //
 // **Q5 n'a pas été choisie : la CI de la PR #314 l'a trouvée** (01/10/2026). Le chantier du compte avait
 // fait du voile un `Pressable` pour que son toucher ferme la feuille (T-7) ; sur web, il a pris un
@@ -321,7 +322,11 @@
 // `ModalFocusTrap`, sans geste dans la feuille. Rejouée sur le commit de la correction, le voile seul
 // rendu à son état fautif, puis une seconde fois avec `tabIndex={-1}` en plus : la garde tombe les
 // deux fois, sur le même message — retirer l'arrêt de tabulation ne suffit pas, `.focus()` prend
-// encore (`FeuilleDuBas`).
+// encore (`FeuilleDuBas`). **Q6 non plus** : en vérifiant que le voile refermait toujours la feuille,
+// un clic au-dessus d'elle ne la refermait pas — ni avant la correction de Q5, ni après. La place
+// animée gardait ses styles en ligne, où `box-none` n'est pas du CSS ; l'étape « un toucher sur le
+// voile » est née de ce relevé. Q5 et Q6 rejouées sur le commit qui ajoute cette étape : chacune tombe
+// à son étape, et le témoin passe toutes les étapes du re-bilan.
 //
 // Ce que ces étapes ne voient pas : « Pas maintenant » (Jest le touche, `entree-du-re-bilan.test.tsx`),
 // et le retour matériel d'Android, que le `Modal` prend à `BackHandler` — c'est l'appareil qui le dit.
