@@ -193,10 +193,12 @@ select results_eq(
   'répondre ne touche ni les libellés snapshotés ni la clé d''idempotence de la génération'
 );
 
-select throws_ok(
+-- **Une seconde réponse est une correction depuis le 02/10/2026** (`v1-33` §6) : ce point est celui de
+-- la semaine interrogée, donc il se corrige jusqu'au point suivant. Le refus d'un point répondu dont la
+-- période est passée, et ce que la correction ne touche pas, sont gardés par le fichier `45`.
+select lives_ok(
   $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, 'non') $stmt$,
-  '22023', null,
-  'un point déjà répondu n''accepte pas une seconde réponse'
+  'un point répondu de la période interrogée se corrige (v1-33 §6)'
 );
 
 -- Même sous la session du propriétaire, un ordre direct est refusé par le privilège (42501) avant

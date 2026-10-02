@@ -377,7 +377,7 @@ et ce que la vague a relevé en chemin est en §9.
 | « Faire un nouveau bilan » sur la restitution (`v1-19` D1) | Mental Model | Depuis l'arbitrage du 28/09/2026 (« la correction gagne »), un bilan refait le même jour **remplace** le précédent dans le suivi : le lien dit « nouveau » pour une correction | **Pas encore posée** : elle touche au rythme des bilans (`v1-19`) et se pose avec la prochaine décision sur ce sujet |
 | L'accent de la carte du point suit le poste dominant (27/08/2026) | Selective Attention | Depuis le 30/09/2026, la question du mois suit l'action engagée : celle qui referme l'engagement peut être la grise | **L'accent sur la question de l'engagement** quand deux points sont ouverts — vague produit |
 | La carte « Plan et Suivi » se ferme par son « Compris » (HANDOFF `v1-17`) | Paradox of the Active User | Tant qu'on ne touche pas « Compris », elle occupe ≈ 36 % de la fenêtre à chaque visite et repousse le point à 514 px — sur toutes les captures qui suivent | **Vue une fois, puis partie**, « Compris » touché ou non — vague produit |
-| `repondre_au_checkin` refuse un point déjà répondu (C1.12, C2.4) | Postel, Fitts | « Non » et « Oui » sont à 8 px l'un de l'autre, et un toucher erroné est définitif ; corriger une réponse n'a jamais été posé comme question de produit | **Corrigeable tant que la période court** — chantier à part (RPC, suivi) |
+| `repondre_au_checkin` refuse un point déjà répondu (C1.12, C2.4) | Postel, Fitts | « Non » et « Oui » sont à 8 px l'un de l'autre, et un toucher erroné est définitif ; corriger une réponse n'a jamais été posé comme question de produit | **Corrigeable tant que la période court** — chantier à part (RPC, suivi). **Livré le 02/10/2026**, précisé ce jour-là avec la personne qui pilote : un lien « Modifier ma réponse » sur la carte répondue rouvre les trois réponses sous « Ta réponse : oui. » ; la réplique est celle de la nouvelle réponse ; la correction tient jusqu'au point suivant — « la période » est celle de l'affichage de la carte, la période interrogée étant déjà passée quand on répond (`BOUCLE.md` §2) |
 | La suppression du compte emploie le principal (kit) | Von Restorff | Sur « Toi » en confirmation, deux principaux verts : « Rattacher un compte » et « Supprimer définitivement » | **Le rattachement en secondaire** pendant la confirmation — vague produit |
 | Au premier plan seulement, les pistes passent avant le cap (`v1-29` n° 3) | Serial Position | Hors premier plan, l'action engagée vient en troisième ou quatrième bloc, sous le pli avec un point ou une carte d'ouverture | Juger après P-1, à la recette |
 | Le plancher de lancement de 1 450 ms (`v1-13`, décision D13) | Doherty | Il sérialise la lecture du plan derrière lui | Technique, sans rouvrir cette décision : T-12 |
@@ -412,7 +412,7 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
 3. **Les chantiers à part**, un par un, chacun avec sa migration, ses tests pgTAP recalculés par
    requête et sa contre-lecture : la quatrième fréquence des loisirs (D5, livrée le 02/10/2026), la question générique le
    mois du choix (D14, livrée le 02/10/2026), « Modifier les jours » (D15, livré le 02/10/2026), le champ sous « 10+ » (livré le 02/10/2026), et la réponse au point
-   corrigeable dans sa période.
+   corrigeable dans sa période (livrée le 02/10/2026).
 
 Puis les reports techniques de §4.2, en commençant par T-5 (les liens), qui touche trente et un
 fichiers et doit passer seul.

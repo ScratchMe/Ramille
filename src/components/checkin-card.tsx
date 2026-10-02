@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { formeInserable, type LoopType } from '@/constants/postes';
 import { Radius, Spacing } from '@/constants/theme';
-import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
+import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { supabase } from '@/lib/supabase';
 import { messageDEcriture } from '@/types/ecriture-en-echec';
@@ -18,6 +18,7 @@ import {
   estDeuxiemeFoisDeSuite,
   genreDeReponse,
   libelleSansObjet,
+  phraseDeLaReponseEnPlace,
   phraseDeSecondRenforcement,
   piedDuPointRepondu,
   questionDuPoint,
@@ -127,12 +128,21 @@ export function CheckinCard({
    * L'instant du geste, quand la réponse vient d'être donnée ici : il date le pied de la carte tant
    * que la ligne relue ne porte pas encore l'horodatage du serveur (audit P-10, 01/10/2026).
    */
-  const [reponduA, setReponduA] = useState<string | null>(null);
+  const [reponduA, setReponduA] = useState<{ instant: string; ligneAvant: string | null } | null>(null);
   /** Le point n'accepte plus de réponse : la question reste lisible, les boutons partent. */
   const [refus, setRefus] = useState<string | null>(null);
   /** La réponse n'est pas partie : les boutons restent, il n'y a qu'à recommencer. */
   const [erreur, setErreur] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /**
+   * **La réponse se corrige jusqu'au point suivant** (`v1-33` §6, décidé le 02/10/2026 avec la personne
+   * qui pilote). « Non » et « Oui » sont à 8 px l'un de l'autre, et un toucher erroné était définitif.
+   * « Modifier ma réponse » rouvre les trois réponses sur la carte répondue — tant qu'elle est affichée,
+   * c'est-à-dire tant que le point est celui de la période interrogée, la borne même que le RPC vérifie.
+   */
+  const [correction, setCorrection] = useState(false);
+  /** Les réponses données ici : chacune rend le focus à la réplique, même une correction identique. */
+  const [reponsesDonnees, setReponsesDonnees] = useState(0);
 
   /**
    * **La réplique prend le focus quand elle remplace les boutons** (24/09/2026, `v1-29`). La carte
@@ -146,8 +156,23 @@ export function CheckinCard({
    */
   const replique = useRef<View>(null);
   useEffect(() => {
-    if (reponseLocale !== null) donnerLeFocus(replique.current);
-  }, [reponseLocale]);
+    if (reponsesDonnees > 0) donnerLeFocus(replique.current);
+  }, [reponsesDonnees]);
+
+  /**
+   * **Le focus suit la correction, dans les deux sens** (la règle d'`ActionCommitment`) : à la question
+   * quand « Modifier ma réponse » rouvre les réponses — le lien disparaît sous le doigt —, et au lien
+   * revenu quand « Annuler » les referme. Seulement après un geste, jamais au montage.
+   */
+  const laQuestion = useRef<unknown>(null);
+  const leLienModifier = useRef<View>(null);
+  const gesteDeCorrection = useRef<'ouvrir' | 'annuler' | null>(null);
+  useEffect(() => {
+    const vient = gesteDeCorrection.current;
+    gesteDeCorrection.current = null;
+    if (vient === 'ouvrir' && correction) donnerLeFocus(laQuestion.current);
+    if (vient === 'annuler' && !correction) donnerLeFocus(leLienModifier.current);
+  }, [correction]);
 
   // Comparaison de libellés et non d'identifiants : la carte ne porte pas l'identifiant du gabarit,
   // et le libellé est ce que la personne a lu en choisissant. Deux actions de libellés identiques
@@ -172,8 +197,13 @@ export function CheckinCard({
   // relue, il prend l'instant du geste — pas une date inventée, celle de la réponse ; l'horodatage du
   // serveur le remplace dès la relecture. Les deux ne peuvent différer que d'un jour, autour de
   // minuit.
+  // **Et le temps d'une correction** (`v1-33` §6) : la ligne porte encore l'heure de la première
+  // réponse, et le pied dirait « Répondu lundi » d'une réponse donnée mercredi. L'instant du geste vaut
+  // donc tant que la ligne porte ce qu'elle portait au geste ; relue, elle l'emporte.
   const pied = piedDuPointRepondu(
-    reponduA !== null ? { ...checkin, responded_at: checkin.responded_at ?? reponduA } : checkin,
+    reponduA !== null && checkin.responded_at === reponduA.ligneAvant
+      ? { ...checkin, responded_at: reponduA.instant }
+      : checkin,
     boucleTourne
   );
 
@@ -207,8 +237,10 @@ export function CheckinCard({
     setSaving(false);
 
     if (!error) {
-      setReponduA(new Date().toISOString());
+      setReponduA({ instant: new Date().toISOString(), ligneAvant: checkin.responded_at });
       setReponseLocale(response);
+      setCorrection(false);
+      setReponsesDonnees((n) => n + 1);
       return;
     }
 
@@ -244,7 +276,7 @@ export function CheckinCard({
           qu'`entering` de reanimated empêchait sur web en masquant la réplique (`src/lib/mouvement.tsx`). */}
       <HauteurSuivie styleDuContenu={styles.corps}>
       <SansApparitionAuMontage>
-      {reponse === null ? (
+      {reponse === null || correction ? (
         <>
           {/* **La question vient de `src/types/checkin.ts`, et c'est la même qu'au rappel.**
               Elle vivait ici, au présent et avec le libellé snapshoté collé après la préposition :
@@ -253,7 +285,11 @@ export function CheckinCard({
               dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ? ».
               Deux phrases pour une seule question, sur un produit dont la boucle entière consiste
               à appuyer sur la notification pour y répondre. */}
-          <ThemedText weight={600} style={styles.question}>
+          <ThemedText
+            weight={600}
+            style={styles.question}
+            {...({ ref: laQuestion, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+          >
             {questionDuPoint(checkin)}
           </ThemedText>
           {/* **Une question figée peut nommer une action qu'on ne suit plus** (C2.1) : elle a été
@@ -269,6 +305,13 @@ export function CheckinCard({
           {questionSurActionQuittee && (
             <ThemedText type="small" themeColor="textTertiary">
               Cette question porte sur l’action que tu suivais alors : {checkin.committed_action_text}.
+            </ThemedText>
+          )}
+          {/* La réponse en place, quand « Modifier ma réponse » rouvre les trois : les boutons n'ont pas
+              d'état « choisi », et c'est voulu — la phrase la désigne, dans leurs mots. */}
+          {correction && reponse !== null && (
+            <ThemedText type="small" themeColor="textTertiary">
+              {phraseDeLaReponseEnPlace(checkin, reponse)}
             </ThemedText>
           )}
           {refus ? (
@@ -337,6 +380,23 @@ export function CheckinCard({
               <MessageInline message={erreur} />
             </>
           )}
+          {/* « Annuler » referme sans rien changer, même après un refus : la réponse en place tient. Le refus
+              et l'erreur restent dans l'état, invisibles sur la carte répondue — « Modifier ma réponse »
+              les efface en rouvrant. */}
+          {correction && (
+            <TextLink
+              label="Annuler"
+              onPress={() => {
+                gesteDeCorrection.current = 'annuler';
+                setCorrection(false);
+              }}
+              disabled={saving}
+              type="small"
+              themeColor="textTertiary"
+              containerStyle={styles.sansObjet}
+              style={styles.lien}
+            />
+          )}
         </>
       ) : (
         <Apparition style={styles.repondu}>
@@ -364,6 +424,23 @@ export function CheckinCard({
               {pied}
             </ThemedText>
           )}
+          {/* **Modifier ma réponse** (`v1-33` §6, 02/10/2026) : souligné, tertiaire, comme « Changer
+              d'avis » — un lien et non un bouton, la réponse reste donnée. Il rouvre les trois réponses ;
+              la carte n'est affichée que le temps de la période interrogée, la borne de la correction. */}
+          <TextLink
+            ref={leLienModifier}
+            label="Modifier ma réponse"
+            hint="Rouvre les trois réponses de ce point"
+            onPress={() => {
+              gesteDeCorrection.current = 'ouvrir';
+              setRefus(null);
+              setErreur(null);
+              setCorrection(true);
+            }}
+            type="small"
+            themeColor="textTertiary"
+            style={styles.lien}
+          />
         </Apparition>
       )}
       </SansApparitionAuMontage>

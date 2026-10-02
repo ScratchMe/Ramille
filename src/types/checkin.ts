@@ -533,6 +533,27 @@ export function libelleSansObjet(point: Pick<PointInterrogeable, 'loop_type' | '
 }
 
 /**
+ * La réponse en place, dite au-dessus des trois réponses quand « Modifier ma réponse » les rouvre
+ * (`v1-33` §6, décidé le 02/10/2026 avec la personne qui pilote) : « Ta réponse : oui. »
+ *
+ * **Dans les mots des boutons**, parce que c'est entre eux qu'on choisit de nouveau : « oui », « non »,
+ * ou le libellé du lien sans objet, avec sa période (« pas de trajet la semaine dernière »). Les
+ * boutons n'ont pas d'état « choisi », et c'est voulu — la règle du 24/09/2026 les garde au même poids,
+ * pour ne jamais désigner la bonne réponse : la phrase désigne celle qu'on a donnée. Voix produit, pas
+ * celle de Ramille.
+ */
+export function phraseDeLaReponseEnPlace(
+  point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
+  reponse: ReponseDuPoint
+): string {
+  if (reponse === 'sans_objet') {
+    const libelle = libelleSansObjet(point);
+    return `Ta réponse : ${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}.`;
+  }
+  return `Ta réponse : ${reponse}.`;
+}
+
+/**
  * Le début de la période que le serveur interroge **en ce moment** — jumelle de
  * `date_trunc('week', now())::date - 7` et de `(date_trunc('month', now()) - interval '1 month')`.
  *
