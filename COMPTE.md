@@ -340,3 +340,9 @@ et une assertion dans `15_suppression_et_export.test.sql`. Ni les clés ni les j
 seulement les faits — **et une clé peut se cacher dans un texte** : le corps d'un rappel porte le lien
 de désinscription avec son jeton, que `20261002201448` a exporté tel quel avant que `20261002203559`
 ne l'en retire. Un jeu d'essai écrit à la main sans ce lien laissait passer la fuite.
+
+**`engagements_relaches` porte aussi les intentions modifiées** depuis le 02/10/2026 (`v1-33` D15) :
+l'export rend toute l'archive, et une ligne `raison: modification` y dit une intention remplacée sur
+une action restée engagée — `relache_le` est alors le jour de la modification, et l'action est
+toujours dans `plan_actions`. Les clés n'ont pas été renommées : elles sont ce que la personne a déjà
+pu télécharger, et la raison suffit à lire la ligne juste.

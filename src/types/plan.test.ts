@@ -6,6 +6,7 @@ import {
   annonceDeLaPiste,
   cadreDuPlan,
   ceQuiManqueALIntention,
+  echeanceARecocher,
   etatDeLaPiste,
   introDesPistes,
   libelleDuChoix,
@@ -132,6 +133,54 @@ describe('formatIntentionTiming', () => {
     expect(formatIntentionTiming('le_mois_prochain')).toBe('le mois prochain');
     expect(formatIntentionTiming('le_mois_prochain', 'pas une date')).toBe('le mois prochain');
     expect(formatIntentionTiming('prochaine_occasion', '2026-10-15T10:00:00Z')).toBe('à ma prochaine occasion');
+  });
+});
+
+// **Le même mois, redit** (`v1-33` D15, décidé le 02/10/2026) : rouvrir une intention pour la
+// modifier précoche l'échéance au mois qu'elle vise, relu depuis aujourd'hui. Éprouvé le même jour,
+// deux mutations, la suite Jest entière sous `TZ=Europe/Paris` : l'échéance rendue telle quelle → les
+// trois tests de l'écart (septembre, mois passé, décembre à janvier) et le préremplissage de la carte
+// (`action-commitment.test.tsx`) ; l'écart compté sur le seul mois, sans l'année → « de décembre à
+// janvier », seul.
+describe('echeanceARecocher', () => {
+  const octobre = new Date('2026-10-02T10:00:00Z');
+
+  it('précoche la même échéance le mois où elle a été choisie', () => {
+    expect(echeanceARecocher('ce_mois', '2026-10-01T08:00:00Z', octobre)).toBe('ce_mois');
+    expect(echeanceARecocher('le_mois_prochain', '2026-10-01T08:00:00Z', octobre)).toBe('le_mois_prochain');
+  });
+
+  it('« Le mois prochain » choisi en septembre vise octobre : rouvert en octobre, c’est « Ce mois-ci »', () => {
+    expect(echeanceARecocher('le_mois_prochain', '2026-09-20T08:00:00Z', octobre)).toBe('ce_mois');
+  });
+
+  it('un mois visé déjà passé ne précoche rien', () => {
+    expect(echeanceARecocher('ce_mois', '2026-09-20T08:00:00Z', octobre)).toBeNull();
+    expect(echeanceARecocher('le_mois_prochain', '2026-08-20T08:00:00Z', octobre)).toBeNull();
+  });
+
+  it('compte l’écart de décembre à janvier, d’une année à l’autre', () => {
+    const janvier = new Date('2027-01-05T10:00:00Z');
+    expect(echeanceARecocher('le_mois_prochain', '2026-12-20T10:00:00Z', janvier)).toBe('ce_mois');
+    expect(echeanceARecocher('ce_mois', '2026-01-20T10:00:00Z', janvier)).toBeNull();
+  });
+
+  it('lit les mois en heure de Paris : le 30 septembre à 23 h 30 UTC, c’est déjà octobre', () => {
+    expect(echeanceARecocher('ce_mois', '2026-09-30T23:30:00Z', octobre)).toBe('ce_mois');
+  });
+
+  it('précoche telle quelle une échéance qui ne vise pas un mois, ou dont la date manque', () => {
+    expect(echeanceARecocher('prochaine_occasion', '2026-01-01T10:00:00Z', octobre)).toBe('prochaine_occasion');
+    expect(echeanceARecocher('avant_le_prochain_bilan', '2026-01-01T10:00:00Z', octobre)).toBe(
+      'avant_le_prochain_bilan'
+    );
+    expect(echeanceARecocher('le_mois_prochain', null, octobre)).toBe('le_mois_prochain');
+    expect(echeanceARecocher('le_mois_prochain', 'pas une date', octobre)).toBe('le_mois_prochain');
+  });
+
+  it('ne précoche rien sans échéance, ou pour une valeur inconnue', () => {
+    expect(echeanceARecocher(null, '2026-10-01T08:00:00Z', octobre)).toBeNull();
+    expect(echeanceARecocher('valeur_inconnue', '2026-10-01T08:00:00Z', octobre)).toBeNull();
   });
 });
 
@@ -843,17 +892,19 @@ describe('motsDuContexte', () => {
 });
 
 describe('l’encart orphelin', () => {
-  // **Deux raisons et pas quatre**, et la règle est « effet de bord non choisi » : `saison` est une
+  // **Deux raisons et pas six**, et la règle est « effet de bord non choisi » : `saison` est une
   // reconduction qui a échoué à la frontière d'une saison, `changement` est la décision de la
   // personne. Les lui apprendre serait inutile ou condescendant.
   it('n’annonce que les deux libérations que la personne n’a pas choisies', () => {
     expect([...RAISONS_ANNONCABLES]).toEqual(['rebilan', 'contexte']);
-    // Les trois tues, nommées : `saison` est une reconduction qui a échoué à la frontière d'une
+    // Les quatre tues, nommées : `saison` est une reconduction qui a échoué à la frontière d'une
     // saison, `changement` est la décision de la personne, et `retrait` (C4.7) aussi — retirer un
-    // bilan est un geste choisi, et la décision D2 de `v1-22` est de ne rien en annoncer. La liste des
-    // cinq raisons vit dans le `check` de `plan_action_commitments_archive`, que les tests pgTAP
-    // éprouvent de leur côté (`29`, `34`).
-    for (const tue of ['saison', 'changement', 'retrait']) {
+    // bilan est un geste choisi, et la décision D2 de `v1-22` est de ne rien en annoncer. Et
+    // `modification` (`v1-33` D15) n'est pas une libération : l'action reste engagée, seule son
+    // intention a changé, sous les yeux de la personne. La liste des six raisons vit dans le `check`
+    // de `plan_action_commitments_archive`, que les tests pgTAP éprouvent de leur côté (`29`, `34`,
+    // `44`).
+    for (const tue of ['saison', 'changement', 'retrait', 'modification']) {
       expect(RAISONS_ANNONCABLES).not.toContain(tue);
     }
   });

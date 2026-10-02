@@ -186,6 +186,27 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   deux chemins clients passent par `archiver_engagement_de_laction`, qui délègue. `action_text` y est
   **figé** : C3.8 reformule plusieurs gabarits, et relire le libellé courant réécrirait ce que la
   personne a lu en choisissant.
+- **Modifier l'intention ne libère pas, et laisse sa trace** (`v1-33` D15, 02/10/2026,
+  `20261002220916_modifier_l_intention_sans_liberer.sql`, test `44`). « Modifier les jours » et
+  « Modifier l'échéance » rouvrent le sélecteur prérempli et rappellent `commit_plan_action` sur
+  l'action **déjà engagée** : l'intention remplacée s'archive (raison `modification`), une intention
+  identique ne réécrit rien — les jours comparés comme un ensemble, une échéance relative identique
+  **seulement le mois où elle a été choisie** —, et `committed_at` repart à maintenant, parce que
+  c'est le jour du choix de l'échéance que la question du mois lit (D14, `BOUCLE.md` §2).
+  - **Ce qui ne bouge pas** : `premier_engagement_le` — une modification n'est pas le premier
+    engagement *choisi* de la saison, et sur un cycle reconduit, qui n'a pas de date, elle aurait
+    rouvert dix semaines de mot de la veille —, `carried_over_from`, et l'annonce : la raison n'est
+    pas dans `RAISONS_ANNONCABLES`. `analytics.engagement_action_by_segment` ne la compte pas parmi
+    les gabarits quittés (`relachees_tous_segments`).
+  - **Le préremplissage redit le même mois** (décidé le 02/10/2026, `echeanceARecocher`) : une
+    échéance relative se précoche au mois qu'elle vise, relu depuis aujourd'hui — « Le mois prochain »
+    choisi en septembre se rouvre en octobre sur « Ce mois-ci », un mois visé déjà passé ne précoche
+    rien. Recochée telle quelle, elle s'écrit et s'archive : la base compare les mots, et le mois visé
+    n'a pas changé — une ligne d'archive de plus, sans effet sur le point.
+  - **Côté écran**, la carte se referme à la lecture qui rend l'intention envoyée — une lecture en
+    échec rend le sélecteur actif, sa sélection gardée —, n'ouvre pas la feuille des rappels (ce n'est
+    pas un nouvel engagement), et l'écran rend le focus à la carte relue (`onModifie`) ; « Annuler »
+    le rend au lien.
 - **Le re-bilan reprend l'engagement, le changement de saison le reconduit.** Les deux situations
   s'excluent dans `generate_plan_cycle_for_user` (le cycle existe déjà / il est neuf), et la capture
   précède l'upsert parce que le `delete` est irréversible. Une reconduction pose
