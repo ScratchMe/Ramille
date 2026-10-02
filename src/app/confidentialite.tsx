@@ -123,8 +123,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // **02/10/2026 : la file d'attente locale des erreurs** (`src/types/erreurs-en-attente.ts`). La page
 // écrivait que les repères de parcours « n'écrivent rien de plus sur ton appareil », et la file y garde
 // désormais une panne qui n'a pas pu partir — le type de l'erreur, l'écran et l'heure, trente jours au
-// plus. Relevé par la contre-lecture de la file ; la phrase est une proposition soumise à la personne
-// qui pilote, comme chaque phrase de cette page. La date suit la mise en ligne.
+// plus. Relevé par la contre-lecture de la file ; la phrase a été validée par la personne qui pilote
+// le même jour (« OK pour corriger la phrase »), comme chaque phrase de cette page. La date suit la
+// mise en ligne, heure de Paris.
 const UPDATED_AT = '2 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
