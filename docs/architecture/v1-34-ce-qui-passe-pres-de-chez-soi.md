@@ -1,8 +1,8 @@
 # v1-34 — Ce qui passe près de chez soi : la zone, le métro, le tram et le RER
 
 > **Page de décision, écrite le 02/10/2026** à la demande de la personne qui pilote : « grouper le
-> sujet de l'aide à la question de la zone avec le sujet du RER ». Aucune ligne de code n'est
-> écrite. Le chantier commence quand les décisions du §5 sont rendues ; elles se consignent au §8.
+> sujet de l'aide à la question de la zone avec le sujet du RER ». **Décidée le même soir** (§8) :
+> toutes les recommandations sont suivies, sauf D4. Le chantier commence aussitôt (D7).
 > Chaque chiffre de cette page a été relevé le 02/10/2026, en base de production ou dans le code, et
 > la source est donnée à côté.
 
@@ -123,6 +123,9 @@ si on se trompe.
 
 ### D4 — Les bilans déjà faits
 
+> **Tranché autrement le 02/10/2026** (§8) : les bilans de production sont des bilans de test, donc pas
+> de règle d'avant. La recommandation ci-dessous reste pour mémoire.
+
 - **Le fait.** Aucun des douze bilans de production n'aura la nouvelle réponse. La règle du plan est
   qu'une condition qu'on ne peut pas évaluer n'est pas remplie (`PLAN.md` §1, C3.8).
 - **Ce qui est en jeu.** Le plan des personnes qui ont déjà un bilan.
@@ -214,4 +217,17 @@ vaut pour une PR seule.
 
 ## 8. Décisions rendues
 
-*À remplir avec la personne qui pilote.*
+**Le 02/10/2026, par la personne qui pilote** : « D4 -> les bilans actuels ne sont que des tests donc
+on s'en fiche. sinon OK ».
+
+- **D1, D2, D3, D5, D6, D7 et D8 : les recommandations sont suivies.** La question de l'accès est
+  remplacée par la question factuelle et sa ligne d'aide ; l'action RER prend la place de l'action
+  train quand « RER ou Transilien » est coché ; l'accès se déduit (rien → inexistant ; bus ou train
+  sans métro, tram ni RER → limité ; métro, tram ou RER → bon) ; l'aide sous la zone redevient une
+  définition ; le chantier passe avant le premier build de production ; une capture de l'étape tient
+  lieu de canvas.
+- **D4 : pas de règle d'avant.** Les douze bilans de production sont des bilans de test. La nouvelle
+  règle vaut donc pour tous, et un bilan qui n'a pas la nouvelle réponse ne reçoit plus aucune action
+  de transport en commun : une condition qu'on ne peut pas évaluer n'est pas remplie (`PLAN.md` §1).
+  Ce qu'on accepte : les plans de test perdent ces actions à leur prochaine génération, jusqu'à une
+  réponse donnée dans l'écran « Contexte » ou dans un nouveau bilan.
