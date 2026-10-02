@@ -541,6 +541,16 @@ le jour venu.
    que le mode rapport existe pour éviter). Recommandation : **la laisser tant qu'il n'y a pas de
    trafic**, et rouvrir la question à la mise sur Play. Ce qu'on casse si on se trompe dans le sens
    « bloquant » : l'app entière, sur web, pour tout le monde.
+   **Rouverte le 02/10/2026, avant la mise sur Play : la personne qui pilote l'a confiée à l'agent
+   (« Tu ne pourrais pas t'occuper de ce sujet dès maintenant ? »), qui l'a tranchée par une
+   quatrième voie que ces trois-là ne voyaient pas : mesurer sans collecteur.** La politique candidate
+   a été injectée en rapport seul sur les dix-neuf routes de la production, les requêtes vers Supabase
+   coupées pour ne rien écrire — donc chaque écran dans son état sans réseau : aucune infraction —,
+   puis appliquée, plus stricte qu'avant (ni `'unsafe-inline'` ni `'unsafe-eval'` pour les scripts, un
+   seul projet Supabase nommé). Et le risque qui retenait le mode bloquant a ses gardes : les gardes
+   navigateur de la CI servent la politique appliquée et échouent à la première infraction, écrans avec
+   données compris, et le build de production refuse de partir si le projet Supabase configuré n'est
+   pas celui que la politique autorise (`TESTING-GARDES.md` §2.16). Détail en `VERCEL.md` §2.2.
 
 ### 12.4 Examiné, et laissé tel quel
 
@@ -900,7 +910,8 @@ condition de réouverture).
 *Note du 02/10/2026* : les quatre entrées `vercel.app` sont retirées (par Antoine, au tableau de
 bord ; la liste relue par l'API de management porte trois entrées, `redirect-urls.md` §3.1 bis),
 l'entrée `localhost:8081` était déjà absente le 21/09, et l'alias `traceverte-me-c4a3.vercel.app`
-répond 410. Restent la CSP, à rouvrir à la publication (checklist du registre, §4), et le
+répond 410. Restent la CSP, à rouvrir à la publication (checklist du registre, §4 — tranchée le même
+jour, §12.3), et le
 pré-détournement d'adresse, dont le passage au code a retiré le gros du danger et laissé un
 reste assumé (§12.12).
 

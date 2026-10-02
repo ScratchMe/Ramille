@@ -151,7 +151,7 @@ import {
   releverParImage,
   releverPendant,
 } from './relever-par-image.mjs';
-import { servirExport } from './servir-export.mjs';
+import { decrireInfractions, releverLaCsp, servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
 
@@ -176,6 +176,10 @@ const ATTENTE = 15_000;
 const REPOS = 1_500;
 
 const echecs = [];
+// Les infractions à la CSP de `vercel.json`, que le serveur applique comme la production
+// (`servir-export.mjs`) : relevées sur chaque page ouverte, lues à la fin — une page fermée garde
+// sa liste.
+const relevesCsp = [];
 
 const { base, fermer } = await servirExport(DIST);
 const navigateur = await chromium.launch(
@@ -199,6 +203,7 @@ async function ouvrir(
   // « Réduire les animations », émulé **avant** le chargement : `useReducedMotion` la lit une fois,
   // au chargement du module (section E).
   if (reduire) await page.emulateMedia({ reducedMotion: 'reduce' });
+  relevesCsp.push({ chemin, infractions: await releverLaCsp(page) });
   // Les exceptions sont écoutées dès avant la navigation : une erreur d'hydratation part pendant
   // que le bundle monte l'app, avant que l'attente ci-dessous ne rende la main (section D).
   if (exceptions) page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
@@ -2401,6 +2406,12 @@ async function attendreLeTexte(page, texte) {
 
 await navigateur.close();
 fermer();
+
+for (const { chemin, infractions } of relevesCsp) {
+  for (const infraction of decrireInfractions(infractions)) {
+    echecs.push(`${chemin} : la CSP de vercel.json, appliquée en production, ${infraction}.`);
+  }
+}
 
 if (echecs.length > 0) {
   console.error('L’export s’affiche mais pas dans l’état attendu :\n');

@@ -54,17 +54,28 @@
 // une dépendance transitive de `satori`, et sa disparition ne produit **aucune** erreur de build :
 // l'échec arrive à l'exécution, en `ENOENT` derrière un `FUNCTION_INVOCATION_FAILED` générique.
 //
+// Et, depuis le 02/10/2026, **la politique de sécurité du site** (Content-Security-Policy), appliquée
+// en production : `servir-export.mjs` la sert telle que `vercel.json` la pose, chaque route relève
+// ses infractions, et une seule fait échouer le contrôle. S'y ajoute un contrôle statique, qui
+// nomme ce qu'il faut corriger quand l'export change : **chaque script écrit en dur dans une page
+// de `dist/` doit avoir son empreinte dans `script-src`**. Il n'y en a qu'un aujourd'hui, celui
+// qu'Expo Router pose pour l'hydratation, et une montée d'Expo qui en changerait un octet le
+// ferait bloquer en production — l'app rendrait alors sans s'hydrater, sur chaque page. Le message
+// donne l'empreinte à recopier.
+//
 // Ce qui n'est PAS vérifié ici, volontairement : le réseau. L'export de CI est construit avec
 // une configuration Supabase factice, donc chaque page échoue à joindre la base — les erreurs
 // de console sont attendues et ne font pas échouer ce contrôle. On teste le rendu, pas les
 // données.
 //
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { chromium } from 'playwright';
 
-import { servirExport } from './servir-export.mjs';
+import { decrireInfractions, releverLaCsp, servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
 
@@ -192,6 +203,53 @@ for (const [fonction, options] of Object.entries(configVercel.functions ?? {})) 
   }
 }
 
+// Puis la CSP : les scripts écrits en dur dans les pages, contre les empreintes de `script-src`.
+// Un `<script src>` se charge depuis le site, donc `'self'` le couvre. Seuls les blocs de données
+// connus (`application/json`, `application/ld+json`) sont sautés : ils ne s'exécutent pas. Tout le
+// reste est contrôlé, `importmap` et `speculationrules` compris — la CSP les soumet à `script-src`
+// (contre-lecture du 02/10/2026).
+const csp = [configVercel.headers ?? []]
+  .flat()
+  .flatMap((regle) => regle.headers)
+  .find(({ key }) => key.toLowerCase() === 'content-security-policy')?.value;
+if (!csp) {
+  echecs.push(
+    'vercel.json ne pose plus d’en-tête Content-Security-Policy appliqué. La politique du site est' +
+      ' bloquante depuis le 02/10/2026 (VERCEL.md §2.2) : la retirer, ou la repasser en' +
+      ' Report-Only, se décide, et ne s’efface pas en silence.',
+  );
+} else {
+  const scriptSrc = csp.split(';').map((d) => d.trim().split(/\s+/)).find(([nom]) => nom === 'script-src') ?? [];
+  const pages = (function lister(dossier) {
+    return readdirSync(dossier, { withFileTypes: true }).flatMap((entree) =>
+      entree.isDirectory() ? lister(join(dossier, entree.name)) : entree.name.endsWith('.html') ? [join(dossier, entree.name)] : [],
+    );
+  })(DIST);
+  const manquantes = new Map();
+  for (const fichier of pages) {
+    // Insensible à la casse, et la balise fermante tolère espaces et attributs : c'est ainsi que le
+    // navigateur la lit (CodeQL, 02/10/2026).
+    for (const [, attributs, corps] of readFileSync(fichier, 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
+      // `(?:^|\s)` et non `\b` : `data-src` ou `data-type` ne sont pas les attributs qu'on cherche.
+      if (/(?:^|\s)src\s*=/i.test(attributs)) continue;
+      const type = /(?:^|\s)type\s*=\s*["']?([^"'\s>]+)/i.exec(attributs)?.[1]?.toLowerCase();
+      if (type === 'application/json' || type === 'application/ld+json') continue;
+      const empreinte = `'sha256-${createHash('sha256').update(corps, 'utf8').digest('base64')}'`;
+      if (!scriptSrc.includes(empreinte)) {
+        manquantes.set(empreinte, [...(manquantes.get(empreinte) ?? []), fichier.slice(DIST.length + 1)]);
+      }
+    }
+  }
+  for (const [empreinte, fichiers] of manquantes) {
+    echecs.push(
+      `Un script écrit en dur dans ${fichiers.length} page${fichiers.length > 1 ? 's' : ''} de l’export` +
+        ` (${fichiers.slice(0, 3).join(', ')}${fichiers.length > 3 ? '…' : ''}) n’a pas son empreinte dans` +
+        ` le script-src de vercel.json : la CSP le bloquerait en production. Ajouter ${empreinte} au` +
+        ' script-src — et retirer l’ancienne empreinte si ce script en remplace un autre.',
+    );
+  }
+}
+
 // `CHROMIUM_PATH` laisse pointer un binaire déjà présent — utile là où les navigateurs de
 // Playwright sont installés hors de son arborescence habituelle. En CI, la variable est
 // absente et le navigateur vient de `npx playwright install chromium`.
@@ -203,6 +261,7 @@ for (const { chemin, marqueur, unChoixCoche } of ROUTES) {
   const page = await navigateur.newPage({ viewport: { width: 420, height: 900 } });
   const exceptions = [];
   page.on('pageerror', (erreur) => exceptions.push(String(erreur)));
+  const infractions = await releverLaCsp(page);
 
   try {
     await page.goto(base + chemin, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -295,6 +354,11 @@ for (const { chemin, marqueur, unChoixCoche } of ROUTES) {
     if (bloquantes.length > 0) {
       echecs.push(`${chemin} : exception non rattrapée — ${bloquantes[0].slice(0, 260)}`);
     }
+    // Après la cascade : une infraction peut en être la cause (un script bloqué ne monte pas
+    // l'app), et elle se lit mieux à côté du symptôme qu'à sa place.
+    for (const infraction of decrireInfractions(infractions)) {
+      echecs.push(`${chemin} : la CSP de vercel.json, appliquée en production, ${infraction}.`);
+    }
 
     // Vérification 4 — sur le DOM **vivant**, après le repos : c'est l'état que l'app a rendu, pas
     // celui du pré-rendu. Le nom relevé est celui qu'un lecteur d'écran annoncerait (`aria-label`,
@@ -367,5 +431,6 @@ if (echecs.length > 0 || choixSansEtat.length > 0) process.exit(1);
 console.log(
   `${ROUTES.length} routes rendues, aucun écran de panne, aucune exception bloquante,` +
     ` ${choixInspectes} choix annonçant leur état.` +
-    ' vercel.json : cleanUrls en place, assets des Functions présents.'
+    ' vercel.json : cleanUrls en place, assets des Functions présents, CSP appliquée sans infraction' +
+    ' et scripts écrits en dur couverts par leur empreinte.'
 );

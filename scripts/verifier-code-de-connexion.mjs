@@ -93,7 +93,7 @@ import process from 'node:process';
 
 import { chromium } from 'playwright';
 
-import { servirExport } from './servir-export.mjs';
+import { decrireInfractions, releverLaCsp, servirExport } from './servir-export.mjs';
 
 const API = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -313,12 +313,21 @@ const navigateur = await chromium.launch({
 });
 const marque = Date.now().toString(36);
 
+// Les infractions à la CSP de `vercel.json`, que le serveur applique comme la production
+// (`servir-export.mjs`) : chaque contexte relève les siennes, lues à la fin.
+const relevesCsp = [];
+async function nouveauContexte() {
+  const contexte = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  relevesCsp.push(await releverLaCsp(contexte));
+  return contexte;
+}
+
 try {
   // ── 1. Le rattachement par code, du champ d'adresse à la session permanente ──────────────────
   etape = 'rattachement par code';
   const adresseA = `code-a-${marque}@test.local`;
 
-  const contexteA = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const contexteA = await nouveauContexte();
   const pageA = await contexteA.newPage();
   const courrielA = await demanderUnCode(pageA, serveur.base, adresseA, 'rattachement');
   const anonymeA = await utilisateurDeLaPage(pageA);
@@ -375,7 +384,7 @@ try {
   const adresseB = `code-b-${marque}@test.local`;
   const idB = await creerUnCompte(adresseB);
 
-  const contexteB = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const contexteB = await nouveauContexte();
   const pageB = await contexteB.newPage();
   const courrielB = await demanderUnCode(pageB, serveur.base, adresseB, 'connexion');
   const avantB = await utilisateurDeLaPage(pageB);
@@ -395,13 +404,13 @@ try {
   etape = 'les deux flux ne se croisent pas';
   const adresseC = `code-c-${marque}@test.local`;
 
-  const contexteC = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const contexteC = await nouveauContexte();
   const pageC = await contexteC.newPage();
   const courrielC = await demanderUnCode(pageC, serveur.base, adresseC, 'rattachement');
   const avantC = await utilisateurDeLaPage(pageC);
 
   // Le même code, présenté au flux qui n'est pas le sien, sur un navigateur neuf.
-  const contexteD = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const contexteD = await nouveauContexte();
   const pageD = await contexteD.newPage();
   await pageD.goto(`${serveur.base}/connexion/retrouver?source=onboarding`, { waitUntil: 'domcontentloaded' });
   const champD = pageD.getByRole('textbox', { name: 'Adresse email du compte' });
@@ -489,7 +498,7 @@ try {
   verifier(jetonsC !== null, 'impossible de lire les jetons du compte témoin : l’assertion d’injection ne prouve rien');
 
   if (jetonsC) {
-    const contexteE = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+    const contexteE = await nouveauContexte();
     const pageE = await contexteE.newPage();
     // La victime ouvre l'app une première fois : elle a sa propre session anonyme, c'est elle
     // qu'on ne doit pas perdre.
@@ -558,12 +567,12 @@ try {
     return brut.replace(new RegExp(adresse, 'g'), '<adresse>').trim();
   };
 
-  const contexteF = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const contexteF = await nouveauContexte();
   const pageF = await contexteF.newPage();
   const courrielF = await demanderUnCode(pageF, serveur.base, adresseF, 'rattachement');
   const ecranPris = await texteDeLaSaisie(pageF, adresseF);
 
-  const contexteG = await navigateur.newContext({ viewport: { width: 420, height: 900 }, locale: 'fr-FR' });
+  const contexteG = await nouveauContexte();
   const pageG = await contexteG.newPage();
   await demanderUnCode(pageG, serveur.base, adresseLibre, 'rattachement');
   const ecranLibre = await texteDeLaSaisie(pageG, adresseLibre);
@@ -600,6 +609,10 @@ try {
 } finally {
   await navigateur.close();
   serveur.fermer();
+}
+
+for (const infraction of decrireInfractions(relevesCsp.flat())) {
+  ecarts.push(`[CSP] la politique de vercel.json, appliquée en production, ${infraction}`);
 }
 
 if (ecarts.length > 0) {
