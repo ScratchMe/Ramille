@@ -31,7 +31,10 @@ PostHog. La liste des événements vit dans `public.usage_event_types` avec une 
 depuis `usage_events` — **ajouter un événement impose une ligne par migration ET une entrée dans
 `src/types/analytics.ts`**, sinon l'insert est rejeté et l'événement perdu en silence (même
 mécanique que `emission_factor_sources`). Un événement déclaré mais qu'aucun code n'émet doit
-être retiré : il ne se lit pas « pas encore instrumenté », il se lit **zéro**.
+être retiré : il ne se lit pas « pas encore instrumenté », il se lit **zéro**. **Et un événement
+ajouté impose de relire le formulaire « Sécurité des données » de Play**
+(`docs/exploitation/fiche-google-play.md` §5) : un événement neuf peut collecter ce que la
+déclaration publiée ne nomme pas, et rien ne le signale.
 
 **La même règle vaut pour une valeur de propriété, et elle est plus discrète** : la base ne valide
 pas les valeurs de `props` — `check_usage_event_props` ne compte que des clés et des longueurs —
