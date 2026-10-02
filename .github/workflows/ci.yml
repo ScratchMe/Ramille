@@ -215,7 +215,7 @@ jobs:
       # React — page blanche sur toutes les routes, avec une CI verte et vingt pages titrées.
       # Celle-ci ouvre vraiment les pages dans un navigateur, cf. l'en-tête du script.
       - run: npx playwright install --with-deps chromium
-      # Les trois gardes qui ouvrent l'export servent la CSP de vercel.json telle que la production
+      # Les deux gardes de ce travail qui ouvrent l'export servent la CSP de vercel.json telle que la production
       # l'applique, l'origine Supabase remplacée par celle de l'export (`servir-export.mjs`) : d'où
       # la variable, la même que celle de l'export.
       - run: node scripts/verifier-rendu-export.mjs

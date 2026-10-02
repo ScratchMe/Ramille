@@ -51,8 +51,8 @@ function resoudre(dist, url) {
  *
  * **Pourquoi ce serveur les sert** (02/10/2026). La CSP du site est appliquée, et une politique
  * appliquée qui interdit quelque chose dont l'app a besoin ne casse pas une page : elle casse l'app
- * entière, sur web, pour tout le monde, et rien ne le signale côté serveur. Les quatre gardes qui
- * ouvrent l'export dans un navigateur passent par ici : servir la politique de production, c'est
+ * entière, sur web, pour tout le monde, et rien ne le signale côté serveur. Les gardes qui ouvrent
+ * l'export dans un navigateur passent par ici : servir la politique de production, c'est
  * faire jouer à chacun de leurs parcours la mesure qu'aucun collecteur ne fait, à chaque PR. Ils
  * relèvent les infractions par `releverLaCsp()` ci-dessous et échouent à la première.
  *
@@ -69,7 +69,7 @@ export function enTetesDeProduction(config, origineSupabase) {
     if (regle.source !== '/(.*)') {
       throw new Error(
         `vercel.json pose des en-têtes sur « ${regle.source} » : servir-export.mjs ne sait reproduire` +
-          ' que la règle « /(.*) ». Étendre resoudre() avant d’ajouter une règle, sinon les gardes' +
+          ' que la règle « /(.*) ». Étendre enTetesDeProduction() avant d’ajouter une règle, sinon les gardes' +
           ' serviraient autre chose que la production.',
       );
     }

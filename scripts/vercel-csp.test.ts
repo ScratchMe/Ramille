@@ -5,22 +5,28 @@
  *
  * **Appliquée depuis le 02/10/2026** (`VERCEL.md` §2.2). Elle était en `Report-Only` sans
  * collecteur, donc elle ne rapportait à personne. La mesure qui en tenait lieu : la politique stricte
- * injectée en rapport seul sur les dix-neuf routes de la production, sans une infraction, et une
- * politique volontairement trop étroite qui en relevait des dizaines sur les mêmes pages. Les
- * quatre gardes navigateur la servent désormais appliquée, à chaque PR.
+ * injectée en rapport seul sur les dix-neuf routes de la production, **les requêtes vers Supabase
+ * coupées** pour ne rien écrire — donc chaque écran dans son état sans réseau —, sans une infraction,
+ * et une politique volontairement trop étroite qui en relevait des dizaines sur les mêmes pages. Les
+ * écrans avec données, eux, sont mesurés par les gardes navigateur, qui la servent désormais
+ * appliquée, à chaque PR.
  *
  * Ce fichier ne remplace pas ces gardes : il ne sait pas si l'app a besoin d'une origine. Il garde
  * **la forme** de la politique contre un affaiblissement fait en passant — un `'unsafe-eval'` remis
  * pour faire taire une erreur, un joker dans `connect-src`, un retour en rapport seul —, chacun
- * pouvant se décider, mais pas sans qu'un test le dise. Et il garde la substitution de l'origine
- * Supabase, la seule chose que le serveur des gardes change à la politique de production.
+ * pouvant se décider, mais pas sans qu'un test le dise. Il garde la substitution de l'origine
+ * Supabase, la seule chose que le serveur des gardes change à la politique de production. Et il garde
+ * le contrôle du build de production (`verifier-origine-supabase-de-la-csp.mjs`), qui couvre la seule
+ * valeur qu'aucune garde ne peut voir : le projet Supabase réellement configuré sur Vercel.
  *
- * Non-vacuité, mesurée le 02/10/2026 en cassant six fois (chaque mutation remise en place avant la
+ * Non-vacuité, mesurée le 02/10/2026 en cassant dix fois (chaque mutation remise en place avant la
  * suivante) : repasser l'en-tête en `Content-Security-Policy-Report-Only` fait tomber 5 tests ;
  * remettre `'unsafe-inline'` dans `script-src`, 1 ; remettre `'unsafe-eval'`, 1 ; remettre
  * `https://*.supabase.co` dans `connect-src`, 2 ; dans `servir-export.mjs`, remplacer aussi les
  * autres sources de `connect-src`, 1 ; servir la politique sans substitution quand l'origine
- * manque, au lieu de refuser, 1. Aucune mutation ne passe.
+ * manque, au lieu de refuser, 1 ; dans le contrôle du build, bloquer aussi hors production, 1 ; ne
+ * jamais bloquer, 2 ; accepter tout projet Supabase, 2 ; le retirer de `vercel-build`, 1. Aucune
+ * mutation ne passe.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -105,5 +111,47 @@ describe('servir-export.mjs — la politique servie aux gardes', () => {
     const r = servie(null);
     expect(r.politique).toBeUndefined();
     expect(r.erreur).toContain('EXPO_PUBLIC_SUPABASE_URL');
+  });
+});
+
+describe('verifier-origine-supabase-de-la-csp.mjs — le build de production refuse un projet que la CSP n’autorise pas', () => {
+  const script = path.join(racine, 'scripts', 'verifier-origine-supabase-de-la-csp.mjs');
+  const origineDeLaCsp = directive('connect-src')[1];
+
+  function construire(env: { VERCEL_ENV?: string; EXPO_PUBLIC_SUPABASE_URL?: string }) {
+    const herite: NodeJS.ProcessEnv = { ...process.env };
+    // Une valeur qui traînerait dans le shell fausserait le cas en silence.
+    delete herite.VERCEL_ENV;
+    delete herite.EXPO_PUBLIC_SUPABASE_URL;
+    const r = spawnSync(process.execPath, [script], { cwd: racine, encoding: 'utf8', env: { ...herite, ...env } });
+    return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
+  }
+
+  test('vercel-build le lance après l’export, et seulement si l’export a réussi', () => {
+    const paquet = JSON.parse(fs.readFileSync(path.join(racine, 'package.json'), 'utf8'));
+    expect(paquet.scripts['vercel-build']).toMatch(
+      /^expo export --platform web && node scripts\/verifier-origine-supabase-de-la-csp\.mjs$/,
+    );
+  });
+
+  test('production, le projet de la CSP : le déploiement part', () => {
+    expect(construire({ VERCEL_ENV: 'production', EXPO_PUBLIC_SUPABASE_URL: `${origineDeLaCsp}/` }).code).toBe(0);
+  });
+
+  test('production, un autre projet Supabase : refusé, et la sortie dit pourquoi', () => {
+    const r = construire({ VERCEL_ENV: 'production', EXPO_PUBLIC_SUPABASE_URL: 'https://autreprojet.supabase.co' });
+    expect(r.code).toBe(1);
+    expect(r.sortie).toContain("n'autorise pas https://autreprojet.supabase.co");
+  });
+
+  test('production, sans variable : refusé', () => {
+    expect(construire({ VERCEL_ENV: 'production' }).code).toBe(1);
+  });
+
+  test('hors production (CI, mesure hors ligne) : un avertissement, jamais un échec', () => {
+    const r = construire({ EXPO_PUBLIC_SUPABASE_URL: 'https://exemple.supabase.co' });
+    expect(r.code).toBe(0);
+    // L'avertissement, et non le message de succès, qui dit aussi son mode.
+    expect(r.sortie).toContain('Avertissement (VERCEL_ENV=(absente), contrôle non bloquant)');
   });
 });

@@ -204,8 +204,10 @@ for (const [fonction, options] of Object.entries(configVercel.functions ?? {})) 
 }
 
 // Puis la CSP : les scripts écrits en dur dans les pages, contre les empreintes de `script-src`.
-// Un `<script src>` se charge depuis le site, donc `'self'` le couvre ; un `type` qui n'est pas du
-// JavaScript (`application/json`, `application/ld+json`) n'est pas exécuté, donc pas contrôlé.
+// Un `<script src>` se charge depuis le site, donc `'self'` le couvre. Seuls les blocs de données
+// connus (`application/json`, `application/ld+json`) sont sautés : ils ne s'exécutent pas. Tout le
+// reste est contrôlé, `importmap` et `speculationrules` compris — la CSP les soumet à `script-src`
+// (contre-lecture du 02/10/2026).
 const csp = [configVercel.headers ?? []]
   .flat()
   .flatMap((regle) => regle.headers)
@@ -228,9 +230,10 @@ if (!csp) {
     // Insensible à la casse, et la balise fermante tolère espaces et attributs : c'est ainsi que le
     // navigateur la lit (CodeQL, 02/10/2026).
     for (const [, attributs, corps] of readFileSync(fichier, 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
-      if (/\bsrc\s*=/i.test(attributs)) continue;
-      const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attributs)?.[1]?.toLowerCase();
-      if (type && !['module', 'text/javascript', 'application/javascript'].includes(type)) continue;
+      // `(?:^|\s)` et non `\b` : `data-src` ou `data-type` ne sont pas les attributs qu'on cherche.
+      if (/(?:^|\s)src\s*=/i.test(attributs)) continue;
+      const type = /(?:^|\s)type\s*=\s*["']?([^"'\s>]+)/i.exec(attributs)?.[1]?.toLowerCase();
+      if (type === 'application/json' || type === 'application/ld+json') continue;
       const empreinte = `'sha256-${createHash('sha256').update(corps, 'utf8').digest('base64')}'`;
       if (!scriptSrc.includes(empreinte)) {
         manquantes.set(empreinte, [...(manquantes.get(empreinte) ?? []), fichier.slice(DIST.length + 1)]);

@@ -663,8 +663,9 @@ const exceptions = [];
 // requête en 401 ou en 42501 explique plus qu'une capture d'écran.
 const journal = [];
 // Les infractions à la CSP de `vercel.json`, que le serveur applique comme la production
-// (`servir-export.mjs`). Ce parcours est le seul endroit où la politique voit l'app **parler à une
-// base** — session, bilan, plan, point, compte — : c'est la mesure qu'aucun collecteur ne fait.
+// (`servir-export.mjs`). Avec le chemin du compte, ce parcours est le seul endroit où la politique
+// voit l'app **parler à une base** — session, bilan, plan, point, compte — : c'est la mesure
+// qu'aucun collecteur ne fait.
 const relevesCsp = [];
 
 /**
@@ -1748,7 +1749,17 @@ try {
     throw new Ecart(`toucher « Plan » depuis le suivi rouvre ${new URL(page.url()).pathname} : un onglet ramène à la racine de sa pile`);
   }
   assurer(new URL(page.url()).search === '', `toucher « Plan » laisse des paramètres dans l’adresse : ${page.url()}`);
-  await page.waitForFunction(`(${titresDuPlan})().some((h) => h.getClientRects().length > 0)`, undefined, { timeout: ATTENTE });
+  // Une **fonction**, jamais une chaîne : Playwright réévalue un prédicat en chaîne par `eval` à chaque
+  // sondage, et la CSP servie (`servir-export.mjs`) interdit `eval` — l'attente ne passait que si le
+  // titre était visible au premier appel (contre-lecture du 02/10/2026, `TESTING-GARDES.md` §2.16).
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('h1, [role="heading"]')].some(
+        (h) => h.textContent.trim() === 'Ton plan' && h.getClientRects().length > 0
+      ),
+    undefined,
+    { timeout: ATTENTE }
+  );
   const titresAuRetour = await lireLesTitresDuPlan();
   assurer(
     titresAuRetour.length === 1 && titresAuRetour[0] === 'avant',
