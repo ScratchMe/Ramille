@@ -246,6 +246,12 @@ on s'en fiche. sinon OK ».
 - **La capture ne suffit pas : Claude Design intervient**, comme D8 le prévoyait. « Faisons intervenir
   Claude Design. Ne serait-ce que pour savoir comment bien afficher l'aide. Ça commence à prendre de
   la place. » Le brief : [`docs/design/v1-34-l-etape-du-contexte/BRIEF.md`](../design/v1-34-l-etape-du-contexte/BRIEF.md).
+- **La fusion n'attend pas le canvas**, à rebours de la lettre de D8 (« avant la fusion »). Posée le
+  même soir : fusionner le chantier dès qu'il est vert et contre-lu, et livrer la réponse de Claude
+  Design dans sa propre PR, **avant le premier build de production** (D7 tient) ; ou tenir la PR
+  jusqu'au canvas, au risque de conflits avec ce qui arrive sur `main`. Réponse : « ok je suis ta
+  reco ». Ce qu'on accepte : le web de production montre l'étape des captures en attendant, et il n'y
+  a que des comptes de test.
 
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 
@@ -260,6 +266,10 @@ on s'en fiche. sinon OK ».
   migration et le déploiement du web, un onglet resté sur l'ancien bundle verrait l'écran « Contexte »
   refuser d'enregistrer, le temps d'un rechargement. Aucun build natif ne l'appelle (le dernier date du
   14/09/2026), et les comptes de production sont des comptes de test (D4).
+- **Le même onglet soumettrait un bilan sans la réponse, en silence** : l'ancien bundle envoie
+  `tc_access` et pas `transports_proches`, le déclencheur ne touche à rien quand la réponse est nulle,
+  et le bilan garde l'accès répondu sans recevoir aucune action de transport en commun (D4). Aucune
+  erreur ne le signale. Même fenêtre, même coût accepté : un rechargement, et des comptes de test.
 - **La garde des miroirs lit une forme de plus** : `colonne <@ ARRAY[…]`, la première colonne tableau
   qu'elle sache comparer (`TESTING-GARDES.md` §2.7).
 

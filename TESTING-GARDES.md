@@ -249,7 +249,7 @@ base que `supabase/migrations/` vient de construire. Quatre choses à savoir ava
   choisir une.
 
 Ajouter un miroir, c'est ajouter **une ligne** au tableau `MIROIRS` ; le reste se lit dans la base
-et dans le module. **Éprouvé en le cassant** (`TESTING.md` §1.1), douze mutations datées en tête du script —
+et dans le module. **Éprouvé en le cassant** (`TESTING.md` §1.1), quinze mutations datées en tête du script (dont trois depuis `v1-34`, pour la forme `<@ ARRAY[…]`) —
 dont la huitième est venue d'une contre-lecture du diff plutôt que d'une idée de départ : une
 colonne peut porter **deux** contraintes bornantes, et n'en lire qu'une ferait affirmer au contrôle
 le contraire de ce que la base applique.

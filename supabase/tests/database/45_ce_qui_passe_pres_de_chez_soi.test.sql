@@ -8,15 +8,16 @@
 -- l'écran « Contexte » reconnaît une réponse inchangée dans quelque ordre qu'on ait touché les puces.
 --
 -- Les assertions de chiffrage générales restent au fichier `10`, dont les fixtures portent désormais
--- la réponse ; ici, chaque profil ne diffère de ses voisins que par elle — le même trajet de 10 km en
--- voiture thermique, cinq jours, les mêmes sorties hebdomadaires —, ce qui rend chaque comparaison
--- probante.
+-- la réponse ; ici, chaque profil ne diffère de ses voisins que par elle et par la zone — le même
+-- trajet de 10 km en voiture thermique, cinq jours, les mêmes sorties hebdomadaires. La zone varie
+-- exprès, à rebours de ce qu'elle décidait avant (un tram « Périurbain », une banlieue sans métro
+-- « Urbain dense ») : c'est ce qui montre qu'elle ne décide plus.
 --
 -- Éprouvé en le cassant le 03/10/2026 (`TESTING.md` §1.1) — voir le relevé des mutations au pied.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);
+select plan(21);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
 select ('a4440000-0000-0000-0000-00000000000' || n)::uuid, '00000000-0000-0000-0000-000000000000',
@@ -230,6 +231,14 @@ select is(
   'la réponse corrigée s''enregistre rangée, et l''accès s''en déduit'
 );
 
+select set_config('role', 'authenticated', true);
+select throws_ok(
+  $$ select public.mettre_a_jour_le_contexte('periurbain', array[]::text[], '1', 'deux_ou_plus') $$,
+  'RM003', null,
+  'une réponse vide est refusée par le RPC, en français, avant le `check` de la table'
+);
+select set_config('role', 'postgres', true);
+
 select ok(
   to_regprocedure('public.mettre_a_jour_le_contexte(text, text, text, text)') is null,
   'l''ancienne signature, qui prenait l''accès, n''existe plus'
@@ -252,8 +261,10 @@ rollback;
 --   - la contrainte de cohérence sans sa moitié « rien de tout ça seul » → 2, puis le fichier entier :
 --     l'insertion qui aurait dû échouer a écrit la ligne, et la suivante bute sur la clé ;
 --   - la même sans son minimum d'une réponse → 3, puis le fichier entier, de même ;
+--   - le RPC qui ne refuse que la réponse nulle, pas le tableau vide → 20, seule (ajoutée par la
+--     contre-lecture du même soir : sans elle, le tableau vide butait sur le `check`, en anglais) ;
 --   - l'ancienne signature du RPC laissée en place (recréée : la base locale l'avait déjà perdue)
---     → 20, seule ;
+--     → 21, seule ;
 --   - l'action du RER chiffrée au TER (`substitute_mode_id = 'train_ter'`) → 17, seule.
 --
 -- **La 11 ne tombe sous aucune mutation seule, et c'est su** : pour le profil 3, qui a le RER sans le

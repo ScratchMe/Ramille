@@ -23,7 +23,8 @@ import { optionCible } from '@/types/demande';
 
 /**
  * Les trois questions qui se posent à tout le monde, écrites **une fois** pour leurs deux usages :
- * le texte au-dessus de la série et le nom de son `radiogroup` (`GroupeDeChoix`). Sans le nom, une
+ * le texte au-dessus de la série et le nom de son groupe (`GroupeDeChoix` : un `radiogroup`, ou un
+ * `group` pour la série à cocher depuis `v1-34`). Sans le nom, une
  * puce « 1 » s'annonçait seule, sans rien qui dise qu'elle compte des véhicules — et `/contexte`, qui
  * reprend ces séries, n'a pas l'étape du questionnaire autour pour le rappeler.
  *
@@ -143,7 +144,8 @@ export function ChampsDeContexte({
 /**
  * Une série du contexte : son intitulé, ses puces, et l'ancre où mène « Il manque encore … »
  * (`v1-31` §2.5) — l'intitulé se marque, le focus va à la puce cochée ou à la première. Écrite une fois
- * pour les quatre, qui ne différaient que par leurs réponses. **Les deux écrans la lisent** : dans le
+ * pour les séries à choix unique, qui ne diffèrent que par leurs réponses — trois depuis `v1-34`, la série
+ * à cocher ayant la sienne (`SerieCumulableDuContexte`). **Les deux écrans la lisent** : dans le
  * questionnaire par `StepShell`, et dans `/contexte` depuis le 01/10/2026 (audit P-13), qui fournit les
  * ancres lui-même — son « Enregistrer », en attente sur un contexte incomplet, mène à ce qui manque au
  * lieu de rester désactivé sans dire pourquoi.

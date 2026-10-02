@@ -246,8 +246,10 @@ begin
     if t.requires_car and coalesce(a.household_vehicles, '') = '0' then
       continue;
     end if;
-    -- C3.8 §1 : la zone décide, là où `requires_tc` ne voyait que « inexistant ». Une condition
-    -- qu'on ne peut pas évaluer n'est pas remplie : sans réponse, on ne propose pas.
+    -- C3.8 §1 : la zone décidait, là où `requires_tc` ne voyait que « inexistant ». **Dormant depuis
+    -- `v1-34`** : plus aucun gabarit ne porte de zone (le contrôle en fin de migration l'impose), mais
+    -- le filtre reste pour qui en écrirait un. Une condition qu'on ne peut pas évaluer n'est pas
+    -- remplie : sans réponse, on ne propose pas.
     if t.zones_admissibles is not null
        and not (coalesce(a.zone_type, '') = any(t.zones_admissibles)) then
       continue;
@@ -460,7 +462,15 @@ begin
     raise exception 'mettre_a_jour_le_contexte: aucune session' using errcode = 'RM003';
   end if;
 
-  if p_zone_type is null or v_transports is null or p_household_vehicles is null then
+  -- **Une réponse ne s'efface pas** (C3.8) : une condition qu'on ne peut pas évaluer n'est pas
+  -- remplie, donc vider `zone_type`, `transports_proches` ou `household_vehicles` **retire** des
+  -- actions du plan, en silence. Les trois sont posées à tout le monde ; les refuser nulles rend la
+  -- règle structurelle plutôt que conventionnelle. `p_teletravail` est la quatrième et la seule qui
+  -- puisse légitimement être nulle : B4.4 ne se pose pas en dessous de deux jours de trajet
+  -- (`teletravailSePose`, C5.4), et l'y forcer inventerait une réponse à une question absente. **Un
+  -- tableau vide n'est pas une réponse non plus** : rangé, il reste vide, et sans ce refus il
+  -- buterait sur le `check` de la table, en anglais et après coup.
+  if p_zone_type is null or coalesce(cardinality(v_transports), 0) = 0 or p_household_vehicles is null then
     raise exception 'mettre_a_jour_le_contexte: les trois réponses de contexte sont obligatoires'
       using errcode = 'RM003';
   end if;
@@ -480,11 +490,13 @@ begin
   from public.assessment_answers
   where assessment_id = v_assessment_id;
 
-  -- **Rien n'a bougé : on ne touche à rien.** `recompute` réécrit `assessment_results` et la
-  -- régénération reconstruit `plan_actions` : un enregistrement à blanc ferait perdre les rangs
-  -- d'affichage et rejouerait la reprise d'engagement pour rien. La réponse stockée est rangée par
-  -- le déclencheur, et celle qu'on reçoit l'est juste au-dessus : deux réponses égales se comparent
-  -- égales, dans quelque ordre qu'on ait touché les puces.
+  -- **Rien n'a bougé : on ne touche à rien.** Ce n'est pas une optimisation — `recompute` réécrit
+  -- `assessment_results` et la régénération forcée reconstruit `plan_actions`, donc un
+  -- enregistrement à blanc ferait perdre les rangs d'affichage et rejouerait la reprise
+  -- d'engagement pour rien. Le geste le plus fréquent sur cet écran est de l'ouvrir, de le lire et
+  -- de le refermer. La réponse stockée est rangée par le déclencheur, et celle qu'on reçoit l'est
+  -- juste au-dessus : deux réponses égales se comparent égales, dans quelque ordre qu'on ait touché
+  -- les puces (`v1-34`).
   if v_avant.zone_type is not distinct from p_zone_type
      and v_avant.transports_proches is not distinct from v_transports
      and v_avant.household_vehicles is not distinct from p_household_vehicles
@@ -492,8 +504,10 @@ begin
     return;
   end if;
 
-  -- Les valeurs admissibles ne sont pas revalidées ici : les `check` de la table les portent. Et
-  -- `tc_access` ne s'écrit pas : le déclencheur le déduit de la réponse.
+  -- Les valeurs admissibles ne sont pas revalidées ici : les `check` de la table les portent déjà
+  -- (`assessment_answers_zone_type_check` et ses sœurs), et les réécrire ferait un second endroit à
+  -- tenir d'accord — le piège de `PARTS_DU_SECOND_MODE` par l'autre bout. Et `tc_access` ne s'écrit
+  -- pas : le déclencheur le déduit de la réponse (`v1-34` D5).
   update public.assessment_answers
   set zone_type = p_zone_type,
       transports_proches = v_transports,
@@ -501,8 +515,12 @@ begin
       teletravail = p_teletravail
   where assessment_id = v_assessment_id;
 
-  -- L'ordre compte : `recompute` remet `assessment_results` d'accord avec les réponses
-  -- (`mobility_constrained`, le résiduel des sorties rares), puis l'appel nommé reconstruit le plan.
+  -- L'ordre compte. `recompute_assessment_results` remet `assessment_results` d'accord avec les
+  -- réponses — `mobility_constrained`, et le résiduel des sorties rares — et appelle lui-même
+  -- `generate_plan_cycle_for_user(user)` en fin de course, qui **retourne sur la garde
+  -- d'idempotence** puisque `submitted_at` n'a pas bougé. C'est le second appel, celui-ci nommé,
+  -- qui reconstruit le plan. Ne pas « simplifier » en retirant l'un des deux : sans le premier le
+  -- plan se reconstruirait sur un résultat périmé, sans le second il ne se reconstruirait pas.
   perform public.recompute_assessment_results(v_assessment_id);
   perform public.generate_plan_cycle_for_user(v_uid, 'contexte');
 end;

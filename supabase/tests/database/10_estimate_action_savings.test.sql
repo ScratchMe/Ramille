@@ -96,7 +96,7 @@ insert into public.assessment_answers (
   car_long_trips_occupancy, zone_type, tc_access, transports_proches, household_vehicles
 ) values (
   'b1111111-1111-1111-1111-111111111115', false, 'rarely', 3, 2, 2, 'thermique',
-  3, 'periurbain', 'bon', array['bus', 'train'], '1'
+  3, 'periurbain', 'limite', array['bus', 'train'], '1'
 );
 
 -- F : deux jours de trajet par semaine, et un « oui » franc au télétravail. C'est le profil que la
@@ -120,7 +120,7 @@ insert into public.assessment_answers (
   car_long_trips_occupancy, zone_type, tc_access, transports_proches, household_vehicles
 ) values (
   'b1111111-1111-1111-1111-111111111117', false, 'rarely', 3, 2, 2, 'thermique',
-  1, 'periurbain', 'bon', array['bus', 'train'], '1'
+  1, 'periurbain', 'limite', array['bus', 'train'], '1'
 );
 
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111111');

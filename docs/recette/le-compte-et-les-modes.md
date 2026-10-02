@@ -11,6 +11,14 @@
 > trajets de ses tableaux de profil, ont été jouées le 02/10/2026 dans
 > [`ce-qui-reste-apres-le-1er-octobre.md`](ce-qui-reste-apres-le-1er-octobre.md), transposées à son profil 1 :
 > conformes (`v1-13` §20). Une ligne réécrite est une ligne neuve (`RECETTE.md` §2.5).
+>
+> **Depuis le 03/10/2026, la question de l'accès n'existe plus**
+> ([`v1-34`](../architecture/v1-34-ce-qui-passe-pres-de-chez-soi.md)) : « Comment sont les transports en
+> commun près de chez toi ? » a laissé place à « Près de chez toi, qu'est-ce que tu pourrais prendre ? »,
+> à cocher. Cette feuille est jouée, donc ses lignes et ses tableaux de profil restent tels qu'ils ont
+> été joués. Pour en transposer un : « Bon » se coche **Métro ou tram**, « Limité » **Bus** ou **Train
+> (TER, Intercités)**, « Inexistant » **Rien de tout ça**. Et la zone ne décide plus d'aucune action :
+> le métro ou le tram ne revient plus avec « Urbain dense » seul.
 
 > **Écrit le 21/09/2026, mis à jour le 27/09/2026** — la séance n'avait pas été jouée entre-temps,
 > donc la feuille couvre désormais les deux périodes : ce que le 21/09 livrait (le compte, le

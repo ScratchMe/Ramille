@@ -1375,9 +1375,20 @@ export function brouillonEstAncien(brouillon: BilanDraft, maintenant: Date): boo
  *
  * La comparaison porte sur les clés du modèle, pas sur les objets : un brouillon relu peut
  * porter des clés en plus, jamais en moins.
+ *
+ * **Un tableau se compare par son contenu** (03/10/2026, contre-lecture de `v1-34`) :
+ * `transports_proches` est la première réponse en tableau, et le brouillon relu par `JSON.parse`
+ * comme le bilan lu sur le serveur en portent chacun leur exemplaire — `['bus'] === ['bus']` est
+ * faux. Avec `===`, aucun brouillon ne se reconnaissait plus dans le dernier bilan. Les deux côtés
+ * sont rangés (le déclencheur côté serveur, `basculerTransport` côté écran), donc l'ordre compare.
  */
 export function memesReponses(a: BilanAnswers, b: BilanAnswers): boolean {
-  return (Object.keys(EMPTY_BILAN_ANSWERS) as (keyof BilanAnswers)[]).every(
-    (cle) => a[cle] === b[cle]
-  );
+  return (Object.keys(EMPTY_BILAN_ANSWERS) as (keyof BilanAnswers)[]).every((cle) => {
+    const x = a[cle];
+    const y = b[cle];
+    if (Array.isArray(x) || Array.isArray(y)) {
+      return Array.isArray(x) && Array.isArray(y) && x.length === y.length && x.every((v, i) => v === y[i]);
+    }
+    return x === y;
+  });
 }

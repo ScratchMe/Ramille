@@ -1448,6 +1448,17 @@ describe('memesReponses', () => {
     expect(memesReponses(dernier, answers({ commute_mode: 'bus', leisure_frequency: 'weekly' }))).toBe(false);
   });
 
+  // **Le brouillon relu n'a jamais le même tableau que le bilan lu** : `JSON.parse` en fabrique un
+  // neuf. Une copie superficielle (`{ ...dernier }`) partagerait la référence et passerait avec `===` —
+  // c'est ainsi que la régression de `v1-34` est passée. Éprouvé en le cassant le 03/10/2026 : le
+  // `===` remis pour tous les champs fait tomber ce test, et lui seul.
+  it('compare une réponse en tableau par son contenu, comme après une relecture du stockage', () => {
+    const dernier = answers({ commute_mode: 'train', transports_proches: ['metro_tram', 'bus'] });
+    expect(memesReponses(dernier, JSON.parse(JSON.stringify(dernier)) as BilanAnswers)).toBe(true);
+    expect(memesReponses(dernier, answers({ commute_mode: 'train', transports_proches: ['bus'] }))).toBe(false);
+    expect(memesReponses(dernier, answers({ commute_mode: 'train', transports_proches: null }))).toBe(false);
+  });
+
   it('ignore les clés en plus d’un brouillon relu, jamais une réponse qui diffère', () => {
     const dernier = answers({ commute_days_per_week: 3 });
     const avecSurplus = { ...dernier, champ_disparu: 'oui' } as BilanAnswers;

@@ -24,8 +24,8 @@ insert into public.assessments (id, user_id, status, submitted_at) values
 -- moins deux actions, sans quoi le test de bascule n'aurait rien à basculer.
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
-  commute_is_carpool, commute_second_mode_used, leisure_frequency, zone_type, tc_access, household_vehicles
-) values ('72222222-2222-2222-2222-222222222222', true, 5, 20, 'voiture', false, false, 'rarely', 'urbain_dense', 'bon', '1');
+  commute_is_carpool, commute_second_mode_used, leisure_frequency, zone_type, tc_access, transports_proches, household_vehicles
+) values ('72222222-2222-2222-2222-222222222222', true, 5, 20, 'voiture', false, false, 'rarely', 'urbain_dense', 'bon', array['metro_tram'], '1');
 
 insert into public.assessment_results (
   assessment_id, total_co2_kg_year, commute_co2_kg_year, leisure_co2_kg_year, travel_co2_kg_year,

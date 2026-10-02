@@ -56,7 +56,7 @@ const REPONSES_TELETRAVAIL = [
 const teletravailSePose = (trajet) =>
   trajet.commute_has_regular_trip !== false && trajet.commute_days_per_week !== null && trajet.commute_days_per_week >= 2;
 
-// Des questions, plus des intitulés (01/10/2026, D4 de `v1-33`) ; les puces ne bougent pas.
+// Des questions, plus des intitulés (01/10/2026, D4 de `v1-33`).
 const QUESTION_ZONE = 'Dans quel type de zone vis-tu ?';
 const QUESTION_TRANSPORTS = 'Près de chez toi, qu’est-ce que tu pourrais prendre ?';
 const AIDE_TRANSPORTS = 'Coche tout ce qui passe assez souvent pour t’en servir.';
