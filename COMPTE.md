@@ -252,7 +252,11 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
 - **Aucun drapeau `horsLigne` ne descend de la racine vers le plan, et aucun bandeau n'a été écrit.**
   L'écran `erreur_reseau` de `/plan` existe depuis C1.4 et dit déjà la chose, en français, avec un
   « Réessayer » et la barre d'onglets intacte. Un drapeau serait la seule chose à devoir rester juste
-  entre deux écrans, pour une information que l'onglet relit lui-même à chaque retour.
+  entre deux écrans, pour une information que l'onglet relit lui-même à chaque retour. L'écran
+  `erreur_reseau` (le nom date d'avant D19) porte depuis le 01/10/2026 le **genre** de l'échec : hors
+  ligne, il dit toujours « Ton plan n’a pas pu être relu. Vérifie ta connexion. » ; sur une réponse
+  du serveur, « … Réessaie dans un instant. » (`v1-33` D19) — le discriminant est le même
+  `status === 0` que `lireLeBilan`.
 - **Un `ensureSession()` qui échoue par coupure ne fait pas interroger la base.** La racine note la
   coupure et s'arrête là : sans session, la requête partirait en `anon`, qui n'a aucun privilège sur
   `assessments`, et le `42501` se lirait « erreur serveur » alors que c'est le réseau — le défaut que

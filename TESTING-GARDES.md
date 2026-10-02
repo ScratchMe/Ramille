@@ -195,7 +195,10 @@ garde l'arrivée sur les vols (aucune puce cochée, « Suivant » qui demande le
 feuille du re-bilan **à l'entrée**, atteinte depuis la restitution par « Faire un nouveau bilan » :
 ouverture, focus sur « Commencer », Échap qui ressort sans écrire, puis un toucher sur le voile,
 au-dessus de la feuille, qui la referme : le parcours lit d'abord ce que le navigateur trouve sous le
-point (`elementFromPoint`), puis ce que le clic y fait. **Une mesure introuvable y
+point (`elementFromPoint`), puis ce que le clic y fait. **Et la vague produit du même jour** y ajoute
+« C'est noté » en attente sur la liste (D13) — la ligne, le focus, et rien ne part : le guetteur de
+`commit_plan_action` armé avant le geste, et la base relue — et, chez le cycliste, la carte des deux
+lieux qui ne revient pas sans « Compris ». Mutations PL15 à PL19 en tête du script. **Une mesure introuvable y
 échoue, elle ne se saute jamais** — la première version d'une garde du jour sautait une mesure sans
 bruit, un titre cherché sans normaliser les insécables que `ThemedText` pose.
 

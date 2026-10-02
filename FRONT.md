@@ -435,8 +435,13 @@ exactement ce qui avait laissé passer le mauvais caractère.
   **ni `disabled`, ni `aria-disabled`**. Il agit (`FRONT-QUESTIONNAIRE.md` §2.6, il demande ce qui manque), donc il ne
   s'annonce pas indisponible ; et sur web, `aria-disabled` réécrit depuis `disabled` pose l'attribut
   natif, qui le rendrait inerte au clic comme au clavier (`EXPO.md` §1.5). `disabled` reste pour ce
-  qui n'agit vraiment pas — le « C'est noté » d'une feuille incomplète, ou en attente de la relecture
-  qui suit l'engagement, et l'« Enregistrer » d'un `/contexte` inchangé. **Incomplet, l'« Enregistrer »
+  qui n'agit vraiment pas — le « C'est noté » en attente de la relecture qui suit l'engagement, et
+  l'« Enregistrer » d'un `/contexte` inchangé. **Le « C'est noté » d'une intention incomplète est en
+  attente depuis le 01/10/2026** (`v1-33` D13, `ActionCommitment`) : son toucher fait apparaître sous
+  les choix « Choisis au moins un jour. » ou « Choisis une échéance. » (`ceQuiManqueALIntention`,
+  `src/types/plan.ts`), en `accentText` 600, et porte le focus sur le premier choix ;
+  `isIntentionComplete` garde toujours l'appel, dans `submit`, et « Annuler » emporte la demande avec
+  le sélecteur qu'il referme. **Incomplet, l'« Enregistrer »
   de `/contexte` est en attente depuis le 01/10/2026** (`v1-33` P-13) : il mène à ce qui manque par
   les ancres de `ChampsDeContexte`, que l'écran fournit lui-même, sous la ligne du questionnaire
   (« Il manque encore … »). Deux gardes derrière lui, et la seconde est voulue : `StepShell` n'appelle pas
@@ -623,6 +628,15 @@ exactement ce qui avait laissé passer le mauvais caractère.
   nomment la cause, c'est ce qui manquait avant le 14/09. Mais le réseau est le cas d'échec **le
   plus probable en production**, et le seul où « réessaie dans un instant » est déjà toute la
   vérité. Le genre se calcule donc **une fois** et sert deux fois, la mesure et le détail.
+  **Et une erreur du serveur ne parle pas de la connexion** (`v1-33` D19, 01/10/2026). Le plan, le
+  suivi et `/contexte` disaient « Vérifie ta connexion. » à toute lecture en échec, y compris sur un
+  500. Le genre — `horsLigne` sur `status === 0`, `serveur` partout ailleurs, une promesse qui lève
+  comprise — se calcule une fois, dans la lecture (l'effet de chargement du plan,
+  `loadAssessmentHistory` / `loadAnsweredCheckins`, `lireLeContexteCourant`), et l'écran en tire sa
+  phrase (`phraseDeLaLectureEnEchec`, `src/types/lecture-en-echec.ts`). `serveur` est le repli parce
+  que « Réessaie dans un instant » reste vrai hors ligne, alors que « Vérifie ta connexion » est faux
+  dès que le réseau n'est pas en cause. **La ligne de relecture du suivi garde « … Vérifie ta
+  connexion. » quel que soit le genre** : sa phrase du serveur n'est pas encore décidée.
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Tout ce qui
   suit vit **derrière la racine**, qui levait à froid sans réseau jusqu'à C4.5 (§12.5 de `v1-13`) et
   route désormais sur la marque locale : ces écrans sont donc atteignables à froid depuis le

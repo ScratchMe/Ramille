@@ -126,7 +126,8 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
 - **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce
   mois-ci » n'est pas une échéance pour un vol. Les voyages ont les leurs, les trois anciennes
   restent et sont celles des sorties. Le repli d'un poste inconnu est la liste des sorties, sans
-  quoi la feuille s'ouvrirait sur rien et « C'est noté » resterait inactif sans dire pourquoi.
+  quoi la feuille s'ouvrirait sur rien, et « C'est noté » réclamerait une échéance qu'on ne peut pas
+  choisir (`ceQuiManqueALIntention`).
 - **`cadreDuPlan` décide de ce que le cap a le droit de chiffrer, et de rien d'autre depuis C5.3.**
   Un plan à **zéro action** ne chiffre pas son cap — ce n'était un cas de bord qu'avant C2.5, et
   depuis, tout cycliste et tout profil sédentaire y tombe ; la carte se rend quand même, elle est
@@ -355,6 +356,12 @@ n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et
   une action engagée et reconduite, alors que rien n'est engagé dans deux cas de production — dont le
   plan à zéro action de tout cycliste depuis C2.5, où proposer d'en choisir une promettrait une liste
   vide.
+- **« Choisir une action » referme la carte et amène la première piste du plan** dans la fenêtre
+  (`v1-33` D16, 01/10/2026) — `defilementVersLaCarte` après le rendu qui referme, posé d'un coup sous
+  « réduire les animations », le focus au geste sur le bloc de la carte. Il poussait `/plan/pistes`
+  (C5.2), dix lignes, alors que les deux cartes choisies par le plan sont juste dessous. « Choisir une
+  autre » mène toujours à la liste. Le geste n'est vérifié que par Jest : le parcours réel n'ouvre
+  jamais de saison.
 
 **Le tout premier plan dit la règle du jeu, et le trait de temps attend qu'il y ait quelque chose à
 mesurer** (C5.6, `estPremierPlan` / `ouvertureDuPremierPlan` dans `src/types/saison.ts`). On arrivait
@@ -413,6 +420,16 @@ arrive et se nomme, une fois. Cinq points :
   de finir ici » de « il n'y en a jamais eu ici », donc la carte se serait rendue à **tout le
   monde** — chaque installation existante, chaque appareil neuf d'un compte existant. Écart consigné
   en `v1-17` §9.
+- **La carte des deux lieux se voit une fois, puis part, « Compris » touché ou non** (tension
+  tranchée le 01/10/2026, `v1-33` §6). Elle passe à `fait` à l'instant où elle se rend, l'écran au
+  premier plan (`CarteDesDeuxLieux` et son `useFocusEffect`, qui appelle `lesDeuxLieuxSontVus`) : une
+  relecture qui la rendrait sur un plan resté derrière un autre onglet ne compte pas. Un drapeau **de
+  visite**, stocké nulle part, la retient jusqu'à ce que l'écran perde le focus
+  (`etatDuPremierParcours(etape, vueDansLaVisite)`) : elle ne disparaît pas sous les yeux, et ne revient
+  ni au focus suivant ni au lancement suivant — un retour de l'app depuis l'arrière-plan, sans
+  changement de focus, reste la même visite. Ce n'est pas une seconde marque : la marque garde ses
+  trois états. Tant qu'elle n'a pas pu se rendre (boucles illisibles, une autre carte d'ouverture
+  devant), elle reste due.
 - **Sans marque, la barre est là**, et c'est le cas à ne pas rater : appareil neuf d'un compte
   existant, session retrouvée par lien, installation d'avant le chantier. La marque autorise une
   absence, elle ne la présume jamais — et `null` recouvre aussi « pas encore lue », donc l'état de

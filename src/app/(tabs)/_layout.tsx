@@ -29,7 +29,7 @@ type PremierParcours = {
   etape: EtapeDuPremierParcours | null;
   /** La carte du premier plan vient de se refermer : la barre arrive, et se nomme. */
   laBarreArrive: () => void;
-  /** Le « Compris » de la carte des deux lieux : plus rien ne se réexplique. */
+  /** La carte des deux lieux s'est rendue, ou son « Compris » a été touché : plus rien ne se réexplique. */
   lesDeuxLieuxSontVus: () => void;
 };
 
