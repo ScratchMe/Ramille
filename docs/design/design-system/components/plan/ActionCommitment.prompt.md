@@ -10,7 +10,7 @@ S’insère en enfant d’ActionCard. L’intention est obligatoire : jours ou �
 
 Aucune notion d’échec : « Changer d’avis » libère sans rien compter. Ses liens (« Modifier les jours », « Changer d’avis », « Annuler ») sont soulignés au repos.
 
-**La carte engagée se modifie sans se libérer** (`v1-33` D15, 02/10/2026) : « Modifier les jours » — « Modifier l’échéance » sur les sorties et les voyages — précède « Changer d’avis », sur la même ligne. Il rouvre le sélecteur **prérempli** de l’intention en place (`state="picking"` avec ses `days` ou son `timing`) ; « Annuler » la laisse telle quelle. Changer ses jours coûtait jusque-là quatre gestes — libérer, rouvrir, recocher, confirmer — et une archive « changement » pour une action qu’on n’avait pas quittée.
+**La carte engagée se modifie sans se libérer** (`v1-33` D15, 02/10/2026) : « Modifier les jours » — « Modifier l’échéance » sur les sorties et les voyages — précède « Changer d’avis », sur la même ligne. Il rouvre le sélecteur **prérempli** de l’intention en place (`state="picking"` avec ses `days` ou son `timing`) — une échéance relative au mois qu’elle vise : « Le mois prochain » choisi en septembre se rouvre en octobre sur « Ce mois-ci » ; « Annuler » la laisse telle quelle. Les deux liens passent à la ligne quand ils ne tiennent pas, et un échec se dit dessous. Changer ses jours coûtait jusque-là quatre gestes — libérer, rouvrir, recocher, confirmer — et une archive « changement » pour une action qu’on n’avait pas quittée.
 
 **Ouvert sur la question** (`surLeChoix`, `v1-32`, 29/09/2026) : sur « Toutes les pistes », le sélecteur est là d'emblée — la pastille « Choisir » a déjà dit « Je m’y engage ». Son contenu ne change pas : rien de coché, « C’est noté » en attente tant que rien n’est choisi. « Annuler » y appelle `onAnnuler` et rend la carte à sa ligne. Le plan ne passe ni l’un ni l’autre.
 
@@ -18,7 +18,7 @@ Aucune notion d’échec : « Changer d’avis » libère sans rien compter. Ses
 <ActionCard titre="Renoncer à un vol long-courrier cette année" gainKg={1601}><ActionCommitment kind="timing" poste="travel" surLeChoix /></ActionCard>
 ```
 
-**Le focus suit le geste** (dans le dépôt, rien ne se dessine) : à la question quand le sélecteur s’ouvre, au bouton revenu quand « Annuler » le referme sur le plan.
+**Le focus suit le geste** (dans le dépôt, rien ne se dessine) : à la question quand le sélecteur s’ouvre, au bouton revenu quand « Annuler » le referme sur le plan — au lien « Modifier… » quand on annule une modification. Une modification écrite le laisse à l’écran, qui le donne à la carte relue.
 
 **« C’est noté » en attente, qui dit ce qui manque** (01/10/2026, D13 de `v1-33`) : tant que l’intention est incomplète, il a l’apparence du désactivé — fond `backgroundElement`, texte `textTertiary` — **et il agit** (`Button.enAttente`, le « Suivant » du questionnaire). Son toucher fait apparaître sous les choix, en `small` `accentText` 600 — le style de « Il manque encore … », jamais une alerte —, « **Choisis au moins un jour.** » ou « **Choisis une échéance.** », et porte le focus sur le premier choix du groupe (`demande`). La ligne retombe dès que l’intention est complète ; rien ne part incomplet. Il était `disabled` : un texte gris sur le gris du sélecteur, puis un bouton vert plein dès un choix, et le toucher d’avant ne faisait rien.
 

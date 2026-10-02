@@ -343,7 +343,12 @@ et ce que la vague a relevé en chemin est en §9.
   **Livré le 02/10/2026** (`PLAN.md`) : « Modifier les jours » ou « Modifier l'échéance » précède
   « Changer d'avis » sur la carte engagée et rouvre le sélecteur prérempli ; l'intention remplacée
   s'archive (raison `modification`), et `committed_at` repart à maintenant — la règle de D14 reste
-  vraie.
+  vraie. **La contre-lecture du même soir en a trouvé trois défauts côté base**, corrigés avant la
+  fusion : « Le mois prochain » redit le mois suivant passait pour identique, alors qu'il vise un autre
+  mois ; une modification posait la date du mot de la veille sur un cycle reconduit ; et la vue
+  d'analyse la comptait comme un gabarit quitté. **Une décision de produit y a été prise** : le
+  préremplissage redit le même mois — « Le mois prochain » choisi en septembre se rouvre en octobre sur
+  « Ce mois-ci ».
 - **D16 — « Choisir une action » de la carte de saison mène à la liste complète** (P-14), alors que les
   deux cartes choisies par le plan sont juste dessous. **Recommandation** : refermer la carte et
   amener la première piste dans la fenêtre ; la liste reste derrière « Voir toutes les pistes ».

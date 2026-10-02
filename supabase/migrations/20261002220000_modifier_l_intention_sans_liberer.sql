@@ -15,20 +15,32 @@
 --     le produit demande ;
 --   * **une intention identique ne réécrit rien** — ni archive, ni `committed_at`. Les jours se
 --     comparent comme un ensemble : l'écran les envoie dans l'ordre où on les a cochés ;
+--   * **une échéance relative n'est identique que le mois où elle a été choisie** : « Le mois
+--     prochain » choisi en septembre vise octobre ; redit en octobre, il vise novembre, et c'est un
+--     autre choix, qui s'écrit. Le mois se lit en heure de Paris, comme la question du mois ;
 --   * **`committed_at` repart à maintenant** sur une vraie modification, comme avant : c'est le jour
 --     où l'échéance a été choisie, et la question du mois le lit (D14, `BOUCLE.md` §2) — « Ce
 --     mois-ci » choisi en septembre puis changé en « Le mois prochain » en octobre n'est pas
---     interrogé sur octobre.
+--     interrogé sur octobre ;
+--   * **une modification n'ouvre pas le mot de la veille** : `premier_engagement_le` ne se pose qu'au
+--     premier engagement choisi de la saison. Sur une action de trajet reconduite, le cycle neuf n'a
+--     pas de date ; changer ses jours l'aurait posée, et dix semaines de mot de la veille repartaient.
 --
--- **Ce qui ne change pas** : la date d'ouverture du mot de la veille (`premier_engagement_le`, posée
--- une fois par saison), la reconduction (`carried_over_from` reste), la signature, les privilèges.
+-- **La statistique des engagements quittés ne compte pas les modifications** :
+-- `analytics.engagement_action_by_segment` comptait toute ligne de l'archive dans
+-- `relachees_tous_segments`, ce qui était juste tant que l'archive ne recevait que des départs. Une
+-- intention modifiée n'est pas un gabarit quitté : la vue est recréée avec ce seul filtre.
+--
+-- **Ce qui ne change pas** : la reconduction (`carried_over_from` reste), la signature, les
+-- privilèges.
 -- La raison `modification` n'est pas annonçable : `RAISONS_ANNONCABLES` (`src/types/plan.ts`) ne
 -- porte que `rebilan` et `contexte`, et le suivi garde l'engagement en place devant toute archive de
 -- son cycle (`decisionsParSaison`).
 --
 -- **Réécrite depuis `pg_get_functiondef` du distant** (`SUPABASE.md` §2.3) : le corps de
 -- `20260928075453`, dont l'empreinte normalisée a été comparée le 02/10/2026 à celle du distant —
--- identiques —, et deux ajouts : trois variables, et le bloc de la modification avant l'écriture.
+-- identiques —, et trois ajouts : quatre variables, le bloc de la modification avant l'écriture,
+-- et la condition qui empêche une modification d'ouvrir le mot de la veille.
 
 -- ---------------------------------------------------------------------------------------------
 -- 1. L'archive admet la modification
@@ -40,6 +52,19 @@ alter table public.plan_action_commitments_archive
   add constraint plan_action_commitments_archive_released_reason_check
   check (released_reason = any (array['rebilan'::text, 'saison'::text, 'changement'::text, 'contexte'::text,
                                       'retrait'::text, 'modification'::text]));
+
+-- Les deux commentaires dataient de C2.2 : trois raisons, un seul auteur. `contexte` (20260919230000),
+-- `retrait` (C4.7) et l'auteur `archiver_engagement_de_laction` y manquaient déjà.
+comment on table public.plan_action_commitments_archive is
+  'Les engagements relâchés, et les intentions modifiées, avec leur raison. Écrite uniquement par '
+  'public.archiver_engagement et public.archiver_engagement_de_laction, jamais par le client — '
+  'c''est ce qui garantit qu''aucun chemin ne détruit un engagement en silence (C2.2).';
+comment on column public.plan_action_commitments_archive.released_reason is
+  'rebilan : un nouveau bilan a retiré le gabarit du plan. saison : le cycle suivant ne propose '
+  'plus ce gabarit. changement : la personne a changé d''avis ou choisi une autre action. '
+  'contexte : une réponse corrigée sur /contexte a retiré le gabarit. retrait : le bilan a été '
+  'retiré. modification : l''action reste engagée, seule son intention (jours ou échéance) a '
+  'changé — ce n''est pas un départ (D15).';
 
 -- ---------------------------------------------------------------------------------------------
 -- 2. Le RPC : la modification s'archive, l'identique ne réécrit rien
@@ -57,6 +82,7 @@ declare
   v_forme_attendue text;
   v_precedent uuid;
   v_deja_engagee boolean;
+  v_engagee_le timestamptz;
   v_jours_avant smallint[];
   v_echeance_avant text;
 begin
@@ -112,18 +138,24 @@ begin
   -- jours », « Modifier l'échéance », sans la libérer. L'intention remplacée s'archive, comme tout
   -- engagement qui part (« aucun chemin ne détruit un engagement sans l'archiver ») ; une intention
   -- identique ne réécrit rien, ni archive ni `committed_at` — les jours se comparent comme un
-  -- ensemble, l'écran les envoyant dans l'ordre où on les a cochés. `committed_at` repart à
-  -- maintenant sur une vraie modification : c'est le jour où l'échéance a été choisie, que la
+  -- ensemble, l'écran les envoyant dans l'ordre où on les a cochés. **Une échéance relative n'est
+  -- identique que le mois où elle a été choisie** : « Le mois prochain » choisi en septembre vise
+  -- octobre, et redit en octobre il vise novembre — c'est un autre choix, qui s'écrit (contre-lecture
+  -- du 02/10/2026). Le mois se lit en heure de Paris, comme la question du mois. `committed_at` repart
+  -- à maintenant sur une vraie modification : c'est le jour où l'échéance a été choisie, que la
   -- question du mois lit (D14, `generate_extras_checkins`).
-  select pa.committed_at is not null, pa.intention_days, pa.intention_timing
-    into v_deja_engagee, v_jours_avant, v_echeance_avant
+  select pa.committed_at is not null, pa.committed_at, pa.intention_days, pa.intention_timing
+    into v_deja_engagee, v_engagee_le, v_jours_avant, v_echeance_avant
   from public.plan_actions pa
   where pa.id = p_plan_action_id;
 
   if v_deja_engagee then
     if (select array_agg(j order by j) from unnest(v_jours_avant) j)
          is not distinct from (select array_agg(j order by j) from unnest(p_days) j)
-       and v_echeance_avant is not distinct from p_timing then
+       and v_echeance_avant is not distinct from p_timing
+       and (p_timing is null or p_timing not in ('ce_mois', 'le_mois_prochain')
+            or date_trunc('month', v_engagee_le at time zone 'Europe/Paris')
+               = date_trunc('month', now() at time zone 'Europe/Paris')) then
       return;
     end if;
     perform public.archiver_engagement_de_laction(p_plan_action_id, 'modification');
@@ -141,7 +173,10 @@ begin
   -- l'action de trajet choisie ensuite. Un second choix de trajet trouve la date posée et ne la
   -- déplace pas — sans quoi changer d'action toutes les huit semaines ferait un mot de la veille sans
   -- fin (`v1-25` §3.4).
-  if coalesce(v_poste, '') = 'commute' then
+  -- Et une modification ne l'ouvre pas (D15) : elle n'est pas le premier engagement choisi de la
+  -- saison. Sur une action de trajet reconduite, le cycle neuf n'a pas de date ; changer ses jours
+  -- l'aurait posée, et dix semaines de mot de la veille repartaient à chaque saison.
+  if coalesce(v_poste, '') = 'commute' and not coalesce(v_deja_engagee, false) then
     update public.plan_cycles
     set premier_engagement_le = now()
     where id = v_cycle_id and premier_engagement_le is null;
@@ -155,7 +190,57 @@ revoke all on function public.commit_plan_action(uuid, smallint[], text, boolean
 grant execute on function public.commit_plan_action(uuid, smallint[], text, boolean) to authenticated;
 
 -- ---------------------------------------------------------------------------------------------
--- 3. Contrôle, lu sur le corps installé sans ses commentaires (`SUPABASE.md` §1.5)
+-- 3. La statistique des engagements quittés ne compte pas les modifications
+-- ---------------------------------------------------------------------------------------------
+-- Recréée depuis `pg_get_viewdef` du distant (02/10/2026), identique à `20260914132522` : seul le
+-- filtre de `relachees` est neuf. Mêmes colonnes, même ordre, donc `create or replace` suffit.
+
+create or replace view analytics.engagement_action_by_segment as
+with proposees as (
+  select
+    pc.user_id,
+    pa.action_template_id,
+    pa.committed_at,
+    pa.intention_days,
+    pa.intention_timing
+  from public.plan_actions pa
+  join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+),
+relachees as (
+  -- Une intention modifiée (D15) laisse l'action engagée : ce n'est pas un gabarit quitté.
+  select action_template_id, count(*) as n
+  from public.plan_action_commitments_archive
+  where released_reason <> 'modification'
+  group by 1
+)
+select
+  s.zone_type,
+  s.tc_access,
+  s.dominant_poste,
+  t.poste as action_poste,
+  t.action_text,
+  count(*) as proposees,
+  count(*) filter (where p.committed_at is not null) as engagees,
+  count(*) filter (where p.intention_days is not null) as intentions_en_jours,
+  count(*) filter (where p.intention_timing is not null) as intentions_en_echeance,
+  -- Hors segment : l'archive ne porte pas de quoi retrouver le segment du moment, et le segment
+  -- d'aujourd'hui n'est pas celui d'alors. Le chiffre est donc identique sur toutes les lignes d'un
+  -- même gabarit, et c'est ce qu'il dit — combien de fois ce gabarit a été quitté, tous profils
+  -- confondus.
+  coalesce(max(r.n), 0) as relachees_tous_segments
+from proposees p
+join public.action_templates t on t.id = p.action_template_id
+join analytics.user_segments s on s.user_id = p.user_id
+left join relachees r on r.action_template_id = p.action_template_id
+group by 1, 2, 3, 4, 5;
+
+revoke all on analytics.engagement_action_by_segment from anon, authenticated;
+
+comment on view analytics.engagement_action_by_segment is
+  'C3.8 §6 — par segment et par gabarit : combien de fois proposé, combien de fois engagé, sous quelle forme d''intention. Les engagements relâchés sont comptés hors segment (l''archive ne porte pas celui du moment), sans les intentions modifiées (D15), qui ne quittent pas l''action.';
+
+-- ---------------------------------------------------------------------------------------------
+-- 4. Contrôle, lu sur le corps installé sans ses commentaires (`SUPABASE.md` §1.5)
 -- ---------------------------------------------------------------------------------------------
 
 do $controle_de_la_modification$
@@ -167,6 +252,12 @@ declare
 begin
   if v_corps not like '%archiver_engagement_de_laction(p_plan_action_id, ''modification'')%' then
     raise exception 'CONTROLE: commit_plan_action n''archive pas l''intention qu''il remplace';
+  end if;
+  if v_corps not like '%date_trunc(''month'', v_engagee_le at time zone ''Europe/Paris'')%' then
+    raise exception 'CONTROLE: une échéance relative redite un autre mois passerait pour identique';
+  end if;
+  if v_corps not like '%and not coalesce(v_deja_engagee, false)%' then
+    raise exception 'CONTROLE: une modification ouvrirait le mot de la veille';
   end if;
   -- Les gardes des migrations précédentes, que la réécriture devait garder.
   if v_corps not like '%errcode = ''RM001''%' then
@@ -188,6 +279,14 @@ begin
 
   if has_function_privilege('anon', 'public.commit_plan_action(uuid,smallint[],text,boolean)', 'execute') then
     raise exception 'CONTROLE: commit_plan_action est appelable sans session';
+  end if;
+
+  if pg_get_viewdef('analytics.engagement_action_by_segment'::regclass) not like '%<> ''modification''%' then
+    raise exception 'CONTROLE: la statistique des engagements quittés compte les modifications';
+  end if;
+  if has_table_privilege('anon', 'analytics.engagement_action_by_segment', 'select')
+     or has_table_privilege('authenticated', 'analytics.engagement_action_by_segment', 'select') then
+    raise exception 'CONTROLE: la vue d''analyse est lisible par un rôle client';
   end if;
 end
 $controle_de_la_modification$;

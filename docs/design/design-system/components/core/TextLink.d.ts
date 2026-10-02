@@ -1,4 +1,10 @@
-/** Texte cliquable — le libellé accessible EST le texte ; cible de 48 px de haut. */
+/**
+ * Texte cliquable — le libellé accessible EST le texte ; cible de 48 px de haut.
+ *
+ * Dans le dépôt, il prend aussi `ref`, transmise à sa cible : pour y rendre le focus après un geste qui l'avait fait
+ * disparaître — « Annuler » d'une modification rend le focus à « Modifier les jours » (`v1-33` D15). Le kit ne dessine
+ * pas le focus, donc ne la déclare pas.
+ */
 export interface TextLinkProps {
   label: string;
   onPress?: () => void;
