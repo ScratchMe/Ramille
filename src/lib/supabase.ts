@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 import type { Database } from '@/lib/database.types';
 import { noterUnCompteRattache, oublierLeCompteRattache, porteUnCompteRattache } from '@/lib/marque-de-compte';
+import { concilierLesMarques } from '@/lib/marques-locales';
 import { decrireProbleme, lireConfigurationSupabase } from '@/types/configuration';
 import { fetchAvecSecondeChance } from '@/types/postgrest';
 import {
@@ -123,10 +124,10 @@ export const supabase = configurationSupabase.complete
         //
         // **Ce que ça coûte, et c'est su** : un raté réseau d'une seconde, que le rejeu absorbait, allume
         // désormais la ligne de relecture — qui porte son « Réessayer ». **Sauf deux lectures qui n'en
-        // ont pas**, à l'entrée d'un re-bilan (contre-lecture de la PR #314) : le préremplissage
-        // (`loadLastSubmittedAnswers`, qui rend `null` sur un échec) et l'engagement en cours. Un raté
-        // là donne un questionnaire vide, sans bandeau ni feuille « Ton plan va être recalculé » — rien
-        // de faux n'y est dit, mais neuf étapes sont à refaire (`v1-33` §9, ouvert). Et les 503 et 520 ne sont plus
+        // ont pas**, à l'entrée d'un re-bilan (contre-lecture de la PR #314) : le préremplissage et
+        // l'engagement en cours. Un raté là donnait un questionnaire vide, sans bandeau ni feuille « Ton
+        // plan va être recalculé » ; depuis le 02/10/2026, l'écran les reprend lui-même, en arrière-plan,
+        // puisque rien n'attend après elles (`relireEnArrierePlan`, `v1-33` §9). Et les 503 et 520 ne sont plus
         // rejoués non plus (un 503 est le cache de schéma de PostgREST pas encore chargé, un 520 un raté de
         // Cloudflare : deux états passagers qui se voient maintenant comme un échec). Ne touche ni
         // `fetchAvecSecondeChance`, qui ne vise que le `401 PGRST303` d'un jeton trop neuf et est une
@@ -137,6 +138,32 @@ export const supabase = configurationSupabase.complete
       },
     })
   : clientAbsent();
+
+/**
+ * **Sur natif, le renouvellement de la session s'arrête en arrière-plan et repart au premier plan**
+ * (02/10/2026, `v1-27` §12.4) — le motif que Supabase documente pour React Native.
+ *
+ * Le relevé du 20/09/2026 disait que ce n'était pas fait et que `getSession()` rafraîchissait à la
+ * demande ; la seconde moitié est vraie, la première ne disait pas tout. **Lue dans la version installée
+ * d'`auth-js` (2.116, `_handleVisibilityChange`)** : hors navigateur, le minuteur du renouvellement tourne
+ * **toujours** — démarré à l'initialisation, un passage toutes les trente secondes —, y compris quand
+ * l'app est en arrière-plan et que le système la laisse tourner. Ce qu'on y gagne :
+ *
+ *   - plus de renouvellement tenté pendant que l'app dort, où le réseau manque souvent et où un échec
+ *     de transport n'a personne à qui se dire ;
+ *   - au retour, `startAutoRefresh` relance **aussitôt** un passage, donc un jeton expiré pendant la
+ *     nuit se renouvelle avant que les écrans ne relisent (`useRafraichirAuRetour`), au lieu d'attendre
+ *     le passage suivant du minuteur ou la première requête.
+ *
+ * Sur web, rien : `auth-js` suit déjà la visibilité de l'onglet. Et iOS traverse `inactive` à l'aller
+ * comme au retour (`suivreLEtatDeLApp`) : arrêter dessus est sans conséquence, `active` relance.
+ */
+if (configurationSupabase.complete && Platform.OS !== 'web') {
+  AppState.addEventListener('change', (etat) => {
+    if (etat === 'active') void supabase.auth.startAutoRefresh();
+    else void supabase.auth.stopAutoRefresh();
+  });
+}
 
 // Chaque visiteur a besoin d'un `user_id` réel dès l'entrée dans l'app (RLS owner-scoped
 // sur tout ce qui touche au bilan) — cf. docs/architecture/v1-04-authentification.md.
@@ -213,6 +240,24 @@ function noterLaSession(session: Session | null) {
   void noterUnCompteRattache();
 }
 
+/**
+ * **La session que rend `ensureSession()` fait d'abord le ménage des marques d'un autre compte**, puis
+ * pose la sienne ([#319](https://github.com/ScratchMe/Ramille/issues/319), 02/10/2026). Le cas qui
+ * l'impose : une session anonyme refusée — purgée au bout de 90 jours, révoquée — laissait ses marques
+ * (bilan, premier parcours, brouillon) à la session anonyme neuve, qui les lisait comme les siennes.
+ * L'ordre compte : balayée après avoir été posée, la marque du compte rattaché serait perdue jusqu'à la
+ * session suivante.
+ *
+ * **Pas dans l'écoute d'`auth-js`, et c'est voulu.** Les sessions qui changent de compte en cours de
+ * route sont des reconnexions par code, qui concilient elles-mêmes (`apresUneReconnexion`,
+ * `src/lib/compte.ts`) et balaient quand le propriétaire est inconnu ; une conciliation lancée à leur
+ * `SIGNED_IN`, qui note sans balayer dans ce cas, passerait avant elles et le leur ferait manquer. Les
+ * autres arrivées — un lancement, une session anonyme créée — passent toutes par `ensureSession()`.
+ */
+function accueillirLaSession(session: Session): Promise<void> {
+  return concilierLesMarques(session.user.id, 'noter').then(() => noterLaSession(session));
+}
+
 if (configurationSupabase.complete) {
   // Synchrone, et ne rappelle pas le client : `auth-js` déconseille un rappel asynchrone ici.
   supabase.auth.onAuthStateChange((evenement, session) => {
@@ -277,7 +322,9 @@ export const ensureSession = uneSeuleFois(async () => {
   } = await supabase.auth.getSession();
 
   if (session) {
-    noterLaSession(session);
+    // Attendu, et non lancé : un appelant qui lit une marque juste après — la racine, son repli hors
+    // ligne — doit lire celles de cette session-ci.
+    await accueillirLaSession(session);
     changerDEtat('presente');
     return session;
   }
@@ -288,6 +335,7 @@ export const ensureSession = uneSeuleFois(async () => {
 
   const { data, error: erreurCreation } = await supabase.auth.signInAnonymously();
   if (erreurCreation) throw erreurCreation;
+  if (data.session) await accueillirLaSession(data.session);
   changerDEtat('presente');
   return data.session;
 });

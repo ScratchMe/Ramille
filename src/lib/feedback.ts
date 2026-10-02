@@ -5,6 +5,8 @@
 // n'existe aucun canal pour en donner une. Ce que ce formulaire garantit, c'est que le retour
 // arrive quelque part — ce qui n'était pas le cas jusqu'ici.
 import { supabase } from '@/lib/supabase';
+import { messageDEcriture } from '@/types/ecriture-en-echec';
+import { genreDeLEchec } from '@/types/lecture-en-echec';
 
 export const FEEDBACK_KINDS = [
   { value: 'mode_manquant', label: 'Un mode de transport manque' },
@@ -44,7 +46,7 @@ export async function sendFeedback(
     return { ok: false, message: 'Ta session n’est pas prête. Réessaie dans un instant.' };
   }
 
-  const { error } = await supabase.from('feedback').insert({
+  const { error, status } = await supabase.from('feedback').insert({
     user_id: user.id,
     kind,
     message: message.trim(),
@@ -76,7 +78,8 @@ export async function sendFeedback(
       ok: false,
       message: tropDeRetours
         ? error.message
-        : 'Ton retour n’est pas parti. Vérifie ta connexion et réessaie.',
+        : // La connexion n'est nommée que hors ligne (`src/types/ecriture-en-echec.ts`, 02/10/2026).
+          messageDEcriture('Ton retour n’est pas parti.', genreDeLEchec(status)),
     };
   }
 

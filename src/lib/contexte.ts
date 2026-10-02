@@ -5,6 +5,7 @@ import {
   type ChoixDeContexte,
   type ContexteEnregistrable,
 } from '@/types/contexte';
+import { messageDEcriture } from '@/types/ecriture-en-echec';
 import { genreDeLEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 
 /**
@@ -91,7 +92,7 @@ export type EcritureDuContexte = { ok: true } | { ok: false; message: string };
 export async function enregistrerLeContexte(
   choix: ContexteEnregistrable
 ): Promise<EcritureDuContexte> {
-  const { error } = await supabase.rpc('mettre_a_jour_le_contexte', {
+  const { error, status } = await supabase.rpc('mettre_a_jour_le_contexte', {
     p_zone_type: choix.zone_type,
     p_tc_access: choix.tc_access,
     p_household_vehicles: choix.household_vehicles,
@@ -99,9 +100,10 @@ export async function enregistrerLeContexte(
   });
 
   if (error) {
+    // La connexion n'est nommée que hors ligne (`src/types/ecriture-en-echec.ts`).
     return {
       ok: false,
-      message: 'Tes réponses ne sont pas enregistrées. Vérifie ta connexion et réessaie.',
+      message: messageDEcriture('Tes réponses ne sont pas enregistrées.', genreDeLEchec(status)),
     };
   }
 

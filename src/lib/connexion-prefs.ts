@@ -36,6 +36,36 @@ export async function marquerRattachementAnnonce(): Promise<void> {
   }
 }
 
+// Marque locale « la session de cet appareil vient d'une reconnexion » — `v1-27` §12.28, 02/10/2026.
+//
+// **Elle existe pour la mesure, et pour elle seule.** Le plan compte `connexion_success` quand il
+// constate un compte rattaché sans annonce faite — le seul endroit où un rattachement par email se
+// voit. Une reconnexion par code (`/connexion/retrouver`, ou l'adresse déjà prise de
+// `/connexion/email`) arrive dans le même état : un compte permanent, et une annonce jamais faite sur
+// cet appareil — balayée avec les marques de la session quittée, ou jamais posée. Le plan comptait
+// donc des reconnexions comme des rattachements, et l'écart entre `connexion_demande` et
+// `connexion_success` pouvait devenir négatif. **L'annonce, elle, ne change pas** : « Ton compte est
+// rattaché à … » reste vrai après une reconnexion, et ce qui se voit n'a pas été touché.
+//
+// Sous le préfixe commun : un départ voulu, ou l'arrivée d'un autre compte, la balaie avec le reste.
+const RECONNEXION_KEY = 'traceverte.session_retrouvee.v1';
+
+export async function noterUneReconnexion(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(RECONNEXION_KEY, '1');
+  } catch {
+    // best-effort : au pire, une reconnexion se compte encore comme un rattachement.
+  }
+}
+
+export async function vientDUneReconnexion(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(RECONNEXION_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
 // La dernière adresse saisie depuis cet appareil.
 //
 // **Ce commentaire disait « l'adresse du dernier lien demandé », et « elle existe pour un seul cas :

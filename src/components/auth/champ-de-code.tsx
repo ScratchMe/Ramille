@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
-import { cadreDuChamp, SANS_ANNEAU_DE_L_INPUT } from '@/components/auth/text-field';
+import { cadreDuChamp, SANS_ANNEAU_DE_L_INPUT } from '@/components/cadre-du-champ';
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';

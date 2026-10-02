@@ -8,6 +8,8 @@
 // reste donc en écriture serveur uniquement, et la seule mutation possible est celle que la
 // fonction autorise, après vérification de propriété.
 import { supabase } from '@/lib/supabase';
+import { messageDEcriture } from '@/types/ecriture-en-echec';
+import { genreDeLEchec } from '@/types/lecture-en-echec';
 import type { IntentionDay, IntentionTiming } from '@/types/plan';
 
 export type EngagementResult =
@@ -49,7 +51,7 @@ export async function commitPlanAction(
    */
   remplace = false
 ): Promise<EngagementResult> {
-  const { error } = await supabase.rpc('commit_plan_action', {
+  const { error, status } = await supabase.rpc('commit_plan_action', {
     p_plan_action_id: planActionId,
     p_days: 'days' in intention ? intention.days : undefined,
     p_timing: 'timing' in intention ? intention.timing : undefined,
@@ -67,18 +69,22 @@ export async function commitPlanAction(
   }
 
   if (error) {
-    return { ok: false, message: 'Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.' };
+    // **La connexion n'est nommée que hors ligne** (`v1-33` §9, 02/10/2026) : la phrase disait
+    // « Vérifie ta connexion » à toute erreur, y compris une réponse du serveur.
+    return { ok: false, message: messageDEcriture('Ton choix n’a pas été enregistré.', genreDeLEchec(status)) };
   }
   return { ok: true };
 }
 
 export async function clearPlanActionCommitment(planActionId: string): Promise<EngagementResult> {
-  const { error } = await supabase.rpc('clear_plan_action_commitment', {
+  const { error, status } = await supabase.rpc('clear_plan_action_commitment', {
     p_plan_action_id: planActionId,
   });
 
   if (error) {
-    return { ok: false, message: 'Le changement n’a pas été enregistré. Réessaie dans un instant.' };
+    // L'inverse de `commitPlanAction` jusqu'au 02/10/2026 : « Réessaie dans un instant » à toute
+    // erreur, hors ligne compris — vrai, mais muet sur la seule chose à vérifier. Même règle des deux côtés.
+    return { ok: false, message: messageDEcriture('Le changement n’a pas été enregistré.', genreDeLEchec(status)) };
   }
   return { ok: true };
 }

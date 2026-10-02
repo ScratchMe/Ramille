@@ -166,6 +166,15 @@ suppression du compte le font —, sans quoi elle se lirait comme un refus, et l
 s'ouvrirait sur un départ choisi. Et **« Commencer un bilan sur cet appareil » efface les marques du
 compte quitté**, comme une déconnexion : ce sont celles d'un autre propriétaire.
 
+**Et depuis le 02/10/2026, les marques locales ont un propriétaire** ([#319](https://github.com/ScratchMe/Ramille/issues/319),
+`v1-27` §12.29) : `traceverte.proprietaire_des_marques.v1` retient le compte qu'elles décrivent. La
+session que rend `ensureSession()` les balaie si elle est d'un autre compte — c'est ce qui couvre le
+seul changement de compte que rien ne déclarait, une session **anonyme** refusée (purgée, révoquée) à
+laquelle l'app en substitue une neuve — puis les prend ; sans propriétaire noté, elle note sans rien
+effacer. Une reconnexion par code passe par `apresUneReconnexion` (`src/lib/compte.ts`) : elle balaie
+si le compte change ou si le propriétaire est inconnu, **pas quand c'est le même compte qui revient**
+après un refus, et elle note la reconnexion pour la mesure (`MESURE.md` §1).
+
 **Le lien du rappel porte `?rappel=1`, et le chemin ne doit pas bouger** (C2.11). L'email ne portait
 que `/plan` : ouvert sur un ordinateur ou un téléphone neuf, il tombait sur la session anonyme que
 l'app venait de créer, et le plan répondait « Ton bilan n'est pas encore fait » avec pour seul bouton
@@ -241,8 +250,9 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
   **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse à l'appareil
   restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut) — **et
   à un second chemin, vu en recette le 02/10/2026** (`v1-13` §20) : une session **anonyme** refusée,
-  par exemple purgée au bout de 90 jours, laisse ses marques à la session anonyme suivante, que rien
-  ne balaie ([#319](https://github.com/ScratchMe/Ramille/issues/319)).
+  par exemple purgée au bout de 90 jours, laissait ses marques à la session anonyme suivante, que rien
+  ne balayait ([#319](https://github.com/ScratchMe/Ramille/issues/319)) — corrigé le même jour : les
+  marques suivent leur propriétaire (§1).
   **Et un troisième effacement depuis C4.7, qui n'est pas une sortie** : retirer son seul bilan
   efface **cette marque-là et elle seule** (`effacerLaMarqueDeBilan`) — le compte n'est pas quitté,
   donc le balayage par préfixe serait de trop. Il ne vaut que pour l'appareil du geste : un autre

@@ -62,11 +62,14 @@ pas dans un chiffre** (11/09/2026) :
   classe pourtant en `a_confirmer` : `is_anonymous` ne bascule qu'au clic du lien reçu — à la saisie du code depuis le 20/09/2026. Le chemin
   Google, lui, n'émettait qu'après une identité liée — les deux branches ne mesuraient pas le même
   fait, et leur comparaison était faussée du taux d'emails jamais confirmés, c'est-à-dire du
-  chiffre qu'on voulait lire. L'écart entre les deux **était** ce taux, et ne l'est plus : depuis
-  le 21/09/2026, une adresse déjà prise sur `/connexion/email` émet `connexion_demande` pour un
-  code de **connexion**, et une reconnexion par code efface les marques locales, après quoi le plan
-  constate un compte rattaché et émet `connexion_success`. Les deux comptent donc aussi des
-  reconnexions — relevé le 02/10/2026, `v1-27` §12.28, où vit la direction pour les séparer.
+  chiffre qu'on voulait lire. L'écart entre les deux **était** ce taux, puis ne l'a plus été du
+  21/09 au 02/10/2026 : une adresse déjà prise sur `/connexion/email` émettait `connexion_demande`
+  pour un code de **connexion**, et le plan constatait un compte retrouvé par code comme un
+  rattachement. **Depuis le 02/10/2026** (`v1-27` §12.28), `connexion_demande` porte `flux`
+  (`rattachement` | `connexion`), et le plan ne compte plus un rattachement constaté après une
+  reconnexion (`traceverte.session_retrouvee.v1`). Le taux se lit donc entre les demandes
+  `flux = rattachement` et les succès par email ; une demande **sans** `flux` est d'avant, et peut
+  être l'une ou l'autre.
 
 ## 2. Ce que la purge et la suppression laissent : des compteurs, et quatre vues
 

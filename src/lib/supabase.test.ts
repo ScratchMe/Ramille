@@ -110,4 +110,25 @@ describe('le client Supabase de l’app', () => {
     expect(data).toEqual([]);
     expect(fetchJetonNeuf).toHaveBeenCalledTimes(2);
   });
+
+  // **Le renouvellement de la session suit le premier plan, sur natif** (02/10/2026, `v1-27` §12.4).
+  // Éprouvé en le cassant le même jour : l'écoute retirée fait tomber ce test ; `start` et `stop`
+  // intervertis aussi.
+  it('arrête le renouvellement de la session en arrière-plan, et le relance au premier plan', () => {
+    // Le `react-native` du registre neuf, celui que le module chargé ci-dessous lira.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AppState } = require('react-native') as typeof import('react-native');
+    const ecoute = jest.spyOn(AppState, 'addEventListener');
+    const client = clientDeLApp();
+    const changement = ecoute.mock.calls.find(([type]) => type === 'change')?.[1];
+    const demarrer = jest.spyOn(client.auth, 'startAutoRefresh');
+    const arreter = jest.spyOn(client.auth, 'stopAutoRefresh');
+
+    expect(changement).toBeDefined();
+    changement?.('background');
+    expect(arreter).toHaveBeenCalledTimes(1);
+    expect(demarrer).not.toHaveBeenCalled();
+    changement?.('active');
+    expect(demarrer).toHaveBeenCalledTimes(1);
+  });
 });

@@ -549,7 +549,12 @@ le jour venu.
   fait, et ce n'est pas un défaut de correction : `getSession()` rafraîchit à la demande un jeton
   expiré, et `useRafraichirAuRetour` relit déjà au premier plan. C'est de l'hygiène de batterie, sur
   du code d'auth — déclencheur `SUPABASE.md` — et ça se fera avec un chantier d'auth, pas en marge
-  d'un audit.
+  d'un audit. **Fait le 02/10/2026 (§12.29), et ce « chantier d'auth » n'a jamais existé** : la phrase
+  renvoyait à plus tard sans rien planifier, l'auth a été touchée trois fois depuis sans que personne
+  ne le fasse, et la personne qui pilote l'a découvert en demandant de quel chantier il s'agissait.
+  **Un renvoi à « un prochain chantier » n'est pas une décision** : il se fait tout de suite, ou il
+  nomme sa condition comme les autres lignes de cette section. Et la prémisse était à moitié fausse :
+  hors navigateur, `auth-js` 2.116 fait tourner son minuteur de renouvellement **en permanence**.
 - **Quatre index « inutilisés »** (`unused_index`) : le produit n'a pas de trafic, et deux d'entre eux
   ne servent que des suppressions (`SUPABASE.md` §2.2).
 - **`minimum_password_length = 6`** dans `supabase/config.toml` : il n'y a pas de mot de passe dans le
@@ -1738,10 +1743,12 @@ la racine, rendue sans router, restait figée si le refus se levait sans la quit
   s'enregistrent pas (`src/types/analytics.ts`) ;
 - une reconnexion par `/connexion/retrouver` efface les marques locales (« on change d'utilisateur
   ici ») alors qu'au sortir d'un refus, c'est le même compte qui revient : le brouillon d'un re-bilan
-  commencé part avec elles ;
+  commencé part avec elles — **corrigé le 02/10/2026** (§12.29) : la reconnexion ne balaie plus que si
+  le compte change ;
 - **une session anonyme refusée laisse ses marques locales à la session anonyme suivante** (vu en
   recette le 02/10/2026, `v1-13` §20) : le chemin anonyme n'efface rien, donc un anonyme purgé qui revient
-  garde la marque de bilan et son premier parcours — [#319](https://github.com/ScratchMe/Ramille/issues/319) ;
+  garde la marque de bilan et son premier parcours — [#319](https://github.com/ScratchMe/Ramille/issues/319).
+  **Corrigé le 02/10/2026** (§12.29) : les marques suivent leur propriétaire ;
 - un autre onglet du même navigateur qui se déconnecte peut faire apparaître l'écran ici, s'il lit la
   marque avant que l'autre onglet ne l'efface — la session de cet onglet est bel et bien partie, et
   l'écran s'en va à la première session rouverte.
@@ -1749,6 +1756,11 @@ la racine, rendue sans router, restait figée si le refus se levait sans la quit
 **Ce qui reste à voir sur appareil** : `v1-13` §11.27.
 
 ### 12.28 Une reconnexion se compte comme un rattachement (02/10/2026)
+
+> **Fait le 02/10/2026** (§12.29), dans la direction écrite plus bas : `connexion_demande` porte `flux`
+> (`rattachement` | `connexion`), et le plan ne compte plus un rattachement constaté après une
+> reconnexion. Pas par la marque du compte rattaché, que le balayage emporte, mais par une marque à
+> elle, posée par la reconnexion (`traceverte.session_retrouvee.v1`) ; l'annonce, elle, ne change pas.
 
 **Relevé par la contre-lecture de la §8.5 quater du registre d'exploitation**, en écrivant les
 requêtes à enregistrer pour lire la mesure. `MESURE.md` §1, le commentaire de `src/app/connexion/email.tsx`
@@ -1773,4 +1785,55 @@ description du référentiel par migration et `src/types/analytics.ts` ; et, cô
 rattaché (`traceverte.compte_rattache.v1`, §12.27) pourrait dire, si elle survivait au balayage. En
 attendant, le registre (§8.5 quater) et `MESURE.md` §1 le disent, et le commentaire de
 `email.tsx`, qui l'affirme encore, se corrige avec la mesure.
+
+### 12.29 La dette d'avant le lancement (02/10/2026)
+
+Demandé le 02/10/2026 par la personne qui pilote, après un point sur la dette restante : « lance-toi dans
+les sujets de dette technique à corriger ». Six sujets, une PR, chacun éprouvé en le cassant — les
+relevés de mutations sont en tête ou au pied de chaque fichier de test cité.
+
+- **Les marques locales suivent leur propriétaire** ([#319](https://github.com/ScratchMe/Ramille/issues/319),
+  §12.27). Une clé de plus, `traceverte.proprietaire_des_marques.v1`, retient le compte dont les marques
+  sont les marques ; la session que rend `ensureSession()` les balaie si elle est d'un autre compte, puis
+  les prend. Sans propriétaire noté, elle note sans rien effacer — un brouillon écrit hors ligne avant
+  toute session survit à la première. Une reconnexion par code (`apresUneReconnexion`) balaie, elle, dans
+  ce cas, comme avant ; mais **plus quand c'est le même compte qui revient** après un refus, dont le
+  brouillon de re-bilan partait avec le reste. La décision est pure (`src/types/marques-locales.ts`), le
+  balayage a quitté `src/lib/compte.ts` pour `src/lib/marques-locales.ts`, que le client Supabase peut
+  importer. **Ce qui reste, et c'est su** : un brouillon écrit hors ligne **entre** le refus d'une session
+  anonyme et la création de la suivante part avec le balayage — il faut un compte purgé, un retour sans
+  réseau, et un questionnaire rempli avant de retrouver le réseau. **Pas dans l'écoute d'`auth-js`** : une
+  conciliation à chaque `SIGNED_IN` passerait avant celle de la reconnexion, et lui ferait manquer le cas
+  du propriétaire inconnu (le commentaire d'`accueillirLaSession` le dit).
+- **Une reconnexion ne se compte plus comme un rattachement** (§12.28).
+- **Une écriture en échec dit son genre** (`v1-33` §9). Le constat visait `commitPlanAction`, et il n'était
+  pas seul : le choix du canal et du mot de la veille (la feuille des rappels et « Toi »), la réponse au
+  point, le contexte corrigé et le canal de retour disaient tous « Vérifie ta connexion » à n'importe
+  quelle erreur — et `clearPlanActionCommitment` l'inverse, « Réessaie dans un instant » hors ligne
+  compris. La règle de D19 vaut désormais pour les écritures (`src/types/ecriture-en-echec.ts`) : le
+  constat de chaque écran, puis « Vérifie ta connexion et réessaie. » hors ligne, « Réessaie dans un
+  instant. » sinon. Les deux suites existaient déjà dans le produit, mot pour mot. **Ce que les tests ne
+  gardent pas** : les appels de la carte du point, du contexte et du canal de retour, qui passent le
+  statut comme les autres — gardés par relecture ; ceux du plan et des rappels ont leurs tests.
+- **Les deux lectures de l'entrée d'un re-bilan se reprennent en arrière-plan** (`v1-33` §9). Une
+  seconde puis deux secondes et demie plus tard, sans rien dire (`src/types/relecture-en-arriere-plan.ts`) :
+  le questionnaire est déjà utilisable, donc la reprise ne retarde personne, et c'est le raté d'une
+  seconde que le rejeu de PostgREST absorbait avant R-5. Pas de bandeau, donc pas de phrase de plus.
+  `loadLastSubmittedAnswers` rend une `Lecture` : elle confondait l'échec et l'absence.
+- **Deux duplications de `v1-33` §9** : la marge et la mesure du défilement, écrites une fois
+  (`src/lib/defilement.ts`) ; le cadre d'un champ, sorti d'`auth/text-field.tsx`
+  (`src/components/cadre-du-champ.ts`), que le champ de distance du questionnaire importait de là.
+- **`npm audit`** : `brace-expansion` corrigé par les quatre entrées du lock (registre §8.8), `node-forge`
+  inatteignable et sans correctif publié.
+- **Le renouvellement de la session suit le premier plan, sur natif** (§12.4).
+
+**Examiné, et laissé tel quel** — deux autres lignes de `v1-33` §9 :
+
+- **« Sur web, le retour suit l'historique du navigateur »** : c'est le navigateur. Le retour d'un
+  navigateur lui appartient, et l'intercepter pour imiter la pile d'Android serait le défaut inverse —
+  une page qui retient qui veut partir. Ce que le produit tient, c'est sa propre pile : un flux terminé
+  la vide (`terminerLeFlux`, `FRONT.md` §2.8). L'historique du navigateur, lui, reste au navigateur — ce
+  qu'il rejoue en arrière n'a pas été relevé page par page, et ne se « corrige » pas d'ici.
+- **« Les questions du contexte restent en `small` tertiaire »** : une question de dessin, que la note
+  elle-même renvoie au dessin.
 

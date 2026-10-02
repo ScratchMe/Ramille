@@ -36,6 +36,9 @@ import type { ModeResultat } from '@/types/resultat';
 // source unique dans `src/types/soumission.ts`, module pur lui aussi, qui porte la dérivation du
 // genre et la raison de ne jamais émettre le message d'erreur.
 import type { EtapeSoumission, GenreErreurSoumission } from '@/types/soumission';
+// Et le flux du code (`v1-27` §12.28) : `src/types/connexion.ts` est la source des deux valeurs, et
+// c'est lui qui décide du `type` envoyé à l'API — la mesure ne peut pas en connaître un troisième.
+import type { ContexteDuCode } from '@/types/connexion';
 
 export const USAGE_EVENT_NAMES = [
   'app_open',
@@ -216,12 +219,19 @@ export type UsageEventPropsByName = {
    *  liée : les deux branches ne mesuraient pas la même chose, et la seule comparaison que cet
    *  événement permet était faussée du taux d'emails jamais confirmés — précisément le chiffre
    *  qu'on veut connaître. Celui-ci porte l'intention, `connexion_success` le fait : l'écart
-   *  entre les deux **est** ce taux. Pas de propriété de méthode — il n'y a que l'email à
-   *  demander un lien, Google liant l'identité dans le même geste. */
-  connexion_demande: never;
+   *  entre les deux **était** ce taux. Pas de propriété de méthode — il n'y a que l'email à
+   *  demander un lien, Google liant l'identité dans le même geste.
+   *
+   *  **`flux` depuis le 02/10/2026** (`v1-27` §12.28) : depuis le 21/09/2026, une adresse déjà prise
+   *  sur `/connexion/email` reçoit un code de **connexion** au compte existant, et cette branche
+   *  émettait le même événement sans rien qui la distingue. `rattachement` est la demande que
+   *  `connexion_success` peut suivre ; `connexion` est une reconnexion, qui ne s'y compare pas. */
+  connexion_demande: { flux: ContexteDuCode };
   /** Le rattachement **constaté**, jamais demandé : une session réellement liée côté Google, la
    *  bascule d'`is_anonymous` côté email (que `/plan` observe déjà pour annoncer le
-   *  rattachement). Les deux valeurs mesurent donc le même fait, et se comparent. */
+   *  rattachement). Les deux valeurs mesurent donc le même fait, et se comparent. **Jamais une
+   *  reconnexion** depuis le 02/10/2026 (`v1-27` §12.28) : le plan la constatait dans le même état
+   *  qu'un rattachement, et la comptait. */
   connexion_success: { method: 'google' | 'email' };
   /**
    * **Retiré le 20/09/2026 : plus aucun code ne l'émet.** C'était « Continuer sans compte » sur

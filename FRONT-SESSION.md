@@ -227,10 +227,13 @@ périmerait en silence au prochain passage :
   `src/lib/notification-prefs.ts`, `src/lib/saison-prefs.ts`, `src/lib/marque-de-bilan.ts`, et
   depuis le 02/10/2026 `src/lib/marque-de-compte.ts` (« cet appareil porte un compte rattaché », qui
   distingue un refus d'une première ouverture — `v1-27` §12.27 ; une reconnexion par code la balaie
-  avec les autres, et la racine la repose aussitôt en relisant la session). Toutes
+  avec les autres, et la racine la repose aussitôt en relisant la session) et
+  `src/lib/marques-locales.ts` (le balayage, et le **propriétaire** des marques depuis le 02/10/2026 :
+  une session d'un autre compte les balaie avant de les prendre, `COMPTE.md` §1). Toutes
   ces clés portent le
   préfixe historique `traceverte.` (le renommer effacerait les brouillons), et c'est par ce
-  **préfixe** que `src/lib/compte.ts` les balaie à la suppression de compte. **Ne jamais
+  **préfixe** que `src/lib/marques-locales.ts` les balaie — à la suppression de compte, à la
+  déconnexion, et quand le compte change. **Ne jamais
   dénombrer les clés `traceverte.*` dans un commentaire.** Le balayage se fait par préfixe
   précisément pour que le nombre n'ait pas à être juste : trois commentaires en portaient un, tous
   faux dès que le jeton d'appareil s'est ajouté. Une phrase qui compte devient fausse à la clé

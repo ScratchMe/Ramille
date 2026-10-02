@@ -327,8 +327,13 @@ export async function loadFrequenceDesLoisirs(assessmentId: string): Promise<str
  * Sert au re-bilan : sans ça, « Modifier mes réponses » repartait d'un questionnaire vide,
  * et refaire son bilan six mois plus tard demandait de retaper les neuf étapes (v1-07 T7).
  * Le mapping est direct — `BilanAnswers` est un miroir des colonnes de la table (v1-05 §3).
+ *
+ * **Une `Lecture` depuis le 02/10/2026** (`v1-33` §9) : elle rendait `null` sur un échec comme sur une
+ * absence, et l'écran ne pouvait donc pas savoir qu'il valait la peine de relire. `{ ok: true, data:
+ * null }` veut dire « aucun bilan à préremplir », `{ ok: false }` « on ne sait pas » — que le
+ * questionnaire reprend en arrière-plan (`relireEnArrierePlan`).
  */
-export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
+export async function loadLastSubmittedAnswers(): Promise<Lecture<BilanAnswers | null>> {
   // **Sans session, on n'interroge pas la base** (29/09/2026, recette `v1-13` §17). `/bilan` ouvert
   // par son adresse dans un navigateur neuf arrive ici avant que la session anonyme n'existe : la
   // requête partait avec la seule clé `anon`, qui n'a aucun privilège sur `assessments`, et le
@@ -338,9 +343,9 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session) return null;
+  if (!session) return { ok: true, data: null };
 
-  const { data: assessment } = await supabase
+  const { data: assessment, error: erreurDuBilan } = await supabase
     .from('assessments')
     .select('id')
     .eq('status', STATUT_DE_BILAN.complete)
@@ -348,56 +353,61 @@ export async function loadLastSubmittedAnswers(): Promise<BilanAnswers | null> {
     .limit(1)
     .maybeSingle();
 
-  if (!assessment) return null;
+  if (erreurDuBilan) return { ok: false };
+  if (!assessment) return { ok: true, data: null };
 
-  const { data: answers } = await supabase
+  const { data: answers, error: erreurDesReponses } = await supabase
     .from('assessment_answers')
     .select('*')
     .eq('assessment_id', assessment.id)
     .maybeSingle();
 
-  if (!answers) return null;
+  if (erreurDesReponses) return { ok: false };
+  if (!answers) return { ok: true, data: null };
 
   return {
-    commute_has_regular_trip: answers.commute_has_regular_trip,
-    commute_days_per_week: answers.commute_days_per_week,
-    commute_distance_km: answers.commute_distance_km,
-    commute_distance_bracket: answers.commute_distance_bracket as BilanAnswers['commute_distance_bracket'],
-    commute_mode: answers.commute_mode as BilanAnswers['commute_mode'],
-    commute_is_carpool: answers.commute_is_carpool,
-    commute_carpool_size: answers.commute_carpool_size,
-    commute_second_mode_used: answers.commute_second_mode_used,
-    commute_second_mode: answers.commute_second_mode as BilanAnswers['commute_second_mode'],
-    commute_second_mode_share: answers.commute_second_mode_share,
-    commute_car_engine: answers.commute_car_engine as BilanAnswers['commute_car_engine'],
-    commute_two_wheeler_type:
-      answers.commute_two_wheeler_type as BilanAnswers['commute_two_wheeler_type'],
-    commute_train_type: answers.commute_train_type as BilanAnswers['commute_train_type'],
-    commute_velo_type: answers.commute_velo_type as BilanAnswers['commute_velo_type'],
-
-    leisure_frequency: answers.leisure_frequency as BilanAnswers['leisure_frequency'],
-    leisure_mode: answers.leisure_mode as BilanAnswers['leisure_mode'],
-    leisure_distance_bracket: answers.leisure_distance_bracket as BilanAnswers['leisure_distance_bracket'],
-    leisure_distance_km: answers.leisure_distance_km,
-    leisure_is_carpool: answers.leisure_is_carpool,
-    leisure_carpool_size: answers.leisure_carpool_size,
-    leisure_car_engine: answers.leisure_car_engine as BilanAnswers['leisure_car_engine'],
-    leisure_two_wheeler_type:
-      answers.leisure_two_wheeler_type as BilanAnswers['leisure_two_wheeler_type'],
-    leisure_train_type: answers.leisure_train_type as BilanAnswers['leisure_train_type'],
-    leisure_velo_type: answers.leisure_velo_type as BilanAnswers['leisure_velo_type'],
-
-    flights_total_per_year: answers.flights_total_per_year,
-    flights_short_per_year: answers.flights_short_per_year,
-    train_long_trips_per_year: answers.train_long_trips_per_year,
-    car_long_trips_per_year: answers.car_long_trips_per_year,
-    car_long_trips_engine: answers.car_long_trips_engine as BilanAnswers['car_long_trips_engine'],
-    car_long_trips_occupancy: answers.car_long_trips_occupancy,
-    coach_long_trips_per_year: answers.coach_long_trips_per_year,
-
-    zone_type: answers.zone_type as BilanAnswers['zone_type'],
-    tc_access: answers.tc_access as BilanAnswers['tc_access'],
-    household_vehicles: answers.household_vehicles as BilanAnswers['household_vehicles'],
-    teletravail: answers.teletravail as BilanAnswers['teletravail'],
+    ok: true,
+    data: {
+      commute_has_regular_trip: answers.commute_has_regular_trip,
+      commute_days_per_week: answers.commute_days_per_week,
+      commute_distance_km: answers.commute_distance_km,
+      commute_distance_bracket: answers.commute_distance_bracket as BilanAnswers['commute_distance_bracket'],
+      commute_mode: answers.commute_mode as BilanAnswers['commute_mode'],
+      commute_is_carpool: answers.commute_is_carpool,
+      commute_carpool_size: answers.commute_carpool_size,
+      commute_second_mode_used: answers.commute_second_mode_used,
+      commute_second_mode: answers.commute_second_mode as BilanAnswers['commute_second_mode'],
+      commute_second_mode_share: answers.commute_second_mode_share,
+      commute_car_engine: answers.commute_car_engine as BilanAnswers['commute_car_engine'],
+      commute_two_wheeler_type:
+        answers.commute_two_wheeler_type as BilanAnswers['commute_two_wheeler_type'],
+      commute_train_type: answers.commute_train_type as BilanAnswers['commute_train_type'],
+      commute_velo_type: answers.commute_velo_type as BilanAnswers['commute_velo_type'],
+  
+      leisure_frequency: answers.leisure_frequency as BilanAnswers['leisure_frequency'],
+      leisure_mode: answers.leisure_mode as BilanAnswers['leisure_mode'],
+      leisure_distance_bracket: answers.leisure_distance_bracket as BilanAnswers['leisure_distance_bracket'],
+      leisure_distance_km: answers.leisure_distance_km,
+      leisure_is_carpool: answers.leisure_is_carpool,
+      leisure_carpool_size: answers.leisure_carpool_size,
+      leisure_car_engine: answers.leisure_car_engine as BilanAnswers['leisure_car_engine'],
+      leisure_two_wheeler_type:
+        answers.leisure_two_wheeler_type as BilanAnswers['leisure_two_wheeler_type'],
+      leisure_train_type: answers.leisure_train_type as BilanAnswers['leisure_train_type'],
+      leisure_velo_type: answers.leisure_velo_type as BilanAnswers['leisure_velo_type'],
+  
+      flights_total_per_year: answers.flights_total_per_year,
+      flights_short_per_year: answers.flights_short_per_year,
+      train_long_trips_per_year: answers.train_long_trips_per_year,
+      car_long_trips_per_year: answers.car_long_trips_per_year,
+      car_long_trips_engine: answers.car_long_trips_engine as BilanAnswers['car_long_trips_engine'],
+      car_long_trips_occupancy: answers.car_long_trips_occupancy,
+      coach_long_trips_per_year: answers.coach_long_trips_per_year,
+  
+      zone_type: answers.zone_type as BilanAnswers['zone_type'],
+      tc_access: answers.tc_access as BilanAnswers['tc_access'],
+      household_vehicles: answers.household_vehicles as BilanAnswers['household_vehicles'],
+      teletravail: answers.teletravail as BilanAnswers['teletravail'],
+    },
   };
 }

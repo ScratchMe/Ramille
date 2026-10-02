@@ -24,6 +24,8 @@ import {
   marquerFeuilleDeRappelVue,
   marquerLaVeilleProposee,
   memoriserLeJetonDeCetAppareil,
+  setMotDeLaVeille,
+  setReminderChannel,
 } from '@/lib/notification-prefs';
 
 /** Ce que rend chaque lecture du double : la session, puis une ligne par table. */
@@ -32,10 +34,13 @@ const mockLectures: {
   utilisateur: unknown;
   profiles: ReponseDouble;
   push_tokens: ReponseDouble;
+  /** Ce que rend une écriture du profil (`update … eq`), avec son statut HTTP — `0` hors ligne. */
+  ecriture: ReponseDouble & { status: number };
 } = {
   utilisateur: null,
   profiles: { data: null, error: null },
   push_tokens: { data: null, error: null },
+  ecriture: { data: null, error: null, status: 204 },
 };
 
 jest.mock('@/lib/supabase', () => {
@@ -47,6 +52,7 @@ jest.mock('@/lib/supabase', () => {
       eq: () => maillon,
       is: () => maillon,
       maybeSingle: async () => mockLectures[table],
+      update: () => ({ eq: async () => mockLectures.ecriture }),
     };
     return maillon;
   };
@@ -209,5 +215,39 @@ describe('loadReminderPrefs', () => {
     // Ce n'est pas un échec : l'appareil n'a rien enregistré, et la base n'est même pas interrogée.
     mockLectures.push_tokens = { data: null, error: { code: '08006', message: 'jamais lu' } };
     expect(await loadReminderPrefs()).toMatchObject({ prefere: 'push', jetonActif: false });
+  });
+});
+
+// **Les deux écritures des rappels disent le genre de leur échec** (`v1-33` §9, 02/10/2026) : un
+// booléen ne laissait aux écrans que « Vérifie ta connexion », même sur une réponse du serveur. Éprouvé
+// en le cassant le 02/10/2026 : le statut ignoré (`genreDeLEchec(0)` en dur) fait tomber « dit le
+// serveur… » des deux fonctions, et seulement eux.
+describe('les écritures des rappels', () => {
+  beforeEach(() => {
+    mockLectures.utilisateur = { id: 'u1' };
+    mockLectures.ecriture = { data: null, error: null, status: 204 };
+  });
+
+  it.each([
+    ['setReminderChannel', () => setReminderChannel('email')],
+    ['setMotDeLaVeille', () => setMotDeLaVeille('oui')],
+  ])('%s rend null quand le choix est enregistré', async (_nom, ecrire) => {
+    expect(await ecrire()).toBeNull();
+  });
+
+  it.each([
+    ['setReminderChannel', () => setReminderChannel('email')],
+    ['setMotDeLaVeille', () => setMotDeLaVeille('oui')],
+  ])('%s dit « hors ligne » quand la requête n’a pas eu de réponse', async (_nom, ecrire) => {
+    mockLectures.ecriture = { data: null, error: { message: 'Failed to fetch' }, status: 0 };
+    expect(await ecrire()).toBe('horsLigne');
+  });
+
+  it.each([
+    ['setReminderChannel', () => setReminderChannel('email')],
+    ['setMotDeLaVeille', () => setMotDeLaVeille('oui')],
+  ])('%s dit le serveur quand il a répondu en échec', async (_nom, ecrire) => {
+    mockLectures.ecriture = { data: null, error: { message: 'Internal Server Error' }, status: 500 };
+    expect(await ecrire()).toBe('serveur');
   });
 });

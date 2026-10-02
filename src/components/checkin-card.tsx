@@ -12,6 +12,8 @@ import { Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
 import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { supabase } from '@/lib/supabase';
+import { messageDEcriture } from '@/types/ecriture-en-echec';
+import { genreDeLEchec } from '@/types/lecture-en-echec';
 import {
   estDeuxiemeFoisDeSuite,
   genreDeReponse,
@@ -198,7 +200,7 @@ export function CheckinCard({
     if (saving) return;
     setSaving(true);
     setErreur(null);
-    const { error } = await supabase.rpc('repondre_au_checkin', {
+    const { error, status } = await supabase.rpc('repondre_au_checkin', {
       p_checkin_id: checkin.id,
       p_reponse: response,
     });
@@ -216,7 +218,8 @@ export function CheckinCard({
       return;
     }
 
-    setErreur('Ta réponse n’est pas partie. Vérifie ta connexion et réessaie.');
+    // La connexion n'est nommée que hors ligne (`src/types/ecriture-en-echec.ts`, 02/10/2026).
+    setErreur(messageDEcriture('Ta réponse n’est pas partie.', genreDeLEchec(status)));
   };
 
   return (
