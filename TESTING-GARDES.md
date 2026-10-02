@@ -83,13 +83,13 @@ Trois branches d'écran basculent d'un profil à l'autre, et aucune n'était jou
 la place des cartes, le cap qui **ne chiffre pas** (`cadreDuPlan`, C5.3), et l'absence de l'encart de
 contexte comme du lien vers les pistes.
 
-**Puis il refait un bilan en voiture** (27/09/2026, `v1-27` §4). Sa carte « Plan et Suivi » n'est
-pas refermée, et le nouveau bilan donne au même cycle ses premières actions : « Ton premier plan »
-est due le même jour — la seule paire de cartes d'ouverture que l'écran empilait. Les exclusions
-elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`cartesDuPlan`) ; cette
-étape garde une partie de ce que Jest ne voit pas — **deux** des huit arguments que l'écran lui passe,
-`carteDuPremierPlan` et `carteDesDeuxLieux`. L'en-tête du script nomme les six autres, que rien ici ne
-garde.
+**Puis il refait un bilan en voiture** (27/09/2026, `v1-27` §4). Le nouveau bilan donne au même
+cycle ses premières actions, et « Ton premier plan » est due. Jusqu'au 01/10/2026, sa carte « Plan et
+Suivi » l'était aussi le même jour — la seule paire de cartes d'ouverture que l'écran empilait —, et
+l'étape gardait **deux** des huit arguments que l'écran passe à `cartesDuPlan`. **Depuis la décision
+« vue une fois, puis partie »** (`v1-33` §6), la carte des deux lieux est vue au premier plan du
+cycliste et ne revient plus : l'étape garde désormais qu'elle ne revient pas sans « Compris », et la
+paire n'est plus tenue que par les tests de `cartesDuPlan`, sur toutes les combinaisons d'états.
 
 **Et il finit par retirer ses deux bilans** (27/09/2026, C4.7, `v1-22`). Le bilan en voiture
 d'abord : c'est lui qui porte le plan, et le profil **s'y engage avant** — sans quoi rien ne gardait
@@ -180,6 +180,35 @@ le 01/10/2026** (décision de la personne qui pilote,
 parcours, sur web, et l'étape le mesure image par image depuis le rendu statique — un relevé démarré
 avant le premier script de la page, sur l'onglet du parcours, pour qu'un échec s'y capture. L'attente
 reste : ailleurs, un reste de saut est accepté.
+
+**Depuis le 01/10/2026, le troisième profil rattache son compte par code** (étape « le compte
+rattaché par code, et rien derrière », `v1-33` T-1). Depuis le plan : « Toi » → « Rattacher un
+compte » → l'adresse envoyée par **Entrée** → le focus sur « Regarde tes emails » → le code lu dans
+Mailpit (comme `verifier-code-de-connexion.mjs`) → la base relue (même utilisateur, plus anonyme, à
+cette adresse) → **le retour quitte l'app** ; puis « Me déconnecter » et le même retour. Tout se joue
+sur un onglet neuf. **Il envoie un e-mail par passage**, sur un plafond local de 30 par heure
+partagé avec `verifier-code-de-connexion.mjs` et tout passage simultané.
+
+**Depuis le 01/10/2026, le parcours répond aussi aux vols et aux longs trajets** (`v1-33` D1) —
+profil 1 : ses deux vols, puis « Oui » ; cycliste et profil sans boucle : « 0 », puis « Non » — et
+garde l'arrivée sur les vols (aucune puce cochée, « Suivant » qui demande le nombre de vols), et la
+feuille du re-bilan **à l'entrée**, atteinte depuis la restitution par « Faire un nouveau bilan » :
+ouverture, focus sur « Commencer », Échap qui ressort sans écrire, puis un toucher sur le voile,
+au-dessus de la feuille, qui la referme : le parcours lit d'abord ce que le navigateur trouve sous le
+point (`elementFromPoint`), puis ce que le clic y fait. **Et la vague produit du même jour** y ajoute
+« C'est noté » en attente sur la liste (D13) — la ligne, le focus, et rien ne part : le guetteur de
+`commit_plan_action` armé avant le geste, et la base relue — et, chez le cycliste, la carte des deux
+lieux qui ne revient pas sans « Compris ». Mutations PL15 à PL19 en tête du script. **Une mesure introuvable y
+échoue, elle ne se saute jamais** — la leçon vient d'une garde voisine du même jour, B6 bis de la
+section K de `verifier-etats-export.mjs`, dont la première version sautait une mesure sans bruit : un
+titre cherché sans normaliser les insécables que `ThemedText` pose.
+
+**L'étape « plan — l'onglet remonte en haut, et ramène à sa racine »** (01/10/2026, `v1-33` T-14)
+garde l'appel de `toucherDOnglet` dans ses deux sens : la remontée d'un onglet déjà à sa racine —
+**le même plan**, son titre marqué avant le toucher, car un écran remonté de zéro est aussi en haut
+—, et le retour à la racine — « Suivi » depuis le plan quand le questionnaire n'a ouvert sa pile que
+sur la restitution, puis « Plan » depuis le suivi, les pistes laissées ouvertes —, lus dans le DOM :
+la restitution démontée, un seul titre « Ton plan », marqué.
 
 ### 2.7 Les miroirs de `check`, comparés à la base plutôt que recopiés
 
@@ -531,7 +560,13 @@ même endroit. Deux gardes la relèvent **à chaque image** (`requestAnimationFr
   ouverte au-dessus ; il défile en glissant et **juste assez** — « C'est noté » finit à moins de
   100 px du bas de la fenêtre, et c'est cette moitié qui a fait tomber la mutation du défilement
   mesuré trop tôt, là où « le titre jamais sous la bande » ne la voyait pas ; sous la préférence, il
-  se pose d'un coup. Que le titre ne passe jamais sous la bande est d'abord gardé par les tests de
+  se pose d'un coup) **et le même sur le plan** (01/10/2026, `v1-33` P-2 : précondition, juste
+  assez, titre jamais sous la bande, en glissant ; posé d'un coup chez le cycliste), **la carte
+  engagée amenée dans la fenêtre après « C'est noté »**, touchée au bas d'un écran de 640 px pour que
+  la relecture l'en sorte (`noterSurUnEcranCourt`, précondition comprise : à 900 px la garde passait
+  sans rien éprouver — et cette précondition se lit aussi à l'appel de défilement de l'app, pas
+  seulement sur une image peinte, règle 10), et **le geste qui ne se défait pas** (P-1 : à chaque image, « C'est noté » ou
+  « Changer d'avis »). Que le titre ne passe jamais sous la bande est d'abord gardé par les tests de
   `defilementPourMontrer`, `src/types/mouvement.test.ts`) — et **le second profil entier sous
   « réduire les animations »**.
 
@@ -600,6 +635,20 @@ Les règles, chacune payée pendant l'écriture :
    environ 170 ms, et une découpe posée 300 ms après le premier `onLayout` — un runner lent — lui
    aurait fait prendre les 840 px pour le repos. La fenêtre dépasse la plus longue durée des jetons
    de mouvement (320 ms).
+10. **Ce qui se pose d'un coup ne laisse pas forcément d'image entre deux états : une précondition ne
+   se lit pas sur les seules images peintes.** CI de la PR #314, 01/10/2026 : chez le cycliste, sous
+   « réduire les animations », la relecture d'un engagement et le défilement qui ramène la carte
+   engagée se posent sans transition, et entre le rendu de la relecture et l'appel de défilement de
+   l'app il s'écoule 3 à 13 ms — une image tombe dedans ou non. La garde exigeait qu'une image
+   montre la carte hors de la fenêtre : verte sur la branche du chantier (quatre passages sur quatre
+   avec une image), rouge sur l'arbre intégré (six passages sur dix sans), **à mise en page identique
+   au pixel près** — on a d'abord soupçonné les retours à la ligne et la carte d'attente, et la mesure
+   les a écartés. Elle lit désormais aussi la carte à l'instant où l'app demande le défilement
+   (`guetterLesDefilements` : le nœud de la fenêtre enveloppé le temps du geste, la mesure prise
+   avant que l'appel ne s'applique, l'appel transmis tel quel). Ce qui reste lu sur les images, c'est
+   le mouvement (règle 1). La précondition n'en est pas affaiblie : la mutation PC — la carte laissée
+   en place par la relecture — la fait toujours tomber, sans appel ni image, et PL4 comme PL14
+   tombent comme avant.
 
 Les mutations qui éprouvent chaque moitié sont consignées dans l'en-tête de chaque garde, datées.
 

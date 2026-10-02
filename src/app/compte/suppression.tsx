@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,6 +16,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { SaisieDuCode } from '@/components/auth/saisie-du-code';
 import { demanderLaConnexion } from '@/lib/auth';
 import { deleteMyAccount, lireEtatDuCompte } from '@/lib/compte';
+import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { type EtatSuppression } from '@/types/compte-suppression';
 import {
   adresseSemblePlausible,
@@ -57,6 +58,33 @@ export default function SuppressionCompte() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  /**
+   * **Le focus suit le geste qui change la phase** (01/10/2026, audit T-4, `FRONT.md` §2.4). Le titre
+   * de la page ne change pas, mais le bouton touché disparaît chaque fois avec la phase qui le
+   * portait, et le focus retombait sur le document : rien n'annonçait ce qui venait d'arriver. Il va
+   * donc à la première phrase de ce qui arrive — le bloc du compte après le code, la dernière étape,
+   * « C'est fait. » —, ou au bouton « Supprimer mon compte » quand « Annuler » le fait revenir. La
+   * saisie du code prend le sien elle-même (`SaisieDuCode`, `apresUnGeste`).
+   *
+   * `geste` retient la cible, posée par le gestionnaire ; l'effet la lit et l'efface, pour qu'un rendu
+   * sans geste — la première lecture de l'état du compte — ne déplace rien. Le motif de
+   * `ActionCommitment`. Une référence par cible, et non une partagée : la phrase du compte et la
+   * dernière étape sont à l'écran ensemble.
+   */
+  const geste = useRef<'compte' | 'derniere-etape' | 'fait' | 'bouton' | null>(null);
+  const phraseDuCompte = useRef<unknown>(null);
+  const derniereEtape = useRef<unknown>(null);
+  const fait = useRef<unknown>(null);
+  const boutonSupprimer = useRef<View>(null);
+  useEffect(() => {
+    const vient = geste.current;
+    geste.current = null;
+    if (vient === 'compte') donnerLeFocus(phraseDuCompte.current);
+    if (vient === 'derniere-etape') donnerLeFocus(derniereEtape.current);
+    if (vient === 'fait') donnerLeFocus(fait.current);
+    if (vient === 'bouton') donnerLeFocus(boutonSupprimer.current);
+  }, [phase]);
+
   useEffect(() => {
     let annule = false;
     lireEtatDuCompte()
@@ -72,6 +100,9 @@ export default function SuppressionCompte() {
   }, []);
 
   const demanderLeCode = async () => {
+    // Entrée part du champ, que le bouton désactivé ne garde pas : un second appui pendant l'envoi
+    // ferait partir une seconde demande (01/10/2026, audit T-3).
+    if (busy) return;
     setMessage(null);
     if (!adresseSemblePlausible(email)) {
       setMessage('Cette adresse semble incomplète.');
@@ -108,13 +139,16 @@ export default function SuppressionCompte() {
       setMessage(result.message);
       return;
     }
+    geste.current = 'fait';
     setPhase({ kind: 'supprime' });
   };
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Recevoir un
+            code » ne servait qu'à le fermer, le défaut de React Native. */}
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.page}>
             <ThemedText type="small" themeColor="textTertiary">
               {APP_NAME}
@@ -129,7 +163,11 @@ export default function SuppressionCompte() {
 
             {phase.kind === 'pret' && phase.etat.kind === 'inconnu' && (
               <>
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                <ThemedText
+                  themeColor="textSecondary"
+                  style={styles.corps}
+                  {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                >
                   Ce navigateur n’est rattaché à aucun compte. Indique l’adresse de ton compte,
                   puis le code reçu par email : la session s’ouvre ici, et la suppression se fait
                   en un geste.
@@ -141,6 +179,7 @@ export default function SuppressionCompte() {
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     placeholder="toi@exemple.fr"
+                    onSubmitEditing={() => void demanderLeCode()}
                   />
                   <Button
                     title={busy ? 'Envoi…' : 'Recevoir un code'}
@@ -168,7 +207,11 @@ export default function SuppressionCompte() {
 
             {phase.kind === 'pret' && phase.etat.kind === 'anonyme-avec-donnees' && (
               <>
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                <ThemedText
+                  themeColor="textSecondary"
+                  style={styles.corps}
+                  {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                >
                   Ce navigateur porte un bilan qui n’a jamais été rattaché à un compte. Il
                   n’existe donc nulle part ailleurs — et tu peux l’effacer ici.
                 </ThemedText>
@@ -182,7 +225,11 @@ export default function SuppressionCompte() {
                     parle (A12-4), sur la page publique que Google Play exige. C'est le
                     navigateur qui porte la session : le dire ainsi est à la fois sans accord
                     de genre et plus exact — cette page n'affirme rien d'autre. */}
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                <ThemedText
+                  themeColor="textSecondary"
+                  style={styles.corps}
+                  {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                >
                   {phase.etat.email
                     ? `Ce navigateur est connecté au compte ${phase.etat.email}.`
                     : 'Ce navigateur est connecté à ton compte.'}
@@ -199,6 +246,8 @@ export default function SuppressionCompte() {
             // compte. La voix porte ce « si », là où `/connexion/email` peut l'affirmer dans ses
             // deux branches (`src/types/connexion.ts`, `VoixDeLaSaisie`).
             voix="peut_etre"
+                // Toujours après « Recevoir un code » : cette page ne s'ouvre jamais sur le code.
+                apresUnGeste
                 adresse={email.trim()}
                 libelleBouton="Ouvrir ma session"
                 onOuverte={async () => {
@@ -215,10 +264,12 @@ export default function SuppressionCompte() {
                   const etat = await lireEtatDuCompte().catch(
                     () => ({ kind: 'rattache', email: email.trim() }) as const
                   );
+                  geste.current = 'compte';
                   setPhase({ kind: 'pret', etat, confirme: false });
                 }}
                 onAutreAdresse={() => {
                   setMessage(null);
+                  geste.current = 'compte';
                   setPhase({ kind: 'pret', etat: { kind: 'inconnu' }, confirme: false });
                 }}
                 renvoyer={demanderLaConnexion}
@@ -227,7 +278,11 @@ export default function SuppressionCompte() {
 
             {phase.kind === 'supprime' && (
               <>
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                <ThemedText
+                  themeColor="textSecondary"
+                  style={styles.corps}
+                  {...({ ref: fait, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                >
                   C’est fait. Ton compte et tout ce qui s’y rattachait — bilans, plan, points de
                   suivi, retours — ont été supprimés définitivement.
                 </ThemedText>
@@ -255,8 +310,12 @@ export default function SuppressionCompte() {
             définitivement. Cette action est irréversible.
           </ThemedText>
           <Button
+            ref={boutonSupprimer}
             title="Supprimer mon compte"
-            onPress={() => setPhase((p) => (p.kind === 'pret' ? { ...p, confirme: true } : p))}
+            onPress={() => {
+              geste.current = 'derniere-etape';
+              setPhase((p) => (p.kind === 'pret' ? { ...p, confirme: true } : p));
+            }}
             disabled={busy}
           />
         </View>
@@ -264,13 +323,20 @@ export default function SuppressionCompte() {
     }
     return (
       <View style={styles.bloc}>
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText
+          type="small"
+          themeColor="textSecondary"
+          {...({ ref: derniereEtape, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+        >
           Dernière étape : confirme, et tout part.
         </ThemedText>
         <View style={styles.actions}>
           <TextLink
             label="Annuler"
-            onPress={() => setPhase((p) => (p.kind === 'pret' ? { ...p, confirme: false } : p))}
+            onPress={() => {
+              geste.current = 'bouton';
+              setPhase((p) => (p.kind === 'pret' ? { ...p, confirme: false } : p));
+            }}
             disabled={busy}
             type="small"
             themeColor="textTertiary"

@@ -183,6 +183,11 @@ dépendance à `household_vehicles` est le dernier fil qui relie une réponse de
   l'intention — le seul choix personnel que le produit demande — et laisse passer. Le produit
   annonce déjà cet effet **après coup** (l'encart orphelin de C2.2, filtré sur
   `released_reason = 'rebilan'`) : il s'agit de le dire avant, pas d'inventer un mécanisme.
+  *Note du 01/10/2026* : « avant » voulait dire avant la soumission ; l'avertissement se dit
+  désormais **avant de commencer**, à l'entrée du re-bilan, parce qu'au terme de neuf étapes sa
+  phrase « ton bilan actuel est toujours juste » colorait tout l'effort (tension tranchée en
+  [`v1-33`](v1-33-les-lois-de-l-ux.md) §6). La décision elle-même — dire ce qu'on perd, ne rien
+  refuser — ne change pas.
 - **D5 — Les quatre réponses B4 vont dans un écran de contexte**, dans le premier questionnaire
   puis accessible seul. Le mettre à jour ne resoumet pas de bilan.
 - **D6 — Rien n'est imposé, à aucune échéance.** Ni à une saison, ni à un an.

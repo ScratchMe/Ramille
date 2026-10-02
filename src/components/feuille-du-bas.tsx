@@ -47,7 +47,38 @@ import { reglage } from '@/lib/mouvement';
  * pourrait laisser une feuille ouverte. Le `Modal` de react-native-web ne lisant pas la préférence, sa
  * feuille glissait même sous elle : ce défaut part avec son animation.
  *
- * **Qui ferme en animant** : le geste de retour et Échap (`onRequestClose`), et l'appelant par
+ * **Toucher le voile ferme aussi** (01/10/2026, audit T-7) : c'est le geste d'Android pour une
+ * feuille modale, et le toucher ne faisait rien — « l'app n'a pas pris mon geste ». Il appelle la même
+ * `fermer()` que le retour, donc la même sortie et le même `onFerme` : la feuille des rappels se marque
+ * vue comme sur un retour. Le voile n'est ni un arrêt de tabulation ni un nœud du lecteur d'écran — le
+ * retour et Échap y suffisent —, et la zone au-dessus de la feuille laisse passer le toucher jusqu'à
+ * lui. **La poignée, elle, ne se tire pas encore** : un glissé se juge au doigt, sur appareil.
+ *
+ * **Sur web, ce toucher n'arrivait jamais au voile** (mesuré le 01/10/2026 par `elementFromPoint` et un
+ * clic au-dessus de la feuille, dans le parcours réel) : la place, qui couvre tout l'écran, était la
+ * vue animée, et reanimated pose sur web les styles d'une vue animée **en ligne** — où `box-none`
+ * n'est pas une valeur CSS, donc ignorée. La place prenait le clic, `pointer-events: auto`, et la
+ * feuille restait ouverte. Elle est désormais une vue ordinaire, dont react-native-web compile le
+ * `box-none` en classe (`pointer-events: none` sur elle, `auto` sur ses enfants), et seule la
+ * feuille, à l'intérieur, s'anime. `sansToucher` reste sur la vue animée : `none`, lui, est une valeur
+ * CSS. Le test natif ne le voyait pas (il lit la valeur du style, pas ce que le navigateur en fait) :
+ * c'est l'étape « un toucher sur le voile » du parcours réel qui le garde.
+ *
+ * **Le voile n'est pas un `Pressable`, et ne doit pas le redevenir** (01/10/2026, CI de la PR #314).
+ * Sur web, c'est le `Modal` de react-native-web qui pose le focus à l'ouverture : son piège, dès qu'il
+ * est actif, essaie `.focus()` sur chaque descendant **dans l'ordre du DOM** et garde le premier qui le
+ * prend — et le voile précède la feuille. Le `Pressable` de react-native-web écrit toujours un
+ * `tabindex` (0, ou -1 désactivé), qui passe devant `focusable={false}` : le voile, `aria-hidden`, était
+ * un arrêt de tabulation et le premier focalisable de la fenêtre, et la feuille du re-bilan s'ouvrait
+ * le focus sur lui au lieu de « Commencer ». `tabIndex={-1}` ne suffit pas : l'arrêt part, mais
+ * `.focus()` prend encore. Le voile reçoit donc le toucher par les répondeurs, **sans aucun
+ * `tabindex`** ; sur natif, les répondeurs sont ce que `Pressable` emploie lui-même, et le toucher
+ * ferme comme avant, ce qui se vérifie sur l'appareil. **Le focus d'ouverture va ainsi au premier
+ * contrôle de la feuille, dans l'ordre du DOM**, et rien ici ne le pose : un contrôle placé avant
+ * celui qu'on veut focaliser le prend. Gardé par `src/tests/ecrans/feuille-du-bas-sur-web.test.tsx`,
+ * qui rend la feuille par react-native-web, et par le parcours réel sur la feuille du re-bilan.
+ *
+ * **Qui ferme en animant** : le geste de retour et Échap (`onRequestClose`), toucher le voile, et l'appelant par
  * `fermer` (la poignée passée en `ref`) — « Pas maintenant », un choix validé. Un bouton qui
  * **navigue** appelle son rappel directement : sur natif, une route poussée sous un `Modal` encore
  * ouvert reste dessous, donc il ne doit pas attendre une sortie. Une seconde fermeture pendant la
@@ -83,8 +114,9 @@ export function FeuilleDuBas({
   const voile = useSharedValue(animationsReduites ? 1 : 0);
   const feuille = useSharedValue(animationsReduites ? 1 : 0);
   const sortieLancee = useRef(false);
-  // Pendant la sortie, la feuille ne prend plus aucun toucher : « Pas maintenant » puis « Soumettre
-  // mon bilan » dans les 200 ms soumettait le bilan.
+  // Pendant la sortie, la feuille ne prend plus aucun toucher : « Pas maintenant » puis le bouton
+  // plein de la feuille du re-bilan (« Soumettre mon bilan » jusqu'au 01/10/2026, « Commencer »
+  // depuis) dans les 200 ms faisait les deux.
   const [enSortie, setEnSortie] = useState(false);
   // Ce que la fin de la sortie appelle. **Un `fermer(apres)` arrivé pendant la sortie le remplace**,
   // au lieu d'être ignoré : le retour lance la sortie, puis le choix de la feuille des rappels finit
@@ -149,24 +181,42 @@ export function FeuilleDuBas({
 
   return (
     <Modal visible animationType="none" transparent onRequestClose={() => fermer()} aria-label={titre}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim }, styleDuVoile]} />
-      <Animated.View style={[styles.place, styleDeLaFeuille, enSortie && styles.sansToucher]}>
-        <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
-          <View style={[styles.poignee, { backgroundColor: theme.border }]} />
-          {enTete && (
-            <ThemedText type="cardTitle" accessibilityRole="header">
-              {titre}
-            </ThemedText>
-          )}
-          {children}
-        </ThemedView>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim }, styleDuVoile]}>
+        {/* Une vue qui répond au toucher, jamais un `Pressable` : sur web, il serait focalisable, et
+            le `Modal` lui donnerait le focus d'ouverture (voir l'en-tête). */}
+        <View
+          testID="voile-de-la-feuille"
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={() => fermer()}
+          style={StyleSheet.absoluteFill}
+          accessible={false}
+          importantForAccessibility="no"
+          aria-hidden
+        />
       </Animated.View>
+      {/* La place est une vue ordinaire, et seule la feuille s'anime : voir « Toucher le voile ». */}
+      <View style={styles.place}>
+        <Animated.View style={[styleDeLaFeuille, enSortie && styles.sansToucher]}>
+          <ThemedView style={[styles.feuille, { borderColor: theme.border }]}>
+            <View style={[styles.poignee, { backgroundColor: theme.border }]} />
+            {enTete && (
+              <ThemedText type="cardTitle" accessibilityRole="header">
+                {titre}
+              </ThemedText>
+            )}
+            {children}
+          </ThemedView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  place: { flex: 1, justifyContent: 'flex-end' },
+  // `box-none` : la zone au-dessus de la feuille laisse passer le toucher jusqu'au voile, qui ferme.
+  // Sur une vue ordinaire, et pas sur une vue animée — sur web, reanimated pose ses styles en ligne, où
+  // `box-none` n'est pas une valeur CSS : la place prenait le toucher (mesuré le 01/10/2026).
+  place: { flex: 1, justifyContent: 'flex-end', pointerEvents: 'box-none' },
   sansToucher: { pointerEvents: 'none' },
   feuille: {
     borderTopLeftRadius: Radius.card,

@@ -28,8 +28,19 @@
  *     avant le démontage, est rendu tout de suite » ;
  *   - `enSortie && styles.sansToucher` retiré → « pendant la sortie, la feuille ne prend plus de
  *     toucher ».
+ * **Et le 01/10/2026, le voile qui ferme** (audit T-7) — la mutation que ce fichier tient ne se voit
+ * ni dans `src/types` ni au parcours réel, qui referme la feuille à Échap :
+ *   - le `onPress` du voile retiré (l'état d'avant) → « toucher le voile ferme la feuille… », seul ;
+ *   - `pointerEvents: 'box-none'` retiré de la place de la feuille → « la zone au-dessus de la
+ *     feuille… », seul : la place couvre tout l'écran, et sans lui elle prenait le toucher avant le
+ *     voile, posé dessous.
+ * **Et le même jour, le voile n'est plus un `Pressable`** (CI de la PR #314 : sur web, il prenait le
+ * focus d'ouverture, `feuille-du-bas-sur-web.test.tsx`) : il répond au toucher par les répondeurs, et
+ * `userEvent.press` joue le toucher comme sur l'appareil, par `onStartShouldSetResponder` puis
+ * `onResponderRelease` — `fireEvent.press` ne cherchait qu'un `onPress`. Éprouvé : chacun des deux
+ * retiré fait tomber « toucher le voile ferme la feuille… », seul.
  */
-import { act, render, screen } from '@testing-library/react-native';
+import { act, render, screen, userEvent } from '@testing-library/react-native';
 import React, { createRef } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
@@ -124,5 +135,25 @@ describe('FeuilleDuBas, une seconde fermeture pendant la sortie', () => {
     expect(neTouchePlus()).toBe(false);
     act(() => poignee.current?.fermer());
     expect(neTouchePlus()).toBe(true);
+  });
+
+  test('toucher le voile ferme la feuille, comme le retour : même sortie, même `onFerme`', async () => {
+    const onFerme = jest.fn();
+    monter(onFerme);
+    // Le voile est masqué au lecteur d'écran (le retour y suffit) : on le cherche parmi les masqués.
+    await userEvent.press(screen.getByTestId('voile-de-la-feuille', { includeHiddenElements: true }));
+    await finirLaSortie();
+    expect(onFerme).toHaveBeenCalledTimes(1);
+  });
+
+  test('la zone au-dessus de la feuille laisse passer le toucher jusqu’au voile', () => {
+    monter(jest.fn());
+    // Le premier ancêtre du contenu qui porte `pointerEvents` dans son style est la place de la
+    // feuille, qui couvre tout l'écran au-dessus du voile.
+    let regle: unknown;
+    for (let noeud = screen.getByText('contenu').parent; noeud && regle === undefined; noeud = noeud.parent) {
+      regle = StyleSheet.flatten(noeud.props.style)?.pointerEvents;
+    }
+    expect(regle).toBe('box-none');
   });
 });

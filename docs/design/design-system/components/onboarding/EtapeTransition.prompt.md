@@ -4,7 +4,7 @@ Le dernier écran de l'onboarding (4 sur 4), juste avant le questionnaire.
 <EtapeTransition onCommencer={commencer} onPrecedent={precedent} onConfidentialite={ouvrirConfidentialite} />
 ```
 
-**Ce qui attend, sans surprise** : « environ 5 minutes », les quatre sections numérotées, et le droit de s'arrêter — les réponses sont conservées.
+**Ce qui attend, sans surprise** : « environ 5 minutes » — dans un bloc au rayon de la carte (18) —, les quatre sections numérotées, et le droit de s'arrêter — les réponses sont conservées. **Les sections portent les noms de l'en-tête du questionnaire**, lus à la source dans le dépôt (`BILAN_SECTION_LABEL`) : « Domicile-travail », « Loisirs du week-end », « Voyages longue distance », « Contexte de mobilité » — l'annonce et ce qu'on trouve ensuite portent le même nom.
 
 **Une ligne dit ce qui vient après le bilan**, parce que le produit est une boucle qui dure des saisons : « Ensuite : une action à ton rythme, et un point de temps en temps pour voir ce qui a changé. » Une ligne et non un cinquième écran — une étape de plus coûterait plus en abandon qu'elle ne rapporte — et sans rythme chiffré, « de temps en temps » étant vrai pour les deux boucles.
 

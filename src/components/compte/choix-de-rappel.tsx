@@ -98,7 +98,10 @@ export function ChoixDeRappel({
   return (
     <View style={styles.bloc}>
       <View style={styles.entete}>
-        <ThemedText weight={600} type="cardTitle">
+        {/* **Un en-tête de section** (01/10/2026, audit T-15), comme « Mes données » : la page parcourue
+            titre par titre sautait « Les rappels ». Niveau 2, déduit du type par `ThemedText` — l'écran
+            porte déjà son titre, « Toi ». */}
+        <ThemedText weight={600} type="cardTitle" accessibilityRole="header">
           {TITRE}
         </ThemedText>
         {/* Un plafond, dérivé de ce que la personne a demandé : « jamais plus » serait faux pour qui

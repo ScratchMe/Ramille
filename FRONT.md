@@ -87,7 +87,8 @@ Quatre règles qui en découlent, et qui se sont toutes payées :
   revenait sans un mot — le même bouton mort, par une autre porte (`useChargementVisible`) ;
 - **une valeur par défaut posée sur un échec est du même mensonge.** Ce qu'on ne sait pas vaut
   `null`, et l'élément ne s'affiche pas — plutôt que de nommer le mauvais jour, le mauvais canal
-  ou le mauvais rythme.
+  ou le mauvais rythme. C'était le cas de `loadReminderPrefs` jusqu'au 01/10/2026 (`v1-33` T-6) :
+  un profil illisible rendait « Par email », coché sur « Toi » comme un réglage lu.
 
 ### 1.3 Un état de chargement n'affirme rien non plus
 
@@ -198,6 +199,14 @@ sécable sur le plan. `ThemedText` réunit donc les chaînes et les nombres vois
 l'appliquer ; un texte imbriqué coupe la réunion et reçoit la règle pour lui-même
 (`src/components/themed-text.test.tsx`).
 
+**Et un nombre ne se sépare pas de son unité** (01/10/2026, `v1-33` Q-7, loi de Prägnanz). « 9,5
+tonnes en moyenne, 2 / tonnes visées en 2050 », dans le titre de la page 2 de l'onboarding, et « plus
+de 300 / km ? » se coupaient à la ligne : la règle ne liait que la ponctuation. L'espace entre un
+chiffre et `km`, `kg`, `t`, `tonne(s)`, `h`, `min`, `minute(s)` est insécable, posée au même endroit ;
+et celle entre `t` ou `kg` et « CO₂e » quand un nombre est devant. L'unité doit finir là : suivie
+d'une lettre, accentuée ou non, c'est un mot (« 2 trajets », « 5 hôtes »), et `\b` ne le voit pas —
+« é » et « ô » n'y sont pas des lettres, d'où une classe écrite.
+
 **Corollaire pour les tests** : un séparateur s'écrit par son **point de code** (`\u00a0`) et jamais
 collé en littéral. Trois assertions le portaient en clair, et leur échec affichait
 `Expected: "1 600"` / `Received: "1 600"` — deux chaînes rigoureusement identiques à l'œil. C'est
@@ -265,6 +274,15 @@ exactement ce qui avait laissé passer le mauvais caractère.
   étape. Être déjà sous le repère ne coupe pas la proposition : la marche reste offerte, dans un
   registre de contribution (« ce que tu n'émets pas laisse de la marge ailleurs ») et jamais
   d'exigence. **Le nombre de paliers restants ne s'affiche jamais.**
+  **La barre du palier est en `accentMuted`, comme les repères** (01/10/2026, `v1-33` R-8) : seul
+  « Toi » est en `accent`. En `accentText`, la marche était la barre la plus foncée de la carte, plus
+  que la personne. **Et le chiffre ne porte plus trois noms** (`v1-33` D12) : la barre dit « Ton
+  prochain palier » (une cible de total), la phrase « Ton cap pour cette saison : N de moins sur
+  l'année sur <poste> » (un écart sur un poste), comme la carte du plan juste après. Seules les deux
+  branches qui nomment le cap le disent ; « déjà sous le repère » (une marge) et « à ta portée » (une
+  distance au repère, sur le total) ne le mesurent pas. Tant que `rolling_quarter` est dormant,
+  « saison » est juste ; s'il se réveille, la carte du plan dira « période » et `palierNote` n'a pas
+  de paramètre de cadence.
 - **Le vocabulaire d'un poste vit dans `src/constants/postes.ts`, et il a quatre registres qu'il
   ne faut pas fusionner.** `POSTE_LABEL` est l'étiquette nue (« Trajet domicile-travail »),
   `POSTE_SUBJECT` / `POSTE_EN_PHRASE` le sujet d'une phrase de restitution, et **`FORME_INSERABLE`
@@ -298,8 +316,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `occasionnels` vient de `loisirsSontLeResiduel`, qui lit **la fréquence déclarée** d'abord. Les
   libellés figés ne suffisent pas : le serveur ne marque le résiduel que sur le poste dominant et
   sur celui de la boucle mensuelle, donc pas dans le cas courant de « rarement » avec un vol, où la
-  barre des loisirs de la restitution le montre pourtant. La restitution lit cette fréquence à part,
-  en tolérant l'échec ; le suivi l'embarque dans sa lecture de l'historique.
+  barre des loisirs de la restitution le montre pourtant. La restitution la lit avec son résultat,
+  dans le même aller-retour, en tolérant l'échec (`loadFrequenceDesLoisirs`) ; le suivi l'embarque
+  dans sa lecture de l'historique.
 - **La saison côté client vit dans `src/types/saison.ts`** (`saisonDe`, `recapDeSaison`), miroir
   exact de `public.season_bounds` : saisons **météorologiques**, décembre appartenant à l'hiver
   **qui commence**. Ne jamais la dériver de `plan_cycles` ni de la cadence — `rolling_quarter`
@@ -416,11 +435,28 @@ exactement ce qui avait laissé passer le mauvais caractère.
   **ni `disabled`, ni `aria-disabled`**. Il agit (`FRONT-QUESTIONNAIRE.md` §2.6, il demande ce qui manque), donc il ne
   s'annonce pas indisponible ; et sur web, `aria-disabled` réécrit depuis `disabled` pose l'attribut
   natif, qui le rendrait inerte au clic comme au clavier (`EXPO.md` §1.5). `disabled` reste pour ce
-  qui n'agit vraiment pas — le « C'est noté » d'une feuille incomplète, l'« Enregistrer » de
-  `/contexte`. Deux gardes derrière lui, et la seconde est voulue : `StepShell` n'appelle pas
+  qui n'agit vraiment pas — le « C'est noté » en attente de la relecture qui suit l'engagement, et
+  l'« Enregistrer » d'un `/contexte` inchangé. **Le « C'est noté » d'une intention incomplète est en
+  attente depuis le 01/10/2026** (`v1-33` D13, `ActionCommitment`) : son toucher fait apparaître sous
+  les choix « Choisis au moins un jour. » ou « Choisis une échéance. » (`ceQuiManqueALIntention`,
+  `src/types/plan.ts`), en `accentText` 600, et porte le focus sur le premier choix ;
+  `isIntentionComplete` garde toujours l'appel, dans `submit`, et « Annuler » emporte la demande avec
+  le sélecteur qu'il referme. **Incomplet, l'« Enregistrer »
+  de `/contexte` est en attente depuis le 01/10/2026** (`v1-33` P-13) : il mène à ce qui manque par
+  les ancres de `ChampsDeContexte`, que l'écran fournit lui-même, sous la ligne du questionnaire
+  (« Il manque encore … »). Deux gardes derrière lui, et la seconde est voulue : `StepShell` n'appelle pas
   `onNext` sur une étape incomplète, et `handleNext` le refuse encore (`issueDuSuivant`) — à la
   dernière étape, il vérifie **toutes** les étapes visibles, `?etape=` permettant d'y arriver avec
   un questionnaire vierge.
+- **« Envoyer » de `/feedback` suit le motif du « Suivant » en attente depuis le 01/10/2026**
+  (`v1-33` D18) : en attente sous trois caractères, ni `disabled` ni `aria-disabled` ; son toucher
+  écrit « Trois caractères au moins pour pouvoir l'envoyer. », y compris à vide, donne le focus au
+  champ et n'envoie rien. `disabled` ne reste que pendant l'envoi.
+- **Un seul bouton principal par état d'écran, y compris sur « Toi » confirmation ouverte**
+  (01/10/2026, `v1-33` §6) : « Rattacher un compte » et « Réessayer » y passent en `secondary` et
+  redeviennent principaux à la fermeture (« Annuler », retour matériel) — c'est pourquoi l'écran tient
+  la confirmation et la passe à `MonCompte` (`confirmation`, `onConfirmation`). Seul
+  `toi-confirmation.test.tsx` le garde : le parcours réel ne lit pas la couleur d'un bouton.
 - **Un groupe de cases d'option n'est qu'un arrêt de tabulation, et se parcourt aux flèches, sur
   web** (25/09/2026, `v1-29` §6.4). Ce sont des `div` à `role="radio"` et non des cases natives :
   react-native-web donnait `tabindex="0"` à chacune et ne faisait rien des flèches — dix modes, dix
@@ -448,6 +484,20 @@ exactement ce qui avait laissé passer le mauvais caractère.
   il retombe sur le document et la tabulation repart du haut de la page (25/09/2026).
   `MessageInline` s'annonce lui-même sur natif (`announceForAccessibility`), une région vivante
   n'annonçant pas son apparition sur Android.
+  **Les écrans de compte suivent la règle depuis le 01/10/2026** (`v1-33` T-4) : la saisie du code
+  prend le focus sur « Regarde tes emails » quand elle arrive après « Recevoir un code » — prop
+  `apresUnGeste` de `SaisieDuCode`, **obligatoire**, fausse pour la reprise depuis « Toi » —,
+  l'adresse revenue par « Utiliser une autre adresse » sur son titre, `/connexion/retrouver` sur le
+  titre de la phase qui arrive (jamais à la première lecture), `/compte/suppression` sur la première
+  phrase de ce qui arrive, et `MonCompte` sur la phrase de la confirmation, puis sur « C'est fait. ».
+  Gardé par la section L de `verifier-etats-export.mjs` et deux étapes du parcours réel ; les phases
+  de `/compte/suppression` et le code de `/connexion/retrouver` ne sont gardés par rien.
+- **Le focus d'un champ est une forme, pas une couleur** (01/10/2026, `v1-33` Q-12, `cadreDuChamp`
+  dans `src/components/auth/text-field.tsx`). La bordure passe à l'accent au focus comme au
+  remplissage, à la même épaisseur (`Stroke.field`) — mais gris contre vert, le changement ne tient
+  que 1,78:1, et il est nul sur un champ déjà rempli. L'anneau du navigateur reste donc et **change
+  de place** : l'`<input>` le perd, le cadre arrondi le porte (`outline: auto`). Mesuré : 21:1 sur la
+  page, 18,5:1 sur le fond du champ ; aucune boîte ne bouge. `NumericField` l'importe de là.
 - **Un bouton secondaire posé sur une carte grise ou teintée prend `onPanel`** : fond de l'écran et
   filet, au lieu du gris des panneaux. Gris sur gris, « Oui » et « Non » de la carte du point se
   lisaient comme du texte.
@@ -455,6 +505,11 @@ exactement ce qui avait laissé passer le mauvais caractère.
   référence ADEME, un code d'erreur, une clé de configuration —, jamais à une phrase adressée à la
   personne : « Ton mode n’est pas dans la liste ? Dis-le-nous. » en 12 px gris à chasse fixe se
   lisait comme une ligne de débogage (décision du 24/09/2026).
+- **Le message d'échec se lit à l'encre du texte, en graisse 600** (`MessageInline`, 01/10/2026,
+  `v1-33` T-11), corps `small` : sous « 8 chiffres, sans espace… », « Ce code ne marche pas : … »
+  avait la taille, la graisse et la couleur de l'aide, et ce qui change sous le geste ne se voyait
+  pas. Aucune couleur de verdict ; la graisse est celle de la ligne « Il manque encore … ». Le
+  succès qui passe par le même composant prend la même forme.
 - **Les espaces insécables de la ponctuation double sont posées par `ThemedText`, au rendu**
   (`src/types/typographie.ts`) : un texte les écrit avec une espace ordinaire, et un texte rendu
   hors de `ThemedText` (un `Text` nu, une carte de `api/`) ne les reçoit pas. Les dérivations de
@@ -527,6 +582,17 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `canGoBack()` est vrai. Et un écran qui dépose quelque chose pour l'écran d'arrivée doit supposer
   que celui-ci se monte **à neuf** : c'est ce qu'a oublié le premier correctif, et le plan perdait la
   feuille des rappels (`useReprendreLEngagement`).
+- **Une sortie de flux ne s'écrit jamais en `router.replace` nu : elle passe par
+  `terminerLeFlux(destination)`** (`src/lib/navigation.ts`, `v1-33` T-1, 01/10/2026). `replace` ne
+  remplace que le sommet de la pile : après un rattachement par code, le retour ramenait à « Ton
+  bilan, d'un appareil à l'autre » — la proposition de rattacher le compte qu'on venait de
+  rattacher —, puis à « Toi », puis à un second plan ; après « Me déconnecter », au plan de la session
+  quittée. `terminerLeFlux` vide la pile (`canDismiss` puis `dismissAll`) puis remplace : c'est la
+  règle de l'onboarding (`v1-11` §9.4), écrite une fois. Six sorties l'appellent — Google, les deux
+  branches du code de `/connexion/email`, `/connexion/retrouver`, « Me déconnecter » et « Revenir au
+  début ». **Un « Retour » remonte d'où l'on vient (`revenirOu`), une sortie de flux va là où le flux
+  mène.** Le parcours réel joue le retour après le rattachement et après la déconnexion. Sur le web,
+  le retour suit l'historique du navigateur : la garde se joue donc sur un onglet neuf.
 
 ### 2.11 Les écrans d'onglet : navigation, concurrence, états et mise en page
 
@@ -562,6 +628,15 @@ exactement ce qui avait laissé passer le mauvais caractère.
   nomment la cause, c'est ce qui manquait avant le 14/09. Mais le réseau est le cas d'échec **le
   plus probable en production**, et le seul où « réessaie dans un instant » est déjà toute la
   vérité. Le genre se calcule donc **une fois** et sert deux fois, la mesure et le détail.
+  **Et une erreur du serveur ne parle pas de la connexion** (`v1-33` D19, 01/10/2026). Le plan, le
+  suivi et `/contexte` disaient « Vérifie ta connexion. » à toute lecture en échec, y compris sur un
+  500. Le genre — `horsLigne` sur `status === 0`, `serveur` partout ailleurs, une promesse qui lève
+  comprise — se calcule une fois, dans la lecture (l'effet de chargement du plan,
+  `loadAssessmentHistory` / `loadAnsweredCheckins`, `lireLeContexteCourant`), et l'écran en tire sa
+  phrase (`phraseDeLaLectureEnEchec`, `src/types/lecture-en-echec.ts`). `serveur` est le repli parce
+  que « Réessaie dans un instant » reste vrai hors ligne, alors que « Vérifie ta connexion » est faux
+  dès que le réseau n'est pas en cause. **La ligne de relecture du suivi garde « … Vérifie ta
+  connexion. » quel que soit le genre** : sa phrase du serveur n'est pas encore décidée.
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Tout ce qui
   suit vit **derrière la racine**, qui levait à froid sans réseau jusqu'à C4.5 (§12.5 de `v1-13`) et
   route désormais sur la marque locale : ces écrans sont donc atteignables à froid depuis le
@@ -602,6 +677,19 @@ exactement ce qui avait laissé passer le mauvais caractère.
   sens contraire. `title`/`subtitle` (48/32) sont les tailles du handoff initial, qu'aucun écran
   n'affiche sans les surcharger. **Le kit recopie ces jetons** (`docs/design/design-system/tokens/`) :
   toucher une valeur ici impose de la recopier là-bas, dans la même PR (`v1-29` §5).
+- **Toucher l'onglet où l'on est remonte en haut de sa page, et un onglet ramène toujours à la
+  racine de sa pile** (01/10/2026, `v1-33` T-14). Le layout retenait le toucher à chaque fois, donc
+  `useScrollToTop` n'agissait jamais ; il ne le retient plus quand l'onglet est déjà à sa racine
+  (`toucherDOnglet`, `src/types/plan.ts`). **La pile se lit sur la route de l'onglet, paramètres
+  compris** (`pileDeLOnglet`) : la restitution que le questionnaire ouvre dans le suivi n'a de `state`
+  qu'à son premier changement. **Et ramener remplace la pile par sa seule racine, sans la nommer**
+  (`pileALaRacine`, posée par `ramenerALaRacine`, la racine gardant sa clé) : `navigate(onglet,
+  { screen: 'index' })` **empile** une seconde racine sous React Navigation 7 — mesuré le
+  01/10/2026, `[index, pistes, index]` et `[bilan, index]`, depuis le 07/09/2026 sans que l'adresse
+  affichée le trahisse. **Un écran d'onglet qui défile s'y abonne par un relais** qui pose la
+  remontée sous « réduire les animations » (`useScrollToTop` appelle `scrollTo({ y: 0, animated:
+  true })` en dur) — le plan et le suivi. Les écrans empilés — les pistes, un bilan — ne le reçoivent
+  jamais (`isFirst`) : le toucher les ramène à la racine.
 - Le wizard du bilan (`src/app/bilan/index.tsx` + `src/components/bilan/steps/*`) dérive
   entièrement sa navigation ("Étape N sur M", saut conditionnel d'étapes) de l'état courant
   des réponses via `isStepVisible`/`nextStep`/`previousStep`/`isStepComplete` dans

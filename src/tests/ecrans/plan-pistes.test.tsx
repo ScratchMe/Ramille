@@ -100,8 +100,10 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
+// Le passage de la pile du plan, sous ses vrais noms — ce double portait `retirer` et `prendre`, que
+// le passage ne porte pas (relevé le 01/10/2026) ; l'écran n'en lit que `deposer`.
 jest.mock('@/app/(tabs)/plan/_layout', () => ({
-  usePassageDEngagement: () => ({ deposer: jest.fn(), retirer: jest.fn(), prendre: jest.fn() }),
+  usePassageDEngagement: () => ({ deposer: jest.fn(), reprendre: jest.fn(() => null), aMontrer: jest.fn(() => false) }),
 }));
 
 jest.mock('expo-router', () => ({

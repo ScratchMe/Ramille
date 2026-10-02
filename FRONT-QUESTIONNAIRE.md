@@ -47,6 +47,19 @@ voyage est en `FRONT.md` §1.
   `if a.commute_second_mode_used and a.commute_second_mode is not null`, où `null` se comporte
   **exactement comme `false`**. D'où un `?? false` à l'insert, inatteignable par construction et
   écrit quand même, le typecheck étant le seul garde qui voie cette dérive.
+- **Les vols et les longs trajets ont suivi le 01/10/2026** (`v1-33` D1) : ils arrivaient répondus
+  « 0 », en vert plein, et le profil pressé traversait le poste souvent le plus lourd sans un toucher.
+  Le total des vols est `number | null` côté client, `null` au départ, et `manqueDeLEtape` le réclame
+  (« le nombre de vols », question du titre, jamais marquée) ; la colonne reste `not null default 0`,
+  d'où un `?? 0` inatteignable à l'insert. Les longs trajets s'ouvrent par « Hors avion, fais-tu des
+  trajets de plus de 300 km sur une année type ? » : « Non » écrit trois zéros, « Oui » ouvre les
+  trois séries sans puce cochée et réclame **un** trajet ; une série laissée vide vaut zéro, d'où un
+  `?? 0` **atteignable** cette fois. La réponse se dérive des compteurs (`reponseAuxLongsTrajets`)
+  **plus** le « Oui » qu'ils ne savent pas dire, tenu par l'écran hors de `BilanAnswers`
+  (`HorsColonnes` — un champ de plus ferait refuser l'insert) et passé à `manqueDeLEtape`, qui
+  l'exige au typecheck : un écran qui n'a rien hors des colonnes passe `RIEN_HORS_COLONNES`. Il n'est
+  pas dans le brouillon : un questionnaire quitté sur « Oui » sans trajet rouvre la question. Un
+  brouillon d'avant ce changement porte des `0` : ce sont des réponses.
 - **Une précision s'ouvre sous l'option qu'elle décrit, et la dernière exception est tombée**
   (`v1-16` §3). La taille du covoiturage du trajet quotidien vivait en tête de l'écran **suivant**,
   alors que ses deux jumelles de C3.5 (sorties, longs trajets) s'ouvrent sous l'option choisie :
@@ -104,6 +117,11 @@ voyage est en `FRONT.md` §1.
     ni le préremplissage d'un re-bilan ni un brouillon relu n'y passent — une précision qu'ils font
     apparaître ne fait rien défiler. « Voir les autres modes » ne défile pas : ce qu'il révèle est
     sous le doigt.
+  **Et le défilement de la plateforme est borné au contenu au moment où il part**, alors qu'un dépli
+  part de zéro : sur une étape qui tenait dans la zone (« Oui » de B1.6, « Oui » des longs trajets),
+  la zone ne remontait pas, la cible calculée étant pourtant juste (01/10/2026). `StepShell` réserve
+  la hauteur finale (`minHeight`, depuis la hauteur **naturelle** : `flexGrow` étire le contenu à la
+  zone) le temps de l'ouverture ; garde B6 bis, section K de `verifier-etats-export.mjs`.
 - **Un filet en haut du pied dit qu'il y a une suite** (`suiteSousLePied`, `v1-31`, décision 3) :
   le trait de la bande haute (`border`, un filet), quand le contenu continue dessous au-delà de sa
   marge basse de 24. Il ne dit pas ce qui manque. Relu au défilement, à la taille du contenu et à
@@ -131,3 +149,19 @@ voyage est en `FRONT.md` §1.
   séparateur est ignoré sans jeter ses chiffres. Et un « 0 » saisi n'est pas une distance — la
   colonne porte `check (commute_distance_km > 0)`, donc la complétude de l'étape et l'insert
   lisent la **même** définition, `distanceDomicileTravailKm`.
+- **Le retour matériel d'Android recule d'une étape** (`useRetourVersLaPhasePrecedente`, 01/10/2026,
+  `v1-33` Q-4) : la même action que « Retour » quand une étape visible est derrière ; `null` sur la
+  première étape et sur l'écran de reprise, où le retour passe à la navigation ; et **pendant le
+  calcul, l'appui est consommé sans rien faire** — le laisser passer reculerait la pile sous une
+  soumission qui continue. Une feuille ouverte garde son retour (`EXPO.md` §1.7). L'onboarding passe
+  par le même crochet.
+- **Une indication se lit avant les réponses**, entre le titre et les choix — B1.1 l'avait après
+  (`v1-33` Q-10). **Et le lien « Ton mode n'est pas dans la liste ? » se rend sous la liste qu'il
+  complète** (Q-8) : sous « Lequel ? » sur B1.6, et seulement sur « Oui » ; sous les modes et « Voir
+  les autres modes » sur les loisirs ; à 8, hors du bloc où mène « Il manque encore … ».
+- **Une forme par fonction** (`v1-33` Q-12, T-20) : deux séries de nombres prennent la même forme
+  (la pilule, pour les vols), et le tableau rayon / style est dans la fiche de `Chip` du kit. Le
+  sous-titre d'une question sous le titre d'étape lit `TypeScale.question` (22/28).
+- **Le champ de distance vide ne montre rien dedans** (01/10/2026, `v1-33` D8) : le « 0 » gris se
+  lisait comme une valeur, la seule que le champ refuse. L'intitulé et « km » disent ce qu'on attend,
+  le contour au repos dit qu'il y a un champ. Ne pas remettre de placeholder (`numeric-field.test.tsx`).

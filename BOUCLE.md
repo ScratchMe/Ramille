@@ -229,6 +229,15 @@ vélo ? », « En {mois}, … » pour la boucle mensuelle). Six points à conna�
   **avant** C2.1, dont `committed_question` est nul — d'où `questionDuPoint`, qui préfère toujours la
   question figée.
 
+**Quand deux points sont ouverts, l'accent de la carte va à celui qui porte la question de l'action
+engagée** (tension tranchée le 01/10/2026, `v1-33` §6) — son genre, `engagement` ou `occasion`, figé à
+la génération, **et l'action suivie aujourd'hui** (`committed_action_text`) : une question composée sur
+une action qu'on a quittée depuis ne referme plus rien, et ne prend pas l'accent. Sans engagement, avec
+un seul point ouvert, ou sans point qui porte l'action suivie, la règle du 27/08/2026 : le poste
+dominant. Depuis le 30/09/2026 la question du mois suit l'action, et celle qui refermait
+l'engagement pouvait être la grise. La dérivation est `accentDesPoints` (`src/types/checkin.ts`) ; la
+carte ne décide rien.
+
 **Un point se répond par « oui », « non » ou « sans objet », et `response_kind` est la vérité**
 (C2.4, `20260912200000_troisieme_reponse_du_point.sql`). Une semaine de congés ou un mois sans voyage
 n'ont pas de réponse honnête entre oui et non : « Non » déclenche la consolation d'échec et s'inscrit

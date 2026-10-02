@@ -16,11 +16,11 @@ import { loisirsSontLeResiduel, type LoopType } from '@/constants/postes';
 import { supabase } from '@/lib/supabase';
 import { type BilanAnswers, STATUT_DE_BILAN } from '@/types/bilan';
 import { genreDeReponse, STATUT_DU_POINT } from '@/types/checkin';
+import { genreDeLEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 import { lireLesBouclesAVenir } from '@/types/rappels';
 import {
   decisionsParSaison,
   keepLatestPerDay,
-  precedentDUnAutreJour,
   type AssessmentSnapshot,
   type CheckinRecord,
   type DecisionBrute,
@@ -39,9 +39,27 @@ import {
  */
 export type Lecture<T> = { ok: true; data: T } | { ok: false };
 
+/**
+ * Une lecture qui dit, en échec, **pourquoi** : hors ligne, ou le serveur en échec (D19 de `v1-33`,
+ * 01/10/2026). Ce sont les deux lectures dont l'échec fait l'écran d'erreur du suivi, et la phrase de
+ * cet écran ne parle de connexion qu'à qui n'en a pas (`phraseDeLaLectureEnEchec`). Le genre se
+ * calcule **ici**, sur le statut HTTP que l'appelant ne voit plus, et une seule fois (`FRONT.md` §2.11).
+ * Un succès rend exactement ce qu'il rendait ; l'échec reste un `Lecture<T>` pour qui ne lit pas le
+ * genre.
+ */
+export type LectureQuiDitPourquoi<T> = { ok: true; data: T } | { ok: false; genre: GenreDEchec };
+
+/**
+ * Le genre d'une lecture qui n'a rien rendu : son statut quand elle a une erreur, `serveur` quand elle
+ * n'a ni erreur ni données — une réponse, donc pas une coupure.
+ */
+function genreDeLaLecture(error: unknown, status: number): GenreDEchec {
+  return error ? genreDeLEchec(status) : 'serveur';
+}
+
 /** Bilans complétés, du plus ancien au plus récent — l'ordre dans lequel on lit une évolution. */
-export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapshot[]>> {
-  const { data, error } = await supabase
+export async function loadAssessmentHistory(): Promise<LectureQuiDitPourquoi<AssessmentSnapshot[]>> {
+  const { data, error, status } = await supabase
     .from('assessments')
     // Les trois postes viennent avec le total depuis C2.7 : le suivi ne montrait que le total, où un
     // effort tenu sur le trajet quotidien disparaît derrière un vol. Non nullables en base.
@@ -53,7 +71,7 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
     .eq('status', STATUT_DE_BILAN.complete)
     .order('submitted_at', { ascending: true });
 
-  if (error || !data) return { ok: false };
+  if (error || !data) return { ok: false, genre: genreDeLaLecture(error, status) };
 
   const snapshots = data.flatMap((assessment) => {
     // `assessment_results` est en 1:1 avec `assessments`, mais un bilan complété dont le
@@ -99,14 +117,14 @@ export async function loadAssessmentHistory(): Promise<Lecture<AssessmentSnapsho
  * **rien** trouvé dans son suivi, sans message d'erreur. C'est donc `response_kind` qu'on lit, et
  * l'horodatage qui borne : un point répondu sans horodatage ne sait pas se placer dans le temps.
  */
-export async function loadAnsweredCheckins(): Promise<Lecture<CheckinRecord[]>> {
-  const { data, error } = await supabase
+export async function loadAnsweredCheckins(): Promise<LectureQuiDitPourquoi<CheckinRecord[]>> {
+  const { data, error, status } = await supabase
     .from('engagement_checkins')
     .select('id, loop_type, period_label, period_start, response_kind, responded_at')
     .eq('status', STATUT_DU_POINT.repondu)
     .order('period_start', { ascending: false });
 
-  if (error || !data) return { ok: false };
+  if (error || !data) return { ok: false, genre: genreDeLaLecture(error, status) };
 
   const points = data.flatMap((checkin) => {
     const reponse = genreDeReponse(checkin.response_kind);
@@ -212,55 +230,56 @@ function unique<T>(valeur: T | T[] | null): T | null {
   return Array.isArray(valeur) ? (valeur[0] ?? null) : valeur;
 }
 
-/** Le bilan qui précède, tel que la restitution d'un re-bilan le compare. */
-export type BilanPrecedent = { submittedAt: string; totalKg: number };
-
-/**
- * Le bilan auquel on compare celui-ci : le plus récent d'un **autre jour** (C2.7, point 2 ;
- * arbitrage du 28/09/2026). Le choix vit dans `precedentDUnAutreJour` (`src/types/suivi.ts`).
- *
- * **Ce commentaire disait l'inverse jusqu'au 28/09/2026** : le prédécesseur était « choisi sur
- * `submitted_at`, jamais dans l'historique dédoublonné », pour ne pas faire dépendre la comparaison
- * du regroupement par jour de `keepLatestPerDay`. La recette web de ce jour-là a montré ce que ça
- * coûtait : un bilan refait le même jour était une correction pour le suivi, qui cachait le premier,
- * et un progrès pour la restitution, qui s'y comparait. La décision prise est que la correction
- * gagne. On ne réutilise toujours pas la liste dédoublonnée — on applique la même règle du jour.
- *
- * Dix lignes lues : assez pour franchir les corrections d'une même journée. Au-delà, on ne compare
- * rien plutôt que de chercher plus loin, et c'est sans risque — l'écran se passe très bien de la
- * comparaison, qui arrive en second temps.
- */
-export async function loadBilanPrecedent(
-  assessmentId: string
-): Promise<Lecture<BilanPrecedent | null>> {
-  const { data, error } = await supabase
-    .from('assessments')
-    .select('id, submitted_at, assessment_results(total_co2_kg_year)')
-    .eq('status', STATUT_DE_BILAN.complete)
-    .order('submitted_at', { ascending: false })
-    .limit(10);
-
-  if (error || !data) return { ok: false };
-
-  const bilans = data.flatMap((ligne) =>
-    ligne.submitted_at
-      ? [
-          {
-            id: ligne.id,
-            submittedAt: ligne.submitted_at,
-            totalKg: unique(ligne.assessment_results)?.total_co2_kg_year ?? null,
-          },
-        ]
-      : []
-  );
-  const precedent = precedentDUnAutreJour(bilans, assessmentId);
-  if (!precedent || precedent.totalKg === null) return { ok: true, data: null };
-
-  return { ok: true, data: { submittedAt: precedent.submittedAt, totalKg: precedent.totalKg } };
-}
+// **La lecture du bilan précédent n'est plus ici** (01/10/2026, audit R-4). `loadBilanPrecedent`
+// relisait, après l'affichage de la restitution, la liste que celle-ci venait déjà de lire pour la
+// place du bilan — mêmes bilans complétés, même ordre. Une seule lecture sert désormais les deux,
+// `lireLesBilansValides` (`src/lib/retrait-du-bilan.ts`), et le choix du précédent est une dérivation
+// pure, `precedentDeLaRestitution` (`src/types/suivi.ts`), qui garde ses trois règles : un **autre
+// jour** (arbitrage du 28/09/2026, la correction gagne), le bilan affiché en tête, et une recherche
+// bornée aux dix plus récents.
 
 /** Le cycle de plan qui couvrait un jour donné, avec le cap qu'il portait. */
 export type CycleDeCePour = { cycleId: string; capKg: number | null };
+
+/**
+ * Le cap d'une ligne de `plan_cycles` : `target_reduction_pct` pour cent de la baseline du poste
+ * dominant — le calcul que la restitution faisait sur le cycle courant et cette lecture sur le cycle
+ * d'alors, écrit une fois pour les deux.
+ */
+function versCycle(
+  ligne: { id: string; baseline_co2_kg_year: number | null; target_reduction_pct: number } | null
+): CycleDeCePour | null {
+  if (!ligne) return null;
+  return {
+    cycleId: ligne.id,
+    capKg:
+      ligne.baseline_co2_kg_year != null
+        ? (ligne.baseline_co2_kg_year * ligne.target_reduction_pct) / 100
+        : null,
+  };
+}
+
+/**
+ * Le cycle de plan courant, pour le palier de la restitution — le cap que `/plan` affiche déjà, figé
+ * à la génération du cycle.
+ *
+ * **Tolérante, et c'est son contrat** : un échec rend `null` comme l'absence de cycle, et l'écran ne
+ * propose alors pas de marche — il ne tombe pas pour elle. C'était une lecture écrite dans l'écran,
+ * qui attendait le résultat du bilan pour partir ; elle part désormais avec lui (audit R-4).
+ */
+export async function loadCycleCourant(): Promise<CycleDeCePour | null> {
+  const { data } = await supabase
+    .from('plan_cycles')
+    // `id` depuis C2.7 : il sert à savoir si le cycle qui couvrait le bilan précédent est **celui-ci**,
+    // auquel cas son cap a été réécrit à la soumission et le palier alors visé n'est plus
+    // connaissable (cf. `palierEstDerriere`).
+    .select('id, baseline_co2_kg_year, target_reduction_pct')
+    .order('period_start', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return versCycle(data);
+}
 
 /**
  * Le cycle qui couvrait ce jour-là, pour savoir quel palier était visé alors (C2.7, point 2).
@@ -279,14 +298,27 @@ export async function loadCycleCouvrant(jourIso: string): Promise<CycleDeCePour 
     .limit(1)
     .maybeSingle();
 
-  if (!data) return null;
-  return {
-    cycleId: data.id,
-    capKg:
-      data.baseline_co2_kg_year != null
-        ? (data.baseline_co2_kg_year * data.target_reduction_pct) / 100
-        : null,
-  };
+  return versCycle(data);
+}
+
+/**
+ * La fréquence des loisirs déclarée dans un bilan, pour nommer le résiduel des sorties rares
+ * (arbitrage du 27/09/2026, `v1-29` §6.3) : les libellés figés ne le marquent que quand il domine ou
+ * porte la boucle mensuelle, et la barre de répartition de la restitution le montre aussi quand les
+ * voyages pèsent plus — « rarement » et un vol, le cas courant.
+ *
+ * **Tolérante** : `null` sur un échec comme sur une absence, et `loisirsSontLeResiduel` retombe alors
+ * sur les libellés. Elle était un effet à part dans l'écran ; elle part désormais avec le résultat
+ * (audit R-4), et le libellé des loisirs est juste dès le premier rendu.
+ */
+export async function loadFrequenceDesLoisirs(assessmentId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('assessment_answers')
+    .select('leisure_frequency')
+    .eq('assessment_id', assessmentId)
+    .maybeSingle();
+  if (error) console.error('La fréquence des loisirs n’a pas pu être lue :', error);
+  return data?.leisure_frequency ?? null;
 }
 
 /**

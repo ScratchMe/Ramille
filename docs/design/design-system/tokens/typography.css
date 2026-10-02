@@ -15,6 +15,7 @@
   --type-body-size: 15px;     --type-body-line: 22px;
   --type-display-size: 32px;  --type-display-line: 38px;  --type-display-tracking: -0.64px;
   --type-label-size: 13px;    --type-label-line: 18px;    --type-label-tracking: 0.3px;
+  --type-question-size: 22px; --type-question-line: 28px; --type-question-tracking: -0.22px;
 
   /* ThemedText.baseSizes */
   --type-default-size: 16px;  --type-default-line: 24px;

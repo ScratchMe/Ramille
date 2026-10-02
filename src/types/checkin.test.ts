@@ -1,5 +1,6 @@
 import { RAMILLE } from '@/constants/mascotte';
 import {
+  accentDesPoints,
   COMPLEMENT_DE_MAINTIEN,
   JOURS_FRANCAIS,
   MOIS_FRANCAIS,
@@ -984,5 +985,96 @@ describe('variantePourLaPeriode', () => {
 describe('STATUT_DU_POINT', () => {
   it('porte les trois statuts du check du schéma', () => {
     expect(Object.values(STATUT_DU_POINT)).toEqual(['pending', 'answered', 'expired']);
+  });
+});
+
+/**
+ * L'accent des points ouverts suit la question de l'engagement (`v1-33` §6, tranché le 01/10/2026).
+ *
+ * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), une mutation à la fois :
+ *   - la règle d'avant seule (`return auPosteDominant` en tête) → « deux points ouverts : l'accent va à
+ *     la question de l'engagement » et « deux questions composées… l'action suivie » ;
+ *   - `occasion` oublié des genres de l'engagement → les deux mêmes : le point du mois ne porte plus
+ *     la question de l'engagement ;
+ *   - un point répondu compté parmi les ouverts (le filtre `status` retiré) → « un seul point ouvert :
+ *     la règle d'avant » ;
+ *   - le filtre par l'action suivie retiré (tout point composé est candidat) → « deux questions
+ *     composées… l'action suivie » et « une question composée sur une action quittée… » (rejouée le
+ *     soir même sur la version corrigée).
+ *
+ * **Et le soir même, l'action quittée** (contre-lecture de la PR #314) : la première version ne
+ * comparait l'action que lorsque deux points étaient composés, et un seul point composé sur une action
+ * quittée prenait l'accent. Éprouvé : la version d'avant remise → « une question composée sur une
+ * action quittée… », seul.
+ */
+describe('accentDesPoints', () => {
+  const CYCLE = 'Trajet domicile-travail (Voiture thermique)';
+  const semaine = (surcharge: Partial<Parameters<typeof accentDesPoints>[0][number]> = {}) => ({
+    status: 'pending',
+    question_kind: 'generique',
+    trip_label: CYCLE,
+    committed_action_text: null,
+    ...surcharge,
+  });
+  const mois = (surcharge: Partial<Parameters<typeof accentDesPoints>[0][number]> = {}) => ({
+    status: 'pending',
+    question_kind: 'generique',
+    trip_label: 'Voyages longue distance (Avion)',
+    committed_action_text: null,
+    ...surcharge,
+  });
+  const VOL = 'Renoncer à un vol long-courrier cette année';
+
+  it('sans engagement, l’accent suit le poste dominant — la règle d’avant', () => {
+    expect(accentDesPoints([semaine(), mois()], { libelleDuCycle: CYCLE, actionEngagee: null })).toEqual([true, false]);
+  });
+
+  // Le cas de la tension : la question du mois referme l'engagement, celle de la semaine est générique
+  // et porte sur le poste dominant. L'accent passe au mois.
+  it('deux points ouverts : l’accent va à la question de l’engagement, même hors du poste dominant', () => {
+    const points = [semaine(), mois({ question_kind: 'occasion', committed_action_text: VOL })];
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: VOL })).toEqual([false, true]);
+    // Et la semaine, quand c'est elle qui la porte.
+    const surLeTrajet = [semaine({ question_kind: 'engagement', committed_action_text: 'Vélo' }), mois()];
+    expect(accentDesPoints(surLeTrajet, { libelleDuCycle: 'Voyages longue distance (Avion)', actionEngagee: 'Vélo' })).toEqual([
+      true,
+      false,
+    ]);
+  });
+
+  it('un seul point ouvert : la règle d’avant, l’autre étant répondu', () => {
+    const points = [semaine(), mois({ question_kind: 'occasion', committed_action_text: VOL, status: 'answered' })];
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: VOL })).toEqual([true, false]);
+    const seul = [mois({ question_kind: 'occasion', committed_action_text: VOL })];
+    expect(accentDesPoints(seul, { libelleDuCycle: CYCLE, actionEngagee: VOL })).toEqual([false]);
+  });
+
+  it('un point de maintien ne porte pas la question de l’engagement', () => {
+    const points = [semaine({ question_kind: 'maintien' }), mois()];
+    expect(accentDesPoints(points, { libelleDuCycle: 'Voyages longue distance (Avion)', actionEngagee: null })).toEqual([
+      false,
+      true,
+    ]);
+  });
+
+  // Engagé sur un vol en septembre, puis « Changer d'avis » : le point du mois reste composé sur le vol,
+  // que la carte signale comme une action quittée. Il ne referme plus rien.
+  it('une question composée sur une action quittée ne prend pas l’accent : la règle d’avant', () => {
+    const points = [semaine(), mois({ question_kind: 'occasion', committed_action_text: VOL })];
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: null })).toEqual([true, false]);
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: 'Vélo' })).toEqual([true, false]);
+  });
+
+  // Deux questions composées sur une action : il a fallu changer d'action entre les deux générations.
+  // C'est celle de l'action suivie aujourd'hui qui la referme ; sans elle, la règle d'avant.
+  it('deux questions composées sur une action : l’action suivie départage, sinon la règle d’avant', () => {
+    const points = [
+      semaine({ question_kind: 'engagement', committed_action_text: 'Vélo' }),
+      mois({ question_kind: 'occasion', committed_action_text: VOL }),
+    ];
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: VOL })).toEqual([false, true]);
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: 'Vélo' })).toEqual([true, false]);
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: null })).toEqual([true, false]);
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: 'Autre chose' })).toEqual([true, false]);
   });
 });

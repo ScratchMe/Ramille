@@ -167,9 +167,10 @@ export const TypeScale = {
   /** Titre d'écran. */
   screen: { fontSize: 26, lineHeight: 32, letterSpacing: -0.26 },
   /**
-   * Chiffre saillant d'une carte : total de la restitution, cap de la saison, écart entre deux
-   * bilans. Il reste **sous** la décision dominante (32) : ce que le produit met en tête, c'est
-   * le poste sur lequel agir, pas le total.
+   * Chiffre saillant d'une carte : total de la restitution, cap de la saison. Il reste **sous**
+   * la décision dominante (32) : ce que le produit met en tête, c'est le poste sur lequel agir, pas
+   * le total. L'écart entre deux bilans n'en est pas : il se dit dans une phrase en `body` sous les
+   * barres (`v1-14` §5, `v1-33` R-10), et ce commentaire le comptait parmi eux jusqu'au 01/10/2026.
    */
   salient: { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
   /** Titre de carte : intitulé d'une action, d'un check-in. */
@@ -182,6 +183,15 @@ export const TypeScale = {
    * d'accroche de l'onboarding. Six recopies à la main jusqu'au 24/09/2026 (`v1-29` §3).
    */
   display: { fontSize: 32, lineHeight: 38, letterSpacing: -0.64 },
+  /**
+   * La question d'un bloc **sous** le titre de l'étape : la distance du trajet, celle d'une sortie, la
+   * part des vols courts — les écrans qui posent deux questions donnent à la seconde un sous-titre plus
+   * petit que le titre d'écran (`screen`, 26). Écrit trois fois à la main, dans trois étapes, jusqu'au
+   * 01/10/2026 (`v1-33`, Q-12) ; **les valeurs sont celles des trois recopies**, rien ne bouge à l'écran.
+   * Il se lit en `style` d'un `ThemedText` `subtitle` à la graisse 600, dont il remplace taille,
+   * interligne et approche.
+   */
+  question: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   /**
    * Étiquette en capitales d'une carte (« TON PREMIER PLAN », « PREMIER PAS »). `v1-11` écrivait
    * le 07/09/2026 qu'une échelle à 13 px « n'existe nulle part » : c'était vrai ce jour-là, et

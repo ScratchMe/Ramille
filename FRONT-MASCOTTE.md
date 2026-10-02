@@ -103,3 +103,11 @@ Ramille ; ce qui voyage est en `FRONT.md` §1, et le design system se lit par le
   redessiner, par la prop `tilt` : une feuille penchée regarde, une feuille droite accompagne.
   **La mascotte n'apparaît jamais à côté d'un chiffre lourd** — ni près du total, ni près d'une
   empreinte élevée : y mettre un visage serait commenter, et le produit ne commente pas.
+  **Depuis le 01/10/2026, le total suit la carte dominante** (`v1-33` D9) : au profil sans émission,
+  dont la carte porte Ramille (`bilanSansEmissions`), son voisin est donc le total — « 0 kg CO₂e »,
+  cette variante n'existant que pour un total nul. La règle tient parce que ce voisin est le
+  contraire d'un chiffre lourd ; si la borne s'élargissait un jour à « presque rien », la relire.
+  **La page introuvable n'affirme rien sur ce que la personne possède** (01/10/2026, `v1-33` D17) :
+  « Rien n'a changé de ton côté — je te ramène. » Elle disait « Ton bilan et ton plan, eux, sont
+  toujours là », fausse pour qui arrive par un lien tronqué sans en avoir jamais fait. Un test de
+  jugement l'épingle (`mascotte.test.ts` : ni « bilan », ni « plan », ni « compte »).

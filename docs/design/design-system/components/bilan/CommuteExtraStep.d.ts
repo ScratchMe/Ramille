@@ -1,6 +1,6 @@
 /** Les champs de `BilanAnswers` (le questionnaire du dépôt, miroir de `assessment_answers`) que l’étape lit ou écrit. */
 export interface CommuteExtraStepAnswers {
-  /** B1.4, lu seulement : le mode principal, retiré de la liste du second mode. */
+  /** B1.4, lu seulement : le mode principal, rappelé sous la question (« En plus de : Voiture. ») et retiré de la liste du second mode. */
   commute_mode:
     | 'voiture'
     | 'bus'

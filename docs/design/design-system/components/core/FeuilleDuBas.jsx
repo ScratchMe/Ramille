@@ -35,10 +35,13 @@ export function FeuilleDuBas({ titre, enTete = true, onFerme, voile = true, styl
     </div>
   );
   if (!voile) return feuille;
-  // Le voile est l'une des deux seules transparences du produit (`--color-scrim`) ; un appui dessus ne referme
-  // pas — c'est le geste de retour qui le fait, comme dans le dépôt.
+  // Le voile est l'une des deux seules transparences du produit (`--color-scrim`) ; un appui dessus referme,
+  // comme le geste de retour (01/10/2026) — un appui sur la feuille elle-même, non.
   return (
-    <div style={{ background: 'var(--color-scrim)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingTop: 24, ...style }}>
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget && onFerme) onFerme(); }}
+      style={{ background: 'var(--color-scrim)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingTop: 24, ...style }}
+    >
       {feuille}
     </div>
   );

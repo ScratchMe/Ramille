@@ -17,6 +17,18 @@ export interface ActionCommitmentProps {
   surLeChoix?: boolean;
   /** « Annuler » rend la main à l'appelant (la liste : la carte redevient sa ligne) — il passe devant `onCancel`. */
   onAnnuler?: () => void;
+  /**
+   * « C’est noté » a abouti, l’écran relit le plan : le sélecteur reste tel quel, « C’est noté » inactif (01/10/2026,
+   * audit P-1). Dans le dépôt, `lectures` — les lectures terminées de l’écran — dit quand il se referme ou redevient
+   * actif.
+   */
+  relecture?: boolean;
+  /**
+   * « C’est noté » a été touché sur une intention incomplète (01/10/2026, D13 de `v1-33`) : il est **en attente**, pas
+   * inactif, et sous les choix apparaît ce qui manque — « Choisis au moins un jour. » ou « Choisis une échéance. ». Dans
+   * le dépôt, c'est l'état de la demande, posé au toucher, retombé dès que l'intention est complète.
+   */
+  demande?: boolean;
   onPick?: () => void;
   onToggleDay?: (jour: number) => void;
   onTiming?: (t: string) => void;

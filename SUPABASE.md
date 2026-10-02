@@ -35,7 +35,11 @@ fonctions et les incidents propres à Ramille, et ne voyage pas. L'histoire comp
 - **`getSession()` remonte l'erreur de rafraîchissement** (`GoTrueClient.__loadSession`), donc
   « pas de session » recouvre trois situations : aucune session (créer), **jeton refusé** (ne pas
   créer — on donnerait un compte vide à qui en a un) et **panne de transport** (ne pas créer non
-  plus, ne rien reprocher, réessayer au prochain lancement).
+  plus, ne rien reprocher, réessayer au prochain lancement). **Mais pas au démarrage, mesuré le
+  01/10/2026** (`auth-js` 2.116) : sur un jeton d'accès déjà expiré dont le rafraîchissement est
+  refusé, l'initialisation retire elle-même la session (`_callRefreshToken`, `_removeSession`) avant
+  le premier `getSession()`, qui ne voit alors ni session ni erreur. Le refus s'écoute donc à
+  l'initialisation, pas à la lecture — Ramille : `v1-27` §12.27, ouvert.
 - **La création de session est un « lis puis écris », donc elle s'enveloppe dans un
   partage de promesse en vol.** Deux appels lancés dans le même rendu lisent tous les deux « pas
   de session » avant que l'un n'ait écrit : deux comptes anonymes, dont un orphelin qui consomme
@@ -83,6 +87,16 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   du `select` l'attrape.
 - **Un `42501` vient soit du privilège, soit de la RLS**, et on ne le sait pas de l'extérieur —
   ce qui rend les tests de refus faciles à écrire pour rien (`TESTING-PGTAP.md` §1.7).
+- **Une lecture qui échoue est rejouée, par défaut, et rien ne le dit.** `@supabase/postgrest-js`
+  (2.116) rejoue tout `GET`, `HEAD` ou `OPTIONS` dont le `fetch` rejette, et ses `503` et `520`,
+  trois fois, à 1, 2 puis 4 s : hors ligne, l'erreur arrive après **sept secondes**, pendant
+  lesquelles l'écran dit « Chargement… ». `createClient` le règle par `db: { retry: false }`, que
+  `supabase-js` transmet. Chez Ramille, c'est le réglage depuis le 01/10/2026 (`v1-33` R-5, P-3) :
+  mesuré sur l'export hors ligne, le plan arrivait à son écran d'erreur à 7 989 ms, il y arrive à
+  613 ms, et chaque écran porte déjà son « Réessayer ». Le coût est assumé : un raté d'une seconde
+  n'est plus absorbé, les `503` et `520` non plus. Les écritures n'ont jamais été rejouées, la
+  seconde chance de `PGRST303` est une couche au-dessous (`fetchAvecSecondeChance`), et `auth-js` a
+  son propre régime. `src/lib/supabase.test.ts` garde le réglage et sa transmission.
 
 ### 1.4 Privilèges, policies et RPC
 
@@ -534,7 +548,8 @@ ses points sont intacts côté serveur. Le troisième cas, une **panne de transp
 création (on fabriquerait le même compte orphelin pour une cause passagère) ni reproche — le
 prochain lancement réessaie, et rien ne s'affiche. La distinction est possible parce qu'`auth-js`
 remonte l'erreur de rafraîchissement dans `getSession()` (relevé dans `GoTrueClient.__loadSession`) :
-les quatre états sont atteignables, aucun n'est décoratif. L'écran `SessionRefusee` est une
+les quatre états sont atteignables, aucun n'est décoratif — **sauf `refusee` au démarrage, que la
+mesure du 01/10/2026 n'a jamais obtenu** (§1, et `v1-27` §12.27). L'écran `SessionRefusee` est une
 **surcouche** du `Stack` et non un remplacement, à la différence de `ConfigurationManquante` : ses
 deux boutons sont des navigations, et un écran rendu à la place du navigateur n'aurait aucune route
 où aller.

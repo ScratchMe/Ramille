@@ -51,7 +51,7 @@ export const PremierEcranPrerempli = () => (
     entree={{ cle: 'commute_has_trip', sens: null }}
     reponsesDonnees={0}
     manque={null}
-    notice="Tes réponses précédentes sont pré-remplies. Modifie ce qui a changé."
+    notice="Tes réponses précédentes sont préremplies. Modifie ce qui a changé."
     motDeRamille="À peu près, c’est déjà bien. Je ne vérifie rien, et personne ne relit."
     onNext={() => {}}
   >

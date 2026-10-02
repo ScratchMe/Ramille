@@ -6,7 +6,7 @@ import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatKm } from '@/lib/format';
 import { decompteDesLongsCourriers, volsCourtsApresTotal, type BilanAnswers } from '@/types/bilan';
@@ -35,17 +35,24 @@ export function FlightsStep({
   update: (patch: Partial<BilanAnswers>) => void;
 }) {
   const theme = useTheme();
-  const total = answers.flights_total_per_year;
+  // **Sans réponse, le total ne vaut rien, pas zéro** (01/10/2026, `v1-33` D1) : aucune puce n'arrive
+  // cochée, et l'étape le réclame. Les lectures chiffrées ci-dessous ne servent qu'une fois un total
+  // choisi — la seconde question ne se rend qu'à partir d'un vol.
+  const total = answers.flights_total_per_year ?? 0;
   const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (answers.flights_short_per_year ?? 0), 0);
   const questionCourts = `Sur ces ${total}, combien sont courts ?`;
-  // Où mène « Il manque encore la part de vols courts » (`v1-31` §2.5) : le sous-titre se marque.
+  // Où mène « Il manque encore le nombre de vols » (`v1-31` §2.5) : la question du titre, qui ne se
+  // marque jamais (`seMarque`), et la puce choisie ou la première.
+  const { bloc: blocDuTotal, cible: cibleDuTotal } = useAncreDuChamp('flights_total_per_year');
+  const iCibleDuTotal = optionCible(TOTAL_CHOICES.map((n) => answers.flights_total_per_year === n));
+  // Où mène « Il manque encore la part de vols courts » : le sous-titre se marque.
   const { bloc, cible, marque } = useAncreDuChamp('flights_short_per_year');
   const iCible = optionCible(shortChoices.map((n) => answers.flights_short_per_year === n));
 
   return (
     <View style={styles.container}>
-      <View style={styles.block}>
+      <View ref={blocDuTotal} style={styles.block}>
         {/* **« Combien de fois » laissait le facteur 2 au hasard** (C3.3, constat A7-7). Un
             aller-retour compte-t-il un ou deux ? Chacun répond à sa façon, sur le poste le plus
             lourd de la plupart des bilans — un vol long-courrier vaut à lui seul plus d'une année
@@ -61,14 +68,15 @@ export function FlightsStep({
           Un aller-retour compte pour deux vols.
         </ThemedText>
         <GroupeDeChoix question={QUESTION_TOTAL} style={styles.chipsWrap}>
-          {TOTAL_CHOICES.map((n) => (
+          {TOTAL_CHOICES.map((n, i) => (
             <Chip
               key={n}
+              ref={i === iCibleDuTotal ? cibleDuTotal : undefined}
               label={n === MAX_VOLS ? `${MAX_VOLS}+` : String(n)}
               // Ce qu'un lecteur d'écran entend là où l'œil lit « 10+ » (A2-9).
               accessibilityLabel={n === MAX_VOLS ? `${MAX_VOLS} vols ou plus` : undefined}
               role="radio"
-              selected={total === n}
+              selected={answers.flights_total_per_year === n}
               onPress={() =>
                 update({
                   flights_total_per_year: n,
@@ -84,12 +92,16 @@ export function FlightsStep({
         <>
           <View style={[styles.separator, { backgroundColor: theme.border }]} />
           <View ref={bloc} style={styles.block}>
-            <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={marque}>
+            <IntituleDuChamp type="subtitle" weight={600} style={TypeScale.question} marque={marque}>
               {questionCourts}
             </IntituleDuChamp>
             <ThemedText type="small" themeColor="textTertiary">
               Europe, moins de 3 h. Le reste est compté comme long-courrier.
             </ThemedText>
+            {/* **La même forme que le total, juste au-dessus** (01/10/2026, `v1-33`, Q-12) : deux séries de
+                nombres sur un même écran répondent à la même fonction — choisir un nombre —, donc elles
+                prennent le même rayon, la pilule du défaut de `Chip`. Celle-ci était à `Radius.chip` : des
+                ronds au-dessus, des carrés arrondis dessous, pour rien qui se dise. */}
             <GroupeDeChoix question={questionCourts} style={styles.row}>
               {shortChoices.map((n, i) => (
                 <Chip
@@ -99,7 +111,6 @@ export function FlightsStep({
                   role="radio"
                   selected={answers.flights_short_per_year === n}
                   onPress={() => update({ flights_short_per_year: n })}
-                  radius={Radius.chip}
                 />
               ))}
             </GroupeDeChoix>
@@ -130,7 +141,6 @@ export function FlightsStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   separator: { height: 1 },

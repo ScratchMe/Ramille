@@ -1,5 +1,6 @@
 /** Section « Mes données » — carte blanche cernée ; export et suppression, sans retenue. */
 export interface MonCompteProps {
+  /** La confirmation de suppression est ouverte — tenue par l’écran hôte, qui passe alors « Rattacher un compte » et « Réessayer » en secondaire (un seul principal). Dans le dépôt : `confirmation` et `onConfirmation(ouverte)`. */
   confirmation?: boolean;
   /** Un export ou une suppression en cours : tout se désactive, et le bouton qui travaille le dit (« Génération… », « Suppression… »). */
   occupe?: 'export' | 'suppression' | null;

@@ -35,6 +35,11 @@ export interface CarteDePisteProps {
   onTiming?: (echeance: string) => void;
   /** « Annuler ». Sur la liste (`surLeChoix`), il rend la carte à sa ligne ; sur le plan, il revient au bouton. */
   onAnnuler?: () => void;
+  /**
+   * « C’est noté » a abouti et l’écran relit le plan : le sélecteur reste, son bouton inactif (01/10/2026, audit P-1).
+   * Dans le dépôt, c’est `lectures` — les lectures terminées de l’écran — qui le dit.
+   */
+  relecture?: boolean;
   onValider?: () => void;
   onLiberer?: () => void;
 }

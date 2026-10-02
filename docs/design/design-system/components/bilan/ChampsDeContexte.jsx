@@ -2,6 +2,7 @@ import React from 'react';
 import { Chip } from '../forms/Chip.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { IntituleDuChamp, useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
+import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/bilan/champs-de-contexte.tsx — les quatre questions du contexte de mobilité, écrites
 // une fois pour deux écrans : la dernière étape du questionnaire (`ContextStep`) et l'écran autonome `/contexte`,
 // qui les repose sans resoumettre de bilan. Seule l'introduction diffère, et elle reste chez chacun.
@@ -40,9 +41,13 @@ const REPONSES_TELETRAVAIL = [
 const teletravailSePose = (trajet) =>
   trajet.commute_has_regular_trip !== false && trajet.commute_days_per_week !== null && trajet.commute_days_per_week >= 2;
 
-const QUESTION_ZONE = 'Type de zone';
-const QUESTION_TC = 'Accès aux transports en commun';
-const QUESTION_VEHICULES = 'Véhicules motorisés dans le foyer';
+// Des questions, plus des intitulés (01/10/2026, D4 de `v1-33`) ; les puces ne bougent pas.
+const QUESTION_ZONE = 'Dans quel type de zone vis-tu ?';
+const QUESTION_TC = 'Comment sont les transports en commun près de chez toi ?';
+const QUESTION_VEHICULES = 'Combien de véhicules motorisés dans ton foyer ?';
+// La ligne d'aide sous la zone, en `small` `textSecondary` : un cran au-dessus de l'intitulé tertiaire.
+const AIDE_ZONE =
+  'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un village, la campagne.';
 
 // `field` (gap `Spacing.two + 2`) et `row` (rangée, gap `Spacing.two`) de la source.
 const CHAMP = { display: 'flex', flexDirection: 'column', gap: 10 };
@@ -50,11 +55,12 @@ const RANGEE = { flexDirection: 'row', gap: 8 };
 
 // Une série : son intitulé, ses puces équiréparties au rayon `Radius.chip` (14), et son ancre. Un composant et non une
 // fonction qui rend du JSX : l'ancre est un hook.
-const SerieDuContexte = ({ champ, question, options, valeur, onChange }) => {
+const SerieDuContexte = ({ champ, question, aide, options, valeur, onChange }) => {
   const { bloc, marque } = useAncreDuChamp(champ);
   return (
     <div ref={bloc} style={CHAMP}>
       <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>{question}</IntituleDuChamp>
+      {aide && <ThemedText type="small" themeColor="textSecondary">{aide}</ThemedText>}
       <GroupeDeChoix question={question} style={RANGEE}>
         {options.map((option) => (
           <Chip key={option.value} label={option.label} accessibilityLabel={option.accessibilityLabel} role="radio"
@@ -67,12 +73,12 @@ const SerieDuContexte = ({ champ, question, options, valeur, onChange }) => {
 
 export function ChampsDeContexte({ choix, trajet, update }) {
   const questionTeletravail = 'Sur tes ' + trajet.commute_days_per_week + ' jours de trajet, combien pourrais-tu travailler depuis chez toi ?';
-  const serie = (question, options, cle) => (
-    <SerieDuContexte champ={cle} question={question} options={options} valeur={choix[cle]} onChange={(valeur) => update({ [cle]: valeur })} />
+  const serie = (question, options, cle, aide) => (
+    <SerieDuContexte champ={cle} question={question} aide={aide} options={options} valeur={choix[cle]} onChange={(valeur) => update({ [cle]: valeur })} />
   );
   return (
     <>
-      {serie(QUESTION_ZONE, CHOIX_DE_ZONE, 'zone_type')}
+      {serie(QUESTION_ZONE, CHOIX_DE_ZONE, 'zone_type', AIDE_ZONE)}
       {serie(QUESTION_TC, CHOIX_DE_TC, 'tc_access')}
       {serie(QUESTION_VEHICULES, CHOIX_DE_VEHICULES, 'household_vehicles')}
       {teletravailSePose(trajet) && serie(questionTeletravail, REPONSES_TELETRAVAIL, 'teletravail')}

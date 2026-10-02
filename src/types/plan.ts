@@ -17,6 +17,7 @@
 import { TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
 import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable, type LoopType } from '@/constants/postes';
 import { formatKg } from '@/lib/format';
+import { defilementPourMontrer } from '@/types/mouvement';
 import { sousLeRepere2050 } from '@/types/palier';
 import { laBoucleDuPointTourne } from '@/types/rappels';
 
@@ -89,8 +90,8 @@ export function intentionKindForPoste(poste: string | null): 'days' | 'timing' {
  *
  * Le repli est celui des sorties : un poste inconnu (un gabarit à venir, une ligne relue d'une
  * version antérieure) reçoit les trois échéances générales plutôt qu'aucune, sans quoi la feuille
- * d'engagement s'ouvrirait sur une liste vide et « C'est noté » resterait inactif sans dire
- * pourquoi.
+ * d'engagement s'ouvrirait sur une liste vide, et « C'est noté » réclamerait une échéance qu'on ne
+ * peut pas choisir (`ceQuiManqueALIntention`).
  */
 export function intentionTimingsForPoste(
   poste: string | null
@@ -169,6 +170,26 @@ export function isIntentionComplete(
   timing: IntentionTiming | null
 ): boolean {
   return kind === 'days' ? days.length > 0 : timing !== null;
+}
+
+/**
+ * **Ce qui manque à une intention**, dit sous les choix au toucher de « C'est noté » en attente — ou
+ * `null` quand elle est complète (D13 de `v1-33`, décidé le 01/10/2026).
+ *
+ * « C'est noté » inactif était un texte gris sur le gris du sélecteur, puis un bouton vert plein dès un
+ * choix ; le toucher avant ne faisait rien, ni bruit ni phrase (audit P-4). Le questionnaire avait
+ * résolu le même cas par l'attente qui demande (`Button.enAttente`, `v1-31`) : « C'est noté » agit, et
+ * son toucher dit ce qui manque. **La phrase se dérive de la complétude elle-même**, et non d'un
+ * second prédicat : `isIntentionComplete` reste ce qui garde l'appel, et une intention qu'il dit
+ * complète n'a rien à réclamer. Mot pour mot, les deux phrases de la décision.
+ */
+export function ceQuiManqueALIntention(
+  kind: 'days' | 'timing',
+  days: IntentionDay[],
+  timing: IntentionTiming | null
+): string | null {
+  if (isIntentionComplete(kind, days, timing)) return null;
+  return kind === 'days' ? 'Choisis au moins un jour.' : 'Choisis une échéance.';
 }
 
 // ── Ce que le plan annonce, et ce que son cap mesure (C3.8 §3) ─────────────────────────────
@@ -803,6 +824,16 @@ export type CartesDuPlan = {
   felicitation: boolean;
   /** « Estimations sur la base des facteurs ADEME… », sous les actions. */
   estimation: boolean;
+  /**
+   * « Une action par saison, une seule. C'est pas à pas qu'on tient un cap. », sous « Ton plan »
+   * (C5.3) — **jamais sur un plan à zéro action** (HANDOFF `v1-17`, A1 et planche C, 01/10/2026).
+   */
+  intro: boolean;
+  /**
+   * Le trait de temps a quelque chose à mesurer (C5.6) — l'écran le rend avec sa légende quand la
+   * période est mesurable (`progression !== null`), et seulement alors.
+   */
+  traitDeTemps: boolean;
 };
 
 /**
@@ -832,12 +863,20 @@ export type CartesDuPlan = {
  *
  * **Ce que la dérivation ne décide pas, et pourquoi** : le contenu de chaque carte (dérivé
  * ailleurs) ; l'encart orphelin, la période révolue et le rattachement — trois faits qui ne
- * s'excluent avec rien et ne se remplacent pas ; le trait de temps (`progression !== null &&
- * !premierPlan`), la carte de re-bilan (`titreDuRebilan`), ce que le cap chiffre (`cadreDuPlan`) et
- * dit (`phraseDesPistesSuffisantes`), et le lien vers les pistes — chacun a sa propre dérivation et
- * n'exclut aucune carte ; et le point lui-même, qui se rend **toujours** quand il y en a un : aucune
- * carte ne prend sa place, c'est la règle de C2.8 (le lien du rappel pointe `/plan`, masquer la
- * question y ouvrirait une notification sur un écran qui ne la porte pas).
+ * s'excluent avec rien et ne se remplacent pas ; la carte de re-bilan (`titreDuRebilan`), ce que le
+ * cap chiffre (`cadreDuPlan`) et dit (`phraseDesPistesSuffisantes`), et le lien vers les pistes —
+ * chacun a sa propre dérivation et n'exclut aucune carte ; et le point lui-même, qui se rend
+ * **toujours** quand il y en a un : aucune carte ne prend sa place, c'est la règle de C2.8 (le lien
+ * du rappel pointe `/plan`, masquer la question y ouvrirait une notification sur un écran qui ne la
+ * porte pas).
+ *
+ * **L'intro et le trait de temps y sont entrés le 01/10/2026** (audit P-5) : ils lisent les deux
+ * mêmes faits que le reste — le nombre d'actions et le premier plan —, et le plan à zéro action ne
+ * suivait pas sa planche (HANDOFF `v1-17`, C : « Ton plan » sans intro, la carte du cap avec le
+ * trait et sa légende). L'intro y annonçait « une action, une seule » au-dessus d'aucune action, et
+ * le trait y manquait toute la saison : `estPremierPlan` ne se referme que sur un engagement,
+ * impossible sans action. La raison de C5.6 — ne pas faire courir le temps sur une action pas encore
+ * choisie — ne vaut pas quand il n'y a rien à choisir.
  */
 export function cartesDuPlan({
   ouvertureDeSaison,
@@ -895,5 +934,114 @@ export function cartesDuPlan({
     encartDeContexte: avecActions && nombreDeMotsDuContexte > 0,
     felicitation: !avecActions,
     estimation: avecActions,
+    // Le principe d'un choix ne se dit qu'au-dessus de quelque chose à choisir — la même condition
+    // que l'encart et la note technique.
+    intro: avecActions,
+    // **Le canvas écrit `engagement || !premierPlan`, et la moitié `engagement` reste impliquée** : un
+    // engagement rend `estPremierPlan` faux (`saison.test.ts` l'épingle). Ce qui s'ajoute est le plan à
+    // zéro action, qui reste « premier » toute sa saison sans rien à choisir.
+    traitDeTemps: !premierPlan || !avecActions,
   };
+}
+
+/**
+ * **De combien défiler pour amener une carte du plan dans la fenêtre — dans les deux sens** (audit
+ * P-1, 01/10/2026). Positif pour descendre, négatif pour remonter, zéro quand elle y est déjà.
+ *
+ * Après « C'est noté », la carte engagée **change de place** à la relecture : au premier plan, le cap
+ * repasse devant les pistes (`pistesAvantLeCap`), et la carte qu'on venait de toucher finissait sous
+ * la barre d'onglets ; revenu de la liste après un choix, l'action choisie passe en tête des cartes,
+ * au-dessus de là où l'on avait laissé l'écran. On l'amène donc **où qu'elle soit** :
+ *
+ * - **son haut est passé sous la bande** — le bord supérieur de la fenêtre : on remonte jusqu'à lui,
+ *   la marge gardée. C'est la moitié que `defilementPourMontrer` refuse à dessein, pour un bloc qui
+ *   s'ouvre vers le bas sous le doigt ; ici la carte s'est déplacée sans geste sur elle ;
+ * - **sinon**, `defilementPourMontrer` : juste assez pour que son bas entre, sans que son haut passe
+ *   sous la bande — sur une carte plus haute que la fenêtre, c'est le haut qui gagne.
+ *
+ * Les positions se lisent depuis le haut de la fenêtre de défilement, en pixels.
+ */
+export function defilementVersLaCarte({
+  haut,
+  bas,
+  hauteurFenetre,
+  marge,
+}: {
+  haut: number;
+  bas: number;
+  hauteurFenetre: number;
+  marge: number;
+}): number {
+  if (haut < 0) return haut - marge;
+  return defilementPourMontrer({ haut, bas, hauteurFenetre, marge });
+}
+
+/**
+ * La pile d'un onglet : partielle quand elle vient d'un lien (sans `index`, l'écran de devant est
+ * alors le dernier), absente quand on ne sait rien d'elle.
+ */
+export type PileDOnglet = { index?: number; routes: readonly { name: string; key?: string }[] } | undefined;
+
+/**
+ * **La pile d'un onglet, lue sur la route que le navigateur d'onglets porte pour lui** (audit T-14,
+ * 01/10/2026) : son `state` dès qu'elle a bougé — **et, avant, les paramètres qui l'ont ouverte**.
+ *
+ * Une pile ouverte par une navigation qui nomme son écran (`{ screen: 'bilan', params }`) se construit
+ * depuis ces paramètres, et le navigateur d'onglets ne porte son `state` qu'au premier changement.
+ * C'est le chemin de la restitution : le questionnaire l'ouvre dans la pile du suivi, qui n'y a que
+ * `bilan`, sans `state` sur la route — la lire « absente », donc à sa racine, laissait la barre rouvrir
+ * la restitution au toucher de « Suivi ». Relevé par le parcours réel en écrivant cette garde.
+ */
+export function pileDeLOnglet(onglet: { state?: PileDOnglet; params?: object } | undefined): PileDOnglet {
+  if (onglet === undefined) return undefined;
+  if (onglet.state !== undefined) return onglet.state;
+  const ecran = (onglet.params as { screen?: unknown } | undefined)?.screen;
+  return typeof ecran === 'string' ? { index: 0, routes: [{ name: ecran }] } : undefined;
+}
+
+/**
+ * **Ce que fait un toucher sur un onglet** (audit T-14, 01/10/2026) : le ramener à la racine de sa
+ * pile, ou laisser faire la barre. Écrite ici parce que l'onglet du plan est le premier à la lire ;
+ * celui du suivi la lit aussi, par le même layout.
+ *
+ * **La règle du produit ne bouge pas : un onglet est un lieu, pas un signet** (retour d'appareil du
+ * 07/09/2026). Toucher « Suivi » depuis un bilan ouvert ramène au suivi, toucher « Plan » depuis la
+ * liste des pistes ramène au plan — le layout retient alors le toucher et navigue vers la racine.
+ * **Mais il le retenait toujours**, y compris sur un onglet déjà à sa racine, et c'est ce qui
+ * empêchait le geste de toute barre d'onglets : toucher l'onglet où l'on est remonte en haut de sa
+ * page. `useScrollToTop` ne remonte que sur un toucher que personne n'a retenu.
+ *
+ * « À sa racine » veut dire **la racine devant, et rien dessous** : une pile ouverte par un lien sur
+ * `/plan/pistes` ne porte que les pistes (aucun `initialRouteName` n'y remet le plan), et une pile
+ * où la racine serait revenue par-dessus d'autres écrans n'est pas à sa racine non plus — la laisser
+ * faire la ferait dépiler jusqu'à son premier écran, qui n'est pas la racine. Une pile dont on ne sait
+ * rien — ni `state`, ni écran nommé à l'ouverture (`pileDeLOnglet`) — n'a jamais quitté sa route
+ * initiale, la racine : elle y est.
+ */
+export function toucherDOnglet(pile: PileDOnglet, racine = 'index'): 'ramenerALaRacine' | 'laisserFaire' {
+  if (pile === undefined || pile.routes.length === 0) return 'laisserFaire';
+  const devant = pile.index ?? pile.routes.length - 1;
+  return devant === 0 && pile.routes[0].name === racine ? 'laisserFaire' : 'ramenerALaRacine';
+}
+
+/**
+ * **La pile d'un onglet ramené à sa racine** (audit T-14, 01/10/2026) : sa seule racine — la même route
+ * si elle y était déjà, clé comprise, pour que son écran reste monté et ne relise rien. Le layout des
+ * onglets la pose quand `toucherDOnglet` dit de ramener.
+ *
+ * **Nommer la racine (`navigate(onglet, { screen: 'index' })`), ce que le layout faisait depuis le
+ * 07/09/2026, ne la ramène pas : il l'empile.** Le routeur de piles d'Expo Router suit React Navigation
+ * 7, où `navigate` ne revient plus à un écran déjà dans la pile. Mesuré le 01/10/2026 sur le routeur
+ * réel (`renderRouter`, une sonde jetée après usage) : « Plan » touché depuis le suivi, les pistes
+ * laissées ouvertes, faisait `[index, pistes, index]` — un second plan monté par-dessus, relu de zéro,
+ * les pistes dessous —, et le premier « Suivi » après un bilan, `[bilan, index]`. Le retour d'Android
+ * redescendait ces piles, et l'onglet n'était plus jamais à sa racine au sens de `toucherDOnglet`,
+ * donc ne remontait plus jamais en haut.
+ */
+export function pileALaRacine(
+  pile: PileDOnglet,
+  racine = 'index'
+): { index: 0; routes: { name: string; key?: string }[] } {
+  const deja = pile?.routes.find((route) => route.name === racine);
+  return { index: 0, routes: [deja ?? { name: racine }] };
 }

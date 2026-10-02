@@ -3,7 +3,7 @@
 // alimentent vivent dans `src/lib/bilan-history.ts`.
 
 import { RAMILLE } from '@/constants/mascotte';
-import { MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
+import { jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint } from '@/types/checkin';
 import { POSTE_EN_PHRASE, POSTES, nomDuPoste, type LoopType, type Poste } from '@/constants/postes';
 import { formatTonnesNu } from '@/lib/format';
 import { saisonDuJour, saisonsEcouleesDepuis } from '@/types/saison';
@@ -105,6 +105,60 @@ export function precedentDUnAutreJour<T extends { id: string; submittedAt: strin
 }
 
 /**
+ * Un bilan valide (complété), tel que la restitution le lit : son identifiant, sa date de soumission
+ * et son total. `lireLesBilansValides` (`src/lib/retrait-du-bilan.ts`) les rend **du plus récent au
+ * plus ancien**, et une seule lecture sert deux décisions — la place du bilan, qui commande le lien
+ * du retrait (`placeDuBilan`), et le bilan auquel on le compare (`precedentDeLaRestitution`).
+ *
+ * `submittedAt` et `totalKg` peuvent manquer sans que la ligne soit fausse pour autant : un bilan
+ * complété porte toujours sa date (trigger `stamp_assessment_submitted_at`), mais le type de la
+ * colonne l'ignore, et un bilan dont le calcul aurait échoué n'aurait pas de résultat. La place se
+ * décide sur l'identifiant seul ; la comparaison écarte ce qui ne se compare pas.
+ */
+export type BilanValide = { id: string; submittedAt: string | null; totalKg: number | null };
+
+/** Le bilan qui précède, tel que la restitution d'un re-bilan le compare. */
+export type BilanPrecedent = { submittedAt: string; totalKg: number };
+
+/**
+ * Combien de bilans, parmi les plus récents, la recherche du précédent parcourt.
+ *
+ * **C'était la borne `limit(10)` de la lecture du précédent**, quand elle était une requête à part
+ * (jusqu'au 01/10/2026, audit R-4) : assez pour franchir les corrections d'une même journée, et
+ * au-delà on ne compare rien plutôt que de chercher plus loin — le repli sûr, l'écran se passant très
+ * bien de la comparaison. La lecture est désormais celle de la place du bilan, qui doit être entière
+ * (un bilan ancien relu doit s'y trouver, sans quoi le lien du retrait ne se rend pas) ; la borne
+ * vit donc ici, et la comparaison se comporte exactement comme avant.
+ */
+export const BILANS_PARCOURUS_POUR_LE_PRECEDENT = 10;
+
+/**
+ * Le bilan auquel la restitution compare celui-ci, choisi dans la lecture des bilans valides.
+ *
+ * Trois règles, et aucune n'est neuve — elles étaient celles de la lecture à part :
+ *   - on ne parcourt que les `BILANS_PARCOURUS_POUR_LE_PRECEDENT` plus récents, **avant** d'écarter
+ *     ceux sans date, comme le faisait la borne de la requête ;
+ *   - le choix est celui de `precedentDUnAutreJour` — un autre jour, et le premier de la liste doit
+ *     être le bilan affiché ;
+ *   - un précédent sans total ne se compare pas : `null`, jamais un zéro.
+ *
+ * **Le paramètre est une liste ordonnée du plus récent au plus ancien, et c'est son nom qui porte le
+ * contrat** (`FRONT.md` §1.1) : dans l'autre ordre, le premier ne serait pas le bilan affiché, et la
+ * comparaison se tairait sans rien dire.
+ */
+export function precedentDeLaRestitution(
+  bilansValidesDuPlusRecent: readonly BilanValide[],
+  assessmentId: string
+): BilanPrecedent | null {
+  const parcourus = bilansValidesDuPlusRecent
+    .slice(0, BILANS_PARCOURUS_POUR_LE_PRECEDENT)
+    .flatMap(({ id, submittedAt, totalKg }) => (submittedAt ? [{ id, submittedAt, totalKg }] : []));
+  const precedent = precedentDUnAutreJour(parcourus, assessmentId);
+  if (!precedent || precedent.totalKg === null) return null;
+  return { submittedAt: precedent.submittedAt, totalKg: precedent.totalKg };
+}
+
+/**
  * Le jour **local** d'un horodatage — et c'est ce que `keepLatestPerDay` regroupe (C2.7, point 7).
  *
  * Les dix premiers caractères d'un `timestamptz` sont son jour **UTC**, ce qui n'est pas le jour de
@@ -203,10 +257,15 @@ export function formatDate(iso: string): string {
   const date = new Date(iso);
   // **Le jour LOCAL, et c'est la même règle que `jourLocalDe`** : quand on date ce qu'une personne
   // a fait, c'est son calendrier qui décide. `getDate`/`getMonth`/`getFullYear` lisent le local,
-  // exactement comme le faisait `toLocaleDateString` — la sortie ne change pas d'un caractère là
-  // où l'ICU est complet.
-  const jour = String(date.getDate()).padStart(2, '0');
-  return `${jour} ${MOIS_FRANCAIS[date.getMonth()]} ${date.getFullYear()}`;
+  // exactement comme le faisait `toLocaleDateString`.
+  //
+  // **« 1er octobre 2026 », et plus « 01 octobre 2026 »** (01/10/2026, audit R-11). Le zéro devant
+  // le jour était la sortie de l'ancien `toLocaleDateString`, gardée au caractère près quand la
+  // liste des mois l'a remplacé — pas une décision. Un jour écrit devant un mois en lettres ne prend
+  // pas de zéro en français, et le premier du mois s'écrit « 1er » : c'est ce que le plan écrit déjà
+  // (« jusqu'au 1er décembre », « Répondu le 1er. »), par la même `jourDuMois`. Une seule forme de
+  // date dans le produit, donc une seule fonction pour l'irrégularité.
+  return `${jourDuMois(date.getDate())} ${MOIS_FRANCAIS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 /**
@@ -267,13 +326,19 @@ export function regimeDeRebilan(
  * **La raison de la ré-insistance est écrite, pas seulement son ton.** Une insistance qui ne dit pas
  * pourquoi n'est qu'un rappel de plus, et la spec §7 les interdit. Ici la raison ne dépend pas de la
  * personne : le référentiel a bougé sous son bilan, et son bilan garde celui de sa date.
+ *
+ * **« Un nouveau bilan », jamais « refaire »** (`v1-19` D1, appliqué ici le 01/10/2026, audit de
+ * `v1-33`) : un bilan s'**ajoute** à celui qu'on regarde, il ne l'écrase pas, et le bouton de la même
+ * carte le dit ainsi (« Faire un nouveau bilan »). La phrase gardait « en refaire un », antérieur à
+ * la décision et jamais relu. Et « préremplies » s'écrit sans trait d'union, d'une seule façon
+ * (`v1-33` §5, D3).
  */
 export function phraseDuRegimeDeRebilan(regime: RegimeDeRebilan): string | null {
   if (regime === 'aucun') return null;
   if (regime === 'proposer') {
-    return 'En faire un nouveau prend moins de temps que la première fois : tes réponses sont pré-remplies, tu ne modifies que ce qui a changé.';
+    return 'En faire un nouveau prend moins de temps que la première fois : tes réponses sont préremplies, tu ne modifies que ce qui a changé.';
   }
-  return 'Plusieurs saisons ont passé depuis. Les facteurs d’émission se mettent à jour chaque trimestre et ton bilan garde ceux de sa date : en refaire un le recalcule avec les valeurs d’aujourd’hui, même si tes trajets n’ont pas changé.';
+  return 'Plusieurs saisons ont passé depuis. Les facteurs d’émission se mettent à jour chaque trimestre et ton bilan garde ceux de sa date : un nouveau bilan prend les valeurs d’aujourd’hui, même si tes trajets n’ont pas changé.';
 }
 
 /**

@@ -3,14 +3,13 @@ import { ChoiceRow } from '../forms/ChoiceRow.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
-import { ThemedView } from '../core/ThemedView.jsx';
 // Source : src/components/bilan/steps/leisure-frequency.tsx — la fréquence des sorties du week-end, trois rangées
 // dans un groupe nommé par la question, qui est aussi le titre de l'étape.
 //
 // « Rarement » saute l'étape suivante (plus de mode, plus de distance) alors que le calcul compte toujours une
 // petite base : la ligne qui le dit s'ouvre sous cette réponse et seulement quand elle est choisie — posée sous le
-// groupe, elle se lirait comme une note sur les trois. Ses valeurs sont interpolées, jamais réécrites. Sans trajet
-// domicile-travail, la ligne d'exemples cède la place au nombre d'étapes du questionnaire.
+// groupe, elle se lirait comme une note sur les trois. Ses valeurs sont interpolées, jamais réécrites. La ligne
+// d'exemples se rend pour tous, avec ou sans trajet domicile-travail (01/10/2026, `v1-33` D7).
 
 // `OPTIONS` de la source, recopiées.
 const OPTIONS = [
@@ -26,14 +25,13 @@ const HYPOTHESES = { sortiesParSemaine: { rarement: 0.25 }, distanceSortieParDef
 // Virgule décimale écrite à la main, comme dans la source.
 const virgule = (valeur) => String(valeur).replace('.', ',');
 
-export function LeisureFrequencyStep({ answers, update, total }) {
-  const commuteSkipped = answers.commute_has_regular_trip === false;
+export function LeisureFrequencyStep({ answers, update }) {
   // Où mène « Il manque encore ta fréquence » : la question, sans recolorer le titre.
   const { bloc } = useAncreDuChamp('leisure_frequency');
   return (
     <div ref={bloc} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <ThemedText type="screenTitle">{QUESTION_FREQUENCE}</ThemedText>
-      {!commuteSkipped && <ThemedText type="small" themeColor="textTertiary">Sport, sorties, visites à la famille.</ThemedText>}
+      <ThemedText type="small" themeColor="textTertiary">Sport, sorties, visites à la famille.</ThemedText>
       <GroupeDeChoix question={QUESTION_FREQUENCE} style={{ gap: 10 }}>
         {OPTIONS.map((option) => (
           <div key={option.value} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -47,11 +45,6 @@ export function LeisureFrequencyStep({ answers, update, total }) {
           </div>
         ))}
       </GroupeDeChoix>
-      {commuteSkipped && (
-        <ThemedView type="backgroundElement" style={{ borderRadius: 16, padding: 16 }}>
-          <ThemedText type="small" style={{ lineHeight: '21px' }}>Sans trajet domicile-travail, ton bilan compte {total} étapes.</ThemedText>
-        </ThemedView>
-      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { NumericField } from '@/components/bilan/numeric-field';
 import { TitreDEtape } from '@/components/bilan/step-shell';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, TypeScale } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   afficherNombreSaisi,
@@ -90,16 +90,19 @@ export function CommuteDaysDistanceStep({
 
       {unknown ? (
         <View ref={blocDeLaDistance} style={styles.block}>
-          <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={distanceMarquee}>
+          <IntituleDuChamp type="subtitle" weight={600} style={TypeScale.question} marque={distanceMarquee}>
             {QUESTION_TRANCHE}
           </IntituleDuChamp>
           {/* **« On ajustera la précision plus tard » promettait un mécanisme qui n'existe pas**
               (C3.7, constat A12-22). Rien dans le produit ne revient demander une distance, et la
               phrase laissait attendre une relance. Ce qui existe vraiment, c'est le re-bilan — et
-              il est préremplissable, donc peu coûteux : c'est ce qu'on dit à la place. */}
+              il est préremplissable, donc peu coûteux : c'est ce qu'on dit à la place.
+
+              **« dans un nouveau bilan », jamais « en refaisant »** (01/10/2026, comme R-7 de `v1-33`, en
+              application de `v1-19` D1 ; texte à valider, `v1-33` §9) : un bilan ne se refait pas, il s'en ajoute un, qui n'efface rien. */}
           <ThemedText type="small" themeColor="textTertiary">
-            Une estimation suffit. Tu pourras donner un chiffre plus précis en refaisant ton
-            bilan : tes réponses seront préremplies.
+            Une estimation suffit. Tu pourras donner un chiffre plus précis dans un nouveau bilan :
+            tes réponses seront préremplies.
           </ThemedText>
           <GroupeDeChoix question={QUESTION_TRANCHE} style={styles.bracketList}>
             {BRACKETS.map((bracket, i) => (
@@ -145,7 +148,7 @@ export function CommuteDaysDistanceStep({
         </View>
       ) : (
         <View ref={blocDeLaDistance} style={styles.block}>
-          <IntituleDuChamp type="subtitle" weight={600} style={styles.subtitle} marque={distanceMarquee}>
+          <IntituleDuChamp type="subtitle" weight={600} style={TypeScale.question} marque={distanceMarquee}>
             Quelle distance pour un aller ?
           </IntituleDuChamp>
           <NumericField
@@ -183,7 +186,6 @@ export function CommuteDaysDistanceStep({
 const styles = StyleSheet.create({
   container: { gap: Spacing.five },
   block: { gap: Spacing.three },
-  subtitle: { fontSize: 22, lineHeight: 28, letterSpacing: -0.22 },
   separator: { height: 1 },
   bracketList: { gap: Spacing.two + 2 },
 });

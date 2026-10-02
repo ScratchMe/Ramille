@@ -42,9 +42,10 @@
 // **Arbitrage retenu le 14/09/2026 : on garde le cap du poste dominant, et on le dit.** Normaliser
 // sur le total donnerait un palier que le plan ne sait pas atteindre — les actions vivent sur un
 // poste, pas sur l'empreinte entière —, donc une marche annoncée puis démentie par l'écran
-// suivant. Ce qui change est la **phrase** : `palierNote` nomme désormais le poste (« une marche
-// à 800 kg de moins sur l'année **sur ton trajet domicile-travail** »), ce qui la rend à la fois
-// vraie et plus facile. Une marche non située se lit comme une exigence sur tout.
+// suivant. Ce qui change est la **phrase** : `palierNote` nomme désormais le poste (« Ton cap
+// pour cette saison : 800 kg de moins sur l'année **sur ton trajet domicile-travail** » — le mot
+// « cap » depuis le 01/10/2026, celui du plan, `v1-33` D12), ce qui la rend à la fois vraie et plus
+// facile. Une marche non située se lit comme une exigence sur tout.
 //
 // `nextPalier` n'a donc pas bougé : elle reçoit le cap et le retranche du total. Ce fichier ne
 // connaît pas le poste, et ne doit pas — c'est la copie qui le nomme, là où elle s'écrit.

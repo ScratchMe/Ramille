@@ -93,7 +93,7 @@ export function StepShell({
   /** Le nom du bouton, qui ne change jamais selon ce qui manque : « Suivant », ou « Voir mon bilan » à
    *  la dernière étape. Un nom qui suivrait les réponses ferait réannoncer le bouton à chaque choix. */
   nextLabel?: string;
-  /** Bandeau discret sous l'en-tête (ex. « réponses pré-remplies » lors d'un re-bilan). */
+  /** Bandeau discret sous l'en-tête (ex. « réponses préremplies » lors d'un re-bilan). */
   notice?: string;
   /**
    * Un mot de Ramille à l'entrée d'une section (C3.9). **Rendu sans `RamilleDit`, et c'est
@@ -339,6 +339,19 @@ export function StepShell({
   // rendu — le motif de la demande.
   const [reponsesVues, setReponsesVues] = useState({ etape: entree.cle, reponses: reponsesDonnees });
   if (reponsesVues.etape !== entree.cle) setReponsesVues({ etape: entree.cle, reponses: reponsesDonnees });
+
+  // **La place d'une ouverture se réserve avant de défiler** (01/10/2026). Le défilement de la
+  // plateforme est borné à la longueur du contenu **au moment où il part** : un dépli part de zéro, et
+  // sur une étape qui tenait dans la zone — le « Oui » du second mode, celui des longs trajets —, il
+  // n'y avait rien à défiler encore : `scrollTo` visait 36 px et la zone restait à 0. Le vélo de B1.4 y
+  // échappait parce que sa liste dépassait déjà de la zone. Quand la cible n'est pas encore atteignable,
+  // le contenu reçoit sa hauteur finale en `minHeight` le temps de l'ouverture, et le défilement part à
+  // la mise en page suivante — toujours pendant que le dépli grandit. La réserve tombe quand le contenu
+  // l'a rejointe, ou s'il rétrécit (l'ouverture défaite), ou en changeant d'étape.
+  const [reserve, setReserve] = useState<{ etape: BilanStepId; hauteur: number } | null>(null);
+  if (reserve !== null && reserve.etape !== entree.cle) setReserve(null);
+  const defilementDOuverture = useRef<number | null>(null);
+  const hauteurNaturelle = useRef(0);
   const suivreLOuverture = ({ depli, hauteur, borne }: Ouverture) => {
     if (reponsesVues.etape !== entree.cle || reponsesDonnees === reponsesVues.reponses) return;
     setReponsesVues({ etape: entree.cle, reponses: reponsesDonnees });
@@ -352,7 +365,15 @@ export function StepShell({
           bas: hautDuDepli + hauteur,
           ouverture: true,
         });
-        if (y !== null) defiler(y);
+        if (y === null) return;
+        if (y <= zone.current.hauteurDuContenu - zone.current.hauteur + 0.5) {
+          defiler(y);
+          return;
+        }
+        defilementDOuverture.current = y;
+        // La hauteur naturelle et non celle du contenu : `flexGrow` étire celui-ci à la zone, et une
+        // réserve comptée depuis elle ne serait jamais rejointe.
+        setReserve({ etape: entree.cle, hauteur: hauteurNaturelle.current + hauteur });
       };
       if (borne) mesurer(borne, montrer);
       else montrer(hautDuDepli);
@@ -379,7 +400,7 @@ export function StepShell({
         </View>
         <ScrollView
           ref={defilement}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, reserve !== null && { minHeight: reserve.hauteur }]}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={(evenement) => {
@@ -389,6 +410,11 @@ export function StepShell({
           onContentSizeChange={(_largeur, hauteur) => {
             zone.current.hauteurDuContenu = hauteur;
             relireLaSuite();
+            const y = defilementDOuverture.current;
+            if (y !== null && y <= hauteur - zone.current.hauteur + 0.5) {
+              defilementDOuverture.current = null;
+              defiler(y);
+            }
           }}
           onLayout={miseEnPageDeLaZone}
         >
@@ -397,6 +423,14 @@ export function StepShell({
             collapsable={false}
             onLayout={(evenement) => {
               zone.current.hautDuContenu = evenement.nativeEvent.layout.y;
+              // La hauteur que le contenu prendrait sans réserve : la sienne, plus les deux marges.
+              const naturelle = evenement.nativeEvent.layout.height + 2 * Spacing.four;
+              const retreci = naturelle < hauteurNaturelle.current - 0.5;
+              hauteurNaturelle.current = naturelle;
+              if (reserve !== null && (naturelle >= reserve.hauteur - 0.5 || retreci)) {
+                defilementDOuverture.current = null;
+                setReserve(null);
+              }
             }}
             {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}
           >

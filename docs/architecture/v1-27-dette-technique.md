@@ -1640,3 +1640,32 @@ dépôt de l'artefact lui-même. Une PR verte ne dépose rien, et rougir la CI e
 une mutation sur la CI de tout le monde. **La référence `actions/upload-artifact@v7`, elle, est
 éprouvée** : une action se télécharge à la préparation du travail, que son étape tourne ou non, et le
 travail « Parcours réel » est passé vert sur `0899229`, le premier commit qui la porte.
+
+### 12.27 L'écran « session refusée » ne s'atteint probablement jamais au démarrage (01/10/2026)
+
+**Relevé par le chantier du compte de la vague `v1-33`, en mesurant autre chose.** Sur l'export, une
+session stockée avec un jeton d'accès expiré, puis un rafraîchissement refusé
+(`400 refresh_token_not_found`) : l'app a créé une session anonyme (`POST /auth/v1/signup`). Avec huit
+coupures réseau d'abord, elle rend `indisponible`, comme prévu ; `refusee`, jamais.
+
+**La cause, lue dans la source installée** (`@supabase/auth-js` 2.116.0, `GoTrueClient`,
+`_callRefreshToken`, l. 4290-4312) : sur un refus qui n'est pas une panne de transport, et un jeton
+d'accès déjà expiré, `auth-js` appelle `_removeSession()` **pendant son initialisation**. Quand
+`ensureSession()` lit ensuite `getSession()`, il n'y a plus rien à lire : « pas de session, pas
+d'erreur », donc `absente`, donc une création. Le commentaire de tête de `src/types/session.ts`
+affirme l'inverse (« rend `{ session: null, error }` quand le rafraîchissement échoue pour de bon »)
+— c'était vrai d'une version antérieure, ou d'un chemin qui n'est pas celui du démarrage.
+
+**Ce que ça coûte** : exactement le défaut que C2.11 devait fermer — un compte vide donné à quelqu'un
+qui en a un, son bilan inatteignable autrement que par `/connexion/retrouver`. Le cas est rare (un
+jeton de rafraîchissement révoqué ou expiré côté serveur), mais il frappe une personne qui a un compte
+rattaché, donc quelqu'un qui tient à ses données.
+
+**Pourquoi ce n'est pas fait dans la PR #314** : c'est l'auth, au démarrage, et la PR portait déjà
+deux vagues. La direction : écouter l'événement `SIGNED_OUT` qu'`auth-js` émet en retirant la session
+pendant l'initialisation (`onAuthStateChange`, enregistré **avant** le premier `getSession`), ou
+relire le stockage avant l'initialisation pour savoir s'il y avait une session — puis une mutation qui
+fait tomber un test, comme toujours (`TESTING.md` §1.1). Le commentaire de `session.ts` et `COMPTE.md`
+décrivent l'intention, et c'est elle que la correction doit rétablir : ils ne bougent pas avant.
+`SUPABASE.md`, lui, affirmait le comportement d'`auth-js` ; ses deux passages portent depuis le
+01/10/2026 la réserve du démarrage.

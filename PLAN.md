@@ -43,20 +43,26 @@ choix d'écran écrit dans le SQL — qui jetait les autres leviers avant même 
 `estimate_action_savings` rend déjà toutes les actions dont le gain atteint 5 kg/an, triées, et que la
 colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage décide. Quatre points :
 
-- **Trois rangs à l'écran, pas deux** (`pistesDuPlan`, `src/types/plan.ts`) : deux cartes pleines,
-  deux cartes estompées derrière « Voir d'autres pistes · N », puis des lignes simples. Au-delà de
-  quatre cartes pleines ce n'est plus un choix qu'on présente, c'est un catalogue. Le compte est
-  **dans** le libellé du lien : un lien qui ne dit pas combien il cache n'aide pas à décider de
-  l'ouvrir. **Et les trois rangs disent l'insistance, jamais la permission** (recette du 14/09/2026,
-  §12.4, `v1-16` §5) : les lignes simples n'avaient pas de bouton, donc le plan affichait des
-  leviers chiffrés et **inatteignables**, sous une phrase qui demandait à la personne de changer sa
-  vie pour que l'app la réordonne. Elles s'ouvrent désormais en carte au toucher — `carteDaction`
-  étant une fabrique, déplier une ligne c'est l'appeler. Le classement n'a pas bougé, et une garde
-  de **partition** dans `plan.test.ts` épingle ce dont la promesse dépend : un rang qui laisserait
-  tomber une action recréerait ici, en silence, le `limit 2` que ce chantier a retiré du serveur.
-- **`actionsCount` pilote encore le disclaimer et l'état vide**, mais la phrase d'intro compte
-  désormais `enAvant.length` : elle décrit ce qui est devant, et dire « Deux actions » à un plan qui
-  en porte cinq serait faux.
+- **Deux cartes sur le plan, tout sur sa liste** (C5.2, `pistesDuPlan` et `pistesParPoste`,
+  `src/types/plan.ts`). Le plan rend les deux premières pistes en cartes pleines — l'action engagée
+  devant —, puis le lien « Voir toutes les pistes · N » vers `plan/pistes`, qui les présente
+  **toutes**, groupées par poste, dans l'ordre du rang et sans rang affiché ; le lien ne se rend que
+  s'il y a plus que les deux cartes à voir. Le compte est **dans** le libellé, et c'est le total : un
+  lien qui ne dit pas combien il mène à voir n'aide pas à décider de l'ouvrir. Ce texte a décrit
+  jusqu'au 01/10/2026 les « trois rangs » d'avant C5.2 — deux cartes pleines, deux estompées derrière
+  « Voir d'autres pistes · N », puis des lignes simples. **Ce qui en reste est la promesse, pas la
+  forme** (recette du 14/09/2026, §12.4, `v1-16` §5) : **toute piste affichée se choisit**. Les
+  lignes simples d'alors n'avaient pas de bouton, donc le plan affichait des leviers chiffrés et
+  inatteignables ; sur la liste, chaque rangée est désormais la cible qui ouvre la carte sur le choix
+  (`v1-32`). Une garde de **partition** dans `plan.test.ts` épingle ce dont la promesse dépend : un
+  groupement qui laisserait tomber une action recréerait ici, en silence, le `limit 2` que ce
+  chantier a retiré du serveur.
+- **`actionsCount` décide de ce qu'un plan à zéro action tait**, et `cartesDuPlan` en porte
+  l'essentiel (la carte du premier plan, les sorties de la carte de saison, le cap non chiffré et la
+  carte des deux lieux lisent le même fait chacune de son côté) : la félicitation à la place des cartes, ni encart de contexte ni note technique —
+  et, depuis le 01/10/2026, ni l'intro (audit P-5, HANDOFF `v1-17` planche C). **L'intro ne compte plus rien** : elle comptait `enAvant.length` jusqu'à C5.3, qui l'a
+  remplacée par une ligne fixe qui dit le principe — « Une action par saison, une seule. C'est pas à
+  pas qu'on tient un cap. » —, et ce principe n'a pas de sens au-dessus d'aucune action.
 - **`first_step` est une ligne sans chiffre qui décrit un essai**, figée sur `plan_actions` comme le
   gain, et affichée **seulement une fois l'action engagée** : avant le choix, une consigne pratique se
   lit comme une charge de plus. Elle ne chiffre rien — le gain est juste au-dessus, et
@@ -121,7 +127,8 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
 - **Les échéances dépendent du poste** (`intentionTimingsForPoste`, `src/types/plan.ts`) : « Ce
   mois-ci » n'est pas une échéance pour un vol. Les voyages ont les leurs, les trois anciennes
   restent et sont celles des sorties. Le repli d'un poste inconnu est la liste des sorties, sans
-  quoi la feuille s'ouvrirait sur rien et « C'est noté » resterait inactif sans dire pourquoi.
+  quoi la feuille s'ouvrirait sur rien, et « C'est noté » réclamerait une échéance qu'on ne peut pas
+  choisir (`ceQuiManqueALIntention`).
 - **`cadreDuPlan` décide de ce que le cap a le droit de chiffrer, et de rien d'autre depuis C5.3.**
   Un plan à **zéro action** ne chiffre pas son cap — ce n'était un cas de bord qu'avant C2.5, et
   depuis, tout cycliste et tout profil sédentaire y tombe ; la carte se rend quand même, elle est
@@ -350,6 +357,12 @@ n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et
   une action engagée et reconduite, alors que rien n'est engagé dans deux cas de production — dont le
   plan à zéro action de tout cycliste depuis C2.5, où proposer d'en choisir une promettrait une liste
   vide.
+- **« Choisir une action » referme la carte et amène la première piste du plan** dans la fenêtre
+  (`v1-33` D16, 01/10/2026) — `defilementVersLaCarte` après le rendu qui referme, posé d'un coup sous
+  « réduire les animations », le focus au geste sur le bloc de la carte. Il poussait `/plan/pistes`
+  (C5.2), dix lignes, alors que les deux cartes choisies par le plan sont juste dessous. « Choisir une
+  autre » mène toujours à la liste. Le geste n'est vérifié que par Jest : le parcours réel n'ouvre
+  jamais de saison.
 
 **Le tout premier plan dit la règle du jeu, et le trait de temps attend qu'il y ait quelque chose à
 mesurer** (C5.6, `estPremierPlan` / `ouvertureDuPremierPlan` dans `src/types/saison.ts`). On arrivait
@@ -370,11 +383,14 @@ connaître :
   lecture, un `count` en `head` dans le même `Promise.all` (règle de C5.5). Un `count` **nul** veut
   dire « pas pu lire » et se lit « s'est déjà engagée » : des deux erreurs possibles, celle qui
   montre une carte de trop coûte moins que celle qui **retire** le trait au milieu d'une saison.
-- **Le trait s'écrit `progression !== null && !premierPlan`**, et non la forme du canvas
-  `(engagement || !premierPlan)` : un engagement rend déjà le signal faux par sa deuxième condition,
-  donc la première moitié n'est exerçable par aucun cas. Un test épingle cette implication — le jour
-  où il tombe, c'est que la forme courte est redevenue fausse. La légende disparaît **avec** le
-  trait ; la période et sa fin, elles, restent.
+- **Le trait s'écrit `progression !== null && traitDeTemps`, et la condition vit dans
+  `cartesDuPlan`** (`traitDeTemps: !premierPlan || nombreDActions === 0`, depuis le 01/10/2026,
+  `v1-33` P-5). La forme du canvas `(engagement || !premierPlan)` reste redondante — un engagement
+  rend déjà le signal faux, un test l'épingle ; ce qui s'ajoute est **le plan à zéro action**, qui
+  reste « premier » toute sa saison faute de pouvoir s'engager : la raison de C5.6 — ne pas faire
+  courir le temps sur une action pas encore choisie — n'y vaut pas, il n'y a rien à choisir (HANDOFF
+  `v1-17`, planche C, qui retire aussi l'intro de ce plan : `intro`, même dérivation). La légende
+  disparaît **avec** le trait ; la période et sa fin restent.
 - **Une seule carte pour deux ouvertures** (`CarteDOuverture`, ex-`CarteDeSaison`) : le canvas décrit
   le cadre de la saison et celui du premier plan de la même façon au pixel près, donc en écrire deux
   garantirait qu'ils divergent — la leçon de `CarteDePiste` en C5.2. Ce qui change est du contenu,
@@ -405,6 +421,16 @@ arrive et se nomme, une fois. Cinq points :
   de finir ici » de « il n'y en a jamais eu ici », donc la carte se serait rendue à **tout le
   monde** — chaque installation existante, chaque appareil neuf d'un compte existant. Écart consigné
   en `v1-17` §9.
+- **La carte des deux lieux se voit une fois, puis part, « Compris » touché ou non** (tension
+  tranchée le 01/10/2026, `v1-33` §6). Elle passe à `fait` à l'instant où elle se rend, l'écran au
+  premier plan (`CarteDesDeuxLieux` et son `useFocusEffect`, qui appelle `lesDeuxLieuxSontVus`) : une
+  relecture qui la rendrait sur un plan resté derrière un autre onglet ne compte pas. Un drapeau **de
+  visite**, stocké nulle part, la retient jusqu'à ce que l'écran perde le focus
+  (`etatDuPremierParcours(etape, vueDansLaVisite)`) : elle ne disparaît pas sous les yeux, et ne revient
+  ni au focus suivant ni au lancement suivant — un retour de l'app depuis l'arrière-plan, sans
+  changement de focus, reste la même visite. Ce n'est pas une seconde marque : la marque garde ses
+  trois états. Tant qu'elle n'a pas pu se rendre (boucles illisibles, une autre carte d'ouverture
+  devant), elle reste due.
 - **Sans marque, la barre est là**, et c'est le cas à ne pas rater : appareil neuf d'un compte
   existant, session retrouvée par lien, installation d'avant le chantier. La marque autorise une
   absence, elle ne la présume jamais — et `null` recouvre aussi « pas encore lue », donc l'état de

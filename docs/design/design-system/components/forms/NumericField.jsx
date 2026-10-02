@@ -1,6 +1,8 @@
 import React from 'react';
 // Source : src/components/bilan/numeric-field.tsx — 64 de haut, contour `fieldBorder` au repos et accent une
-// fois un nombre saisi (`Stroke.field`), chiffre 28/600 à chasse égale, unité 17/24.
+// fois un nombre saisi ou au focus (`Stroke.field`), chiffre 28/600 à chasse égale, unité 17/24. Au focus,
+// l'anneau du navigateur suit le cadre, et plus l'`<input>` (`cadreDuChamp`, 01/10/2026). Vide, il ne montre rien
+// dedans : l'intitulé et l'unité disent ce qu'on attend, le contour dit qu'il y a un champ (pas de « 0 » gris).
 
 // **La virgule est un séparateur décimal, pas un caractère à jeter.** Filtrer tout ce qui
 // n'est pas un chiffre ne donnait ni erreur ni refus pour « 3,5 » : ça donnait **35**. Le
@@ -28,13 +30,14 @@ export function NumericField({ value, onChange, unit, label }) {
   // « 3, » en « 3 », et la décimale deviendrait impossible à taper.
   const [saisie, setSaisie] = React.useState(() => afficherNombreSaisi(value));
   const [valeurConnue, setValeurConnue] = React.useState(value);
+  const [focus, setFocus] = React.useState(false);
   if (value !== valeurConnue) {
     setValeurConnue(value);
     setSaisie(afficherNombreSaisi(value));
   }
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 64, borderRadius: 16, border: 'var(--stroke-field) solid ' + (saisie.length > 0 ? 'var(--color-accent)' : 'var(--color-field-border)'), background: 'var(--color-background-element)', padding: '0 20px' }}>
-      <input inputMode="decimal" aria-label={label + ', en ' + unit} placeholder="0" value={saisie}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 64, borderRadius: 16, border: 'var(--stroke-field) solid ' + (saisie.length > 0 || focus ? 'var(--color-accent)' : 'var(--color-field-border)'), outline: focus ? 'auto' : 'none', background: 'var(--color-background-element)', padding: '0 20px' }}>
+      <input inputMode="decimal" aria-label={label + ', en ' + unit} value={saisie} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
         onChange={(e) => {
           const nettoye = nettoyerSaisieNumerique(e.target.value);
           const valeur = saisieVersNombre(nettoye);

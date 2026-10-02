@@ -356,14 +356,51 @@ export const LONGUEUR_DU_CODE = 8;
 export type ContexteDuCode = 'rattachement' | 'connexion';
 
 /**
- * Ce que la frappe laisse passer : les chiffres, et rien d'autre.
+ * Les suites de chiffres d'un texte, **chacune prise en entier** — jamais un morceau d'une suite
+ * plus longue : neuf chiffres d'affilée ne sont pas un code de huit. La première forme ne lie que
+ * des chiffres d'un seul tenant, celle que les deux e-mails donnent au code (`{{ .Token }}`) ; la
+ * deuxième admet **une** espace entre deux chiffres, ce qu'une messagerie insère (« 847 924 69 »), et
+ * prend donc « 06 12 34 56 78 » en entier — dix chiffres, pas un code ; la troisième admet aussi
+ * **un** tiret (« 8479-2469 »). Les tirets passent en dernier parce qu'une date « 01-10-2026 » compte
+ * huit chiffres une fois ses tirets admis : derrière un code espacé, la règle de « la dernière suite »
+ * l'aurait prise (contre-lecture de la PR #314).
+ *
+ * **Sans assertion arrière (`(?<!…)`), et c'est exprès** : ce module est chargé au démarrage de
+ * l'app, et une expression que le moteur de Hermes refuserait lèverait à son chargement, sur
+ * Android seulement, là où aucune suite de ce dépôt ne tourne. Une suite prise en entier n'a pas
+ * besoin de bornes.
+ */
+const SUITES_D_UN_SEUL_TENANT = /\d+/g;
+const SUITES_ESPACEES = /\d(?:\s?\d)*/g;
+const SUITES_A_TIRETS = /\d(?:[\s-]?\d)*/g;
+
+/**
+ * Ce que la frappe et le collé laissent passer : le code, et rien d'autre.
  *
  * **Une espace collée avec le code est retirée, pas refusée** — les messageries en insèrent, et
  * refuser un collé qui contient le bon code ferait chercher une faute qui n'existe pas. La
  * troncature à la longueur attendue est ici et non dans le composant, pour que le collé d'un
  * code suivi de texte garde les chiffres utiles.
+ *
+ * **Un collé garde la suite de huit chiffres, pas les huit premiers chiffres** (01/10/2026, audit
+ * T-16). Le filtre seul gardait tout chiffre rencontré, puis tronquait : « Le 01/10, ton code :
+ * 84792469 » donnait « 01108479 », vérifié aussitôt et refusé — « il a expiré, ou ce n'est pas le
+ * plus récent », une cause fausse pour un code juste. Le cas n'est pas d'école : l'e-mail de
+ * rattachement nomme l'adresse **avant** le code, et une adresse porte souvent des chiffres. On
+ * cherche donc une suite d'exactement huit chiffres d'un seul tenant, et à défaut la même avec des
+ * séparateurs, les espaces avant les tirets — dans cet ordre, parce qu'une date « 01-10-2026 » compte
+ * aussi huit chiffres une fois ses tirets admis. Et c'est **la dernière** suite trouvée qui est gardée : dans les deux e-mails, le
+ * code vient après tout ce qui porte des chiffres. Le filtre d'avant ne sert qu'à défaut, et c'est
+ * lui que suit la frappe : une saisie de moins de huit chiffres rend ses chiffres, et un neuvième
+ * chiffre tapé est ignoré comme avant.
  */
 export function chiffresDuCode(saisie: string): string {
+  for (const motif of [SUITES_D_UN_SEUL_TENANT, SUITES_ESPACEES, SUITES_A_TIRETS]) {
+    const codes = (saisie.match(motif) ?? [])
+      .map((suite) => suite.replace(/\D/g, ''))
+      .filter((chiffres) => chiffres.length === LONGUEUR_DU_CODE);
+    if (codes.length > 0) return codes[codes.length - 1];
+  }
   return saisie.replace(/\D/g, '').slice(0, LONGUEUR_DU_CODE);
 }
 

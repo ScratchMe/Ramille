@@ -81,6 +81,12 @@ relais au rendu suivant.
 
 ### 1.5 `react-native-web` : ce qui ne se comporte pas comme sur natif
 
+- **La touche d'action du clavier s'écrit `enterKeyHint`, pas `returnKeyType`** : react-native-web
+  0.21 avertit que `returnKeyType` est déprécié, et React Native 0.86 traduit `enterKeyHint` sur
+  natif. Et **`blurOnSubmit={false}`**, pas `submitBehavior` : react-native-web ne lit que le premier.
+- **Une `ScrollView` qui porte un champ prend `keyboardShouldPersistTaps="handled"`** : au défaut
+  (`never`), clavier ouvert, le premier toucher sur un bouton ne fait que fermer le clavier.
+
 - **Un `<input>` enfant d'un conteneur flex a besoin de `minWidth: 0` explicite** pour pouvoir
   rétrécir sous sa largeur intrinsèque, sinon un texte voisin est recouvert ou coupé. Même famille
   pour tout enfant flex qui doit pouvoir se comprimer.
@@ -146,6 +152,16 @@ relais au rendu suivant.
   toute première image est encore à opacité nulle (`styles.hidden`), et ne rend rien. Et un
   outil qui cherche le dialogue par son rôle ne le voit pas glisser : `aria-modal`, lui, est posé
   tout de suite (lu dans la source du `Modal` de react-native-web 0.21 ; mesuré le 27/09/2026).
+- **Le piège à focus du `Modal` pose le focus à l'ouverture, sur le premier descendant qui
+  l'accepte** (react-native-web 0.21, `ModalFocusTrap`, mesuré le 01/10/2026). Un `tabindex="-1"`
+  suffit pour qu'un élément l'accepte. **Et un `Pressable` de react-native-web est toujours
+  focalisable** : son `tabIndex` l'emporte sur `focusable={false}`. Une surface qui doit recevoir un
+  toucher sans jamais recevoir le focus doit être une `View` à répondeurs.
+- **Reanimated (4.5) pose en ligne, sur web, les styles d'une vue animée, et
+  `pointerEvents: 'box-none'` en ligne n'est pas du CSS.** Une vue animée en `box-none` qui couvre
+  l'écran prend donc tous les clics : le `box-none` se met sur une `View` ordinaire, que
+  react-native-web compile en classe, et l'animation sur un enfant. Ramille :
+  `src/components/feuille-du-bas.tsx`.
 - **Les animations de disposition de reanimated (4.5) ne se comportent pas sur web comme sur
   natif**, mesuré sur un export le 27/09/2026 :
   - `entering` pose `visibility: hidden` sur l'élément jusqu'à `animationstart`, une image au moins
@@ -177,6 +193,14 @@ sur l'espace restant mais sur sa taille max-content. Une page qui gère son prop
 réclame sa largeur en hauteur sur tous les téléphones : la plafonner à une **part** de la page,
 pas à un nombre de pixels.
 
+**Un écran plein se met dans une `ScrollView` à `contentContainerStyle: { flexGrow: 1,
+justifyContent: … }`** : il garde sa mise en page à la taille courante et défile quand le contenu
+déborde. Chez Ramille, `/connexion`, `/connexion/email`, `/connexion/retrouver`, l'échec du
+démarrage, la page introuvable et `SessionRefusee` étaient centrés dans une boîte fixe et
+débordaient des deux côtés à 320 × 568, la mascotte au-dessus du haut de l'écran (`v1-33` T-2,
+01/10/2026, comparé image par image à 390 × 844 : rien n'a bougé). Un écran à phases remonte son
+cadre à chaque phase (`key`), pour que la phase qui arrive s'ouvre en haut.
+
 **En Yoga les marges ne fusionnent pas**, contrairement à CSS. Deux voisins qui portent chacun
 leur marge donnent la **somme**, pas le maximum : une `marginVertical` posée sur chaque élément
 d'une liste rend un écart double entre deux éléments et simple aux extrémités. Un écart qui doit
@@ -198,6 +222,17 @@ marge, et une frontière ne la compte qu'une fois.
   clé d'état incrémentée, l'effet qui la porte en dépendance, et un `cancelled` dans son nettoyage
   — seul le dernier lancé écrit, sans compteur de génération. Le rappel passé au hook de retour
   doit être stable (`useCallback`), sinon l'effet se réabonne à chaque rendu.
+- **Sur Android, le retour matériel d'un écran à phases recule d'une phase** — une étape, l'adresse
+  derrière le code, une confirmation ouverte —, sans quoi il quitte la route, et l'app quand la pile
+  est vide. Chez Ramille, un seul crochet le fait (`useRetourVersLaPhasePrecedente`, 01/10/2026) :
+  l'action déjà présente à l'écran, ou `null` pour laisser passer. **Un `Modal` visible prend le
+  retour avant lui** (`ReactModalHostView.kt` : la boîte de dialogue reçoit la touche et appelle
+  `onRequestClose`), donc un écran qui branche le crochet n'a pas à exclure ses feuilles. **Et un écran
+  couvert par un autre garde son écoute** : la pile le laisse monté, et le dernier abonné parle le
+  premier — souvent avant l'écran du dessus, qui n'en a pas. L'écoute ne doit donc agir qu'au premier
+  plan (`useIsFocused`). Chez Ramille, c'est le crochet qui le garde, depuis que la contre-lecture du
+  01/10/2026 a trouvé le questionnaire reculant d'une étape, caché sous `/feedback`, pendant que
+  `/feedback` restait affiché : trois appelants portaient la garde à la main, deux l'avaient oubliée.
 - **La barre d'onglets change de disposition toute seule au-delà de 768 px de large.**
   `shouldUseHorizontalLabels` (bottom-tabs) fait passer le libellé **à côté** de l'icône dès que
   la place suffit, sauf si `tabBarLabelPosition` est posé. Tout ce qui est dessiné dans le slot

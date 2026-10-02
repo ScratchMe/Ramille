@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { IntituleDuChamp, useAncreDuChamp } from '@/components/bilan/ancre-du-champ';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
+import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { REPONSES_TELETRAVAIL, teletravailSePose, type BilanAnswers, type ChampDuBilan } from '@/types/bilan';
 import {
@@ -18,10 +19,26 @@ import { optionCible } from '@/types/demande';
  * le texte au-dessus de la série et le nom de son `radiogroup` (`GroupeDeChoix`). Sans le nom, une
  * puce « 1 » s'annonçait seule, sans rien qui dise qu'elle compte des véhicules — et `/contexte`, qui
  * reprend ces séries, n'a pas l'étape du questionnaire autour pour le rappeler.
+ *
+ * **Des questions, plus des intitulés** (D4 de `v1-33`, décidé le 01/10/2026 ; audit Q-5). « Type de
+ * zone », « Accès aux transports en commun », « Véhicules motorisés dans le foyer » demandaient de se
+ * classer là où toutes les autres étapes posent une question — la spécification écrivait déjà « Dans
+ * quel type de zone vis-tu ? ». Les valeurs et les libellés des puces ne bougent pas : ni migration ni
+ * miroir. Le nom de chaque groupe suit, puisqu'il **est** la question.
  */
-const QUESTION_ZONE = 'Type de zone';
-const QUESTION_TC = 'Accès aux transports en commun';
-const QUESTION_VEHICULES = 'Véhicules motorisés dans le foyer';
+const QUESTION_ZONE = 'Dans quel type de zone vis-tu ?';
+const QUESTION_TC = 'Comment sont les transports en commun près de chez toi ?';
+const QUESTION_VEHICULES = 'Combien de véhicules motorisés dans ton foyer ?';
+
+/**
+ * **La ligne d'aide sous la zone** (D4) : « Périurbain » est un mot d'urbaniste, et cette réponse décide
+ * des actions du plan — le métro et le tram ne sont proposés qu'en zone urbaine dense (`PLAN.md` §1) —
+ * et, avec un accès limité aux transports, de la moyenne montrée à la restitution (`mobility_constrained`
+ * en zone rurale). Texte de l'audit, rendu tel quel ; sa relecture contre ces deux règles est au rapport
+ * du chantier G du 01/10/2026 — elle peut faire mal classer une ville moyenne desservie par un tram.
+ */
+const AIDE_ZONE =
+  'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un village, la campagne.';
 
 /**
  * Les quatre questions B4, rendues **une seule fois pour deux écrans** (C6.4, `v1-19` D5).
@@ -57,6 +74,7 @@ export function ChampsDeContexte({
       <SerieDuContexte
         champ="zone_type"
         question={QUESTION_ZONE}
+        aide={AIDE_ZONE}
         options={CHOIX_DE_ZONE}
         valeur={choix.zone_type}
         onChange={(value) => update({ zone_type: value })}
@@ -104,18 +122,28 @@ export function ChampsDeContexte({
 /**
  * Une série du contexte : son intitulé, ses puces, et l'ancre où mène « Il manque encore … »
  * (`v1-31` §2.5) — l'intitulé se marque, le focus va à la puce cochée ou à la première. Écrite une fois
- * pour les quatre, qui ne différaient que par leurs réponses. **Dans `/contexte`, l'ancre ne fait
- * rien** : il n'y a pas de `StepShell` autour, et cet écran ne change pas.
+ * pour les quatre, qui ne différaient que par leurs réponses. **Les deux écrans la lisent** : dans le
+ * questionnaire par `StepShell`, et dans `/contexte` depuis le 01/10/2026 (audit P-13), qui fournit les
+ * ancres lui-même — son « Enregistrer », en attente sur un contexte incomplet, mène à ce qui manque au
+ * lieu de rester désactivé sans dire pourquoi.
  */
 function SerieDuContexte<T extends string>({
   champ,
   question,
+  aide,
   options,
   valeur,
   onChange,
 }: {
   champ: ChampDuBilan;
   question: string;
+  /**
+   * Une ligne d'aide sous la question, au-dessus des puces — dans le registre des aides du
+   * questionnaire (« Un aller-retour compte pour deux vols. »), mais un cran plus lisible que
+   * l'intitulé, qui est lui-même en tertiaire : deux lignes du même gris se liraient comme un
+   * intitulé sur deux lignes.
+   */
+  aide?: string;
   options: readonly { value: T; label: string; accessibilityLabel?: string }[];
   valeur: T | null;
   onChange: (valeur: T) => void;
@@ -127,6 +155,11 @@ function SerieDuContexte<T extends string>({
       <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>
         {question}
       </IntituleDuChamp>
+      {aide && (
+        <ThemedText type="small" themeColor="textSecondary">
+          {aide}
+        </ThemedText>
+      )}
       <GroupeDeChoix question={question} style={styles.row}>
         {options.map((option, i) => (
           <Chip

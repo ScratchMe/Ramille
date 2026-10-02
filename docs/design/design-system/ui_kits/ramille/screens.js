@@ -8,9 +8,15 @@ const Phone = ({ children, dark }) => (
 );
 const Scroll = ({ children, gap = 24 }) => <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap }}>{children}</div>;
 const Foot = ({ children }) => <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>{children}</div>;
-const Bar = ({ label, value, pct, muted }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText><ThemedText type="small" weight={600}>{value}</ThemedText></div>
+// Source : `CompareRow` (src/app/(tabs)/suivi/bilan.tsx). La ligne qui est à la personne (« Toi ») est en gras et en
+// `text` ; les repères (le palier, la moyenne) sont en `textSecondary`, poids normal, et en remplissage `accentMuted`.
+// Les valeurs sont en chiffres tabulaires, comme dans le dépôt.
+const Bar = ({ label, value, pct, bold, muted }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+      <ThemedText type="small" weight={bold ? 600 : 400} themeColor={bold ? 'text' : 'textSecondary'}>{label}</ThemedText>
+      <ThemedText type="small" weight={bold ? 600 : 400} themeColor={bold ? 'text' : 'textSecondary'} style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</ThemedText>
+    </div>
     <div style={{ height: 14, borderRadius: 7, background: 'var(--color-border)' }}><div style={{ width: pct + '%', height: '100%', borderRadius: 7, background: muted ? 'var(--color-accent-muted)' : 'var(--color-accent)' }} /></div>
   </div>
 );
@@ -71,30 +77,60 @@ function Bilan({ go }) {
   );
 }
 
+// Source : src/app/(tabs)/suivi/bilan.tsx, en mode « nouveau » (la sortie du questionnaire) — recomposée le 01/10/2026
+// sur l'écran réel (audit R-12 de `v1-33`). L'ordre est celui des décisions D9 et D11 : la carte dominante, **le total
+// juste dessous** avec sa méthode et la contestation (« Un chiffre me semble faux », « Ce bilan ne me ressemble pas »),
+// puis la répartition, « Où tu te situes » et sa phrase du cap ; la fin de page ne garde que le partage et le nouveau
+// bilan, et le pied porte le seul pas suivant. « Modifier mes réponses » n'existe plus (`v1-19` D1).
+//
+// Les chiffres sont ceux que le kit portait (3,4 t, 2,1 t pour 62 %, 2,8 t), cohérents entre eux ; ce qui manquait pour
+// qu'ils se somment et pour dire le cap en est tiré : 2,1 t + 380 kg + 920 kg = 3,4 t, un cap de 420 kg (20 % du poste
+// dominant) donc un palier à 3,0 t. **Pas de barre « Repère 2050 »**
+// au-dessus de la moyenne : 3,4 t est au-dessus, et le repère n'y est qu'un gouffre (`showsTarget2050`, D10 laisse la
+// barre en relecture seulement). Le palier est en `accentMuted` comme les repères : seul « Toi » porte l'accent.
+// Aucune bannière de compte ici : elle ne se rend qu'à une session anonyme, et ce kit ne porte pas l'état de la session.
 function Restitution({ go }) {
   return (
     <Phone>
+      <BandeHaute onCompte={() => go('toi')} />
       <Scroll>
         <ThemedText type="small" themeColor="textTertiary">Ton bilan transport</ThemedText>
-        <div style={{ background: 'var(--color-background-selected)', borderRadius: 24, padding: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ background: 'var(--color-background-selected)', borderRadius: 24, padding: 22, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <ThemedText type="small" weight={600} themeColor="accentText">Le déplacement qui pèse le plus</ThemedText>
-          <ThemedText as="h1" weight={600} style={{ fontSize: 32, lineHeight: '38px', letterSpacing: '-0.64px' }}>Ton trajet domicile-travail, en voiture</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">2,1 t CO₂e par an · 62 % de ton empreinte transport</ThemedText>
+          <ThemedText type="display">Ton trajet domicile-travail en voiture thermique</ThemedText>
+          <ThemedText themeColor="textSecondary" style={{ fontSize: 16, lineHeight: '24px' }}>2,1 t CO₂e par an, soit 62 % de ton empreinte transport.</ThemedText>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <ThemedText type="small" themeColor="textTertiary">Total annuel</ThemedText>
-          <ThemedText weight={600} style={{ fontSize: 26, lineHeight: '32px' }}>3,4 t CO₂e</ThemedText>
+          <ThemedText type="small" themeColor="textTertiary">Estimation annuelle, tous déplacements</ThemedText>
+          <ThemedText type="salient" style={{ fontVariantNumeric: 'tabular-nums' }}>3,4 t CO₂e</ThemedText>
+          <BlocMethode />
+          <TextLink label="Un chiffre me semble faux" role="link" type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'flex-start' }} />
+          <TextLink label="Ce bilan ne me ressemble pas" type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'flex-start' }} />
         </div>
-        <div style={{ background: 'var(--color-background-element)', borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ThemedText type="cardTitle">Où tu te situes</ThemedText>
-          <Bar label="Toi" value="3,4 t" pct={100} />
-          <Bar label="Moyenne en France" value="2,8 t" pct={82} muted />
-          <Bar label="Repère 2050" value="0,6 t" pct={18} muted />
-          <ThemedText type="body" themeColor="textSecondary">0,6 t au-dessus de la moyenne en France.</ThemedText>
-          <ThemedText type="code" themeColor="textTertiary">source SDES 2,8 t · repère dérivé ADEME</ThemedText>
+        <div style={{ background: 'var(--color-background-element)', borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <ThemedText type="small" weight={600}>Répartition par poste</ThemedText>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Bar label="Trajet domicile-travail" value="2,1 t CO₂e" pct={62} bold />
+            <Bar label="Loisirs du week-end" value="380 kg CO₂e" pct={11} muted />
+            <Bar label="Voyages longue distance" value="920 kg CO₂e" pct={27} muted />
+          </div>
+        </div>
+        <div style={{ background: 'var(--color-background-element)', borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <ThemedText type="small" weight={600}>Où tu te situes</ThemedText>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Bar label="Toi" value="3,4 t" pct={85} bold />
+            <Bar label="Ton prochain palier" value="3,0 t" pct={75} muted />
+            <Bar label="Moyenne en France" value="2,8 t" pct={70} muted />
+          </div>
+          <ThemedText type="small" themeColor="textSecondary">Ton cap pour cette saison : 420 kg CO₂e de moins sur l’année sur ton trajet domicile-travail. Le plan qui suit propose de quoi le franchir ; 2050 se joue palier après palier.</ThemedText>
+          <ThemedText type="code" themeColor="textTertiary">SDES, données 2017 · cible 2050 : ADEME</ThemedText>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
+          <TextLink label="Partager mon bilan" type="small" weight={600} themeColor="accentText" align="center" />
+          <TextLink label="Faire un nouveau bilan" role="link" type="small" themeColor="textTertiary" align="center" onPress={() => go('bilan')} />
         </div>
       </Scroll>
-      <Foot><Button title="Voir ce que je peux faire" onPress={() => go('plan')} /><TextLink label="Modifier mes réponses" type="small" themeColor="textTertiary" align="center" onPress={() => go('bilan')} /></Foot>
+      <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', flexShrink: 0 }}><Button title="Voir ce que je peux faire" onPress={() => go('plan')} /></div>
     </Phone>
   );
 }
@@ -116,9 +152,9 @@ function Plan({ go, dark }) {
           <ActionCommitment state="idle" otherActionCommitted={state === 'committed'} />
         </ActionCard>
         <div style={{ border: '1px solid var(--color-border)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <ThemedText type="small" themeColor="textTertiary">Ton cap pour cette période</ThemedText>
+          <ThemedText type="small" weight={600} themeColor="accentText">Ton cap pour cette saison</ThemedText>
           <ThemedText type="salient">− 184 kg</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">Cadence : Automne 2026</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">par an, soit − 20 % sur ton trajet domicile-travail</ThemedText>
         </div>
       </Scroll>
       <BarreOnglets actif="plan" onChange={(t) => go(t)} />
@@ -147,7 +183,7 @@ function Suivi({ go, dark }) {
           ))}
           <ThemedText type="small" themeColor="textSecondary">Tu réponds régulièrement : c’est déjà ça qui compte.</ThemedText>
         </div>
-        <Button title="Refaire mon bilan" variant="secondary" onPress={() => go('bilan')} />
+        <Button title="Faire un nouveau bilan" variant="secondary" onPress={() => go('bilan')} />
       </Scroll>
       <BarreOnglets actif="suivi" onChange={(t) => go(t)} />
     </Phone>
@@ -158,16 +194,18 @@ function Toi({ go, dark }) {
   const [canal, setCanal] = useState('push');
   return (
     <Phone dark={dark}>
-      <Scroll gap={24}>
+      {/* L'ordre et l'écart de l'écran (`v1-33` T-15) : le compte, puis les rappels, puis « Mes données »,
+          32 entre sections. */}
+      <Scroll gap={32}>
         <TextLink label="← Retour" type="small" themeColor="textTertiary" onPress={() => go('plan')} />
         <ThemedText type="screenTitle" as="h1">Toi</ThemedText>
-        <ChoixDeRappel canal={canal} onChoisir={setCanal} />
         <div style={{ background: 'var(--color-background-element)', borderRadius: 18, padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <ThemedText type="small" weight={600}>Ton compte</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">Aucun compte : ton bilan vit sur cet appareil. Un compte sert à le retrouver ailleurs.</ThemedText>
           <GoogleButton />
           <TextLink label="Utiliser un email à la place" type="linkPrimary" align="center" />
         </div>
+        <ChoixDeRappel canal={canal} onChoisir={setCanal} />
         <MonCompte />
       </Scroll>
     </Phone>

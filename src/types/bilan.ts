@@ -119,10 +119,36 @@ export type BilanAnswers = {
   leisure_train_type: TrainType | null;
   leisure_velo_type: VeloType | null;
 
-  flights_total_per_year: number;
+  /**
+   * Le nombre de vols d'une année type — avec `null` pour **pas encore répondu** (01/10/2026,
+   * `v1-33` D1), comme `commute_second_mode_used`.
+   *
+   * Il démarrait à `0` : la puce « 0 » arrivait cochée en vert plein, « Suivant » était actif, et le
+   * profil minimal traversait le poste le plus lourd du bilan sans un toucher. Un « 0 » de trop
+   * **sous-estime** les voyages, qui décident souvent du poste dominant, donc du plan — la règle
+   * « une question à laquelle personne n'a répondu ne vaut pas Non », restée ici parce qu'elle
+   * préexistait.
+   *
+   * **La colonne reste `not null default 0`**, pour la raison de `commute_second_mode_used` : `null`
+   * décrit un questionnaire en cours, jamais un bilan — l'étape est toujours visible et le réclame.
+   * D'où un `?? 0` à l'insert, inatteignable par construction. Un brouillon écrit avant ce changement
+   * porte `0`, et il reste valide : c'est une réponse, qu'on ne distingue plus d'un défaut.
+   */
+  flights_total_per_year: number | null;
   flights_short_per_year: number | null;
-  train_long_trips_per_year: number;
-  car_long_trips_per_year: number;
+  /**
+   * Les trois compteurs des trajets de plus de 300 km (B3.3 / B3.4), avec `null` pour **sans
+   * réponse** (01/10/2026, `v1-33` D1). L'étape s'ouvre par « Hors avion, fais-tu des trajets de
+   * plus de 300 km… ? » : « Non » les met tous trois à `0`, « Oui » les laisse vides, sans puce
+   * cochée, et l'étape réclame au moins un trajet (`reponseAuxLongsTrajets`).
+   *
+   * Les colonnes restent `not null default 0` : l'insert écrit `?? 0`, et **ce repli-ci est
+   * atteignable**, à la différence de celui des vols — « Oui » puis deux trajets en train laisse
+   * l'autocar et la voiture vides, ce qui veut dire « aucun » : l'étape réclame un trajet, pas une
+   * réponse par série.
+   */
+  train_long_trips_per_year: number | null;
+  car_long_trips_per_year: number | null;
   car_long_trips_engine: CarEngine | null;
   /** Nombre de personnes dans la voiture sur un long trajet (C3.5) — 1 = seul. Partir à
    *  trois est plus courant sur 700 km qu'au quotidien, et le calcul supposait « seul »
@@ -136,7 +162,7 @@ export type BilanAnswers = {
    * personne ne choisit ni la motorisation ni le remplissage d'un autocar — ce n'est pas son
    * véhicule, donc il n'y a rien à lui demander de plus.
    */
-  coach_long_trips_per_year: number;
+  coach_long_trips_per_year: number | null;
 
   zone_type: ZoneType | null;
   tc_access: TcAccess | null;
@@ -176,13 +202,14 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
   leisure_train_type: null,
   leisure_velo_type: null,
 
-  flights_total_per_year: 0,
+  // `null` et non `0` (01/10/2026, `v1-33` D1) : personne n'a encore répondu. Cf. les champs.
+  flights_total_per_year: null,
   flights_short_per_year: null,
-  train_long_trips_per_year: 0,
-  car_long_trips_per_year: 0,
+  train_long_trips_per_year: null,
+  car_long_trips_per_year: null,
   car_long_trips_engine: null,
   car_long_trips_occupancy: null,
-  coach_long_trips_per_year: 0,
+  coach_long_trips_per_year: null,
 
   zone_type: null,
   tc_access: null,
@@ -660,7 +687,11 @@ export function normaliserReponses(reponses: BilanAnswers): BilanAnswers {
   // Voyages : la motorisation ne tient qu'à la présence d'un trajet en voiture. Rien à
   // normaliser pour la part de vols courts — `0` et `null` sont équivalents au calcul
   // (`coalesce(flights_short_per_year, 0)` côté SQL), et B3.1 écrit l'un ou l'autre.
-  if (a.car_long_trips_per_year === 0) {
+  //
+  // **Un compteur vide vaut zéro trajet** (01/10/2026, `v1-33` D1) : « Oui » aux longs trajets les
+  // laisse vides, et l'insert écrit `0` sous une série sans réponse. Une motorisation n'y décrit
+  // aucune voiture.
+  if ((a.car_long_trips_per_year ?? 0) === 0) {
     a.car_long_trips_engine = null;
     a.car_long_trips_occupancy = null;
   }
@@ -773,15 +804,84 @@ export function decompteDesLongsCourriers(longsCourriers: number): string {
  * fois la distance d'un vol court. C'est le « binaire qu'on n'a pas choisi » de `v1-16` §4.
  *
  * Un total qui change entre deux valeurs non nulles garde, lui, la réponse donnée, ramenée sous le
- * nouveau total : c'en était une.
+ * nouveau total : c'en était une. **Un total sans réponse** (`null`, 01/10/2026) est un total nul :
+ * aucune part de vols courts n'a pu y être donnée.
  */
 export function volsCourtsApresTotal(
   avant: Pick<BilanAnswers, 'flights_total_per_year' | 'flights_short_per_year'>,
   nouveauTotal: number
 ): number | null {
   if (nouveauTotal === 0) return 0;
-  if (avant.flights_total_per_year === 0 || avant.flights_short_per_year === null) return null;
+  if (!avant.flights_total_per_year || avant.flights_short_per_year === null) return null;
   return Math.min(avant.flights_short_per_year, nouveauTotal);
+}
+
+/**
+ * Ce que le questionnaire a reçu et qu'**aucune colonne ne porte** (01/10/2026, `v1-33` D1).
+ *
+ * `BilanAnswers` est un miroir exact des colonnes, et c'est ce qui permet à l'insert de le diffuser
+ * tel quel : un champ en plus ferait refuser l'insert entier par PostgREST (`src/app/bilan/index.tsx`).
+ * Une réponse d'écran sans colonne vit donc à côté, ici, tenue par l'écran du questionnaire — et
+ * `manqueDeLEtape` la reçoit, pour rester la seule source de « ce qui manque ».
+ *
+ * **Une seule aujourd'hui : le « Oui » aux longs trajets, quand les compteurs ne le disent pas.**
+ * « Oui » laisse les trois séries sans puce cochée ; sans ce drapeau, un « Oui » qu'on vient de
+ * toucher ne se distinguerait pas d'une question qu'on n'a pas encore vue. Il n'est **pas** écrit dans
+ * le brouillon (sa forme est celle de `src/lib/bilan-draft.ts`) : un questionnaire quitté sur « Oui »
+ * sans aucun trajet se rouvre sur la question, à reposer — rien n'y est perdu, puisqu'aucun compteur
+ * n'était rempli.
+ */
+export type HorsColonnes = { ouiAuxLongsTrajets: boolean };
+export const RIEN_HORS_COLONNES: HorsColonnes = { ouiAuxLongsTrajets: false };
+
+/** Les trois compteurs des longs trajets, dans l'ordre de l'écran — train, autocar, voiture. */
+function compteursDesLongsTrajets(
+  a: Pick<BilanAnswers, 'train_long_trips_per_year' | 'coach_long_trips_per_year' | 'car_long_trips_per_year'>
+): (number | null)[] {
+  return [a.train_long_trips_per_year, a.coach_long_trips_per_year, a.car_long_trips_per_year];
+}
+
+/**
+ * La réponse à « Hors avion, fais-tu des trajets de plus de 300 km sur une année type ? » — `null`
+ * tant qu'elle n'est pas donnée (01/10/2026, `v1-33` D1).
+ *
+ * **Dérivée des compteurs, et du seul « Oui » qu'ils ne savent pas dire.** Un trajet déclaré vaut
+ * « Oui » ; trois zéros valent « Non », ce que « Non » écrit — et ce qu'un re-bilan relit d'un bilan
+ * sans long trajet, comme un brouillon d'avant cette question : c'est une réponse. Trois compteurs
+ * vides valent « pas encore répondu », sauf juste après « Oui » (`HorsColonnes`). Et un mélange de vide
+ * et de zéro, sans trajet, est un « Oui » : « Non » écrit les trois, donc seul « Oui » suivi d'un « 0 »
+ * le produit — c'est ce qui le rend lisible dans un brouillon relu, où le drapeau n'est plus.
+ *
+ * Le drapeau l'emporte sur trois zéros : « Oui », puis « 0 » dans chaque série, est un « Oui » qui
+ * attend encore son trajet, pas un « Non » qu'on n'a pas touché.
+ */
+export function reponseAuxLongsTrajets(
+  a: Pick<BilanAnswers, 'train_long_trips_per_year' | 'coach_long_trips_per_year' | 'car_long_trips_per_year'>,
+  horsColonnes: HorsColonnes
+): boolean | null {
+  const compteurs = compteursDesLongsTrajets(a);
+  if (compteurs.some((n) => n !== null && n > 0)) return true;
+  if (horsColonnes.ouiAuxLongsTrajets) return true;
+  if (compteurs.every((n) => n === null)) return null;
+  return compteurs.every((n) => n === 0) ? false : true;
+}
+
+/**
+ * Ce que « Oui » ou « Non » écrit dans les trois compteurs (01/10/2026, `v1-33` D1) — à côté du
+ * drapeau de `HorsColonnes`, que l'écran pose en même temps.
+ *
+ * « Non » vaut zéro partout. « Oui » vide les trois séries, pour qu'aucune puce n'arrive cochée — un
+ * « 0 » qui resterait de « Non » serait une réponse donnée à la place de la personne, le défaut même
+ * que la question corrige. **Sauf si un trajet est déjà déclaré** : la réponse était déjà « Oui », et
+ * la toucher de nouveau n'efface rien.
+ */
+export function compteursApresLaReponse(
+  a: Pick<BilanAnswers, 'train_long_trips_per_year' | 'coach_long_trips_per_year' | 'car_long_trips_per_year'>,
+  oui: boolean
+): Partial<BilanAnswers> {
+  if (!oui) return { train_long_trips_per_year: 0, coach_long_trips_per_year: 0, car_long_trips_per_year: 0 };
+  if (compteursDesLongsTrajets(a).some((n) => n !== null && n > 0)) return {};
+  return { train_long_trips_per_year: null, coach_long_trips_per_year: null, car_long_trips_per_year: null };
 }
 
 export function distanceDomicileTravailARelire(reponses: BilanAnswers): boolean {
@@ -798,8 +898,10 @@ export function distanceDomicileTravailARelire(reponses: BilanAnswers): boolean 
  * elle, n'est pas dans ce cas : la tranche et le champ libre sous « Plus de 30 km » sont deux questions
  * posées l'une sous l'autre, donc deux champs.
  *
- * `flights_total_per_year` n'est jamais réclamé — il vaut zéro par défaut — mais il est la question
- * principale de son étape, et c'est à ce titre qu'il figure ici (`QUESTION_PRINCIPALE`).
+ * **Les longs trajets en ajoutent deux qui ne sont pas des colonnes** (01/10/2026, `v1-33` D1) :
+ * `fait_des_longs_trajets`, la question d'entrée (« Oui / Non »), qu'aucune colonne ne porte — elle se
+ * dérive des compteurs (`reponseAuxLongsTrajets`) ; et `nombre_de_longs_trajets`, le trajet qu'un
+ * « Oui » réclame, et que trois colonnes peuvent donner — la même raison que la distance du trajet.
  */
 export type ChampDuBilan =
   | 'commute_has_regular_trip'
@@ -825,6 +927,8 @@ export type ChampDuBilan =
   | 'leisure_distance_km'
   | 'flights_total_per_year'
   | 'flights_short_per_year'
+  | 'fait_des_longs_trajets'
+  | 'nombre_de_longs_trajets'
   | 'car_long_trips_engine'
   | 'car_long_trips_occupancy'
   | 'zone_type'
@@ -875,16 +979,17 @@ export const CHAMPS_DE_L_ETAPE: Record<BilanStepId, readonly ChampDuBilan[]> = {
     'leisure_distance_bracket',
     'leisure_distance_km',
   ],
-  flights: ['flights_short_per_year'],
-  long_trips: ['car_long_trips_engine', 'car_long_trips_occupancy'],
+  flights: ['flights_total_per_year', 'flights_short_per_year'],
+  long_trips: ['fait_des_longs_trajets', 'nombre_de_longs_trajets', 'car_long_trips_engine', 'car_long_trips_occupancy'],
   context: ['zone_type', 'tc_access', 'household_vehicles', 'teletravail'],
 };
 
 /**
  * La question que pose le titre de chaque étape — celle dont l'intitulé est le titre lui-même, et qui
- * ne se marque donc jamais (`seMarque`). `null` quand le titre ne porte pas de groupe : les longs
- * trajets (« Et les trajets de plus de 300 km ? » chapeaute trois séries) et le contexte, dont les
- * quatre questions ont chacune leur intitulé.
+ * ne se marque donc jamais (`seMarque`). `null` quand le titre ne porte pas de groupe : le contexte,
+ * dont les quatre questions ont chacune leur intitulé. **Les longs trajets en ont une depuis le
+ * 01/10/2026** (`v1-33` D1) : leur titre chapeautait trois séries (« Et les trajets de plus de
+ * 300 km ? ») ; il pose désormais la question d'entrée, « Oui / Non ».
  */
 export const QUESTION_PRINCIPALE: Record<BilanStepId, ChampDuBilan | null> = {
   commute_has_trip: 'commute_has_regular_trip',
@@ -894,7 +999,7 @@ export const QUESTION_PRINCIPALE: Record<BilanStepId, ChampDuBilan | null> = {
   leisure_frequency: 'leisure_frequency',
   leisure_detail: 'leisure_mode',
   flights: 'flights_total_per_year',
-  long_trips: null,
+  long_trips: 'fait_des_longs_trajets',
   context: null,
 };
 
@@ -930,8 +1035,16 @@ export function seMarque(etape: BilanStepId, champ: ChampDuBilan): boolean {
  * **`isStepComplete` en dérive**, et ce n'est pas un raffinement : deux listes de conditions
  * tenues en parallèle finiraient par diverger, et l'écart serait silencieux — un « Suivant » qui
  * avance sur une étape incomplète, ou une ligne qui réclame un champ déjà rempli.
+ *
+ * **`horsColonnes` est obligatoire, et c'est voulu** (01/10/2026) : c'est ce que l'écran a reçu sans
+ * colonne pour l'écrire — le « Oui » aux longs trajets. Un appel qui l'oublierait réclamerait « une
+ * réponse » sous un « Oui » coché ; le typecheck est ce qui empêche de l'oublier.
  */
-export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): CeQuiManque | null {
+export function manqueDeLEtape(
+  step: BilanStepId,
+  answers: BilanAnswers,
+  horsColonnes: HorsColonnes
+): CeQuiManque | null {
   const manque = (champ: ChampDuBilan, phrase: string): CeQuiManque => ({ champ, phrase });
   switch (step) {
     case 'commute_has_trip':
@@ -1032,18 +1145,29 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): CeQuiM
         return manque('leisure_distance_km', 'la distance d’une sortie');
       return null;
     case 'flights':
+      // **Réclamé, et non plus supposé à zéro** (01/10/2026, `v1-33` D1) : c'est la question du titre,
+      // donc elle ne se marque pas (`seMarque`), mais elle se demande comme les autres.
+      if (answers.flights_total_per_year === null) return manque('flights_total_per_year', 'le nombre de vols');
       if (answers.flights_total_per_year > 0 && answers.flights_short_per_year === null)
         return manque('flights_short_per_year', 'la part de vols courts');
       return null;
-    case 'long_trips':
-      if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_engine === null)
+    case 'long_trips': {
+      // La question d'entrée d'abord, puis le trajet qu'un « Oui » annonce (01/10/2026, `v1-33` D1) —
+      // au moins un, sur l'une des trois séries : une série laissée vide vaut zéro.
+      const reponse = reponseAuxLongsTrajets(answers, horsColonnes);
+      if (reponse === null) return manque('fait_des_longs_trajets', 'une réponse');
+      if (reponse && !compteursDesLongsTrajets(answers).some((n) => n !== null && n > 0))
+        return manque('nombre_de_longs_trajets', 'le nombre de trajets');
+      const enVoiture = answers.car_long_trips_per_year ?? 0;
+      if (enVoiture > 0 && answers.car_long_trips_engine === null)
         return manque('car_long_trips_engine', 'la motorisation');
       // C3.5 : le calcul supposait « seul » sur 700 km, alors que c'est le trajet qu'on partage
       // le plus. Obligatoire comme la motorisation juste au-dessus, et pour la même raison —
       // déclarer des longs trajets en voiture, c'est en déclarer deux choses.
-      if (answers.car_long_trips_per_year > 0 && answers.car_long_trips_occupancy === null)
+      if (enVoiture > 0 && answers.car_long_trips_occupancy === null)
         return manque('car_long_trips_occupancy', 'le nombre de personnes dans la voiture');
       return null;
+    }
     case 'context':
       if (answers.zone_type === null) return manque('zone_type', 'ton type de zone');
       if (answers.tc_access === null) return manque('tc_access', 'l’accès aux transports en commun');
@@ -1060,8 +1184,8 @@ export function manqueDeLEtape(step: BilanStepId, answers: BilanAnswers): CeQuiM
 }
 
 // Dérivé, jamais réécrit — cf. `manqueDeLEtape`.
-export function isStepComplete(step: BilanStepId, answers: BilanAnswers): boolean {
-  return manqueDeLEtape(step, answers) === null;
+export function isStepComplete(step: BilanStepId, answers: BilanAnswers, horsColonnes: HorsColonnes): boolean {
+  return manqueDeLEtape(step, answers, horsColonnes) === null;
 }
 
 /** Ce que fait « Suivant » (ou « Voir mon bilan ») sur une étape, pour ces réponses. */
@@ -1089,11 +1213,15 @@ export type IssueDuSuivant =
  * « Retour » — plutôt que de refuser en silence : le « Suivant » en attente y dira ce qui manque, là où
  * un refus muet laisserait un bouton qui ne fait rien.
  */
-export function issueDuSuivant(step: BilanStepId, answers: BilanAnswers): IssueDuSuivant {
-  if (!isStepComplete(step, answers)) return { genre: 'attendre' };
+export function issueDuSuivant(
+  step: BilanStepId,
+  answers: BilanAnswers,
+  horsColonnes: HorsColonnes
+): IssueDuSuivant {
+  if (!isStepComplete(step, answers, horsColonnes)) return { genre: 'attendre' };
   const suivante = nextStep(step, answers);
   if (suivante !== null) return { genre: 'passer', vers: suivante };
-  const incomplete = visibleSteps(answers).find((etape) => !isStepComplete(etape, answers));
+  const incomplete = visibleSteps(answers).find((etape) => !isStepComplete(etape, answers, horsColonnes));
   return incomplete === undefined ? { genre: 'soumettre' } : { genre: 'revenir', vers: incomplete };
 }
 
@@ -1202,7 +1330,7 @@ export function brouillonEstAncien(brouillon: BilanDraft, maintenant: Date): boo
  * Deux jeux de réponses identiques champ par champ.
  *
  * Décide si un brouillon n'est rien d'autre que le dernier bilan rechargé : dans ce cas le
- * bandeau « Tes réponses précédentes sont pré-remplies » reste vrai, et il disparaissait —
+ * bandeau « Tes réponses précédentes sont préremplies » reste vrai, et il disparaissait —
  * ouvrir le questionnaire et repartir suffisait à écrire un brouillon, et c'est par cette
  * branche que la visite suivante entrait (audit A2-6).
  *

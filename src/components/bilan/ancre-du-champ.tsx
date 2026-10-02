@@ -19,9 +19,9 @@ import type { ChampDuBilan } from '@/types/bilan';
  *   d'accessibilité — sans TalkBack rien ne se passe, et le clavier ne s'ouvrirait pas. Le geste appelle
  *   donc aussi le `focus()` du `TextInput`, et c'est ce qu'on attend d'un champ.
  *
- * **Hors de `StepShell`, rien ne se passe** : les références restent inertes, et `marque` vaut faux.
- * C'est le cas de l'écran `/contexte`, qui rend `ChampsDeContexte` sans le questionnaire autour — et
- * qui ne change pas : son « Enregistrer » reste désactivé tant que le contexte est incomplet.
+ * **Hors d'un fournisseur, rien ne se passe** : les références restent inertes, et `marque` vaut
+ * faux. Deux écrans fournissent `ContexteDesAncres` : `StepShell`, et `/contexte` depuis le
+ * 01/10/2026 (`v1-33` P-13), dont l'« Enregistrer » d'un contexte incomplet mène à ce qui manque.
  */
 export type AncreDuChamp = {
   bloc: RefObject<View | null>;

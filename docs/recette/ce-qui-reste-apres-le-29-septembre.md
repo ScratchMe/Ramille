@@ -106,6 +106,7 @@ saisir **à la lettre** :
 | Mode des sorties | **Voiture (seul)** → « Quelle motorisation ? » → **Thermique** |
 | Distance d'une sortie | **15 à 30 km** |
 | Vols | **2** au total, dont **1** court (donc **un long-courrier**) |
+| Trajets de plus de 300 km, hors avion ? | **Oui** (depuis le 01/10/2026, `v1-33` D1) |
 | Longs trajets en train | **0** |
 | Longs trajets en autocar | **2** |
 | Longs trajets en voiture | **2** → **Thermique** → « Vous êtes combien dans la voiture ? » → **2** |
@@ -147,7 +148,8 @@ premier parcours ne pouvait pas montrer, son profil s'engageant sur le rang 1.
 | Mode | **Vélo** → « Quel type de vélo ? » → **Mécanique** |
 | Second mode ? | **Non** |
 | Sorties | **Rarement — une fois par mois ou moins** |
-| Vols | **0** |
+| Vols | **0** — à toucher : rien n'est coché d'avance depuis le 01/10/2026 |
+| Trajets de plus de 300 km, hors avion ? | **Oui** |
 | Longs trajets en train | **1** |
 | Longs trajets en autocar | **0** |
 | Longs trajets en voiture | **0** |
@@ -246,7 +248,7 @@ le lundi 5 (hebdomadaire).
 | 02.1 | La restitution, « Voir ce que je peux faire », puis **« Compris »** sur « Ton premier plan » | Le plan : « Renoncer à un vol long-courrier cette année », « − 1 601 kg », puis la seconde carte, puis « **Voir toutes les pistes · 10** » | |
 | 02.2 | Toucher « Voir toutes les pistes · 10 » | Titre « Toutes les pistes », « Retour au plan » en haut, la barre d'onglets toujours là, et la phrase « **Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan.** » | |
 | 02.3 | Les groupes et les lignes | Trois têtes de groupe en capitales grises, plus petites que les titres des pistes : **Voyages longue distance** (6), **Loisirs du week-end** (2), **Trajet domicile-travail** (2), dans cet ordre et chaque groupe dans l'ordre du tableau du profil 1. **Chaque ligne** : le titre en noir à la taille du texte courant, dessous le gain en gras — « **− 1 601 kg** par an » —, et à droite une **pastille bordée « Choisir »**. Les gains se lisent en colonne sans rien ouvrir | |
-| 02.4 | Toucher « **Choisir** » sur « Renoncer à un vol long-courrier cette année » | La ligne devient une carte **ouverte sur « Quand ? »** — « À mon prochain projet de voyage », « Avant mon prochain bilan » —, **rien de coché**, « **C'est noté** » inactif, et **pas de bouton « Je m'y engage »** à toucher d'abord. Ne rien valider | |
+| 02.4 | Toucher « **Choisir** » sur « Renoncer à un vol long-courrier cette année » | La ligne devient une carte **ouverte sur « Quand ? »** — « À mon prochain projet de voyage », « Avant mon prochain bilan » —, **rien de coché**, « **C'est noté** » gris mais actif — son toucher fait apparaître « **Choisis une échéance.** » sous les choix, le focus va sur la première, rien ne part —, et **pas de bouton « Je m'y engage »** à toucher d'abord. Ne rien valider *(Réécrite le 01/10/2026, `v1-33` D13 : « C'est noté » était inactif)* | |
 | 02.5 | Toucher « **Choisir** » sur « Regrouper deux sorties en une seule, une fois sur cinq » | La carte du vol **se referme** et redevient sa ligne ; celle des sorties s'ouvre sur **« Quand ? »** — « Ce mois-ci », « Le mois prochain », « À ma prochaine occasion ». Une seule carte à la fois, **aucun lien « Réduire »**. C'est la ligne 03.11 du 28/09, réécrite | |
 | 02.6 | « **Annuler** » | La carte redevient sa ligne, à sa place | |
 | 02.7 | Toucher « Choisir » sur la **dernière** ligne, « Travailler depuis chez toi un jour par semaine » | La carte s'ouvre sur **« Quels jours ? »**. Si son « C'est noté » sortait de l'écran, l'écran **défile juste assez** pour le montrer, et le titre de la carte reste visible. Noter s'il a défilé. « Annuler » | |

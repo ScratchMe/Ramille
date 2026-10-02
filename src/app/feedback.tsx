@@ -1,8 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { cadreDuChamp } from '@/components/auth/text-field';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
@@ -14,6 +15,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { FontFamily, Radius, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { donnerLeFocus } from '@/lib/focus';
 import { revenirOu } from '@/lib/navigation';
 import {
   FEEDBACK_KINDS,
@@ -55,17 +57,46 @@ export default function Feedback() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  // Le focus passe la bordure à l'accent, comme les trois autres champs (`cadreDuChamp`, 01/10/2026).
+  const [focusDuChamp, setFocusDuChamp] = useState(false);
+  // Le champ lui-même, pour lui donner le focus quand « Envoyer » demande ce qui manque.
+  const champ = useRef<TextInput>(null);
 
   const trimmed = message.trim();
-  const canSend = trimmed.length >= 3 && !sending;
+  // **Trois caractères au moins, et la base le dit aussi** : `feedback_message_check` borne
+  // `length(btrim(message))` entre 3 et 2000, donc rien ne part dessous, ni côté client ni côté serveur.
+  const manque = trimmed.length < 3;
   // **Le minimum se dit dès qu'il manque quelque chose** (24/09/2026, audit d'accessibilité 3.3.2) :
   // « Envoyer » restait grisé sur un texte d'un ou deux caractères sans que rien ne dise pourquoi.
   // Pas avant la première frappe — un champ vide n'a encore rien de trop court — et en texte calme,
   // sans `role="alert"` : ce n'est pas un échec, c'est ce qui manque, et l'annoncer à chaque frappe
   // rendrait le lecteur d'écran inutilisable (la règle du `manque` de `StepShell`).
-  const tropCourt = trimmed.length > 0 && trimmed.length < 3;
+  const tropCourt = trimmed.length > 0 && manque;
+
+  // **« Envoyer » sous trois caractères demande, et il le dit même à vide** (01/10/2026, `v1-33` D18,
+  // audit T-19). Il restait désactivé, sans un mot, tant que le champ était vide : la phrase ci-dessus
+  // ne venait qu'avec la première frappe, donc un champ vide face à un bouton gris ne disait rien. C'est
+  // le motif du « Suivant » du questionnaire (`FRONT.md` §2.4, `v1-31`) : le bouton prend l'apparence du
+  // désactivé (`enAttente`) et **agit** — son toucher écrit la phrase, y compris à vide, et donne le
+  // focus au champ. **Rien ne part pour autant** : `onSend` refuse lui-même, c'est lui qui tient la
+  // porte, plus un `disabled`.
+  //
+  // La demande tient jusqu'à ce que le message soit assez long, puis retombe : un champ qu'on vide
+  // ensuite ne redit rien avant le prochain toucher, comme le questionnaire. Elle retombe au rendu —
+  // jamais dans un effet, qui laisserait une image de trop.
+  const [demande, setDemande] = useState(false);
+  const demandeActive = demande && manque;
+  if (demande && !manque) setDemande(false);
 
   const onSend = async () => {
+    if (manque) {
+      setDemande(true);
+      // Au geste, et jamais autrement : le focus va au champ, que le clavier s'ouvre sur natif — la
+      // demande du « Suivant » le fait de même pour un champ de saisie.
+      donnerLeFocus(champ.current);
+      if (Platform.OS !== 'web') champ.current?.focus();
+      return;
+    }
     setSending(true);
     setError(null);
     const result = await sendFeedback(kind, message, context);
@@ -103,7 +134,15 @@ export default function Feedback() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Envoyer » ne
+            servait qu'à le fermer — le défaut de React Native —, et l'envoi avait l'air ignoré. La
+            touche d'action du clavier, elle, reste un retour à la ligne : le champ est multiligne,
+            et lui faire envoyer le message interdirait d'écrire un second paragraphe. */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.intro}>
             <ThemedText type="screenTitle">
               Un retour à nous faire ?
@@ -131,7 +170,9 @@ export default function Feedback() {
                 role="radio"
                 selected={kind === option.value}
                 onPress={() => setKind(option.value)}
-                radius={16}
+                // Le rayon des champs, lu dans son jeton et plus écrit en dur (01/10/2026, audit
+                // T-20) : la valeur ne change pas, elle ne peut plus dériver de lui.
+                radius={Radius.field}
                 selectedStyle="outline"
               />
             ))}
@@ -142,6 +183,7 @@ export default function Feedback() {
               {LIBELLE_MESSAGE}
             </ThemedText>
             <TextInput
+              ref={champ}
               value={message}
               onChangeText={setMessage}
               multiline
@@ -155,14 +197,14 @@ export default function Feedback() {
               accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
               // Le contour au repos est `fieldBorder` (24/09/2026, `v1-29`) : `border` n'y tenait que
               // 1,33:1, on ne voyait pas le seul champ de texte libre du produit. L'accent une fois
-              // qu'il y a un texte, comme `TextField`.
+              // qu'il y a un texte ou au focus, comme `TextField` (`cadreDuChamp`) — l'élément est ici
+              // le cadre lui-même, et l'anneau du navigateur le suivait déjà.
+              onFocus={() => setFocusDuChamp(true)}
+              onBlur={() => setFocusDuChamp(false)}
               style={[
                 styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: message.length > 0 ? theme.accent : theme.fieldBorder,
-                },
+                { backgroundColor: theme.backgroundElement, color: theme.text },
+                cadreDuChamp(theme, { rempli: message.length > 0, focus: focusDuChamp }),
               ]}
             />
             {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10, qui la réserve aux
@@ -171,7 +213,7 @@ export default function Feedback() {
             <ThemedText type="small" themeColor="textTertiary" style={styles.compteur}>
               {trimmed.length} / {FEEDBACK_MAX_LENGTH}
             </ThemedText>
-            {tropCourt && (
+            {(tropCourt || demandeActive) && (
               <ThemedText type="small" themeColor="textTertiary">
                 Trois caractères au moins pour pouvoir l’envoyer.
               </ThemedText>
@@ -182,7 +224,16 @@ export default function Feedback() {
               même chose à l'œil, mais sans région vivante elle n'est annoncée à personne. */}
           <MessageInline message={error} />
 
-          <Button title={sending ? 'Envoi…' : 'Envoyer'} onPress={onSend} disabled={!canSend} />
+          {/* **Jamais `disabled` sous trois caractères** (`v1-33` D18) : le bouton garde l'apparence du
+              désactivé (`enAttente`) et mène au champ. `disabled` ne reste que pendant l'envoi, où il n'agit
+              vraiment pas — et sans `aria-disabled` : un bouton qui agit n'est pas indisponible
+              (`FRONT.md` §2.4). */}
+          <Button
+            title={sending ? 'Envoi…' : 'Envoyer'}
+            onPress={onSend}
+            enAttente={manque}
+            disabled={sending}
+          />
 
           {/* Ce qui part avec le message, dit avant l'envoi et non dans une politique que
               personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. Une

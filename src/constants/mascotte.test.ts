@@ -199,4 +199,28 @@ describe('Ramille', () => {
       expect(ligne).not.toMatch(/trace ?verte/i);
     }
   });
+
+  /**
+   * **La page introuvable n'affirme rien sur ce que la personne possède** (01/10/2026, `v1-33` D17,
+   * constat T-18). C'est la seule page qu'on atteint sans l'avoir voulu — typiquement par un lien
+   * tronqué, ouvert par quelqu'un qui n'a jamais fait de bilan, que « Revenir à l'accueil » envoie
+   * ensuite à l'onboarding. « Ton bilan et ton plan, eux, sont toujours là » lui promettait des
+   * données qui n'existent pas. Un test de **jugement** (`TESTING.md` §2.1), pas de code : il
+   * épingle une décision de produit, pour qu'on ne rétablisse pas la phrase d'avant en croyant
+   * l'améliorer — elle rassurait mieux qui a un bilan, et c'est ce que la décision a accepté de
+   * perdre.
+   *
+   * Les deux moitiés comptent : sans la seconde, une phrase vidée de tout passerait la première. La
+   * page doit encore **rendre la main** (« je te ramène »).
+   *
+   * **Éprouvé en le cassant, le 01/10/2026** (`TESTING.md` §1.1), deux mutations, chacune faisant
+   * tomber ce test et aucun autre : la phrase d'avant remise (« Ton bilan et ton plan, eux, sont
+   * toujours là — je te ramène. ») le fait tomber sur sa première assertion — **les règles de voix, elles,
+   * restent vertes avec elle** : aucune ne voyait ce défaut — ; « Rien n'a changé de ton côté. » sans
+   * la sortie le fait tomber sur la seconde.
+   */
+  it('la page introuvable ne parle ni du bilan ni du plan, et rend la main', () => {
+    expect(RAMILLE.introuvable).not.toMatch(/bilan|plan|suivi|historique|donn[ée]es|compte|toujours/i);
+    expect(RAMILLE.introuvable).toMatch(/je te ramène/);
+  });
 });

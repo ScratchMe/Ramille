@@ -87,8 +87,10 @@ const REFUS_DU_RPC: Record<string, string | undefined> = {
 // notification insistante ni répétée (une seule question par période, générée côté serveur
 // par generate_commute_checkins/generate_extras_checkins, jamais par le client).
 //
-// `emphasize` matérialise la recommandation "concentre-toi sur ton poste dominant" (décision
-// produit du 27/08/2026, les deux boucles restent proposées) sans jamais masquer l'autre.
+// `emphasize` désigne le point à regarder d'abord, sans jamais masquer l'autre : la question de
+// l'action engagée quand deux points sont ouverts (`v1-33` §6, tranché le 01/10/2026), le poste
+// dominant sinon — la recommandation du 27/08/2026, les deux boucles restant proposées. La carte ne
+// le décide pas : l'écran le lit dans `accentDesPoints` (`src/types/checkin.ts`).
 export function CheckinCard({
   checkin,
   emphasize,
@@ -119,6 +121,11 @@ export function CheckinCard({
   historique?: PointRepondu[];
 }) {
   const [reponseLocale, setReponseLocale] = useState<ReponseDuPoint | null>(null);
+  /**
+   * L'instant du geste, quand la réponse vient d'être donnée ici : il date le pied de la carte tant
+   * que la ligne relue ne porte pas encore l'horodatage du serveur (audit P-10, 01/10/2026).
+   */
+  const [reponduA, setReponduA] = useState<string | null>(null);
   /** Le point n'accepte plus de réponse : la question reste lisible, les boutons partent. */
   const [refus, setRefus] = useState<string | null>(null);
   /** La réponse n'est pas partie : les boutons restent, il n'y a qu'à recommencer. */
@@ -156,7 +163,17 @@ export function CheckinCard({
   // avec `estDeLaPeriodeCourante`), et c'est `response_kind` qui la remplit. L'état local garde le
   // dessus le temps d'un aller-retour réseau, pour que la carte bascule à l'instant du geste.
   const reponse = reponseLocale ?? genreDeReponse(checkin.response_kind);
-  const pied = piedDuPointRepondu(checkin, boucleTourne);
+  // **Le pied daté arrive avec la réponse** (audit P-10, 01/10/2026). Il se composait sur la ligne
+  // seule, donc juste après le geste — `responded_at` encore nul — la carte n'avait pas de « Répondu
+  // jeudi. Prochain point : lundi 5 octobre. » : le rendez-vous n'apparaissait qu'au passage suivant
+  // sur le plan, la fin du geste ne disant pas quand on se retrouve. Tant que la ligne n'est pas
+  // relue, il prend l'instant du geste — pas une date inventée, celle de la réponse ; l'horodatage du
+  // serveur le remplace dès la relecture. Les deux ne peuvent différer que d'un jour, autour de
+  // minuit.
+  const pied = piedDuPointRepondu(
+    reponduA !== null ? { ...checkin, responded_at: checkin.responded_at ?? reponduA } : checkin,
+    boucleTourne
+  );
 
   // **Le second renforcement ne se déclenche qu'une fois, et jamais sur un compteur** (C2.10). Il se
   // calcule sur les **périodes** et non sur les dernières lignes répondues : deux « oui » séparés par
@@ -188,6 +205,7 @@ export function CheckinCard({
     setSaving(false);
 
     if (!error) {
+      setReponduA(new Date().toISOString());
       setReponseLocale(response);
       return;
     }
@@ -202,8 +220,8 @@ export function CheckinCard({
   };
 
   return (
-    // **L'accent tombe une fois répondu** (v1-14 §4.1) : il sert à désigner la question du poste
-    // dominant parmi plusieurs cartes, et une question déjà refermée n'a plus rien à désigner.
+    // **L'accent tombe une fois répondu** (v1-14 §4.1) : il sert à désigner la question à regarder
+    // d'abord parmi plusieurs cartes, et une question déjà refermée n'a plus rien à désigner.
     <ThemedView
       type={emphasize && reponse === null ? 'backgroundSelected' : 'backgroundElement'}
       style={styles.card}
@@ -295,7 +313,13 @@ export function CheckinCard({
                   Un lien et non un troisième bouton : c'est une sortie, pas une réponse qu'on
                   propose à égalité avec les deux autres. `TextLink` porte la cible tactile
                   (`ControlHeight.target`) sans déplacer le texte, et son libellé accessible **est**
-                  le texte affiché. */}
+                  le texte affiché.
+
+                  **Souligné au repos** (audit P-7, 01/10/2026), comme « Annuler » et « Changer
+                  d'avis », les deux autres liens tertiaires du plan : sans soulignement, il se
+                  lisait comme une légende sous « Non » et « Oui », et la réponse honnête d'une
+                  semaine de congés passait pour du texte. Il reste discret — tertiaire, petit,
+                  centré —, bien en deçà d'un bouton. */}
               <TextLink
                 label={libelleSansObjet(checkin)}
                 onPress={() => answer('sans_objet')}
@@ -303,6 +327,7 @@ export function CheckinCard({
                 type="small"
                 themeColor="textTertiary"
                 containerStyle={styles.sansObjet}
+                style={styles.lien}
                 hint={`Aucune occasion pour ${formeInserable(checkin.poste, checkin.loop_type)} sur cette période`}
               />
               {/* Les boutons restent actifs : l'échec est une panne, pas un refus. */}
@@ -355,4 +380,7 @@ const styles = StyleSheet.create({
   // Centré sous les deux boutons : le lien doit se lire comme une sortie commune aux deux, pas
   // comme une suite du bouton de gauche.
   sansObjet: { alignItems: 'center' },
+  // Souligné au repos, comme les liens tertiaires d'`ActionCommitment` : sous le doigt, `TextLink`
+  // lui donne alors la teinte appuyée plutôt qu'un soulignement qu'il porte déjà.
+  lien: { textDecorationLine: 'underline' },
 });

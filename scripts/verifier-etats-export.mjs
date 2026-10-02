@@ -1709,6 +1709,20 @@ for (const reduire of [false, true]) {
 //   | la capture de la répétition d'Entrée retirée (`barre-d-espace.ts`) | l'Entrée maintenu, sur ses deux constats — seulement |
 //   | le focus volé par un brouillon relu (`entree.sens === null` retiré de l'effet) | A3 : à l'arrivée du brouillon, le focus est sur l'étape — seulement (`v1-31` §9, écart 13) |
 //
+// **B6 bis, éprouvé le 01/10/2026** de la même façon (un export chacune, cache Metro isolé, `--clear`,
+// le script entier rejoué) :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | la réserve de l'ouverture retirée — l'état d'avant, où le défilement part sur le contenu d'avant le dépli | B6 bis, les deux « Oui » sans la préférence : le dépli finit sous le pied (20 et 34 px), défilement 0, aucune position en chemin — seulement. Sous la préférence rien ne grandit, et ces cas passaient déjà |
+//   | la réserve qui ne tombe jamais | B6 bis sans la préférence, après « Non » : 44 et 130 px sous la zone — seulement. Ouvert, le dépli dépasse déjà la réserve : c'est en se refermant qu'elle se voit |
+//   | la réserve comptée sur la hauteur du contenu, que `flexGrow` étire à la zone, et non sur sa hauteur naturelle | B6 bis sans la préférence : 456 et 368 px de trop une fois le dépli ouvert — seulement. C'était la première version de la correction |
+//
+// La première version de B6 bis cherchait le titre sans normaliser les blancs : les insécables que pose
+// `ThemedText` (« 300 km », « ? ») le rendaient introuvable, et la mesure de la réserve était **sautée
+// sans bruit** — c'est le rejeu de la troisième mutation qui l'a montré. Une mesure introuvable échoue
+// désormais.
+//
 // La garde de l'étape courante retirée de `handleNext` n'a pas de cas ici : `StepShell` n'appelle
 // déjà pas `onNext` sur une étape incomplète, donc c'est par construction une seconde garde. Elle est
 // portée par `issueDuSuivant`, testée dans `bilan.test.ts` (deux mutations consignées), et son
@@ -2098,6 +2112,112 @@ if (Object.values(COULEUR).some((c) => c === null)) {
     }
   }
 
+  // **B6 bis — une ouverture sur une étape qui tenait dans la zone** (01/10/2026). Le défilement de la
+  // plateforme est borné à la longueur du contenu au moment où il part, et un dépli part de zéro : sur le
+  // « Oui » du second mode (B1.6) et sur celui des longs trajets (`v1-33` D1), il n'y avait encore rien à
+  // défiler — `scrollTo` visait 36 px et la zone restait à 0. B6 y échappait : la liste des modes dépasse
+  // déjà de la zone à 360. `StepShell` réserve désormais la hauteur finale le temps de l'ouverture. Ici,
+  // à 390 × 844 : la zone remonte jusqu'à ce que le dépli finisse 16 au-dessus du pied, en chemin, le
+  // focus reste sur « Oui » ; sous la préférence, posé dès la première image ; et la réserve tombe — le
+  // contenu revient à sa hauteur, sans blanc sous le dernier élément.
+  const OUVERTURES_SUR_UNE_ETAPE_COURTE = [
+    {
+      nom: '« Oui » du second mode (B1.6)',
+      brouillon: brouillonDe('commute_extra', { ...TRAJET_DECLARE, commute_mode: 'voiture', commute_car_engine: 'thermique' }),
+      titre: 'Utilises-tu un second mode en complément ?',
+      // Le dernier élément du dépli : le lien du mode manquant, sous la boîte « Lequel ? ».
+      dernier: () => {
+        const n = [...document.querySelectorAll('[role="link"], a, [role="button"]')].find((e) =>
+          /^Ton mode n.est pas dans la liste/.test((e.getAttribute('aria-label') ?? e.innerText ?? '').trim())
+        );
+        return n ? n.getBoundingClientRect().bottom : null;
+      },
+    },
+    {
+      nom: '« Oui » des longs trajets',
+      brouillon: brouillonDe('long_trips', {
+        ...TRAJET_DECLARE,
+        commute_mode: 'voiture',
+        commute_car_engine: 'thermique',
+        commute_second_mode_used: false,
+        leisure_frequency: 'rarely',
+        flights_total_per_year: 0,
+        flights_short_per_year: 0,
+      }),
+      titre: 'Hors avion, fais-tu des trajets de plus de 300 km sur une année type ?',
+      // Le dernier élément du dépli : la série de la voiture, sans précision tant qu'elle est vide.
+      dernier: () => {
+        const g = [...document.querySelectorAll('[role="radiogroup"]')].find(
+          (x) => x.getAttribute('aria-label') === 'Trajets longue distance en voiture'
+        );
+        return g ? g.getBoundingClientRect().bottom : null;
+      },
+    },
+  ];
+  for (const cas of OUVERTURES_SUR_UNE_ETAPE_COURTE) {
+    for (const reduire of [false, true]) {
+      const ou = `/bilan, ${cas.nom} touché à 390 × 844 (B6 bis)${reduire ? ' sous « réduire les animations »' : ''}`;
+      const page = await ouvrir('/bilan', { [BROUILLON]: cas.brouillon }, { reduire, releve: true });
+      try {
+        const oui = page.getByRole('radio', { name: 'Oui', exact: true });
+        await oui.waitFor({ state: 'visible', timeout: ATTENTE });
+        await page.waitForTimeout(REPOS);
+        const avant = await lireK(page);
+        if (!avant.zone || avant.zone.decalage !== 0) kEchec(ou, 'la zone a défilé avant le geste — la garde ne peut pas conclure.');
+        const releve = await releverPendant(
+          page,
+          { zone: ['defilement', { titre: cas.titre, bouton: 'Suivant' }] },
+          () => oui.click(),
+          1_200
+        );
+        await page.waitForTimeout(REPOS);
+        const lu = await lireK(page);
+        const bas = await page.evaluate(cas.dernier);
+        // Le titre se cherche blancs normalisés : `ThemedText` pose des insécables (« 300 km », « ? »).
+        const contenu = await page.evaluate((titre) => {
+          const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+          const h = [...document.querySelectorAll('h1')].find((e) => e.getClientRects().length > 0 && n(e.innerText) === titre);
+          let z = h?.parentElement;
+          while (z && !/(auto|scroll)/.test(getComputedStyle(z).overflowY)) z = z.parentElement;
+          // Le contenu, et ce qu'il porterait sans réserve : sa première vue, plus les deux marges de 24.
+          return z ? { hauteur: z.scrollHeight, naturelle: z.firstElementChild.firstElementChild.getBoundingClientRect().height + 48 } : null;
+        }, cas.titre);
+        if (bas === null || !lu.zone) kEchec(ou, 'le dépli est introuvable — la garde ne peut pas conclure.');
+        else if (!auPixel(bas, lu.zone.bas - 16)) {
+          kEchec(ou, `le dépli finit à ${Math.round(lu.zone.bas - bas)} px au-dessus du pied — attendu 16 (défilement ${Math.round(lu.zone.decalage)}) : le défilement à l'ouverture est borné au contenu d'avant le dépli.`);
+        }
+        if (lu.focus !== 'Oui') kEchec(ou, `le focus est sur « ${lu.focus} » — il reste sur « Oui ».`);
+        if (!contenu) kEchec(ou, 'la zone est introuvable une fois le dépli ouvert — la garde ne peut pas conclure.');
+        else if (contenu.hauteur > Math.max(contenu.naturelle, lu.zone ? lu.zone.bas - lu.zone.haut : 0) + 1) {
+          kEchec(ou, `le contenu garde ${Math.round(contenu.hauteur - contenu.naturelle)} px de trop une fois le dépli ouvert : la réserve n'est pas tombée.`);
+        }
+        const positions = releve.map((e) => e.zone?.position).filter((p) => p != null);
+        const bouge = enChemin(positions, lu.zone?.decalage ?? 0);
+        if (!reduire && !bouge) kEchec(ou, `le défilement saute (${positions.join(', ')}) — la plateforme l'anime.`);
+        if (reduire && bouge) kEchec(ou, 'le défilement passe par des positions intermédiaires — sous la préférence, il se pose.');
+        // « Non » referme le dépli : l'étape tient de nouveau dans la zone. Une réserve qui ne tomberait
+        // pas ne se voit qu'ici — une fois le dépli ouvert, sa hauteur naturelle la dépasse déjà.
+        await page.getByRole('radio', { name: 'Non', exact: true }).click();
+        await page.waitForTimeout(REPOS);
+        const apresNon = await page.evaluate((titre) => {
+          const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+          const h = [...document.querySelectorAll('h1')].find((e) => e.getClientRects().length > 0 && n(e.innerText) === titre);
+          let z = h?.parentElement;
+          while (z && !/(auto|scroll)/.test(getComputedStyle(z).overflowY)) z = z.parentElement;
+          return z ? { contenu: z.scrollHeight, zone: z.clientHeight } : null;
+        }, cas.titre);
+        if (!apresNon) kEchec(ou, 'la zone est introuvable après « Non ».');
+        else if (apresNon.contenu > apresNon.zone + 1) {
+          kEchec(ou, `après « Non », le contenu garde ${apresNon.contenu - apresNon.zone} px sous la zone : la réserve de l'ouverture n'est pas tombée.`);
+        }
+      } catch (erreur) {
+        kEchec(ou, String(erreur).slice(0, 180));
+      } finally {
+        await page.close();
+      }
+    }
+  }
+
   // La même étape, rouverte depuis un brouillon où « Vélo » est déjà choisi : rien ne défile au montage.
   // À 360, la boîte passe sous le pied (738 contre 698) : c'est là que la moitié peut tomber.
   {
@@ -2132,7 +2252,7 @@ if (Object.values(COULEUR).some((c) => c === null)) {
       await page.getByRole('radio', { name: 'Urbain dense', exact: true }).click();
       await page.getByRole('radio', { name: 'Bon', exact: true }).click();
       await page
-        .getByRole('radiogroup', { name: 'Véhicules motorisés dans le foyer' })
+        .getByRole('radiogroup', { name: 'Combien de véhicules motorisés dans ton foyer ?' })
         .getByRole('radio', { name: '0', exact: true })
         .click();
       await page.getByRole('button', { name: 'Voir mon bilan', exact: true }).click();
@@ -2152,6 +2272,130 @@ if (Object.values(COULEUR).some((c) => c === null)) {
     } finally {
       await page.close();
     }
+  }
+}
+
+// ── L. Les écrans de compte : le focus suit le geste, et seulement lui (01/10/2026, audit T-4) ───
+//
+// Un écran de compte change de phase sans changer de route — l'adresse puis le code, la confirmation
+// d'une suppression —, et le bouton touché disparaît avec la phase qui le portait : le focus
+// retombait sur le document (mesuré, `BODY`), et rien n'annonçait ce qui arrivait. La phase qui
+// arrive **sous le doigt** prend donc le focus (`FRONT.md` §2.4) ; celle qui s'ouvre sans geste ne le
+// vole à personne. Les deux moitiés se gardent ici, parce qu'elles se jouent sans réseau : la reprise
+// depuis « Toi » (le code ouvert d'emblée, depuis deux marques locales), « Utiliser une autre
+// adresse », la première phase de `/connexion/retrouver`, et la confirmation de « Supprimer mon
+// compte » sur « Toi ». Ce qui demande un envoi réel se garde au parcours réel
+// (`verifier-parcours-reel.mjs`) : « Regarde tes emails » après l'adresse de `/connexion/email`, à
+// l'étape « le compte rattaché par code, et rien derrière », et « C'est fait. » de « Toi », à l'étape
+// « suppression du compte ». **Rien ne garde les autres** — les phases de `/compte/suppression`, le
+// code de `/connexion/retrouver` et le retour à sa collision : chacune demande un envoi, et
+// `verifier-code-de-connexion.mjs`, qui traverse le code de `/connexion/retrouver`, ne lit pas le focus.
+//
+// **Éprouvée en la cassant le 01/10/2026**, une mutation à la fois, un export chacune (cache Metro
+// privé, `--clear`), le script entier rejoué. Ce qui tombe, dans tout le script :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | la reprise ouverte « sous le doigt » (`apresUnGeste: true`) | L1, la reprise — seulement |
+//   | « Rattacher mon adresse » sans `TitreDArrivee` | L2, « Utiliser une autre adresse » — seulement |
+//   | la première phase de `/connexion/retrouver` posée « sous le doigt » | L3 — seulement |
+//   | le focus de la confirmation retiré (`donnerLeFocus` de `MonCompte`) | L4 — seulement |
+const ADRESSE_DU_CODE = 'traceverte.derniere_adresse_lien.v1';
+const FLUX_DU_CODE = 'traceverte.dernier_flux_de_code.v1';
+
+/** Où est le focus : le document, ou le texte normalisé de l'élément qui l'a. */
+function lireLeFocus() {
+  const actif = document.activeElement;
+  return {
+    corps: actif === null || actif === document.body,
+    texte: (actif?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+  };
+}
+
+async function attendreLeTexte(page, texte) {
+  await page.waitForFunction((t) => document.body.innerText.replace(/\s+/g, ' ').includes(t), texte, {
+    timeout: ATTENTE,
+  });
+}
+
+{
+  const ou = '/connexion/email?reprise=1';
+  const page = await ouvrir(ou, { [ADRESSE_DU_CODE]: 'camille@exemple.fr', [FLUX_DU_CODE]: 'rattachement' });
+  try {
+    await attendreLeTexte(page, 'Regarde tes emails');
+    // Le repos avant la lecture, comme L2 à L4 : L1 est une assertion **négative**, et le vol qu'elle
+    // guette viendrait de l'effet de `TitreDArrivee`, qui part après le rendu — lu trop tôt, il passerait
+    // (contre-lecture de la PR #314).
+    await page.waitForTimeout(REPOS);
+    const surLaReprise = await page.evaluate(lireLeFocus);
+    if (!surLaReprise.corps) {
+      echecs.push(
+        `${ou} (L1) : la saisie du code s'ouvre sans geste — la reprise depuis « Toi » — et prend pourtant` +
+          ` le focus (« ${surLaReprise.texte} ») : un écran ouvert sans geste ne le vole à personne` +
+          ' (`SaisieDuCode`, `apresUnGeste`).'
+      );
+    }
+    await page.getByRole('button', { name: 'Utiliser une autre adresse', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await attendreLeTexte(page, 'Rattacher mon adresse');
+    await page.waitForTimeout(REPOS);
+    const apresLeGeste = await page.evaluate(lireLeFocus);
+    if (apresLeGeste.corps || !apresLeGeste.texte.startsWith('Rattacher mon adresse')) {
+      echecs.push(
+        `${ou} (L2) : après « Utiliser une autre adresse » au clavier, le focus est sur` +
+          ` ${apresLeGeste.corps ? 'le document' : `« ${apresLeGeste.texte} »`} — il doit être sur le titre` +
+          ' qui arrive, « Rattacher mon adresse » (`TitreDArrivee`).'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou}, focus des phases : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+{
+  // Sans réseau, la lecture de l'état du compte n'aboutit pas : l'écran pose sa phase d'adresse, sans
+  // que personne ait rien touché.
+  const ou = '/connexion/retrouver';
+  const page = await ouvrir(ou);
+  try {
+    await attendreLeTexte(page, 'Retrouver mon compte');
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(lireLeFocus);
+    if (!focus.corps) {
+      echecs.push(
+        `${ou} (L3) : la première phase arrive sans geste et prend pourtant le focus (« ${focus.texte} »)` +
+          ' — seule une phase arrivée sous le doigt le prend.'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou}, focus de la première phase : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+{
+  const ou = '/compte, « Supprimer mon compte »';
+  const page = await ouvrir('/compte');
+  try {
+    await page.getByRole('button', { name: 'Supprimer mon compte', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await attendreLeTexte(page, 'Cette action est irréversible.');
+    await page.waitForTimeout(REPOS);
+    const focus = await page.evaluate(lireLeFocus);
+    if (focus.corps || !focus.texte.startsWith('Tes bilans, ton plan')) {
+      echecs.push(
+        `${ou} (L4) : le lien disparaît sous le doigt, et le focus est sur` +
+          ` ${focus.corps ? 'le document' : `« ${focus.texte} »`} — il doit être sur la confirmation qui` +
+          ' le remplace (`MonCompte`).'
+      );
+    }
+  } catch (erreur) {
+    echecs.push(`${ou}, focus de la confirmation : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
   }
 }
 
@@ -2181,5 +2425,6 @@ console.log(
     ' pose sur le premier mode révélé ; un arrêt de tabulation par groupe d’options, et les flèches' +
     ' y cochent sans en sortir ; la barre posée au démarrage, l’étape, son rail, une précision et les' +
     ' onglets en mouvement — et posés sous « réduire les animations » ; au « Suivant » en attente, ce' +
-    ' qui manque se dit, y mène et y fait défiler, une ouverture remonte l’écran, et le filet dit la suite.'
+    ' qui manque se dit, y mène et y fait défiler, une ouverture remonte l’écran, et le filet dit la suite ;' +
+    ' sur les écrans de compte, le focus suit le geste qui change la phase, et seulement lui.'
 );

@@ -8,6 +8,8 @@ import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 // suppression avec confirmation en état. Blanche et non grise, pour son bouton : sur un panneau gris, le bouton
 // secondaire, gris lui aussi, perdait sa forme et se lisait comme du texte. Le libellé de l'export est celui du web
 // (« Télécharger ») ; sur natif, le fichier part par la feuille de partage et le bouton dit « Exporter ».
+// La confirmation est tenue par l'écran hôte dans le dépôt (`confirmation` + `onConfirmation(ouverte)`), pour que
+// « Rattacher un compte » passe en secondaire tant qu'elle est ouverte ; le kit, sans état, la prend en prop.
 export function MonCompte({ confirmation = false, occupe = null, supprime = false, onExporter, onDemanderSuppression, onAnnuler, onSupprimer, onRevenir, message }) {
   const SOULIGNE = { textDecoration: 'underline' };
   const carte = { background: 'var(--color-background)', border: '1px solid var(--color-border)', borderRadius: 18, padding: 24, display: 'flex', flexDirection: 'column', gap: 8 };
@@ -27,7 +29,7 @@ export function MonCompte({ confirmation = false, occupe = null, supprime = fals
   const inactif = occupe !== null;
   return (
     <div style={carte}>
-      <ThemedText type="small" weight={600} accessibilityRole="header">Mes données</ThemedText>
+      <ThemedText type="cardTitle" accessibilityRole="header">Mes données</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">Tu peux récupérer l’intégralité de ce que Ramille sait de toi, dans un fichier JSON, ou tout supprimer définitivement.</ThemedText>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
         <Button title={occupe === 'export' ? 'Génération…' : 'Télécharger mes données'} variant="secondary" onPress={onExporter} disabled={inactif} />

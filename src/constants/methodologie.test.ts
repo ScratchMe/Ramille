@@ -70,6 +70,16 @@ describe('sectionsDeMethode', () => {
     expect(texte).toContain('50 %');
   });
 
+  // **Un aller, pour un vol comme pour un long trajet** (01/10/2026, `v1-33` D2) : le calcul compte
+  // chaque trajet une fois, sans le doubler — l'écran le dit sous chacune des deux questions
+  // (« Un aller-retour compte pour deux… »), et la méthode ne le disait que des vols. Éprouvé le même
+  // jour : la fin de la ligne des longs trajets retirée fait tomber ce test, et lui seul.
+  it('dit des vols et des longs trajets qu’ils comptent un aller', () => {
+    const ligne = (debut: string) => lignes(null).find((l) => l.startsWith(debut)) ?? '';
+    expect(ligne('Un vol compte')).toMatch(/— un aller, pas un aller-retour\.$/);
+    expect(ligne('Un trajet en train de plus de 300 km')).toMatch(/— un aller, pas un aller-retour\.$/);
+  });
+
   // Hermes peut être construit sans ICU complet : `toLocaleString('fr-FR')` rendrait « 1,500 »,
   // soit une virgule décimale au milieu d'une distance, dans le bloc qui explique d'où vient un
   // chiffre. Invisible en CI, visible sur l'appareil — même piège que `MOIS_FRANCAIS`.

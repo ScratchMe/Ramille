@@ -8,7 +8,11 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // poste le plus lourd de la plupart des bilans. La seconde question n'apparaît qu'à partir d'un vol et propose de 0
 // au total choisi ; changer le total ramène les courts sous lui. La dernière puce affiche « 10+ », et le lecteur
 // d'écran l'entend « 10 vols ou plus ». Les distances supposées s'affichent en bas, interpolées depuis les hypothèses du calcul.
+// **Aucune puce n'arrive cochée** (01/10/2026, `v1-33` D1) : le total vaut `null` tant qu'on n'a pas répondu, et
+// « Il manque encore le nombre de vols » mène à la question du titre, qui ne change pas de couleur.
 // « Il manque encore la part de vols courts » mène à la seconde question, dont le sous-titre passe en `accentText`.
+// **Les deux séries de nombres prennent la même forme, la pilule** (22, le défaut de `Chip` ; 01/10/2026, `v1-33`,
+// Q-12) : la série des courts était à `Radius.chip`, des carrés arrondis sous des ronds, pour une même fonction.
 
 // `TOTAL_CHOICES` de la source, recopiée : « N+ » stocke N.
 const TOTAL_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -29,16 +33,26 @@ const PUCES = { flexDirection: 'row', flexWrap: 'wrap', gap: 8 };
 const decompteDesLongsCourriers = (n) =>
   n <= 0 ? 'Aucun vol long-courrier ne sera compté.' : n === 1 ? '1 vol long-courrier sera compté.' : n + ' vols long-courriers seront comptés.';
 
-// `volsCourtsApresTotal` (src/types/bilan.ts), recopiée : sous un total nul, le 0 des vols courts est posé d'office
-// et n'est pas une réponse — passer de 0 à 4 vols pose la seconde question à vide, au lieu de la montrer répondue.
+// `volsCourtsApresTotal` (src/types/bilan.ts), recopiée : sous un total nul — ou sans réponse —, le 0 des vols courts
+// est posé d'office et n'est pas une réponse — passer de 0 à 4 vols pose la seconde question à vide, au lieu de la
+// montrer répondue.
 const volsCourtsApresTotal = (avant, nouveauTotal) => {
   if (nouveauTotal === 0) return 0;
-  if (avant.flights_total_per_year === 0 || avant.flights_short_per_year === null) return null;
+  if (!avant.flights_total_per_year || avant.flights_short_per_year === null) return null;
   return Math.min(avant.flights_short_per_year, nouveauTotal);
 };
 
+// Le sous-titre d'une question sous le titre de l'étape : `TypeScale.question` (src/constants/theme.ts), jeton du kit
+// `--type-question-*` — `subtitle` ramené à 22/28, graisse 600 (01/10/2026, `v1-33`, Q-12).
+const SOUS_TITRE = {
+  fontSize: 'var(--type-question-size)',
+  lineHeight: 'var(--type-question-line)',
+  letterSpacing: 'var(--type-question-tracking)',
+};
+
 export function FlightsStep({ answers, update }) {
-  const total = answers.flights_total_per_year;
+  // Sans réponse, le total ne vaut rien, pas zéro : aucune puce cochée, et la seconde question attend un vol.
+  const total = answers.flights_total_per_year ?? 0;
   const courts = answers.flights_short_per_year;
   const shortChoices = Array.from({ length: total + 1 }, (_, i) => i);
   const longCount = Math.max(total - (courts === null ? 0 : courts), 0);
@@ -53,7 +67,7 @@ export function FlightsStep({ answers, update }) {
         <GroupeDeChoix question={QUESTION_TOTAL} style={PUCES}>
           {TOTAL_CHOICES.map((n) => (
             <Chip key={n} label={n === MAX_VOLS ? MAX_VOLS + '+' : String(n)} accessibilityLabel={n === MAX_VOLS ? MAX_VOLS + ' vols ou plus' : undefined}
-              role="radio" selected={total === n}
+              role="radio" selected={answers.flights_total_per_year === n}
               onPress={() => update({
                 flights_total_per_year: n,
                 flights_short_per_year: volsCourtsApresTotal(answers, n),
@@ -66,11 +80,11 @@ export function FlightsStep({ answers, update }) {
         <>
           <div style={{ height: 1, background: 'var(--color-border)' }} />
           <div ref={bloc} style={{ ...COLONNE, gap: 16 }}>
-            <IntituleDuChamp type="subtitle" weight={600} style={{ fontSize: 22, lineHeight: '28px', letterSpacing: '-0.22px' }} marque={marque}>{questionCourts}</IntituleDuChamp>
+            <IntituleDuChamp type="subtitle" weight={600} style={SOUS_TITRE} marque={marque}>{questionCourts}</IntituleDuChamp>
             <ThemedText type="small" themeColor="textTertiary">Europe, moins de 3 h. Le reste est compté comme long-courrier.</ThemedText>
             <GroupeDeChoix question={questionCourts} style={PUCES}>
               {shortChoices.map((n) => (
-                <Chip key={n} label={String(n)} role="radio" selected={courts === n} onPress={() => update({ flights_short_per_year: n })} radius={14} />
+                <Chip key={n} label={String(n)} role="radio" selected={courts === n} onPress={() => update({ flights_short_per_year: n })} />
               ))}
             </GroupeDeChoix>
             {courts !== null && (

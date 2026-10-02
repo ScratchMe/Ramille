@@ -6,11 +6,11 @@ export interface ContextStepAnswers {
   commute_days_per_week: number | null;
   /** Fréquence des sorties du week-end : « rarement » change la seconde phrase de l'introduction. Lue seulement. */
   leisure_frequency: 'rarely' | 'weekly' | 'multiple_weekly' | null;
-  /** « Type de zone » : Urbain dense, Périurbain, Rural. */
+  /** « Dans quel type de zone vis-tu ? » : Urbain dense, Périurbain, Rural. */
   zone_type: 'urbain_dense' | 'periurbain' | 'rural' | null;
-  /** « Accès aux transports en commun » : Bon, Limité, Inexistant. */
+  /** « Comment sont les transports en commun près de chez toi ? » : Bon, Limité, Inexistant. */
   tc_access: 'bon' | 'limite' | 'inexistant' | null;
-  /** « Véhicules motorisés dans le foyer » : 0, 1, 2 ou plus. */
+  /** « Combien de véhicules motorisés dans ton foyer ? » : 0, 1, 2 ou plus. */
   household_vehicles: '0' | '1' | '2_plus' | null;
   /** Les jours qu'on pourrait travailler depuis chez soi : Aucun, Un jour, Deux ou plus — seulement quand la question se pose. */
   teletravail: 'aucun' | 'un_jour' | 'deux_ou_plus' | null;

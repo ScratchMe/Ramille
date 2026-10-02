@@ -44,8 +44,8 @@ export type ButtonProps = {
    *
    * **Sous le doigt, la teinte d'une surface neutre** (`backgroundPressed`), pas l'`accentPressed` d'un
    * principal : le bouton gris virerait au vert foncé au moment du toucher (`v1-31` §2.8). L'apparence
-   * de `disabled` ne bouge pas — d'autres écrans la lisent, dont le « C'est noté » de la feuille
-   * d'engagement.
+   * de `disabled` ne bouge pas — d'autres écrans la lisent, pour ce qui n'agit vraiment pas (un
+   * aller-retour en cours).
    */
   enAttente?: boolean;
 };

@@ -26,17 +26,19 @@ export function ContextStep({
     <View style={styles.container}>
       <View style={styles.intro}>
         <TitreDEtape>Quel est ton contexte de mobilité ?</TitreDEtape>
-        {/* Écart 12 (C5.4) — l'intro dit la **règle**, pas l'usage. « Ça nous sert à te proposer
-            des actions réalistes » décrivait une intention ; « ne propose que ce qui tient »
-            dit ce qui se passe, et c'est ce qui rend l'encart du plan lisible plus tard comme
-            une prémisse et non comme une surprise.
+        {/* **La règle du plan n'est plus redite ici** (01/10/2026, `v1-33` D7). L'intro disait
+            « Ton plan ne propose que ce qui tient avec ces réponses. » (écart 12 de C5.4 : la règle,
+            pas l'usage), deux cents pixels sous Ramille, qui ouvre la section en disant la même chose
+            (« Ce qui est possible là où tu vis change ce que je te proposerai ensuite. »,
+            `RAMILLE.entreeDeSection`) : deux voix pour un seul fait, dans le même gris. La règle reste
+            dite une fois sur l'étape, par Ramille — et sur `/contexte`, qui n'a pas de Ramille et
+            garde la phrase.
 
-            **La seconde phrase se dérive depuis C6.4, et ce n'est pas un raffinement** : écrite en
-            dur, elle était fausse pour qui sort rarement — `household_vehicles` décide alors du
-            mode du résiduel de sorties, donc du total. `phraseDuCalculDuContexte` dit pourquoi, et
-            ce que ça vaut. */}
+            **Ce qui reste se dérive depuis C6.4, et ce n'est pas un raffinement** : écrite en dur, la
+            phrase était fausse pour qui sort rarement — `household_vehicles` décide alors du mode du
+            résiduel de sorties, donc du total. `phraseDuCalculDuContexte` dit pourquoi, et ce que ça
+            vaut. */}
         <ThemedText type="small" themeColor="textTertiary">
-          Ton plan ne propose que ce qui tient avec ces réponses.{' '}
           {phraseDuCalculDuContexte(answers.leisure_frequency)}
         </ThemedText>
       </View>

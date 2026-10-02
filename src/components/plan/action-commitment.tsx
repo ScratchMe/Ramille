@@ -12,6 +12,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
+  ceQuiManqueALIntention,
   INTENTION_DAYS,
   intentionTimingsForPoste,
   intentionKindForPoste,
@@ -47,6 +48,8 @@ export function ActionCommitment({
   onRefus,
   surLeChoix = false,
   onAnnuler,
+  onOuvert,
+  lectures,
 }: {
   actionId: string;
   poste: string | null;
@@ -79,7 +82,7 @@ export function ActionCommitment({
    * S'ouvrir **directement sur la question** (« Quand ? », « Quels jours ? »), sans passer par « Je
    * m'y engage » (décision n° 1 du 28/09/2026, `v1-32` §4.2) : sur l'écran des pistes, « Choisir »
    * vient de le dire, et le redemander faisait quatre gestes là où trois suffisent. Le contenu du
-   * sélecteur ne change pas — rien de coché, « C'est noté » inactif tant que rien n'est choisi,
+   * sélecteur ne change pas — rien de coché, « C'est noté » en attente tant que rien n'est choisi,
    * **aucune valeur par défaut**. Le plan ne le passe pas.
    */
   surLeChoix?: boolean;
@@ -88,6 +91,20 @@ export function ActionCommitment({
    * liste, il n'y en a pas : la carte redevient sa ligne. Sans lui, le comportement du plan.
    */
   onAnnuler?: () => void;
+  /**
+   * Le sélecteur vient de s'ouvrir sous le doigt (« Je m'y engage », « Choisir celle-ci à la
+   * place ») : l'écran du plan y fait défiler juste assez pour que « C'est noté » finisse au-dessus
+   * de la barre d'onglets (audit P-2, 01/10/2026). Jamais au montage — la liste, qui s'ouvre sur le
+   * choix, défile elle-même.
+   */
+  onOuvert?: () => void;
+  /**
+   * Le nombre de lectures de l'écran **terminées** (audit P-1, 01/10/2026). Un engagement pris ici
+   * garde le sélecteur tel quel, « C'est noté » inactif, jusqu'à la lecture qui suit : la carte s'y
+   * relit engagée, ou, si elle échoue, le sélecteur redevient actif. Sans lui — la liste, qui part
+   * vers le plan —, le sélecteur reste inactif jusqu'au départ.
+   */
+  lectures?: number;
 }) {
   const kind = intentionKindForPoste(poste);
 
@@ -96,6 +113,43 @@ export function ActionCommitment({
   const [timing, setTiming] = useState<IntentionTiming | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * La lecture qu'un engagement réussi attend pour se refermer (audit P-1, 01/10/2026) : le nombre
+   * de lectures terminées au moment du succès, ou `null`.
+   *
+   * **Le sélecteur ne se referme plus au succès, et c'est ce qui défaisait le geste sous les yeux.**
+   * Refermé avant la relecture, il rendait « Je m'y engage » le temps que l'écran relise le plan, puis
+   * seulement la carte engagée : la personne voyait son engagement annulé, et pouvait le reprendre.
+   * Il reste donc tel quel, « C'est noté » inactif (`busy`), jusqu'à la lecture qui suit : la carte
+   * s'y relit engagée et passe à « Changer d'avis » dans le même rendu — ou la lecture échoue, et le
+   * sélecteur redevient actif, sa sélection gardée, sous la ligne de relecture de l'écran.
+   *
+   * Ajusté **au rendu**, jamais dans un effet : un effet partirait après l'image où la carte est
+   * déjà relue (la règle de la demande de `StepShell`).
+   */
+  const [lectureAttendue, setLectureAttendue] = useState<number | null>(null);
+  /**
+   * Le nombre de lectures **au retour du RPC**, pas au toucher (contre-lecture de la PR #314). Lu dans
+   * la fermeture de `submit`, il valait celui du toucher : une lecture terminée pendant l'aller-retour
+   * — un retour de l'app au premier plan — passait pour « la lecture qui suit », et « C'est noté »
+   * redevenait actif avant la vraie relecture, un second envoi possible. Tenu à jour dans un effet et
+   * non pendant le rendu (règle des références de React) : le retour du RPC arrive toujours après.
+   */
+  const lecturesCourantes = useRef(lectures);
+  useEffect(() => {
+    lecturesCourantes.current = lectures;
+  }, [lectures]);
+  if (lectureAttendue !== null && committed) {
+    setLectureAttendue(null);
+    setBusy(false);
+    setPicking(false);
+    setDays([]);
+    setTiming(null);
+  } else if (lectureAttendue !== null && lectures !== undefined && lectures > lectureAttendue) {
+    setLectureAttendue(null);
+    setBusy(false);
+  }
 
   // La question écrite une fois pour ses deux usages : le texte au-dessus des puces et le nom de
   // leur groupe (`GroupeDeChoix`).
@@ -137,7 +191,37 @@ export function ActionCommitment({
   const toggleDay = (day: IntentionDay) =>
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
 
+  /**
+   * **« C'est noté » en attente, qui dit ce qui manque** (D13 de `v1-33`, 01/10/2026 ; audit P-4). Il
+   * était `disabled` tant que rien n'était choisi : un texte gris sur le gris du sélecteur, puis un
+   * bouton vert plein dès un choix, et le toucher d'avant ne faisait rien. C'est le motif du « Suivant »
+   * du questionnaire (`v1-31`, `Button.enAttente`) : le bouton agit, et son toucher **demande**.
+   *
+   * La demande fait apparaître la ligne sous les choix — « Choisis au moins un jour. » ou « Choisis une
+   * échéance. », `ceQuiManqueALIntention` — et porte le focus **au geste** sur le premier choix du
+   * groupe : rien n'est coché, c'est l'arrêt de tabulation du groupe, et c'est de lui que le lecteur
+   * d'écran annonce la question. Pas d'alerte : ce n'est pas un échec, et le focus qui part fait déjà
+   * l'annonce. Elle retombe **au rendu**, jamais dans un effet, dès que l'intention est complète — un
+   * nouveau manque (un jour décoché) ne se redit qu'au prochain toucher : la règle de la demande de
+   * `StepShell`.
+   *
+   * **`isIntentionComplete` garde toujours l'appel** : c'est `submit` qui le relit et qui demande au
+   * lieu d'envoyer — rien ne part incomplet, quel que soit le chemin qui l'appelle.
+   */
+  const manque = ceQuiManqueALIntention(kind, days, timing);
+  const [demande, setDemande] = useState(false);
+  if (demande && manque === null) setDemande(false);
+  const premierChoix = useRef<View>(null);
+  const demander = () => {
+    setDemande(true);
+    donnerLeFocus(premierChoix.current);
+  };
+
   const submit = async () => {
+    if (!isIntentionComplete(kind, days, timing)) {
+      demander();
+      return;
+    }
     setBusy(true);
     setError(null);
     // Le refus précédent appartenait à la tentative précédente : il s'efface ici et nulle part
@@ -168,17 +252,13 @@ export function ActionCommitment({
       setError(result.message);
       return;
     }
-    // **Sur la liste, le sélecteur reste tel quel, « C'est noté » inactif**, jusqu'à ce que l'écran
-    // parte vers le plan (`onEngage`). Refermé ici, il montrait « Je m'y engage » ou « Choisir
-    // celle-ci à la place » pendant le retour de la pile, sur natif — un bouton que la liste n'a
-    // plus —, et un `busy` rendu faux laissait « C'est noté » se retoucher une seconde fois. La
-    // relecture qui suit rend de toute façon la ligne engagée, qui n'est plus une carte.
-    if (!surLeChoix) {
-      setBusy(false);
-      setPicking(false);
-      setDays([]);
-      setTiming(null);
-    }
+    // **Le sélecteur reste tel quel, « C'est noté » inactif, sur le plan comme sur la liste.** Sur la
+    // liste, jusqu'à ce que l'écran parte vers le plan (`onEngage`) : refermé ici, il montrait « Je
+    // m'y engage » ou « Choisir celle-ci à la place » pendant le retour de la pile, sur natif — un
+    // bouton que la liste n'a plus —, et un `busy` rendu faux laissait « C'est noté » se retoucher une
+    // seconde fois ; la relecture qui suit rend de toute façon la ligne engagée, qui n'est plus une
+    // carte. Sur le plan, jusqu'à la lecture qui suit (`lectureAttendue`, audit P-1).
+    if (lecturesCourantes.current !== undefined) setLectureAttendue(lecturesCourantes.current);
     onChanged();
     onEngage?.(poste);
   };
@@ -226,6 +306,7 @@ export function ActionCommitment({
           onPress={() => {
             geste.current = 'ouvrir';
             setPicking(true);
+            onOuvert?.();
           }}
         />
       </View>
@@ -249,11 +330,13 @@ export function ActionCommitment({
         // une ligne, entre les marges de la carte et celles du sélecteur, chacun ne mesurait que 27 à
         // 31 px de large à 360-390 dp, sous la cible de 48 (décision n° 7, `GroupeDeChoix`).
         <GroupeDeChoix question={question} cumulable colonnes={4}>
-          {INTENTION_DAYS.map((day) => (
+          {INTENTION_DAYS.map((day, rang) => (
             <Chip
               // Deux jours portent l'initiale « M » : l'accessibilité passe par le libellé
               // long, pas par la puce.
               key={day.value}
+              // Le premier choix reçoit le focus quand « C'est noté » demande (D13) : rien n'est coché.
+              ref={rang === 0 ? premierChoix : undefined}
               label={day.short}
               accessibilityLabel={day.long}
               role="checkbox"
@@ -270,19 +353,32 @@ export function ActionCommitment({
           {/* C3.8 §4 : les échéances dépendent du poste — un voyage ne se décide pas au calendrier
               du mois. La liste se dérive ici plutôt que dans le rendu d'un ternaire, pour que
               `src/types/plan.ts` reste le seul endroit qui sache lesquelles vont avec quoi. */}
-          {intentionTimingsForPoste(poste).map((option) => (
+          {intentionTimingsForPoste(poste).map((option, rang) => (
             <Chip
               key={option.value}
+              ref={rang === 0 ? premierChoix : undefined}
               label={option.label}
               role="radio"
               selected={timing === option.value}
               onPress={() => setTiming(option.value)}
-              radius={16}
+              // Le rayon des champs, nommé (T-20, 01/10/2026) : il était écrit `16` en dur, hors de
+              // tout jeton, comme dans trois autres appelants de `Chip`.
+              radius={Radius.field}
               selectedStyle="outline"
               nestedBackground
             />
           ))}
         </GroupeDeChoix>
+      )}
+
+      {/* **Ce qui manque, sous les choix** (D13) : dans le style de la ligne « Il manque encore … » du
+          questionnaire — `accentText` 600, jamais une alerte —, au toucher de « C'est noté » et
+          seulement tant qu'il manque quelque chose. Un texte et non un lien : les choix qu'il nomme
+          sont juste au-dessus, et le focus y est déjà. */}
+      {demande && manque !== null && (
+        <ThemedText type="small" weight={600} themeColor="accentText">
+          {manque}
+        </ThemedText>
       )}
 
       <MessageInline message={error} />
@@ -296,6 +392,8 @@ export function ActionCommitment({
               return;
             }
             geste.current = 'annuler';
+            // La demande appartient au sélecteur qu'on referme : rouvert, il ne redit rien d'office.
+            setDemande(false);
             setPicking(false);
           }}
           disabled={busy}
@@ -303,12 +401,10 @@ export function ActionCommitment({
           themeColor="textTertiary"
           style={styles.link}
         />
-        <Button
-          title="C’est noté"
-          onPress={submit}
-          disabled={busy || !isIntentionComplete(kind, days, timing)}
-          flex
-        />
+        {/* **En attente, jamais inactif, tant qu'il manque quelque chose** (D13) : il a l'apparence du
+            désactivé et agit — son toucher demande (`demander`). `disabled` reste pour ce qui
+            n'agit vraiment pas : l'aller-retour d'un engagement, jusqu'à la relecture (`busy`). */}
+        <Button title="C’est noté" onPress={submit} enAttente={manque !== null} disabled={busy} flex />
       </View>
     </ThemedView>
   );

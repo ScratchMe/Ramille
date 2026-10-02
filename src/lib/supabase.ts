@@ -106,6 +106,34 @@ export const supabase = configurationSupabase.complete
       // peut être installé par un polyfill après le chargement de ce module, et une référence
       // capturée ici figerait celui d'avant.
       global: { fetch: fetchAvecSecondeChance((entree, options) => fetch(entree, options)) },
+      db: {
+        // **Pas de rejeu des lectures : un échec réseau se dit tout de suite** (01/10/2026, `v1-33`, R-5
+        // et P-3). `@supabase/postgrest-js` rejoue **par défaut** tout GET dont le `fetch` rejette, trois
+        // fois, après 1 s, 2 s puis 4 s — et de même ses réponses 503 et 520. Relevé sur le client réel :
+        // quatre appels à 0,1, 1,1, 3,1 et 7,1 s, et l’erreur n’arrive qu’à la septième seconde. Hors
+        // ligne, le plan disait donc « Chargement… » sept secondes avant son écran d'erreur — sur le chemin
+        // nominal du rappel ouvert dans le métro —, et chaque « Réessayer » en recoûtait sept. Rien dans le
+        // dépôt ne réglait ni ne documentait ce rejeu.
+        //
+        // La règle du produit est l'inverse : « Chargement… » après 300 ms, l'échec tout de suite
+        // (`FRONT.md` §1.2, `v1-30` §5.8). Et les écrans portent déjà leur reprise : l'écran d'erreur son
+        // « Réessayer », la relecture en échec sa ligne et son « Réessayer ». Un rejeu invisible par-dessus
+        // ne rattrapait que le raté d'une seconde, au prix de sept secondes muettes quand la panne dure.
+        //
+        // **Ce que ça coûte, et c'est su** : un raté réseau d'une seconde, que le rejeu absorbait, allume
+        // désormais la ligne de relecture — qui porte son « Réessayer ». **Sauf deux lectures qui n'en
+        // ont pas**, à l'entrée d'un re-bilan (contre-lecture de la PR #314) : le préremplissage
+        // (`loadLastSubmittedAnswers`, qui rend `null` sur un échec) et l'engagement en cours. Un raté
+        // là donne un questionnaire vide, sans bandeau ni feuille « Ton plan va être recalculé » — rien
+        // de faux n'y est dit, mais neuf étapes sont à refaire (`v1-33` §9, ouvert). Et les 503 et 520 ne sont plus
+        // rejoués non plus (un 503 est le cache de schéma de PostgREST pas encore chargé, un 520 un raté de
+        // Cloudflare : deux états passagers qui se voient maintenant comme un échec). Ne touche ni
+        // `fetchAvecSecondeChance`, qui ne vise que le `401 PGRST303` d'un jeton trop neuf et est une
+        // couche au-dessous, ni les écritures, que PostgREST ne rejouait déjà jamais (seuls GET, HEAD et
+        // OPTIONS sont concernés), ni `auth-js`, qui a son propre régime (`AuthRetryableFetchError`).
+        // `src/lib/supabase.test.ts` garde le réglage **et** sa transmission par `supabase-js`.
+        retry: false,
+      },
     })
   : clientAbsent();
 

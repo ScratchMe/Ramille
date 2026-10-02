@@ -35,6 +35,15 @@ type Passage = {
   deposer: (engagement: EngagementPris) => void;
   /** Lu-et-effacé par le plan, au focus. Rend `null` s'il n'y a rien à reprendre. */
   reprendre: () => EngagementPris | null;
+  /**
+   * Lu-et-effacé par le plan **à son focus, sans attendre ses préférences** : un engagement vient
+   * d'être pris sur la liste, et la carte engagée sera amenée dans la fenêtre à la lecture qui suit
+   * (audit P-1, 01/10/2026). **Séparé de `reprendre`, et c'est le point** : la feuille des rappels
+   * attend que les préférences soient lues (`useReprendreLEngagement`), donc sur une pile neuve elle
+   * ne reprend le passage qu'**après** la première lecture — la carte, elle, doit se montrer à cette
+   * lecture-là, pas à une suivante qui viendrait au prochain retour sur le plan.
+   */
+  aMontrer: () => boolean;
 };
 
 const PassageDEngagement = createContext<Passage | null>(null);
@@ -59,16 +68,23 @@ export function usePassageDEngagement(): Passage {
 
 export default function PlanLayout() {
   const enAttente = useRef<EngagementPris | null>(null);
+  const aMontrer = useRef(false);
 
   const passage = useMemo<Passage>(
     () => ({
       deposer: (engagement) => {
         enAttente.current = engagement;
+        aMontrer.current = true;
       },
       reprendre: () => {
         const engagement = enAttente.current;
         enAttente.current = null;
         return engagement;
+      },
+      aMontrer: () => {
+        const montrer = aMontrer.current;
+        aMontrer.current = false;
+        return montrer;
       },
     }),
     []

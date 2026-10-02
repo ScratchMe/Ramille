@@ -322,6 +322,39 @@ et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
 au-dessus des pistes, par exemple, ne fait bouger aucune assertion de présence. Chaque branche
 qu'on prétend garder demande donc sa moitié négative.
 
+**Les tests de la vague du 01/10/2026 (`v1-33`), et ce que chacun a appris :**
+
+- **Un aller-retour se voit en retenant les réponses** : le double de Supabase de
+  `src/tests/ecrans/restitution-du-bilan.test.tsx` ne répond qu'à la demande du test, donc une
+  lecture partie trop tard manque à la liste des requêtes en vol. C'est la seule garde de la
+  restitution d'un re-bilan sur deux jours différents — les re-bilans du parcours réel sont des
+  corrections du même jour. Le même fichier lit **l'ordre** des blocs, ce que le critère ci-dessus
+  range d'ordinaire dans la mise en page : c'est une décision de produit prise sur une mesure (D9,
+  D11), et ni `src/types` ni le parcours ne la voient.
+- **Le retour matériel du questionnaire** (`src/tests/ecrans/retour-du-questionnaire.test.tsx`) :
+  `BackHandler` espionné, `Platform.OS` forcé à `android`, le calcul gardé en vol par une lecture qui
+  ne rend qu'à la demande. Sa première rédaction restait **verte** quand le retour passait pendant le
+  calcul : le recul se cachait derrière `CalculEnCours`, et il a fallu faire échouer le calcul pour
+  lire l'étape où le questionnaire revient.
+- **Les longs trajets relus** (`src/tests/ecrans/longs-trajets-relus.test.tsx`) : la dérivation de la
+  réponse est juste et testée dans `src/types`, c'est ce que l'écran lui passe qui ne l'était pas — un
+  « Oui » relu des compteurs retombait sur « Non » au toucher d'un « 0 ». Le cas même que le critère
+  ci-dessus vise : une mutation d'écran que ni `src/types` ni le parcours réel ne voient.
+- **Deux écrans de service** : `feedback.test.tsx` (le toucher d'« Envoyer » à vide demande, ne part
+  pas, donne le focus) et `toi-confirmation.test.tsx` (un seul principal pendant la confirmation,
+  retour matériel compris par un `BackHandler` simulé) ; et un test colocalisé, `numeric-field.test.tsx`,
+  pour l'absence du placeholder. Chaque branche y porte sa moitié négative.
+- **Un client réel sous minuteries fictives ne se débloque pas** (`src/lib/supabase.test.ts`) : la
+  chaîne d'attente de la session d'`auth-js` y reste pendante. Temps réels, borne de 1,5 s.
+- **Un défaut propre au web se teste en rendant par react-native-web**
+  (`src/tests/ecrans/feuille-du-bas-sur-web.test.tsx`, seul de la suite) : `@jest-environment jsdom`,
+  `jest.mock('react-native', () => jest.requireActual('react-native-web'))`, un rendu par
+  `react-dom/client` ; reanimated réduit à ce que le composant appelle, `@/lib/mouvement` à son
+  `reglage` ; et `fetch` fixé à `undefined`, sans quoi « Cannot log after tests are done » sort quand
+  on lance la suite entière. Coût : 1,6 s. Ce qu'il voit et que le rendu natif ne voit pas : un
+  `tabindex`, le focus posé par le `Modal`. Ce qu'il ne voit pas : ce qui est sous le doigt, que seul
+  le parcours réel peut demander au navigateur.
+
 ### 2.13 Rejouer la CI en local, et ce que le rejeu garde de lui-même
 
 `node scripts/rejouer-la-ci.mjs` rejoue les travaux de `ci.yml` dans l'ordre — `verifications`,

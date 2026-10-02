@@ -35,7 +35,13 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   courbe à régler, et **posé sous la préférence** (`animated: !animationsReduites`) — le défilement
   compte parmi ce qui s'anime. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5),
   et le focus part avant lui, au geste. Les deux défilements du questionnaire et leurs règles :
-  `FRONT-QUESTIONNAIRE.md` §2.6.
+  `FRONT-QUESTIONNAIRE.md` §2.6 — **borné au contenu au moment où il part** : une ouverture qui grandit
+  doit avoir sa place réservée (`StepShell`). **Le plan défile depuis le 01/10/2026** (`v1-33` P-1 et P-2), deux
+  fois, et jamais à chaque retour : à l'ouverture du sélecteur, juste assez pour que « C'est noté »
+  finisse au-dessus de la barre (`defilementPourMontrer`) ; après la relecture d'un engagement pris
+  sur l'écran ou ramené de la liste, jusqu'à la carte engagée, où qu'elle soit
+  (`defilementVersLaCarte`). Le focus va à son bloc avec le rendu qui retire « C'est noté », avant le
+  défilement, qu'il ne fait pas lui-même.
 - **Ce qui ne bouge jamais** : l'état pressé (une teinte immédiate, `v1-29` décision n° 6), un
   chiffre (jamais un compteur qui défile — il afficherait des valeurs fausses en chemin), une
   navigation de pile (« standard plateforme »), et le focus, qui part au geste et jamais à la fin
@@ -71,6 +77,25 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   (`display: none`), où `onLayout` rend zéro. `HauteurSuivie` l'ignore ; tenue, elle faisait
   regrandir la carte du point sous les yeux à chaque retour sur le plan. Toute mesure prise dans
   `onLayout` pour animer pose la même question.
+- **Toucher le voile ferme la feuille, comme le retour** (01/10/2026, `v1-33` T-7) : même `fermer()`,
+  donc même sortie animée et même `onFerme` — la feuille des rappels se marque vue comme sur un
+  retour. **Le voile n'est pas un `Pressable`** : il reçoit le toucher par les répondeurs
+  (`onStartShouldSetResponder`, `onResponderRelease`), sans aucun `tabindex`, et il n'est ni un arrêt
+  de tabulation ni un nœud du lecteur d'écran. **La place au-dessus de la feuille est une vue
+  ordinaire en `pointerEvents: 'box-none'`, et seule la feuille, à l'intérieur, s'anime** : sur web,
+  reanimated pose les styles d'une vue animée en ligne, où `box-none` n'est pas du CSS — la place
+  prenait donc le clic et la feuille restait ouverte (mesuré le 01/10/2026 ; gardé par l'étape
+  « re-bilan — un toucher sur le voile… » du parcours réel). **La poignée ne se tire toujours pas** :
+  un glissé se juge au doigt, sur appareil.
+- **Sur web, c'est le `Modal` qui pose le focus d'ouverture d'une feuille, et rien d'autre** (mesuré
+  le 01/10/2026, CI de la PR #314). Dès que son piège à focus est actif, juste après le montage, il
+  essaie `.focus()` sur chaque descendant dans l'ordre du DOM et garde le premier qui l'accepte ; à la
+  fermeture, il rend le focus à l'élément qui l'avait avant. Le focus part donc avec la feuille, pas
+  à la fin de sa montée. Ce qui décide où il tombe, c'est l'ordre des éléments focalisables, voile
+  compris : tout élément qui porte un `tabindex` et précède le contrôle voulu prend le focus à sa
+  place. Un `Pressable` de react-native-web en porte toujours un ; `focusable={false}` n'y change
+  rien, et `tabIndex={-1}` retire l'arrêt de tabulation sans empêcher `.focus()`. Gardé par
+  `src/tests/ecrans/feuille-du-bas-sur-web.test.tsx` et par le parcours réel.
 - **Une feuille qui redescend peut encore recevoir un choix** : la fermeture part au geste de
   retour, et un choix validé après un `await` arrive pendant la sortie — ou juste après. `fermer(apres)`
   remplace alors le rappel en attente, ou l'appelle aussitôt si la sortie est finie — ignoré, le
