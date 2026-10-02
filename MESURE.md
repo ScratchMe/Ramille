@@ -46,8 +46,8 @@ gonflait exactement le chiffre auquel on voulait la comparer. D'où `SOURCES_CON
 d'appartenance — et le fait que les valeurs attendues soient écrites dans la description du
 référentiel, seul endroit où la base peut les porter.
 
-**`app_error` peut arriver en retard, et le dit** (02/10/2026) : une panne survenue sans session ou
-sans réseau attend sur l'appareil et part plus tard, avec `differee` et `retard_h`
+**`app_error` peut arriver en retard, et le dit** (02/10/2026) : une panne survenue sans session, sans
+réseau ou pendant une panne passagère du serveur attend sur l'appareil et part plus tard, avec `differee` et `retard_h`
 (`docs/exploitation/remontee-erreurs.md` §3 bis). C'est le seul événement qui attend : les autres
 s'émettent après la session, la règle ci-dessous.
 

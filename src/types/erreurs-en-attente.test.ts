@@ -1,14 +1,18 @@
 /**
- * La file d'attente locale des erreurs (02/10/2026, `docs/exploitation/remontee-erreurs.md` §3).
+ * La file d'attente locale des erreurs (02/10/2026, `docs/exploitation/remontee-erreurs.md` §3 bis).
  *
- * Ce fichier garde la file elle-même ; son stockage, son envoi et ses deux déclencheurs le sont dans
- * `src/lib/analytics.test.ts`.
+ * Ce fichier garde la file elle-même ; son stockage et son envoi le sont dans `src/lib/analytics.test.ts`,
+ * ses deux déclencheurs (`src/app/_layout.tsx`) ne le sont que par relecture.
  *
  * Éprouvé en le cassant le 02/10/2026 (`TESTING.md` §1.1), chacune faisant tomber la sienne :
  *   - `enfiler` sans borne (`.slice` retiré) → « garde les vingt plus récentes », seul ;
  *   - l'âge maximal ignoré à la lecture → « laisse tomber une erreur de plus de trente jours », seul ;
- *   - un refus du serveur gardé (`status === 0` retiré de `suiteDeLEnvoi`) → « vide la file sur un
- *     refus », seul.
+ *   - un refus du serveur gardé (`suiteDeLEnvoi` rend « garder » sur toute erreur) → « vide la file sur un
+ *     refus », seul ici — et « ne garde pas une panne envoyée, ni une panne refusée » dans
+ *     `src/lib/analytics.test.ts` ;
+ *   - une panne du serveur qui vide (`status >= 500` retiré) → « garde la file sur une panne passagère du
+ *     serveur », seul ; de même `429` retiré (contre-lecture du 02/10/2026 : la première version vidait
+ *     la file sur tout statut autre que 0).
  */
 import {
   AGE_MAXIMAL_MS,
@@ -81,6 +85,14 @@ describe('suiteDeLEnvoi', () => {
   });
 
   it('vide la file sur un refus : la rejouer la ferait refuser pour toujours', () => {
-    expect(suiteDeLEnvoi(400, { message: 'refus' })).toBe('vider');
+    for (const status of [400, 401, 403, 404, 409]) {
+      expect(suiteDeLEnvoi(status, { message: 'refus' })).toBe('vider');
+    }
+  });
+
+  it('garde la file sur une panne passagère du serveur — 5xx, trop de requêtes, délai dépassé', () => {
+    for (const status of [500, 502, 503, 504, 429, 408]) {
+      expect(suiteDeLEnvoi(status, { message: 'panne' })).toBe('garder');
+    }
   });
 });

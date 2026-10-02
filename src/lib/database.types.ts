@@ -91,6 +91,7 @@ export type Database = {
           actives: boolean
           derniere_verification: string
           dernier_envoi: string | null
+          dernier_passage: string | null
           dernier_resume: string | null
           envois_du_jour: number
           id: boolean
@@ -102,6 +103,7 @@ export type Database = {
           actives?: boolean
           derniere_verification?: string
           dernier_envoi?: string | null
+          dernier_passage?: string | null
           dernier_resume?: string | null
           envois_du_jour?: number
           id?: boolean
@@ -113,6 +115,7 @@ export type Database = {
           actives?: boolean
           derniere_verification?: string
           dernier_envoi?: string | null
+          dernier_passage?: string | null
           dernier_resume?: string | null
           envois_du_jour?: number
           id?: boolean

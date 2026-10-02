@@ -5,8 +5,9 @@
 //
 // 1. **`track()` ne lève jamais et ne bloque jamais.** Une mesure qui casse l'écran qu'elle
 //    observe est pire que pas de mesure du tout. Tout est avalé : session absente, réseau
-//    coupé, garde-fou de volume atteint. En développement, l'échec est journalisé — silencieux
-//    en production, où il n'y a personne pour le lire.
+//    coupé, garde-fou de volume atteint — et seule une panne (`app_error`) est gardée pour plus
+//    tard, dans la file d'attente des erreurs (plus bas). En développement, l'échec est
+//    journalisé — silencieux en production, où il n'y a personne pour le lire.
 // 2. **On n'attend jamais le résultat.** Aucun appelant ne doit mettre un `await` devant :
 //    la fonction rend `void` exprès, pour que ce soit impossible sans le remarquer.
 // 3. **On n'envoie que des valeurs venues du code.** Jamais une saisie utilisateur, jamais un
@@ -22,6 +23,7 @@ import {
   type UsageEventPropsByName,
 } from '@/types/analytics';
 import {
+  CLE_DE_LA_FILE,
   enfiler,
   lireLaFile,
   memeErreur,
@@ -49,22 +51,20 @@ async function send(name: UsageEventName, props: UsageEventProps | undefined): P
     // `getSession()` lit le cache local, contrairement à `getUser()` qui fait un aller-retour
     // réseau : on ne paie pas une requête supplémentaire par événement.
     //
-    // **Sans session, on laisse tomber — et ce renoncement est la responsabilité de
-    // l'appelant, pas la nôtre.** Il n'est pas neutre : il ne frappe pas au hasard mais
-    // exactement les premiers lancements, ceux où `ensureSession()` fait encore son
-    // aller-retour de création de compte. C'est ce qui avait vidé `app_open`, dénominateur de
-    // tous les entonnoirs : **une seule ligne en base pour six vues d'étape d'onboarding**
-    // (v1-13, préambule ; la contre-vérification d'A1-3 du 09/09 comptait zéro). Le layout
-    // racine l'émet désormais dans le `.then(ensureSession)`. La règle qui en découle : **un
-    // événement qui peut partir avant la première session s'émet après elle**, jamais au
-    // montage. Une file d'attente ici coûterait une persistance et un vidage à gérer pour
-    // rattraper un seul cas, `app_error` au démarrage, qui est un filet assumé comme partiel
-    // (cf. docs/exploitation/remontee-erreurs.md §3).
+    // **Sans session, on laisse tomber — sauf une panne.** Ce renoncement n'est pas neutre : il
+    // ne frappe pas au hasard mais exactement les premiers lancements, ceux où `ensureSession()`
+    // fait encore son aller-retour de création de compte. C'est ce qui avait vidé `app_open`,
+    // dénominateur de tous les entonnoirs : **une seule ligne en base pour six vues d'étape
+    // d'onboarding** (v1-13, préambule ; la contre-vérification d'A1-3 du 09/09 comptait zéro).
+    // Le layout racine l'émet désormais dans le `.then(ensureSession)`. La règle qui en découle,
+    // et qui est la responsabilité de l'appelant : **un événement qui peut partir avant la
+    // première session s'émet après elle**, jamais au montage.
     //
-    // **Ce cas-là a sa file depuis le 02/10/2026** (`src/types/erreurs-en-attente.ts`) : une panne est
-    // l'événement qu'on veut le plus, et la phase de test fermé sur Play en a besoin. Une erreur sans
-    // session ou sans réponse se garde, et part au prochain démarrage (`envoyerLesErreursEnAttente`).
-    // Les autres événements gardent la règle d'avant : ils s'émettent après la session.
+    // **La panne est la seule exception, et elle a sa file** (02/10/2026,
+    // `src/types/erreurs-en-attente.ts`) : elle ne choisit pas son moment, et c'est l'événement
+    // que le test fermé sur Play veut le plus. Sans session, ou sans réponse du serveur, ou sur
+    // une panne passagère de celui-ci, `app_error` se garde sur l'appareil et part plus tard
+    // (`envoyerLesErreursEnAttente`).
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -93,12 +93,9 @@ async function send(name: UsageEventName, props: UsageEventProps | undefined): P
 
 // ── La file d'attente des erreurs ──────────────────────────────────────────────────────────────
 
-/** Sous le préfixe commun : un départ voulu, ou l'arrivée d'un autre compte, la balaie avec le reste. */
-const FILE_KEY = 'traceverte.erreurs_en_attente.v1';
-
 async function lireLaFileStockee(): Promise<ErreurEnAttente[]> {
   try {
-    return lireLaFile(await AsyncStorage.getItem(FILE_KEY), Date.now());
+    return lireLaFile(await AsyncStorage.getItem(CLE_DE_LA_FILE), Date.now());
   } catch {
     return [];
   }
@@ -106,17 +103,18 @@ async function lireLaFileStockee(): Promise<ErreurEnAttente[]> {
 
 async function ecrireLaFile(file: ErreurEnAttente[]): Promise<void> {
   try {
-    if (file.length === 0) await AsyncStorage.removeItem(FILE_KEY);
-    else await AsyncStorage.setItem(FILE_KEY, JSON.stringify(file));
+    if (file.length === 0) await AsyncStorage.removeItem(CLE_DE_LA_FILE);
+    else await AsyncStorage.setItem(CLE_DE_LA_FILE, JSON.stringify(file));
   } catch {
     // Best-effort, comme toute la mesure : une file perdue est une panne non tracée, rien de plus.
   }
 }
 
 /**
- * **Les écritures de la file passent une par une** : deux pannes au même instant — l'écran d'erreur et
- * une promesse rejetée à côté — lisaient toutes deux la file vide, et la seconde écrasait la première
- * (le test l'a trouvé à la première exécution). Le vidage passe par la même file, pour la même raison.
+ * **Les écritures de la file passent une par une** : deux écritures rapprochées — l'écran d'erreur qui
+ * retombe juste après « Réessayer », ou une panne pendant le vidage — lisaient toutes deux la même file,
+ * et la seconde écrasait la première (le test l'a trouvé à la première exécution, avec deux pannes
+ * émises coup sur coup). Le vidage passe par la même série, pour la même raison.
  */
 let enCours: Promise<void> = Promise.resolve();
 function enSerie(travail: () => Promise<void>): Promise<void> {
@@ -134,14 +132,31 @@ function garderLErreur(props: UsageEventProps | undefined): Promise<void> {
 }
 
 /**
- * Envoie les erreurs gardées sur l'appareil — au démarrage, une fois la session là, et au retour au
- * premier plan (`src/app/_layout.tsx`). Comme `track()`, **ne lève jamais**, et ne s'attend pas.
+ * Envoie les erreurs gardées sur l'appareil — au démarrage, une fois la session là, et, sur natif, au
+ * retour au premier plan compté comme une ouverture (`src/app/_layout.tsx`). Comme `track()`, **ne lève
+ * jamais**, et ne s'attend pas.
  *
  * Elles partent en **un seul insert** : un lot qui passe ou ne passe pas, donc une file qui ne se vide
  * jamais à moitié. Ne sont retirées de la file que celles qui viennent de partir — une panne survenue
  * pendant l'envoi reste pour le suivant.
+ *
+ * **Un seul envoi à la fois** : le client Supabase ne pose aucun délai à ses requêtes, donc un envoi du
+ * démarrage resté suspendu pouvait croiser celui d'un retour au premier plan, qui relisait la même file
+ * et insérait le même lot une seconde fois. Un appel pendant un envoi rend celui qui est en cours. Le
+ * prix : un envoi qui ne revient jamais retient la file jusqu'au lancement suivant.
  */
-export async function envoyerLesErreursEnAttente(): Promise<void> {
+let envoiEnCours: Promise<void> | null = null;
+
+export function envoyerLesErreursEnAttente(): Promise<void> {
+  if (!envoiEnCours) {
+    envoiEnCours = envoyerLaFile().finally(() => {
+      envoiEnCours = null;
+    });
+  }
+  return envoiEnCours;
+}
+
+async function envoyerLaFile(): Promise<void> {
   try {
     const file = await lireLaFileStockee();
     if (file.length === 0) return;

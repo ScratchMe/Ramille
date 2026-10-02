@@ -516,9 +516,10 @@ avec sa requête et ce qui doit alerter — et, depuis le lot 6, `analytics.coho
 `public.suppressions_de_compte_par_mois` (§8.5 bis), puis les quatre vues de l'administration
 (§8.5 ter). À côté : `redirect-urls.md` (la liste réelle des URL de redirection Supabase, relevée entrée par entrée, avec ce qui doit en être retiré),
 `sauvegarde.md` (le régime de sauvegarde et la procédure de restauration) et
-`remontee-erreurs.md`. **Rien dans le code ni dans la CI ne voit ces réglages, et aucun de ces
-journaux n'émet d'alerte** : c'est ce dossier qui les rend vérifiables, et un journal qu'on ne
-sait pas où lire se lit zéro. Aucune valeur secrète n'y descend — on nomme le réglage et
+`remontee-erreurs.md`. **Rien dans le code ni dans la CI ne voit ces réglages, et ces journaux
+n'émettent qu'une alerte, désactivable** — un e-mail récapitulatif quand ils voient du neuf, depuis le
+02/10/2026 (§8.11) : c'est ce dossier qui les rend vérifiables, et un journal qu'on ne sait pas où
+lire se lit zéro. Aucune valeur secrète n'y descend — on nomme le réglage et
 l'endroit où il vit.
 
 Deux nuances du fichier des redirections qu'il ne faut pas réécrire à l'envers — le suffixe de

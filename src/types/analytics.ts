@@ -260,9 +260,11 @@ export type UsageEventPropsByName = {
    *  donc elle n'a pas de propriété de provenance : il n'y en a qu'une. */
   rappels_view: never;
   /** Une exception de rendu a remonté jusqu'à l'`ErrorBoundary` du layout racine (C0.4).
-   *  **Deux propriétés, et jamais une troisième** : la catégorie et la route. Pas de message
-   *  d'exception, pas de pile — un message d'erreur est du texte libre, et du texte libre dans
-   *  `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la migration). */
+   *  **Ce qui décrit la panne tient en deux propriétés, et jamais une troisième** : la catégorie
+   *  et la route. Pas de message d'exception, pas de pile — un message d'erreur est du texte libre,
+   *  et du texte libre dans `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la
+   *  migration). Les deux de la file d'attente, en dessous, disent seulement **quand** elle est
+   *  partie : un drapeau et un nombre, posés par le code. */
   app_error: {
     category: AppErrorCategory;
     route: string;
