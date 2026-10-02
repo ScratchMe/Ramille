@@ -134,9 +134,15 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // plus de l'adresse ; l'identifiant de notification, enregistré quel que soit le canal ; l'adresse IP
 // et l'appareil de chaque session ; l'échec d'une soumission du bilan, qui est un repère de parcours ;
 // GitHub et Cloudflare pour les sauvegardes ; et un export qui ne rendait ni les identités ni les
-// sessions (`20261002195246_l_export_rend_les_identites_et_les_sessions.sql`). **Aucune ne change ce
+// sessions (`20261002195246_l_export_rend_les_identites_et_les_sessions.sql`, puis
+// `20261002201448_l_export_rend_aussi_les_messages.sql` pour les messages). **Aucune ne change ce
 // que le produit fait** : la page décrit ce qui existait déjà, donc ce n'est pas l'élargissement que
 // « Évolutions de ce document » promet d'annoncer dans l'application avant qu'il prenne effet.
+// Deux phrases reposent sur une lecture et non sur une mesure, et se vérifient sur le premier build :
+// que Firebase attribue son identifiant dès le premier lancement, permission accordée ou non
+// (initialisation automatique de `firebase-messaging`, embarqué par `expo-notifications`), et que
+// Supabase Auth réécrit l'adresse IP d'une session à chaque rafraîchissement (« ouverte ou utilisée
+// pour la dernière fois » couvre les deux cas). La page déclare plutôt trop que pas assez.
 const UPDATED_AT = '2 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -165,7 +171,10 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           `${APP_NAME} estime l’empreinte carbone de tes déplacements à partir de ce que tu déclares. ` +
-          'Nous ne collectons rien d’autre que ce qui sert à produire ce résultat et à te le restituer dans le temps.',
+          'Ce que tu déclares ne sert qu’à produire ce résultat et à te le restituer dans le temps. S’y ajoute ce que ' +
+          'nos services techniques enregistrent d’eux-mêmes — tes sessions, ce que Google transmet si tu passes par ' +
+          'lui, l’identifiant de notification de ton téléphone —, décrit ci-dessous, et dont nous ne nous servons pas ' +
+          'pour autre chose que faire fonctionner la connexion et les notifications.',
       },
       {
         kind: 'definitions',
@@ -193,14 +202,16 @@ const SECTIONS: LegalSection[] = [
             term: 'Ton compte, si tu en crées un',
             text:
               'Ton adresse email. Si tu passes par Google, nous recevons aussi l’identifiant du compte Google, ainsi ' +
-              'que le nom et l’adresse de la photo de profil que Google transmet d’office : nous ne les lisons ni ne ' +
+              'que le nom et l’adresse de la photo de profil, que notre service d’authentification demande à Google par ' +
+              'défaut : nous ne les lisons ni ne ' +
               'les affichons. Rien d’autre — ni tes contacts, ni ton agenda, ni aucune autre donnée Google.',
           },
           {
             term: 'Tes sessions de connexion',
             text:
               'Pour chaque session ouverte sur un appareil, la session anonyme comprise, notre service ' +
-              'd’authentification enregistre l’adresse IP et le navigateur ou le système d’où elle a été ouverte. ' +
+              'd’authentification enregistre l’adresse IP et le navigateur ou le système d’où elle a été ouverte ou ' +
+              'utilisée pour la dernière fois. ' +
               'C’est son fonctionnement ordinaire : nous ne nous en servons pas, et nous n’en tirons aucune position.',
           },
           {
@@ -208,8 +219,9 @@ const SECTIONS: LegalSection[] = [
             text:
               'Dès que ton téléphone accepte les notifications de l’application, nous enregistrons l’identifiant qui ' +
               'permet de lui en envoyer, quel que soit le canal de rappel que tu choisis. Sur les versions d’Android ' +
-              'antérieures à la 13, les notifications sont acceptées d’office : il faut les couper dans les réglages ' +
-              'du téléphone pour que cet identifiant ne soit pas enregistré.',
+              'antérieures à la 13, les notifications sont acceptées d’office : l’identifiant est donc enregistré dès le ' +
+              'premier lancement. Les couper dans les réglages du téléphone le désactive à l’ouverture suivante de ' +
+              'l’application.',
           },
         ],
       },
@@ -224,20 +236,25 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'Nous enregistrons aussi quelques repères de parcours dans l’application : quels écrans tu as ouverts, à quelle ' +
-          'étape du questionnaire tu en es, si tu as rattaché un compte, et le fait qu’un écran n’a pas réussi à ' +
+          'Nous enregistrons aussi quelques repères de parcours dans l’application : quels écrans tu as ouverts et ' +
+          'd’où tu y arrivais, à quelle étape du questionnaire tu en es, si tu as partagé ton bilan, demandé un code ' +
+          'de connexion ou rattaché un compte — et, quand tu cherches un compte existant, si cet appareil portait déjà ' +
+          'un bilan —, et le fait qu’un écran n’a pas réussi à ' +
           's’afficher ou qu’un envoi de ton bilan a échoué (le type de l’erreur et l’endroit, jamais son message). Ces ' +
           'repères ne portent rien d’autre : ni texte que tu aurais saisi, ni adresse IP, ni identifiant d’appareil, et ' +
-          'aucun suivi de ce que tu fais ailleurs. Ces repères ' +
-          'servent à une seule chose : voir où le produit décroche pour le réparer. Ils restent chez notre hébergeur, ' +
-          'aucun outil d’analyse tiers ne les reçoit.',
+          'aucun suivi de ce que tu fais ailleurs. Ils servent à voir où le produit décroche pour le réparer. ' +
+          'L’ouverture de l’application sert aussi à savoir que tu es toujours là : elle remet tes rappels à leur ' +
+          'rythme normal et repousse la suppression automatique d’une session anonyme (le détail plus bas). Ces ' +
+          'repères restent chez notre hébergeur, aucun outil d’analyse tiers ne les reçoit.',
       },
       {
         kind: 'paragraph',
         text:
           'La base légale est l’exécution du service que tu demandes. Pour les rappels par email et pour les repères de ' +
           'parcours, c’est notre intérêt légitime — maintenir le suivi que tu as commencé dans un cas, corriger ce qui ne ' +
-          'fonctionne pas dans l’autre. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
+          'fonctionne pas dans l’autre. Ce que nos services techniques enregistrent d’eux-mêmes — tes sessions, ce que ' +
+          'Google transmet, l’identifiant de notification — relève de l’exécution du service : la connexion et les ' +
+          'notifications ne fonctionnent pas sans. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
           'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
           'que tu aies à te connecter.',
       },
@@ -293,7 +310,8 @@ const SECTIONS: LegalSection[] = [
         text:
           'Dès l’ouverture de l’application, une session anonyme est créée pour que ton bilan puisse être enregistré et te ' +
           'revenir si tu fermes puis rouvres l’app. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
-          'numéro de téléphone.',
+          'numéro de téléphone. Comme toute session, elle garde l’adresse IP et l’appareil d’où elle est utilisée, et ' +
+          'l’identifiant de notification dès que ton téléphone accepte les notifications (le détail plus haut).',
       },
       {
         kind: 'paragraph',
@@ -311,8 +329,8 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Tout ce que tu déclares et tout ce que nous en calculons sont hébergés dans l’Union européenne. Nous faisons ' +
-          'appel aux prestataires suivants, chacun pour une fonction précise, et chacun ne reçoit que ce que cette ' +
-          'fonction exige :',
+          'appel aux prestataires suivants, chacun pour une fonction précise, et chacun ne reçoit que ce qui sert à ' +
+          'cette fonction :',
       },
       {
         kind: 'definitions',
@@ -340,8 +358,9 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'Expo',
             text:
-              'Acheminement des notifications vers ton téléphone. Expo fournit l’identifiant de notification de ton ' +
-              'appareil dès que ton téléphone accepte les notifications, quel que soit le canal choisi. Il ne reçoit ' +
+              'Acheminement des notifications vers ton téléphone. Dès que ton téléphone accepte les notifications, quel ' +
+              'que soit le canal choisi, Expo reçoit l’identifiant que Google attribue à l’application sur ton téléphone ' +
+              'et un identifiant d’installation, et nous rend l’identifiant de notification. Il ne reçoit ' +
               'le texte d’un message que si tu as choisi les notifications comme canal de rappel, ou demandé le mot ' +
               'de la veille : la question de ton point, ou ce mot (le détail plus bas). Société américaine, serveurs ' +
               'situés aux États-Unis.',
@@ -349,9 +368,9 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'Google (Firebase Cloud Messaging)',
             text:
-              'La couche du système Android qui remet les notifications à ton téléphone. Elle fournit l’identifiant ' +
-              'de ton appareil dans les mêmes conditions qu’Expo, et ne remet un message que dans les cas décrits ' +
-              'juste au-dessus. Société américaine.',
+              'La couche du système Android qui remet les notifications à ton téléphone. Elle attribue un identifiant à ' +
+              'l’application sur ton téléphone, dès son premier lancement, que tu acceptes les notifications ou non, et ' +
+              'ne remet un message que dans les cas décrits juste au-dessus. Société américaine.',
           },
           {
             term: 'Google (connexion avec un compte Google)',
@@ -363,8 +382,9 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'GitHub',
             text:
-              'Fabrication de la sauvegarde hebdomadaire de la base : une machine de GitHub Actions en fait une copie ' +
-              'complète et la chiffre, puis la machine est effacée à la fin de l’opération. Société américaine.',
+              'Fabrication de la sauvegarde hebdomadaire de la base : une machine de GitHub Actions en fait une copie, ' +
+              'sessions exceptées, et la chiffre, puis la machine est effacée à la fin de l’opération. Société ' +
+              'américaine.',
           },
           {
             term: 'Cloudflare',
@@ -396,7 +416,7 @@ const SECTIONS: LegalSection[] = [
           'pour ton trajet, par exemple « Demain, tu as prévu de faire ton trajet à vélo. » C’est tout ce qui sort de ' +
           'ton bilan et de ton plan par ce canal : il n’y figure aucun chiffre, ' +
           'aucun de tes totaux, aucune autre de tes réponses. Pour la connexion Google : l’adresse du ' +
-          'compte avec lequel tu choisis de te connecter. Pour la sauvegarde : une copie complète de la base, que ' +
+          'compte avec lequel tu choisis de te connecter. Pour la sauvegarde : une copie de la base, sessions exceptées, que ' +
           'GitHub chiffre avant qu’elle quitte sa machine, et que Cloudflare ne reçoit que chiffrée. Pour la carte de ' +
           'partage : le lien que tu génères toi-même, ' +
           'avec ton total annuel, ton poste principal et sa part — tant que tu ne partages rien, rien ne part. Le canal ' +
@@ -426,13 +446,16 @@ const SECTIONS: LegalSection[] = [
             'tu n’as pas créé de compte.',
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
-          'Sessions de connexion, avec leur adresse IP et leur appareil : gardées tant que la session existe. Elle part ' +
-            'quand tu te déconnectes de cet appareil, avec la suppression de ton compte, ou avec la suppression ' +
-            'automatique d’une session anonyme.',
-          'Identifiant de notification de ton téléphone : désactivé dès que ton téléphone cesse d’accepter les ' +
-            'notifications — permission retirée dans ses réglages, ou application désinstallée — puis supprimé ' +
-            '90 jours plus tard. Il part aussi avec la suppression de ton compte et avec la suppression ' +
-            'automatique d’une session anonyme.',
+          'Sessions de connexion, avec leur adresse IP et leur appareil : gardées sans limite de durée tant que ton ' +
+            'compte existe. Une session part quand tu te déconnectes de cet appareil, si l’appareil joint alors notre ' +
+            'service, et toutes partent avec la ' +
+            'suppression de ton compte ou la suppression automatique d’une session anonyme.',
+          'Identifiant de notification de ton téléphone : désactivé à l’ouverture suivante de l’application si tu ' +
+            'as retiré la permission dans les réglages du téléphone, ou au premier envoi qui échoue si l’application ' +
+            'est désinstallée, puis supprimé 90 jours plus tard. Si aucun envoi ne part vers ce téléphone, parce que ' +
+            'tu as choisi les rappels par email ou aucun rappel, il reste enregistré tant que ton compte existe. Il ' +
+            'part dans tous les cas avec la suppression de ton compte et avec la suppression automatique d’une ' +
+            'session anonyme.',
           'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +
             'd’envoi, message — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',
@@ -541,7 +564,7 @@ export default function Confidentialite() {
     <LegalPage
       title="Politique de confidentialité"
       updatedAt={UPDATED_AT}
-      intro={`${APP_NAME} collecte le strict nécessaire pour estimer l’empreinte carbone de tes déplacements et t’accompagner dans la durée. Cette page dit précisément quoi, pourquoi, pendant combien de temps, et ce que tu peux exiger.`}
+      intro={`${APP_NAME} collecte ce qui sert à estimer l’empreinte carbone de tes déplacements et à t’accompagner dans la durée, et ses services techniques enregistrent d’eux-mêmes quelques données de fonctionnement. Cette page dit précisément quoi, pourquoi, pendant combien de temps, et ce que tu peux exiger.`}
       sections={SECTIONS}
     />
   );

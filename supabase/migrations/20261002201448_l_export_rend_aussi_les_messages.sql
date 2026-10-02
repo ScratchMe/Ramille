@@ -1,36 +1,30 @@
--- L'export rend aussi ce que Supabase Auth garde de la personne : ses identités de connexion et
--- ses sessions (02/10/2026).
+-- L'export rend aussi les messages de rappel, la question figée de chaque point et les métadonnées
+-- du compte (02/10/2026, le même soir que `20261002195246`).
 --
--- **D'où ça vient.** En préparant le formulaire « Sécurité des données » de Google Play
--- (`docs/exploitation/fiche-google-play.md` §1.4), le rapprochement entre ce que le produit
--- enregistre et ce que dit la page de confidentialité a trouvé deux choses que l'export ne rendait
--- pas, alors que la page promet « l'intégralité de ce que nous conservons sur toi » (RGPD art. 15) :
+-- **D'où ça vient.** La contre-lecture de la migration précédente a trouvé trois choses que la
+-- page de confidentialité dit conservées et que l'export ne rendait pas, alors qu'il promet
+-- « l'intégralité de ce que nous conservons sur toi » :
 --
---   - **les identités de connexion** (`auth.identities`). La connexion avec Google y range ce que
---     Google transmet : l'adresse, l'identifiant du compte Google, et aussi le nom et l'adresse de la
---     photo de profil, parce que Supabase Auth demande le droit `userinfo.profile`. Le produit ne les
---     lit nulle part ; ils n'en sont pas moins conservés ;
---   - **les sessions** (`auth.sessions`), qui portent l'adresse IP et l'agent utilisateur de chaque
---     session ouverte. Mesuré le 02/10/2026 : 110 sessions sur 110 les portent.
+--   - **le message de chaque rappel** : la page dit que sa trace — « période concernée, canal, date
+--     d'envoi, message » — est gardée six mois, et l'export n'en rendait ni l'objet, ni le corps, ni
+--     le texte de la notification, ni l'adresse à laquelle il est parti ;
+--   - **la question figée de chaque point** (`committed_question`), qui est la phrase même posée à
+--     la personne et peut nommer son mode, son action et ses jours ;
+--   - **les métadonnées du compte** (`auth.users.raw_user_meta_data`), où Supabase Auth recopie ce
+--     que Google transmet à la connexion, nom et photo compris — la migration précédente ne rendait
+--     que leur copie d'`auth.identities`.
 --
--- La page de confidentialité les décrit depuis la même PR ; cette migration rend vraie la phrase
--- sur l'export. **Une troisième retouche, de la même famille** : les points de suivi s'exportaient
--- par leur seul booléen `response`, qui vaut `null` pour une réponse « sans objet » — donc une
--- réponse donnée se lisait comme une absence de réponse. `response_kind` est la vérité d'une
--- réponse (`BOUCLE.md`), et il part maintenant avec elle.
+-- **Ce qui ne part toujours pas** : le jeton de désinscription (`unsubscribe_token`) et le ticket du
+-- fournisseur (`provider_ticket`) sont des clés ; l'erreur d'envoi (`last_error`) est un message
+-- technique du fournisseur, pas un fait sur la personne.
 --
--- **Ce qui ne part pas, et pourquoi.** Des sessions, ni l'identifiant ni les jetons : ce sont des
--- clés, pas des faits sur la personne — même raisonnement que le jeton d'appareil, dont l'export
--- ne rend que la fin. Des identités, `provider_id` reste : c'est l'identifiant chez le fournisseur,
--- qu'`identity_data` porte déjà sous `sub`.
---
--- **Réécrite depuis `pg_get_functiondef`** du distant, relevé le 02/10/2026 (empreinte du corps
--- `3706e516ec6c8b143ac4352475236d9f`), et non depuis le fichier qui l'a créée (`SUPABASE.md` §1.5).
+-- **Réécrite depuis le corps que `20261002195246` vient d'installer** (empreinte
+-- `1f5f70a641a087adb4c138f0270f60f7`, relevée en local et sur le distant).
 --
 -- **Ne pas rejouer après celle-ci** les migrations qui réécrivent `export_my_data` en entier —
 -- `20260905210000_suppression_et_export_compte.sql`, `20260907230000_rappels_canal.sql`,
--- `20260910140000_retention_outbox_et_jetons.sql`, `20260928075453_le_mot_de_la_veille.sql` :
--- chacune remettrait un export qui ne rend ni les identités ni les sessions.
+-- `20260910140000_retention_outbox_et_jetons.sql`, `20260928075453_le_mot_de_la_veille.sql`,
+-- `20261002195246_l_export_rend_les_identites_et_les_sessions.sql`.
 
 create or replace function public.export_my_data()
  returns jsonb
@@ -56,7 +50,8 @@ begin
         'cree_le', u.created_at,
         'cadence_du_plan', p.cadence_type,
         'canal_de_rappel', p.reminder_channel,
-        'mot_de_la_veille', p.mot_de_la_veille
+        'mot_de_la_veille', p.mot_de_la_veille,
+        'metadonnees', u.raw_user_meta_data
       )
       from auth.users u join public.profiles p on p.id = u.id
       where u.id = v_user_id
@@ -130,6 +125,7 @@ begin
         'statut', c.status,
         'reponse', c.response,
         'type_de_reponse', c.response_kind,
+        'question', c.committed_question,
         'repondu_le', c.responded_at
       ) order by c.period_start), '[]'::jsonb)
       from public.engagement_checkins c where c.user_id = v_user_id
@@ -140,6 +136,10 @@ begin
         'periode', c.period_label,
         'jour_vise', o.jour_vise,
         'canal', o.channel,
+        'destinataire', o.recipient_email,
+        'objet', o.subject,
+        'message', o.body,
+        'notification', o.push_body,
         'statut', o.status,
         'envoye_le', o.sent_at
       ) order by o.created_at), '[]'::jsonb)
@@ -179,17 +179,20 @@ $function$;
 revoke execute on function public.export_my_data() from public, anon;
 grant execute on function public.export_my_data() to authenticated;
 
--- Contrôle d'installation : la fonction que ce fichier vient d'installer rend bien les clés neuves,
--- et `anon` ne l'atteint toujours pas. Il ne protège pas d'un rejeu ultérieur d'une migration plus
--- ancienne, qui ne repasse pas par ici : c'est la consigne d'en-tête et le test 15 qui le font.
+-- Contrôle d'installation, comme celui de la migration précédente : il vérifie ce que ce fichier
+-- vient d'installer, pas un rejeu ultérieur.
 do $$
 declare
   v_corps text := (select prosrc from pg_proc where oid = 'public.export_my_data()'::regprocedure);
 begin
-  if position('identites_de_connexion' in v_corps) = 0
-     or position('''sessions''' in v_corps) = 0
-     or position('type_de_reponse' in v_corps) = 0 then
-    raise exception 'export_my_data ne rend pas les identités, les sessions ou le type de réponse';
+  if position('raw_user_meta_data' in v_corps) = 0
+     or position('committed_question' in v_corps) = 0
+     or position('o.push_body' in v_corps) = 0
+     or position('identites_de_connexion' in v_corps) = 0 then
+    raise exception 'export_my_data ne rend pas les messages, la question figée ou les métadonnées';
+  end if;
+  if position('unsubscribe_token' in v_corps) > 0 or position('provider_ticket' in v_corps) > 0 then
+    raise exception 'export_my_data rend une clé qui ne doit pas partir';
   end if;
   if has_function_privilege('anon', 'public.export_my_data()', 'execute') then
     raise exception 'anon peut appeler export_my_data';

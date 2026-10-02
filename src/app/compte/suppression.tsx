@@ -297,14 +297,14 @@ export default function SuppressionCompte() {
                 est supprimé, ce qui est gardé et combien de temps (`docs/exploitation/
                 fiche-google-play.md` §1.4, décidé le 02/10/2026). Hors des blocs d'état, pour que
                 le rendu statique le porte : c'est lui que lit quelqu'un qui ouvre l'adresse sans
-                compte, examinateur compris. Les deux durées sont celles de `/confidentialite` —
-                la règle du bucket des sauvegardes et le compteur du mois —, à toucher ensemble. */}
+                compte, examinateur compris. La durée des sauvegardes et le compteur du mois sont ceux
+                de `/confidentialite`, à toucher ensemble : rien ne garde l'accord des deux pages. */}
             <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
               La suppression efface ton compte et tout ce qui s’y rattache : bilans, résultats,
               plan, points de suivi, retours, repères de parcours, sessions et identifiant de
-              notification. Nos sauvegardes chiffrées en gardent une copie jusqu’à 90 jours,
-              puis s’effacent d’elles-mêmes. Il ne reste ensuite qu’un compteur des suppressions
-              du mois, sans aucun identifiant.
+              notification. Nos sauvegardes chiffrées en gardent une copie, sessions exceptées,
+              jusqu’à 90 jours, puis s’effacent d’elles-mêmes. Il ne reste ensuite qu’un compteur
+              des suppressions du mois, sans aucun identifiant.
             </ThemedText>
 
             <ThemedText type="small" themeColor="textTertiary" style={styles.pied}>

@@ -330,6 +330,8 @@ confidentialité (« l'intégralité de ce que nous conservons sur toi », RGPD 
 ne rougisse. C'est arrivé avec les tables d'auth : `auth.identities` (ce que la connexion Google
 transmet, nom et photo compris) et `auth.sessions` (l'adresse IP et l'appareil de chaque session)
 n'y sont entrées que le 02/10/2026 (`20261002195246_l_export_rend_les_identites_et_les_sessions.sql`),
+avec, le même soir, le message de chaque rappel et la question figée de chaque point
+(`20261002201448_l_export_rend_aussi_les_messages.sql`),
 trouvées en préparant le formulaire de Play (`docs/exploitation/fiche-google-play.md` §1.4). **Une
 table neuve qui porte un `user_id` impose donc une ligne dans l'export**, et une assertion dans
 `15_suppression_et_export.test.sql` ; ni les clés ni les jetons n'y partent, seulement les faits.
