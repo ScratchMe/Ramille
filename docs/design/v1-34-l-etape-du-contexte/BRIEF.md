@@ -20,8 +20,8 @@ ce que veut dire « Périurbain » et ce qu'elle doit cocher, puis finir.
 ## 1. L'étape telle qu'elle est, mesurée
 
 Mesurée le 03/10/2026 sur l'export web de la branche de la PR
-[#330](https://github.com/ScratchMe/Ramille/pull/330), qui n'est **pas encore en production**. Le
-trajet est régulier, quatre jours par semaine, donc la question du télétravail se pose.
+[#330](https://github.com/ScratchMe/Ramille/pull/330), avant sa fusion. Le trajet est régulier,
+quatre jours par semaine, donc la question du télétravail se pose.
 
 | | 390 × 844 | 360 × 800 |
 |---|---|---|
@@ -167,8 +167,9 @@ donc les quatre questions sont posées :
 
 ## 8. Pour voir l'état actuel
 
-**L'étape n'est pas en production** : elle vit sur la branche de la PR #330. Les captures font
-référence, prises à 2× dans `captures/avant/` :
+**L'étape est en production depuis la fusion de la PR #330, le 03/10/2026** : `www.ramille.fr`, en
+navigation privée, « Découvrir mon impact », puis le questionnaire jusqu'à l'étape 9. Le brief a été
+écrit juste avant, et ses captures, prises sur la branche, font référence, à 2× dans `captures/avant/` :
 
 | Capture | Ce qu'elle montre |
 |---|---|

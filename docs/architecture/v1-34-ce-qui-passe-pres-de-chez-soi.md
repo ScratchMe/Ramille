@@ -255,7 +255,7 @@ on s'en fiche. sinon OK ».
 
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 
-**Livré le 03/10/2026**, dans une PR (migration `ce_qui_passe_pres_de_chez_soi`, test pgTAP `45`).
+**Livré le 03/10/2026**, dans la PR [#330](https://github.com/ScratchMe/Ramille/pull/330) : migration `20261002231530_ce_qui_passe_pres_de_chez_soi`, appliquée sur le projet distant juste avant la fusion (registre d'exploitation §7 bis), et test pgTAP `45`.
 
 - **Le modèle** : `assessment_answers.transports_proches` (`text[]`, deux `check` : les valeurs, et
   « aucun » seul) ; un déclencheur qui range la réponse et en déduit `tc_access` ; deux colonnes de
@@ -273,15 +273,17 @@ on s'en fiche. sinon OK ».
 - **La garde des miroirs lit une forme de plus** : `colonne <@ ARRAY[…]`, la première colonne tableau
   qu'elle sache comparer (`TESTING-GARDES.md` §2.7).
 
-**Une précision tranchée en chemin, à valider** : l'action des sorties en RER. Le §4 disait « l'action
+**Une précision tranchée en chemin, validée le 03/10/2026** : l'action des sorties en RER. Le §4 disait « l'action
 des sorties, chiffrée au RER si le métro ou le tram n'est pas coché ». Un même libellé ne peut pas
 porter deux chiffrages — `action_text` est la clé unique du référentiel —, et la question du point est
 figée à la génération, comme pour D3. Le chantier a donc créé une action à part, « Prendre le RER pour
 deux sorties sur cinq », proposée quand le RER est coché sans le métro ni le tram, avec sa question
 « En {mois}, as-tu pris le RER pour une sortie ? ». Le comportement décidé est tenu (le gain est celui
-du RER) ; seul le libellé est neuf.
+du RER) ; seul le libellé est neuf. L'autre voie — garder l'action générique des sorties pour qui n'a
+que le RER, chiffrée au métro ou au tram — gardait un libellé juste et un gain faux. Posée à la
+personne qui pilote avec les phrases ci-dessous, réponse : « ok pour les deux ».
 
-**Les phrases nouvelles, à relire** — calquées mot pour mot sur leurs jumelles du train et des
+**Les phrases nouvelles, validées le même jour** — calquées mot pour mot sur leurs jumelles du train et des
 sorties, « train » devenant « RER » :
 
 | Action | Question du point | Mot de la veille | Premier pas |
