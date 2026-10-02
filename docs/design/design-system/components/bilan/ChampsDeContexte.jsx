@@ -47,7 +47,7 @@ const QUESTION_TC = 'Comment sont les transports en commun près de chez toi ?';
 const QUESTION_VEHICULES = 'Combien de véhicules motorisés dans ton foyer ?';
 // La ligne d'aide sous la zone, en `small` `textSecondary` : un cran au-dessus de l'intitulé tertiaire.
 const AIDE_ZONE =
-  'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un village, la campagne.';
+  'Urbain dense : une grande ville et sa proche banlieue, là où passent métro ou tram. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.';
 
 // `field` (gap `Spacing.two + 2`) et `row` (rangée, gap `Spacing.two`) de la source.
 const CHAMP = { display: 'flex', flexDirection: 'column', gap: 10 };

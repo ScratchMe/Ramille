@@ -34,11 +34,16 @@ const QUESTION_VEHICULES = 'Combien de véhicules motorisés dans ton foyer ?';
  * **La ligne d'aide sous la zone** (D4) : « Périurbain » est un mot d'urbaniste, et cette réponse décide
  * des actions du plan — le métro et le tram ne sont proposés qu'en zone urbaine dense (`PLAN.md` §1) —
  * et, avec un accès limité aux transports, de la moyenne montrée à la restitution (`mobility_constrained`
- * en zone rurale). Texte de l'audit, rendu tel quel ; sa relecture contre ces deux règles est au rapport
- * du chantier G du 01/10/2026 — elle peut faire mal classer une ville moyenne desservie par un tram.
+ * en zone rurale). **Alignée sur ce que le plan fait de la réponse** (décidé le 02/10/2026, `v1-33` §9) :
+ * le texte de l'audit laissait sans place la ville moyenne desservie par un tram, qui choisissait
+ * « Périurbain » et perdait le métro et le tram, et faisait proposer un métro à une proche banlieue qui
+ * n'en a pas. « Là où passent métro ou tram » le dit. Ce qu'on accepte : une banlieue sans métro ni tram
+ * qui choisit « Périurbain » perd aussi « les transports en commun pour deux sorties sur cinq », que la
+ * zone borne de même. La vraie correction serait une question à part sur le métro et le tram — une
+ * migration, pas une phrase.
  */
 const AIDE_ZONE =
-  'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un village, la campagne.';
+  'Urbain dense : une grande ville et sa proche banlieue, là où passent métro ou tram. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.';
 
 /**
  * Les quatre questions B4, rendues **une seule fois pour deux écrans** (C6.4, `v1-19` D5).

@@ -391,8 +391,26 @@ fichiers et doit passer seul.
 
 ## 9. Ce qui reste ouvert après la PR #314
 
-**Des textes rendus sans décision qui les nomme mot pour mot, à valider** — la contre-lecture les a
-relevés : la décision fixait l'intention, la phrase a été écrite pendant la vague.
+**Tranché le 02/10/2026** avec la personne qui pilote, recommandations suivies toutes les quatre :
+
+- **les textes écrits pendant la vague sont validés tels quels** — les deux questions de D4, les phrases
+  du serveur de D19, les trois phrases où « refaire » a été retiré ;
+- **l'aide sous la zone est alignée sur le plan** : « Urbain dense : une grande ville et sa proche
+  banlieue, là où passent métro ou tram. Périurbain : sa couronne, ou une ville moyenne ou petite.
+  Rural : un bourg, un village, la campagne. » Ce qu'on accepte : une banlieue sans métro ni tram qui
+  choisit « Périurbain » perd aussi l'action « transports en commun pour deux sorties sur cinq » ;
+- **la ligne de relecture du suivi a sa phrase du serveur** : « Ton suivi n’a pas pu être relu à
+  l’instant : ce que tu vois peut avoir changé depuis. » ;
+- **le voile ferme toutes les feuilles**, celle des rappels comprise : le retour d'Android fait déjà la
+  même chose, et le réglage reste dans « Toi » ;
+- **l'ordre de la suite** : la session refusée d'abord (PR #315), puis ces textes, puis les chantiers à
+  part, un par jour.
+
+Et **la phrase de `/feedback` passe à l'encre de ce qui manque** (`accentText`, 600) : c'est la fin de
+D18, dont la recommandation était déjà « le motif du questionnaire ».
+
+**Des textes rendus sans décision qui les nomme mot pour mot** — la contre-lecture les a relevés : la
+décision fixait l'intention, la phrase a été écrite pendant la vague. **Validés le 02/10/2026.**
 
 - **D4** : « Comment sont les transports en commun près de chez toi ? » et « Combien de véhicules
   motorisés dans ton foyer ? » — seule la question de la zone était donnée.
@@ -409,7 +427,7 @@ relevés : la décision fixait l'intention, la phrase a été écrite pendant la
   repris ou de `?etape=` sinon — et non à la seule première étape ; la feuille du re-bilan se referme
   par « Commencer », un libellé que la décision ne nommait pas.
 
-**Deux textes rendus tels que décidés, et à revoir** :
+**Deux textes rendus tels que décidés, et à revoir** — **tous deux tranchés le 02/10/2026**, plus haut :
 
 - **La ligne d'aide sous la zone (D4) peut faire mal classer.** Rendue mot pour mot : « Urbain dense :
   une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un
@@ -424,20 +442,21 @@ relevés : la décision fixait l'intention, la phrase a été écrite pendant la
 
 - **Toucher le voile consomme la feuille des rappels**, qui ne se montre qu'une fois par appareil
   (T-7) : un toucher distrait à côté de la feuille la fait partir pour toujours. Restreindre le voile
-  à la feuille du re-bilan ?
+  à la feuille du re-bilan ? **Non, tranché le 02/10/2026** : le voile ferme toutes les feuilles.
 - **« Réessayer » en secondaire pendant la confirmation de suppression** : la décision visait
   « Rattacher un compte » ; le chantier l'a étendue au « Réessayer » d'un échec, pour qu'il n'y ait
   qu'un principal.
 - **« Faire un nouveau bilan » le jour même** reste la tension de §6, non posée.
 - **Toucher le voile de la feuille du re-bilan sort du questionnaire**, comme « Pas maintenant » :
-  même question que pour la feuille des rappels, sur une feuille qui s'ouvre sans geste.
+  même question que pour la feuille des rappels, sur une feuille qui s'ouvre sans geste — même
+  réponse le 02/10/2026.
 - **La carte de saison et la carte des deux lieux dues le même jour** (un premier bilan fin novembre,
   le plan ouvert en décembre) : « Choisir une action » referme la saison, la carte des deux lieux se
   rend en tête et se note vue pendant que l'écran défile vers la première piste — elle peut partir
   sans être entrée dans la fenêtre. Conforme à la règle écrite (« rendue, l'écran au premier plan »).
 - **D18 ne réduit les façons de dire un formulaire incomplet que de trois à deux** : la phrase de
   `/feedback` reste en `small` tertiaire, là où le questionnaire, `/contexte` et D13 la disent en
-  `accentText` 600.
+  `accentText` 600. **Fait le 02/10/2026.**
 
 **Des constats techniques, chacun pour une PR à part** :
 

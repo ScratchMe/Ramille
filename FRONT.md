@@ -451,7 +451,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
 - **« Envoyer » de `/feedback` suit le motif du « Suivant » en attente depuis le 01/10/2026**
   (`v1-33` D18) : en attente sous trois caractères, ni `disabled` ni `aria-disabled` ; son toucher
   écrit « Trois caractères au moins pour pouvoir l'envoyer. », y compris à vide, donne le focus au
-  champ et n'envoie rien. `disabled` ne reste que pendant l'envoi.
+  champ et n'envoie rien. `disabled` ne reste que pendant l'envoi. **Et la phrase est à l'encre de ce
+  qui manque** depuis le 02/10/2026 (`small`, `accentText`, 600), comme la ligne du questionnaire,
+  celle de `/contexte` et celle de « C'est noté » : un formulaire incomplet se dit d'une seule façon.
 - **Un seul bouton principal par état d'écran, y compris sur « Toi » confirmation ouverte**
   (01/10/2026, `v1-33` §6) : « Rattacher un compte » et « Réessayer » y passent en `secondary` et
   redeviennent principaux à la fermeture (« Annuler », retour matériel) — c'est pourquoi l'écran tient

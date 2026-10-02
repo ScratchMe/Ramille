@@ -168,7 +168,7 @@ describe('/contexte — les questions du contexte', () => {
     }
     expect(
       screen.getByText(
-        'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un village, la campagne.'
+        'Urbain dense : une grande ville et sa proche banlieue, là où passent métro ou tram. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.'
       )
     ).toBeTruthy();
   });

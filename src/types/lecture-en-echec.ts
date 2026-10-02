@@ -57,16 +57,14 @@ export function genreDesEchecs(genres: readonly (GenreDEchec | null)[]): GenreDE
  * (« rien n'a jamais pu être lu ») ou la ligne de relecture au-dessus d'un écran déjà rempli
  * (`FRONT.md` §1.2).
  */
-export type EcranEnEchec = 'plan' | 'relectureDuPlan' | 'suivi' | 'contexte';
+export type EcranEnEchec = 'plan' | 'relectureDuPlan' | 'suivi' | 'relectureDuSuivi' | 'contexte';
 
 /**
  * **Hors ligne inchangé** (D19). La décision fixe l'intention — la phrase du serveur ne parle pas de
- * la connexion ; elle garde le constat, et dit d'attendre plutôt que de chercher — et les phrases
- * ci-dessous ont été écrites avec la vague, à valider (`v1-33` §9).
- *
- * **La ligne de relecture du suivi n'y est pas** : sa phrase n'est pas écrite, et elle dit encore
- * « Vérifie ta connexion. » quel que soit le genre (`src/app/(tabs)/suivi/index.tsx`,
- * `banniereRelecture`, et `v1-33` §9).
+ * la connexion ; elle garde le constat, et dit d'attendre plutôt que de chercher. Les phrases ont été
+ * écrites avec la vague du 01/10/2026 et **validées le 02/10/2026** par la personne qui pilote, celle
+ * de la relecture du suivi comprise, qui disait jusque-là « Vérifie ta connexion. » quel que soit
+ * l'échec (`v1-33` §9).
  */
 const PHRASES: Record<EcranEnEchec, Record<GenreDEchec, string>> = {
   plan: {
@@ -81,6 +79,11 @@ const PHRASES: Record<EcranEnEchec, Record<GenreDEchec, string>> = {
   suivi: {
     horsLigne: 'Ton suivi n’a pas pu être relu. Vérifie ta connexion.',
     serveur: 'Ton suivi n’a pas pu être relu. Réessaie dans un instant.',
+  },
+  relectureDuSuivi: {
+    horsLigne:
+      'Ton suivi n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion.',
+    serveur: 'Ton suivi n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis.',
   },
   contexte: {
     horsLigne: 'Tes réponses n’ont pas pu être lues. Vérifie ta connexion et réessaie.',

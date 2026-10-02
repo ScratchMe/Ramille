@@ -213,8 +213,12 @@ export default function Feedback() {
             <ThemedText type="small" themeColor="textTertiary" style={styles.compteur}>
               {trimmed.length} / {FEEDBACK_MAX_LENGTH}
             </ThemedText>
+            {/* **À l'encre de ce qui manque, comme le questionnaire, `/contexte` et « C'est noté »**
+                (02/10/2026, fin de `v1-33` D18) : la phrase restait en tertiaire, et un formulaire
+                incomplet se disait encore de deux façons (audit T-19). Un texte et non un lien : il n'y
+                a qu'un champ, et le toucher d'« Envoyer » y porte déjà le focus. */}
             {(tropCourt || demandeActive) && (
-              <ThemedText type="small" themeColor="textTertiary">
+              <ThemedText type="small" weight={600} themeColor="accentText">
                 Trois caractères au moins pour pouvoir l’envoyer.
               </ThemedText>
             )}
