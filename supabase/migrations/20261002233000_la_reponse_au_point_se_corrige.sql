@@ -8,11 +8,17 @@
 --
 -- **La règle.** La carte répondue offre « Modifier ma réponse », qui rouvre les trois réponses ; le
 -- RPC accepte de réécrire un point répondu **tant qu'il est celui de la période interrogée** —
--- jusqu'à l'arrivée du point suivant, le temps qu'un point non répondu aurait pour l'être, et le
--- temps que la carte répondue reste affichée (`estDeLaPeriodeCourante`, `src/types/checkin.ts`).
+-- jusqu'à la fin de sa période, minuit UTC le lundi (ou le 1er du mois), le temps que la carte
+-- répondue reste affichée (`estDeLaPeriodeCourante`, `src/types/checkin.ts`). « Jusqu'au point
+-- suivant », dit la décision : le point suivant n'arrive qu'à 6 h UTC, et jamais quand la boucle
+-- s'est arrêtée — la borne est celle de la carte, pas celle du cron.
 -- `responded_at` repart à maintenant : c'est l'instant de la dernière réponse, que le pied de la carte
 -- date (« Répondu mercredi. ») et que lisent la purge pour inactivité et l'administration — une
--- correction est une activité. Le statut reste `answered`, donc les rappels ne repartent pas.
+-- correction est une activité. **Elle remplace la première, elle ne s'y ajoute pas** : la semaine
+-- « a répondu » de `analytics.retention_par_cohorte` est celle de la dernière réponse, donc un point du
+-- mois répondu le 1er et corrigé le 20 quitte la semaine du 1er pour celle du 20 (contre-lecture du
+-- 02/10/2026 ; un point de la semaine se corrige dans sa semaine). Le statut reste `answered`, donc
+-- les rappels ne repartent pas.
 --
 -- **Ce qui ne change pas** : C1.12 tient pour tout ce qui n'est pas une correction. Le trigger lève
 -- toujours sur une ligne répondue, sauf quand le RPC l'a annoncé (un réglage local à la transaction,
@@ -78,7 +84,7 @@ begin
   end if;
 
   -- La correction (`v1-33` §6, 02/10/2026) : un point déjà répondu se réécrit tant qu'il est celui de la
-  -- période interrogée — jusqu'au point suivant. Le début de cette période est celui des deux
+  -- période interrogée — jusqu'à la fin de sa période, minuit UTC. Le début de cette période est celui des deux
   -- générateurs (`generate_commute_checkins`, `generate_extras_checkins`) et de
   -- `debutDePeriodeInterrogee` côté client, qui borne l'affichage de la carte répondue : les trois se
   -- touchent ensemble. Le trigger n'accepte la réécriture que sur ce réglage, posé le temps de
@@ -121,7 +127,7 @@ begin
     -- période : la correction y est close.
     raise exception 'Ce point de suivi n''attend plus de réponse (%).',
       case v_statut
-        when 'answered' then 'déjà répondu, et le point suivant est arrivé'
+        when 'answered' then 'déjà répondu, et sa période est passée'
         when 'expired' then 'clos par la période suivante'
         else v_statut
       end

@@ -568,6 +568,11 @@ export function phraseDeLaReponseEnPlace(
  * Sert à borner l'affichage de la carte répondue (C2.4) : elle reste le temps de la période, et pas
  * au-delà — sinon un compte dont la boucle a cessé d'être générée garderait à l'écran, pour
  * toujours, un « Répondu lundi » et la promesse d'un point qui ne viendra pas.
+ *
+ * **Et, depuis le 02/10/2026, la correction d'une réponse** (`v1-33` §6) : `repondre_au_checkin`
+ * réécrit un point répondu tant que son `period_start` est au moins celui-ci, la même formule écrite
+ * une troisième fois. Les trois — les deux générateurs, ce RPC et cette fonction — se touchent
+ * ensemble : la carte répondue offre « Modifier ma réponse » exactement tant que le serveur l'accepte.
  */
 export function debutDePeriodeInterrogee(
   loopType: LoopType,

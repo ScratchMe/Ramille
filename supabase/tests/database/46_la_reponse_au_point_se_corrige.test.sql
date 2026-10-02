@@ -7,7 +7,7 @@
 --     dérivée et l'horodatage suivent ; les libellés figés et la clé d'idempotence, non ;
 --   - **P** corrige son point du mois interrogé en « sans objet » — la borne mensuelle n'est pas la
 --     borne hebdomadaire ;
---   - **P** ne corrige pas un point dont la période est passée : le point suivant est arrivé ;
+--   - **P** ne corrige pas un point dont la période est passée ;
 --   - un tiers ne corrige pas le point de P ;
 --   - **le trigger** refuse toute réécriture d'un point répondu hors de la correction, et dans la
 --     correction toute colonne autre que les trois d'une réponse ; et le RPC retire son annonce.
@@ -101,7 +101,7 @@ select lives_ok(
 select throws_ok(
   $$ select public.repondre_au_checkin('e8010000-0000-0000-0000-00000000000c', 'non') $$,
   '22023',
-  'Ce point de suivi n''attend plus de réponse (déjà répondu, et le point suivant est arrivé).',
+  'Ce point de suivi n''attend plus de réponse (déjà répondu, et sa période est passée).',
   'un point dont la période est passée ne se corrige plus'
 );
 

@@ -228,7 +228,7 @@ describe('CheckinCard — le pied daté', () => {
 /**
  * **La réponse se corrige jusqu'au point suivant** (`v1-33` §6, décidé le 02/10/2026 avec la personne
  * qui pilote). La règle côté base — la borne de la période, les trois colonnes — est gardée par le
- * test pgTAP `45` ; ce bloc garde la carte : le lien, la phrase qui désigne la réponse en place, la
+ * test pgTAP `46` ; ce bloc garde la carte : le lien, la phrase qui désigne la réponse en place, la
  * réplique de la nouvelle réponse, le pied daté de la correction, et le focus dans les deux sens.
  *
  * Éprouvé en le cassant, le 02/10/2026 (TESTING.md §1.1), sept mutations, une à la fois, la suite Jest
@@ -241,6 +241,11 @@ describe('CheckinCard — le pied daté', () => {
  *   - le focus qui ne revient pas au lien après « Annuler » → « « Annuler » referme… », seul ;
  *   - « Modifier ma réponse » qui garde le refus d'avant → « un refus du serveur se dit… », par sa
  *     réouverture — ajoutée après que la mutation a passé la première écriture du test.
+ * Et deux de plus, sur la contre-lecture du même soir, chacune sur le test écrit pour elle :
+ *   - la réponse donnée ici qui l'emporte toujours sur la ligne (l'état d'avant) → « relue corrigée
+ *     ailleurs… », et « garde l'horodatage du serveur… » du bloc du pied ;
+ *   - le focus déclenché par la valeur de la réponse et non par le compteur → « une seconde réponse
+ *     identique… », seul.
  */
 describe('CheckinCard — corriger sa réponse', () => {
   beforeEach(() => {
@@ -319,6 +324,43 @@ describe('CheckinCard — corriger sa réponse', () => {
     expect(mockRpc).not.toHaveBeenCalled();
     expect(screen.getByText(repliqueDuPoint(repondu(), 'oui', true).ligne)).toBeTruthy();
     expect(dernierFocus()?.accessibilityLabel).toBe('Modifier ma réponse');
+  });
+
+  // **Une correction faite ailleurs l'emporte à la relecture** (contre-lecture du 02/10/2026) : la
+  // réponse donnée ici ne vaut que tant que la ligne n'a pas bougé — elle gardait sinon la réplique du
+  // « oui » sous une ligne qui dit « non », le pied, lui, suivant la ligne.
+  it('relue corrigée ailleurs, la carte dit la réponse de la ligne', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+    const { rerender } = render(<CheckinCard checkin={point({ period_start: '2026-09-28' })} emphasize boucleTourne />);
+    fireEvent.press(screen.getByText('Oui'));
+    await waitFor(() => expect(screen.getByText(repliqueDuPoint(repondu(), 'oui', true).ligne)).toBeTruthy());
+
+    rerender(
+      <CheckinCard
+        checkin={point({ period_start: '2026-09-28', status: 'answered', response_kind: 'non', responded_at: '2026-10-06T09:00:00Z' })}
+        emphasize
+        boucleTourne
+      />
+    );
+    expect(screen.getByText(repliqueDuPoint(repondu(), 'non', true).ligne)).toBeTruthy();
+    expect(screen.getByText('Répondu mardi. Prochain point : lundi 12 octobre.')).toBeTruthy();
+  });
+
+  // Une correction **identique** à la réponse donnée ici retire aussi les boutons sous le doigt : le
+  // focus doit retourner à la réplique, qui n'a pourtant pas changé de réponse.
+  it('une seconde réponse identique rend encore le focus à la réplique', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+    render(<CheckinCard checkin={point({ period_start: '2026-09-28' })} emphasize boucleTourne />);
+    const attendue = repliqueDuPoint(repondu(), 'oui', true).ligne;
+    fireEvent.press(screen.getByText('Oui'));
+    await waitFor(() => expect(screen.getByText(attendue)).toBeTruthy());
+    fireEvent.press(screen.getByText('Modifier ma réponse'));
+    focus.mockClear();
+
+    fireEvent.press(screen.getByText('Oui'));
+    await waitFor(() => expect(screen.getByText(attendue)).toBeTruthy());
+    await waitFor(() => expect(focus).toHaveBeenCalled());
+    expect((focus.mock.calls.at(-1)?.[0] as NoeudDeTest).props.children?.props.ligne).toBe(attendue);
   });
 
   // Le point suivant est arrivé pendant que la carte restait affichée : le RPC refuse, la carte le dit,

@@ -148,7 +148,9 @@ select is(
 -- les colonnes, la RLS raisonnant par ligne et jamais par colonne.
 --
 -- Le point de C est passé à `expired` comme le fait la génération de la période suivante
--- (20260904180000) : il sert de second refus, à côté du point déjà répondu de A.
+-- (20260904180000) : il sert de refus. Le point de A, répondu, se corrige depuis le 02/10/2026 tant
+-- que sa période court (`v1-33` §6) ; le refus d'un point répondu dont la période est passée est
+-- gardé par le fichier `46`.
 
 update public.engagement_checkins
 set status = 'expired'
@@ -195,7 +197,7 @@ select results_eq(
 
 -- **Une seconde réponse est une correction depuis le 02/10/2026** (`v1-33` §6) : ce point est celui de
 -- la semaine interrogée, donc il se corrige jusqu'au point suivant. Le refus d'un point répondu dont la
--- période est passée, et ce que la correction ne touche pas, sont gardés par le fichier `45`.
+-- période est passée, et ce que la correction ne touche pas, sont gardés par le fichier `46`.
 select lives_ok(
   $stmt$ select public.repondre_au_checkin(current_setting('test.checkin_commute_a')::uuid, 'non') $stmt$,
   'un point répondu de la période interrogée se corrige (v1-33 §6)'

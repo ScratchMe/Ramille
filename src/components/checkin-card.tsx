@@ -65,9 +65,9 @@ export type EngagementCheckin = {
 // Aucun des deux ne se lève en réessayant, donc aucun des deux ne doit conseiller de vérifier la
 // connexion : ce serait renvoyer la personne vers un geste qui ne peut rien changer.
 //
-//   - `22023` (`invalid_parameter_value`) : le point porte déjà une réponse, ou la génération de
-//     la période suivante l'a clos pendant que la carte restait affichée — le cas du retour de
-//     notification.
+//   - `22023` (`invalid_parameter_value`) : la génération de la période suivante a clos le point
+//     pendant que la carte restait affichée — le cas du retour de notification —, ou, depuis que la
+//     réponse se corrige (`v1-33` §6), le point est répondu et sa période passée.
 //   - `P0002` (`no_data_found`) : aucun point de cet identifiant sous ce compte. La session est
 //     valide (sans elle, c'est le privilège qui refuserait, en `42501`), donc la carte est
 //     simplement plus vieille que la session — un lien de connexion ouvert entre-temps a changé
@@ -123,12 +123,16 @@ export function CheckinCard({
    */
   historique?: PointRepondu[];
 }) {
-  const [reponseLocale, setReponseLocale] = useState<ReponseDuPoint | null>(null);
   /**
-   * L'instant du geste, quand la réponse vient d'être donnée ici : il date le pied de la carte tant
-   * que la ligne relue ne porte pas encore l'horodatage du serveur (audit P-10, 01/10/2026).
+   * La réponse donnée ici, son instant, et ce que la ligne portait au moment du geste
+   * (`responded_at`). Elle vaut **tant que la ligne n'a pas été relue** — tant qu'elle porte encore ce
+   * qu'elle portait au geste — et la ligne l'emporte ensuite (voir `reponse` et `pied`, plus bas).
    */
-  const [reponduA, setReponduA] = useState<{ instant: string; ligneAvant: string | null } | null>(null);
+  const [geste, setGeste] = useState<{
+    reponse: ReponseDuPoint;
+    instant: string;
+    ligneAvant: string | null;
+  } | null>(null);
   /** Le point n'accepte plus de réponse : la question reste lisible, les boutons partent. */
   const [refus, setRefus] = useState<string | null>(null);
   /** La réponse n'est pas partie : les boutons restent, il n'y a qu'à recommencer. */
@@ -189,7 +193,13 @@ export function CheckinCard({
   // `pending`. La carte répondue reste maintenant le temps de la période (le plan borne la lecture
   // avec `estDeLaPeriodeCourante`), et c'est `response_kind` qui la remplit. L'état local garde le
   // dessus le temps d'un aller-retour réseau, pour que la carte bascule à l'instant du geste.
-  const reponse = reponseLocale ?? genreDeReponse(checkin.response_kind);
+  //
+  // **Et pas plus longtemps, depuis que la réponse se corrige** (`v1-33` §6, contre-lecture du
+  // 02/10/2026) : une ligne répondue ne changeait plus, donc l'état local la valait pour toujours. Une
+  // correction faite ailleurs — l'autre appareil, l'autre onglet — se relit maintenant sur une carte
+  // restée montée : la ligne l'emporte dès qu'elle ne porte plus ce qu'elle portait au geste.
+  const gesteEnCours = geste !== null && checkin.responded_at === geste.ligneAvant ? geste : null;
+  const reponse = gesteEnCours?.reponse ?? genreDeReponse(checkin.response_kind);
   // **Le pied daté arrive avec la réponse** (audit P-10, 01/10/2026). Il se composait sur la ligne
   // seule, donc juste après le geste — `responded_at` encore nul — la carte n'avait pas de « Répondu
   // jeudi. Prochain point : lundi 5 octobre. » : le rendez-vous n'apparaissait qu'au passage suivant
@@ -201,9 +211,7 @@ export function CheckinCard({
   // réponse, et le pied dirait « Répondu lundi » d'une réponse donnée mercredi. L'instant du geste vaut
   // donc tant que la ligne porte ce qu'elle portait au geste ; relue, elle l'emporte.
   const pied = piedDuPointRepondu(
-    reponduA !== null && checkin.responded_at === reponduA.ligneAvant
-      ? { ...checkin, responded_at: reponduA.instant }
-      : checkin,
+    gesteEnCours !== null ? { ...checkin, responded_at: gesteEnCours.instant } : checkin,
     boucleTourne
   );
 
@@ -222,8 +230,8 @@ export function CheckinCard({
   // lignes, jamais des colonnes. Même raisonnement que `plan_actions` (v1-13, chantier C1.12).
   // `responded_at` vient désormais de l'horloge du serveur, plus de celle du téléphone.
   //
-  // Le RPC refuse aussi un point déjà répondu ou expiré par le cron, là où l'`update` rendait un
-  // succès sur zéro ligne : l'erreur remplace une carte qui félicitait pour rien. Un refus ne doit
+  // Le RPC refuse aussi un point expiré par le cron, ou répondu dont la période est passée, là où
+  // l'`update` rendait un succès sur zéro ligne : l'erreur remplace une carte qui félicitait pour rien. Un refus ne doit
   // pas pour autant laisser deux boutons morts — c'est la même exigence que le reste du produit
   // (C1.4), et elle se règle ici parce que c'est ici que le refus arrive.
   const answer = async (response: ReponseDuPoint) => {
@@ -237,8 +245,7 @@ export function CheckinCard({
     setSaving(false);
 
     if (!error) {
-      setReponduA({ instant: new Date().toISOString(), ligneAvant: checkin.responded_at });
-      setReponseLocale(response);
+      setGeste({ reponse: response, instant: new Date().toISOString(), ligneAvant: checkin.responded_at });
       setCorrection(false);
       setReponsesDonnees((n) => n + 1);
       return;
@@ -361,8 +368,8 @@ export function CheckinCard({
                   (`ControlHeight.target`) sans déplacer le texte, et son libellé accessible **est**
                   le texte affiché.
 
-                  **Souligné au repos** (audit P-7, 01/10/2026), comme « Annuler » et « Changer
-                  d'avis », les deux autres liens tertiaires du plan : sans soulignement, il se
+                  **Souligné au repos** (audit P-7, 01/10/2026), comme les autres liens tertiaires
+                  du plan — « Annuler », « Changer d'avis », « Modifier ma réponse » : sans soulignement, il se
                   lisait comme une légende sous « Non » et « Oui », et la réponse honnête d'une
                   semaine de congés passait pour du texte. Il reste discret — tertiaire, petit,
                   centré —, bien en deçà d'un bouton. */}

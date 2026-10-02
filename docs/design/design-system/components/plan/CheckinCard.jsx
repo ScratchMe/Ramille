@@ -34,10 +34,10 @@ export function CheckinCard({ periodLabel, question, emphasize = true, answered 
       {reponse === null || correction ? (
         <>
           <ThemedText weight={600} style={{ fontSize: 16, lineHeight: '23px' }}>{question}</ThemedText>
-          {/* La réponse en place, dans les mots des boutons : ils n'ont pas d'état « choisi », et c'est voulu. */}
-          {correction && reponseEnPlace && <ThemedText type="small" themeColor="textTertiary">{reponseEnPlace}</ThemedText>}
           {/* La question est figée à sa génération : changer d'action ensuite ne la réécrit pas, et la carte le dit. */}
           {actionQuittee && <ThemedText type="small" themeColor="textTertiary">Cette question porte sur l’action que tu suivais alors : {actionQuittee}.</ThemedText>}
+          {/* La réponse en place, dans les mots des boutons : ils n'ont pas d'état « choisi », et c'est voulu. */}
+          {correction && reponseEnPlace && <ThemedText type="small" themeColor="textTertiary">{reponseEnPlace}</ThemedText>}
           {refus ? (
             // Le point n'accepte plus de réponse : la question reste lisible, les boutons partent.
             <MessageInline message={refus} />

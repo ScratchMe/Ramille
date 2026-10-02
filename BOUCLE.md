@@ -339,7 +339,7 @@ la signature est `repondre_au_checkin(uuid, text)`, la version booléenne **supp
 raisonnement complet est au paragraphe de C2.4, plus haut.
 
 **La réponse se corrige jusqu'au point suivant** (`v1-33` §6, décidé le 02/10/2026 avec la personne
-qui pilote, `20261002233000_la_reponse_au_point_se_corrige.sql`, test `45`). « Non » et « Oui » sont à
+qui pilote, `20261002233000_la_reponse_au_point_se_corrige.sql`, test `46`). « Non » et « Oui » sont à
 8 px l'un de l'autre, et un toucher erroné était définitif. La carte répondue offre « Modifier ma
 réponse », qui rouvre les trois réponses sous « Ta réponse : oui. » (`phraseDeLaReponseEnPlace`) ; la
 réplique est celle de la nouvelle réponse, et « deux fois de suite » la suit, puisqu'il se dérive à la
@@ -348,7 +348,9 @@ lecture. Ce qu'il faut en savoir :
 - **La borne est celle de l'affichage.** `repondre_au_checkin` réécrit un point répondu tant que son
   `period_start` est celui de la période interrogée — la formule des deux générateurs, et celle de
   `debutDePeriodeInterrogee` qui borne la carte répondue côté client : **les trois se touchent
-  ensemble**. Au-delà, le refus est celui d'un point clos (`22023`).
+  ensemble**. Elle tombe à minuit UTC le lundi (ou le 1er), et non à l'arrivée du point suivant, à
+  6 h — qui n'arrive jamais quand la boucle s'est arrêtée. Au-delà, le refus est celui d'un point clos
+  (`22023`, « déjà répondu, et sa période est passée »).
 - **C1.12 tient pour tout le reste.** Le trigger n'accepte la réécriture d'une ligne répondue que sur
   une annonce du RPC — `ramille.correction_du_point`, un réglage local à la transaction, posé juste
   avant l'`update` et retiré aussitôt — et alors **seules les trois colonnes d'une réponse** changent
@@ -356,7 +358,12 @@ lecture. Ce qu'il faut en savoir :
   ligne répondue passe toujours par le désarmement du trigger, pas par cette annonce.
 - **`responded_at` repart à maintenant** : c'est l'heure de la dernière réponse, que le pied date
   (« Répondu mercredi. ») et que lisent la purge pour inactivité et l'administration — une correction
-  est une activité. Le statut reste `answered`, donc les rappels ne repartent pas.
+  est une activité. Elle **remplace** la première : un point du mois corrigé trois semaines plus tard
+  change la semaine « a répondu » de `analytics.retention_par_cohorte`, celle d'une semaine révolue
+  pouvant baisser après coup. Le statut reste `answered`, donc les rappels ne repartent pas.
+- **Côté carte, la réponse donnée ici ne vaut que tant que la ligne n'a pas bougé** (`geste`,
+  `checkin-card.tsx`) : une correction faite sur un autre appareil se relit sur une carte restée
+  montée, et l'état local la masquait pour toujours.
 
 **Le signal « deux fois de suite » se compte sur les PÉRIODES, et il ne se déclenche qu'une fois**
 (C2.10, `20260912210000_second_renforcement.sql`). Il est dans la spec §7 comme signal d'engagement
