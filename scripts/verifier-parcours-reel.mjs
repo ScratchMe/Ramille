@@ -312,6 +312,21 @@
 //   | Q3 — un lien posé avant « Commencer » dans la feuille | la même étape : le focus est sur ce lien, pas sur « Commencer » |
 //   | Q4 — la feuille qui ne s'ouvre plus à l'entrée (la lecture de l'engagement ignorée) | la même étape : « ne s'est pas ouverte à l'entrée du re-bilan » |
 //   | P2 rejouée — la feuille se démonte sans sortie | la même étape, à Échap : elle « disparaît d'un coup » — l'étape réécrite garde ce que l'ancienne gardait |
+//   | Q5 — le voile de la feuille redevenu un `Pressable` (01/10/2026, l'arbre intégré de `7032f1c`) | la même étape : « la feuille ouverte n'a pas le focus sur « Commencer » : {"nom":"DIV","dansLaFeuille":true} » |
+//   | Q6 — la place de la feuille redevenue la vue animée, `box-none` dans ses styles (01/10/2026) | « re-bilan — un toucher sur le voile… » : « au-dessus de la feuille (210, 231), le toucher tombe sur DIV « css-g5y9jx » et pas sur le voile » |
+//
+// **Q5 n'a pas été choisie : la CI de la PR #314 l'a trouvée** (01/10/2026). Le chantier du compte avait
+// fait du voile un `Pressable` pour que son toucher ferme la feuille (T-7) ; sur web, il a pris un
+// `tabindex="0"` malgré `focusable={false}`, et c'est lui que le piège du `Modal` a focalisé — mesuré
+// en journalisant chaque `.focus()` du rejeu : 6 ms après l'insertion du dialogue, depuis
+// `ModalFocusTrap`, sans geste dans la feuille. Rejouée sur le commit de la correction, le voile seul
+// rendu à son état fautif, puis une seconde fois avec `tabIndex={-1}` en plus : la garde tombe les
+// deux fois, sur le même message — retirer l'arrêt de tabulation ne suffit pas, `.focus()` prend
+// encore (`FeuilleDuBas`). **Q6 non plus** : en vérifiant que le voile refermait toujours la feuille,
+// un clic au-dessus d'elle ne la refermait pas — ni avant la correction de Q5, ni après. La place
+// animée gardait ses styles en ligne, où `box-none` n'est pas du CSS ; l'étape « un toucher sur le
+// voile » est née de ce relevé. Q5 et Q6 rejouées sur le commit qui ajoute cette étape : chacune tombe
+// à son étape, et le témoin passe toutes les étapes du re-bilan.
 //
 // Ce que ces étapes ne voient pas : « Pas maintenant » (Jest le touche, `entree-du-re-bilan.test.tsx`),
 // et le retour matériel d'Android, que le `Modal` prend à `BackHandler` — c'est l'appareil qui le dit.
@@ -1920,10 +1935,12 @@ try {
   const feuillePosee = await mesurer(page, 'feuille', FEUILLE);
   assurer(feuillePosee?.voile && feuillePosee.haut !== null, `la feuille « ${FEUILLE} » est introuvable une fois ouverte`);
   // **Le focus est dans la feuille, sur « Commencer »** (relevé le 01/10/2026). Ouverte à l'entrée
-  // d'un écran, elle n'a pas de geste à suivre : le `Modal` de react-native-web ne déplace pas le
-  // focus à l'ouverture (il piège le suivant, et rend l'ancien à la fermeture), donc ce qui le pose
-  // là ne se lit pas dans le composant — d'où la garde. Sans elle, un clavier ou un lecteur d'écran
-  // resterait sous le voile, sur une étape qu'on ne peut pas encore atteindre.
+  // d'un écran, elle n'a pas de geste à suivre : c'est le `Modal` de react-native-web qui pose le focus
+  // à l'ouverture — son piège essaie `.focus()` sur chaque descendant dans l'ordre du DOM et garde le
+  // premier qui le prend, puis rend l'ancien à la fermeture (mesuré le 01/10/2026, Q5 en tête). Ce qui
+  // le met sur « Commencer » est donc l'ordre des focalisables de la fenêtre, voile compris, et rien ne
+  // le pose dans un composant — d'où la garde. Sans elle, un clavier ou un lecteur d'écran resterait
+  // sous le voile, sur une étape qu'on ne peut pas encore atteindre.
   const focusALOuverture = await page.evaluate((titre) => {
     const actif = document.activeElement;
     const dialogue = [...document.querySelectorAll('[aria-modal="true"]')].find((d) => d.getAttribute('aria-label') === titre);
@@ -1988,6 +2005,38 @@ try {
     'sous « réduire les animations », la feuille redescend à Échap : elle doit partir d’un coup'
   );
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+  // **Un toucher sur le voile, au-dessus de la feuille, la referme comme Échap** (01/10/2026, `v1-33`
+  // T-7). Jest ne le voyait pas : le test natif lit la valeur `box-none` du style de la place, et le
+  // test web clique le voile lui-même — aucun ne demande au navigateur ce qui est sous le doigt. Or
+  // sur web, la place animée gardait ses styles en ligne, où `box-none` n'est pas du CSS : elle prenait
+  // le clic, et la feuille restait ouverte (mesuré le jour même, `FeuilleDuBas`). D'où les deux
+  // lectures : ce que le navigateur trouve sous le point, puis ce que le clic y fait. Rien n'est écrit.
+  etape('re-bilan — un toucher sur le voile, au-dessus de la feuille, la referme');
+  entreeDuReBilan = await depuisLaRestitution();
+  await entreeDuReBilan.click();
+  const ouverteAuToucher = await mesurerAuRepos(page, 'feuille', FEUILLE);
+  assurer(ouverteAuToucher?.haut != null, `la feuille « ${FEUILLE} » ne s’est pas posée à sa seconde ouverture`);
+  const auDessus = { x: Math.round((page.viewportSize()?.width ?? 420) / 2), y: Math.round(ouverteAuToucher.haut / 2) };
+  const sousLeDoigt = await page.evaluate(({ x, y }) => {
+    const e = document.elementFromPoint(x, y);
+    return e?.getAttribute('data-testid') ?? `${e?.tagName} « ${e?.getAttribute('aria-label') ?? e?.className} »`;
+  }, auDessus);
+  assurer(
+    sousLeDoigt === 'voile-de-la-feuille',
+    `au-dessus de la feuille (${auDessus.x}, ${auDessus.y}), le toucher tombe sur ${sousLeDoigt} et pas sur le voile :` +
+      ' la place doit le laisser passer (`box-none` sur une vue ordinaire, `FeuilleDuBas`)'
+  );
+  await page.mouse.click(auDessus.x, auDessus.y);
+  try {
+    await page.waitForURL((url) => url.pathname === '/suivi/bilan', { timeout: ATTENTE });
+  } catch {
+    throw new Ecart(
+      `le toucher sur le voile n’a pas refermé la feuille (${new URL(page.url()).pathname}) :` +
+        ' il ressort comme Échap vers la restitution (`fermer`, `onQuitter`)'
+    );
+  }
+  assurer((await mesurer(page, 'feuille', FEUILLE)) === null, 'la feuille est encore là après le toucher sur le voile');
 
   // **Un « Retour » sans pile derrière** (recette du 28/09/2026, constat H1). Ouvert par son adresse
   // — un rechargement, un favori —, l'écran des pistes n'a rien derrière lui, et « Retour au plan »,

@@ -41,12 +41,15 @@ import { phraseDeLEngagementRecalcule, type EngagementEnCours } from '@/types/re
  * le cycle suivant est neuf, l'engagement est *reconduit* par un autre chemin, et il n'y a rien à
  * dire.
  *
- * **Le focus** : sur web, il est sur « Commencer », le premier contrôle de la feuille, une fois
- * celle-ci ouverte — relevé par le parcours réel le 01/10/2026, qui le garde. Ce n'est pas le `Modal`
- * de react-native-web qui l'y pose à l'ouverture (il piège le focus suivant, et rend l'ancien à la
- * fermeture) : ouverte à l'entrée d'un écran, la feuille n'a pas de geste à suivre, et c'est ce que la
- * garde surveille. Sur Android, TalkBack entre dans la boîte de dialogue ; ce qu'il annonce à
- * l'ouverture et à la fermeture se vérifie sur l'appareil.
+ * **Le focus** : sur web, il est sur « Commencer », le premier contrôle de la feuille, dès qu'elle
+ * s'ouvre — relevé par le parcours réel le 01/10/2026, qui le garde. **C'est le `Modal` de
+ * react-native-web qui l'y pose** (mesuré le même jour, CI de la PR #314) : actif, son piège essaie
+ * `.focus()` sur chaque descendant dans l'ordre du DOM et garde le premier qui le prend, puis rend
+ * l'ancien focus à la fermeture. Rien ici ne le pose, donc « Commencer » doit rester le premier
+ * focalisable de la fenêtre : un lien placé avant lui le prend, et le voile l'a pris tant qu'il était
+ * un `Pressable` (`FeuilleDuBas`). Ouverte à l'entrée d'un écran, la feuille n'a pas de geste à suivre ;
+ * le focus part avec elle, pas à la fin de sa montée. Sur Android, TalkBack entre dans la boîte de
+ * dialogue ; ce qu'il annonce à l'ouverture et à la fermeture se vérifie sur l'appareil.
  */
 export function FeuilleNouveauBilan({
   engagement,
