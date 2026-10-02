@@ -193,7 +193,9 @@ partagé avec `verifier-code-de-connexion.mjs` et tout passage simultané.
 profil 1 : ses deux vols, puis « Oui » ; cycliste et profil sans boucle : « 0 », puis « Non » — et
 garde l'arrivée sur les vols (aucune puce cochée, « Suivant » qui demande le nombre de vols), et la
 feuille du re-bilan **à l'entrée**, atteinte depuis la restitution par « Faire un nouveau bilan » :
-ouverture, focus sur « Commencer », Échap qui ressort sans écrire. **Une mesure introuvable y
+ouverture, focus sur « Commencer », Échap qui ressort sans écrire, puis un toucher sur le voile,
+au-dessus de la feuille, qui la referme : le parcours lit d'abord ce que le navigateur trouve sous le
+point (`elementFromPoint`), puis ce que le clic y fait. **Une mesure introuvable y
 échoue, elle ne se saute jamais** — la première version d'une garde du jour sautait une mesure sans
 bruit, un titre cherché sans normaliser les insécables que `ThemedText` pose.
 

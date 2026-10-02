@@ -254,8 +254,10 @@ périmerait en silence au prochain passage :
   réponses cochées. **Et la feuille « Ton plan va être recalculé » se dit à l'entrée** (`v1-33` §6,
   qui déplace `v1-19` D4) : elle arrivait au terme de neuf étapes pour dire « ton bilan actuel est
   toujours juste ». Mêmes conditions (`engagementDeLaPeriodeCourante`) ; « Commencer » la referme,
-  « Pas maintenant » et le retour ressortent (`revenirOu('/')`). Sur web, le focus est posé sur
-  « Commencer » : le `Modal` de react-native-web ne le fait pas lui-même.
+  « Pas maintenant » et le retour ressortent (`revenirOu('/')`). Sur web, le focus est sur
+  « Commencer » dès l'ouverture : c'est le `Modal` de react-native-web qui l'y pose, sur le premier
+  élément focalisable de la fenêtre dans l'ordre du DOM (`FRONT-MOUVEMENT.md` §2.12). « Commencer »
+  doit donc rester le premier contrôle de la feuille.
 - **Ramille parle à l'entrée de chaque section du questionnaire — quatre, pas neuf** (C3.9,
   `RAMILLE.entreeDeSection`). Le questionnaire demande des ordres de grandeur et ne le disait qu'une
   fois, dans l'onboarding, cinq écrans plus tôt ; au troisième champ, la précision qu'on croit

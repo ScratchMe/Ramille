@@ -152,6 +152,16 @@ relais au rendu suivant.
   toute première image est encore à opacité nulle (`styles.hidden`), et ne rend rien. Et un
   outil qui cherche le dialogue par son rôle ne le voit pas glisser : `aria-modal`, lui, est posé
   tout de suite (lu dans la source du `Modal` de react-native-web 0.21 ; mesuré le 27/09/2026).
+- **Le piège à focus du `Modal` pose le focus à l'ouverture, sur le premier descendant qui
+  l'accepte** (react-native-web 0.21, `ModalFocusTrap`, mesuré le 01/10/2026). Un `tabindex="-1"`
+  suffit pour qu'un élément l'accepte. **Et un `Pressable` de react-native-web est toujours
+  focalisable** : son `tabIndex` l'emporte sur `focusable={false}`. Une surface qui doit recevoir un
+  toucher sans jamais recevoir le focus doit être une `View` à répondeurs.
+- **Reanimated (4.5) pose en ligne, sur web, les styles d'une vue animée, et
+  `pointerEvents: 'box-none'` en ligne n'est pas du CSS.** Une vue animée en `box-none` qui couvre
+  l'écran prend donc tous les clics : le `box-none` se met sur une `View` ordinaire, que
+  react-native-web compile en classe, et l'animation sur un enfant. Ramille :
+  `src/components/feuille-du-bas.tsx`.
 - **Les animations de disposition de reanimated (4.5) ne se comportent pas sur web comme sur
   natif**, mesuré sur un export le 27/09/2026 :
   - `entering` pose `visibility: hidden` sur l'élément jusqu'à `animationstart`, une image au moins

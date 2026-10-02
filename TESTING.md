@@ -322,7 +322,7 @@ et la règle de colocalisation du dépôt s'arrête à la porte du routeur.
 au-dessus des pistes, par exemple, ne fait bouger aucune assertion de présence. Chaque branche
 qu'on prétend garder demande donc sa moitié négative.
 
-**Trois tests d'écran de la vague du 01/10/2026 (`v1-33`), et ce que chacun a appris :**
+**Les tests de la vague du 01/10/2026 (`v1-33`), et ce que chacun a appris :**
 
 - **Un aller-retour se voit en retenant les réponses** : le double de Supabase de
   `src/tests/ecrans/restitution-du-bilan.test.tsx` ne répond qu'à la demande du test, donc une
@@ -342,6 +342,14 @@ qu'on prétend garder demande donc sa moitié négative.
   pour l'absence du placeholder. Chaque branche y porte sa moitié négative.
 - **Un client réel sous minuteries fictives ne se débloque pas** (`src/lib/supabase.test.ts`) : la
   chaîne d'attente de la session d'`auth-js` y reste pendante. Temps réels, borne de 1,5 s.
+- **Un défaut propre au web se teste en rendant par react-native-web**
+  (`src/tests/ecrans/feuille-du-bas-sur-web.test.tsx`, seul de la suite) : `@jest-environment jsdom`,
+  `jest.mock('react-native', () => jest.requireActual('react-native-web'))`, un rendu par
+  `react-dom/client` ; reanimated réduit à ce que le composant appelle, `@/lib/mouvement` à son
+  `reglage` ; et `fetch` fixé à `undefined`, sans quoi « Cannot log after tests are done » sort quand
+  on lance la suite entière. Coût : 1,6 s. Ce qu'il voit et que le rendu natif ne voit pas : un
+  `tabindex`, le focus posé par le `Modal`. Ce qu'il ne voit pas : ce qui est sous le doigt, que seul
+  le parcours réel peut demander au navigateur.
 
 ### 2.13 Rejouer la CI en local, et ce que le rejeu garde de lui-même
 
