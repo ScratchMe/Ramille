@@ -99,7 +99,7 @@ export function CommuteDaysDistanceStep({
               il est préremplissable, donc peu coûteux : c'est ce qu'on dit à la place.
 
               **« dans un nouveau bilan », jamais « en refaisant »** (01/10/2026, comme R-7 de `v1-33`, en
-              application de `v1-19` D1 ; texte à valider, `v1-33` §9) : un bilan ne se refait pas, il s'en ajoute un, qui n'efface rien. */}
+              application de `v1-19` D1 ; validé le 02/10/2026, `v1-33` §9) : un bilan ne se refait pas, il s'en ajoute un, qui n'efface rien. */}
           <ThemedText type="small" themeColor="textTertiary">
             Une estimation suffit. Tu pourras donner un chiffre plus précis dans un nouveau bilan :
             tes réponses seront préremplies.

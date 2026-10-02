@@ -203,8 +203,8 @@ touche au schéma (une migration, un RPC, la paire SQL / TypeScript de la boucle
 
 **Les deux vagues sont parties dans la même PR** (#314), la vague produit sur l'arbre intégré de la
 technique : toutes les lignes « vague produit » de ce tableau, et les quatre tensions tranchées
-« vague produit » de §6, y sont. Deux textes restent à valider, et ce que la vague a relevé en
-chemin est en §9.
+« vague produit » de §6, y sont. Les textes qui restaient à valider ont été tranchés le 02/10/2026,
+et ce que la vague a relevé en chemin est en §9.
 
 | | Décidé le 01/10/2026 | Où |
 |---|---|---|
@@ -391,7 +391,7 @@ fichiers et doit passer seul.
 
 ## 9. Ce qui reste ouvert après la PR #314
 
-**Tranché le 02/10/2026** avec la personne qui pilote, recommandations suivies toutes les quatre :
+**Tranché le 02/10/2026** avec la personne qui pilote, toutes les recommandations suivies :
 
 - **les textes écrits pendant la vague sont validés tels quels** — les deux questions de D4, les phrases
   du serveur de D19, les trois phrases où « refaire » a été retiré ;
@@ -406,8 +406,9 @@ fichiers et doit passer seul.
 - **l'ordre de la suite** : la session refusée d'abord (PR #315), puis ces textes, puis les chantiers à
   part, un par jour.
 
-Et **la phrase de `/feedback` passe à l'encre de ce qui manque** (`accentText`, 600) : c'est la fin de
-D18, dont la recommandation était déjà « le motif du questionnaire ».
+Et **la phrase de `/feedback` passe à l'encre de ce qui manque au toucher d'« Envoyer »** (`accentText`,
+600), calme pendant la frappe comme avant : c'est la fin de D18, dont la recommandation était déjà « le
+motif du questionnaire ».
 
 **Des textes rendus sans décision qui les nomme mot pour mot** — la contre-lecture les a relevés : la
 décision fixait l'intention, la phrase a été écrite pendant la vague. **Validés le 02/10/2026.**

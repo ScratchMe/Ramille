@@ -451,9 +451,12 @@ exactement ce qui avait laissé passer le mauvais caractère.
 - **« Envoyer » de `/feedback` suit le motif du « Suivant » en attente depuis le 01/10/2026**
   (`v1-33` D18) : en attente sous trois caractères, ni `disabled` ni `aria-disabled` ; son toucher
   écrit « Trois caractères au moins pour pouvoir l'envoyer. », y compris à vide, donne le focus au
-  champ et n'envoie rien. `disabled` ne reste que pendant l'envoi. **Et la phrase est à l'encre de ce
-  qui manque** depuis le 02/10/2026 (`small`, `accentText`, 600), comme la ligne du questionnaire,
-  celle de `/contexte` et celle de « C'est noté » : un formulaire incomplet se dit d'une seule façon.
+  champ et n'envoie rien. `disabled` ne reste que pendant l'envoi. **Et la phrase prend l'encre de ce
+  qui manque au toucher d'« Envoyer »** depuis le 02/10/2026 (`small`, `accentText`, 600), comme la
+  ligne du questionnaire, celle de `/contexte` et celle de « C'est noté », qui ne s'écrivent qu'au
+  toucher : un bouton qui demande se dit d'une seule façon. **Pendant la frappe, elle reste calme** —
+  tertiaire, dès le premier caractère, comme le veut l'audit d'accessibilité du 24/09/2026 (3.3.2) —
+  parce qu'à ce moment-là rien n'a été demandé.
 - **Un seul bouton principal par état d'écran, y compris sur « Toi » confirmation ouverte**
   (01/10/2026, `v1-33` §6) : « Rattacher un compte » et « Réessayer » y passent en `secondary` et
   redeviennent principaux à la fermeture (« Annuler », retour matériel) — c'est pourquoi l'écran tient
@@ -637,8 +640,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `loadAssessmentHistory` / `loadAnsweredCheckins`, `lireLeContexteCourant`), et l'écran en tire sa
   phrase (`phraseDeLaLectureEnEchec`, `src/types/lecture-en-echec.ts`). `serveur` est le repli parce
   que « Réessaie dans un instant » reste vrai hors ligne, alors que « Vérifie ta connexion » est faux
-  dès que le réseau n'est pas en cause. **La ligne de relecture du suivi garde « … Vérifie ta
-  connexion. » quel que soit le genre** : sa phrase du serveur n'est pas encore décidée.
+  dès que le réseau n'est pas en cause. **La ligne de relecture du suivi suit le genre depuis le
+  02/10/2026**, comme celle du plan (`relectureDuSuivi`) : sa phrase du serveur a été décidée ce
+  jour-là (`v1-33` §9), et l'écran porte le genre de l'échec plutôt qu'un booléen.
 - **Un écran hors ligne ne dit jamais « tu n'as rien », et il ne se fige pas non plus.** Tout ce qui
   suit vit **derrière la racine**, qui levait à froid sans réseau jusqu'à C4.5 (§12.5 de `v1-13`) et
   route désormais sur la marque locale : ces écrans sont donc atteignables à froid depuis le
