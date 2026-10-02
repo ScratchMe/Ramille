@@ -30,6 +30,32 @@ une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par 
 `BilanAnswers` (`src/types/bilan.ts`) est un miroir direct des colonnes de la table, pour un
 insert sans transformation.
 
+**La fréquence des loisirs a quatre réponses depuis le 02/10/2026** (`v1-33` D5,
+`20261002201852_la_quatrieme_frequence_des_loisirs.sql`) : « Rarement — une fois par mois ou
+moins » (`rarely`, 0,25 sortie par semaine), « Deux ou trois fois par mois » (`multiple_monthly`,
+0,6), « Une fois par semaine » (`weekly`, 1) et « Plusieurs fois par semaine » (`multiple_weekly`,
+3), toutes sur 52 semaines. Trois choses à savoir avant d'en ajouter une cinquième :
+
+- **seule « Rarement » est à part** : elle saute le détail des sorties et passe sur le résiduel
+  (`BOUCLE.md` §1). Tout le schéma et tout l'écran testent `= 'rarely'` ou `<> 'rarely'`, donc une
+  réponse nouvelle se comporte d'office comme une sortie déclarée — mode et distance demandés,
+  boucle mensuelle sur les sorties, actions de loisirs au plan ;
+- **le seul endroit qui énumère les fréquences est le `case` du calcul, et il n'a pas de `else`** :
+  une valeur admise par le `check` sans sa branche rend un total NULL, que la colonne refuse, donc
+  chaque bilan portant cette réponse échoue à la soumission. Le contrôle de la migration et le
+  fichier pgTAP `41` vérifient **chaque** valeur admise, lue dans la contrainte ;
+- **la valeur affichée et la valeur calculée sont gardées à part** : `HYPOTHESES.sortiesParSemaine`
+  par `scripts/verifier-hypotheses-calcul.mjs`, qui lit la **dernière migration réécrivant le
+  calcul en entier** — d'où la réécriture complète du 02/10/2026, une substitution lui aurait caché
+  la constante —, et la liste des réponses (`REPONSES_FREQUENCE_DES_LOISIRS`, `LeisureFrequency`)
+  par `scripts/verifier-miroirs-de-check.mjs`, où elle manquait depuis le premier jour.
+
+Et ce qu'aucune garde ne suit, à reprendre à la main : le **nombre** de fréquences écrit dans le
+contrôle de la migration et dans la prémisse du fichier `41` (quatre), et les recopies du kit —
+`docs/design/design-system/components/bilan/LeisureFrequencyStep.*`, l'union de `ContextStep.d.ts`,
+la phrase de `suivi/BlocMethode.jsx` — avec la hauteur de son aperçu (`.design-sync/config.json`).
+Les domaines des tests Jest, eux, se dérivent de la liste.
+
 **Le questionnaire demande désormais ce que le calcul supposait** (C3.4 + C3.5 + C3.6,
 `20260914123432`). Quatre réponses s'ajoutent, toutes **obligatoires dès que leur déclencheur est
 là** — laisser le choix facultatif reviendrait à garder le défaut pour tous ceux qui passent sans

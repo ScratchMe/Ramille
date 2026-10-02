@@ -260,6 +260,13 @@ et ce que la vague a relevé en chemin est en §9.
   environ. **Recommandation** : une quatrième réponse, « Deux ou trois fois par mois » — c'est une
   migration, avec le recalcul de toute la suite pgTAP (`TESTING-PGTAP.md` §2.2), donc un chantier à
   part. **Ce qu'on casse** : toutes les valeurs attendues de pgTAP, à recalculer par requête.
+  **Livré le 02/10/2026** (`BILAN.md` §1) : `multiple_monthly`, 0,6 sortie par semaine, et la phrase
+  de méthode qui le dit — tous deux validés le 02/10/2026, avec la réplique de Ramille à l'entrée de
+  l'étape, qui passe d'« une semaine ordinaire » à « Pense à un mois ordinaire, pas au meilleur ni
+  au pire. » : la semaine poussait vers l'erreur que D5 corrige. **Ce qu'on
+  cassait était surestimé** : ajouter une fréquence ne touche ni un facteur ni un bilan existant,
+  donc aucune valeur attendue de la suite n'a bougé ; c'est le `case` du calcul, sans `else`, qui
+  demandait de l'attention.
 - **D6 — Le second mode ne rappelle pas le premier** (Q-11). « Utilises-tu un second mode en
   complément ? » ne dit pas de quoi, et « Lequel ? » retire le mode principal sans le dire.
   **Recommandation** : « En plus de : {mode principal}. Par exemple vélo puis train. » **Ce qu'on
@@ -382,7 +389,7 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
    même PR que la première** (#314) : trois chantiers — le questionnaire, la restitution et le
    suivi, le plan et le contexte —, puis les surfaces de service.
 3. **Les chantiers à part**, un par un, chacun avec sa migration, ses tests pgTAP recalculés par
-   requête et sa contre-lecture : la quatrième fréquence des loisirs (D5), la question générique le
+   requête et sa contre-lecture : la quatrième fréquence des loisirs (D5, livrée le 02/10/2026), la question générique le
    mois du choix (D14), « Modifier les jours » (D15), le champ sous « 10+ », et la réponse au point
    corrigeable dans sa période.
 
@@ -404,7 +411,10 @@ fichiers et doit passer seul.
 - **le voile ferme toutes les feuilles**, celle des rappels comprise : le retour d'Android fait déjà la
   même chose, et le réglage reste dans « Toi » ;
 - **l'ordre de la suite** : la session refusée d'abord (PR #315), puis ces textes, puis les chantiers à
-  part, un par jour.
+  part, un par un. (Ce paragraphe a écrit « un par jour » jusqu'au 02/10/2026. Le rythme venait du
+  texte de l'option proposée, pas d'une raison : la personne qui pilote l'a relevé le jour même —
+  « comment ça un par jour ? pourquoi faire ? » —, et rien ne l'impose. Ce qui tient, c'est « un par
+  un » — §8 —, parce que chacun touche le schéma.)
 
 Et **la phrase de `/feedback` passe à l'encre de ce qui manque au toucher d'« Envoyer »** (`accentText`,
 600), calme pendant la frappe comme avant : c'est la fin de D18, dont la recommandation était déjà « le

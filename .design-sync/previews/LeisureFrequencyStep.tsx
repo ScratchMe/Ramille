@@ -13,7 +13,7 @@ const Etape = ({ depart, total }: { depart: Reponses; total: number }) => {
   );
 };
 
-/** Rien de choisi : la ligne d'exemples sous le titre, trois rangées dans un groupe nommé par la question. */
+/** Rien de choisi : la ligne d'exemples sous le titre, quatre rangées dans un groupe nommé par la question. */
 export const Vierge = () => <Etape depart={{ commute_has_regular_trip: true, leisure_frequency: null }} total={9} />;
 
 /**
@@ -22,7 +22,7 @@ export const Vierge = () => <Etape depart={{ commute_has_regular_trip: true, lei
  */
 export const Rarement = () => <Etape depart={{ commute_has_regular_trip: true, leisure_frequency: 'rarely' }} total={8} />;
 
-/** Sans trajet domicile-travail : la ligne d'exemples cède la place au nombre d'étapes du questionnaire. */
+/** Sans trajet domicile-travail : la ligne d'exemples reste, comme pour tous (01/10/2026, `v1-33` D7). */
 export const SansTrajetDomicileTravail = () => (
   <Etape depart={{ commute_has_regular_trip: false, leisure_frequency: null }} total={6} />
 );

@@ -7,14 +7,8 @@ import { TitreDEtape } from '@/components/bilan/step-shell';
 import { ThemedText } from '@/components/themed-text';
 import { HYPOTHESES } from '@/constants/methodologie';
 import { Spacing } from '@/constants/theme';
-import type { BilanAnswers, LeisureFrequency } from '@/types/bilan';
+import { REPONSES_FREQUENCE_DES_LOISIRS as OPTIONS, type BilanAnswers } from '@/types/bilan';
 import { optionCible } from '@/types/demande';
-
-const OPTIONS: { value: LeisureFrequency; label: string }[] = [
-  { value: 'rarely', label: 'Rarement — une fois par mois ou moins' },
-  { value: 'weekly', label: 'Une fois par semaine' },
-  { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
-];
 
 /** Écrite une fois : le titre de l'étape et le nom de la série (`GroupeDeChoix`). */
 const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le week-end ?';
@@ -65,7 +59,7 @@ export function LeisureFrequencyStep({
                 sans avoir rien déclaré.
 
                 La ligne se rend **sous la réponse qui la provoque** et seulement quand elle est
-                choisie : posée sous le groupe, elle se lit comme une note sur les trois. Même
+                choisie : posée sous le groupe, elle se lit comme une note sur toutes. Même
                 registre que la ligne d'hypothèses des longs trajets et des vols, et mêmes
                 valeurs interpolées depuis `HYPOTHESES` — un script de CI les compare aux
                 constantes du calcul. Ce registre était la chasse fixe (`code`) jusqu'au

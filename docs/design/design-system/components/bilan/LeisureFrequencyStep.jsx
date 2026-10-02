@@ -3,17 +3,18 @@ import { ChoiceRow } from '../forms/ChoiceRow.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
-// Source : src/components/bilan/steps/leisure-frequency.tsx — la fréquence des sorties du week-end, trois rangées
+// Source : src/components/bilan/steps/leisure-frequency.tsx — la fréquence des sorties du week-end, quatre rangées
 // dans un groupe nommé par la question, qui est aussi le titre de l'étape.
 //
 // « Rarement » saute l'étape suivante (plus de mode, plus de distance) alors que le calcul compte toujours une
 // petite base : la ligne qui le dit s'ouvre sous cette réponse et seulement quand elle est choisie — posée sous le
-// groupe, elle se lirait comme une note sur les trois. Ses valeurs sont interpolées, jamais réécrites. La ligne
+// groupe, elle se lirait comme une note sur toutes. Ses valeurs sont interpolées, jamais réécrites. La ligne
 // d'exemples se rend pour tous, avec ou sans trajet domicile-travail (01/10/2026, `v1-33` D7).
 
-// `OPTIONS` de la source, recopiées.
+// `REPONSES_FREQUENCE_DES_LOISIRS` (src/types/bilan.ts), recopiées — la quatrième depuis le 02/10/2026 (`v1-33` D5).
 const OPTIONS = [
   { value: 'rarely', label: 'Rarement — une fois par mois ou moins' },
+  { value: 'multiple_monthly', label: 'Deux ou trois fois par mois' },
   { value: 'weekly', label: 'Une fois par semaine' },
   { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
 ];

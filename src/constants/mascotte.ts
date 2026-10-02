@@ -352,7 +352,11 @@ export const RAMILLE = {
    */
   entreeDeSection: {
     commute_has_trip: 'À peu près, c’est déjà bien. Je ne vérifie rien, et personne ne relit.',
-    leisure_frequency: 'Pense à une semaine ordinaire, pas à la meilleure ni à la pire.',
+    // Un mois et non une semaine depuis le 02/10/2026 (`v1-33` D5, décidé avec la personne qui
+    // pilote) : qui sort deux ou trois fois par mois n'a qu'une sortie, ou aucune, dans une semaine
+    // ordinaire — la semaine le poussait vers « Rarement » ou « Une fois par semaine », l'erreur
+    // que la quatrième réponse corrige. Les quatre réponses se lisent sur un mois.
+    leisure_frequency: 'Pense à un mois ordinaire, pas au meilleur ni au pire.',
     flights: 'De mémoire, sans aller chercher. C’est l’ordre de grandeur qui compte.',
     context: 'Ce qui est possible là où tu vis change ce que je te proposerai ensuite.',
   } satisfies Record<

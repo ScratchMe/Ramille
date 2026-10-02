@@ -34,7 +34,7 @@ const sectionsDeMethode = (dateDuBilan) => [
     lignes: [
       'Ton trajet domicile-travail compte 45 semaines par an — 52 moins les congés, les jours fériés et les absences.',
       'Un second mode déclaré sans sa part du trajet en prend la moitié (50 %) : c’était le cas de tous les bilans faits avant qu’on pose la question.',
-      '« Rarement » vaut 0,25 sortie par semaine, « une fois par semaine » 1, « plusieurs fois » 3 — sur 52 semaines.',
+      '« Rarement » vaut 0,25 sortie par semaine, « deux ou trois fois par mois » 0,6, « une fois par semaine » 1, « plusieurs fois » 3 — sur 52 semaines.',
       'Sans distance déclarée, une sortie compte 15 km.',
       'Un vol compte 1 500 km s’il est court ou moyen-courrier, 9 000 km s’il est long-courrier — un aller, pas un aller-retour.',
       'Un trajet en train de plus de 300 km compte 800 km, un long trajet en autocar 700 km, en voiture 700 km — un aller, pas un aller-retour.',
