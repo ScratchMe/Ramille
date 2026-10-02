@@ -107,6 +107,58 @@ export const STATUT_DU_POINT = { enAttente: 'pending', repondu: 'answered', clos
 export type StatutDuPoint = (typeof STATUT_DU_POINT)[keyof typeof STATUT_DU_POINT];
 
 /**
+ * Les deux genres d'une question **composée sur l'action engagée** : `engagement` pour la boucle de la
+ * semaine, `occasion` pour celle du mois (C2.1). Les deux autres ne portent sur aucune action :
+ * `generique` est le repli sans engagement, `maintien` l'habitude déjà tenue.
+ */
+const GENRES_DE_L_ENGAGEMENT: readonly string[] = ['engagement', 'occasion'];
+
+/**
+ * **Quel point affiché porte l'accent** (`emphasize` de `CheckinCard`) — une entrée par point, dans
+ * l'ordre reçu.
+ *
+ * **La règle d'avant suit le poste dominant** (décision du 27/08/2026, `v1-14`) : « concentre-toi sur
+ * ton poste dominant », sans jamais masquer l'autre boucle. **Depuis le 30/09/2026 la question du mois
+ * suit l'action engagée** (`v1-27` §12.25) : quand deux points sont ouverts, celui qui referme
+ * l'engagement pouvait être le gris, sous une question générique de la semaine en vert. **Tranché le
+ * 01/10/2026** (`v1-33` §6) : quand deux points sont ouverts, l'accent va à celui qui porte la question
+ * de l'action engagée — son genre le dit, figé à la génération comme la question elle-même. Sans
+ * engagement, et dès qu'un seul point est ouvert, la règle d'avant.
+ *
+ * Deux points composés sur une action se départagent par l'action **suivie aujourd'hui**
+ * (`committed_action_text`, le libellé figé) : il en faut un changement d'action entre les deux
+ * générations, la semaine sur le trajet puis le mois sur un voyage. S'ils ne se départagent pas — ni
+ * l'un ni l'autre ne porte l'action suivie, plus rien n'est engagé —, la règle d'avant, plutôt que
+ * deux accents.
+ *
+ * L'accent tombe une fois le point répondu (la carte le lit, `v1-14` §4.1) : un point répondu n'est
+ * pas « ouvert », et ne compte pas parmi les deux.
+ */
+export function accentDesPoints(
+  points: readonly {
+    status: string;
+    question_kind: string | null;
+    trip_label: string;
+    committed_action_text: string | null;
+  }[],
+  { libelleDuCycle, actionEngagee }: { libelleDuCycle: string; actionEngagee: string | null }
+): boolean[] {
+  const auPosteDominant = points.map((point) => point.trip_label === libelleDuCycle);
+  const ouverts = points.filter((point) => point.status === STATUT_DU_POINT.enAttente);
+  if (ouverts.length < 2) return auPosteDominant;
+
+  let surLEngagement = ouverts.filter((point) => GENRES_DE_L_ENGAGEMENT.includes(point.question_kind ?? ''));
+  if (surLEngagement.length > 1) {
+    surLEngagement = surLEngagement.filter(
+      (point) => actionEngagee !== null && point.committed_action_text === actionEngagee
+    );
+  }
+  if (surLEngagement.length !== 1) return auPosteDominant;
+  const [lePoint] = surLEngagement;
+  return points.map((point) => point === lePoint);
+}
+
+/**
  * Les douze mois en français — **jumelle de `public.mois_francais(date)`**, à toucher avec elle.
  *
  * Deux fois la même liste, et c'est assumé pour la même raison que le reste de ce module : le

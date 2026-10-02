@@ -40,6 +40,7 @@ import {
   type ChoixDeContexte,
 } from '@/types/contexte';
 import { decalagePourMontrer } from '@/types/demande';
+import { phraseDeLaLectureEnEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 
 /**
  * Corriger son contexte de mobilité sans refaire de bilan (C6.4, #232, `v1-19` D5).
@@ -70,7 +71,8 @@ import { decalagePourMontrer } from '@/types/demande';
 type Etat =
   // `relance` : ce chargement est un « Réessayer » de la personne, et il se dit tout de suite.
   | { statut: 'chargement'; relance?: true }
-  | { statut: 'erreur' }
+  // Le genre de l'échec (D19, 01/10/2026) : la phrase ne parle de connexion qu'hors ligne.
+  | { statut: 'erreur'; genre: GenreDEchec }
   | { statut: 'sans_bilan' }
   | { statut: 'pret'; depart: ContexteCourant };
 
@@ -95,7 +97,7 @@ export default function Contexte() {
         setChoix(lecture.contexte.choix);
         return;
       }
-      setEtat({ statut: lecture.etat === 'sans_bilan' ? 'sans_bilan' : 'erreur' });
+      setEtat(lecture.etat === 'sans_bilan' ? { statut: 'sans_bilan' } : { statut: 'erreur', genre: lecture.genre });
     })();
 
     return () => {
@@ -176,23 +178,24 @@ export default function Contexte() {
 
   if (etat.statut === 'erreur' || etat.statut === 'sans_bilan') {
     // **Deux états, deux phrases, et surtout deux vérités différentes.** Une lecture en échec ne
-    // dit rien des données de la personne (C1.4) : on parle de la connexion, jamais de son bilan.
-    // L'absence de bilan, elle, est un fait connu, et la porte qui va avec est le questionnaire.
-    const panne = etat.statut === 'erreur';
+    // dit rien des données de la personne (C1.4) : on parle de la lecture, jamais de son bilan — et de
+    // la connexion seulement hors ligne (D19, 01/10/2026, `phraseDeLaLectureEnEchec`). L'absence de
+    // bilan, elle, est un fait connu, et la porte qui va avec est le questionnaire.
+    const panne = etat.statut === 'erreur' ? etat.genre : null;
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.vide}>
             <ThemedText type="screenTitle">Ton contexte de mobilité</ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              {panne
-                ? 'Tes réponses n’ont pas pu être lues. Vérifie ta connexion et réessaie.'
+              {panne !== null
+                ? phraseDeLaLectureEnEchec('contexte', panne)
                 : 'Ces réponses font partie de ton bilan. Tu pourras les corriger ici une fois ton premier bilan fait.'}
             </ThemedText>
             <Button
-              title={panne ? 'Réessayer' : 'Faire mon bilan'}
+              title={panne !== null ? 'Réessayer' : 'Faire mon bilan'}
               onPress={() => {
-                if (panne) {
+                if (panne !== null) {
                   setEtat({ statut: 'chargement', relance: true });
                   void lireLeContexteCourant().then((lecture) => {
                     if (lecture.etat === 'ok') {
@@ -200,7 +203,9 @@ export default function Contexte() {
                       setChoix(lecture.contexte.choix);
                       return;
                     }
-                    setEtat({ statut: lecture.etat === 'sans_bilan' ? 'sans_bilan' : 'erreur' });
+                    setEtat(
+                      lecture.etat === 'sans_bilan' ? { statut: 'sans_bilan' } : { statut: 'erreur', genre: lecture.genre }
+                    );
                   });
                   return;
                 }

@@ -20,7 +20,7 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 // Chargé après le double : `bilan-history.ts` lit `@/lib/supabase` à l'import.
-const { loadCycleCourant, loadFrequenceDesLoisirs, loadLastSubmittedAnswers } =
+const { loadAnsweredCheckins, loadAssessmentHistory, loadCycleCourant, loadFrequenceDesLoisirs, loadLastSubmittedAnswers } =
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('./bilan-history') as typeof import('./bilan-history');
 
@@ -96,5 +96,42 @@ describe('loadFrequenceDesLoisirs', () => {
     mockFrom.mockImplementation(() => requete({ leisure_frequency: 'rarement' }));
     await expect(loadFrequenceDesLoisirs('b1')).resolves.toBe('rarement');
     expect(mockFrom).toHaveBeenCalledWith('assessment_answers');
+  });
+});
+
+/**
+ * Les deux lectures dont l'échec fait l'écran d'erreur du suivi disent **pourquoi** (D19 de `v1-33`,
+ * 01/10/2026) : hors ligne — pas de réponse HTTP, `status: 0` — ou le serveur en échec. La phrase de
+ * l'écran ne parle de connexion qu'au premier.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : le statut ignoré (`'serveur'` en dur dans
+ * `genreDeLaLecture`) fait tomber « hors ligne, elle le dit » pour les deux lectures, et rien d'autre.
+ */
+describe('les lectures du suivi disent le genre de leur échec', () => {
+  /** Une liste PostgREST qui se résout au bout de son `order`. */
+  function liste(reponse: { data: unknown; error: unknown; status: number }) {
+    const chaine: Record<string, unknown> = {};
+    for (const methode of ['select', 'eq']) chaine[methode] = () => chaine;
+    chaine.order = async () => reponse;
+    return chaine;
+  }
+  const LECTURES = [
+    ['loadAssessmentHistory', () => loadAssessmentHistory()],
+    ['loadAnsweredCheckins', () => loadAnsweredCheckins()],
+  ] as const;
+
+  it.each(LECTURES)('%s : hors ligne, elle le dit', async (_nom, lire) => {
+    mockFrom.mockImplementation(() => liste({ data: null, error: { message: 'Failed to fetch' }, status: 0 }));
+    await expect(lire()).resolves.toEqual({ ok: false, genre: 'horsLigne' });
+  });
+
+  it.each(LECTURES)('%s : un serveur en échec n’est pas une coupure', async (_nom, lire) => {
+    mockFrom.mockImplementation(() => liste({ data: null, error: { message: 'Internal Server Error' }, status: 500 }));
+    await expect(lire()).resolves.toEqual({ ok: false, genre: 'serveur' });
+  });
+
+  it.each(LECTURES)('%s : un succès rend ce qu’il rendait', async (_nom, lire) => {
+    mockFrom.mockImplementation(() => liste({ data: [], error: null, status: 200 }));
+    await expect(lire()).resolves.toEqual({ ok: true, data: [] });
   });
 });

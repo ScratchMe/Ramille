@@ -2252,7 +2252,7 @@ if (Object.values(COULEUR).some((c) => c === null)) {
       await page.getByRole('radio', { name: 'Urbain dense', exact: true }).click();
       await page.getByRole('radio', { name: 'Bon', exact: true }).click();
       await page
-        .getByRole('radiogroup', { name: 'Véhicules motorisés dans le foyer' })
+        .getByRole('radiogroup', { name: 'Combien de véhicules motorisés dans ton foyer ?' })
         .getByRole('radio', { name: '0', exact: true })
         .click();
       await page.getByRole('button', { name: 'Voir mon bilan', exact: true }).click();

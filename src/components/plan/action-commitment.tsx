@@ -12,6 +12,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import {
+  ceQuiManqueALIntention,
   INTENTION_DAYS,
   intentionTimingsForPoste,
   intentionKindForPoste,
@@ -81,7 +82,7 @@ export function ActionCommitment({
    * S'ouvrir **directement sur la question** (« Quand ? », « Quels jours ? »), sans passer par « Je
    * m'y engage » (décision n° 1 du 28/09/2026, `v1-32` §4.2) : sur l'écran des pistes, « Choisir »
    * vient de le dire, et le redemander faisait quatre gestes là où trois suffisent. Le contenu du
-   * sélecteur ne change pas — rien de coché, « C'est noté » inactif tant que rien n'est choisi,
+   * sélecteur ne change pas — rien de coché, « C'est noté » en attente tant que rien n'est choisi,
    * **aucune valeur par défaut**. Le plan ne le passe pas.
    */
   surLeChoix?: boolean;
@@ -179,7 +180,37 @@ export function ActionCommitment({
   const toggleDay = (day: IntentionDay) =>
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
 
+  /**
+   * **« C'est noté » en attente, qui dit ce qui manque** (D13 de `v1-33`, 01/10/2026 ; audit P-4). Il
+   * était `disabled` tant que rien n'était choisi : un texte gris sur le gris du sélecteur, puis un
+   * bouton vert plein dès un choix, et le toucher d'avant ne faisait rien. C'est le motif du « Suivant »
+   * du questionnaire (`v1-31`, `Button.enAttente`) : le bouton agit, et son toucher **demande**.
+   *
+   * La demande fait apparaître la ligne sous les choix — « Choisis au moins un jour. » ou « Choisis une
+   * échéance. », `ceQuiManqueALIntention` — et porte le focus **au geste** sur le premier choix du
+   * groupe : rien n'est coché, c'est l'arrêt de tabulation du groupe, et c'est de lui que le lecteur
+   * d'écran annonce la question. Pas d'alerte : ce n'est pas un échec, et le focus qui part fait déjà
+   * l'annonce. Elle retombe **au rendu**, jamais dans un effet, dès que l'intention est complète — un
+   * nouveau manque (un jour décoché) ne se redit qu'au prochain toucher : la règle de la demande de
+   * `StepShell`.
+   *
+   * **`isIntentionComplete` garde toujours l'appel** : c'est `submit` qui le relit et qui demande au
+   * lieu d'envoyer — rien ne part incomplet, quel que soit le chemin qui l'appelle.
+   */
+  const manque = ceQuiManqueALIntention(kind, days, timing);
+  const [demande, setDemande] = useState(false);
+  if (demande && manque === null) setDemande(false);
+  const premierChoix = useRef<View>(null);
+  const demander = () => {
+    setDemande(true);
+    donnerLeFocus(premierChoix.current);
+  };
+
   const submit = async () => {
+    if (!isIntentionComplete(kind, days, timing)) {
+      demander();
+      return;
+    }
     setBusy(true);
     setError(null);
     // Le refus précédent appartenait à la tentative précédente : il s'efface ici et nulle part
@@ -288,11 +319,13 @@ export function ActionCommitment({
         // une ligne, entre les marges de la carte et celles du sélecteur, chacun ne mesurait que 27 à
         // 31 px de large à 360-390 dp, sous la cible de 48 (décision n° 7, `GroupeDeChoix`).
         <GroupeDeChoix question={question} cumulable colonnes={4}>
-          {INTENTION_DAYS.map((day) => (
+          {INTENTION_DAYS.map((day, rang) => (
             <Chip
               // Deux jours portent l'initiale « M » : l'accessibilité passe par le libellé
               // long, pas par la puce.
               key={day.value}
+              // Le premier choix reçoit le focus quand « C'est noté » demande (D13) : rien n'est coché.
+              ref={rang === 0 ? premierChoix : undefined}
               label={day.short}
               accessibilityLabel={day.long}
               role="checkbox"
@@ -309,9 +342,10 @@ export function ActionCommitment({
           {/* C3.8 §4 : les échéances dépendent du poste — un voyage ne se décide pas au calendrier
               du mois. La liste se dérive ici plutôt que dans le rendu d'un ternaire, pour que
               `src/types/plan.ts` reste le seul endroit qui sache lesquelles vont avec quoi. */}
-          {intentionTimingsForPoste(poste).map((option) => (
+          {intentionTimingsForPoste(poste).map((option, rang) => (
             <Chip
               key={option.value}
+              ref={rang === 0 ? premierChoix : undefined}
               label={option.label}
               role="radio"
               selected={timing === option.value}
@@ -326,6 +360,16 @@ export function ActionCommitment({
         </GroupeDeChoix>
       )}
 
+      {/* **Ce qui manque, sous les choix** (D13) : dans le style de la ligne « Il manque encore … » du
+          questionnaire — `accentText` 600, jamais une alerte —, au toucher de « C'est noté » et
+          seulement tant qu'il manque quelque chose. Un texte et non un lien : les choix qu'il nomme
+          sont juste au-dessus, et le focus y est déjà. */}
+      {demande && manque !== null && (
+        <ThemedText type="small" weight={600} themeColor="accentText">
+          {manque}
+        </ThemedText>
+      )}
+
       <MessageInline message={error} />
 
       <View style={styles.pickerActions}>
@@ -337,6 +381,8 @@ export function ActionCommitment({
               return;
             }
             geste.current = 'annuler';
+            // La demande appartient au sélecteur qu'on referme : rouvert, il ne redit rien d'office.
+            setDemande(false);
             setPicking(false);
           }}
           disabled={busy}
@@ -344,12 +390,10 @@ export function ActionCommitment({
           themeColor="textTertiary"
           style={styles.link}
         />
-        <Button
-          title="C’est noté"
-          onPress={submit}
-          disabled={busy || !isIntentionComplete(kind, days, timing)}
-          flex
-        />
+        {/* **En attente, jamais inactif, tant qu'il manque quelque chose** (D13) : il a l'apparence du
+            désactivé et agit — son toucher demande (`demander`). `disabled` reste pour ce qui
+            n'agit vraiment pas : l'aller-retour d'un engagement, jusqu'à la relecture (`busy`). */}
+        <Button title="C’est noté" onPress={submit} enAttente={manque !== null} disabled={busy} flex />
       </View>
     </ThemedView>
   );

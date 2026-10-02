@@ -6,7 +6,11 @@ export interface CheckinCardProps {
   /** Le libellé que la base fige à la génération : « Semaine du 14/09 », « août 2026 ». */
   periodLabel: string;
   question: string;
-  /** Le point du poste dominant : teinte `backgroundSelected` et étiquette accent, tant qu'il n'est pas répondu. */
+  /**
+   * Le point à regarder d'abord : teinte `backgroundSelected` et étiquette accent, tant qu'il n'est pas répondu. Quand deux
+   * points sont ouverts, celui qui porte la question de l'action engagée ; sinon, celui du poste dominant (01/10/2026,
+   * `v1-33` §6 — `accentDesPoints`, src/types/checkin.ts).
+   */
   emphasize?: boolean;
   /** `null` = question posée ; sinon la réponse donnée, et Ramille répond. `true` / `false` valent `oui` / `non`. */
   answered?: 'oui' | 'non' | 'sans_objet' | boolean | null;

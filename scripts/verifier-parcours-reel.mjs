@@ -511,6 +511,12 @@
 //   | PL12 — « Suivi » nomme sa racine (`navigate('suivi', { screen: 'index' })`, le layout d'avant) | « l'onglet remonte… » : la restitution reste montée sous le suivi |
 //   | PL13 — « Plan » nomme sa racine, de même | « l'onglet remonte… » : un second plan monté (titres « avant, neuf ») |
 //   | PL14 — la seule relecture qui glisse sous « réduire les animations » | le cycliste, à son engagement : l'écran glisse jusqu'à la carte engagée |
+//   | PL15 — « C'est noté » remis `disabled` sur une intention incomplète (vague produit, D13) | « pistes — choisir depuis la liste, à la place » : « C'est noté » est inactif avant qu'une échéance soit choisie |
+//   | PL16 — la garde de `submit` retirée : le toucher en attente envoie (D13) | la même étape : « C'est noté », touché sans échéance, a écrit — un appel à `commit_plan_action` |
+//   | PL17 — la demande jamais posée (`setDemande(true)` retiré, D13) | la même étape : « Choisis une échéance. » n'apparaît jamais |
+//   | PL18 — la carte des deux lieux notée vue au seul « Compris » (`onRendue` ne note rien, l'écran d'avant) | « cycliste — un nouveau bilan en voiture » : la carte des deux lieux revient sans « Compris » |
+//   | PL19 — la visite ignorée (`etatDuPremierParcours(etape)` seul) : notée vue, la carte part dans la foulée | « plan — Compris fait venir la barre » : « Ici, ton plan : l’action en cours… » n'apparaît jamais |
+//   | PC1 — la relecture ne déplace plus la carte engagée (`pistesAvantLeCap` toujours vrai) | « engagement » : la carte engagée n'est jamais sortie de la fenêtre — la précondition, réécrite le même jour, mord encore |
 //
 // **Trois corrections que les mutations ont faites à la garde**, et c'est ce qu'elles valaient le
 // premier jour : à 420 × 900, la carte relue finissait dans la fenêtre sans défiler — PL4 ne tombait
@@ -541,6 +547,26 @@
 // déclenche aucun appel, et aucune image ne la montre dehors. Le témoin passe sur le même arbre, deux
 // fois de bout en bout, et le cycliste huit fois en tout — dont trois, tracés, sans une seule image où
 // la carte est dehors : l'ancienne précondition y serait tombée.
+//
+// **PL15 à PL18 viennent de la vague produit de `v1-33`** (chantier G, même jour, même méthode) :
+// « C'est noté » en attente (D13) et la carte des deux lieux vue une fois, puis partie (tension
+// tranchée, §6). Cette décision retire à **D1 et D2** l'étape qui les exerçait : la carte des deux
+// lieux est vue au premier plan du cycliste, donc jamais due en même temps que « Ton premier plan » au
+// nouveau bilan. La paire reste épinglée sur toutes les combinaisons par les tests de `cartesDuPlan`,
+// et l'assertion « s'empile » reste, sans mutation qui la fasse tomber ici. La carte d'origine, au
+// caractère près, se lit désormais au « Compris » du premier profil, à sa seule visite ; et celle du
+// cycliste — la phrase que **B1** garde — à son premier plan, où B1, rejouée ce jour-là, tombe donc
+// désormais (« cycliste — restitution, puis le plan sans action », sur la même phrase). PL19 ne fait pas
+// parler l'assertion « elle ne disparaît pas sous les yeux » du cycliste : l'attente du premier profil,
+// qui la cherche juste après « Compris », tombe la première — la carte n'y vit qu'une image.
+//
+// **Et le chantier G a trouvé la même course, sur sa branche, et l'a fermée par une autre voie** :
+// sous « réduire les animations », la précondition tombait sans défaut une fois sur deux sur l'arbre
+// d'avant ce chantier (mesuré : deux échecs sur quatre à 7f73f57). Il rapporte la carte relue à la
+// position d'avant le défilement ; quatre témoins verts d'affilée ensuite, et PC1 — la même mutation
+// que PC ci-dessus — dit qu'une carte restée en place ne la satisfait toujours pas. **L'intégration
+// garde les deux lectures** : l'image rapportée à la position d'avant, et l'appel de défilement ; une
+// seule suffit à dire « dehors », et aucune ne le dit d'une carte que la relecture laisse en place.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -1078,13 +1104,21 @@ async function verifierLaCarteEngagee(ou, { vues = null, appels = [], glisse = t
     // mise en page que l'app vient de mesurer pour décider de défiler ; le premier seul faisait dépendre
     // la garde d'une course — sous « réduire les animations », le rendu de la relecture et le défilement
     // posé d'un coup tombent parfois dans la même image, et aucune ne montre alors la carte dehors.
-    // Elle n'en est pas moins exigeante : sans appel de défilement (PL4), la carte reste dehors et
-    // l'assertion du dessus tombe ; une carte restée en place ne déclenche aucun appel, et aucune
-    // image ne la montre dehors.
+    // **Et une image se lit aussi rapportée à la position d'avant le défilement** (chantier G, même
+    // jour, même course trouvée sur sa branche) : en coordonnées du contenu, le bouton finissait sous le
+    // bas de la fenêtre qu'on regardait — relevé image par image : 195 px de défilement, puis 406 d'un
+    // coup, la carte déjà dans la fenêtre. Elle n'en est pas moins exigeante : sans appel de défilement
+    // (PL4), la carte reste dehors et l'assertion du dessus tombe ; une carte restée en place ne
+    // déclenche aucun appel, ne bouge pas dans le contenu, et aucune image ne la montre dehors.
     if (exigerUnDefilement) {
+      const avant = vues.find(Boolean)?.position ?? 0;
       const horsDeLaFenetre = (v) =>
         v != null && ((v.basDuBouton !== null && v.basDuBouton > v.hauteur + 0.5) || v.haut < -0.5);
-      const dehors = vues.some(horsDeLaFenetre) || appels.some((a) => horsDeLaFenetre(a.vue));
+      const horsDeLaFenetreDAvant = (v) =>
+        v != null &&
+        ((v.basDuBouton !== null && v.position + v.basDuBouton > avant + v.hauteur + 0.5) || v.position + v.haut < avant - 0.5);
+      const dehors =
+        vues.some((v) => horsDeLaFenetre(v) || horsDeLaFenetreDAvant(v)) || appels.some((a) => horsDeLaFenetre(a.vue));
       const lues = appels
         .map((a) => (a.vue ? `« Changer d’avis » à ${Math.round(a.vue.basDuBouton ?? -1)} px pour une fenêtre de ${a.vue.hauteur}, titre à ${Math.round(a.vue.haut)}` : 'carte introuvable'))
         .join(' ; ');
@@ -1498,6 +1532,13 @@ try {
       ' place (`arrivee`, src/app/(tabs)/_layout.tsx)'
   );
   assurer(barrePosee.opacite >= 0.99, `la barre d’onglets reste translucide après son arrivée (${barrePosee.opacite})`);
+  // **La carte des deux lieux arrive avec la barre** — et ce plan-ci a des actions et une boucle : la
+  // carte d'origine, au caractère près (`v1-27` §12.23). L'assertion vivait au nouveau bilan du
+  // cycliste, où la carte ne revient plus depuis qu'elle se voit une fois (décision du 01/10/2026) :
+  // c'est ici, à sa seule visite, qu'elle dit tout ce que le plan porte.
+  await attendreTexte(
+    'Ici, ton plan : l’action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+  );
 
   // ── 6. L'engagement sur la première piste ───────────────────────────────────────────────────
   etape('engagement');
@@ -2230,9 +2271,37 @@ try {
       `« ${echeance} » est déjà cochée à l’ouverture : aucune échéance par défaut`
     );
   }
+  // **« C'est noté » en attente, qui dit ce qui manque** (D13 de `v1-33`, 01/10/2026). Il était inactif
+  // avant qu'une échéance soit choisie ; il agit désormais, gris, et son toucher **demande** : « Choisis
+  // une échéance. » sous les choix, le focus sur le premier, et rien ne part. « Rien ne part » est une
+  // absence : le guetteur est armé avant le geste, il laisse à un appel le temps de partir, et la base
+  // est relue — l'engagement est toujours sur la première piste.
   const cEstNote = page.getByRole('button', { name: 'C’est noté', exact: true });
-  assurer((await cEstNote.getAttribute('aria-disabled')) === 'true', '« C’est noté » est actif avant qu’une échéance soit choisie');
+  assurer(
+    (await cEstNote.getAttribute('aria-disabled')) !== 'true',
+    '« C’est noté » est inactif avant qu’une échéance soit choisie : il doit être en attente, et dire ce qui manque (D13)'
+  );
+  const appelsDEngagement = [];
+  const guetterLEngagement = (requete) => {
+    if (requete.url().includes('/rest/v1/rpc/commit_plan_action')) appelsDEngagement.push(requete.url());
+  };
+  page.on('request', guetterLEngagement);
+  await cEstNote.click();
+  await page.waitForTimeout(800);
+  page.off('request', guetterLEngagement);
+  const avantLEcheance = await lire('plan_actions?select=rank,committed_at&order=rank', jeton);
+  assurer(
+    appelsDEngagement.length === 0 && avantLEcheance[0].committed_at !== null && avantLEcheance[1].committed_at === null,
+    `« C’est noté », touché sans échéance, a écrit : ${appelsDEngagement.length} appel(s) à commit_plan_action, et en base` +
+      ` ${JSON.stringify(avantLEcheance.slice(0, 2))} — rien ne part incomplet (\`isIntentionComplete\`, ActionCommitment)`
+  );
+  await attendreTexte('Choisis une échéance.');
+  await focusSur('À mon prochain projet de voyage', 'après « C’est noté » en attente, sur la liste');
   await choisir('Avant mon prochain bilan');
+  assurer(
+    !(await page.getByText('Choisis une échéance.', { exact: true }).first().isVisible().catch(() => false)),
+    '« Choisis une échéance. » reste à l’écran une échéance choisie : la ligne retombe dès que l’intention est complète'
+  );
   await cEstNote.click();
   try {
     await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
@@ -2593,7 +2662,20 @@ try {
     { timeout: ATTENTE }
   );
   await attendreTexte('Deux endroits, pas plus.');
+  // **Et elle ne promet ni action ni cap à un plan qui n'en a pas** (décision du 30/09/2026, `v1-27`
+  // §12.23) : le cycliste a un point le lundi, pas d'action, et sa carte du cap ne montre que la
+  // saison. C'est ici qu'elle se lit, à sa seule visite — elle se voit une fois depuis le 01/10/2026.
+  await attendreTexte(
+    'Ici, ton plan : le point régulier et ta saison. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+  );
   await page.waitForTimeout(600);
+  // **Vue, elle ne disparaît pas sous les yeux** (décision du 01/10/2026, `v1-33` §6) : elle passe à
+  // `fait` à l'instant où elle se rend, et seule la visite la retient — un rendu qui la retirerait aussitôt
+  // la ferait clignoter une image, puis rien.
+  assurer(
+    await page.getByText('Deux endroits, pas plus.').first().isVisible(),
+    'la carte des deux lieux a disparu pendant la visite où elle s’est rendue : elle doit rester jusqu’à ce que l’écran perde le focus (`etatDuPremierParcours`, `vueDansLaVisite`)'
+  );
   const barreDuCycliste = await mesurer(page, 'barre');
   const arriveeDuCycliste = (await echantillons(page)).map((e) => e.barre);
   // Relevée masquée au départ, puis **là, et plus jamais absente** : « rien ne bouge » ne vaut que
@@ -2650,13 +2732,13 @@ try {
     `la ligne d'horizon du suivi ne dit pas « déjà sous le repère » (ligneDHorizon2050) : ${texteDeLaCarte.slice(0, 300)}`
   );
 
-  // **Un nouveau bilan qui donne des actions : le premier plan passe devant les deux lieux**
-  // (27/09/2026, `v1-27` §4). La carte « Deux endroits, pas plus. » est encore due — ce profil ne
-  // l'a pas refermée — et le nouveau bilan, en voiture, donne au même cycle ses premières actions :
-  // « Ton premier plan » l'est aussi. Les deux s'empilaient ; `cartesDuPlan` fait passer la seconde
-  // devant. Cette étape garde **deux arguments de l'appel** — la dérivation a toutes ses combinaisons
-  // d'états dans Jest, mais un écran qui lui passerait le mauvais argument les laisserait tous verts ;
-  // l'en-tête nomme ceux que rien ici ne garde.
+  // **Un nouveau bilan qui donne des actions : « Ton premier plan », et la carte des deux lieux ne
+  // revient pas** (27/09/2026, `v1-27` §4 ; puis décision du 01/10/2026, `v1-33` §6). Le nouveau bilan, en
+  // voiture, donne au même cycle ses premières actions : « Ton premier plan » est dû. La carte « Deux
+  // endroits, pas plus. » l'était encore aussi jusqu'au 01/10/2026 — ce profil ne l'a jamais refermée —,
+  // et les deux s'empilaient avant que `cartesDuPlan` fasse passer le premier plan devant. **Elle se voit
+  // désormais une fois, puis part, « Compris » touché ou non** : rendue au premier plan du cycliste,
+  // quittée par l'onglet du suivi sans « Compris », elle ne revient pas, ni devant ni derrière.
   // **Le préremplissage qui ouvre une précision ne fait pas défiler l'écran** (`v1-31` §2.7, écart 12
   // du §9). Une précision qui s'ouvre sous le pied fait remonter l'écran — après une réponse donnée,
   // jamais sous une donnée arrivée plus tard. Ouvert par `?etape=commute_mode`, le re-bilan de ce
@@ -2724,14 +2806,21 @@ try {
     !(await page.getByText('Deux endroits, pas plus.').first().isVisible()),
     'la carte des deux lieux s’empile sur « Ton premier plan » (cartesDuPlan, décidé le 27/09/2026)'
   );
-  // Refermée, la carte du premier plan laisse passer celle qui attendait : sa marque n'a pas bougé.
+  // Refermée, la carte du premier plan laisse la place à la carte d'attente, qui nomme le lundi — et
+  // **pas** à la carte des deux lieux : elle a été vue au premier plan de ce profil. C'est la garde de
+  // la décision du 01/10/2026, « elle ne revient pas sans Compris ». Son absence se lit **avant**
+  // d'attendre le lundi, une fois la carte du premier plan partie : ce qui prend sa place se rend dans
+  // le même rendu, et une carte des deux lieux revenue ferait sinon tomber l'attente du lundi, sur un
+  // délai qui ne dit pas pourquoi.
   await page.getByText('Compris', { exact: true }).first().click();
-  await attendreTexte('Deux endroits, pas plus.');
-  // Ce plan-ci a des actions et une boucle : la carte d'origine, au caractère près (`v1-27` §12.23 —
-  // elle ne décrit que ce que le plan porte, et ici il porte tout).
-  await attendreTexte(
-    'Ici, ton plan : l’action en cours, le point régulier, ton cap. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
+  await page.getByText('TON PREMIER PLAN').first().waitFor({ state: 'hidden', timeout: ATTENTE });
+  await page.waitForTimeout(600);
+  assurer(
+    !(await page.getByText('Deux endroits, pas plus.').first().isVisible().catch(() => false)),
+    'la carte des deux lieux revient sans « Compris » : vue au premier plan du cycliste, elle ne doit plus se rendre' +
+      ' (`lesDeuxLieuxSontVus` au rendu, `CarteDesDeuxLieux`, décision du 01/10/2026)'
   );
+  await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
 
   // ── 11. Retirer un bilan, puis le seul qui reste (C4.7, `v1-22`) ─────────────────────────
   //
@@ -2869,24 +2958,13 @@ try {
   // §12.22). Le plan lit les boucles par `mes_boucles_a_venir`, et le client relit leurs valeurs
   // (`lireLesBouclesAVenir`) : une valeur renommée d'un seul côté, ou la fonction absente de la
   // base, ferait disparaître la carte **sans une erreur**. Le cycliste
-  // a un trajet, donc un point le lundi. **La carte des deux lieux l'occupe d'abord** : le cycliste
-  // ne l'a jamais refermée (le premier plan est passé devant, puis ses bilans ont été retirés), et
-  // elle remplace la carte d'attente (`cartesDuPlan`). La première version de cette étape l'oubliait
-  // et a échoué au premier rejeu, le 30/09/2026 — c'est donc aussi la preuve que refermer la carte des
-  // deux lieux rend la place à celle qui attendait. La ligne de Ramille dépend du canal (« Je te fais
-  // signe » ou « On se retrouve ici »), pas le jour.
+  // a un trajet, donc un point le lundi. **La carte des deux lieux l'occupait d'abord** jusqu'au
+  // 01/10/2026 : le cycliste ne l'avait jamais refermée, et elle remplace la carte d'attente
+  // (`cartesDuPlan`). Elle se voit désormais une fois — au premier plan de ce profil —, donc la carte
+  // d'attente est là d'emblée. La ligne de Ramille dépend du canal (« Je te fais signe » ou « On se
+  // retrouve ici »), pas le jour.
   await bouton('Voir ce que je peux faire');
   await page.waitForURL(/\/plan/, { timeout: ATTENTE });
-  await attendreTexte('Deux endroits, pas plus.');
-  // **Et elle ne promet ni action ni cap à un plan qui n'en a pas** (décision du 30/09/2026, `v1-27`
-  // §12.23) : le cycliste a un point le lundi, pas d'action, et sa carte du cap ne montre que la
-  // saison. Des deux faits que l'écran passe à la dérivation, c'est **les actions** qu'on voit ici
-  // varier — la même carte, à l'étape 10, en avait ; **les boucles**, elles, ne sont vues vides que
-  // par le troisième profil, plus bas. La dérivation elle-même est gardée par Jest.
-  await attendreTexte(
-    'Ici, ton plan : le point régulier et ta saison. En bas, ton suivi : tes bilans et tes réponses, saison après saison.'
-  );
-  await page.getByText('Compris', { exact: true }).first().click();
   await attendreTexte(/^(Je te fais signe|On se retrouve ici) lundi\.$/);
 
   await rpc('delete_my_account', sobre.jeton);
@@ -3092,7 +3170,7 @@ try {
       `l'ordre attendu, engagement (les jours au clavier), point répondu, suivi, « Toi » et sa ligne de ` +
       `canal, compte supprimé — puis le cycliste, ${ATTENDU_SOBRE.totalKg} kg et un plan à zéro action, ` +
       `barre d'onglets venue sans « Compris », puis son nouveau bilan en voiture où « Ton premier plan » ` +
-      `passe devant la carte des deux lieux, puis ses deux bilans retirés — le plan reparti du précédent, ` +
+      `se rend sans que la carte des deux lieux, vue une fois, revienne, puis ses deux bilans retirés — le plan reparti du précédent, ` +
       `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi — puis un ` +
       `profil sans boucle, à qui ni le plan ni le suivi ne promettent rien, et qui rattache son compte ` +
       `par code — Entrée envoie, le focus suit, et le retour ne rouvre ni le flux fini ni la session ` +

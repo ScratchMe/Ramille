@@ -24,6 +24,7 @@
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { AccessibilityInfo } from 'react-native';
 
 import { ActionCommitment } from '@/components/plan/action-commitment';
 
@@ -38,11 +39,11 @@ jest.mock('@/lib/plan-engagement', () => ({
 const onChanged = jest.fn();
 const onEngage = jest.fn();
 
-/** Un trajet domicile-travail : l'intention se dit en jours. */
-const carte = (surcharge: { committed?: boolean; lectures?: number } = {}) => (
+/** Un trajet domicile-travail : l'intention se dit en jours — sauf `poste` qui dit autre chose. */
+const carte = (surcharge: { committed?: boolean; lectures?: number; poste?: string } = {}) => (
   <ActionCommitment
     actionId="a1"
-    poste="commute"
+    poste={surcharge.poste ?? 'commute'}
     committed={surcharge.committed ?? false}
     intentionDays={null}
     intentionTiming={null}
@@ -111,5 +112,86 @@ describe('ActionCommitment — jusqu’à la relecture', () => {
     rerender(carte({ committed: false, lectures: 5 }));
     expect(screen.getByText('Je m’y engage')).toBeTruthy();
     expect(screen.queryByText('C’est noté')).toBeNull();
+  });
+});
+
+/**
+ * **« C'est noté » en attente, qui dit ce qui manque** (D13 de `v1-33`, 01/10/2026). Le parcours réel
+ * le joue sur la liste, pour une échéance ; ce fichier voit la forme en jours, sur le plan, que le
+ * parcours ne touche pas incomplète — et le focus, qu'il lit là-bas sur une case d'option.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), cinq mutations jouées une à une, rien hors
+ * de ce bloc ne tombant :
+ *   - « C'est noté » remis `disabled` sur une intention incomplète (l'état d'avant) → les trois tests
+ *     du bloc, le toucher ne faisant plus rien ;
+ *   - la demande jamais posée (`setDemande(true)` retiré) → les trois, sur la ligne ;
+ *   - la garde de `submit` retirée (l'appel part incomplet) → les trois, la ligne absente et l'appel
+ *     parti ;
+ *   - le focus jamais donné (`donnerLeFocus` retiré de `demander`) → « agit en attente… », seul ;
+ *   - la demande qui ne retombe plus (`setDemande(false)` retiré) → « la ligne retombe… », seul ;
+ *   - la demande gardée par « Annuler » (le `setDemande(false)` de son gestionnaire retiré) → « la
+ *     ligne retombe… », seul, sur le sélecteur rouvert.
+ */
+describe('ActionCommitment — « C’est noté » en attente', () => {
+  let focus: jest.SpyInstance;
+  beforeEach(() => {
+    focus = jest.spyOn(AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
+  });
+  afterEach(() => focus.mockRestore());
+
+  /** Le nœud qui a reçu le dernier focus, par son libellé accessible. */
+  const dernierFocus = () => {
+    const appels = focus.mock.calls.filter(([, evenement]) => evenement === 'focus');
+    const noeud = appels.at(-1)?.[0] as { props?: { accessibilityLabel?: string } } | undefined;
+    return noeud?.props?.accessibilityLabel;
+  };
+
+  it('agit en attente : dit « Choisis au moins un jour. », porte le focus sur lundi, et n’envoie rien', () => {
+    render(carte());
+    fireEvent.press(screen.getByText('Je m’y engage'));
+
+    // En attente, pas inactif : il agit.
+    expect(inactif('C’est noté')).toBe(false);
+    expect(screen.queryByText('Choisis au moins un jour.')).toBeNull();
+
+    fireEvent.press(screen.getByText('C’est noté'));
+    expect(screen.getByText('Choisis au moins un jour.')).toBeTruthy();
+    expect(dernierFocus()).toBe('lundi');
+    expect(mockEngager).not.toHaveBeenCalled();
+  });
+
+  it('dit « Choisis une échéance. » pour une intention à échéance', () => {
+    render(carte({ poste: 'travel' }));
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByText('C’est noté'));
+    expect(screen.getByText('Choisis une échéance.')).toBeTruthy();
+    expect(mockEngager).not.toHaveBeenCalled();
+  });
+
+  it('la ligne retombe dès que l’intention est complète, et ne revient qu’au toucher suivant', async () => {
+    render(carte());
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByText('C’est noté'));
+    expect(screen.getByText('Choisis au moins un jour.')).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    expect(screen.queryByText('Choisis au moins un jour.')).toBeNull();
+
+    // Décoché, rien ne se redit d'office : il faut toucher de nouveau.
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    expect(screen.queryByText('Choisis au moins un jour.')).toBeNull();
+
+    // Refermé par « Annuler » puis rouvert, le sélecteur ne redit rien d'office : la demande était la
+    // sienne.
+    fireEvent.press(screen.getByText('C’est noté'));
+    expect(screen.getByText('Choisis au moins un jour.')).toBeTruthy();
+    fireEvent.press(screen.getByText('Annuler'));
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    expect(screen.queryByText('Choisis au moins un jour.')).toBeNull();
+
+    // Complète, l'intention part.
+    fireEvent.press(screen.getByRole('checkbox', { name: 'jeudi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+    await waitFor(() => expect(mockEngager).toHaveBeenCalledWith('a1', { days: [4] }, false));
   });
 });

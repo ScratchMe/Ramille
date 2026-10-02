@@ -5,6 +5,7 @@ import {
   INTENTION_TIMINGS_VOYAGES,
   annonceDeLaPiste,
   cadreDuPlan,
+  ceQuiManqueALIntention,
   etatDeLaPiste,
   introDesPistes,
   libelleDuChoix,
@@ -152,6 +153,41 @@ describe('isIntentionComplete', () => {
     expect(isIntentionComplete('days', [2] as IntentionDay[], null)).toBe(true);
     expect(isIntentionComplete('timing', [], null)).toBe(false);
     expect(isIntentionComplete('timing', [], 'ce_mois')).toBe(true);
+  });
+});
+
+/**
+ * D13 de `v1-33` (01/10/2026) : « C'est noté » en attente dit ce qui manque, mot pour mot.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : les deux phrases interverties fait tomber « nomme ce qui
+ * manque » ; la complétude réécrite à la main (`days.length > 0 || timing !== null`, un second
+ * prédicat qui ne regarde plus la forme) fait tomber « se tait dès que l'intention est complète, et
+ * seulement alors ».
+ */
+describe('ceQuiManqueALIntention', () => {
+  it('nomme ce qui manque, selon la forme de l’intention', () => {
+    expect(ceQuiManqueALIntention('days', [], null)).toBe('Choisis au moins un jour.');
+    expect(ceQuiManqueALIntention('timing', [], null)).toBe('Choisis une échéance.');
+  });
+
+  // La phrase ne réclame que ce que la garde de l'appel réclame : les deux lisent la même complétude,
+  // sur toutes les combinaisons — une échéance ne complète pas une intention à jours, ni l'inverse.
+  it('se tait dès que l’intention est complète, et seulement alors', () => {
+    const jours: IntentionDay[][] = [[], [2], [1, 3, 5]];
+    const echeances = [null, 'ce_mois', 'avant_le_prochain_bilan'] as const;
+    for (const kind of ['days', 'timing'] as const) {
+      for (const days of jours) {
+        for (const timing of echeances) {
+          const manque = ceQuiManqueALIntention(kind, days, timing);
+          expect({ kind, days, timing, seTait: manque === null }).toEqual({
+            kind,
+            days,
+            timing,
+            seTait: isIntentionComplete(kind, days, timing),
+          });
+        }
+      }
+    }
   });
 });
 

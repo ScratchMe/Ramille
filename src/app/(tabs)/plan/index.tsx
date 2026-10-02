@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams, useScrollToTop } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -94,6 +94,13 @@ import { supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
 import { defilementPourMontrer } from '@/types/mouvement';
 import {
+  genreDeLEchec,
+  genreDesEchecs,
+  phraseDeLaLectureEnEchec,
+  type GenreDEchec,
+} from '@/types/lecture-en-echec';
+import {
+  accentDesPoints,
   debutDePeriodeInterrogee,
   estDeLaPeriodeCourante,
   genreDeReponse,
@@ -272,7 +279,11 @@ type LoadState =
   // **Cet état ne s'atteint que depuis `loading`** : les trois autres viennent d'une lecture
   // qui a réussi, et l'écran d'erreur plein écran ne vaut que quand rien n'a jamais pu être lu.
   // La relecture en échec se dit à côté (`relectureEnEchec`), sans rien effacer.
-  | { status: 'erreur_reseau' }
+  //
+  // **Le nom date d'avant D19** (`v1-33`, 01/10/2026) : l'état vaut pour toute lecture qui n'a rien
+  // rendu, réseau coupé ou serveur en échec, et `genre` dit lequel — calculé une fois, dans la lecture,
+  // pour que l'écran ne parle de connexion qu'à qui n'en a pas (`phraseDeLaLectureEnEchec`).
+  | { status: 'erreur_reseau'; genre: GenreDEchec }
   // Bilan complété mais plan_cycles pas encore généré — ne devrait plus arriver en
   // pratique (compute_assessment_results le génère désormais immédiatement, cf.
   // migration 20260824190000), gardé comme filet pour les bilans complétés avant elle
@@ -345,6 +356,21 @@ const VIDE_DE_CONTEXTE: ReponsesDeContexte = {
  */
 const MARGE_DE_DEFILEMENT = Spacing.three;
 
+/**
+ * **La carte des deux lieux, et l'instant où elle est vue : rendue, l'écran au premier plan** (décision
+ * du 01/10/2026, `v1-33` §6). Un composant à part pour que l'instant soit le sien — son montage —, et
+ * par `useFocusEffect` plutôt qu'un effet de montage : une relecture au retour de l'app peut la rendre
+ * sur un plan resté derrière un autre onglet, et ce n'est pas une carte vue. Le focus suivant la
+ * notera. `onRendue` doit être stable : l'effet de focus se réabonne à chaque identité nouvelle.
+ */
+function CarteDesDeuxLieux({
+  onRendue,
+  ...carte
+}: ComponentProps<typeof CarteDOuverture> & { onRendue: () => void }) {
+  useFocusEffect(onRendue);
+  return <CarteDOuverture {...carte} />;
+}
+
 export default function Plan() {
   // **Émis au focus et non au montage** : dans une barre d'onglets, react-navigation garde
   // l'écran monté quand on passe à l'autre. Avec `useTrackView`, l'événement ne partirait
@@ -359,7 +385,10 @@ export default function Plan() {
   // obligeait le repli à écraser les deux autres, qui perdaient alors leurs sorties : « Revoir
   // mon bilan » depuis `pending`, et « Faire mon bilan » depuis `no_assessment` — le
   // questionnaire, lui, se remplit très bien hors ligne (brouillon AsyncStorage).
-  const [relectureEnEchec, setRelectureEnEchec] = useState(false);
+  //
+  // **Le genre de l'échec, ou `null`** (D19, 01/10/2026) : la ligne ne parle de connexion qu'à qui n'a
+  // pas de réseau — une réponse du serveur en échec dit seulement que ce qu'on voit peut avoir changé.
+  const [relectureEnEchec, setRelectureEnEchec] = useState<GenreDEchec | null>(null);
 
   /**
    * Le refus de remplacement (`RM001`), remonté à l'écran plutôt que gardé dans la carte.
@@ -433,8 +462,26 @@ export default function Plan() {
    * et il rend la carte qui nomme la barre au moment où elle arrive.
    */
   const premierParcours = usePremierParcours();
-  const { laBarreArrive } = premierParcours;
-  const { carteDesDeuxLieux } = etatDuPremierParcours(premierParcours.etape);
+  const { laBarreArrive, lesDeuxLieuxSontVus } = premierParcours;
+  /**
+   * **La carte des deux lieux, vue une fois puis partie** (décision du 01/10/2026, `v1-33` §6). Elle
+   * passe à `fait` à l'instant où elle se rend, l'écran au premier plan (`CarteDesDeuxLieux`, plus bas) ;
+   * ce drapeau la retient **le temps de la visite**, pour qu'elle ne disparaisse pas sous les yeux de
+   * qui la lit, et retombe quand l'écran perd le focus — elle ne revient alors ni au focus suivant ni
+   * au lancement suivant. Une visite et non une marque : rien ne la stocke, et la marque garde ses trois
+   * états (`PLAN.md` §4).
+   */
+  const [deuxLieuxDansLaVisite, setDeuxLieuxDansLaVisite] = useState(false);
+  useFocusEffect(useCallback(() => () => setDeuxLieuxDansLaVisite(false), []));
+  const lesDeuxLieuxSeRendent = useCallback(() => {
+    setDeuxLieuxDansLaVisite(true);
+    lesDeuxLieuxSontVus();
+  }, [lesDeuxLieuxSontVus]);
+  const refermerLesDeuxLieux = useCallback(() => {
+    setDeuxLieuxDansLaVisite(false);
+    lesDeuxLieuxSontVus();
+  }, [lesDeuxLieuxSontVus]);
+  const { carteDesDeuxLieux } = etatDuPremierParcours(premierParcours.etape, deuxLieuxDansLaVisite);
   /**
    * Le lien du rappel porte `?rappel=1` (C2.11). Il ne sert qu'à l'état sans bilan : quand il y a un
    * plan à montrer, il n'y a rien à expliquer — la personne est au bon endroit.
@@ -605,14 +652,15 @@ export default function Plan() {
    * la bande. Deux cas, deux dérivations testées :
    *  - **à l'ouverture du sélecteur** (`defilementPourMontrer`, la règle de la liste) : la carte
    *    grandit vers le bas sous le doigt, on la fait monter jusqu'à « C'est noté », jamais redescendre ;
-   *  - **après la relecture d'un engagement** (`defilementVersLaCarte`) : la carte a changé de place
-   *    sans geste sur elle, on l'amène où qu'elle soit — y compris vers le haut.
+   *  - **quand elle a changé de place sans geste sur elle** (`defilementVersLaCarte`) — après la
+   *    relecture d'un engagement, ou la carte de saison refermée par « Choisir une action » (D16) : on
+   *    l'amène où qu'elle soit, y compris vers le haut.
    * Les mesures se prennent dans la fenêtre de défilement, comme sur la liste : l'ancrage du défilement
    * de Chrome compense ce qui change de taille au-dessus, et une position dans la page bougerait sans
    * que rien ne bouge à l'œil (`TESTING-GARDES.md` §2.14).
    */
   const amenerDansLaFenetre = useCallback(
-    (id: string, cas: 'ouverture' | 'relecture') => {
+    (id: string, cas: 'ouverture' | 'deplacee') => {
       const carte = cartes.current.get(id);
       // La fenêtre de défilement elle-même — le nœud qui défile, et non l'instance du composant.
       const ecran = defilement.current?.getNativeScrollRef();
@@ -693,7 +741,7 @@ export default function Plan() {
     if (!carteEngageeAMontrer.current) return;
     carteEngageeAMontrer.current = false;
     if (idEngage === null) return;
-    amenerDansLaFenetre(idEngage, 'relecture');
+    amenerDansLaFenetre(idEngage, 'deplacee');
     if (ouvertureDeFeuille !== null) {
       focusApresLaFeuille.current = true;
       return;
@@ -705,6 +753,24 @@ export default function Plan() {
     focusApresLaFeuille.current = false;
     if (idEngage !== null) donnerLeFocus(blocs.current.get(idEngage));
   }, [ouvertureDeFeuille, idEngage]);
+
+  /**
+   * **La première piste, amenée quand « Choisir une action » referme la carte de saison** (D16 de
+   * `v1-33`, 01/10/2026 ; audit P-14). Posée au geste (`refermerLouverture`), consommée par l'effet qui
+   * suit le rendu où la carte n'est plus : la mesure se prend sur la mise en page d'après — la carte
+   * d'action a remonté de la hauteur de la carte refermée, et la carte d'attente a pu se rendre
+   * au-dessus d'elle. Par la dérivation de la carte engagée relue, et pour la même raison : elle a
+   * changé de place sans geste sur elle (`defilementVersLaCarte`, qui achève `defilementPourMontrer`).
+   * Le défilement de la plateforme, posé sous « réduire les animations » ; le focus est déjà parti, au
+   * geste.
+   */
+  const premiereAMontrer = useRef<string | null>(null);
+  useEffect(() => {
+    const id = premiereAMontrer.current;
+    if (id === null || ouverture !== null) return;
+    premiereAMontrer.current = null;
+    amenerDansLaFenetre(id, 'deplacee');
+  }, [ouverture, amenerDansLaFenetre]);
 
   // **La confirmation passe par la boîte de réception** : la personne y lit son code, le tape, et
   // arrive ici avec `is_anonymous` passé à `false`. Rien ne le lui disait (issue #62) — la boucle
@@ -783,14 +849,18 @@ export default function Plan() {
     // seulement plus tout à fait à jour. Ce chargement tourne à chaque retour au premier plan
     // (`useRafraichirAuRetour`), et le plan est la destination du rappel — le remplacer par un
     // écran d'erreur à chaque ouverture hors ligne coûterait plus que la ligne qui le dit.
-    const echecDeLecture = () => {
+    //
+    // **Le genre se calcule ici, une fois** (D19, `FRONT.md` §2.11) : sur le statut de la lecture qui a
+    // échoué — `0` quand elle n'a pas eu de réponse —, et `serveur` quand rien ne le dit, une promesse
+    // qui lève par exemple (`src/types/lecture-en-echec.ts` dit pourquoi ce repli est le bon).
+    const echecDeLecture = (genre: GenreDEchec) => {
       if (cancelled) return;
-      setRelectureEnEchec(true);
+      setRelectureEnEchec(genre);
       // `pending` et `no_assessment` sont dérivés d'une lecture **réussie** au même titre que
       // `ok` : seul `loading` n'a jamais rien su, et c'est le seul que l'écran d'erreur plein
       // écran remplace.
       setState((precedent) =>
-        precedent.status === 'loading' ? { status: 'erreur_reseau' } : precedent
+        precedent.status === 'loading' ? { status: 'erreur_reseau', genre } : precedent
       );
     };
 
@@ -808,7 +878,10 @@ export default function Plan() {
         // décisions, elles, se prennent dans **l'ordre d'avant**, un résultat après l'autre : l'échec
         // du bilan, puis « pas de bilan » — qui gagne sur un cycle illisible, sans quoi quelqu'un sans
         // bilan lirait une panne —, puis l'échec du cycle, puis « en préparation ».
-        const [{ data: assessment, error: erreurBilan }, { data: cycles, error: cycleError }] = await Promise.all([
+        const [
+          { data: assessment, error: erreurBilan, status: statutDuBilan },
+          { data: cycles, error: cycleError, status: statutDuCycle },
+        ] = await Promise.all([
           // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
           // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
           // id systématiquement, pas seulement dans le cas filet ci-dessous.
@@ -847,7 +920,7 @@ export default function Plan() {
         if (cancelled) return;
 
         if (erreurBilan) {
-          echecDeLecture();
+          echecDeLecture(genreDeLEchec(statutDuBilan));
           return;
         }
 
@@ -856,7 +929,7 @@ export default function Plan() {
           // Une lecture qui aboutit efface la ligne de relecture, y compris sur les deux
           // sorties anticipées : sans ça, elle survivrait à l'échec précédent au-dessus d'un
           // écran pourtant à jour.
-          setRelectureEnEchec(false);
+          setRelectureEnEchec(null);
           return;
         }
 
@@ -866,7 +939,7 @@ export default function Plan() {
         // ligne, il n'y a rien à attendre. `pending` reste le filet du cas légitime — un bilan
         // complété avant que le calcul ne génère le plan, que le cron rattrape.
         if (cycleError) {
-          echecDeLecture();
+          echecDeLecture(genreDeLEchec(statutDuCycle));
           return;
         }
 
@@ -875,7 +948,7 @@ export default function Plan() {
 
         if (!cycle) {
           setState({ status: 'pending', assessmentId: assessment.id });
-          setRelectureEnEchec(false);
+          setRelectureEnEchec(null);
           return;
         }
 
@@ -892,7 +965,7 @@ export default function Plan() {
         // Une erreur ici compte autant que les deux autres : sans les points, la carte d'attente
         // prend leur place et Ramille dit qu'il n'y a rien à rattraper le jour où la question
         // est justement ouverte.
-        const { data: checkins, error: erreurCheckins } = await supabase
+        const { data: checkins, error: erreurCheckins, status: statutDesPoints } = await supabase
           .from('engagement_checkins')
           // `committed_question` d'abord : c'est la question **figée** à la génération, celle que
           // le rappel a envoyée (C2.1). La carte l'affiche telle quelle plutôt que de la
@@ -921,7 +994,7 @@ export default function Plan() {
         if (cancelled) return;
 
         if (erreurCheckins) {
-          echecDeLecture();
+          echecDeLecture(genreDeLEchec(statutDesPoints));
           return;
         }
 
@@ -944,8 +1017,8 @@ export default function Plan() {
         // de bord non choisi — et la borner à une ligne ne dirait rien de la seconde question. Un
         // `count` en `head` ne ramène aucune ligne : c'est une existence, pas une donnée.
         const [
-          { data: resultat, error: erreurResultat },
-          { data: bouclesAVenir, error: erreurBoucle },
+          { data: resultat, error: erreurResultat, status: statutDuResultat },
+          { data: bouclesAVenir, error: erreurBoucle, status: statutDesBoucles },
           { data: contexte },
           { data: orphelins },
           { count: engagementsArchives },
@@ -1000,7 +1073,12 @@ export default function Plan() {
         const bouclesLues = erreurBoucle ? null : lireLesBouclesAVenir(bouclesAVenir);
         if (bouclesLues !== null) setBoucles(bouclesLues);
         setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));
-        setRappels(prefs);
+        // **Une lecture des rappels qui n'a rien rendu ne remplace pas la dernière** (relevé par le
+        // chantier B le 01/10/2026, effet de bord de T-6) : `loadReminderPrefs` rend `null` quand il n'a
+        // rien lu, et le poser ici effaçait la dernière lecture réussie — la carte d'attente, qui la
+        // demande, disparaissait sans que la ligne de relecture s'allume. La règle des boucles, juste
+        // au-dessus, et de `FRONT.md` §1.2 : on garde ce qu'on savait, et la ligne dit que l'écran date.
+        if (prefs !== null) setRappels(prefs);
         setPermission(etatPermission);
 
         // **Sauf si l'action est revenue dans le plan, ou si la perte date d'un autre cycle**
@@ -1111,16 +1189,25 @@ export default function Plan() {
           premierPlan,
         });
         planLu = true;
-        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des deux
-        // lectures secondaires ci-dessus a échoué — le total, ou les boucles, sans lesquelles ni la
-        // carte d'attente ni celle des deux lieux ne se montrent.
-        setRelectureEnEchec(Boolean(erreurResultat) || bouclesLues === null);
+        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des trois
+        // lectures secondaires ci-dessus a échoué — le total, les boucles, sans lesquelles ni la
+        // carte d'attente ni celle des deux lieux ne se montrent, ou les rappels, sans lesquels la
+        // carte d'attente ne se montre pas. Le genre suit le statut de chacune ; une réponse illisible
+        // et des rappels qui n'ont rien rendu ne disent pas de statut, et ne sont pas une coupure.
+        setRelectureEnEchec(
+          genreDesEchecs([
+            erreurResultat ? genreDeLEchec(statutDuResultat) : null,
+            erreurBoucle ? genreDeLEchec(statutDesBoucles) : bouclesLues === null ? 'serveur' : null,
+            prefs === null ? 'serveur' : null,
+          ])
+        );
       } catch {
         // Une promesse rejetée — `loadReminderPrefs` ou `lirePermission`, qui touchent un
         // module natif et ne rendent pas d'erreur mais lèvent — laissait l'écran sur
         // « Chargement de ton plan… » pour toujours : le même mensonge par omission, en plus
-        // muet. Même leçon que la racine de l'app (07/09/2026).
-        echecDeLecture();
+        // muet. Même leçon que la racine de l'app (07/09/2026). Rien n'y dit le réseau : le
+        // transport de PostgREST rend ses coupures, il ne les lève pas.
+        echecDeLecture('serveur');
       } finally {
         // **La fin d'une lecture, quelle que soit son issue** — jamais celle d'une lecture qu'une
         // plus récente a remplacée, qui n'écrit rien (« seul le dernier lancé écrit »). Une relance
@@ -1195,12 +1282,13 @@ export default function Plan() {
   // d'une lecture réussie — le plan, « en préparation » et « pas encore de bilan » — et le lien
   // relance la même lecture que le retour sur l'onglet.
   const banniereRelecture = (centree = false) =>
-    relectureEnEchec || refusDeRemplacement ? (
+    relectureEnEchec !== null || refusDeRemplacement ? (
       <View style={[styles.relecture, centree && styles.relectureCentree]}>
         {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
-        {relectureEnEchec && (
+        {relectureEnEchec !== null && (
           <>
-            <MessageInline message="Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
+            {/* Le genre décide de la phrase (D19) : la connexion ne se nomme qu'hors ligne. */}
+            <MessageInline message={phraseDeLaLectureEnEchec('relectureDuPlan', relectureEnEchec)} />
             {/* Inactif, et dit occupé, tant que la relecture qu'il a demandée tourne (audit P-8) : la
                 teinte tertiaire est celle d'un lien qui n'agit pas — un état se dit par le texte,
                 jamais par une opacité (`FRONT.md` §1.4). */}
@@ -1326,6 +1414,9 @@ export default function Plan() {
   // L'écran ne sait rien : il le dit, et il ne propose surtout ni de faire un bilan ni
   // d'attendre — les deux replis d'avant affirmaient quelque chose sur les données de la
   // personne. « Réessayer » relance exactement la lecture que le retour sur l'onglet relance.
+  //
+  // **Il ne parle de connexion qu'hors ligne** (D19, 01/10/2026) : sur une réponse 500, « Vérifie ta
+  // connexion » envoyait la personne vérifier ce qui marchait (capture `e-19` de l'audit).
   if (state.status === 'erreur_reseau') {
     return (
       <ThemedView style={styles.container}>
@@ -1333,7 +1424,7 @@ export default function Plan() {
           <BandeHaute />
           <View style={styles.centered}>
             <MessageInline
-              message="Ton plan n’a pas pu être relu. Vérifie ta connexion."
+              message={phraseDeLaLectureEnEchec('plan', state.genre)}
               style={styles.erreurTexte}
             />
             <Button title="Réessayer" onPress={reessayerDepuisLErreur} />
@@ -1388,6 +1479,8 @@ export default function Plan() {
   // encore sur elle (C2.1). `null` quand rien n'est engagé, ce qui est aussi un « plus la même ».
   const actionEngageeTexte =
     cycle.plan_actions.find((a) => a.committed_at !== null)?.action_templates?.action_text ?? null;
+  // L'accent des points ouverts : la question de l'engagement d'abord, le poste dominant sinon.
+  const accents = accentDesPoints(checkins, { libelleDuCycle: cycle.trip_label, actionEngagee: actionEngageeTexte });
   // **Deux cartes, et le compte de ce qui attend ailleurs** (C5.2). Le `limit 2` du serveur avait
   // disparu en C4.6 — l'estimateur rendait déjà toutes les actions au gain ≥ 5 kg/an, et le plan en
   // jetait le reste avant même de l'écrire (constat A13-18) — mais l'exhaustivité était revenue
@@ -1485,17 +1578,18 @@ export default function Plan() {
     nombreDActions: actionsCount,
   });
 
-  // Les quatre sorties referment la carte, et **deux d'entre elles font quelque chose de plus** :
-  // « Choisir une action » et « Choisir une autre » déplient les pistes en refermant, sans quoi elles
-  // reposent le plan tel qu'il était et ne se distinguent pas de « Reprendre la même action » —
-  // c'est-à-dire que le bouton ne fait rien de ce que son libellé annonce. La clé était transmise
-  // par le composant et jetée ici, sous un commentaire qui annonçait au futur ce que C4.6 allait
-  // ajouter alors que C4.6 est livré dans la même vague (relevé par cinq constats de l'audit, le
-  // 14/09/2026).
+  // Les quatre sorties referment la carte, et **deux d'entre elles font quelque chose de plus**, sans
+  // quoi elles reposeraient le plan tel qu'il était et ne se distingueraient pas de « Reprendre la même
+  // action » — c'est-à-dire que le bouton ne ferait rien de ce que son libellé annonce (relevé par cinq
+  // constats de l'audit, le 14/09/2026) :
+  //  - **« Choisir une action » amène la première piste du plan** (D16 de `v1-33`, 01/10/2026). Elle
+  //    menait à la liste complète, dix lignes, alors que les deux cartes que le plan a choisies sont
+  //    juste dessous : le bouton le plus saillant de l'écran contournait la sélection que le plan existe
+  //    pour faire (audit P-14). La liste reste derrière « Voir toutes les pistes · N » ;
+  //  - **« Choisir une autre » mène à la liste**, où l'on change d'action : la bascule d'engagement se
+  //    joue sur la carte d'action elle-même, où `commit_plan_action` libère et archive la précédente.
   //
-  // « Reprendre la même action » n'a effectivement rien à faire : C2.2 a déjà reconduit l'engagement.
-  // Et la bascule d'engagement se joue sur la carte d'action elle-même, où `commit_plan_action`
-  // libère et archive la précédente — d'où le dépli, qui amène simplement ces cartes sous les yeux.
+  // « Reprendre la même action » n'a rien à faire : C2.2 a déjà reconduit l'engagement.
   //
   // **Ce qui reste à faire est la mémoire de saison** (écart 7 de `v1-14` §10, moitié « affichage ») :
   // rapatrier l'engagement libéré du cycle courant pour le rappeler à côté du choix. Elle n'est pas
@@ -1514,11 +1608,21 @@ export default function Plan() {
   };
 
   const refermerLouverture = (cle?: string) => {
-    // **Le bouton mène là où l'on choisit** (C5.2). Il dépliait les pistes sous la carte ; depuis
-    // qu'elles ont leur écran, il y conduit. C'est la même intention, avec une destination qui
-    // existe : une sortie nommée « Choisir une action » qui laisse la personne sur le même écran
-    // devant les deux mêmes cartes ne tiendrait pas sa promesse.
-    if (cle === 'choisir' || cle === 'choisir_une_autre') router.push('/plan/pistes');
+    // **« Choisir une autre » mène là où l'on change d'action** (C5.2) : la liste, où chaque piste se
+    // choisit à la place de celle qu'on suit.
+    if (cle === 'choisir_une_autre') router.push('/plan/pistes');
+    // **« Choisir une action » referme la carte et amène la première piste** (D16) — la première des
+    // cartes du plan, rien n'étant engagé quand ce bouton se rend (`sortiesDeLouverture`). Le focus part
+    // **au geste**, sur le bloc qui l'annonce par son titre : le bouton touché sort de l'écran avec sa
+    // carte, et le focus retomberait sur le document. Le défilement, lui, attend le rendu qui referme
+    // (`premiereAMontrer`, plus haut).
+    if (cle === 'choisir') {
+      const premiere = pistes.enAvant[0];
+      if (premiere) {
+        donnerLeFocus(blocs.current.get(premiere.id));
+        premiereAMontrer.current = premiere.id;
+      }
+    }
     void marquerLouvertureDeSaisonVue(cycle.id);
     setOuverture(null);
   };
@@ -1867,12 +1971,13 @@ export default function Plan() {
               actions : les deux étaient dues le même jour. Relevé le 27/09/2026 en sortant la
               décision du rendu ; le premier plan passe devant, décidé par la personne qui pilote. */
           affichage.carteDOuverture === 'deuxLieux' && deuxLieux ? (
-            <CarteDOuverture
+            <CarteDesDeuxLieux
               ouverture={deuxLieux.ouverture}
               sorties={SORTIE_DES_DEUX_LIEUX}
               ligne={deuxLieux.ligne}
               visage="calm"
-              onSortie={premierParcours.lesDeuxLieuxSontVus}
+              onSortie={refermerLesDeuxLieux}
+              onRendue={lesDeuxLieuxSeRendent}
             />
           ) : null}
 
@@ -1908,14 +2013,18 @@ export default function Plan() {
           {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est
               la raison de revenir la plus fréquente, et la question vivait sous les actions,
               après le cap — il fallait faire défiler pour la trouver. Une question qu'on ne
-              voit pas est une question à laquelle on ne répond pas. */}
+              voit pas est une question à laquelle on ne répond pas.
+
+              **L'accent, quand deux points sont ouverts, va à la question de l'engagement**
+              (`v1-33` §6, tranché le 01/10/2026) — sinon au poste dominant, la règle d'avant
+              (`accentDesPoints`). */}
           {checkins.length > 0 && (
             <View style={styles.checkins}>
-              {checkins.map((checkin) => (
+              {checkins.map((checkin, rang) => (
                 <CheckinCard
                   key={checkin.id}
                   checkin={checkin}
-                  emphasize={checkin.trip_label === cycle.trip_label}
+                  emphasize={accents[rang]}
                   actionEngagee={actionEngageeTexte}
                   historique={historique[checkin.loop_type]}
                   boucleTourne={laBoucleDuPointTourne(boucles, checkin.loop_type)}

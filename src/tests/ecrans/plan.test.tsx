@@ -21,15 +21,31 @@
  *   - la relance qui n'appelle plus que `rafraichir` (l'état d'avant) → 3, « inactif pendant » ;
  *   - le `finally` qui ne relâche plus la relance → 3, « relâché à la fin ».
  *
+ * **Et deux contrats de plus le 01/10/2026, la vague produit de `v1-33`** — des branches d'état que le
+ * parcours réel ne joue pas (il ne fait jamais échouer une lecture) :
+ *   4. **une erreur du serveur ne parle pas de la connexion** (D19) : le genre de l'échec se calcule sur
+ *      le statut de la lecture qui a échoué, et l'écran d'erreur comme la ligne de relecture le disent ;
+ *   5. **des rappels qui n'ont rien rendu ne remplacent pas la dernière lecture** (relevé par le
+ *      chantier B) : la carte d'attente reste, et la ligne de relecture s'allume.
+ * Quatre mutations, chacune faisant tomber la sienne et aucune autre :
+ *   - le bilan illisible toujours dit hors ligne (`echecDeLecture('horsLigne')`) → 4, « sur l'écran
+ *     d'erreur » ;
+ *   - les boucles illisibles toujours dites hors ligne → 4, « la relecture en échec du serveur » ;
+ *   - `setRappels(prefs)` sans condition (l'état d'avant) → 5 ;
+ *   - `prefs === null` retiré de la ligne de relecture → 5.
+ *
  * **Ce qu'il coûte** : douze modules doublés pour monter l'écran — le transport, le stockage local
  * de quatre marques, la navigation et ses deux contextes de pile, la mesure, et les composants qui
  * tirent `react-native-svg`. C'est le prix d'un écran qui lit dix sources ; le relevé de
  * `plan-pistes.test.tsx` en dit le reste.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import React from 'react';
+import { AccessibilityInfo } from 'react-native';
 
 import Plan from '@/app/(tabs)/plan/index';
+import { Colors } from '@/constants/theme';
 
 // ── Les doublures ─────────────────────────────────────────────────────────────────────────────
 
@@ -81,20 +97,19 @@ jest.mock('@/lib/connexion-prefs', () => ({
   aVuEngagementOrphelin: async () => true,
   marquerEngagementOrphelinVu: async () => {},
 }));
+/** La carte d'ouverture de saison a-t-elle été vue sur cet appareil ? Vue, sauf où un test dit non. */
+const mockVuLaSaison = jest.fn<Promise<boolean>, [string]>();
+const mockMarquerLaSaison = jest.fn<Promise<void>, [string]>();
 jest.mock('@/lib/saison-prefs', () => ({
-  aVuLouvertureDeSaison: async () => true,
-  marquerLouvertureDeSaisonVue: async () => {},
+  aVuLouvertureDeSaison: (cycle: string) => mockVuLaSaison(cycle),
+  marquerLouvertureDeSaisonVue: (cycle: string) => mockMarquerLaSaison(cycle),
 }));
 jest.mock('@/lib/premier-parcours', () => ({ aVuLePremierPlan: async () => true, marquerLePremierPlanVu: async () => {} }));
 jest.mock('@/lib/compte', () => ({ lireEtatDuRattachement: async () => ({ kind: 'local' }) }));
+/** Les réglages de rappel lus — `null` quand rien n'a été lu (`loadReminderPrefs`, T-6). */
+const mockPrefs = jest.fn<Promise<unknown>, []>();
 jest.mock('@/lib/notification-prefs', () => ({
-  loadReminderPrefs: async () => ({
-    prefere: 'none',
-    jetonActif: false,
-    emailPossible: false,
-    email: null,
-    reponseALaVeille: null,
-  }),
+  loadReminderPrefs: () => mockPrefs(),
   aDejaVuLaFeuilleDeRappel: async () => true,
   aDejaProposeLaVeille: async () => true,
   lireLaFenetreDuMotDeLaVeille: async () => null,
@@ -137,10 +152,25 @@ function lectures(surcharge: Record<string, () => Promise<unknown>> = {}) {
   mockLire.mockImplementation((cle) => (base[cle] ?? (async () => ({ data: null, error: null })))());
 }
 
-const panne = async () => ({ data: null, error: { message: 'réseau' } });
+/** Hors ligne : la requête n'a pas eu de réponse HTTP — le `catch` du transport pose `status: 0`. */
+const panne = async () => ({ data: null, error: { message: 'réseau' }, status: 0 });
+/** Le serveur a répondu, en échec. */
+const panneDuServeur = async () => ({ data: null, error: { message: 'Internal Server Error' }, status: 500 });
+
+const PREFS = {
+  prefere: 'none',
+  jetonActif: false,
+  emailPossible: false,
+  email: null,
+  reponseALaVeille: null,
+};
 
 beforeEach(() => {
   mockLire.mockReset();
+  mockPrefs.mockReset().mockResolvedValue(PREFS);
+  mockVuLaSaison.mockReset().mockResolvedValue(true);
+  mockMarquerLaSaison.mockReset().mockResolvedValue(undefined);
+  (router.push as jest.Mock).mockClear();
 });
 
 describe('Plan — l’ordre des états, les deux premières lectures parties ensemble', () => {
@@ -194,5 +224,210 @@ describe('Plan — une relance répond sous le doigt', () => {
     await act(async () => rendreLeBilan({ data: { id: 'b1', submitted_at: '2026-09-10T10:00:00Z' }, error: null }));
     await waitFor(() => expect(inactif()).toBe(false));
     expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
+  });
+});
+
+describe('Plan — une erreur du serveur ne parle pas de la connexion (D19)', () => {
+  it('dit la panne du serveur sans nommer la connexion, sur l’écran d’erreur', async () => {
+    lectures({ assessments: panneDuServeur });
+    render(<Plan />);
+    await waitFor(() => expect(screen.getByText('Ton plan n’a pas pu être relu. Réessaie dans un instant.')).toBeTruthy());
+    expect(screen.queryByText(/connexion/)).toBeNull();
+  });
+
+  it('dit la coupure telle qu’elle était, hors ligne', async () => {
+    lectures({ plan_cycles: panne });
+    render(<Plan />);
+    await waitFor(() => expect(screen.getByText('Ton plan n’a pas pu être relu. Vérifie ta connexion.')).toBeTruthy());
+  });
+
+  it('dit la relecture en échec du serveur sans nommer la connexion', async () => {
+    lectures({ 'rpc:mes_boucles_a_venir': panneDuServeur });
+    render(<Plan />);
+    await waitFor(() =>
+      expect(
+        screen.getByText('Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis.')
+      ).toBeTruthy()
+    );
+    expect(screen.queryByText(/connexion/)).toBeNull();
+  });
+});
+
+describe('Plan — des rappels qui n’ont rien rendu ne remplacent pas la dernière lecture', () => {
+  it('garde la carte d’attente, et allume la ligne de relecture', async () => {
+    // Première lecture : tout est lu sauf le total — la ligne s'allume, la carte d'attente est là.
+    lectures({ assessment_results: panneDuServeur });
+    render(<Plan />);
+    await waitFor(() => expect(screen.getByText(/reviens quand tu veux/)).toBeTruthy());
+    expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
+
+    // La relecture lit le total, mais pas les rappels : la carte reste, et la ligne aussi.
+    lectures();
+    mockPrefs.mockResolvedValue(null);
+    fireEvent.press(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(mockPrefs).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Réessayer' }).props.accessibilityState?.disabled).toBe(false));
+    expect(screen.getByText(/reviens quand tu veux/)).toBeTruthy();
+    expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
+  });
+});
+
+/**
+ * **« Choisir une action » de la carte de saison amène la première piste du plan** (D16 de `v1-33`,
+ * 01/10/2026 ; audit P-14). Le parcours réel ne joue jamais une ouverture de saison — il lui faudrait un
+ * cycle précédent et un jour dans les deux premières semaines du cycle —, donc ce câblage n'est vu
+ * qu'ici : la carte se referme, la liste ne s'ouvre pas, et le focus part au geste sur le bloc de la
+ * première carte, qui l'annonce par son titre. Le défilement, lui, demande une vraie mise en page.
+ *
+ * Éprouvé en le cassant, le 01/10/2026, chacune faisant tomber la sienne et aucune autre :
+ *   - « Choisir une action » qui pousse encore `/plan/pistes` (l'état d'avant) → « referme la carte… » ;
+ *   - le focus jamais donné (`donnerLeFocus` retiré du geste) → la même, sur le focus ;
+ *   - « Choisir une autre » qui n'ouvre plus la liste → « « Choisir une autre » mène toujours… ».
+ */
+describe('Plan — la carte de saison, « Choisir une action »', () => {
+  /** Aujourd'hui en `YYYY-MM-DD` local : la carte ne vit que les deux premières semaines du cycle. */
+  const jour = (decalageEnMois = 0) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + decalageEnMois);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const action = (id: string, rang: number, texte: string, engagee = false) => ({
+    id,
+    action_template_id: `g${rang}`,
+    saving_kg_year: 600 - rang * 100,
+    saving_share_percent: 10,
+    detail_text: null,
+    first_step: null,
+    rank: rang,
+    committed_at: engagee ? '2026-09-02T10:00:00Z' : null,
+    intention_days: engagee ? [2] : null,
+    intention_timing: null,
+    carried_over_from: null,
+    action_templates: { action_text: texte, poste: 'commute' },
+  });
+  const cycles = (engagee: boolean) => [
+    {
+      ...CYCLE,
+      id: 'c2',
+      period_start: jour(),
+      period_end: jour(3),
+      baseline_co2_kg_year: 1000,
+      plan_actions: [
+        action('a1', 1, 'Passer deux trajets sur cinq en train', engagee),
+        action('a2', 2, 'Faire un trajet sur cinq à vélo'),
+      ],
+    },
+    { ...CYCLE, id: 'c1', period_start: jour(-3), period_end: jour(-1) },
+  ];
+
+  let focus: jest.SpyInstance;
+  beforeEach(() => {
+    focus = jest.spyOn(AccessibilityInfo, 'sendAccessibilityEvent').mockImplementation(() => {});
+    mockVuLaSaison.mockResolvedValue(false);
+  });
+  afterEach(() => focus.mockRestore());
+
+  it('referme la carte et amène la première piste, sans ouvrir la liste', async () => {
+    lectures({ plan_cycles: async () => ({ data: cycles(false), error: null }) });
+    render(<Plan />);
+    const choisir = await screen.findByRole('button', { name: 'Choisir une action' });
+
+    fireEvent.press(choisir);
+
+    expect(router.push).not.toHaveBeenCalledWith('/plan/pistes');
+    expect(screen.queryByRole('button', { name: 'Choisir une action' })).toBeNull();
+    expect(mockMarquerLaSaison).toHaveBeenCalledWith('c2');
+    const vise = focus.mock.calls.filter(([, evenement]) => evenement === 'focus').at(-1)?.[0] as
+      | { props?: { accessibilityLabel?: string } }
+      | undefined;
+    expect(vise?.props?.accessibilityLabel).toMatch(/^Passer deux trajets sur cinq en train\./);
+  });
+
+  it('« Choisir une autre » mène toujours à la liste, où l’on change d’action', async () => {
+    lectures({ plan_cycles: async () => ({ data: cycles(true), error: null }) });
+    render(<Plan />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Choisir une autre' }));
+    expect(router.push).toHaveBeenCalledWith('/plan/pistes');
+  });
+});
+
+/**
+ * **L'accent de la carte du point, quand deux points sont ouverts, va à la question de l'engagement**
+ * (`v1-33` §6, tranché le 01/10/2026). `accentDesPoints` a ses tests ; ce qui ne se voit qu'ici est
+ * l'**appel** — que l'écran passe la liste affichée, le libellé du cycle et l'action engagée relue —, et
+ * le parcours réel n'ouvre jamais deux points à la fois.
+ *
+ * Éprouvé en le cassant, le 01/10/2026 : l'écran qui garde la règle d'avant
+ * (`emphasize={checkin.trip_label === cycle.trip_label}`) fait tomber ce test, et lui seul.
+ */
+describe('Plan — l’accent des deux points ouverts', () => {
+  const VOL = 'Renoncer à un vol long-courrier cette année';
+  const point = (surcharge: Record<string, unknown>) => ({
+    loop_type: 'commute',
+    period_label: 'Semaine du 22 septembre',
+    trip_label: CYCLE.trip_label,
+    poste: 'commute',
+    period_start: '2026-09-22',
+    question_kind: 'generique',
+    mode: null,
+    committed_question: 'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
+    committed_action_text: null,
+    status: 'pending',
+    response_kind: null,
+    responded_at: null,
+    ...surcharge,
+  });
+
+  it('va au point du mois qui referme l’engagement, et non au poste dominant', async () => {
+    lectures({
+      plan_cycles: async () => ({
+        data: [
+          {
+            ...CYCLE,
+            plan_actions: [
+              {
+                id: 'a1',
+                action_template_id: 'g1',
+                saving_kg_year: 1601,
+                saving_share_percent: 30,
+                detail_text: null,
+                first_step: null,
+                rank: 1,
+                committed_at: '2026-09-02T10:00:00Z',
+                intention_days: null,
+                intention_timing: 'au_prochain_voyage',
+                carried_over_from: null,
+                action_templates: { action_text: VOL, poste: 'travel' },
+              },
+            ],
+          },
+        ],
+        error: null,
+      }),
+      engagement_checkins: async () => ({
+        data: [
+          point({ id: 'p1' }),
+          point({
+            id: 'p2',
+            loop_type: 'extras',
+            period_label: 'Septembre 2026',
+            trip_label: 'Voyages longue distance (Avion)',
+            poste: 'travel',
+            period_start: '2026-09-01',
+            question_kind: 'occasion',
+            committed_question: 'En septembre, as-tu renoncé à un vol long-courrier ?',
+            committed_action_text: VOL,
+          }),
+        ],
+        error: null,
+      }),
+    });
+    render(<Plan />);
+    const couleur = async (texte: string) => {
+      const etiquette = await screen.findByText(texte);
+      return [etiquette.props.style].flat(Infinity).reduce((c, st) => (st && st.color ? st.color : c), null);
+    };
+    expect(await couleur('Septembre 2026')).toBe(Colors.light.accentText);
+    expect(await couleur('Semaine du 22 septembre')).toBe(Colors.light.textTertiary);
   });
 });
