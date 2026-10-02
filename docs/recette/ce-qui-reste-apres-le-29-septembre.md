@@ -21,6 +21,11 @@
 > 02, `v1-13` §17), le 30/09/2026 (bloc 03, §18) et le 1er octobre (blocs 04 et 06, §19) ; les
 > jugements du bloc 05 tranchés le même jour par la personne qui pilote (§19).
 >
+> **Ses lignes 02.4 et 02.9, réécrites le 01/10/2026 pour la vague `v1-33`
+> ([#314](https://github.com/ScratchMe/Ramille/pull/314)), se jouent dans
+> [`ce-qui-reste-apres-le-1er-octobre.md`](ce-qui-reste-apres-le-1er-octobre.md)**, qui est
+> désormais la feuille ouverte au navigateur ; celle-ci ne garde que son bloc 07, au build natif.
+>
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **sur trois jours** — c'est le
 > calendrier ci-dessous qui décide de l'ordre, pas la numérotation.
 

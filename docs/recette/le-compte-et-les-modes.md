@@ -1,5 +1,11 @@
 # Recette web — ce qui est neuf depuis le 18/09/2026
 
+> **Et ses lignes 03.11, 08.1, 08.5, 09.1, 10.4 et 10.8, réécrites le 01/10/2026 pour la vague
+> `v1-33` ([#314](https://github.com/ScratchMe/Ramille/pull/314)), se jouent dans
+> [`ce-qui-reste-apres-le-1er-octobre.md`](ce-qui-reste-apres-le-1er-octobre.md)** — transposées à
+> son profil 1 —, avec la question d'entrée des longs trajets de ses tableaux de profil : une ligne
+> réécrite est une ligne neuve (`RECETTE.md` §2.5).
+
 > **Remplacée pour ses lignes restantes le 29/09/2026** par
 > [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), la seule feuille
 > ouverte : 12.1 à 12.3 et 14.3 — et 02.2, 02.6, 02.10 et 03.11, réécrites le 29/09 pour des écrans

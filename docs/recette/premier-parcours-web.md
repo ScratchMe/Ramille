@@ -1,5 +1,10 @@
 # Recette web — le premier parcours
 
+> **Et sa ligne 06.4, réécrite le 01/10/2026 pour la vague `v1-33`
+> ([#314](https://github.com/ScratchMe/Ramille/pull/314)), se joue dans
+> [`ce-qui-reste-apres-le-1er-octobre.md`](ce-qui-reste-apres-le-1er-octobre.md)**, avec la question
+> d'entrée des longs trajets de son tableau de profil.
+
 > **Remplacée pour ses lignes restantes le 29/09/2026** par
 > [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), la seule feuille
 > ouverte : 06.2 à 06.5 et 08.6, réécrites le 29/09 pour « Toutes les pistes », et 07.4, 07.6 à
