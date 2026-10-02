@@ -30,7 +30,9 @@
 // c'est que l'appareil **portait un compte rattaché** — une marque locale que seuls les départs voulus
 // effacent (`src/lib/marque-de-compte.ts`) : c'est `porteUnCompte`. Une session **anonyme** refusée
 // (purgée au bout de 90 jours, révoquée) ne la porte pas, et reste une première ouverture : elle n'a
-// aucun compte à retrouver. Mesuré sur l'export, puis reproduit sur le client réel par
+// aucun compte à retrouver — **dans la forme du démarrage**. Quand c'est `getSession()` qui rend
+// l'erreur (un processus resté vivant, rare : une lecture passe d'ordinaire avant lui), le refus se
+// dit sans consulter la marque, anonyme compris. Mesuré sur l'export, puis reproduit sur le client réel par
 // `src/lib/session-refusee.test.ts`. Les quatre états sont donc atteignables — aucun n'est décoratif.
 
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
@@ -81,8 +83,10 @@ export function doitOuvrirUneSessionAnonyme(etat: EtatDeSession): boolean {
  *     laissait devant un plan illisible, sans rien pour le dire ;
  *   * **les surfaces publiques et de service** — `/compte/suppression` (exigée par Google Play),
  *     `/rappels/stop` (le lien de désinscription d'un e-mail), `/confidentialite`, `/conditions`,
- *     `/feedback`, `/status` : elles ne demandent pas de compte, et la surcouche cachait la
- *     confirmation d'une désinscription déjà partie.
+ *     `/status` : elles ne demandent pas de compte, et la surcouche cachait la confirmation d'une
+ *     désinscription déjà partie. **`/feedback` n'en est pas** : il écrit un retour rattaché à la
+ *     session (`sendFeedback`), et sans elle « Envoyer » répondrait sans fin « Ta session n'est pas
+ *     prête » — l'écran de reconnexion y dit mieux ce qui manque.
  *
  * Écrit comme une liste, et non comme « les routes qui ont besoin du compte » : une route neuve se
  * couvre par défaut, et c'est le cas sûr — l'écran dit vrai partout où un compte manque.
@@ -92,7 +96,6 @@ const CHEMINS_SANS_ECRAN_DE_RECONNEXION = [
   '/rappels/stop',
   '/confidentialite',
   '/conditions',
-  '/feedback',
   '/status',
 ] as const;
 

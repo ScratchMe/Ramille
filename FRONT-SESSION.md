@@ -224,7 +224,10 @@ périmerait en silence au prochain passage :
   connexion", jeton d'appareil, ouverture de saison vue, marque « cet appareil a vu un bilan ») via
   AsyncStorage — explicitement device-local, pas de sync multi-device tant que le compte n'est pas
   rattaché. Voir `src/lib/bilan-draft.ts`, `src/lib/connexion-prefs.ts`,
-  `src/lib/notification-prefs.ts`, `src/lib/saison-prefs.ts`, `src/lib/marque-de-bilan.ts`. Toutes
+  `src/lib/notification-prefs.ts`, `src/lib/saison-prefs.ts`, `src/lib/marque-de-bilan.ts`, et
+  depuis le 02/10/2026 `src/lib/marque-de-compte.ts` (« cet appareil porte un compte rattaché », qui
+  distingue un refus d'une première ouverture — `v1-27` §12.27 ; une reconnexion par code la balaie
+  avec les autres, et la racine la repose aussitôt en relisant la session). Toutes
   ces clés portent le
   préfixe historique `traceverte.` (le renommer effacerait les brouillons), et c'est par ce
   **préfixe** que `src/lib/compte.ts` les balaie à la suppression de compte. **Ne jamais

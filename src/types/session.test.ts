@@ -87,7 +87,8 @@ describe('doitOuvrirUneSessionAnonyme', () => {
  */
 describe('lEcranDeReconnexionSePose', () => {
   it('se pose sur les écrans qui demandent le compte, et sur une route neuve', () => {
-    for (const chemin of ['/', '/plan', '/plan/pistes', '/suivi', '/suivi/bilan', '/compte', '/bilan', '/onboarding', '/contexte', '/une-route-neuve']) {
+    // `/feedback` aussi : il écrit un retour rattaché à la session, et ne marche pas sans elle.
+    for (const chemin of ['/', '/plan', '/plan/pistes', '/suivi', '/suivi/bilan', '/compte', '/bilan', '/onboarding', '/contexte', '/feedback', '/une-route-neuve']) {
       expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: true });
     }
   });
@@ -99,7 +100,7 @@ describe('lEcranDeReconnexionSePose', () => {
   });
 
   it('laisse les surfaces publiques et de service, qui ne demandent pas de compte', () => {
-    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/feedback', '/status']) {
+    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/status']) {
       expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: false });
     }
   });

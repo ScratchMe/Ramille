@@ -15,10 +15,12 @@
 //
 // Trois propriétés, décidées ailleurs qu'ici :
 //
-//   * **elle se pose quand une session non anonyme est vue** — à chaque lancement d'un compte
-//     rattaché, et à la connexion (`src/lib/supabase.ts`) ; les comptes rattachés d'avant le
-//     02/10/2026 la reçoivent donc à leur premier lancement suivant, et seul un refus survenu
-//     **avant** ce lancement retombe encore sur une session anonyme ;
+//   * **elle se pose à chaque session non anonyme vue** — au lancement d'un compte rattaché, à la
+//     connexion, à chaque rafraîchissement de jeton (`src/lib/supabase.ts`) ; les comptes rattachés
+//     d'avant le 02/10/2026 la reçoivent donc à leur premier lancement suivant, et seul un refus
+//     survenu **avant** ce lancement retombe encore sur une session anonyme. Une reconnexion par code
+//     balaie les marques de l'ancien propriétaire, celle-ci comprise : la racine, que la reconnexion
+//     rejoint aussitôt, relit la session et la repose ;
 //   * **elle ne survit à aucun départ voulu** : « Me déconnecter » et la suppression du compte
 //     balaient les marques par le préfixe historique `traceverte.` (`effacerLesMarquesLocales`),
 //     d'où le nom de la clé, qui n'est pas négociable ;

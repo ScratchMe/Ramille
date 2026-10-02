@@ -184,13 +184,19 @@ describe('une session refusée', () => {
   });
 
   it('« Commencer un bilan sur cet appareil » efface la marque et lève le refus', async () => {
-    const { ensureSession, etatDeLaSession, repartirSurCetAppareil } = await relancerAvecUnJetonRefuse(
+    const { ensureSession, etatDeLaSession, ecouterLeRefus, repartirSurCetAppareil } = await relancerAvecUnJetonRefuse(
       await unCompteDejaVu()
     );
     await ensureSession();
     expect(etatDeLaSession()).toBe('refusee');
+    const prevenu = jest.fn();
+    ecouterLeRefus(prevenu);
 
     await repartirSurCetAppareil();
+    // Tout de suite, avant toute relecture : l'écran de reconnexion se déduit de cet état, et
+    // resterait posé sur `/onboarding` s'il ne changeait qu'au prochain `ensureSession()`.
+    expect(etatDeLaSession()).toBe('absente');
+    expect(prevenu).toHaveBeenCalledTimes(1);
     const session = await ensureSession();
 
     expect(session?.user.id).toBe('anonyme-neuf');
@@ -212,6 +218,43 @@ describe('une session refusée', () => {
 
     expect(etatDeLaSession()).toBe('presente');
     expect(prevenu).toHaveBeenCalledTimes(1);
+  });
+
+  // Le refus en cours de route : le rafraîchissement échoue pendant qu'on se sert de l'app, et `auth-js`
+  // retire la session hors de son initialisation — l'écoute de `SIGNED_OUT` est seule à le voir.
+  it('un refus en cours de route se dit et prévient, sans attendre une relecture', async () => {
+    const { ensureSession, etatDeLaSession, ecouterLeRefus, supabase } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+    ]);
+    await ensureSession();
+    await laisserSePoser();
+    const prevenu = jest.fn();
+    ecouterLeRefus(prevenu);
+
+    // Une heure plus tard : le jeton d'accès a expiré, et la première lecture le rafraîchit.
+    await AsyncStorage.setItem(CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(-3600))));
+    await supabase.auth.getSession();
+    await laisserSePoser();
+
+    expect(etatDeLaSession()).toBe('refusee');
+    expect(prevenu).toHaveBeenCalledTimes(1);
+    expect(creations).toHaveLength(0);
+  });
+
+  // La reconnexion par code pose la marque au `SIGNED_IN`, puis balaie les marques de l'ancien
+  // propriétaire : c'est la relecture de la racine qui doit la reposer.
+  it('la marque balayée par une reconnexion revient à la session suivante relue', async () => {
+    const { ensureSession } = await nouveauLancement([[CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))]]);
+    await ensureSession();
+    await laisserSePoser();
+    const { effacerLesMarquesLocales } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+
+    await effacerLesMarquesLocales();
+    expect(await AsyncStorage.getItem(MARQUE_DU_COMPTE)).toBeNull();
+    await ensureSession();
+    await laisserSePoser();
+
+    expect(await AsyncStorage.getItem(MARQUE_DU_COMPTE)).toBe('1');
   });
 
   it('une première ouverture reste une première ouverture : la session anonyme s’ouvre', async () => {
@@ -252,10 +295,19 @@ describe('une session refusée', () => {
  *   | Ce qu'on casse | Ce qui tombe |
  *   |---|---|
  *   | la marque jamais lue (`porteUnCompte` toujours faux : le défaut d'avant, reproduit) | « un jeton refusé… », « le refus survit… », « Commencer… » et « une session revenue… » — les deux derniers par leur précondition |
- *   | la marque jamais posée (`noterLaSession` qui sort toujours) | les quatre mêmes |
+ *   | la marque jamais posée (`noterLaSession` qui sort toujours) | les quatre mêmes, « un refus en cours de route… » et « la marque balayée… » |
  *   | la marque posée aussi pour une session anonyme (la garde `is_anonymous` retirée) | « une session anonyme refusée… » et « Commencer… » — la session anonyme d'après repose la marque |
  *   | « Me déconnecter » non déclaré | « une déconnexion voulue… », et « ne ferme que la session… » (`compte.test.ts`) |
  *   | le refus jamais levé par une session revenue | « une session revenue… », seul |
  *   | « Commencer » qui n'efface pas la marque | « Commencer… », seul |
  *   | la suppression du compte non déclarée | « ferme la session de cet appareil… » (`compte.test.ts`), seul |
+ *
+ * **Et trois que la seconde contre-lecture a fait survivre à la première version des tests**, rejouées
+ * le même jour sur les tests ajoutés pour elles :
+ *
+ *   | Ce qu'on casse | Ce qui tombe |
+ *   |---|---|
+ *   | l'écoute de `SIGNED_OUT` qui ne pose jamais le refus | « un refus en cours de route… », seul |
+ *   | « Commencer » qui efface la marque sans lever l'état | « Commencer… », seul — par l'état lu juste après, avant toute relecture |
+ *   | la marque écrite une seule fois par session (le cache d'avant) | « la marque balayée… », seul |
  */

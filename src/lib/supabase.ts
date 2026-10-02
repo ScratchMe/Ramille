@@ -173,8 +173,10 @@ let dernierEtatDeSession: EtatDeSession = 'absente';
  * compte — le défaut même que C2.11 devait fermer.
  *
  * **Le refus, c'est : plus de session, alors que l'appareil porte un compte rattaché**
- * (`src/lib/marque-de-compte.ts`). La marque se pose quand une session non anonyme est vue, et seuls
- * les départs voulus l'effacent. La première version de cette correction déduisait le refus de tout
+ * (`src/lib/marque-de-compte.ts`). La marque se pose **à chaque** session non anonyme vue, et les
+ * départs voulus l'effacent — une reconnexion aussi, qui balaie les marques de l'ancien propriétaire
+ * (`/connexion/retrouver`, `/connexion/email`) : c'est la session suivante, celle que la racine relit
+ * aussitôt, qui la repose. La première version de cette correction déduisait le refus de tout
  * `SIGNED_OUT` non déclaré, et elle se trompait deux fois (contre-lecture de la PR #315) : une session
  * **anonyme** purgée au bout de 90 jours est refusée de la même façon, et se voyait dire « Reconnecte-toi
  * pour retrouver ton bilan » ; et le drapeau, en mémoire, ne survivait ni à un rechargement ni à une app
@@ -191,9 +193,6 @@ let dernierEtatDeSession: EtatDeSession = 'absente';
  * de session anonyme.
  */
 let departsVolontaires = 0;
-// La marque n'est écrite qu'une fois par session vue : chaque `TOKEN_REFRESHED` la réécrirait sinon.
-// Remis à faux à chaque `SIGNED_OUT`, puisque les départs voulus effacent la marque juste après.
-let compteNote = false;
 const ecouteursDuRefus = new Set<() => void>();
 
 function changerDEtat(etat: EtatDeSession) {
@@ -202,9 +201,15 @@ function changerDEtat(etat: EtatDeSession) {
   if (changeLeRefus) for (const ecouteur of ecouteursDuRefus) ecouteur();
 }
 
+/**
+ * **À chaque session non anonyme vue, sans cache** (contre-lecture de la PR #315) : une première version
+ * ne l'écrivait qu'une fois par session, et une reconnexion par code — qui pose la marque au
+ * `SIGNED_IN`, puis balaie toutes les marques de l'ancien propriétaire — la laissait effacée jusqu'au
+ * lancement suivant, donc le défaut d'origine rouvert. Une écriture par rafraîchissement de jeton, une
+ * fois l'heure, ne coûte rien.
+ */
 function noterLaSession(session: Session | null) {
-  if (!session || session.user.is_anonymous || compteNote) return;
-  compteNote = true;
+  if (!session || session.user.is_anonymous) return;
   void noterUnCompteRattache();
 }
 
@@ -212,7 +217,6 @@ if (configurationSupabase.complete) {
   // Synchrone, et ne rappelle pas le client : `auth-js` déconseille un rappel asynchrone ici.
   supabase.auth.onAuthStateChange((evenement, session) => {
     if (evenement === 'SIGNED_OUT') {
-      compteNote = false;
       if (departsVolontaires > 0) return;
       void porteUnCompteRattache().then((porte) => {
         if (porte) changerDEtat('refusee');

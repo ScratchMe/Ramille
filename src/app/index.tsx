@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
-import { ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
+import { ecouterLeRefus, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
 import { destinationDuDemarrage, lireLeBilan, type LectureDuBilan } from '@/types/demarrage';
@@ -59,7 +59,9 @@ export default function Index() {
         // **Un refus ne lit rien et ne route nulle part** (02/10/2026, `v1-27` §12.27) : sans session,
         // la lecture partirait en `anon`, qui n'a aucun privilège, et l'écran technique d'une « erreur
         // serveur » se poserait sous l'écran de reconnexion — le piège décrit ci-dessus, par un autre
-        // chemin. La racine attend : c'est l'écran de reconnexion, posé par le layout, qui décide.
+        // chemin. La racine attend : c'est l'écran de reconnexion, posé par le layout, qui décide — et
+        // si le refus se lève sans qu'elle soit quittée (une session rouverte dans un autre onglet),
+        // l'écoute ci-dessous la relance.
         if (etatDeLaSession() === 'refusee') return;
 
         // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-10). Quelqu'un qui a
@@ -154,6 +156,16 @@ export default function Index() {
       annule = true;
     };
   }, [tentative]);
+
+  // **Un refus levé relance la racine** (02/10/2026, `v1-27` §12.27) : elle a rendu la main sans router,
+  // et rien d'autre ne la ferait repartir — elle resterait sur l'écran de lancement.
+  useEffect(
+    () =>
+      ecouterLeRefus(() => {
+        if (etatDeLaSession() !== 'refusee') setTentative((n) => n + 1);
+      }),
+    []
+  );
 
   // Gestionnaire d'événement : ici l'écriture synchrone est légitime, et l'incrément de
   // `tentative` relance l'effet.

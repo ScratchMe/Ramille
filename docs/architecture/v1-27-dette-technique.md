@@ -1705,8 +1705,18 @@ déduisait le refus de tout `SIGNED_OUT` qu'aucun départ voulu n'avait déclar�
 - « Commencer » efface les marques du compte quitté (son brouillon, sa marque de bilan, son premier
   parcours) ; la racine ne lit plus la base en état refusé.
 
-Gardé sur le client réel par sept tests, les départs passant par leurs vrais appelants, et par le
-relevé des mutations au pied de ce fichier de test.
+Gardé sur le client réel (`src/lib/session-refusee.test.ts`, « Me déconnecter » passant par son vrai
+appelant), par `src/lib/compte.test.ts` pour les deux départs déclarés, et par le relevé des mutations
+au pied du premier.
+
+**Et la seconde contre-lecture a trouvé cinq choses de plus, corrigées avant la fusion** : la marque
+n'était écrite qu'une fois par session, et une reconnexion par code — qui balaie les marques de
+l'ancien propriétaire juste après le `SIGNED_IN` — la laissait effacée jusqu'au lancement suivant (elle
+s'écrit désormais à chaque session non anonyme vue, et la racine que la reconnexion rejoint la repose) ;
+trois mutations survivaient aux tests (le refus en cours de route, l'état levé par « Commencer », ce
+cache), et ont chacune leur test ; `/feedback` était exempté de l'écran alors qu'il écrit sous la
+session ; sur web, `aria-hidden` ne retirait pas l'écran caché de la tabulation (`inert` le fait) ; et
+la racine, rendue sans router, restait figée si le refus se levait sans la quitter.
 
 **Ce qui reste, et c'est su** :
 

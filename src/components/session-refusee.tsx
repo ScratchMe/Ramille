@@ -29,8 +29,10 @@ import { Spacing } from '@/constants/theme';
  * **C'est une surcouche, pas un remplacement du `Stack`** — et ce n'est pas un choix de mise en
  * page. Rendu à la place du navigateur (comme `ConfigurationManquante`, qui lui n'a nulle part où
  * aller), il n'aurait aucune route vers laquelle partir : ses deux boutons seraient morts. Le
- * navigateur reste donc monté dessous, et les deux gestes sont confiés à l'appelant, qui lève le
- * drapeau avant de naviguer.
+ * navigateur reste donc monté dessous, et les deux gestes sont confiés à l'appelant. **Rien ne
+ * l'abaisse à la main** depuis le 02/10/2026 (`v1-27` §12.27) : le layout racine le déduit du refus et
+ * de la route (`lEcranDeReconnexionSePose`) — il s'efface sur `/connexion/…`, où mène « J'ai déjà un
+ * compte », et revient si l'on en ressort sans session.
  */
 export function SessionRefusee({
   onRetrouver,

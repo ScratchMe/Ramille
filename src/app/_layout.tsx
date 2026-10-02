@@ -15,7 +15,7 @@ import {
   type ErrorBoundaryProps,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform, StyleSheet, View } from 'react-native';
 
 import { ConfigurationManquante } from '@/components/configuration-manquante';
@@ -113,6 +113,16 @@ export default function RootLayout() {
   const [refus, setRefus] = useState(false);
   const chemin = usePathname();
   const ecranDeReconnexion = refus && lEcranDeReconnexionSePose(chemin);
+  // **Sur web, `inert` et pas seulement `aria-hidden`** (contre-lecture de la PR #315) :
+  // react-native-web ne traduit pas `importantForAccessibility`, et `aria-hidden` ne retire rien de
+  // l'ordre de tabulation — Tab atteignait d'abord les boutons de l'écran caché, qui précède la
+  // surcouche dans le DOM. `inert` les rend inertes au clavier comme au lecteur d'écran.
+  const pile = useRef<View>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const noeud = pile.current as unknown as { inert?: boolean } | null;
+    if (noeud) noeud.inert = ecranDeReconnexion;
+  }, [ecranDeReconnexion]);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -396,9 +406,11 @@ export default function RootLayout() {
           l'app s'arrête net, et elle le dit. */}
       {configurationSupabase.complete ? (
         <>
-          {/* **Caché au lecteur d'écran sous l'écran de reconnexion** (02/10/2026) : sans cela,
-              TalkBack ou la tabulation atteignaient l'écran d'en dessous. */}
+          {/* **Caché sous l'écran de reconnexion** (02/10/2026) : sans cela, TalkBack ou la tabulation
+              atteignaient l'écran d'en dessous — par `importantForAccessibility` sur natif, par `inert`
+              (ci-dessus) et `aria-hidden` sur web. */}
           <View
+            ref={pile}
             style={styles.pile}
             importantForAccessibility={ecranDeReconnexion ? 'no-hide-descendants' : 'auto'}
             aria-hidden={ecranDeReconnexion || undefined}
@@ -421,9 +433,10 @@ export default function RootLayout() {
                 // brouillon, sa marque de bilan, l'étape de son premier parcours — seraient relues par
                 // la session anonyme suivante comme les siennes (la règle de `seDeconnecterDeCetAppareil`).
                 // Puis le refus est levé, et le questionnaire ouvrira la session qu'il lui faut.
-                void effacerLesMarquesLocales()
-                  .then(repartirSurCetAppareil)
-                  .finally(() => router.replace('/onboarding'));
+                // **La navigation d'abord** : levé avant elle, le refus découvrait l'écran d'en
+                // dessous — un plan sans session — le temps d'une image.
+                router.replace('/onboarding');
+                void effacerLesMarquesLocales().then(repartirSurCetAppareil);
               }}
             />
           )}

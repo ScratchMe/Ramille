@@ -563,7 +563,8 @@ elle, une première ouverture, l'anonyme purgé compris. Il **tient** jusqu'à c
 redémarrage. `SIGNED_OUT` reste écouté pour le montrer en cours de route, et les départs voulus se
 déclarent (`pendantUnDepartVolontaire`). L'écran se déduit de l'état et de la route
 (`lEcranDeReconnexionSePose`, `src/types/session.ts`). Le client réel le garde, stockage et réseau
-doublés, les départs passant par leurs vrais appelants : `src/lib/session-refusee.test.ts`. L'écran
+doublés, « Me déconnecter » passant par son vrai appelant : `src/lib/session-refusee.test.ts` (la
+suppression, elle, par le double de `src/lib/compte.test.ts`). L'écran
 `SessionRefusee` est une
 **surcouche** du `Stack` et non un remplacement, à la différence de `ConfigurationManquante` : ses
 deux boutons sont des navigations, et un écran rendu à la place du navigateur n'aurait aucune route
