@@ -114,7 +114,7 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   par un appel réel depuis l'app, jamais par « un test en a besoin ».
 - **Le 30/10/2026, la plateforme cesse d'accorder d'office l'accès aux tables neuves de `public`
   sur les projets existants** (annonce reçue le 28/09/2026 ; le CLI avait basculé le
-  30/05/2026, §2.2). Un dépôt qui écrit déjà ses privilèges n'a rien à changer, et deux
+  30/05/2026, §2.2). Un dépôt qui écrit déjà ses privilèges n'a rien à changer, et trois
   choses que l'annonce ne dit pas valent d'être sues :
     * **son modèle de `grant` est un plafond, pas un point de départ** : `select` à `anon`, les
       quatre ordres à `authenticated` et à `service_role`, sur chaque table. Le recopier défait ce
@@ -124,14 +124,19 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
       tableau de bord ne fait rien d'autre** (Integrations → Data API → Settings, « Default
       privileges for new entities » ; mesuré le 02/10/2026 après l'avoir désactivé). Il réécrit
       les privilèges par défaut de `postgres` et laisse ceux du second créateur, `supabase_admin`,
-      tels quels — que `postgres` ne peut pas modifier non plus. Ce qui compte est donc le
-      **propriétaire** des objets : tant que tout ce qui vit dans `public` est créé par
-      `postgres`, la moitié `supabase_admin` ne touche rien ;
+      tels quels — que `postgres` ne peut pas modifier non plus. Ce qui compte est donc le rôle
+      qui **crée** chaque objet, et il ne se lit pas après coup : le propriétaire n'en est
+      qu'un indice, puisqu'un changement de propriétaire garde les autres bénéficiaires de
+      l'ACL. Ce qui tranche est le relevé des privilèges réels ;
     * **et une fonction neuve reste exécutable par `anon`** une fois le réglage désactivé : il
       retire `anon` et `authenticated` des privilèges par défaut du schéma, mais `EXECUTE` à
       **PUBLIC** est le défaut global de PostgreSQL, qu'un `alter default privileges … in schema`
-      ne peut pas retirer (mesuré le 02/10/2026 : `proacl` nul, `anon` exécute). Le
-      `revoke execute … from public` par fonction (plus bas) reste la seule garde.
+      ne peut pas retirer (mesuré le 02/10/2026 : `proacl` nul, `anon` exécute). La quatrième
+      instruction de la parade de Supabase, qui fait ce retrait `in schema public`, est donc
+      sans effet. Le `revoke execute … from public` par fonction (plus bas) reste la seule
+      garde en place ; une entrée globale — `alter default privileges for role postgres revoke
+      execute on functions from public`, sans `in schema` — en serait une seconde, à décider à
+      part, puisqu'elle vaudrait pour tous les schémas, `analytics` compris.
 - **`revoke execute … from anon, authenticated` ne révoque rien** : PostgreSQL accorde `EXECUTE`
   à **PUBLIC** à la création, et les deux rôles en héritent. Il faut `from public, anon,
   authenticated`. Un `create or replace` ne préserve pas non plus l'ACL qu'on croit.
@@ -332,13 +337,17 @@ Trois choses à retenir, portables :
    jusqu'au 02/10/2026 qu'elle s'y désactivait : le réglage « Default privileges for new
    entities » (Integrations → Data API → Settings) a été désactivé, et le relevé de
    `pg_default_acl` montre la ligne `postgres` réécrite et la ligne `supabase_admin` intacte
-   (§1.4). **Elle reste donc ouverte, et ne touche aucun de nos objets** : les 23 relations et
-   les 72 fonctions de `public` appartiennent à `postgres` — migrations passées par
-   `apply_migration` comprises — et `execute_sql` tourne sous `postgres` (relevé le
-   02/10/2026). Ce qui la rendrait réelle est un objet que Supabase créerait lui-même dans
-   `public` — une extension installée dans ce schéma depuis le tableau de bord, par exemple —,
-   et le relevé des propriétaires le dirait. Le registre porte les relevés et la vérification
-   du 31/10 (`docs/exploitation/README.md` §3.1 et §5).
+   (§1.4). **Elle reste donc ouverte, et ne vaut que pour les objets que `supabase_admin`
+   crée** : nos migrations, `apply_migration` comprise, et `execute_sql` tournent sous
+   `postgres`, et au 02/10/2026 toutes les relations et toutes les fonctions de `public` lui
+   appartenaient. Le propriétaire n'étant qu'un indice du créateur (§1.4), ce qui tranche est
+   le relevé des privilèges réels — celui du 02/10/2026 rend, pour `anon` et
+   `authenticated`, exactement la matrice de `18_grants_explicites.test.sql`. Ce qui rendrait
+   cette moitié réelle est un objet que Supabase créerait lui-même dans `public` — une
+   extension installée dans ce schéma depuis le tableau de bord, par exemple. L'en-tête de
+   `20260920190000` dit encore qu'elle « se désactive au tableau de bord » : migration livrée,
+   on ne la retouche pas (§2.3). Le registre porte les relevés, chiffres compris, et la
+   vérification du 31/10 (`docs/exploitation/README.md` §3.1 et §5).
 3. **Ni la CI ni pgTAP n'auraient vu l'oubli**, parce que la stack locale porte exactement les
    mêmes entrées que le distant. La garde qui manque est donc une **assertion**, pas une
    relecture : `31_gardes_sous_les_gardes.test.sql` en porte trois, dont une lue sur

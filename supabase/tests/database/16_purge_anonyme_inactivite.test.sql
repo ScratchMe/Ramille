@@ -103,12 +103,14 @@ select is_empty(
 -- table révoqués explicitement (le chantier C0.3 retire `auto_expose_new_tables`, donc aucune
 -- table ne doit plus compter sur un grant implicite).
 --
--- **Cette assertion ne mord que là où de nouvelles entités sont exposées par défaut** — le projet
--- distant, réglage « Default privileges for new entities » du tableau de bord. En local,
--- `auto_expose_new_tables` étant absent de `supabase/config.toml` depuis C0.3, le CLI révoque les
--- privilèges par défaut avant d'appliquer les migrations : aucun grant n'est jamais posé sur
--- `purge_runs`, et l'assertion passerait aussi sans le `revoke all privileges` de la migration. Ne
--- pas la lire comme une preuve que le revoke fait quelque chose ici — elle garde la production.
+-- **Cette assertion ne mord plus nulle part par défaut** : sur le distant, les tables créées par
+-- `postgres` ne reçoivent plus rien d'office depuis `20260920190000`, et le réglage « Default
+-- privileges for new entities » est désactivé (relevé du 02/10/2026). Elle garde contre le
+-- retour de l'un ou de l'autre. En local, `auto_expose_new_tables` étant absent de
+-- `supabase/config.toml` depuis C0.3, le CLI révoque les privilèges par défaut avant d'appliquer
+-- les migrations : aucun grant n'est jamais posé sur `purge_runs`, et l'assertion passerait aussi
+-- sans le `revoke all privileges` de la migration. Ne pas la lire comme une preuve que le revoke
+-- fait quelque chose ici — elle garde la production.
 select ok(
   not has_table_privilege('authenticated', 'public.purge_runs', 'select')
     and not has_table_privilege('anon', 'public.purge_runs', 'select')
