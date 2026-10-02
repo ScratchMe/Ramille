@@ -57,6 +57,15 @@ jobs:
       contents: read
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      # L'archive porte les adresses email de tous les comptes, et elle voyage du pooler au runner
+      # par le protocole de Postgres. Par défaut, libpq **préfère** TLS sans l'exiger
+      # (`sslmode=prefer`) : si le serveur ne le propose pas, le dump part en clair, et rien ne le
+      # signale. Cette variable l'exige, ici, dans un fichier qu'on peut lire, plutôt que dans un
+      # secret que personne ne relit. Elle ne vaut que si la chaîne de connexion ne nomme pas son
+      # propre `sslmode` : la chaîne l'emporte (mesuré le 02/10/2026, `sslmode=prefer` dans l'URI
+      # et `PGSSLMODE=require` dans l'environnement se connectent en clair) — d'où la garde de la
+      # première étape, qui n'accepte dans la chaîne qu'un `sslmode` exigeant le chiffrement.
+      PGSSLMODE: require
       SAUVEGARDE_PASSPHRASE: ${{ secrets.SAUVEGARDE_PASSPHRASE }}
       # L'endpoint porte l'identifiant de compte Cloudflare et **le préfixe `.eu.`** de la
       # juridiction : sans lui, le client s'adresse à la juridiction par défaut et ne voit pas le
@@ -84,7 +93,12 @@ jobs:
       # téléverserait un artefact vide et se terminerait en vert. C'est exactement le mode de
       # défaillance qu'une sauvegarde ne peut pas se permettre — on ne découvre l'absence de
       # contenu que le jour où l'on restaure.
-      - name: Vérifier que les secrets existent
+      #
+      # La même étape vérifie que la chaîne de connexion ne défait pas `PGSSLMODE` (en tête du
+      # job) : un `sslmode` écrit dans la chaîne l'emporte sur la variable. Le texte de cette étape
+      # est joué tel quel par `scripts/sauvegarde-garde-tls.test.ts`, qui porte les cas et les
+      # mutations : le workflow, lui, ne tourne pas en CI.
+      - name: Vérifier les secrets et le chiffrement exigé
         run: |
           set -euo pipefail
           manquants=""
@@ -98,6 +112,43 @@ jobs:
             echo "::error::Secrets de dépôt manquants :$manquants. Les créer dans Settings > Secrets and variables > Actions (voir docs/exploitation/sauvegarde.md)."
             exit 1
           fi
+          # Une liste blanche, et non la recherche d'un mode faible : libpq décode les `%` des
+          # noms comme des valeurs (`sslmode=%70refer` vaut `prefer`) et lit aussi les chaînes de
+          # la forme `clé=valeur`, deux formes qu'une recherche ne voit pas. La chaîne doit donc
+          # être une URI, et ce qui suit son « ? » ne peut porter qu'un `sslmode` qui exige le
+          # chiffrement, autant de fois qu'on voudra. Rien de la chaîne n'est jamais affiché : un
+          # mot de passe dont le « ? » n'est pas encodé finit dans la requête (le défaut du
+          # 17/09/2026, sauvegarde.md §3), donc un paramètre inconnu n'est pas nommé.
+          case "$SUPABASE_DB_URL" in
+            *[[:space:]]*)
+              echo "::error::Le secret SUPABASE_DB_URL contient une espace ou un retour à la ligne : une URI n'en porte pas (un mot de passe qui en contient les encode en %20). Le recoller sans (voir docs/exploitation/sauvegarde.md §3)."
+              exit 1
+              ;;
+            postgres://*|postgresql://*) ;;
+            *)
+              echo "::error::Le secret SUPABASE_DB_URL n'est pas une URI postgresql://… : cette étape ne saurait pas y lire le mode de chiffrement. Reprendre la chaîne du bouton Connect (voir docs/exploitation/sauvegarde.md §3)."
+              exit 1
+              ;;
+          esac
+          requete=""
+          case "$SUPABASE_DB_URL" in
+            *\?*) requete="${SUPABASE_DB_URL#*\?}" ;;
+          esac
+          parametres=()
+          IFS='&' read -r -a parametres <<< "$requete"
+          for parametre in "${parametres[@]}"; do
+            case "$parametre" in
+              sslmode=require|sslmode=verify-ca|sslmode=verify-full) ;;
+              sslmode=disable|sslmode=allow|sslmode=prefer)
+                echo "::error::Le secret SUPABASE_DB_URL porte $parametre, qui l'emporte sur PGSSLMODE=require et permettrait au dump de partir en clair. Le passer à sslmode=require (voir docs/exploitation/sauvegarde.md §3)."
+                exit 1
+                ;;
+              *)
+                echo "::error::Le secret SUPABASE_DB_URL porte, après le « ? », un paramètre que cette étape n'accepte pas (un sslmode encodé lui échapperait). N'y laisser que sslmode=require (voir docs/exploitation/sauvegarde.md §3). Le paramètre n'est pas affiché : il pourrait contenir un fragment du mot de passe."
+                exit 1
+                ;;
+            esac
+          done
 
       # L'image ubuntu-24.04 embarque un client PostgreSQL dont la version suit l'image et
       # peut être antérieure au serveur : `pg_dump` refuse de dumper une base plus récente que
