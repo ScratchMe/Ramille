@@ -13,7 +13,7 @@
 --      lourds du produit. La règle des deux nouveaux filtres est écrite une fois pour toutes :
 --      *une condition qu'on ne peut pas évaluer n'est pas remplie*, donc sans réponse on ne
 --      propose pas. Depuis `v1-34` (02/10/2026), la zone ne décide plus d'aucune action : c'est ce qui
---      passe près de chez la personne (`transports_proches`), éprouvé par le fichier `44`.
+--      passe près de chez la personne (`transports_proches`), éprouvé par le fichier `45`.
 --
 -- Les fixtures passent par `recompute_assessment_results` plutôt que par un insert direct
 -- dans `assessment_results` : depuis l'étape 6a l'estimateur lit l'instantané par segment, et
@@ -185,7 +185,7 @@ select ok(
 -- Le constat A8-5 en une assertion : ce profil a répondu « limité », pas « inexistant », donc
 -- `requires_tc` le laissait passer — et le métro arrivait en tête de son plan. C3.8 l'écartait par
 -- la zone ; `v1-34` l'écarte parce qu'il n'a pas coché le métro ni le tram. Les règles fines de la
--- réponse — le tram d'une ville moyenne, le RER, l'exclusion — sont éprouvées par le fichier `44`.
+-- réponse — le tram d'une ville moyenne, le RER, l'exclusion — sont éprouvées par le fichier `45`.
 select is_empty(
   $$ select action_text from public.estimate_action_savings('b1111111-1111-1111-1111-111111111114')
      where action_text ilike '%métro%' $$,

@@ -249,7 +249,7 @@ on s'en fiche. sinon OK ».
 
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 
-**Livré le 03/10/2026**, dans une PR (migration `ce_qui_passe_pres_de_chez_soi`, test pgTAP `44`).
+**Livré le 03/10/2026**, dans une PR (migration `ce_qui_passe_pres_de_chez_soi`, test pgTAP `45`).
 
 - **Le modèle** : `assessment_answers.transports_proches` (`text[]`, deux `check` : les valeurs, et
   « aucun » seul) ; un déclencheur qui range la réponse et en déduit `tc_access` ; deux colonnes de
