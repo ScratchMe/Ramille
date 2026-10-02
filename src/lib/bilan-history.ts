@@ -412,7 +412,9 @@ export async function loadLastSubmittedAnswers(): Promise<Lecture<BilanAnswers |
       coach_long_trips_per_year: answers.coach_long_trips_per_year,
 
       zone_type: answers.zone_type as BilanAnswers['zone_type'],
-      tc_access: answers.tc_access as BilanAnswers['tc_access'],
+      // L'accès ne se recopie pas : le serveur le déduit de la réponse aux transports (`v1-34`).
+      tc_access: null,
+      transports_proches: answers.transports_proches as BilanAnswers['transports_proches'],
       household_vehicles: answers.household_vehicles as BilanAnswers['household_vehicles'],
       teletravail: answers.teletravail as BilanAnswers['teletravail'],
     },

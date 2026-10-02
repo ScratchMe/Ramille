@@ -8,8 +8,11 @@ export interface ContextStepAnswers {
   leisure_frequency: 'rarely' | 'multiple_monthly' | 'weekly' | 'multiple_weekly' | null;
   /** « Dans quel type de zone vis-tu ? » : Urbain dense, Périurbain, Rural. */
   zone_type: 'urbain_dense' | 'periurbain' | 'rural' | null;
-  /** « Comment sont les transports en commun près de chez toi ? » : Bon, Limité, Inexistant. */
-  tc_access: 'bon' | 'limite' | 'inexistant' | null;
+  /**
+   * « Près de chez toi, qu’est-ce que tu pourrais prendre ? » (`v1-34`) : à cocher — Métro ou tram, RER ou
+   * Transilien, Train (TER, Intercités), Bus — ou « Rien de tout ça » seul. Rangée dans cet ordre ; `null` sans réponse.
+   */
+  transports_proches: ('metro_tram' | 'rer' | 'train' | 'bus' | 'aucun')[] | null;
   /** « Combien de véhicules motorisés dans ton foyer ? » : 0, 1, 2 ou plus. */
   household_vehicles: '0' | '1' | '2_plus' | null;
   /** Les jours qu'on pourrait travailler depuis chez soi : Aucun, Un jour, Deux ou plus — seulement quand la question se pose. */

@@ -21,7 +21,7 @@ const REPONSES = {
   flights_total_per_year: null,
   flights_short_per_year: null,
   zone_type: null,
-  tc_access: null,
+  transports_proches: null,
   household_vehicles: null,
   teletravail: null,
 };
@@ -40,7 +40,7 @@ const MANQUE = {
     : null,
   context: (a) =>
     a.zone_type === null ? manque('zone_type', 'ton type de zone')
-    : a.tc_access === null ? manque('tc_access', 'l’accès aux transports en commun')
+    : a.transports_proches === null ? manque('transports_proches', 'ce qui passe près de chez toi')
     : a.household_vehicles === null ? manque('household_vehicles', 'le nombre de véhicules du foyer')
     : teletravailSePose(a) && a.teletravail === null ? manque('teletravail', 'ta réponse sur le télétravail')
     : null,

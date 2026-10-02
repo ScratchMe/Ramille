@@ -48,7 +48,7 @@ export type ChampDuBilan =
   | 'car_long_trips_engine'
   | 'car_long_trips_occupancy'
   | 'zone_type'
-  | 'tc_access'
+  | 'transports_proches'
   | 'household_vehicles'
   | 'teletravail';
 

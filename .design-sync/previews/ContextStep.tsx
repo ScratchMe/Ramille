@@ -8,7 +8,7 @@ const VIERGE: Reponses = {
   commute_days_per_week: 5,
   leisure_frequency: 'weekly',
   zone_type: null,
-  tc_access: null,
+  transports_proches: null,
   household_vehicles: null,
   teletravail: null,
 };

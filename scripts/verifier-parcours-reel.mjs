@@ -788,7 +788,8 @@ async function saisirLeCycliste() {
   await choisir('Non'); // aucun long trajet : « Non » met les trois compteurs à zéro (`v1-33` D1)
   await suivant();
   await choisir('Urbain dense');
-  await choisir('Bon');
+  // Ce qui passe près de chez soi (`v1-34`) : le métro ou le tram, d'où l'accès « bon » qu'il donnait.
+  await choisir('Métro ou tram');
   await choisir('0');
   await choisir(/^Aucun/, { exact: false });
   await suivant('Voir mon bilan');
@@ -1414,7 +1415,11 @@ try {
 
   etape('questionnaire — contexte');
   await choisir('Périurbain');
-  await choisir('Limité');
+  // **Ce qui passe près de chez soi** (`v1-34`, 02/10/2026) : le bus et le train, d'où l'accès « limité »
+  // qu'il répondait avant — le serveur le déduit, et l'encart du plan le dit encore. Le train coché est ce
+  // qui garde « Passer deux trajets sur cinq en train » dans son plan.
+  await choisir('Bus');
+  await choisir('Train (TER, Intercités)');
   await choisir('1');
   await choisir(/^Un jour/, { exact: false });
   await suivant('Voir mon bilan');
@@ -2372,7 +2377,7 @@ try {
   // est son **appel**, avec les gabarits du plan — la famille « le test garde la fonction, jamais ses
   // appels ».
   etape('contexte — retiré puis remis, l’encart se tait au-dessus de l’action revenue');
-  // L'engagement repasse sur le train, la seule piste de ce profil que l'accès aux transports retire.
+  // L'engagement repasse sur le train, la seule piste de ce profil que « Rien de tout ça » retire.
   await ouvrirLesPistes();
   await rangee(ATTENDU.pistes[0][0]).click();
   await attendreTexte('Quels jours ?');
@@ -2380,17 +2385,19 @@ try {
   await bouton('C’est noté');
   await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
   await attendreTexte('TON ENGAGEMENT');
-  const enregistrerLeContexte = async (acces) => {
+  // Les puces se cochent depuis `v1-34` : on touche celles qui donnent la réponse voulue, dans l'ordre.
+  // « Rien de tout ça » décoche le reste ; une autre puce la décoche (`basculerTransport`).
+  const enregistrerLeContexte = async (puces) => {
     await page.goto(`${base}/contexte`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await page.getByRole('radio', { name: acces, exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
-    await choisir(acces);
+    await page.getByRole('checkbox', { name: puces[0], exact: true }).waitFor({ state: 'visible', timeout: ATTENTE });
+    for (const puce of puces) await choisir(puce);
     await bouton('Enregistrer');
     await page.waitForURL((url) => url.pathname === '/plan', { timeout: ATTENTE });
   };
   const ENCART = 'Ton plan a changé avec tes nouvelles réponses de contexte.';
-  await enregistrerLeContexte('Inexistant');
+  await enregistrerLeContexte(['Rien de tout ça']);
   await attendreTexte(ENCART);
-  await enregistrerLeContexte('Limité');
+  await enregistrerLeContexte(['Bus', 'Train (TER, Intercités)']);
   // **Le titre de la carte, au mot près, et pas une sous-chaîne** (contre-lecture du 01/10/2026) :
   // l'encart cite lui-même le libellé du train, donc `attendreTexte` pouvait se satisfaire de l'encart
   // d'un écran pas encore relu — et l'assertion d'en dessous aurait accusé `orphelinAAnnoncer` d'un
@@ -2398,7 +2405,7 @@ try {
   const lesPistesRevenues = await lire('plan_actions?select=action_templates(action_text)', jeton);
   assurer(
     lesPistesRevenues.some((piste) => piste.action_templates?.action_text === ATTENDU.pistes[0][0]),
-    `« ${ATTENDU.pistes[0][0]} » n’est pas revenue dans le plan avec l’accès « Limité » : l’étape ne peut pas conclure`
+    `« ${ATTENDU.pistes[0][0]} » n’est pas revenue dans le plan avec le bus et le train cochés : l’étape ne peut pas conclure`
   );
   try {
     await page.getByText(ATTENDU.pistes[0][0], { exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
@@ -3001,7 +3008,7 @@ try {
   await suivant();
   // Sans trajet, la question du télétravail ne se pose pas (`teletravailSePose`).
   await choisir('Urbain dense');
-  await choisir('Bon');
+  await choisir('Métro ou tram');
   await choisir('1');
   await suivant('Voir mon bilan');
 

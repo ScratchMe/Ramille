@@ -52,7 +52,7 @@ insert into public.assessments (id, user_id, status, submitted_at) values
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
   commute_car_engine, commute_is_carpool, commute_second_mode_used, commute_second_mode,
-  commute_second_mode_share, leisure_frequency, teletravail
+  commute_second_mode_share, leisure_frequency, teletravail, transports_proches
 ) values (
   'a3400000-0000-0000-0000-000000000001', true, 5, 20, 'voiture', 'thermique', false, true, 'train',
   0.25, 'rarely',
@@ -60,7 +60,10 @@ insert into public.assessment_answers (
   -- condition qu'on ne peut pas évaluer n'est pas remplie » — et l'assertion qui suit sur le gain
   -- d'une journée de télétravail comparerait `NULL`. La fixture d'un test de calcul doit répondre
   -- ce que le questionnaire exige désormais.
-  'deux_ou_plus'
+  'deux_ou_plus',
+  -- `v1-34`, pour la même raison : sans « Train » coché, l'action du train ne se propose plus, et
+  -- les deux assertions sur sa jambe compareraient `NULL`.
+  array['train']
 );
 
 -- B — le même bilan sans la part : c'est le bilan d'avant C3.4, et son total ne doit pas bouger.

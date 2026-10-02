@@ -7,7 +7,19 @@ export type DistanceBracket = 'lt_5' | '5_15' | '15_30' | '30_50' | '50_plus';
 export type LeisureDistanceBracket = 'lt_5' | '5_15' | '15_30' | '30_plus';
 export type LeisureFrequency = 'rarely' | 'multiple_monthly' | 'weekly' | 'multiple_weekly';
 export type ZoneType = 'urbain_dense' | 'periurbain' | 'rural';
+/**
+ * L'accès aux transports, **déduit** depuis `v1-34` (02/10/2026) : la question n'est plus posée, et
+ * le déclencheur `assessment_answers_deduit_l_acces` écrit la colonne d'après `transports_proches`.
+ * Le type reste, parce que la colonne reste — la moyenne française, la phrase du plan et les vues de
+ * la mesure la lisent.
+ */
 export type TcAccess = 'bon' | 'limite' | 'inexistant';
+/**
+ * « Près de chez toi, qu'est-ce que tu pourrais prendre ? » (`v1-34`) : ce qui passe assez souvent pour
+ * s'en servir, plusieurs réponses à la fois, ou `aucun` seul. Décide des actions de transport en
+ * commun du plan, à la place de la zone.
+ */
+export type TransportProche = 'metro_tram' | 'rer' | 'train' | 'bus' | 'aucun';
 export type HouseholdVehicles = '0' | '1' | '2_plus';
 /**
  * B4.4 — « Peux-tu travailler depuis chez toi ? » (C3.8).
@@ -165,7 +177,13 @@ export type BilanAnswers = {
   coach_long_trips_per_year: number | null;
 
   zone_type: ZoneType | null;
+  /**
+   * Plus demandé depuis `v1-34` : le serveur le déduit de `transports_proches` à l'écriture. Le
+   * questionnaire l'envoie nul, et la colonne reste pour ce qui la lit.
+   */
   tc_access: TcAccess | null;
+  /** Ce qui passe près de chez la personne (`v1-34`) — rangé dans l'ordre des puces, sans doublon. */
+  transports_proches: TransportProche[] | null;
   household_vehicles: HouseholdVehicles | null;
   /**
    * Ne se demande que s'il y a un trajet régulier : la question n'a pas d'objet sans lui, et les
@@ -213,6 +231,7 @@ export const EMPTY_BILAN_ANSWERS: BilanAnswers = {
 
   zone_type: null,
   tc_access: null,
+  transports_proches: null,
   household_vehicles: null,
   teletravail: null,
 };
@@ -951,7 +970,7 @@ export type ChampDuBilan =
   | 'car_long_trips_engine'
   | 'car_long_trips_occupancy'
   | 'zone_type'
-  | 'tc_access'
+  | 'transports_proches'
   | 'household_vehicles'
   | 'teletravail';
 
@@ -1000,7 +1019,7 @@ export const CHAMPS_DE_L_ETAPE: Record<BilanStepId, readonly ChampDuBilan[]> = {
   ],
   flights: ['flights_total_per_year', 'flights_short_per_year'],
   long_trips: ['fait_des_longs_trajets', 'nombre_de_longs_trajets', 'car_long_trips_engine', 'car_long_trips_occupancy'],
-  context: ['zone_type', 'tc_access', 'household_vehicles', 'teletravail'],
+  context: ['zone_type', 'transports_proches', 'household_vehicles', 'teletravail'],
 };
 
 /**
@@ -1189,7 +1208,8 @@ export function manqueDeLEtape(
     }
     case 'context':
       if (answers.zone_type === null) return manque('zone_type', 'ton type de zone');
-      if (answers.tc_access === null) return manque('tc_access', 'l’accès aux transports en commun');
+      if (answers.transports_proches === null || answers.transports_proches.length === 0)
+        return manque('transports_proches', 'ce qui passe près de chez toi');
       if (answers.household_vehicles === null)
         return manque('household_vehicles', 'le nombre de véhicules du foyer');
       // C3.8 : demandée, pas supposée. Le calcul du plan écarte les gabarits de télétravail quand

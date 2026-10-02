@@ -49,7 +49,7 @@ jest.mock('@/lib/navigation', () => ({ revenirOu: jest.fn() }));
 const CONTEXTE_INCOMPLET = {
   etat: 'ok',
   contexte: {
-    choix: { zone_type: 'urbain_dense', tc_access: 'bon', household_vehicles: '1', teletravail: null },
+    choix: { zone_type: 'urbain_dense', transports_proches: ['metro_tram', 'bus'], household_vehicles: '1', teletravail: null },
     trajet: { commute_has_regular_trip: true, commute_days_per_week: 3 },
     leisure_frequency: 'hebdomadaire',
   },
@@ -156,20 +156,41 @@ describe('/contexte — les questions du contexte', () => {
   it('nomme chaque groupe par sa question, et dit sous la zone ce que veut dire chaque réponse', async () => {
     mockLire.mockResolvedValue(CONTEXTE_COMPLET);
     render(<Contexte />);
-    for (const question of [
-      'Dans quel type de zone vis-tu ?',
-      'Comment sont les transports en commun près de chez toi ?',
-      'Combien de véhicules motorisés dans ton foyer ?',
+    // Ce qui passe près de chez soi se coche (`v1-34`) : un groupe, pas un `radiogroup`, qui
+    // annoncerait qu'en cocher une décoche les autres.
+    for (const [question, role] of [
+      ['Dans quel type de zone vis-tu ?', 'radiogroup'],
+      ['Près de chez toi, qu’est-ce que tu pourrais prendre ?', 'group'],
+      ['Combien de véhicules motorisés dans ton foyer ?', 'radiogroup'],
     ]) {
       // Le groupe porte son nom par `aria-label` (`GroupeDeChoix`) : la requête par rôle de la
       // bibliothèque ne voit pas une `View` qui n'est pas elle-même un élément accessible.
       const groupe = await screen.findByLabelText(question);
-      expect(groupe.props.role).toBe('radiogroup');
+      expect(groupe.props.role).toBe(role);
     }
+    // L'aide de la zone redevient une définition (D6 de `v1-34`) : la zone ne décide plus du métro.
     expect(
       screen.getByText(
-        'Urbain dense : une grande ville et sa proche banlieue, là où passent métro ou tram. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.'
+        'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.'
       )
     ).toBeTruthy();
+    expect(screen.getByText('Coche tout ce qui passe assez souvent pour t’en servir.')).toBeTruthy();
+  });
+
+  /**
+   * **Le test garde l'appel, pas seulement la fonction** : `basculerTransport` a ses tests, ce qui se
+   * garde ici est que l'écran la branche sur chaque puce. Éprouvé en le cassant le 03/10/2026 : l'appui
+   * branché sur un simple ajout (`[...valeurs, valeur]`) fait tomber ce test, et lui seul ici.
+   */
+  it('« Rien de tout ça » décoche le reste, et une autre puce la décoche', async () => {
+    mockLire.mockResolvedValue(CONTEXTE_COMPLET);
+    render(<Contexte />);
+    // `aria-checked` arrive sur l'élément hôte en `accessibilityState` : c'est ce qu'un lecteur d'écran lit.
+    const coche = (nom: string) => screen.getByRole('checkbox', { name: nom }).props.accessibilityState?.checked === true;
+    await waitFor(() => expect(coche('Métro ou tram')).toBe(true));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'Rien de tout ça' }));
+    expect([coche('Métro ou tram'), coche('Bus'), coche('Rien de tout ça')]).toEqual([false, false, true]);
+    fireEvent.press(screen.getByRole('checkbox', { name: 'Train (TER, Intercités)' }));
+    expect([coche('Train (TER, Intercités)'), coche('Rien de tout ça')]).toEqual([true, false]);
   });
 });

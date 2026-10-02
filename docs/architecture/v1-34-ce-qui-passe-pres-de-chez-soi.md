@@ -231,3 +231,41 @@ on s'en fiche. sinon OK ».
   de transport en commun : une condition qu'on ne peut pas évaluer n'est pas remplie (`PLAN.md` §1).
   Ce qu'on accepte : les plans de test perdent ces actions à leur prochaine génération, jusqu'à une
   réponse donnée dans l'écran « Contexte » ou dans un nouveau bilan.
+
+## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
+
+**Livré le 03/10/2026**, dans une PR (migration `ce_qui_passe_pres_de_chez_soi`, test pgTAP `44`).
+
+- **Le modèle** : `assessment_answers.transports_proches` (`text[]`, deux `check` : les valeurs, et
+  « aucun » seul) ; un déclencheur qui range la réponse et en déduit `tc_access` ; deux colonnes de
+  `action_templates`, `transports_requis` et `transports_exclus`, qui remplacent la condition de zone
+  des trois actions de transport en commun ; `estimate_action_savings` qui les lit ;
+  `mettre_a_jour_le_contexte` qui prend la réponse au lieu de l'accès.
+- **La signature du RPC change** : l'ancienne (quatre `text`) est supprimée. Entre l'application de la
+  migration et le déploiement du web, un onglet resté sur l'ancien bundle verrait l'écran « Contexte »
+  refuser d'enregistrer, le temps d'un rechargement. Aucun build natif ne l'appelle (le dernier date du
+  14/09/2026), et les comptes de production sont des comptes de test (D4).
+- **La garde des miroirs lit une forme de plus** : `colonne <@ ARRAY[…]`, la première colonne tableau
+  qu'elle sache comparer (`TESTING-GARDES.md` §2.7).
+
+**Une précision tranchée en chemin, à valider** : l'action des sorties en RER. Le §4 disait « l'action
+des sorties, chiffrée au RER si le métro ou le tram n'est pas coché ». Un même libellé ne peut pas
+porter deux chiffrages — `action_text` est la clé unique du référentiel —, et la question du point est
+figée à la génération, comme pour D3. Le chantier a donc créé une action à part, « Prendre le RER pour
+deux sorties sur cinq », proposée quand le RER est coché sans le métro ni le tram, avec sa question
+« En {mois}, as-tu pris le RER pour une sortie ? ». Le comportement décidé est tenu (le gain est celui
+du RER) ; seul le libellé est neuf.
+
+**Les phrases nouvelles, à relire** — calquées mot pour mot sur leurs jumelles du train et des
+sorties, « train » devenant « RER » :
+
+| Action | Question du point | Mot de la veille | Premier pas |
+|---|---|---|---|
+| « Passer deux trajets sur cinq en RER » | « {jours}, as-tu fait ce trajet en RER ? » | « Demain, tu as prévu de faire ton trajet en RER. » | « Vérifie l'horaire qui te convient, puis essaie-le une fois. » |
+| « Prendre le RER pour deux sorties sur cinq » | « En {mois}, as-tu pris le RER pour une sortie ? » | — (aucune action de sortie n'en a) | « Repère la ligne qui dessert ta sortie habituelle. » |
+
+**Ce qui reste à faire hors de cette PR** : remesurer les hauteurs des deux aperçus du kit
+(`ChampsDeContexte`, `ContextStep`) à la prochaine synchronisation de design ; et, à la prochaine séance
+de recette, régénérer l'artefact depuis `docs/recette/premier-parcours-web.md`, dont le profil coche
+désormais le bus et le train.
+

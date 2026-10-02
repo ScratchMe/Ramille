@@ -56,15 +56,16 @@ réécrire à chaque livraison plutôt qu'à compléter :
   vraiment** : les boucles partent du dernier bilan valide, la carte d'attente et ses voisines ne
   promettent rien quand aucune boucle ne tourne, et la question du mois suit l'action engagée
   (`v1-27` §12.21 à §12.25).
+- **ce qui passe près de chez soi, décidé le 02/10/2026 et livré le 03/10/2026**
+  ([`v1-34`](v1-34-ce-qui-passe-pres-de-chez-soi.md)) : une question factuelle remplace l'accès aux
+  transports, la zone ne décide plus du métro et du tram, et le RER devient proposable — avant le
+  premier build de production.
 
 **Ce qui reste ouvert** : le moment anniversaire (C6.5), conçu — son canvas est dans
 [`docs/design/v1-20-moment-anniversaire/`](../design/v1-20-moment-anniversaire/) — et pas encore
 construit, avec le reste de C4.8 ; la seconde vague des transitions (`v1-30` §6), après la recette sur appareil ;
 le thème sombre, après le lancement (`v1-29` §6.1) ; les déplacements professionnels, au backlog
-(§5) ; et, **décidé le 02/10/2026 et en chantier**, ce qui passe près de chez soi
-([`v1-34`](v1-34-ce-qui-passe-pres-de-chez-soi.md)) : une question factuelle à la place de l'accès
-aux transports, pour que la zone ne décide plus du métro et du tram et que le RER devienne
-proposable — avant le premier build de production. **Et avant de publier sur Play, ce qui reste n'est pas du code** : les vérifications sur
+(§5). **Et avant de publier sur Play, ce qui reste n'est pas du code** : les vérifications sur
 appareil de `v1-13` §11 — aucun build EAS n'est parti depuis le 14/09/2026, et le prochain se demande à
 la personne qui pilote, pas avant le 1er octobre (`v1-30` §9) —, la feuille web de [`docs/recette/`](../recette/), et la checklist de
 publication de `docs/exploitation/README.md` §4.

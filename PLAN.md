@@ -30,9 +30,9 @@ font de leurs états et de leur mise en page est dans `FRONT.md` §2.11, et la c
 et rend les gains en kg/an, triés. Deux règles non négociables : **aucune action au gain
 inférieur à 5 kg/an n'est proposée** (aux facteurs ACV, substituer une voiture par un bus urbain
 ne gagne que 14 %, contre 33× pour le métro — c'est invisible sans le calcul, d'où l'absence de
-tout template proposant le bus), et le **contexte B4** (`zone_type`, `tc_access`,
-`household_vehicles`) filtre l'impossible : pas de transports en commun là où la personne a
-répondu qu'il n'y en a pas. L'estimateur lit l'instantané par segment figé sur
+tout template proposant le bus), et le **contexte B4** (`transports_proches` depuis `v1-34`,
+`household_vehicles`, `teletravail`) filtre l'impossible : pas de transport en commun que la personne
+n'a pas coché près de chez elle. L'estimateur lit l'instantané par segment figé sur
 `assessment_results` (`commute_main_leg_km_year`, `travel_flight_long_co2_kg_year`…) — **ne
 jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Les gains sont
 ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
@@ -94,9 +94,10 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
   y a **deux seuils**, un jour se tenant avec « un jour » et deux jours demandant « deux ou plus ».
   Un tableau **vide** n'est pas un tableau absent — `= any('{}')` est faux pour toute valeur, donc il
   écarte tout le monde là où `null` n'écarte personne ; un test l'interdit.
-- **Le métro et le tram sont bornés à `urbain_dense`, le train et le RER ne le sont pas**, et c'est
-  la moitié qu'il ne faut pas « uniformiser » : un TER dessert des communes rurales, et lui coller
-  la même zone retirerait à ce profil la seule alternative qui lui reste.
+- **Le métro et le tram étaient bornés à `urbain_dense`, le train et le RER ne l'étaient pas**, et
+  c'était la moitié qu'il ne fallait pas « uniformiser » : un TER dessert des communes rurales, et
+  lui coller la même zone retirait à ce profil la seule alternative qui lui restait. **Depuis
+  `v1-34` (02/10/2026), aucune action ne dépend plus de la zone** : voir le paragraphe qui suit.
 - **Le télétravail se demande** (B4.4, `assessment_answers.teletravail`), et l'action s'appelle
   « Travailler depuis chez toi un jour par semaine » — « garder » supposait qu'on en avait. Le
   libellé seul ne suffisait pas : sans la question, l'action reste en tête chez les gros rouleurs
@@ -147,6 +148,32 @@ venir** (C3.8, `20260914131144`). Le filtre de contexte ne lisait qu'une valeur 
   l'état d'avant C5.3, et la phrase **dictait une régression** — appliquer ce `||` ôterait son cap à
   un plan à cinq actions dont aucune n'est en avant. Une seule cause vaut : zéro action. Un test
   compare désormais les deux formes à nombre d'actions égal, et il tombe sur cette fusion.
+
+**Ce qui passe près de chez soi décide des transports en commun, plus la zone** (`v1-34`,
+`ce_qui_passe_pres_de_chez_soi`, 02/10/2026). La question de l'accès (« bon, limité, inexistant »)
+est remplacée par « Près de chez toi, qu'est-ce que tu pourrais prendre ? » —
+`assessment_answers.transports_proches` : `metro_tram`, `rer`, `train`, `bus`, ou `aucun` seul. Cinq
+points à ne pas défaire :
+
+- **Un gabarit dit ce qu'il lui faut** : `transports_requis` (au moins un de ces transports coché) et
+  `transports_exclus` (aucun de ceux-là ne l'est). `null` vaut « pas de condition », et le `check`
+  refuse le tableau vide, qui écarterait tout le monde — la même règle que `zones_admissibles`, que
+  plus aucun gabarit ne porte.
+- **Le RER coché prend la place du train, il ne s'y ajoute pas** (D3) : « Passer deux trajets sur
+  cinq en RER », chiffrée au facteur du RER, exclut l'action du train par `transports_exclus`. La
+  question du point et le mot de la veille sont figés à la génération : un Francilien qui s'engage à
+  prendre le RER s'entend demander s'il a pris le RER. Les sorties suivent la même règle : « Prendre
+  le RER pour deux sorties sur cinq » s'efface devant celle des transports en commun quand le métro
+  ou le tram est coché.
+- **L'accès se déduit, il ne se demande plus** (D5) : le déclencheur `assessment_answers_deduit_l_acces`
+  écrit `tc_access` d'après la réponse — rien → `inexistant` ; bus ou train sans métro, tram ni RER →
+  `limite` ; métro, tram ou RER → `bon` — et range la réponse dans l'ordre des puces. La moyenne
+  française, la phrase de l'encart et les vues de la mesure lisent toujours `tc_access`.
+- **Une réponse absente n'ouvre rien** (D4) : un bilan d'avant la question ne reçoit plus aucune
+  action de transport en commun. Décidé parce que les bilans de production étaient des bilans de
+  test ; la règle de C3.8 s'applique telle quelle.
+- **Le bus ne débloque rien** : il ne gagne que 14 % sur une voiture, et aucun gabarit ne le propose.
+  Il est dans la liste pour que « Rien de tout ça » reste une réponse honnête.
 
 **`action_text` est la clé naturelle du référentiel d'actions, et elle porte enfin un index
 unique.** Tout le dépôt apparie les gabarits par elle — `action_templates.id` vaut

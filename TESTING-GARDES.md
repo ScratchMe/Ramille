@@ -243,8 +243,10 @@ base que `supabase/migrations/` vient de construire. Quatre choses à savoir ava
   puce « 6+ » promet qu'il n'y a rien au-dessus.
 - **Une colonne peut porter plusieurs `check`, et un seul énumère.** `engagement_checkins.response_kind`
   en a deux : celle du domaine, et celle de cohérence avec `response`, qui nomme les mêmes trois
-  valeurs sans les énumérer. Seule la forme `colonne = ANY (ARRAY[…])` est lue — et deux contraintes
-  énumérantes sur la même colonne font échouer le contrôle plutôt que d'en choisir une.
+  valeurs sans les énumérer. Seules deux formes sont lues : `colonne = ANY (ARRAY[…])`, et, depuis
+  `v1-34` (02/10/2026), `colonne <@ ARRAY[…]` pour une colonne tableau — `transports_proches`, la
+  première. Deux contraintes énumérantes sur la même colonne font échouer le contrôle plutôt que d'en
+  choisir une.
 
 Ajouter un miroir, c'est ajouter **une ligne** au tableau `MIROIRS` ; le reste se lit dans la base
 et dans le module. **Éprouvé en le cassant** (`TESTING.md` §1.1), douze mutations datées en tête du script —
