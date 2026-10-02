@@ -36,9 +36,12 @@ set description = 'Un code a été demandé depuis /connexion/email (props.flux)
   || 'compare pas à connexion_success. Sans flux : d''avant le 02/10/2026, l''un ou l''autre.'
 where name = 'connexion_demande';
 
+-- Repartie de la **dernière** description (`20260911110000_evenement_connexion_demande.sql`), et non de
+-- la première : « constaté », les deux émetteurs et l'exclusion de la demande restent.
 update public.usage_event_types
-set description = 'Rattachement effectif du compte (props.method : google, email). Jamais une reconnexion '
-  || 'depuis le 02/10/2026 : avant, le plan comptait aussi le compte retrouvé par code.'
+set description = 'Rattachement du compte constaté (props.method) : identité liée côté Google (/connexion), '
+  || 'bascule d''is_anonymous côté email (annonce de /plan). Jamais la demande de lien — c''est connexion_demande. '
+  || 'Jamais une reconnexion depuis le 02/10/2026 : avant, le plan comptait aussi le compte retrouvé par code.'
 where name = 'connexion_success';
 
 do $$

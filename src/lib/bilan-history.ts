@@ -342,7 +342,12 @@ export async function loadLastSubmittedAnswers(): Promise<Lecture<BilanAnswers |
   // lecture sans session ne dit rien des données de la personne.
   const {
     data: { session },
+    error: erreurDeSession,
   } = await supabase.auth.getSession();
+  // **Une session illisible est un échec, pas une absence** (contre-lecture du 02/10/2026) : sur un
+  // jeton expiré dont le renouvellement échoue — un raté réseau compris —, `auth-js` rend
+  // `{ session: null, error }`, et « aucun bilan » aurait laissé le questionnaire vide sans reprise.
+  if (erreurDeSession) return { ok: false };
   if (!session) return { ok: true, data: null };
 
   const { data: assessment, error: erreurDuBilan } = await supabase
@@ -383,7 +388,7 @@ export async function loadLastSubmittedAnswers(): Promise<Lecture<BilanAnswers |
         answers.commute_two_wheeler_type as BilanAnswers['commute_two_wheeler_type'],
       commute_train_type: answers.commute_train_type as BilanAnswers['commute_train_type'],
       commute_velo_type: answers.commute_velo_type as BilanAnswers['commute_velo_type'],
-  
+
       leisure_frequency: answers.leisure_frequency as BilanAnswers['leisure_frequency'],
       leisure_mode: answers.leisure_mode as BilanAnswers['leisure_mode'],
       leisure_distance_bracket: answers.leisure_distance_bracket as BilanAnswers['leisure_distance_bracket'],
@@ -395,7 +400,7 @@ export async function loadLastSubmittedAnswers(): Promise<Lecture<BilanAnswers |
         answers.leisure_two_wheeler_type as BilanAnswers['leisure_two_wheeler_type'],
       leisure_train_type: answers.leisure_train_type as BilanAnswers['leisure_train_type'],
       leisure_velo_type: answers.leisure_velo_type as BilanAnswers['leisure_velo_type'],
-  
+
       flights_total_per_year: answers.flights_total_per_year,
       flights_short_per_year: answers.flights_short_per_year,
       train_long_trips_per_year: answers.train_long_trips_per_year,
@@ -403,7 +408,7 @@ export async function loadLastSubmittedAnswers(): Promise<Lecture<BilanAnswers |
       car_long_trips_engine: answers.car_long_trips_engine as BilanAnswers['car_long_trips_engine'],
       car_long_trips_occupancy: answers.car_long_trips_occupancy,
       coach_long_trips_per_year: answers.coach_long_trips_per_year,
-  
+
       zone_type: answers.zone_type as BilanAnswers['zone_type'],
       tc_access: answers.tc_access as BilanAnswers['tc_access'],
       household_vehicles: answers.household_vehicles as BilanAnswers['household_vehicles'],

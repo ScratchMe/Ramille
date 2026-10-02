@@ -12,7 +12,8 @@
  * **Et depuis le 02/10/2026, l'échec ne se confond plus avec l'absence** (`v1-33` §9) : la lecture rend
  * une `Lecture`, et le questionnaire reprend l'échec en arrière-plan. Éprouvé le même jour : l'erreur
  * du bilan ignorée (`if (erreurDuBilan)` retiré) fait tomber « dit l'échec… », seul ; celle des
- * réponses ignorée, « dit l'échec des réponses… », seul.
+ * réponses ignorée, « dit l'échec des réponses… », seul ; celle de la session ignorée, « dit l'échec
+ * quand la session… », seul.
  */
 const mockGetSession = jest.fn();
 const mockFrom = jest.fn();
@@ -56,6 +57,13 @@ describe('loadLastSubmittedAnswers', () => {
 
     await expect(loadLastSubmittedAnswers()).resolves.toEqual({ ok: true, data: null });
     expect(mockFrom).toHaveBeenCalledWith('assessments');
+  });
+
+  it('dit l’échec quand la session elle-même n’a pas pu être lue', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: { message: 'Failed to fetch' } });
+
+    await expect(loadLastSubmittedAnswers()).resolves.toEqual({ ok: false });
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 
   it('dit l’échec de la lecture du bilan, au lieu de « aucun bilan »', async () => {

@@ -777,10 +777,11 @@ export default function Plan() {
   // que part `connexion_success`** (v1-13 C1.2). L'écran email l'émettait juste après
   // `updateUser({ email })`, où rien n'est encore rattaché : `etatDuRattachement` classe cet
   // instant en `a_confirmer`, et `is_anonymous` ne bascule qu'au clic du lien. Il n'y porte plus
-  // que `connexion_demande`, l'intention — l'écart entre les deux **est** le taux d'emails jamais
-  // confirmés, c'est-à-dire le chiffre cherché.
+  // que `connexion_demande`, l'intention — l'écart entre les demandes `flux = rattachement` et ces
+  // succès est le taux de codes jamais saisis, c'est-à-dire le chiffre cherché (`MESURE.md` §1).
   //
-  // Deux précautions qui font que ce chiffre veut dire quelque chose :
+  // Trois précautions qui font que ce chiffre veut dire quelque chose — la troisième, une reconnexion
+  // qui ne se compte pas, est écrite au point d'émission ci-dessous (`v1-27` §12.28) :
   //
   // — **Google n'est émis ici que sur web**, où l'écran de connexion ne peut pas le faire : sa
   //   redirection plein écran emporte la page avant la ligne suivante, et le retour d'OAuth
@@ -825,7 +826,11 @@ export default function Plan() {
       // **Et une reconnexion ne se compte pas** (`v1-27` §12.28, 02/10/2026) : elle arrive ici dans
       // le même état qu'un rattachement — un compte permanent, une annonce jamais faite sur cet
       // appareil —, mais le compte l'était déjà. L'annonce, elle, reste : elle dit vrai.
-      if ((methode === 'email' || Platform.OS === 'web') && !(await vientDUneReconnexion())) {
+      const reconnexion = await vientDUneReconnexion();
+      // La garde d'annulation après chaque attente, comme plus haut : un effet relancé pendant cette
+      // lecture compterait le même rattachement deux fois.
+      if (annule) return;
+      if ((methode === 'email' || Platform.OS === 'web') && !reconnexion) {
         track('connexion_success', { method: methode });
       }
       await marquerRattachementAnnonce();

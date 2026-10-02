@@ -7,11 +7,12 @@
 // mandataire, l'importer ne lève plus au chargement, donc il ne fait plus tomber une suite entière.
 // Elle passe par ce qu'un test doit **dresser** avant de pouvoir affirmer : une suite de logique
 // pure (`src/types/*`) n'installe aucun double, une suite d'entrée-sortie (`src/lib/*`) double
-// exactement ce qu'elle éprouve. Ici on double AsyncStorage pour les marques, et **le client, pour
-// la seule lecture des réglages** : la session, la ligne du profil et celle du jeton de cet appareil
-// — exactement ce que `loadReminderPrefs` lit, et rien de ce que les écritures touchent. Ce qui
-// est éprouvé, c'est la règle de `FRONT.md` §1.2 sur cette lecture : un échec rend `null`, jamais
-// un canal par défaut. Ce que la base répond vraiment reste au parcours réel.
+// exactement ce qu'elle éprouve. Ici on double AsyncStorage pour les marques, et **le client** : pour
+// la lecture des réglages — la session, la ligne du profil et celle du jeton de cet appareil, ce que
+// `loadReminderPrefs` lit —, et depuis le 02/10/2026 pour les deux écritures des rappels (`update …
+// eq`, avec le statut de la réponse). Ce qui est éprouvé : la règle de `FRONT.md` §1.2 sur la lecture
+// (un échec rend `null`, jamais un canal par défaut), et le genre de l'échec d'une écriture. Ce que
+// la base répond vraiment reste au parcours réel.
 //
 // La conséquence à connaître si cette suite tombe un jour avec une erreur de configuration : ce
 // n'est pas ce fichier qui aura changé, c'est une de ces fonctions qui aura commencé à toucher le
@@ -36,11 +37,14 @@ const mockLectures: {
   push_tokens: ReponseDouble;
   /** Ce que rend une écriture du profil (`update … eq`), avec son statut HTTP — `0` hors ligne. */
   ecriture: ReponseDouble & { status: number };
+  /** L'erreur que `getUser()` rend avec un utilisateur absent — `null` d'ordinaire. */
+  erreurUtilisateur: unknown;
 } = {
   utilisateur: null,
   profiles: { data: null, error: null },
   push_tokens: { data: null, error: null },
   ecriture: { data: null, error: null, status: 204 },
+  erreurUtilisateur: null,
 };
 
 jest.mock('@/lib/supabase', () => {
@@ -58,7 +62,9 @@ jest.mock('@/lib/supabase', () => {
   };
   return {
     supabase: {
-      auth: { getUser: async () => ({ data: { user: mockLectures.utilisateur }, error: null }) },
+      auth: {
+        getUser: async () => ({ data: { user: mockLectures.utilisateur }, error: mockLectures.erreurUtilisateur }),
+      },
       from: (table: 'profiles' | 'push_tokens') => chaine(table),
     },
   };
@@ -225,7 +231,20 @@ describe('loadReminderPrefs', () => {
 describe('les écritures des rappels', () => {
   beforeEach(() => {
     mockLectures.utilisateur = { id: 'u1' };
+    mockLectures.erreurUtilisateur = null;
     mockLectures.ecriture = { data: null, error: null, status: 204 };
+  });
+
+  // Sans utilisateur, rien n'est écrit : hors ligne, `getUser()` rend une erreur de transport
+  // d'`auth-js` ; une session absente n'est pas une panne de réseau. Éprouvé en le cassant le
+  // 02/10/2026 : `genreDeLaSessionManquante` qui rend toujours `serveur` fait tomber ce test, seul.
+  it('dit « hors ligne » quand l’utilisateur n’a pas pu être lu faute de réseau, le serveur sinon', async () => {
+    mockLectures.utilisateur = null;
+    mockLectures.erreurUtilisateur = { name: 'AuthRetryableFetchError', status: 0 };
+    expect(await setReminderChannel('email')).toBe('horsLigne');
+    expect(await setMotDeLaVeille('oui')).toBe('horsLigne');
+    mockLectures.erreurUtilisateur = { name: 'AuthSessionMissingError', status: 400 };
+    expect(await setReminderChannel('email')).toBe('serveur');
   });
 
   it.each([

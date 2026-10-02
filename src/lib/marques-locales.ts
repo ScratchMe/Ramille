@@ -79,10 +79,18 @@ async function noterLeProprietaire(userId: string): Promise<void> {
 }
 
 /**
- * Les conciliations passent **une par une**. Une session qui change se voit deux fois presque en même
- * temps — par l'écoute d'`auth-js` et par `ensureSession()` ou une reconnexion — et deux balayages
- * entrelacés pourraient effacer ce que l'autre vient d'écrire, la marque du compte rattaché comprise.
- * En file, la seconde lit le propriétaire que la première a noté, et ne fait plus rien.
+ * Les conciliations passent **une par une**. Deux appelants concilient — `ensureSession()` (la racine,
+ * le layout, toute écriture qui le rappelle) et `apresUneReconnexion()` —, et deux balayages
+ * entrelacés pourraient effacer ce que l'autre vient d'écrire. En file, le second lit le propriétaire
+ * que le premier a noté, et ne fait plus rien **s'il concilie le même compte**. La marque du compte
+ * rattaché, elle, s'écrit hors de la file (`noterLaSession`) ; ce qui la protège est qu'elle est
+ * reposée après chaque balayage d'`ensureSession()`.
+ *
+ * **Une fenêtre reste, et elle est étroite** (contre-lecture du 02/10/2026) : un `ensureSession()` dont
+ * la lecture de session a rendu l'**ancienne** session juste avant une reconnexion entre dans la file
+ * après elle, rebalaie, et remet l'ancien compte comme propriétaire. Le lancement suivant le corrige
+ * (la session relue est la nouvelle, donc elle rebalaie et redevient propriétaire) ; entre-temps, la
+ * marque de reconnexion peut être partie, et un rattachement constaté compté à tort une fois.
  */
 let file: Promise<void> = Promise.resolve();
 

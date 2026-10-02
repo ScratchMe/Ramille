@@ -150,7 +150,7 @@ export default function BilanQuestionnaire() {
   // rechargé (alors le bandeau de préremplissage reste vrai), et vers quoi repartir si le
   // brouillon a plusieurs semaines. La lecture du brouillon ne l'attend pas : elle débloque
   // l'écran, et ce second aller-retour ne fait qu'affiner ce qui est déjà affiché — hors ligne
-  // il rend `null` et rien ne change.
+  // il échoue, se reprend deux fois en arrière-plan (`relireEnArrierePlan`), et rien ne change.
   useEffect(() => {
     let cancelled = false;
 

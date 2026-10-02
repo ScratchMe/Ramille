@@ -7,11 +7,17 @@
  * où quelqu'un veut vraiment arrêter de recevoir.
  */
 
+import type { GenreDEchec } from '@/types/lecture-en-echec';
+
 /** Les quatre états de la page. Aucun n'est un reproche : personne n'a rien fait de mal. */
 export type EtatDesinscription = 'en-cours' | 'coupes' | 'lien-invalide' | 'panne';
 
-/** Ce que rend l'appel au RPC, en séparant le refus du serveur d'une panne de transport. */
-export type ReponseDesinscription = { ok: true; coupes: boolean } | { ok: false };
+/**
+ * Ce que rend l'appel au RPC, en séparant le refus du serveur d'une panne. La panne porte son genre
+ * depuis le 02/10/2026 (`src/types/ecriture-en-echec.ts`) : la page disait « Vérifie ta connexion » à
+ * toute erreur, y compris une réponse du serveur.
+ */
+export type ReponseDesinscription = { ok: true; coupes: boolean } | { ok: false; genre: GenreDEchec };
 
 const FORME_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -51,4 +57,15 @@ export function jetonDuLien(valeur: string | string[] | undefined): string | nul
 export function etatApres(reponse: ReponseDesinscription): EtatDesinscription {
   if (!reponse.ok) return 'panne';
   return reponse.coupes ? 'coupes' : 'lien-invalide';
+}
+
+/**
+ * La phrase de la panne, selon son genre — la règle de D19 appliquée aux écritures (`v1-33` §9,
+ * 02/10/2026). La fin ne change pas : elle dit ce qui n'a **pas** été fait, et c'est ce qui fait
+ * réessayer.
+ */
+export function phraseDeLaPanne(genre: GenreDEchec): string {
+  return genre === 'horsLigne'
+    ? 'Ta demande n’a pas abouti. Vérifie ta connexion et réessaie : tes rappels ne sont pas encore coupés.'
+    : 'Ta demande n’a pas abouti. Réessaie dans un instant : tes rappels ne sont pas encore coupés.';
 }

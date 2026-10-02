@@ -1789,8 +1789,9 @@ attendant, le registre (§8.5 quater) et `MESURE.md` §1 le disent, et le commen
 ### 12.29 La dette d'avant le lancement (02/10/2026)
 
 Demandé le 02/10/2026 par la personne qui pilote, après un point sur la dette restante : « lance-toi dans
-les sujets de dette technique à corriger ». Six sujets, une PR, chacun éprouvé en le cassant — les
-relevés de mutations sont en tête ou au pied de chaque fichier de test cité.
+les sujets de dette technique à corriger ». Une PR, contre-lue avant d'être ouverte. Ce qui a un
+comportement à garder est éprouvé en le cassant — les relevés de mutations sont en tête ou au pied de
+chaque fichier de test cité ; les deux déplacements et la montée du lock n'en ont pas, et le disent.
 
 - **Les marques locales suivent leur propriétaire** ([#319](https://github.com/ScratchMe/Ramille/issues/319),
   §12.27). Une clé de plus, `traceverte.proprietaire_des_marques.v1`, retient le compte dont les marques
@@ -1808,18 +1809,24 @@ relevés de mutations sont en tête ou au pied de chaque fichier de test cité.
 - **Une reconnexion ne se compte plus comme un rattachement** (§12.28).
 - **Une écriture en échec dit son genre** (`v1-33` §9). Le constat visait `commitPlanAction`, et il n'était
   pas seul : le choix du canal et du mot de la veille (la feuille des rappels et « Toi »), la réponse au
-  point, le contexte corrigé et le canal de retour disaient tous « Vérifie ta connexion » à n'importe
-  quelle erreur — et `clearPlanActionCommitment` l'inverse, « Réessaie dans un instant » hors ligne
-  compris. La règle de D19 vaut désormais pour les écritures (`src/types/ecriture-en-echec.ts`) : le
-  constat de chaque écran, puis « Vérifie ta connexion et réessaie. » hors ligne, « Réessaie dans un
-  instant. » sinon. Les deux suites existaient déjà dans le produit, mot pour mot. **Ce que les tests ne
-  gardent pas** : les appels de la carte du point, du contexte et du canal de retour, qui passent le
-  statut comme les autres — gardés par relecture ; ceux du plan et des rappels ont leurs tests.
+  point, le contexte corrigé, le canal de retour et la page `/rappels/stop` disaient tous « Vérifie ta
+  connexion » à n'importe quelle erreur — et `clearPlanActionCommitment` l'inverse, « Réessaie dans un
+  instant » hors ligne compris. La règle de D19 vaut désormais pour les écritures
+  (`src/types/ecriture-en-echec.ts`, et `phraseDeLaPanne` pour `/rappels/stop`) : le constat de chaque
+  écran, puis « Vérifie ta connexion et réessaie. » hors ligne, « Réessaie dans un instant. » sinon. Les
+  deux suites existaient déjà dans le produit, mot pour mot. **Les phrases du serveur sont à valider** par
+  la personne qui pilote, comme celles de D19 l'ont été : elles sont nouvelles à l'écran, même faites de
+  morceaux connus. **Ce que les tests gardent** : les fonctions du plan, des rappels et de
+  `/rappels/stop` (le statut qu'elles passent) ; les appels de la carte du point, du contexte et du canal
+  de retour, et les écrans qui lisent le genre des rappels (« Toi », la feuille), ne le sont que par
+  relecture.
 - **Les deux lectures de l'entrée d'un re-bilan se reprennent en arrière-plan** (`v1-33` §9). Une
   seconde puis deux secondes et demie plus tard, sans rien dire (`src/types/relecture-en-arriere-plan.ts`) :
   le questionnaire est déjà utilisable, donc la reprise ne retarde personne, et c'est le raté d'une
   seconde que le rejeu de PostgREST absorbait avant R-5. Pas de bandeau, donc pas de phrase de plus.
-  `loadLastSubmittedAnswers` rend une `Lecture` : elle confondait l'échec et l'absence.
+  `loadLastSubmittedAnswers` rend une `Lecture` : elle confondait l'échec et l'absence — y compris,
+  relevé par la contre-lecture, quand c'est la session qui n'a pas pu être lue (un renouvellement de
+  jeton en échec rend `{ session: null, error }`).
 - **Deux duplications de `v1-33` §9** : la marge et la mesure du défilement, écrites une fois
   (`src/lib/defilement.ts`) ; le cadre d'un champ, sorti d'`auth/text-field.tsx`
   (`src/components/cadre-du-champ.ts`), que le champ de distance du questionnaire importait de là.
