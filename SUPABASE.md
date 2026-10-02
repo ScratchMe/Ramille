@@ -35,7 +35,11 @@ fonctions et les incidents propres à Ramille, et ne voyage pas. L'histoire comp
 - **`getSession()` remonte l'erreur de rafraîchissement** (`GoTrueClient.__loadSession`), donc
   « pas de session » recouvre trois situations : aucune session (créer), **jeton refusé** (ne pas
   créer — on donnerait un compte vide à qui en a un) et **panne de transport** (ne pas créer non
-  plus, ne rien reprocher, réessayer au prochain lancement).
+  plus, ne rien reprocher, réessayer au prochain lancement). **Mais pas au démarrage, mesuré le
+  01/10/2026** (`auth-js` 2.116) : sur un jeton d'accès déjà expiré dont le rafraîchissement est
+  refusé, l'initialisation retire elle-même la session (`_callRefreshToken`, `_removeSession`) avant
+  le premier `getSession()`, qui ne voit alors ni session ni erreur. Le refus s'écoute donc à
+  l'initialisation, pas à la lecture — Ramille : `v1-27` §12.27, ouvert.
 - **La création de session est un « lis puis écris », donc elle s'enveloppe dans un
   partage de promesse en vol.** Deux appels lancés dans le même rendu lisent tous les deux « pas
   de session » avant que l'un n'ait écrit : deux comptes anonymes, dont un orphelin qui consomme
@@ -544,7 +548,8 @@ ses points sont intacts côté serveur. Le troisième cas, une **panne de transp
 création (on fabriquerait le même compte orphelin pour une cause passagère) ni reproche — le
 prochain lancement réessaie, et rien ne s'affiche. La distinction est possible parce qu'`auth-js`
 remonte l'erreur de rafraîchissement dans `getSession()` (relevé dans `GoTrueClient.__loadSession`) :
-les quatre états sont atteignables, aucun n'est décoratif. L'écran `SessionRefusee` est une
+les quatre états sont atteignables, aucun n'est décoratif — **sauf `refusee` au démarrage, que la
+mesure du 01/10/2026 n'a jamais obtenu** (§1, et `v1-27` §12.27). L'écran `SessionRefusee` est une
 **surcouche** du `Stack` et non un remplacement, à la différence de `ConfigurationManquante` : ses
 deux boutons sont des navigations, et un écran rendu à la place du navigateur n'aurait aucune route
 où aller.

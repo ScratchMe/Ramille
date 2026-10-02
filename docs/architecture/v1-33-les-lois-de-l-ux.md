@@ -162,15 +162,38 @@ phases). L'état de chaque ligne est celui de la PR qui porte ce document.
 | T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux |
 | T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView` |
 | T-7 (glissé) | La poignée de la feuille promet un glissé qui n'existe pas | Un seuil de glissé se juge au doigt |
-| R-12 | L'écran « Restitution » du kit montre encore la barre 2050 au-dessus de la moyenne et « Modifier mes réponses » | Après les arbitrages D9 et D10, qui décident de ce qu'il doit montrer |
+
+R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
+« Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10
+tranchées.
+
+### 4.3 Trouvés en chemin, et corrigés dans la même PR
+
+Aucun de ces défauts n'était dans l'audit. Chacun est sorti d'une mesure faite pour autre chose,
+et chacun a sa garde.
+
+| Le défaut | Depuis | Trouvé par | La correction |
+|---|---|---|---|
+| **Toucher un onglet empilait une seconde racine** : `navigate(onglet, { screen: 'index' })` empile sous React Navigation 7 au lieu de revenir. Le retour ramenait à un second plan, ou à une restitution restée montée sous le suivi | 07/09/2026 | T-14, en mesurant la remontée en haut | `pileALaRacine` : la pile remplacée par sa seule racine, qui garde sa clé (`FRONT.md` §2.11) |
+| **La bannière de compte de la restitution arrivait une image après le résultat**, et poussait le total de 92 px vers le bas | `v1-28` | D9, en mesurant où tombe le total | Lue au montage, avec le résultat (`FRONT-SUIVI.md`) |
+| **« Oui » à B1.6 ne faisait pas défiler la zone qui s'ouvre** : le contenu était trop court pour que `scrollTo` l'atteigne | `v1-31` | Le chantier A, sur une capture | Une réserve de hauteur sous l'étape (`StepShell`), gardée par la section K de `verifier-etats-export.mjs` |
+| **Sur web, le voile d'une feuille prenait le focus d'ouverture** à la place de « Commencer » : le piège à focus du `Modal` de react-native-web pose le focus sur le premier descendant qui l'accepte, et un `Pressable` en porte toujours un `tabindex` | T-7, le soir même | La CI de la PR | Le voile devient une vue à répondeurs, sans `tabindex` (`FRONT-MOUVEMENT.md` §2.12, `EXPO.md` §1.5) |
+| **Sur web, toucher le voile n'a jamais refermé une feuille** : la place au-dessus de la feuille était une vue animée, et reanimated pose ses styles en ligne, où `box-none` n'est pas du CSS | `feuille-du-bas.tsx` | Le diagnostic du défaut précédent | La place devient une vue ordinaire, seule la feuille s'anime ; une étape de plus au parcours réel |
+| **Des rappels illisibles effaçaient la carte d'attente du plan** sans que la ligne de relecture s'allume — effet de bord de T-6, `loadReminderPrefs` rendant désormais `null` | T-6, dans cette PR | Le chantier B | La dernière lecture réussie est gardée, et l'échec compte dans la relecture (`FRONT.md` §1.2) |
+| **La garde de la carte engagée du parcours réel tombait sans défaut** une fois sur deux sous « réduire les animations » : le défilement posé d'un coup tombe parfois dans l'image même de la relecture | `v1-33` P-1 | La CI de la PR, et le chantier G sur sa branche | Lue aussi à l'appel de défilement, et rapportée à la position d'avant (`TESTING-GARDES.md` §2.14, règle 10) |
 
 ## 5. Les questions de produit
 
 Chacune sous la forme de `CLAUDE.md` : le fait, ce qui est en jeu, la recommandation, ce qu'on casse si
 on se trompe. **Posées et tranchées le 01/10/2026**, une par une, avec la personne qui pilote :
 **toutes les recommandations sont suivies, sauf D10.** La colonne « Où » dit où chacune se fait : la
-**vague produit** est la PR qui suit celle de ce document, sur les seuls écrans ; un **chantier à part**
+**vague produit** touche les seuls écrans ; un **chantier à part**
 touche au schéma (une migration, un RPC, la paire SQL / TypeScript de la boucle) et se livre seul (§8).
+
+**Les deux vagues sont parties dans la même PR** (#314), la vague produit sur l'arbre intégré de la
+technique : toutes les lignes « vague produit » de ce tableau, et les quatre tensions tranchées
+« vague produit » de §6, y sont. Deux textes restent à valider, et ce que la vague a relevé en
+chemin est en §9.
 
 | | Décidé le 01/10/2026 | Où |
 |---|---|---|
@@ -344,7 +367,9 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
    restitution et le suivi —, intégrés, contre-lus sur le diff entier, la CI rejouée.
 2. **La vague produit** : les décisions de §5 et §6 qui ne touchent qu'aux écrans (D1 côté écran, D2,
    D3, D4, D6 à D9, D11 à D13, D16 à D19, et les quatre tensions tranchées « vague produit »). Elle
-   part de l'arbre intégré de la première, parce qu'elle touche les mêmes écrans.
+   part de l'arbre intégré de la première, parce qu'elle touche les mêmes écrans. **Partie dans la
+   même PR que la première** (#314) : trois chantiers — le questionnaire, la restitution et le
+   suivi, le plan et le contexte —, puis les surfaces de service.
 3. **Les chantiers à part**, un par un, chacun avec sa migration, ses tests pgTAP recalculés par
    requête et sa contre-lecture : la quatrième fréquence des loisirs (D5), la question générique le
    mois du choix (D14), « Modifier les jours » (D15), le champ sous « 10+ », et la réponse au point
@@ -352,3 +377,43 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
 
 Puis les reports techniques de §4.2, en commençant par T-5 (les liens), qui touche trente et un
 fichiers et doit passer seul.
+
+## 9. Ce qui reste ouvert après la PR #314
+
+**Deux textes rendus tels que décidés, et à revoir** :
+
+- **La ligne d'aide sous la zone (D4) peut faire mal classer.** Rendue mot pour mot : « Urbain dense :
+  une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une petite ville. Rural : un
+  village, la campagne. » Or le métro et le tram ne sont proposés qu'en `urbain_dense` (`PLAN.md` §1) :
+  une ville moyenne qui a un tram n'est ni « une grande ville » ni « une petite ville » dans cette
+  phrase, et qui y vit et choisit « Périurbain » perd les deux actions bornées à la zone dense. La
+  correction de fond — filtrer le métro et le tram sur une réponse à part — demande une migration.
+- **La ligne de relecture du suivi dit encore « Vérifie ta connexion. »** sur une erreur du serveur
+  (D19) : sa phrase n'était pas dans la décision.
+
+**Des questions de produit que la vague a fait naître** :
+
+- **Toucher le voile consomme la feuille des rappels**, qui ne se montre qu'une fois par appareil
+  (T-7) : un toucher distrait à côté de la feuille la fait partir pour toujours. Restreindre le voile
+  à la feuille du re-bilan ?
+- **« Réessayer » en secondaire pendant la confirmation de suppression** : la décision visait
+  « Rattacher un compte » ; le chantier l'a étendue au « Réessayer » d'un échec, pour qu'il n'y ait
+  qu'un principal.
+- **« Faire un nouveau bilan » le jour même** reste la tension de §6, non posée.
+
+**Des constats techniques, chacun pour une PR à part** :
+
+- **L'écran « session refusée » ne s'atteint probablement jamais au démarrage** (mesuré sur l'export
+  par le chantier du compte) : sur un jeton d'accès expiré dont le rafraîchissement est refusé
+  (`400 refresh_token_not_found`), `auth-js` 2.116 supprime la session pendant son initialisation ;
+  `getSession` voit alors « pas de session, pas d'erreur », et l'app crée une session anonyme — le
+  défaut que C2.11 devait fermer (`v1-27` §12.27).
+- **`commitPlanAction` dit « Vérifie ta connexion et réessaie. » à toute erreur d'écriture** : D19 ne
+  couvre que les lectures.
+- **Sur web, le retour suit l'historique du navigateur** : depuis un plan atteint en naviguant, il
+  revient à l'entrée d'avant, pas forcément hors de l'app. Le pendant d'Android, la pile, est vide.
+- **`cadreDuChamp` vit dans `auth/text-field.tsx`**, et le champ de distance l'importe de là.
+- **Les questions du contexte restent en `small` tertiaire** (D4), là où les autres étapes posent les
+  leurs en grand : à juger en dessin.
+
+**Ce qui ne se vérifie que sur appareil** est consigné en `v1-13` §11.26.

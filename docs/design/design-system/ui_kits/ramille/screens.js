@@ -152,9 +152,9 @@ function Plan({ go, dark }) {
           <ActionCommitment state="idle" otherActionCommitted={state === 'committed'} />
         </ActionCard>
         <div style={{ border: '1px solid var(--color-border)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <ThemedText type="small" themeColor="textTertiary">Ton cap pour cette période</ThemedText>
+          <ThemedText type="small" weight={600} themeColor="accentText">Ton cap pour cette saison</ThemedText>
           <ThemedText type="salient">− 184 kg</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">Cadence : Automne 2026</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">par an, soit − 20 % sur ton trajet domicile-travail</ThemedText>
         </div>
       </Scroll>
       <BarreOnglets actif="plan" onChange={(t) => go(t)} />
@@ -183,7 +183,7 @@ function Suivi({ go, dark }) {
           ))}
           <ThemedText type="small" themeColor="textSecondary">Tu réponds régulièrement : c’est déjà ça qui compte.</ThemedText>
         </div>
-        <Button title="Refaire mon bilan" variant="secondary" onPress={() => go('bilan')} />
+        <Button title="Faire un nouveau bilan" variant="secondary" onPress={() => go('bilan')} />
       </Scroll>
       <BarreOnglets actif="suivi" onChange={(t) => go(t)} />
     </Phone>

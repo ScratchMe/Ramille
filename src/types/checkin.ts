@@ -169,8 +169,9 @@ export function accentDesPoints(
  * qu'il aurait permise : Hermes peut être construit sans données ICU complètes, et il rend alors
  * un mois en anglais ou un numéro. Le défaut serait invisible en CI (Node porte l'ICU complet) et
  * visible seulement sur l'appareil, dans la seule phrase qui doit correspondre mot pour mot à la
- * notification que la personne vient d'ouvrir. `formatDate` du suivi prend ce risque pour une
- * date d'affichage ; la question du point ne le prend pas.
+ * notification que la personne vient d'ouvrir. `formatDate` du suivi a longtemps pris ce risque
+ * pour une date d'affichage ; il ne le prend plus depuis le 20/09/2026 et lit cette liste
+ * (`src/types/suivi.ts`), qui est désormais la seule source des mois côté client.
  */
 export const MOIS_FRANCAIS = [
   'janvier',
