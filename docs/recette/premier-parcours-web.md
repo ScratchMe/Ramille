@@ -1,10 +1,15 @@
 # Recette web — le premier parcours
 
 > **Remplacée pour ses lignes restantes le 29/09/2026** par
-> [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), la seule feuille
-> ouverte : 06.2 à 06.5 et 08.6, réécrites le 29/09 pour « Toutes les pistes », et 07.4, 07.6 à
+> [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), alors la seule
+> feuille ouverte : 06.2 à 06.5 et 08.6, réécrites le 29/09 pour « Toutes les pistes », et 07.4, 07.6 à
 > 07.9, jamais jouées, s'y jouent — transposées à ses deux profils — et ne se jouent plus ici. Cette
 > feuille reste la mémoire de ce qui a été joué le 18/09 ; son artefact garde sa base.
+>
+> **Puis sa ligne 06.4, réécrite le 01/10/2026 pour la vague `v1-33`
+> ([#314](https://github.com/ScratchMe/Ramille/pull/314)), et la question d'entrée des longs trajets
+> de son tableau de profil, ont été jouées le 02/10/2026 dans
+> [`ce-qui-reste-apres-le-1er-octobre.md`](ce-qui-reste-apres-le-1er-octobre.md) : conformes (`v1-13` §20).
 
 > **Écrit le 17/09/2026**, le jour de la livraison du lot 5. **Jouée le 18/09/2026** — ce qu'elle a
 > trouvé est en `v1-13` §14.

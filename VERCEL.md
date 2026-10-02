@@ -247,8 +247,9 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
 ### 1.8 Ce que l'outillage d'une session agent ne voit pas
 
 - **L'outil MCP Vercel d'une session ne voit pas forcément le compte où vivent les projets** — sur
-  Ramille, `list_deployments` a répondu 403 le 15/09/2026 ; chez Tour de Growth, l'unique équipe
-  visible est restée vide. Conséquence : **l'agent ne peut pas lire les compteurs de
+  Ramille, `list_deployments` a répondu 403 le 15/09/2026, puis répond depuis le 01/10/2026 — la liste
+  des déploiements et leur commit, pas l'usage ; chez Tour de Growth, l'unique équipe visible est restée
+  vide. Conséquence : **l'agent ne peut pas lire les compteurs de
   consommation**, et la configuration se fait à la main dans le tableau de bord. Règle : *quand
   une ressource que je ne peux pas lire est en jeu, je demande le chiffre avant d'agir, pas
   après.*

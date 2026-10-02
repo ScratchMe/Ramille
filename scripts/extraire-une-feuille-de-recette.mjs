@@ -13,19 +13,32 @@
 // La page se relit en entier par l'outil `Artifact` (action `read`) ; ses données sont un seul bloc,
 // `<script type="application/json" id="donnees">`, que `--page` remplace — rien d'autre n'est touché.
 //
-// **Les tableaux se trouvent par leur ancre**, et les ancres sont celles de la feuille du 29/09/2026
-// (`TABLEAUX` ci-dessous). Une autre feuille déclare les siennes ; une ancre absente fait échouer le
-// script en la nommant, plutôt que de rendre une page à laquelle il manque un tableau.
+// **Les tableaux se trouvent par leur ancre**, et chaque feuille déclare les siennes
+// (`TABLEAUX_PAR_FEUILLE` ci-dessous, par nom de fichier) : la page de son artefact lit ces clés-là.
+// Une feuille non déclarée, ou une ancre absente, fait échouer le script en la nommant, plutôt que de
+// rendre une page à laquelle il manque un tableau.
 import fs from 'node:fs';
+import path from 'node:path';
 
-const TABLEAUX = {
-  sujets: '## Pourquoi cette séance',
-  calendrier: '## Le calendrier',
-  profil1: '### Profil 1',
-  pistes: "**Ce qu'il rend**",
-  profil2: '### Profil 2',
-  contexte: '**Et ce que `/contexte` en fait**',
-  comptes: '### Les deux comptes',
+const TABLEAUX_PAR_FEUILLE = {
+  'ce-qui-reste-apres-le-29-septembre.md': {
+    sujets: '## Pourquoi cette séance',
+    calendrier: '## Le calendrier',
+    profil1: '### Profil 1',
+    pistes: "**Ce qu'il rend**",
+    profil2: '### Profil 2',
+    contexte: '**Et ce que `/contexte` en fait**',
+    comptes: '### Les deux comptes',
+  },
+  // Écrite le 02/10/2026 : plus de tableau des comptes gardés — la séance crée le sien.
+  'ce-qui-reste-apres-le-1er-octobre.md': {
+    sujets: '## Pourquoi cette séance',
+    calendrier: '## Le calendrier',
+    profil1: '### Profil 1',
+    pistes: "**Ce qu'il rend**",
+    profil2: '### Profil 2',
+    contexte: '**Et ce que `/contexte` en fait**',
+  },
 };
 
 const echapper = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -90,8 +103,10 @@ function tableauApres(md, ancre) {
   return rangs.slice(1).map((r) => r.map(enLigne));
 }
 
-function extraire(md) {
-  const donnees = Object.fromEntries(Object.entries(TABLEAUX).map(([cle, ancre]) => [cle, tableauApres(md, ancre)]));
+function extraire(md, nom) {
+  const tableaux = TABLEAUX_PAR_FEUILLE[nom];
+  if (!tableaux) throw new Error(`feuille non déclarée dans TABLEAUX_PAR_FEUILLE : « ${nom} »`);
+  const donnees = Object.fromEntries(Object.entries(tableaux).map(([cle, ancre]) => [cle, tableauApres(md, ancre)]));
   donnees.blocs = [...md.matchAll(/^## Bloc (\d\d) — (.+)$/gm)].map((m) => {
     const debut = m.index + m[0].length;
     const fin = md.indexOf('\n## ', debut);
@@ -118,7 +133,7 @@ if (!feuille || (option && (option !== '--page' || !page))) {
   console.error('usage : node scripts/extraire-une-feuille-de-recette.mjs <feuille.md> [--page <page.html>]');
   process.exit(2);
 }
-const json = JSON.stringify(extraire(fs.readFileSync(feuille, 'utf8')));
+const json = JSON.stringify(extraire(fs.readFileSync(feuille, 'utf8'), path.basename(feuille)));
 if (!page) {
   process.stdout.write(`${json}\n`);
 } else {

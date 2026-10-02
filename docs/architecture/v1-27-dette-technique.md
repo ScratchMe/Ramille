@@ -1732,6 +1732,9 @@ la racine, rendue sans router, restait figée si le refus se levait sans la quit
 - une reconnexion par `/connexion/retrouver` efface les marques locales (« on change d'utilisateur
   ici ») alors qu'au sortir d'un refus, c'est le même compte qui revient : le brouillon d'un re-bilan
   commencé part avec elles ;
+- **une session anonyme refusée laisse ses marques locales à la session anonyme suivante** (vu en
+  recette le 02/10/2026, `v1-13` §20) : le chemin anonyme n'efface rien, donc un anonyme purgé qui revient
+  garde la marque de bilan et son premier parcours — [#319](https://github.com/ScratchMe/Ramille/issues/319) ;
 - un autre onglet du même navigateur qui se déconnecte peut faire apparaître l'écran ici, s'il lit la
   marque avant que l'autre onglet ne l'efface — la session de cet onglet est bel et bien partie, et
   l'écran s'en va à la première session rouverte.

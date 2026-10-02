@@ -273,7 +273,8 @@ destination légitime, et elle se note comme telle.
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
 | Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09, **jouée le 28/09 par l'agent** — constats en `v1-13` §15 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
 | Ce qui reste après la séance du 28/09/2026 — les correctifs de la soirée revus sur la production, le suivi sur deux jours, les jugements qui reviennent à la personne qui pilote (**blocs 00 et 01 joués le 29/09 par l'agent**, `v1-13` §16 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | https://claude.ai/artifact/39KtxfEBam38o9HB4rcn53 |
-| **Tout ce qui reste à recetter au 29/09/2026 — la seule feuille ouverte** : l'écran du mode (`v1-31`) et « Toutes les pistes » (`v1-32`) sur la production, `/contexte` (§11.W.8), deux bilans de deux jours, le point du 1er octobre, les jugements, et un bloc final qui attend le build natif (**blocs 00 à 02 joués le 29/09 au soir, bloc 03 le 30/09, blocs 04 et 06 le 1er octobre, par l'agent** — `v1-13` §17 à §19 ; le bloc 05 tranché le 1er octobre par la personne qui pilote ; reste le bloc 07, au build natif) | `docs/recette/ce-qui-reste-apres-le-29-septembre.md` | https://claude.ai/artifact/4pWwnbinxhigiR7jJW4puR |
+| Tout ce qui reste à recetter au 29/09/2026 : l'écran du mode (`v1-31`) et « Toutes les pistes » (`v1-32`) sur la production, `/contexte` (§11.W.8), deux bilans de deux jours, le point du 1er octobre, les jugements, et un bloc final qui attend le build natif (**blocs 00 à 02 joués le 29/09 au soir, bloc 03 le 30/09, blocs 04 et 06 le 1er octobre, par l'agent** — `v1-13` §17 à §19 ; le bloc 05 tranché le 1er octobre par la personne qui pilote ; reste le bloc 07, au build natif) | `docs/recette/ce-qui-reste-apres-le-29-septembre.md` | https://claude.ai/artifact/4pWwnbinxhigiR7jJW4puR |
+| Ce qui reste au 02/10/2026, **jouée entière le jour même** — plus aucune feuille n'a de ligne à jouer au navigateur ; reste le bloc 07 de celle du 29/09, au build natif : les lignes réécrites par la vague `v1-33` ([#314](https://github.com/ScratchMe/Ramille/pull/314)) dans trois feuilles déjà jouées, l'encart orphelin dans un navigateur neuf (§11.W.8), l'e-mail de rattachement recopié au tableau de bord (§11.W.9) et la moitié web de la session refusée ([#315](https://github.com/ScratchMe/Ramille/pull/315), §11.27) — **jouée le 02/10 par l'agent**, `v1-13` §20 : 40 lignes conformes, un constat hors feuille | `docs/recette/ce-qui-reste-apres-le-1er-octobre.md` | https://claude.ai/artifact/7bdZ4dt91goXPSDrXwog5A |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
@@ -332,7 +333,7 @@ laisse quelque chose : une feuille courte, datée, qui dit dans son en-tête **�
 a un sens — ici, une fois la PR des correctifs déployée, et sa ligne 00.2 vérifie que c'est le cas
 avant qu'on joue quoi que ce soit.
 
-**La quatrième, écrite le 29/09/2026, est la seule feuille ouverte** : elle rassemble tout ce qui
+**La quatrième, écrite le 29/09/2026, a été la seule feuille ouverte jusqu'au 02/10** : elle rassemble tout ce qui
 reste à recetter, lu dans les documents **et dans les bases des artefacts** — une ligne muette dans
 une base est une ligne non jouée, même quand son document ne le dit pas. Trois feuilles portaient
 encore des lignes jamais jouées, et deux écrans livrés **après** la dernière séance avaient réécrit
@@ -349,8 +350,9 @@ dans le dépôt le 30/09/2026, parce qu'il vivait dans le dossier de travail d'u
 conteneur qui redémarre l'emporte : la page publiée se relit en entier (`Artifact`, action `read`),
 ses données sont un seul bloc JSON (`<script type="application/json" id="donnees">`), et
 `--page <page.html>` remplace ce bloc et rien d'autre. Ses tableaux se trouvent par leur **ancre**,
-propre à chaque feuille : une ancre absente le fait échouer en la nommant, plutôt que de rendre une
-page à laquelle il manque un tableau.
+propre à chaque feuille et déclarée dans le script (`TABLEAUX_PAR_FEUILLE`, par nom de fichier, depuis
+la feuille du 02/10/2026) : une feuille non déclarée ou une ancre absente le fait échouer en la nommant,
+plutôt que de rendre une page à laquelle il manque un tableau.
 
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est
@@ -360,6 +362,9 @@ exactement ce que ce format existe pour ne plus reproduire.
 
 La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit a coûté un essai.
 
+- **Un troisième contexte, quand la feuille en demande trois** (02/10/2026) : `S.C = S.A`, puis
+  `S.nouvelle(nom, 'C')` — un contexte de plus dans le même Chromium, isolé comme les autres, et que
+  `S.nouvelle(…, 'A')` ne ferme pas.
 - **Le pilote** : `scripts/pilote-de-recette.mjs`, lancé en arrière-plan. Deux navigateurs (A et B)
   dont les contextes ne partagent jamais leur stockage, ce qui rend la précaution des fenêtres
   privées gratuite. Son en-tête dit comment lui envoyer une étape (avec le jeton qu'il écrit au
@@ -392,9 +397,10 @@ La mécanique de §1.9, telle qu'elle a tourné le 28/09/2026. Tout ce qui suit 
   de jouer le bloc du code « avec une vraie messagerie » — l'objet, le corps, l'absence de lien, le
   dossier de réception. **La limite d'une minute par adresse** se paie : un renvoi à 54 secondes a
   été refusé (et a trouvé un défaut, H2).
-- **La version servie ne se lit pas chez Vercel** : lister les déploiements est refusé (403) au
-  connecteur. On la lit dans ce qui est servi — la date de la page de confidentialité, un texte que
-  la dernière fusion a changé.
+- **La version servie se lit chez Vercel depuis le 01/10/2026** (`list_deployments`, cible `production` :
+  le commit et l'état `READY`) ; lister les déploiements était refusé (403) au connecteur jusque-là.
+  À défaut, on la lit dans ce qui est servi — une clé ASCII que la dernière fusion a ajoutée au paquet
+  JavaScript, ou un texte qu'elle a changé (un marqueur accentué y est échappé : `CLAUDE.md`).
 - **Deux lignes ne se jouent pas au web, et la feuille doit le savoir** : recharger une page réseau
   coupé rend la page d'erreur du navigateur (rien ne sert l'app hors ligne), et un jugement « au
   doigt » ne se rend pas à la souris.

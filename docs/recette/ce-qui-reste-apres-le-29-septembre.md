@@ -1,7 +1,7 @@
 # Recette — tout ce qui reste à recetter, au 29 septembre
 
-> **Écrite le 29/09/2026**, le soir de la fusion de `v1-31` (#296). C'est **la seule feuille
-> ouverte** : elle reprend les lignes jamais jouées des trois précédentes, et ne rejoue aucune ligne
+> **Écrite le 29/09/2026**, le soir de la fusion de `v1-31` (#296). Elle a été **la seule feuille
+> ouverte** jusqu'au 02/10/2026 (plus bas) : elle reprend les lignes jamais jouées des trois précédentes, et ne rejoue aucune ligne
 > revenue conforme. Elle remplace, pour leurs lignes restantes :
 >
 > - [`le-compte-et-les-modes.md`](le-compte-et-les-modes.md) — 12.1 à 12.3 et 14.3 (jouée le 28/09,
@@ -20,6 +20,13 @@
 > navigateur, les lignes de §11 qui attendent un appareil. **Jouée le** 29/09/2026 au soir (blocs 00 à
 > 02, `v1-13` §17), le 30/09/2026 (bloc 03, §18) et le 1er octobre (blocs 04 et 06, §19) ; les
 > jugements du bloc 05 tranchés le même jour par la personne qui pilote (§19).
+>
+> **Sa ligne 02.4 et ses tableaux de profil, réécrits le 01/10/2026 pour la vague `v1-33`
+> ([#314](https://github.com/ScratchMe/Ramille/pull/314)), ont été joués le 02/10/2026 dans
+> [`ce-qui-reste-apres-le-1er-octobre.md`](ce-qui-reste-apres-le-1er-octobre.md)** : conformes
+> (`v1-13` §20). Plus aucune feuille n'a de ligne à jouer au navigateur ; celle-ci ne garde que son
+> bloc 07, au build natif, complété le même jour de `v1-13` §11.25, §11.26 et de la moitié native de
+> §11.27 (07.17 à 07.19).
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **sur trois jours** — c'est le
 > calendrier ci-dessous qui décide de l'ordre, pas la numérotation.
@@ -322,7 +329,9 @@ le lundi 5 (hebdomadaire).
 > **Rien de ce bloc ne se joue au navigateur**, et la séance au navigateur ne le coche pas : chaque
 > ligne renvoie à sa case de `v1-13` §11, qui dit tout ce qu'on y cherche. Demande un build EAS —
 > au plus un tous les deux jours — et un vrai téléphone Android, un modèle d'entrée de gamme si
-> possible. Les lignes vont de la plus neuve à la plus ancienne.
+> possible. Les lignes 07.1 à 07.16 vont de la plus neuve à la plus ancienne ; 07.17 à 07.19,
+> ajoutées le 02/10/2026, sont plus neuves encore, et sont en bas pour ne pas renuméroter celles que la
+> base de l'artefact garde déjà.
 
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
@@ -342,6 +351,9 @@ le lundi 5 (hebdomadaire).
 | 07.14 | **« Voir tout » sur un téléphone étroit** (§11.10, la part non rapportée) | La liste des points groupée par saison tient | |
 | 07.15 | **À partir du 1er décembre** : la carte d'ouverture de saison et son trait de temps (§11.9), sur un compte qui a deux cycles | La carte entre (elle démarre transparente) ; le trait se lit comme une mesure du temps ; Ramille dessous ne commente pas les deux nombres | |
 | 07.16 | **Juste avant la publication sur Play** (§11.3) | `/compte/suppression` se trouve depuis un navigateur neuf sans l'app ; et l'empreinte de signature de Play est dans `assetlinks.json` | |
+| 07.17 | **La session refusée au démarrage, sur Android** (§11.27, la moitié native — la moitié web jouée le 02/10/2026, `v1-13` §20) : un compte rattaché, ses sessions supprimées côté serveur, l'app rouverte une fois le jeton expiré ; puis l'app tuée pendant qu'on va chercher son code sur `/connexion/retrouver`, et rouverte ; puis la même chose avec une session anonyme ; puis une reconnexion par code | L'écran « Reconnecte-toi pour retrouver ton bilan », jamais un questionnaire vide, et de nouveau après l'app tuée ; l'anonyme sur l'onboarding, sans cet écran ; après la reconnexion, la marque `traceverte.compte_rattache.v1` dans AsyncStorage | |
+| 07.18 | **La vague des lois de l'UX au doigt** (§11.26) | Le retour matériel recule d'une étape du questionnaire, d'une phase du compte, referme la confirmation de « Toi », et ne fait rien pendant le calcul ; la touche d'action du clavier envoie, et le premier toucher sur « Envoyer », clavier ouvert, envoie ; TalkBack annonce le titre aux changements de phase du compte, le premier choix après « C’est noté » en attente, la première piste après « Choisir une action » ; le voile d'une feuille la referme au doigt ; la carte des deux lieux finit sa visite au changement d'onglet ; le chargement hors ligne ne dure plus 7 s | |
+| 07.19 | **« Toi » au doigt** (§11.25) : l'ouvrir sur un compte anonyme, notifications ouvertes puis fermées | Le lien « Supprimer mon compte » ne saute pas au point qu'un toucher s'y perde. Sinon, la hauteur réservée se mesure par plateforme | |
 
 ## Ce qui ne se joue pas ici
 

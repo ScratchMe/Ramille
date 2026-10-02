@@ -1,8 +1,8 @@
 # Recette web — ce qui reste après la séance du 28 septembre
 
 > **Remplacée pour ses lignes restantes le 29/09/2026** par
-> [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), la seule feuille
-> ouverte : 02.1 à 02.4, 03.1 à 03.3, 04.1 et 04.2 — les blocs 00 et 01 ont été joués le 29/09,
+> [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), alors la seule
+> feuille ouverte : 02.1 à 02.4, 03.1 à 03.3, 04.1 et 04.2 — les blocs 00 et 01 ont été joués le 29/09,
 > `v1-13` §16 — s'y jouent, et ne se jouent plus ici. Cette feuille reste la mémoire de ce qui a été
 > joué ; son artefact garde sa base.
 
