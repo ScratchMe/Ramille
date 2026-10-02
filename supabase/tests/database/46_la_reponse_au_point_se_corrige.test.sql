@@ -1,5 +1,5 @@
 -- Tests pgTAP : la réponse au point se corrige jusqu'au point suivant (`v1-33` §6, migration
--- `20261002233000_la_reponse_au_point_se_corrige.sql`).
+-- `20261002234720_la_reponse_au_point_se_corrige.sql`).
 --
 -- « Non » et « Oui » sont à 8 px l'un de l'autre, et un toucher erroné était définitif. Ce fichier
 -- garde ce que la correction permet, et surtout ce qu'elle ne permet pas :

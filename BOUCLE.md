@@ -339,7 +339,7 @@ la signature est `repondre_au_checkin(uuid, text)`, la version booléenne **supp
 raisonnement complet est au paragraphe de C2.4, plus haut.
 
 **La réponse se corrige jusqu'au point suivant** (`v1-33` §6, décidé le 02/10/2026 avec la personne
-qui pilote, `20261002233000_la_reponse_au_point_se_corrige.sql`, test `46`). « Non » et « Oui » sont à
+qui pilote, `20261002234720_la_reponse_au_point_se_corrige.sql`, test `46`). « Non » et « Oui » sont à
 8 px l'un de l'autre, et un toucher erroné était définitif. La carte répondue offre « Modifier ma
 réponse », qui rouvre les trois réponses sous « Ta réponse : oui. » (`phraseDeLaReponseEnPlace`) ; la
 réplique est celle de la nouvelle réponse, et « deux fois de suite » la suit, puisqu'il se dérive à la
