@@ -1,26 +1,41 @@
 import type {
   HouseholdVehicles,
-  TcAccess,
   Teletravail,
+  TransportProche,
   ZoneType,
 } from '@/types/bilan';
-import type { ReponsesDeContexte } from '@/types/plan';
+
+/**
+ * Ce que la base rend des réponses de contexte, avant qu'on les ramène à ce que l'écran édite.
+ *
+ * **Un type de lecture** : `string | null`, parce que ces colonnes sont du `text` — `text[]` pour ce qui
+ * passe près de chez soi (`v1-34`). L'encart du plan lit les siennes par `ReponsesDeContexte`
+ * (`src/types/plan.ts`), qui garde l'accès aux transports : depuis `v1-34` il se déduit de la réponse,
+ * et c'est sa phrase que l'encart dit.
+ */
+export type ReponsesLuesDuContexte = {
+  zone_type: string | null;
+  transports_proches: string[] | null;
+  household_vehicles: string | null;
+  teletravail: string | null;
+};
 
 /**
  * Les quatre réponses de contexte B4, éditables hors du questionnaire (C6.4, `v1-19` D5).
  *
- * **Deux types pour deux métiers, et les confondre coûterait quelque chose.** `ReponsesDeContexte`
- * (`src/types/plan.ts`) est un type de **lecture** : il porte `string | null` parce qu'il décrit ce
- * qui sort de la base, où ces colonnes sont du `text`, et `motsDuContexte` tait poliment une valeur
- * qu'il ne sait pas dire. `ChoixDeContexte` est un type d'**écriture** : il ne peut porter qu'une
+ * **Deux types pour deux métiers, et les confondre coûterait quelque chose.** `ReponsesLuesDuContexte`
+ * est un type de **lecture**, `ChoixDeContexte` un type d'**écriture** : il ne peut porter qu'une
  * valeur que le produit propose, et c'est ce qui rend impossible d'envoyer au RPC une chaîne que le
  * `check` de la table refuserait — en anglais, et neuf étapes trop tard.
+ *
+ * **La deuxième réponse n'est plus l'accès aux transports** (`v1-34`, 02/10/2026) : c'est ce qui passe
+ * près de chez la personne, et le serveur en déduit l'accès.
  *
  * `lireLeContexte` est le seul passage de l'un à l'autre, et il refuse en rendant `null`.
  */
 export type ChoixDeContexte = {
   zone_type: ZoneType | null;
-  tc_access: TcAccess | null;
+  transports_proches: TransportProche[] | null;
   household_vehicles: HouseholdVehicles | null;
   teletravail: Teletravail | null;
 };
@@ -35,7 +50,7 @@ export type ChoixDeContexte = {
  */
 export type ContexteEnregistrable = ChoixDeContexte & {
   zone_type: ZoneType;
-  tc_access: TcAccess;
+  transports_proches: TransportProche[];
   household_vehicles: HouseholdVehicles;
 };
 
@@ -56,11 +71,58 @@ export const CHOIX_DE_ZONE: { value: ZoneType; label: string }[] = [
   { value: 'rural', label: 'Rural' },
 ];
 
-export const CHOIX_DE_TC: { value: TcAccess; label: string }[] = [
-  { value: 'bon', label: 'Bon' },
-  { value: 'limite', label: 'Limité' },
-  { value: 'inexistant', label: 'Inexistant' },
+/**
+ * Ce qui peut passer près de chez soi (`v1-34`), dans l'ordre où l'écran le propose — et dans lequel
+ * la réponse se range (`transportsRanges`). « RER ou Transilien » est déjà le libellé du mode dans le
+ * questionnaire (C4.4) : les mêmes mots aux deux endroits.
+ */
+export const CHOIX_DE_TRANSPORTS: { value: TransportProche; label: string }[] = [
+  { value: 'metro_tram', label: 'Métro ou tram' },
+  { value: 'rer', label: 'RER ou Transilien' },
+  { value: 'train', label: 'Train (TER, Intercités)' },
+  { value: 'bus', label: 'Bus' },
+  { value: 'aucun', label: 'Rien de tout ça' },
 ];
+
+/** La réponse qui exclut les autres. */
+export const AUCUN_TRANSPORT: TransportProche = 'aucun';
+
+const ORDRE_DES_TRANSPORTS = CHOIX_DE_TRANSPORTS.map((c) => c.value);
+
+/**
+ * La réponse rangée dans l'ordre des puces, sans doublon — **la jumelle de `public.transports_ranges`**,
+ * que le déclencheur applique à chaque écriture. Les deux se tiennent : l'écran compare la réponse lue
+ * à la réponse éditée pour savoir s'il y a quelque chose à enregistrer (`contexteAChange`), et le RPC
+ * fait la même comparaison de son côté ; si l'un rangeait autrement, l'écran promettrait une mise à jour
+ * que le serveur jugerait inutile.
+ */
+export function transportsRanges(transports: readonly TransportProche[]): TransportProche[] {
+  return ORDRE_DES_TRANSPORTS.filter((valeur) => transports.includes(valeur));
+}
+
+/**
+ * Ce que devient la réponse quand on touche une puce.
+ *
+ * **« Rien de tout ça » exclut les autres, dans les deux sens** : la toucher retire tout le reste, et
+ * toucher une autre puce la retire. La base refuse aussi `aucun` combiné (`check`), donc l'écran ne doit
+ * jamais pouvoir le produire. **Plus rien de coché rend `null`**, pas un tableau vide : la question est
+ * alors sans réponse, et c'est ce que `manqueDeLEtape` et `contexteEstComplet` doivent voir — la base
+ * refuse le tableau vide.
+ */
+export function basculerTransport(
+  actuels: readonly TransportProche[] | null,
+  valeur: TransportProche
+): TransportProche[] | null {
+  const deja = actuels ?? [];
+  if (valeur === AUCUN_TRANSPORT) {
+    return deja.includes(AUCUN_TRANSPORT) ? null : [AUCUN_TRANSPORT];
+  }
+  const sansAucun = deja.filter((v) => v !== AUCUN_TRANSPORT);
+  const suivants = sansAucun.includes(valeur)
+    ? sansAucun.filter((v) => v !== valeur)
+    : [...sansAucun, valeur];
+  return suivants.length === 0 ? null : transportsRanges(suivants);
+}
 
 export const CHOIX_DE_VEHICULES: { value: HouseholdVehicles; label: string }[] = [
   { value: '0', label: '0' },
@@ -87,22 +149,33 @@ function narrow<T extends string>(valeur: string | null, admissibles: readonly T
  * ajouté une réponse sans passer ici, et alors on préfère reposer la question à envoyer au RPC une
  * chaîne que la table refusera.
  */
-export function lireLeContexte(reponses: ReponsesDeContexte): ChoixDeContexte {
+export function lireLeContexte(reponses: ReponsesLuesDuContexte): ChoixDeContexte {
   return {
     zone_type: narrow(
       reponses.zone_type,
       CHOIX_DE_ZONE.map((c) => c.value)
     ),
-    tc_access: narrow(
-      reponses.tc_access,
-      CHOIX_DE_TC.map((c) => c.value)
-    ),
+    transports_proches: lireLesTransports(reponses.transports_proches),
     household_vehicles: narrow(
       reponses.household_vehicles,
       CHOIX_DE_VEHICULES.map((c) => c.value)
     ),
     teletravail: narrow(reponses.teletravail, VALEURS_TELETRAVAIL),
   };
+}
+
+/**
+ * La réponse aux transports, ramenée à ce que l'écran édite — **entière ou pas du tout** : une seule
+ * valeur inconnue, une réponse vide ou « rien de tout ça » combiné, et la question est à reposer plutôt
+ * qu'à corriger à moitié. Un bilan d'avant la question rend `null`, ce qui est vrai : elle n'a pas de
+ * réponse.
+ */
+function lireLesTransports(lus: string[] | null): TransportProche[] | null {
+  if (lus === null || lus.length === 0) return null;
+  if (!lus.every((v) => (ORDRE_DES_TRANSPORTS as readonly string[]).includes(v))) return null;
+  const ranges = transportsRanges(lus as TransportProche[]);
+  if (ranges.includes(AUCUN_TRANSPORT) && ranges.length > 1) return null;
+  return ranges;
 }
 
 /**
@@ -122,7 +195,12 @@ export function contexteEstComplet(
   choix: ChoixDeContexte,
   teletravailSePose: boolean
 ): choix is ContexteEnregistrable {
-  if (choix.zone_type === null || choix.tc_access === null || choix.household_vehicles === null) {
+  if (
+    choix.zone_type === null ||
+    choix.transports_proches === null ||
+    choix.transports_proches.length === 0 ||
+    choix.household_vehicles === null
+  ) {
     return false;
   }
   return !teletravailSePose || choix.teletravail !== null;
@@ -140,10 +218,16 @@ export function contexteEstComplet(
 export function contexteAChange(avant: ChoixDeContexte, apres: ChoixDeContexte): boolean {
   return (
     avant.zone_type !== apres.zone_type ||
-    avant.tc_access !== apres.tc_access ||
+    memesTransports(avant.transports_proches, apres.transports_proches) === false ||
     avant.household_vehicles !== apres.household_vehicles ||
     avant.teletravail !== apres.teletravail
   );
+}
+
+/** Deux réponses aux transports égales, dans quelque ordre qu'on ait touché les puces. */
+function memesTransports(a: TransportProche[] | null, b: TransportProche[] | null): boolean {
+  if (a === null || b === null) return a === b;
+  return transportsRanges(a).join() === transportsRanges(b).join();
 }
 
 /**
@@ -161,8 +245,8 @@ export function contexteAChange(avant: ChoixDeContexte, apres: ChoixDeContexte):
  * On ne corrige donc pas la phrase pour tout le monde : on la rend vraie pour chacun. Le seuil est
  * `leisure_frequency`, la seule chose dont dépend la branche.
  *
- * **Ce qui n'est volontairement pas dit** : `zone_type` et `tc_access` décident ensemble de
- * `mobility_constrained`, qui n'entre dans aucun total mais décide si la restitution montre la
+ * **Ce qui n'est volontairement pas dit** : `zone_type` et `tc_access` — déduit depuis `v1-34` de ce qui
+ * passe près de chez soi — décident ensemble de `mobility_constrained`, qui n'entre dans aucun total mais décide si la restitution montre la
  * barre de la moyenne française (C3.1). Ce n'est pas « le calcul de ton bilan » au sens où la
  * personne l'entend — son chiffre ne bouge pas —, et l'annoncer obligerait à expliquer un repère
  * qu'on a précisément décidé de taire à ce profil-là.

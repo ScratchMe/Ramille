@@ -93,6 +93,16 @@
 // de cohérence, qui nomme les mêmes valeurs sans les énumérer) n'est pas lue comme une
 // énumération ; et `teletravail`, dont le `check` autorise `NULL` avant d'énumérer, compare les
 // trois valeurs et pas un quatrième état.
+// Puis trois le 02/10/2026 (`v1-34`), quand la question de l'accès a laissé place à une colonne
+// tableau bornée par `<@ ARRAY[…]`, la première que ce contrôle sache lire :
+//   - `CHOIX_DE_TRANSPORTS` perd `'bus'`                 → 1 écart (la base l'accepte, la puce a
+//     disparu) ;
+//   - la forme `<@` retirée de `valeursEnumerees`        → « aucune contrainte n'énumère » sur les
+//     deux miroirs de la colonne : sans elle, `transports_proches` serait hors d'atteinte, comme
+//     `IntentionDay` ;
+//   - `TransportProche` perd `'rer'`                     → 1 écart.
+// Et la contrainte de cohérence de la colonne (`'aucun' = ANY (transports_proches)`, la colonne
+// après `ANY`) reste non lue, ce qui est voulu : le passage reste vert.
 //
 // Usage : node scripts/verifier-miroirs-de-check.mjs [url-postgres]
 // Sans argument, la stack locale, dont le port est lu dans `supabase/config.toml` et jamais écrit
@@ -149,11 +159,13 @@ const MIROIRS = [
     module: 'src/types/contexte.ts',
     colonne: 'assessment_answers.zone_type',
   },
+  // `v1-34` : la question de l'accès est remplacée par ce qui passe près de chez soi. L'accès se
+  // déduit côté serveur et n'a plus de puces ; son union reste déclarée plus bas, la colonne restant.
   {
     genre: 'valeurs',
-    constante: 'CHOIX_DE_TC',
+    constante: 'CHOIX_DE_TRANSPORTS',
     module: 'src/types/contexte.ts',
-    colonne: 'assessment_answers.tc_access',
+    colonne: 'assessment_answers.transports_proches',
   },
   {
     genre: 'valeurs',
@@ -187,6 +199,12 @@ const MIROIRS = [
   // --- Les unions de littéraux : la famille que rien d'autre ne peut voir ---
   { genre: 'type', constante: 'ZoneType', module: 'src/types/bilan.ts', colonne: 'assessment_answers.zone_type' },
   { genre: 'type', constante: 'TcAccess', module: 'src/types/bilan.ts', colonne: 'assessment_answers.tc_access' },
+  {
+    genre: 'type',
+    constante: 'TransportProche',
+    module: 'src/types/bilan.ts',
+    colonne: 'assessment_answers.transports_proches',
+  },
   {
     genre: 'type',
     constante: 'HouseholdVehicles',
@@ -419,13 +437,16 @@ function contraintesParColonne() {
 /**
  * Les valeurs qu'une contrainte énumère pour cette colonne, ou `null` si aucune ne le fait.
  *
- * On ne cherche que la forme `colonne = ANY (ARRAY['a'::text, …])`, celle que Postgres rend pour un
- * `in (…)`. La contrainte de cohérence de `response_kind`, qui compare la colonne à des littéraux
- * un par un, n'est donc pas lue comme une énumération — ce qui est voulu : elle ne dit pas le
- * domaine, elle dit un accord entre deux colonnes.
+ * On ne cherche que deux formes : `colonne = ANY (ARRAY['a'::text, …])`, celle que Postgres rend pour
+ * un `in (…)`, et — depuis `v1-34`, pour une colonne qui est un tableau — `colonne <@ ARRAY[…]`, celle
+ * de `assessment_answers.transports_proches` (chaque réponse cochée appartient à la liste). La
+ * contrainte de cohérence de `response_kind`, qui compare la colonne à des littéraux un par un, n'est
+ * donc pas lue comme une énumération — ce qui est voulu : elle ne dit pas le domaine, elle dit un
+ * accord entre deux colonnes. Celle de `transports_proches` non plus (`'aucun' = ANY (colonne)`, la
+ * colonne après `ANY`).
  */
 function valeursEnumerees(definitions, colonne) {
-  const motif = new RegExp(`\\b${colonne}\\b\\s*=\\s*ANY\\s*\\(ARRAY\\[([^\\]]*)\\]`);
+  const motif = new RegExp(`\\b${colonne}\\b\\s*(?:=\\s*ANY\\s*\\(|<@\\s*)ARRAY\\[([^\\]]*)\\]`);
   const enumerantes = definitions
     .map((definition) => definition.match(motif))
     .filter((trouve) => trouve !== null);

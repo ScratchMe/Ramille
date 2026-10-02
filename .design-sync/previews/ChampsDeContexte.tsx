@@ -4,7 +4,7 @@ import { ChampsDeContexte } from 'ramille-design-system';
 type Choix = React.ComponentProps<typeof ChampsDeContexte>['choix'];
 type Trajet = React.ComponentProps<typeof ChampsDeContexte>['trajet'];
 
-const VIERGE: Choix = { zone_type: null, tc_access: null, household_vehicles: null, teletravail: null };
+const VIERGE: Choix = { zone_type: null, transports_proches: null, household_vehicles: null, teletravail: null };
 
 // L'écran hôte espace les questions de 24 : le composant rend un fragment.
 const Hote = ({ depart, trajet }: { depart: Choix; trajet: Trajet }) => {
@@ -27,7 +27,7 @@ export const QuatreQuestions = () => (
 /** Ouvert pour corriger, comme sur l'écran `/contexte` : les réponses déjà données sont cochées. */
 export const Prerempli = () => (
   <Hote
-    depart={{ zone_type: 'periurbain', tc_access: 'limite', household_vehicles: '1', teletravail: 'un_jour' }}
+    depart={{ zone_type: 'periurbain', transports_proches: ['train', 'bus'], household_vehicles: '1', teletravail: 'un_jour' }}
     trajet={{ commute_has_regular_trip: true, commute_days_per_week: 4 }}
   />
 );

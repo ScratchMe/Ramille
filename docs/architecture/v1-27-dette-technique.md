@@ -1264,7 +1264,7 @@ la liste de trois, et surtout la parade qu'elle prescrivait — `supabase db res
 locale. Le réflexe de faire porter à l'appelant une manipulation que l'assertion aurait dû éviter
 est le vrai enseignement de cette ligne.
 
-### 12.16 Le RER n'est pas proposable comme action, faute de savoir où l'on habite (21/09/2026)
+### 12.16 Le RER n'est pas proposable comme action, faute de savoir où l'on habite (21/09/2026) — fermé le 03/10/2026
 
 **Relevé en livrant C4.4, le 21/09/2026.** Le chantier ferme la moitié coûteuse du défaut du RER :
 le bilan d'un usager du RER passe de 249,2 à 88,0 kg/an sur le profil de référence, soit le facteur
@@ -1290,6 +1290,12 @@ l'Île-de-France. Elle n'existe nulle part dans le questionnaire aujourd'hui, et
 seul gabarit serait cher — c'est une décision de produit, pas une correction. Le jour où le
 questionnaire demande quelque chose de ce genre pour une autre raison, ce gabarit-là est le premier
 à en profiter.
+
+**Réouverture proposée le 02/10/2026** : [`v1-34`](v1-34-ce-qui-passe-pres-de-chez-soi.md) remplace
+la question de l'accès par « Près de chez toi, qu'est-ce que tu pourrais prendre ? », dont la réponse
+« RER ou Transilien » est celle qui distingue l'Île-de-France. **Décisions rendues le même soir, et
+fermé le 03/10/2026** : le RER coché ouvre « Passer deux trajets sur cinq en RER », chiffrée au
+facteur du RER, à la place de l'action du train (`v1-34` §9).
 
 ### 12.17 Une garde du chemin du compte a rougi sans cause trouvée (21/09/2026)
 

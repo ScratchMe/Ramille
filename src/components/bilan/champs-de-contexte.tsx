@@ -5,9 +5,16 @@ import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
-import { REPONSES_TELETRAVAIL, teletravailSePose, type BilanAnswers, type ChampDuBilan } from '@/types/bilan';
 import {
-  CHOIX_DE_TC,
+  REPONSES_TELETRAVAIL,
+  teletravailSePose,
+  type BilanAnswers,
+  type ChampDuBilan,
+  type TransportProche,
+} from '@/types/bilan';
+import {
+  basculerTransport,
+  CHOIX_DE_TRANSPORTS,
   CHOIX_DE_VEHICULES,
   CHOIX_DE_ZONE,
   type ChoixDeContexte,
@@ -16,7 +23,8 @@ import { optionCible } from '@/types/demande';
 
 /**
  * Les trois questions qui se posent à tout le monde, écrites **une fois** pour leurs deux usages :
- * le texte au-dessus de la série et le nom de son `radiogroup` (`GroupeDeChoix`). Sans le nom, une
+ * le texte au-dessus de la série et le nom de son groupe (`GroupeDeChoix` : un `radiogroup`, ou un
+ * `group` pour la série à cocher depuis `v1-34`). Sans le nom, une
  * puce « 1 » s'annonçait seule, sans rien qui dise qu'elle compte des véhicules — et `/contexte`, qui
  * reprend ces séries, n'a pas l'étape du questionnaire autour pour le rappeler.
  *
@@ -25,25 +33,33 @@ import { optionCible } from '@/types/demande';
  * classer là où toutes les autres étapes posent une question — la spécification écrivait déjà « Dans
  * quel type de zone vis-tu ? ». Les valeurs et les libellés des puces ne bougent pas : ni migration ni
  * miroir. Le nom de chaque groupe suit, puisqu'il **est** la question.
+ *
+ * **La deuxième n'est plus un jugement mais un fait** (`v1-34`, décidé le 02/10/2026). « Comment sont
+ * les transports en commun près de chez toi ? — Bon, Limité, Inexistant » ne disait pas quel
+ * transport passe : le plan décidait du métro et du tram sur la zone, et ne proposait jamais le RER.
+ * La question qui la remplace se répond en cochant, et l'accès s'en déduit côté serveur.
  */
 const QUESTION_ZONE = 'Dans quel type de zone vis-tu ?';
-const QUESTION_TC = 'Comment sont les transports en commun près de chez toi ?';
+const QUESTION_TRANSPORTS = 'Près de chez toi, qu’est-ce que tu pourrais prendre ?';
 const QUESTION_VEHICULES = 'Combien de véhicules motorisés dans ton foyer ?';
 
 /**
- * **La ligne d'aide sous la zone** (D4) : « Périurbain » est un mot d'urbaniste, et cette réponse décide
- * des actions du plan — le métro et le tram ne sont proposés qu'en zone urbaine dense (`PLAN.md` §1) —
- * et, avec un accès limité aux transports, de la moyenne montrée à la restitution (`mobility_constrained`
- * en zone rurale). **Alignée sur ce que le plan fait de la réponse** (décidé le 02/10/2026, `v1-33` §9) :
- * le texte de l'audit laissait sans place la ville moyenne desservie par un tram, qui choisissait
- * « Périurbain » et perdait le métro et le tram, et faisait proposer un métro à une proche banlieue qui
- * n'en a pas. « Là où passent métro ou tram » le dit. Ce qu'on accepte : une banlieue sans métro ni tram
- * qui choisit « Périurbain » perd aussi « les transports en commun pour deux sorties sur cinq », que la
- * zone borne de même. La vraie correction serait une question à part sur le métro et le tram — une
- * migration, pas une phrase.
+ * **La fréquence se dit dans l'aide** (D2 de `v1-34`) : un village desservi par deux TER par jour a
+ * une gare, et ne peut pas faire deux trajets sur cinq en train. Le produit ne mesure pas la desserte ;
+ * c'est la personne qui juge, comme elle jugeait entre « bon » et « limité ».
+ */
+const AIDE_TRANSPORTS = 'Coche tout ce qui passe assez souvent pour t’en servir.';
+
+/**
+ * **La ligne d'aide sous la zone** (D4 de `v1-33`) : « Périurbain » est un mot d'urbaniste. Elle a porté
+ * le 02/10/2026 « là où passent métro ou tram », parce que la zone décidait alors du métro et du tram
+ * (`v1-33` §9). **Elle redevient une définition le même soir** (D6 de `v1-34`) : ce qui passe près de
+ * chez soi a sa propre question, la zone ne décide plus d'aucune action, et garder la clause demanderait
+ * de se classer selon le métro alors que le métro ne se décide plus là. La zone garde sa part dans la
+ * moyenne montrée à la restitution (`mobility_constrained` en zone rurale).
  */
 const AIDE_ZONE =
-  'Urbain dense : une grande ville et sa proche banlieue, là où passent métro ou tram. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.';
+  'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.';
 
 /**
  * Les quatre questions B4, rendues **une seule fois pour deux écrans** (C6.4, `v1-19` D5).
@@ -84,12 +100,13 @@ export function ChampsDeContexte({
         valeur={choix.zone_type}
         onChange={(value) => update({ zone_type: value })}
       />
-      <SerieDuContexte
-        champ="tc_access"
-        question={QUESTION_TC}
-        options={CHOIX_DE_TC}
-        valeur={choix.tc_access}
-        onChange={(value) => update({ tc_access: value })}
+      <SerieCumulableDuContexte
+        champ="transports_proches"
+        question={QUESTION_TRANSPORTS}
+        aide={AIDE_TRANSPORTS}
+        options={CHOIX_DE_TRANSPORTS}
+        valeurs={choix.transports_proches}
+        onToggle={(value) => update({ transports_proches: basculerTransport(choix.transports_proches, value) })}
       />
       <SerieDuContexte
         champ="household_vehicles"
@@ -127,7 +144,8 @@ export function ChampsDeContexte({
 /**
  * Une série du contexte : son intitulé, ses puces, et l'ancre où mène « Il manque encore … »
  * (`v1-31` §2.5) — l'intitulé se marque, le focus va à la puce cochée ou à la première. Écrite une fois
- * pour les quatre, qui ne différaient que par leurs réponses. **Les deux écrans la lisent** : dans le
+ * pour les séries à choix unique, qui ne diffèrent que par leurs réponses — trois depuis `v1-34`, la série
+ * à cocher ayant la sienne (`SerieCumulableDuContexte`). **Les deux écrans la lisent** : dans le
  * questionnaire par `StepShell`, et dans `/contexte` depuis le 01/10/2026 (audit P-13), qui fournit les
  * ancres lui-même — son « Enregistrer », en attente sur un contexte incomplet, mène à ce qui manque au
  * lieu de rester désactivé sans dire pourquoi.
@@ -184,7 +202,59 @@ function SerieDuContexte<T extends string>({
   );
 }
 
+/**
+ * La série qui se coche (`v1-34`) : des `checkbox` dans un groupe nommé, jamais des `radio` — qui
+ * annonceraient qu'en cocher une décoche les autres —, comme les jours d'une intention. **Le premier
+ * choix multiple du questionnaire**, et le premier avec une réponse qui exclut les autres : la règle
+ * vit dans `basculerTransport`, pas ici. Les puces gardent leur largeur naturelle et passent à la
+ * ligne, comme celles des sorties et des voyages : « Train (TER, Intercités) » ne tient pas dans un
+ * cinquième de rangée.
+ */
+function SerieCumulableDuContexte({
+  champ,
+  question,
+  aide,
+  options,
+  valeurs,
+  onToggle,
+}: {
+  champ: ChampDuBilan;
+  question: string;
+  aide: string;
+  options: readonly { value: TransportProche; label: string }[];
+  valeurs: readonly TransportProche[] | null;
+  onToggle: (valeur: TransportProche) => void;
+}) {
+  const { bloc, cible, marque } = useAncreDuChamp(champ);
+  const cochees = options.map((option) => valeurs?.includes(option.value) ?? false);
+  const iCible = optionCible(cochees);
+  return (
+    <View ref={bloc} style={styles.field}>
+      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>
+        {question}
+      </IntituleDuChamp>
+      <ThemedText type="small" themeColor="textSecondary">
+        {aide}
+      </ThemedText>
+      <GroupeDeChoix question={question} cumulable style={styles.rangeeQuiPasseALaLigne}>
+        {options.map((option, i) => (
+          <Chip
+            key={option.value}
+            ref={i === iCible ? cible : undefined}
+            label={option.label}
+            role="checkbox"
+            selected={cochees[i]}
+            onPress={() => onToggle(option.value)}
+            radius={Radius.chip}
+          />
+        ))}
+      </GroupeDeChoix>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   field: { gap: Spacing.two + 2 },
   row: { flexDirection: 'row', gap: Spacing.two },
+  rangeeQuiPasseALaLigne: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 });

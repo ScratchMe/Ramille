@@ -96,17 +96,17 @@ values ('c2210000-0000-0000-0000-000000000002', 'c2200000-0000-0000-0000-0000000
 
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
   commute_distance_km, commute_mode, commute_car_engine, leisure_frequency, leisure_mode,
-  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, household_vehicles)
+  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, transports_proches, household_vehicles)
 select a, true, 5, 20, 'voiture', 'thermique', 'weekly', 'voiture', '15_30', 'thermique',
-       'urbain_dense', 'bon', '1'
+       'urbain_dense', 'bon', array['metro_tram'], '1'
 from unnest(array['c2210000-0000-0000-0000-000000000001'::uuid, 'c2210000-0000-0000-0000-000000000011',
                   'c2210000-0000-0000-0000-000000000021', 'c2210000-0000-0000-0000-000000000031']) a;
 
 -- Le second bilan d'A : plus aucun trajet régulier, donc plus aucun gabarit `commute` dans le plan.
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip,
-  leisure_frequency, leisure_mode, leisure_distance_bracket, zone_type, tc_access, household_vehicles)
+  leisure_frequency, leisure_mode, leisure_distance_bracket, zone_type, tc_access, transports_proches, household_vehicles)
 values ('c2210000-0000-0000-0000-000000000002', false, 'weekly', 'bus', '15_30',
-        'urbain_dense', 'bon', '1');
+        'urbain_dense', 'bon', array['metro_tram'], '1');
 
 select public.recompute_assessment_results('c2210000-0000-0000-0000-000000000001');
 select public.recompute_assessment_results('c2210000-0000-0000-0000-000000000011');
@@ -419,9 +419,9 @@ alter table public.assessments disable trigger stamp_assessment_submitted_at;
 insert into public.assessments (id, user_id, status, submitted_at)
 values ('c2210000-0000-0000-0000-000000000099', 'c2200000-0000-0000-0000-000000000002', 'completed', null);
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip,
-  leisure_frequency, leisure_mode, leisure_distance_bracket, zone_type, tc_access, household_vehicles)
+  leisure_frequency, leisure_mode, leisure_distance_bracket, zone_type, tc_access, transports_proches, household_vehicles)
 values ('c2210000-0000-0000-0000-000000000099', false, 'weekly', 'bus', '15_30',
-        'urbain_dense', 'bon', '1');
+        'urbain_dense', 'bon', array['metro_tram'], '1');
 
 alter table public.assessments enable trigger stamp_assessment_submitted_at;
 
@@ -454,9 +454,9 @@ insert into public.assessments (id, user_id, status)
 values ('c2210000-0000-0000-0000-000000000041', 'c2200000-0000-0000-0000-000000000005', 'completed');
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
   commute_distance_km, commute_mode, commute_car_engine, leisure_frequency, leisure_mode,
-  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, household_vehicles)
+  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, transports_proches, household_vehicles)
 values ('c2210000-0000-0000-0000-000000000041', true, 5, 20, 'voiture', 'thermique', 'weekly', 'voiture',
-        '15_30', 'thermique', 'urbain_dense', 'bon', '1');
+        '15_30', 'thermique', 'urbain_dense', 'bon', array['metro_tram'], '1');
 select public.recompute_assessment_results('c2210000-0000-0000-0000-000000000041');
 
 select set_config('test.cycle_e1',

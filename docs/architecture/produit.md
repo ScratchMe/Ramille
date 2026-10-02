@@ -56,6 +56,10 @@ réécrire à chaque livraison plutôt qu'à compléter :
   vraiment** : les boucles partent du dernier bilan valide, la carte d'attente et ses voisines ne
   promettent rien quand aucune boucle ne tourne, et la question du mois suit l'action engagée
   (`v1-27` §12.21 à §12.25).
+- **ce qui passe près de chez soi, décidé le 02/10/2026 et livré le 03/10/2026**
+  ([`v1-34`](v1-34-ce-qui-passe-pres-de-chez-soi.md)) : une question factuelle remplace l'accès aux
+  transports, la zone ne décide plus du métro et du tram, et le RER devient proposable — avant le
+  premier build de production.
 
 **Ce qui reste ouvert** : le moment anniversaire (C6.5), conçu — son canvas est dans
 [`docs/design/v1-20-moment-anniversaire/`](../design/v1-20-moment-anniversaire/) — et pas encore

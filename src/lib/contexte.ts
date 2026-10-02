@@ -55,7 +55,7 @@ export async function lireLeContexteCourant(): Promise<LectureDuContexte> {
   const { data: reponses, error: erreurReponses, status: statutDesReponses } = await supabase
     .from('assessment_answers')
     .select(
-      'zone_type, tc_access, household_vehicles, teletravail, leisure_frequency, commute_has_regular_trip, commute_days_per_week'
+      'zone_type, transports_proches, household_vehicles, teletravail, leisure_frequency, commute_has_regular_trip, commute_days_per_week'
     )
     .eq('assessment_id', bilan.id)
     .maybeSingle();
@@ -94,7 +94,8 @@ export async function enregistrerLeContexte(
 ): Promise<EcritureDuContexte> {
   const { error, status } = await supabase.rpc('mettre_a_jour_le_contexte', {
     p_zone_type: choix.zone_type,
-    p_tc_access: choix.tc_access,
+    // L'accès aux transports ne s'envoie plus : le serveur le déduit de la réponse (`v1-34`).
+    p_transports_proches: choix.transports_proches,
     p_household_vehicles: choix.household_vehicles,
     p_teletravail: choix.teletravail,
   });

@@ -138,7 +138,7 @@ const COMPLET: BilanAnswers = {
   coach_long_trips_per_year: 0,
   car_long_trips_per_year: 0,
   zone_type: 'rural',
-  tc_access: 'bon',
+  transports_proches: ['bus'],
   household_vehicles: '1',
   teletravail: 'aucun',
 };

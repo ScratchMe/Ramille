@@ -127,14 +127,14 @@ where id in ('c4710000-0000-0000-0000-0000000000a1', 'c4710000-0000-0000-0000-00
              'c4710000-0000-0000-0000-0000000000c1');
 
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
-  commute_distance_km, commute_mode, leisure_frequency, zone_type, tc_access, household_vehicles)
-values ('c4710000-0000-0000-0000-0000000000a1', true, 1, 2, 'marche', 'rarely', 'urbain_dense', 'bon', '0');
+  commute_distance_km, commute_mode, leisure_frequency, zone_type, tc_access, transports_proches, household_vehicles)
+values ('c4710000-0000-0000-0000-0000000000a1', true, 1, 2, 'marche', 'rarely', 'urbain_dense', 'bon', array['metro_tram'], '0');
 
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
   commute_distance_km, commute_mode, commute_car_engine, leisure_frequency, leisure_mode,
-  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, household_vehicles, teletravail)
+  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, transports_proches, household_vehicles, teletravail)
 select b, true, 5, 20, 'voiture', 'thermique', 'weekly', 'voiture', '15_30', 'thermique',
-       'urbain_dense', 'bon', '1', 'deux_ou_plus'
+       'urbain_dense', 'bon', array['metro_tram'], '1', 'deux_ou_plus'
 from unnest(array[
   'c4710000-0000-0000-0000-0000000000b1'::uuid, 'c4710000-0000-0000-0000-0000000000c1',
   'c4710000-0000-0000-0000-0000000000d1', 'c4710000-0000-0000-0000-0000000000e1'
@@ -155,14 +155,14 @@ insert into public.assessments (id, user_id, status) values
 
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
   commute_distance_km, commute_mode, commute_car_engine, leisure_frequency, leisure_mode,
-  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, household_vehicles, teletravail)
+  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, transports_proches, household_vehicles, teletravail)
 values
   ('c4710000-0000-0000-0000-0000000000a2', true, 5, 20, 'voiture', 'thermique', 'weekly', 'voiture',
-   '15_30', 'thermique', 'urbain_dense', 'bon', '1', 'deux_ou_plus'),
+   '15_30', 'thermique', 'urbain_dense', 'bon', array['metro_tram'], '1', 'deux_ou_plus'),
   ('c4710000-0000-0000-0000-0000000000b2', true, 5, 25, 'voiture', 'thermique', 'weekly', 'voiture',
-   '15_30', 'thermique', 'urbain_dense', 'bon', '1', 'deux_ou_plus'),
+   '15_30', 'thermique', 'urbain_dense', 'bon', array['metro_tram'], '1', 'deux_ou_plus'),
   ('c4710000-0000-0000-0000-0000000000c2', true, 5, 25, 'voiture', 'thermique', 'weekly', 'voiture',
-   '15_30', 'thermique', 'urbain_dense', 'bon', '1', 'deux_ou_plus');
+   '15_30', 'thermique', 'urbain_dense', 'bon', array['metro_tram'], '1', 'deux_ou_plus');
 
 update public.plan_cycles set created_at = now() - interval '1 hour'
 where user_id in ('c4700000-0000-0000-0000-000000000001', 'c4700000-0000-0000-0000-000000000002',

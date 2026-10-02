@@ -60,7 +60,8 @@ import { phraseDeLaLectureEnEchec, type GenreDEchec } from '@/types/lecture-en-e
  * résiduel des sorties rares) puis reconstruit le plan de la période courante. `submitted_at` ne
  * bouge pas, aucune ligne n'est ajoutée à `assessments`. Sur un profil réel, passer en « rural,
  * pas de transports en commun » a fait tomber le plan de onze à huit actions — les trois écartées
- * étant celles qui supposaient un métro.
+ * étant celles qui supposaient un métro. (Depuis `v1-34`, le 03/10/2026, c'est la réponse « Rien de
+ * tout ça » qui les écarte, et la zone n'en écarte plus aucune.)
  *
  * **Et il peut coûter l'action engagée.** Si le gabarit suivi n'est plus proposé, le serveur
  * l'archive en `contexte`, et l'encart orphelin du plan l'annonce ensuite avec cette raison — d'où
@@ -328,8 +329,9 @@ export default function Contexte() {
               **repose** l'engagement sur le gabarit s'il est encore proposé, donc annoncer une
               perte certaine serait faux dans le cas courant. **Et sa fin ne promet pas de choix**
               (décision du 27/09/2026, alignée sur `phraseDeLEngagementRecalcule`) : « tu en
-              choisiras une autre » était faux quand le contexte vide le plan — passer à « rural » ou
-              à « pas de transports en commun » peut ne laisser aucune action. */}
+              choisiras une autre » était faux quand le contexte vide le plan — répondre « Rien de
+              tout ça » retire toutes les actions de transport en commun (`v1-34`), et peut ne
+              laisser aucune action. */}
           <ThemedText type="small" themeColor="textTertiary">
             Enregistrer met ton plan à jour ; ton bilan n’est pas refait. Si ton nouveau plan ne
             propose plus l’action que tu suis, elle ne sera plus engagée.

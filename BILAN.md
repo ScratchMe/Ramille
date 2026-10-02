@@ -141,6 +141,28 @@ pas défaire :
   autocar — ce n'est pas son véhicule, donc il n'y a rien à lui demander de plus. Son chiffre
   surprend et c'est le sujet — 0,03756, soit **plus qu'un TER** et douze fois un TGV.
 
+**Ce qui passe près de chez soi remplace l'accès aux transports depuis le 02/10/2026** (`v1-34`,
+`ce_qui_passe_pres_de_chez_soi`). `assessment_answers.transports_proches` est un `text[]` —
+`metro_tram`, `rer`, `train`, `bus`, ou `aucun` seul —, et c'est le **premier choix multiple** du
+questionnaire. Quatre choses à savoir avant d'y toucher :
+
+- **`tc_access` reste une colonne, mais plus personne ne l'écrit** : le déclencheur
+  `assessment_answers_deduit_l_acces` le déduit de la réponse à chaque écriture, et range la réponse
+  dans l'ordre des puces, sans doublon (`transports_ranges`, jumelle de `transportsRanges` dans
+  `src/types/contexte.ts`). Le questionnaire l'envoie nul, le préremplissage d'un nouveau bilan ne le
+  recopie pas, et la moyenne française comme la phrase du plan le lisent comme avant ;
+- **la règle de « Rien de tout ça » vit à un seul endroit côté écran** (`basculerTransport`) : elle
+  exclut les autres dans les deux sens, et plus rien de coché rend `null` — la base refuse le tableau
+  vide comme « aucun » combiné ;
+- **c'est le premier miroir d'une colonne tableau que la CI sait lire** : `CHOIX_DE_TRANSPORTS` et
+  `TransportProche` sont comparés au `check` `transports_proches <@ ARRAY[…]`
+  (`scripts/verifier-miroirs-de-check.mjs`, `TESTING-GARDES.md` §2.7) ;
+- **les recopies du kit suivent à la main** : `docs/design/design-system/components/bilan/ChampsDeContexte.*`,
+  `ContextStep.d.ts`, `bilan.card.js` et `forms/IntituleDuChamp.d.ts`, ainsi que les deux aperçus de
+  `.design-sync/previews/`. **Leurs hauteurs (`.design-sync/config.json`) sont à remesurer** à la
+  prochaine synchronisation : la série qui se coche passe sur deux rangées et porte une ligne d'aide, et
+  une hauteur ne se devine pas (`.design-sync/NOTES.md`).
+
 **Deux réponses de ce questionnaire sont gouvernées ailleurs** : ajouter une réponse de voyage
 impose sa ligne dans `public.a_des_voyages_declares`, sans quoi le voyage ne déclenche jamais la
 boucle mensuelle (`BOUCLE.md` §1 — c'est le défaut de l'autocar, en C4.4). Le balayage de

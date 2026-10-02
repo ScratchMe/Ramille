@@ -27,6 +27,14 @@
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **en une journée** — mais le bloc 03
 > attend au moins une heure entre son début et sa fin.
+>
+> **Depuis le 03/10/2026, la question de l'accès n'existe plus**
+> ([`v1-34`](../architecture/v1-34-ce-qui-passe-pres-de-chez-soi.md)) : « Comment sont les transports en
+> commun près de chez toi ? » a laissé place à « Près de chez toi, qu'est-ce que tu pourrais prendre ? »,
+> à cocher. Cette feuille est jouée, donc ses lignes et ses tableaux de profil restent tels qu'ils ont
+> été joués. Pour en transposer un : « Bon » se coche **Métro ou tram**, « Limité » **Bus** ou **Train
+> (TER, Intercités)**, « Inexistant » **Rien de tout ça**. Et la zone ne décide plus d'aucune action :
+> le métro ou le tram ne revient plus avec « Urbain dense » seul.
 
 ## Pourquoi cette séance, et ce qu'elle ne fait pas
 

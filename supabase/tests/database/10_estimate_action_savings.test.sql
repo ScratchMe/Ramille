@@ -12,7 +12,8 @@
 --      branche **voyages**, qui n'était éprouvée nulle part alors qu'elle porte les gains les plus
 --      lourds du produit. La règle des deux nouveaux filtres est écrite une fois pour toutes :
 --      *une condition qu'on ne peut pas évaluer n'est pas remplie*, donc sans réponse on ne
---      propose pas.
+--      propose pas. Depuis `v1-34` (02/10/2026), la zone ne décide plus d'aucune action : c'est ce qui
+--      passe près de chez la personne (`transports_proches`), éprouvé par le fichier `45`.
 --
 -- Les fixtures passent par `recompute_assessment_results` plutôt que par un insert direct
 -- dans `assessment_results` : depuis l'étape 6a l'estimateur lit l'instantané par segment, et
@@ -44,10 +45,10 @@ insert into public.assessments (id, user_id, status, submitted_at) values
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km,
   commute_mode, commute_car_engine, commute_is_carpool, commute_second_mode_used,
-  leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
+  leisure_frequency, zone_type, tc_access, transports_proches, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111111', true, 5, 10, 'voiture', 'thermique', false, false,
-  'rarely', 'urbain_dense', 'bon', '1', 'deux_ou_plus'
+  'rarely', 'urbain_dense', 'bon', array['metro_tram', 'train', 'bus'], '1', 'deux_ou_plus'
 );
 
 -- B : même trajet, même voiture, mais rural sans transports en commun. Seul le contexte B4
@@ -55,33 +56,34 @@ insert into public.assessment_answers (
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km,
   commute_mode, commute_car_engine, commute_is_carpool, commute_second_mode_used,
-  leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
+  leisure_frequency, zone_type, tc_access, transports_proches, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111112', true, 5, 10, 'voiture', 'thermique', false, false,
-  'rarely', 'rural', 'inexistant', '1', 'deux_ou_plus'
+  'rarely', 'rural', 'inexistant', array['aucun'], '1', 'deux_ou_plus'
 );
 
 -- C : 60 km de trajet, urbain dense. Le vélo n'est pas une option, la desserte oui.
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km,
   commute_mode, commute_car_engine, commute_is_carpool, commute_second_mode_used,
-  leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
+  leisure_frequency, zone_type, tc_access, transports_proches, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111113', true, 5, 60, 'voiture', 'thermique', false, false,
-  'rarely', 'urbain_dense', 'bon', '1', 'deux_ou_plus'
+  'rarely', 'urbain_dense', 'bon', array['metro_tram', 'bus'], '1', 'deux_ou_plus'
 );
 
 -- D : le profil du constat A8-5 — rural à desserte **limitée**, c'est-à-dire ni « bon » ni
 -- « inexistant ». Le filtre ne lisait que la seconde valeur, donc « Passer deux trajets sur cinq en
 -- métro ou en tram » arrivait en tête de son plan. Il répond « non » au télétravail : c'est le
--- gros rouleur sans alternative que le libellé seul laissait en tête.
+-- gros rouleur sans alternative que le libellé seul laissait en tête. Depuis `v1-34`, il dit ce qui
+-- passe près de chez lui — le bus et le train —, et c'est cette réponse qui écarte le métro.
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km,
   commute_mode, commute_car_engine, commute_is_carpool, commute_second_mode_used,
-  leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
+  leisure_frequency, zone_type, tc_access, transports_proches, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111114', true, 5, 10, 'voiture', 'thermique', false, false,
-  'rarely', 'rural', 'limite', '1', 'aucun'
+  'rarely', 'rural', 'limite', array['bus', 'train'], '1', 'aucun'
 );
 
 -- E : le profil voyages, que rien n'éprouvait — alors que c'est la branche qui porte les gains les
@@ -91,10 +93,10 @@ insert into public.assessment_answers (
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, leisure_frequency,
   flights_total_per_year, flights_short_per_year, car_long_trips_per_year, car_long_trips_engine,
-  car_long_trips_occupancy, zone_type, tc_access, household_vehicles
+  car_long_trips_occupancy, zone_type, tc_access, transports_proches, household_vehicles
 ) values (
   'b1111111-1111-1111-1111-111111111115', false, 'rarely', 3, 2, 2, 'thermique',
-  3, 'periurbain', 'bon', '1'
+  3, 'periurbain', 'limite', array['bus', 'train'], '1'
 );
 
 -- F : deux jours de trajet par semaine, et un « oui » franc au télétravail. C'est le profil que la
@@ -103,10 +105,10 @@ insert into public.assessment_answers (
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km,
   commute_mode, commute_car_engine, commute_is_carpool, commute_second_mode_used,
-  leisure_frequency, zone_type, tc_access, household_vehicles, teletravail
+  leisure_frequency, zone_type, tc_access, transports_proches, household_vehicles, teletravail
 ) values (
   'b1111111-1111-1111-1111-111111111116', true, 2, 30, 'voiture', 'thermique', false, false,
-  'rarely', 'periurbain', 'limite', '1', 'deux_ou_plus'
+  'rarely', 'periurbain', 'limite', array['bus'], '1', 'deux_ou_plus'
 );
 
 -- G : le jumeau de E, au seul détail qu'il part **seul**. Il n'est pas un cas de plus mais ce qui
@@ -115,10 +117,10 @@ insert into public.assessment_answers (
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, leisure_frequency,
   flights_total_per_year, flights_short_per_year, car_long_trips_per_year, car_long_trips_engine,
-  car_long_trips_occupancy, zone_type, tc_access, household_vehicles
+  car_long_trips_occupancy, zone_type, tc_access, transports_proches, household_vehicles
 ) values (
   'b1111111-1111-1111-1111-111111111117', false, 'rarely', 3, 2, 2, 'thermique',
-  1, 'periurbain', 'bon', '1'
+  1, 'periurbain', 'limite', array['bus', 'train'], '1'
 );
 
 select public.recompute_assessment_results('b1111111-1111-1111-1111-111111111111');
@@ -178,10 +180,12 @@ select ok(
   'trajet domicile-travail de 10 km -> le vélo reste proposé, la garde ne bloque pas tout'
 );
 
--- ── 4. C3.8 §1 : la zone, là où la desserte ne suffisait pas ────────────────────────────
+-- ── 4. C3.8 §1, puis `v1-34` : ce qui passe, là où la desserte ne suffisait pas ───────────
 
 -- Le constat A8-5 en une assertion : ce profil a répondu « limité », pas « inexistant », donc
--- `requires_tc` le laissait passer — et le métro arrivait en tête de son plan.
+-- `requires_tc` le laissait passer — et le métro arrivait en tête de son plan. C3.8 l'écartait par
+-- la zone ; `v1-34` l'écarte parce qu'il n'a pas coché le métro ni le tram. Les règles fines de la
+-- réponse — le tram d'une ville moyenne, le RER, l'exclusion — sont éprouvées par le fichier `45`.
 select is_empty(
   $$ select action_text from public.estimate_action_savings('b1111111-1111-1111-1111-111111111114')
      where action_text ilike '%métro%' $$,
@@ -189,13 +193,12 @@ select is_empty(
 );
 
 -- **Le filtre retire l'impossible, il n'appauvrit pas le plan**, et c'est la moitié qu'il est le
--- plus facile de casser en « corrigeant » : un TER dessert des communes rurales, donc le train
--- garde son seul `requires_tc`. Lui coller la même zone retirerait à ce profil la seule
+-- plus facile de casser en « corrigeant » : un TER dessert des communes rurales, donc le train ne
+-- dépend que de la réponse « Train ». Lui coller une zone retirerait à ce profil la seule
 -- alternative qui lui reste.
 --
--- C4.4 a retiré « ou en RER » du libellé, et c'est le même raisonnement pris par l'autre bout :
--- le gain est chiffré au tarif du TER, le RER n'est pas ciblable sans savoir où la personne
--- habite au sens du réseau — donc on ne promet que ce qu'on chiffre.
+-- C4.4 avait retiré « ou en RER » du libellé : le gain est chiffré au tarif du TER. Depuis `v1-34`,
+-- le RER a son propre gabarit, chiffré au sien, quand la personne le coche.
 select ok(
   exists (
     select 1 from public.estimate_action_savings('b1111111-1111-1111-1111-111111111114')

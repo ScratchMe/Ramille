@@ -27,6 +27,10 @@
 -- `authenticated` avec le jeton de S, la RLS owner-scoped rend les lignes de C invisibles, donc un
 -- relevé « avant » y vaudrait zéro et toute comparaison « après » serait vraie par accident. Chaque
 -- relevé se fait donc sous `postgres`, et seul l'appel du RPC se fait sous le rôle de la personne.
+--
+-- **Depuis `v1-34` (02/10/2026), le RPC reçoit ce qui passe près de chez soi** à la place de l'accès,
+-- qui s'en déduit par un déclencheur : `tc_access` décide toujours de `mobility_constrained`, mais il
+-- n'est plus écrit par personne. Les règles de la réponse elle-même sont au fichier `45`.
 begin;
 create extension if not exists pgtap with schema extensions;
 
@@ -36,7 +40,7 @@ select plan(18);
 
 select ok(
   has_function_privilege('authenticated',
-    'public.mettre_a_jour_le_contexte(text,text,text,text)', 'execute'),
+    'public.mettre_a_jour_le_contexte(text,text[],text,text)', 'execute'),
   'mettre_a_jour_le_contexte : appelable par une session'
 );
 
@@ -44,7 +48,7 @@ select ok(
 -- explicite est ce qui rend la chose vraie sans dépendre de ce raisonnement.
 select ok(
   not has_function_privilege('anon',
-    'public.mettre_a_jour_le_contexte(text,text,text,text)', 'execute'),
+    'public.mettre_a_jour_le_contexte(text,text[],text,text)', 'execute'),
   'mettre_a_jour_le_contexte : révoquée de anon'
 );
 
@@ -85,17 +89,17 @@ values ('c6410000-0000-0000-0000-000000000001', 'c6400000-0000-0000-0000-0000000
 -- total tient presque entièrement au résiduel de sorties, dont le mode se choisit sur
 -- `household_vehicles`.
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
-  commute_distance_km, commute_mode, leisure_frequency, zone_type, tc_access, household_vehicles)
+  commute_distance_km, commute_mode, leisure_frequency, zone_type, transports_proches, household_vehicles)
 values ('c6410000-0000-0000-0000-000000000001', true, 1, 2, 'marche', 'rarely',
-        'urbain_dense', 'bon', '0');
+        'urbain_dense', array['metro_tram', 'bus'], '0');
 
 -- C — cinq jours de voiture thermique, urbain dense et bien desservi : le contexte qui ouvre le
 -- plus d'actions, donc celui où en fermer se mesure.
 insert into public.assessment_answers (assessment_id, commute_has_regular_trip, commute_days_per_week,
   commute_distance_km, commute_mode, commute_car_engine, leisure_frequency, leisure_mode,
-  leisure_distance_bracket, leisure_car_engine, zone_type, tc_access, household_vehicles, teletravail)
+  leisure_distance_bracket, leisure_car_engine, zone_type, transports_proches, household_vehicles, teletravail)
 values ('c6410000-0000-0000-0000-000000000002', true, 5, 20, 'voiture', 'thermique', 'weekly',
-        'voiture', '15_30', 'thermique', 'urbain_dense', 'bon', '1', 'deux_ou_plus');
+        'voiture', '15_30', 'thermique', 'urbain_dense', array['metro_tram', 'train', 'bus'], '1', 'deux_ou_plus');
 
 select public.recompute_assessment_results('c6410000-0000-0000-0000-000000000001');
 select public.recompute_assessment_results('c6410000-0000-0000-0000-000000000002');
@@ -132,7 +136,7 @@ select set_config('request.jwt.claims',
   json_build_object('sub', 'c6400000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 
 select lives_ok(
-  $$ select public.mettre_a_jour_le_contexte('urbain_dense', 'bon', '1', null) $$,
+  $$ select public.mettre_a_jour_le_contexte('urbain_dense', array['metro_tram', 'bus'], '1', null) $$,
   'un profil dont B4.4 ne se pose pas enregistre bien un quatrième argument nul'
 );
 
@@ -160,14 +164,14 @@ select is(
   'et aucun second bilan n’apparaît dans le suivi'
 );
 
--- ── Scénario C : la desserte disparaît, le plan se referme ──────────────────────────────
+-- ── Scénario C : plus rien ne passe, le plan se referme ────────────────────────────────
 
 select set_config('role', 'authenticated', true);
 select set_config('request.jwt.claims',
   json_build_object('sub', 'c6400000-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
 
 select lives_ok(
-  $$ select public.mettre_a_jour_le_contexte('rural', 'inexistant', '1', 'deux_ou_plus') $$,
+  $$ select public.mettre_a_jour_le_contexte('rural', array['aucun'], '1', 'deux_ou_plus') $$,
   'le contexte se durcit sans erreur'
 );
 
@@ -176,7 +180,7 @@ select lives_ok(
 -- remplie, donc vider une réponse retire des actions — en silence, et dans le sens qui appauvrit.
 
 select throws_ok(
-  $$ select public.mettre_a_jour_le_contexte(null, 'bon', '1', null) $$,
+  $$ select public.mettre_a_jour_le_contexte(null, array['bus'], '1', null) $$,
   'RM003', null,
   'une zone vidée est refusée, et reconnue à son code'
 );
@@ -184,19 +188,20 @@ select throws_ok(
 select throws_ok(
   $$ select public.mettre_a_jour_le_contexte('rural', null, '1', null) $$,
   'RM003', null,
-  'un accès aux transports vidé est refusé'
+  'une réponse aux transports vidée est refusée'
 );
 
 select throws_ok(
-  $$ select public.mettre_a_jour_le_contexte('rural', 'bon', null, null) $$,
+  $$ select public.mettre_a_jour_le_contexte('rural', array['bus'], null, null) $$,
   'RM003', null,
   'un nombre de véhicules vidé est refusé'
 );
 
 select set_config('role', 'postgres', true);
 
--- La moitié « repère » : `tc_access` et `zone_type` ne changent aucun total, mais décident de ce
--- que la restitution montre. Sans recalcul, cette valeur serait restée fausse en silence.
+-- La moitié « repère » : `tc_access` — déduit de « rien de tout ça », donc `inexistant` — et
+-- `zone_type` ne changent aucun total, mais décident de ce que la restitution montre. Sans recalcul,
+-- cette valeur serait restée fausse en silence.
 select is(
   (select mobility_constrained from public.assessment_results
    where assessment_id = 'c6410000-0000-0000-0000-000000000002'),
@@ -204,8 +209,8 @@ select is(
   'mobility_constrained suit le contexte : la restitution ne compare plus à la moyenne française'
 );
 
--- Et la moitié « plan » : le filtre de plausibilité de C3.8 referme les gabarits qui supposaient
--- un métro. C'est **aussi** la preuve que la garde d'idempotence a été sautée — `now()` étant figé,
+-- Et la moitié « plan » : le filtre de plausibilité referme les gabarits qui supposaient un métro
+-- ou un train — depuis `v1-34`, sur ce qui passe près de chez soi et non plus sur la zone. C'est **aussi** la preuve que la garde d'idempotence a été sautée — `now()` étant figé,
 -- une régénération de cause `bilan` serait repartie sans rien reconstruire.
 select cmp_ok(
   (select count(*)::int from public.plan_actions

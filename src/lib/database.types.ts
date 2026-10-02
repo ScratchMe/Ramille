@@ -30,6 +30,9 @@ export type Database = {
           share: number | null
           substitute_mode_id: string | null
           teletravail_admissible: string[] | null
+          // v1-34 — ce qui passe près de chez soi (20261002231530)
+          transports_exclus: string[] | null
+          transports_requis: string[] | null
           trips: number | null
           zones_admissibles: string[] | null
         }
@@ -51,6 +54,8 @@ export type Database = {
           share?: number | null
           substitute_mode_id?: string | null
           teletravail_admissible?: string[] | null
+          transports_exclus?: string[] | null
+          transports_requis?: string[] | null
           trips?: number | null
           zones_admissibles?: string[] | null
         }
@@ -72,6 +77,8 @@ export type Database = {
           share?: number | null
           substitute_mode_id?: string | null
           teletravail_admissible?: string[] | null
+          transports_exclus?: string[] | null
+          transports_requis?: string[] | null
           trips?: number | null
           zones_admissibles?: string[] | null
         }
@@ -162,6 +169,8 @@ export type Database = {
           tc_access: string | null
           teletravail: string | null
           train_long_trips_per_year: number
+          // v1-34 — ce qui passe près de chez soi (20261002231530) ; tc_access s'en déduit
+          transports_proches: string[] | null
           updated_at: string
           zone_type: string | null
         }
@@ -201,6 +210,7 @@ export type Database = {
           tc_access?: string | null
           teletravail?: string | null
           train_long_trips_per_year?: number
+          transports_proches?: string[] | null
           updated_at?: string
           zone_type?: string | null
         }
@@ -240,6 +250,7 @@ export type Database = {
           tc_access?: string | null
           teletravail?: string | null
           train_long_trips_per_year?: number
+          transports_proches?: string[] | null
           updated_at?: string
           zone_type?: string | null
         }
@@ -1169,6 +1180,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      // v1-34 — l'accès déduit de la réponse aux transports (20261002231530), serveur seulement
+      acces_deduit: { Args: { p_transports: string[] }; Returns: string }
       a_des_voyages_declares: {
         Args: {
           p_reponses: Database["public"]["Tables"]["assessment_answers"]["Row"]
@@ -1322,11 +1335,12 @@ export type Database = {
       }
       // Les boucles à venir, une par une (20260930131841) — remplace ma_boucle_a_venir
       mes_boucles_a_venir: { Args: never; Returns: string[] }
+      // v1-34 : la réponse aux transports à la place de l'accès (20261002231530)
       mettre_a_jour_le_contexte: {
         Args: {
           p_household_vehicles: string
-          p_tc_access: string
           p_teletravail: string | null
+          p_transports_proches: string[]
           p_zone_type: string
         }
         Returns: undefined
@@ -1425,6 +1439,8 @@ export type Database = {
         Args: { p_semaines: number }
         Returns: string
       }
+      // v1-34 — la forme rangée de la réponse aux transports (20261002231530), serveur seulement
+      transports_ranges: { Args: { p_transports: string[] }; Returns: string[] }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
       // L'alerte d'exploitation (20261002203259)
       verifier_les_alertes: { Args: never; Returns: string }

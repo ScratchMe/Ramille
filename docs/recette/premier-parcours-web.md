@@ -90,7 +90,7 @@ ces chiffres, et une ligne de plus ou de moins dans le plan.
 | Trajets de plus de 300 km, hors avion ? | **Oui** — la question ouvre l'étape depuis le 01/10/2026 (`v1-33` D1) |
 | Longs trajets en autocar | **0** par an — le compteur existe depuis C4.4 : toucher 0 ou laisser la série vide (elle vaut zéro) pour retrouver ces chiffres |
 | Longs trajets en voiture | **2** par an, thermique, **2** personnes à bord |
-| Contexte | **Périurbain**, transports en commun **Limité**, **1** véhicule |
+| Contexte | **Périurbain** ; près de chez soi, **Bus** et **Train (TER, Intercités)** cochés — depuis le 02/10/2026, la question remplace l'accès « Limité », qui s'en déduit (`v1-34`) ; **1** véhicule |
 | Télétravail | **Un jour** |
 
 Ce que ce profil rend, mesuré :
@@ -249,9 +249,9 @@ plus la même chose — c'est la porte elle-même qui est en recette.
 | 07.3 | Toucher **« Modifier ces réponses »** | L'écran **« Ton contexte de mobilité »** s'ouvre, avec les quatre mêmes questions que la dernière étape du questionnaire et les réponses déjà sélectionnées. **Retomber dans le questionnaire serait l'écart que ce chantier ferme** | |
 | 07.4 | Lire le pied de l'écran, sans rien toucher | « Enregistrer met ton plan à jour ; ton bilan n'est pas refait. Si ton nouveau plan ne propose plus l'action que tu suis, elle ne sera plus engagée. » (depuis le 27/09/2026 ; avant, « … tu en choisiras une autre », faux quand le plan se vide) Et **« Enregistrer » est inactif** tant qu'aucune réponse n'a bougé | |
 | 07.5 | Toucher **« Retour »** | On retrouve le plan, inchangé | |
-| 07.6 | Rouvrir l'écran, passer l'accès aux transports en commun sur **Inexistant**, puis **« Enregistrer »** | Retour au plan, et **le plan s'est réduit** : « Passer deux trajets sur cinq en train » a disparu — c'était la seule piste de ce profil qui supposait des transports en commun (le métro et le tram ne lui sont jamais proposés en périurbain). La première carte devient **« Faire ce trajet à deux au moins un jour sur deux »**, **− 480 kg CO₂e**, et le lien dit **« Voir toutes les pistes · 9 »** (mesuré le 25/09/2026 en régénérant le plan de ce profil dans une transaction annulée) | |
+| 07.6 | Rouvrir l'écran, cocher **« Rien de tout ça »** sous « Près de chez toi, qu'est-ce que tu pourrais prendre ? » — le bus et le train se décochent —, puis **« Enregistrer »** | Retour au plan, et **le plan s'est réduit** : « Passer deux trajets sur cinq en train » a disparu — c'était la seule piste de ce profil qui supposait des transports en commun (le métro et le tram ne lui sont pas proposés : il ne les a pas cochés). La première carte devient **« Faire ce trajet à deux au moins un jour sur deux »**, **− 480 kg CO₂e**, et le lien dit **« Voir toutes les pistes · 9 »** (mesuré le 25/09/2026 en régénérant le plan de ce profil dans une transaction annulée) | |
 | 07.7 | Ouvrir l'onglet **Suivi** | **Aucune entrée nouvelle.** Un second bilan dans l'historique serait le défaut que C6.4 ferme — corriger son contexte n'est pas refaire un bilan | |
-| 07.8 | Revenir au contexte et remettre **Limité**, puis enregistrer | Le plan retrouve ses actions. Le suivi n'a toujours qu'une entrée | |
+| 07.8 | Revenir au contexte, recocher **Bus** et **Train (TER, Intercités)** — « Rien de tout ça » se décoche —, puis enregistrer | Le plan retrouve ses actions. Le suivi n'a toujours qu'une entrée | |
 | 07.9 | Ouvrir **« Toi »** | La ligne **« Mon contexte de mobilité »** y mène aussi. C'est la seule porte pour un plan à zéro action, où l'encart du plan ne se rend pas | |
 
 ---

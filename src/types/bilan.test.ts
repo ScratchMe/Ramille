@@ -707,7 +707,7 @@ describe('isStepComplete', () => {
           commute_has_regular_trip: true,
           commute_days_per_week: 5,
           zone_type: 'urbain_dense',
-          tc_access: 'bon',
+          transports_proches: ['metro_tram', 'bus'],
           household_vehicles: '1',
         })
       )
@@ -721,7 +721,7 @@ describe('isStepComplete', () => {
           commute_has_regular_trip: true,
           commute_days_per_week: 5,
           zone_type: 'urbain_dense',
-          tc_access: 'bon',
+          transports_proches: ['metro_tram', 'bus'],
           household_vehicles: '1',
           teletravail: 'aucun',
         })
@@ -737,7 +737,7 @@ describe('isStepComplete', () => {
         answers({
           commute_has_regular_trip: false,
           zone_type: 'rural',
-          tc_access: 'inexistant',
+          transports_proches: ['aucun'],
           household_vehicles: '0',
         })
       )
@@ -1272,7 +1272,7 @@ describe('normaliserReponses', () => {
         answers({
           ...redescendu,
           zone_type: 'urbain_dense',
-          tc_access: 'bon',
+          transports_proches: ['metro_tram', 'bus'],
           household_vehicles: '1',
         })
       )
@@ -1286,7 +1286,7 @@ describe('normaliserReponses', () => {
       commute_has_regular_trip: true,
       commute_days_per_week: 2,
       zone_type: 'urbain_dense',
-      tc_access: 'bon',
+      transports_proches: ['metro_tram', 'bus'],
       household_vehicles: '1',
     });
     expect(teletravailSePose(a_deux_jours)).toBe(true);
@@ -1546,6 +1546,17 @@ describe('memesReponses', () => {
     expect(memesReponses(dernier, answers({ commute_mode: 'bus', leisure_frequency: 'weekly' }))).toBe(false);
   });
 
+  // **Le brouillon relu n'a jamais le même tableau que le bilan lu** : `JSON.parse` en fabrique un
+  // neuf. Une copie superficielle (`{ ...dernier }`) partagerait la référence et passerait avec `===` —
+  // c'est ainsi que la régression de `v1-34` est passée. Éprouvé en le cassant le 03/10/2026 : le
+  // `===` remis pour tous les champs fait tomber ce test, et lui seul.
+  it('compare une réponse en tableau par son contenu, comme après une relecture du stockage', () => {
+    const dernier = answers({ commute_mode: 'train', transports_proches: ['metro_tram', 'bus'] });
+    expect(memesReponses(dernier, JSON.parse(JSON.stringify(dernier)) as BilanAnswers)).toBe(true);
+    expect(memesReponses(dernier, answers({ commute_mode: 'train', transports_proches: ['bus'] }))).toBe(false);
+    expect(memesReponses(dernier, answers({ commute_mode: 'train', transports_proches: null }))).toBe(false);
+  });
+
   it('ignore les clés en plus d’un brouillon relu, jamais une réponse qui diffère', () => {
     const dernier = answers({ commute_days_per_week: 3 });
     const avecSurplus = { ...dernier, champ_disparu: 'oui' } as BilanAnswers;
@@ -1656,6 +1667,7 @@ const DOMAINES: { [K in keyof BilanAnswers]: readonly BilanAnswers[K][] } = {
   coach_long_trips_per_year: [null, 0, 2, 12],
   zone_type: [null, 'urbain_dense', 'periurbain', 'rural'],
   tc_access: [null, 'bon', 'limite', 'inexistant'],
+  transports_proches: [null, ['bus'], ['metro_tram', 'rer'], ['aucun']],
   household_vehicles: [null, '0', '1', '2_plus'],
   teletravail: [null, ...REPONSES_TELETRAVAIL.map((r) => r.value)],
 };
@@ -1741,6 +1753,7 @@ describe('normaliserReponses — ce qu’elle affirme d’elle-même', () => {
       'coach_long_trips_per_year',
       'zone_type',
       'tc_access',
+      'transports_proches',
       'household_vehicles',
     ];
     for (const reponses of TIRAGES) {
@@ -1868,11 +1881,14 @@ describe('manqueDeLEtape — le champ et sa phrase', () => {
       'le nombre de personnes dans la voiture',
     ],
     ['context', {}, 'zone_type', 'ton type de zone'],
-    ['context', { zone_type: 'rural' }, 'tc_access', 'l’accès aux transports en commun'],
-    ['context', { zone_type: 'rural', tc_access: 'bon' }, 'household_vehicles', 'le nombre de véhicules du foyer'],
+    ['context', { zone_type: 'rural' }, 'transports_proches', 'ce qui passe près de chez toi'],
+    // Une réponse vide n'est pas une réponse (`v1-34`) : `basculerTransport` rend `null`, mais la
+    // garde ne doit pas dépendre de qui a écrit la valeur.
+    ['context', { zone_type: 'rural', transports_proches: [] }, 'transports_proches', 'ce qui passe près de chez toi'],
+    ['context', { zone_type: 'rural', transports_proches: ['bus'] }, 'household_vehicles', 'le nombre de véhicules du foyer'],
     [
       'context',
-      { zone_type: 'rural', tc_access: 'bon', household_vehicles: '1', commute_days_per_week: 4 },
+      { zone_type: 'rural', transports_proches: ['bus'], household_vehicles: '1', commute_days_per_week: 4 },
       'teletravail',
       'ta réponse sur le télétravail',
     ],
@@ -2011,7 +2027,7 @@ describe('issueDuSuivant', () => {
     coach_long_trips_per_year: 0,
     car_long_trips_per_year: 0,
     zone_type: 'rural',
-    tc_access: 'bon',
+    transports_proches: ['metro_tram', 'bus'],
     household_vehicles: '1',
     teletravail: 'aucun',
   });
@@ -2035,7 +2051,7 @@ describe('issueDuSuivant', () => {
   // Le défaut préexistant : `/bilan?etape=context` sur un questionnaire vierge, trois réponses, et
   // « Voir mon bilan » soumettait les replis de l'insert.
   it('la dernière étape ramène à la première étape visible incomplète', () => {
-    const contexteSeul = answers({ zone_type: 'rural', tc_access: 'bon', household_vehicles: '1' });
+    const contexteSeul = answers({ zone_type: 'rural', transports_proches: ['bus'], household_vehicles: '1' });
     expect(issueDuSuivant('context', contexteSeul)).toEqual({ genre: 'revenir', vers: 'commute_has_trip' });
     expect(issueDuSuivant('context', { ...COMPLET, flights_total_per_year: 2 })).toEqual({
       genre: 'revenir',

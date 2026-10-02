@@ -2255,7 +2255,8 @@ if (Object.values(COULEUR).some((c) => c === null)) {
     const page = await ouvrir('/bilan?etape=context', {}, { requetes });
     try {
       await page.getByRole('radio', { name: 'Urbain dense', exact: true }).click();
-      await page.getByRole('radio', { name: 'Bon', exact: true }).click();
+      // Ce qui passe près de chez soi se coche depuis `v1-34` : une case, plus une réponse unique.
+      await page.getByRole('checkbox', { name: 'Métro ou tram', exact: true }).click();
       await page
         .getByRole('radiogroup', { name: 'Combien de véhicules motorisés dans ton foyer ?' })
         .getByRole('radio', { name: '0', exact: true })
