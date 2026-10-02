@@ -19,7 +19,7 @@ import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable, type Loo
 import { formatKg } from '@/lib/format';
 import { defilementPourMontrer } from '@/types/mouvement';
 import { sousLeRepere2050 } from '@/types/palier';
-import { MOIS_FRANCAIS, moisEnHeureDeParis } from '@/types/checkin';
+import { MOIS_FRANCAIS, moisAbsoluEnHeureDeParis, moisEnHeureDeParis } from '@/types/checkin';
 import { laBoucleDuPointTourne } from '@/types/rappels';
 
 export { formeInserable };
@@ -152,6 +152,34 @@ export function formatIntentionTiming(
     }
   }
   return INTENTION_TIMINGS.find((t) => t.value === timing)?.label.toLowerCase() ?? null;
+}
+
+/**
+ * L'échéance qu'on précoche en rouvrant une intention pour la modifier (`v1-33` D15).
+ *
+ * **Le même mois, redit** (décidé le 02/10/2026 avec la personne qui pilote) : une échéance relative se précoche au mois qu'elle
+ * vise, relu depuis aujourd'hui. « Le mois prochain » choisi en septembre vise octobre ; rouvert en
+ * octobre, c'est « Ce mois-ci » qui est coché — le recocher tel quel aurait visé novembre, en
+ * silence. Un mois visé déjà passé ne précoche rien : la personne choisit. Les autres échéances
+ * (« À ma prochaine occasion », celles des voyages) ne visent pas un mois et se précochent telles
+ * quelles, comme une relative dont la date est inconnue ou illisible. Le mois se lit en heure de
+ * Paris, comme le serveur qui interroge (`moisAbsoluEnHeureDeParis`, qui compte aussi l'année).
+ */
+export function echeanceARecocher(
+  timing: string | null | undefined,
+  engageeLe: string | null,
+  maintenant: Date = new Date()
+): IntentionTiming | null {
+  const choisie = INTENTION_TIMINGS.find((t) => t.value === timing)?.value ?? null;
+  if (choisie === null) return null;
+  const decalage = MOIS_VISE[choisie];
+  if (decalage === undefined || engageeLe === null) return choisie;
+  const instant = new Date(engageeLe);
+  if (Number.isNaN(instant.getTime())) return choisie;
+  const ecart = moisAbsoluEnHeureDeParis(instant) + decalage - moisAbsoluEnHeureDeParis(maintenant);
+  if (ecart === 0) return 'ce_mois';
+  if (ecart === 1) return 'le_mois_prochain';
+  return null;
 }
 
 /** Phrase complète de rappel, quelle que soit la forme de l'intention. */

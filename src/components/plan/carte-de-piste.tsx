@@ -68,6 +68,11 @@ type Props = {
    * rende le focus après la relecture d'un engagement (audit P-1, `ActionCard`).
    */
   refDuBloc?: Ref<View>;
+  /**
+   * Une modification de l'intention vient d'être écrite (`v1-33` D15) : le plan rend le focus à la
+   * carte relue, comme après un engagement (`ActionCommitment`).
+   */
+  onModifie?: () => void;
 };
 
 /**
@@ -89,6 +94,7 @@ export function CarteDePiste({
   onOuvert,
   lectures,
   refDuBloc,
+  onModifie,
 }: Props) {
   // **Une seule source pour « une autre est engagée »** (`etatDeLaPiste`, `v1-32` §4.1) : c'est ce
   // que la pastille de la liste dit (« Choisir à la place ») et ce qu'on demande au serveur
@@ -129,6 +135,8 @@ export function CarteDePiste({
         onAnnuler={onAnnuler}
         onOuvert={onOuvert}
         lectures={lectures}
+        engageeLe={action.committed_at}
+        onModifie={onModifie}
       />
     </ActionCard>
   );

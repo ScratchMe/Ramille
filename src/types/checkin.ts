@@ -207,12 +207,22 @@ function dernierDimanche(annee: number, mois: number): number {
  * européenne : du dernier dimanche de mars au dernier dimanche d'octobre, à 1 h UTC.
  */
 export function moisEnHeureDeParis(instant: Date): number {
+  return moisAbsoluEnHeureDeParis(instant) % 12;
+}
+
+/**
+ * Le même mois, compté depuis l'an zéro (`année × 12 + mois`) : deux instants se comparent ainsi
+ * d'un mois à l'autre, décembre et janvier compris — l'échéance qu'on précoche en rouvrant une
+ * intention se lit à l'écart entre le mois qu'elle vise et le mois en cours (`v1-33` D15).
+ */
+export function moisAbsoluEnHeureDeParis(instant: Date): number {
   const annee = instant.getUTCFullYear();
   const debutEte = Date.UTC(annee, 2, dernierDimanche(annee, 2), 1);
   const finEte = Date.UTC(annee, 9, dernierDimanche(annee, 9), 1);
   const t = instant.getTime();
   const heures = t >= debutEte && t < finEte ? 2 : 1;
-  return new Date(t + heures * 3_600_000).getUTCMonth();
+  const aParis = new Date(t + heures * 3_600_000);
+  return aParis.getUTCFullYear() * 12 + aParis.getUTCMonth();
 }
 
 /**

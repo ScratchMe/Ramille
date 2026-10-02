@@ -698,9 +698,9 @@ export default function Plan() {
 
   /**
    * **La carte engagée se montre après la relecture, une fois** (audit P-1). Trois temps :
-   *  - `engagementAMontrer` est posé **au geste** — « C'est noté » sur cet écran (`surEngagement`),
-   *    ou le retour de la liste après un choix (`passage.aMontrer`, lu au focus sans attendre les
-   *    préférences) ;
+   *  - `engagementAMontrer` est posé **au geste** — « C'est noté » sur cet écran (`surEngagement`,
+   *    et `surModification` depuis D15), ou le retour de la liste après un choix
+   *    (`passage.aMontrer`, lu au focus sans attendre les préférences) ;
    *  - la lecture qui suit le consomme dans son `finally`, réussie ou non, et seulement si elle a lu
    *    un plan pose `carteEngageeAMontrer` : un engagement ne déplace l'écran qu'une fois, jamais à
    *    chaque retour sur le plan, et jamais sur la foi d'une lecture en échec ;
@@ -726,6 +726,12 @@ export default function Plan() {
     },
     [proposerLesRappels]
   );
+  // Une intention modifiée (`v1-33` D15) se montre comme un engagement — la carte relue reçoit le
+  // focus et annonce la nouvelle intention —, sans la feuille des rappels, qui n'a rien de neuf à
+  // proposer.
+  const surModification = useCallback(() => {
+    engagementAMontrer.current = true;
+  }, []);
   useFocusEffect(
     useCallback(() => {
       if (passage.aMontrer()) engagementAMontrer.current = true;
@@ -1656,6 +1662,7 @@ export default function Plan() {
         action={action}
         committedActionId={committedActionId}
         onEngage={surEngagement}
+        onModifie={surModification}
         onChanged={() => setRefreshKey((key) => key + 1)}
         onRefus={(message) => setRefusDeRemplacement(message)}
         onOuvert={() => {
