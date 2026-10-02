@@ -1723,7 +1723,10 @@ la racine, rendue sans router, restait figée si le refus se levait sans la quit
 - les comptes rattachés d'avant le 02/10/2026 reçoivent la marque à leur premier lancement suivant ;
   seul un refus survenu **avant** ce lancement retombe encore sur une session anonyme ;
 - un compte **supprimé depuis un autre appareil** porte encore la marque ici : l'écran de reconnexion
-  s'y affiche, et seul « Commencer » en sort utilement — à poser à la personne qui pilote ;
+  s'y affiche — sa phrase « rattachés à ton compte » y est fausse, « J'ai déjà un compte » n'y mène à
+  rien — et seul « Commencer » en sort. **Accepté le 02/10/2026** par la personne qui pilote : le serveur
+  refuse ce jeton exactement comme celui d'un compte vivant, l'app ne peut pas les distinguer, et c'est
+  le cas courant que la correction devait servir ;
 - `track()` renonce sans session : les vues de `/connexion/retrouver` venues d'un refus ne
   s'enregistrent pas (`src/types/analytics.ts`) ;
 - une reconnexion par `/connexion/retrouver` efface les marques locales (« on change d'utilisateur
