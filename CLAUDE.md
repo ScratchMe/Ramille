@@ -569,9 +569,10 @@ l'a lue, puis l'a supprimée. Aucune des vingt tables existantes n'était concer
 ne vérifie pas — et que ni la CI ni pgTAP n'auraient attrapée, le local se comportant comme le
 distant. `20260920190000_trois_gardes_qui_manquaient_sous_les_gardes.sql` ferme la moitié qui nous
 concerne (les objets créés par `postgres`, c'est-à-dire par les migrations) ; l'autre moitié
-appartient à `supabase_admin`, se désactive au tableau de bord (Integrations → Data API) et
-**restait ouverte au 28/09/2026** — l'échéance Supabase du 30/10/2026 ne la fermera pas
-forcément : `SUPABASE.md` §2.2 et `docs/exploitation/README.md` §3.1 et §5. Trois assertions de `31` épinglent le fait, dont une sur le
+appartient à `supabase_admin`, **et le réglage du tableau de bord ne la ferme pas** (désactivé, mesuré le
+02/10/2026) — sans conséquence tant que tout objet de `public` est créé par `postgres`, ce que
+les privilèges relevés ce jour-là confirment : `SUPABASE.md` §2.2 et `docs/exploitation/README.md`
+§3.1 et §5. Trois assertions de `31` épinglent la moitié `postgres` en CI, dont une sur le
 catalogue.
 
 **Une policy appelle `auth.uid()` dans un sous-select, et une clé étrangère neuve veut son
