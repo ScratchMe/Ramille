@@ -330,8 +330,13 @@ confidentialité (« l'intégralité de ce que nous conservons sur toi », RGPD 
 ne rougisse. C'est arrivé avec les tables d'auth : `auth.identities` (ce que la connexion Google
 transmet, nom et photo compris) et `auth.sessions` (l'adresse IP et l'appareil de chaque session)
 n'y sont entrées que le 02/10/2026 (`20261002195246_l_export_rend_les_identites_et_les_sessions.sql`),
-avec, le même soir, le message de chaque rappel et la question figée de chaque point
-(`20261002201448_l_export_rend_aussi_les_messages.sql`),
-trouvées en préparant le formulaire de Play (`docs/exploitation/fiche-google-play.md` §1.4). **Une
-table neuve qui porte un `user_id` impose donc une ligne dans l'export**, et une assertion dans
-`15_suppression_et_export.test.sql` ; ni les clés ni les jetons n'y partent, seulement les faits.
+trouvées en préparant le formulaire de Play (`docs/exploitation/fiche-google-play.md` §1.4). Les deux
+contre-lectures du même soir en ont trouvé d'autres, **et c'étaient des colonnes de tables déjà
+exportées, pas des tables** : le message de chaque rappel, la question figée de chaque point, les
+métadonnées du compte (`20261002201448_l_export_rend_aussi_les_messages.sql`), puis l'adresse en
+attente de confirmation et l'action suivie par chaque point (`20261002203559`). **Une table neuve qui
+porte un `user_id`, ou une colonne neuve sur une table exportée, impose donc une ligne dans l'export**,
+et une assertion dans `15_suppression_et_export.test.sql`. Ni les clés ni les jetons n'y partent,
+seulement les faits — **et une clé peut se cacher dans un texte** : le corps d'un rappel porte le lien
+de désinscription avec son jeton, que `20261002201448` a exporté tel quel avant que `20261002203559`
+ne l'en retire. Un jeu d'essai écrit à la main sans ce lien laissait passer la fuite.

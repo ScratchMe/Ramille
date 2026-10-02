@@ -1850,24 +1850,25 @@ chaque fichier de test cité ; les deux déplacements et la montée du lock n'en
 En rendant vraies la page de confidentialité et la page de suppression (`docs/exploitation/fiche-google-play.md`
 §1.4, décidé le 02/10/2026), la contre-lecture a relevé quatre comportements que la page décrit désormais
 tels qu'ils sont, et qu'on pourrait rendre plus sobres. Aucun ne se fait avant le lancement : chacun change
-ce que l'app fait, et trois touchent au natif, donc à un build.
+ce que l'app fait, et deux touchent au natif, donc à un build (le premier et le troisième).
 
 - **L'identifiant de notification est enregistré quel que soit le canal** (`enregistrerLeJetonPour`, appelé
   à chaque démarrage par `src/app/_layout.tsx`, ne regarde que la permission). Plus sobre : ne l'enregistrer
   qu'avec le push choisi ou le mot de la veille demandé. **Ce qui retient** : c'est une retouche de la
   feuille des rappels et de sa reprise, et la règle « la préférence ne se dégrade jamais d'elle-même »
   (`BOUCLE.md`) suppose qu'un jeton existe déjà quand on choisit le push.
-- **Un identifiant que rien n'emploie n'est jamais désactivé.** `disabled_at` ne se pose qu'au lancement
-  sans permission ou sur un `DeviceNotRegistered` ; avec les rappels par e-mail ou aucun, et l'application
+- **Un identifiant que rien n'emploie n'est jamais désactivé.** `disabled_at` ne se pose qu'au démarrage
+  sans permission, sur un `DeviceNotRegistered` ou au-delà de cinq appareils par compte ; avec les rappels par e-mail ou aucun, et l'application
   désinstallée, aucun envoi ne part, donc le jeton reste actif jusqu'à la suppression du compte. Plus
   sobre : une purge sur `last_seen_at`. **Condition** : choisir la durée, qui est une promesse de la page.
 - **Firebase attribue son identifiant dès le premier lancement**, permission accordée ou non — lu, pas
   mesuré : `firebase-messaging` est embarqué par `expo-notifications` et son initialisation automatique
   n'est coupée nulle part. Plus sobre : la couper et l'initialiser à la demande. **À vérifier d'abord sur le
-  premier build**, comme la réécriture de l'adresse IP d'une session à chaque rafraîchissement ; la page
-  déclare les deux plutôt trop que pas assez.
-- **Les sessions n'ont pas de durée** : la limite de durée et d'inactivité de Supabase Auth est réservée au
-  plan Pro (`supabase/config.toml`, commentée). Une session d'appareil abandonné reste jusqu'à la
+  premier build** ; la page le déclare plutôt trop que pas assez. La réécriture de l'adresse IP d'une
+  session à chaque renouvellement, elle, est mesurée (stack locale, 02/10/2026).
+- **Les sessions n'ont pas de durée** : la limite de durée et d'inactivité de Supabase Auth n'est pas réglée
+  (`[auth.sessions]` est commentée dans `supabase/config.toml`, et rien ne la règle sur le distant) ; d'après
+  Supabase, elle demande une offre payante. Une session d'appareil abandonné reste jusqu'à la
   suppression du compte, avec son adresse IP. **Condition** : un passage au plan Pro, ou une purge à nous
   sur `auth.sessions`, que GoTrue possède.
 

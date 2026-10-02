@@ -135,14 +135,17 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // et l'appareil de chaque session ; l'échec d'une soumission du bilan, qui est un repère de parcours ;
 // GitHub et Cloudflare pour les sauvegardes ; et un export qui ne rendait ni les identités ni les
 // sessions (`20261002195246_l_export_rend_les_identites_et_les_sessions.sql`, puis
-// `20261002201448_l_export_rend_aussi_les_messages.sql` pour les messages). **Aucune ne change ce
+// `20261002201448_l_export_rend_aussi_les_messages.sql` pour les messages, et
+// `20261002203559_l_export_retire_le_jeton_du_message.sql`, qui retire du message le jeton de
+// désinscription que la deuxième y avait laissé). **Aucune ne change ce
 // que le produit fait** : la page décrit ce qui existait déjà, donc ce n'est pas l'élargissement que
 // « Évolutions de ce document » promet d'annoncer dans l'application avant qu'il prenne effet.
-// Deux phrases reposent sur une lecture et non sur une mesure, et se vérifient sur le premier build :
+// Une phrase repose sur une lecture et non sur une mesure, et se vérifie sur le premier build :
 // que Firebase attribue son identifiant dès le premier lancement, permission accordée ou non
-// (initialisation automatique de `firebase-messaging`, embarqué par `expo-notifications`), et que
-// Supabase Auth réécrit l'adresse IP d'une session à chaque rafraîchissement (« ouverte ou utilisée
-// pour la dernière fois » couvre les deux cas). La page déclare plutôt trop que pas assez.
+// (initialisation automatique de `firebase-messaging`, embarqué par `expo-notifications`).
+// La page déclare plutôt trop que pas assez. La réécriture de l'adresse IP d'une session à chaque
+// renouvellement, elle, est mesurée (stack locale, GoTrue v2.196, 02/10/2026 : `203.0.113.10` puis
+// `198.51.100.20` après un rafraîchissement).
 const UPDATED_AT = '2 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -171,10 +174,10 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           `${APP_NAME} estime l’empreinte carbone de tes déplacements à partir de ce que tu déclares. ` +
-          'Ce que tu déclares ne sert qu’à produire ce résultat et à te le restituer dans le temps. S’y ajoute ce que ' +
-          'nos services techniques enregistrent d’eux-mêmes — tes sessions, ce que Google transmet si tu passes par ' +
-          'lui, l’identifiant de notification de ton téléphone —, décrit ci-dessous, et dont nous ne nous servons pas ' +
-          'pour autre chose que faire fonctionner la connexion et les notifications.',
+          'Ce que tu déclares ne sert qu’à produire ce résultat et à te le restituer dans le temps. S’y ajoutent ce ' +
+          'que nos services techniques enregistrent d’eux-mêmes — tes sessions, ce que Google transmet si tu passes ' +
+          'par lui — et l’identifiant de notification que l’application enregistre, décrits ci-dessous, dont nous ' +
+          'ne nous servons pas pour autre chose que faire fonctionner la connexion et les notifications.',
       },
       {
         kind: 'definitions',
@@ -210,8 +213,8 @@ const SECTIONS: LegalSection[] = [
             term: 'Tes sessions de connexion',
             text:
               'Pour chaque session ouverte sur un appareil, la session anonyme comprise, notre service ' +
-              'd’authentification enregistre l’adresse IP et le navigateur ou le système d’où elle a été ouverte ou ' +
-              'utilisée pour la dernière fois. ' +
+              'd’authentification enregistre l’adresse IP et le navigateur ou le système de sa dernière utilisation, ' +
+              'remplacés à chaque renouvellement de la session. ' +
               'C’est son fonctionnement ordinaire : nous ne nous en servons pas, et nous n’en tirons aucune position.',
           },
           {
@@ -220,7 +223,7 @@ const SECTIONS: LegalSection[] = [
               'Dès que ton téléphone accepte les notifications de l’application, nous enregistrons l’identifiant qui ' +
               'permet de lui en envoyer, quel que soit le canal de rappel que tu choisis. Sur les versions d’Android ' +
               'antérieures à la 13, les notifications sont acceptées d’office : l’identifiant est donc enregistré dès le ' +
-              'premier lancement. Les couper dans les réglages du téléphone le désactive à l’ouverture suivante de ' +
+              'premier lancement. Les couper dans les réglages du téléphone le désactive au prochain démarrage de ' +
               'l’application.',
           },
         ],
@@ -253,8 +256,9 @@ const SECTIONS: LegalSection[] = [
           'La base légale est l’exécution du service que tu demandes. Pour les rappels par email et pour les repères de ' +
           'parcours, c’est notre intérêt légitime — maintenir le suivi que tu as commencé dans un cas, corriger ce qui ne ' +
           'fonctionne pas dans l’autre. Ce que nos services techniques enregistrent d’eux-mêmes — tes sessions, ce que ' +
-          'Google transmet, l’identifiant de notification — relève de l’exécution du service : la connexion et les ' +
-          'notifications ne fonctionnent pas sans. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
+          'Google transmet — relève de l’exécution du service : la connexion ne fonctionne pas sans. L’identifiant de ' +
+          'notification, enregistré quel que soit le canal choisi, relève de notre intérêt légitime : pouvoir t’envoyer ' +
+          'des notifications dès que tu les choisis, sans réglage à refaire. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
           'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
           'que tu aies à te connecter.',
       },
@@ -310,8 +314,10 @@ const SECTIONS: LegalSection[] = [
         text:
           'Dès l’ouverture de l’application, une session anonyme est créée pour que ton bilan puisse être enregistré et te ' +
           'revenir si tu fermes puis rouvres l’app. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
-          'numéro de téléphone. Comme toute session, elle garde l’adresse IP et l’appareil d’où elle est utilisée, et ' +
-          'l’identifiant de notification dès que ton téléphone accepte les notifications (le détail plus haut).',
+          'numéro de téléphone — sauf l’adresse que tu saisis pour recevoir un code, gardée même si tu ne vas pas au ' +
+          'bout, jusqu’à ce que tu la confirmes, en saisisses une autre ou que la session soit supprimée. Comme toute ' +
+          'session, elle garde l’adresse IP et l’appareil de sa dernière utilisation, et l’identifiant de ' +
+          'notification dès que ton téléphone accepte les notifications (le détail plus haut).',
       },
       {
         kind: 'paragraph',
@@ -450,10 +456,10 @@ const SECTIONS: LegalSection[] = [
             'compte existe. Une session part quand tu te déconnectes de cet appareil, si l’appareil joint alors notre ' +
             'service, et toutes partent avec la ' +
             'suppression de ton compte ou la suppression automatique d’une session anonyme.',
-          'Identifiant de notification de ton téléphone : désactivé à l’ouverture suivante de l’application si tu ' +
+          'Identifiant de notification de ton téléphone : désactivé au prochain démarrage de l’application si tu ' +
             'as retiré la permission dans les réglages du téléphone, ou au premier envoi qui échoue si l’application ' +
-            'est désinstallée, puis supprimé 90 jours plus tard. Si aucun envoi ne part vers ce téléphone, parce que ' +
-            'tu as choisi les rappels par email ou aucun rappel, il reste enregistré tant que ton compte existe. Il ' +
+            'est désinstallée, puis supprimé 90 jours plus tard. Si aucun envoi ne part vers ce téléphone, par exemple ' +
+            'parce que tu as choisi les rappels par email ou aucun rappel, il reste enregistré tant que ton compte existe. Il ' +
             'part dans tous les cas avec la suppression de ton compte et avec la suppression automatique d’une ' +
             'session anonyme.',
           'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +

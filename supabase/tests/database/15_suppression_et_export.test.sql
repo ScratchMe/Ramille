@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(46);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-suppr-a@test.local', 'x', now(), now()),
@@ -61,6 +61,21 @@ select c.user_id, c.id, 'email', 'pgtap-suppr-a@test.local', 'Ton point de la se
 from public.engagement_checkins c
 where c.user_id = '90000000-0000-0000-0000-000000000001';
 
+-- Le corps d'un vrai rappel finit par le lien de désinscription et son jeton, comme l'écrit
+-- `enqueue_checkin_reminders` : sans lui, l'assertion qui interdit le jeton dans l'export passait
+-- parce que le jeu d'essai ne le contenait pas (seconde contre-lecture du 02/10/2026).
+update public.notification_outbox
+   set body = body || E'\n\nPour ne plus recevoir ces rappels : https://www.ramille.fr/rappels/stop?jeton=' || unsubscribe_token::text
+ where user_id = '90000000-0000-0000-0000-000000000001' and channel = 'email';
+
+-- Une ligne push : le mot de la veille. Une ligne porte le texte des deux canaux, préparés pour le
+-- repli ; l'export ne doit rendre que celui du canal de la ligne. Créée une seconde plus tard, pour
+-- qu'elle vienne après l'e-mail dans l'export, trié par date de création.
+insert into public.notification_outbox (user_id, channel, genre, jour_vise, subject, body, push_body, status, sent_at, created_at)
+values ('90000000-0000-0000-0000-000000000001', 'push', 'veille', current_date + 1,
+        'Objet jamais parti', 'Corps jamais parti', 'Demain, tu as prévu de faire ton trajet à vélo.',
+        'sent', now(), now() + interval '1 second');
+
 -- Un engagement relâché : même raisonnement une fois de plus (C2.2). Ce sont les choix de la
 -- personne — l'action, les jours, la raison de l'arrêt — et la table n'est écrite que par le
 -- serveur, donc l'export est le seul endroit d'où elle peut les relire.
@@ -82,17 +97,23 @@ limit 1;
 -- prises dans la plage réservée à la documentation (RFC 5737).
 --
 -- Mutations jouées le 02/10/2026, chacune sur le fichier entier contre la stack locale :
---   - l'export d'avant (sans identités, sans sessions, sans type de réponse) : les assertions de
+--   - l'export d'avant (sans identités, sans sessions, sans type de réponse), joué sur le fichier tel
+--     qu'il était alors : les assertions de
 --     l'identité Google, des sessions, de l'adresse IP et du genre de réponse tombent, quatre et
 --     elles seules ;
 --   - les sessions lues sans `where s.user_id = v_user_id` : seule « et seulement les siennes » tombe ;
 --   - l'identifiant de session ajouté aux sessions exportées : seule l'assertion qui l'interdit tombe.
--- Et le même soir, après la contre-lecture (la seconde migration, `20261002201448`) :
+-- Et le même soir, après la première contre-lecture (la seconde migration, `20261002201448`) :
 --   - les identités lues sans `where i.user_id = v_user_id` : les deux assertions des identités
 --     tombent (« et seulement les siennes », et celle du nom, l'identité de B pouvant passer devant) ;
 --   - le jeton de désinscription ajouté aux rappels exportés : seule l'assertion qui l'interdit tombe ;
 --   - le corps de la première migration, sans les messages : le message du rappel, les métadonnées
 --     du compte et la question figée tombent, trois et elles seules.
+-- Et après la seconde contre-lecture (la troisième migration, `20261002203559`), le jeu d'essai portant
+-- enfin le lien de désinscription dans le corps du rappel :
+--   - le message rendu sans retirer le jeton : seule l'assertion qui interdit le jeton tombe ;
+--   - le corps de la seconde migration : le jeton, le message d'une ligne push qui n'est pas parti et
+--     l'adresse en attente tombent, trois et elles seules. Avant ce jeu d'essai, la fuite passait.
 insert into auth.identities (provider_id, user_id, identity_data, provider, created_at, last_sign_in_at)
 values ('pgtap-google-sub-0001', '90000000-0000-0000-0000-000000000001',
         jsonb_build_object('sub', 'pgtap-google-sub-0001', 'email', 'pgtap-suppr-a@test.local',
@@ -104,7 +125,8 @@ insert into auth.identities (provider_id, user_id, identity_data, provider, crea
 values ('pgtap-google-sub-0002', '90000000-0000-0000-0000-000000000002',
         jsonb_build_object('sub', 'pgtap-google-sub-0002', 'name', 'Autre Personne'), 'google', now(), now());
 -- Supabase Auth recopie aussi ce que Google transmet dans les métadonnées du compte.
-update auth.users set raw_user_meta_data = jsonb_build_object('name', 'Personne de Test')
+update auth.users set raw_user_meta_data = jsonb_build_object('name', 'Personne de Test'),
+                      email_change = 'pgtap-attente@test.local'
  where id = '90000000-0000-0000-0000-000000000001';
 insert into auth.sessions (id, user_id, created_at, updated_at, ip, user_agent) values
   ('9a000000-0000-0000-0000-00000000aaaa', '90000000-0000-0000-0000-000000000001', now(), now(), '203.0.113.7', 'pgtap-navigateur-a'),
@@ -158,8 +180,32 @@ select is_empty(
 -- silencieusement incomplet (RGPD art. 15).
 select is(
   jsonb_array_length(public.export_my_data() -> 'rappels_envoyes'),
-  1,
+  2,
   'l''export nomme les rappels déjà envoyés'
+);
+
+select ok(
+  public.export_my_data() #>> '{rappels_envoyes,0,message}' like '%Une seule question%',
+  'l''export rend le corps d''un rappel parti par e-mail'
+);
+
+select is(
+  public.export_my_data() #>> '{rappels_envoyes,0,destinataire}',
+  'pgtap-suppr-a@test.local',
+  'l''export dit à quelle adresse un rappel est parti'
+);
+
+select is(
+  public.export_my_data() #>> '{rappels_envoyes,1,notification}',
+  'Demain, tu as prévu de faire ton trajet à vélo.',
+  'l''export rend le texte d''une notification partie'
+);
+
+-- Le texte de l'e-mail préparé pour le repli n'est jamais parti sur une ligne push.
+select is(
+  public.export_my_data() #>> '{rappels_envoyes,1,objet}',
+  null,
+  'l''export ne rend pas un message qui n''est pas parti'
 );
 
 select is(
@@ -211,6 +257,12 @@ select is(
 );
 
 select is(
+  public.export_my_data() #>> '{compte,adresse_en_attente_de_confirmation}',
+  'pgtap-attente@test.local',
+  'l''export rend l''adresse saisie pour un code et pas encore confirmée'
+);
+
+select is(
   public.export_my_data() #>> '{compte,metadonnees,name}',
   'Personne de Test',
   'l''export rend les métadonnées du compte, où Supabase recopie ce que Google transmet'
@@ -229,14 +281,14 @@ select is_empty(
   'l''identifiant de la session n''apparaît nulle part dans l''export'
 );
 
--- Une réponse « sans objet » a un booléen nul : sans son genre, elle s'exportait comme une
--- absence de réponse.
 select is(
   public.export_my_data() #>> '{points_de_suivi,0,question}',
   'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
   'l''export rend la question figée de chaque point, telle qu''elle a été posée'
 );
 
+-- Une réponse « sans objet » a un booléen nul : sans son type, elle s'exportait comme une absence
+-- de réponse.
 select is(
   public.export_my_data() #>> '{points_de_suivi,0,type_de_reponse}',
   'oui',
