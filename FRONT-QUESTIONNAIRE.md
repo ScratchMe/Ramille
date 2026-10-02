@@ -60,6 +60,30 @@ voyage est en `FRONT.md` §1.
   l'exige au typecheck : un écran qui n'a rien hors des colonnes passe `RIEN_HORS_COLONNES`. Il n'est
   pas dans le brouillon : un questionnaire quitté sur « Oui » sans trajet rouvre la question. Un
   brouillon d'avant ce changement porte des `0` : ce sont des réponses.
+- **« 10+ » ouvre un champ, réclamé** (02/10/2026, `v1-33` §6, décidé avec la personne qui pilote) :
+  la puce enregistrait 10, et vingt vols comptaient pour dix. Elle ouvre « Environ combien, sur une
+  année ? » (`ChampDuPlafond`) sous les vols et sous chaque série des longs trajets, **sans migration** —
+  la colonne porte le nombre saisi. Trois choses à ne pas défaire :
+  - **un nombre de dix ou plus dit « 10+ » de lui-même** (`plafondChoisi`) — un re-bilan, un brouillon,
+    un bilan d'avant où « 10+ » valait 10 ; ce que la colonne ne sait pas dire, « 10+ » touché et le champ
+    vide, ou un nombre plus petit tapé dedans, est un drapeau de `HorsColonnes` (`plafondsChoisis`),
+    hors du brouillon comme le « Oui ». **Et toute frappe dans le champ le pose** : corriger un 14 relu
+    en 16 passe par « 1 », et le nombre seul refermait le champ sous le doigt (contre-lecture du
+    02/10/2026). Un nombre plus petit tapé dans le champ — 3, ou 0 — laisse « 10+ » cochée : c'est
+    encore le champ qui répond, et une autre puce le referme. Le champ vide se réclame par **son** champ (`nombre_de_vols`,
+    `trajets_en_train`…), dont l'intitulé se marque, et une série sous « 10+ » se réclame **avant**
+    « au moins un trajet » : une série vide vaut zéro ;
+  - **au-delà de dix vols, la part de vols courts se saisit**, même question, un champ borné au total
+    pendant la frappe ; mais **le total, lui, ne ramène pas la part** à chaque frappe — « 20 » → « 2 » →
+    « 25 » perdait la réponse —, et une part plus grande qu'un total redescendu se réclame comme
+    manquante ;
+  - **un compte est entier** (`NumericField` `entier`) : la virgule reste affichée et « 12,5 » vaut 12,
+    jamais 125 ; et l'unité étant le nom compté, le libellé s'annonce seul. Au-delà de cinquante, une
+    ligne de relecture (`compteARelire`), jamais un blocage, sur le motif de la distance domicile-travail ;
+    et le champ s'arrête à la borne de la colonne, un `smallint` (`COMPTE_MAXIMUM`, 32 767) — au-delà,
+    l'insert échouait sans dire où.
+  Vider le champ de la voiture fait reposer sa motorisation et son nombre de personnes : un compte vide
+  les efface, et c'est `normaliserReponses` seule qui efface.
 - **Une précision s'ouvre sous l'option qu'elle décrit, et la dernière exception est tombée**
   (`v1-16` §3). La taille du covoiturage du trajet quotidien vivait en tête de l'écran **suivant**,
   alors que ses deux jumelles de C3.5 (sorties, longs trajets) s'ouvrent sous l'option choisie :

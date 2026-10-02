@@ -25,7 +25,10 @@ const saisieVersNombre = (saisie) => {
   return Number.isFinite(n) ? n : null;
 };
 const afficherNombreSaisi = (valeur) => (valeur == null ? '' : String(valeur).replace('.', ','));
-export function NumericField({ value, onChange, unit, label }) {
+// `entier` (02/10/2026, `v1-33` §6) : un compte et non une mesure — le clavier sans décimale, la partie entière de ce
+// qui est tapé (`saisieVersEntier`), la virgule gardée à l'écran pour ne pas faire de « 12,5 » un 125, et le libellé
+// annoncé seul : l'unité d'un compte est le nom compté (« vols »), que le libellé dit déjà.
+export function NumericField({ value, onChange, unit, label, entier = false }) {
   // La saisie est gardée telle quelle pendant la frappe : la reformater depuis le nombre réécrirait
   // « 3, » en « 3 », et la décimale deviendrait impossible à taper.
   const [saisie, setSaisie] = React.useState(() => afficherNombreSaisi(value));
@@ -37,10 +40,11 @@ export function NumericField({ value, onChange, unit, label }) {
   }
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 64, borderRadius: 16, border: 'var(--stroke-field) solid ' + (saisie.length > 0 || focus ? 'var(--color-accent)' : 'var(--color-field-border)'), outline: focus ? 'auto' : 'none', background: 'var(--color-background-element)', padding: '0 20px' }}>
-      <input inputMode="decimal" aria-label={label + ', en ' + unit} value={saisie} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+      <input inputMode={entier ? 'numeric' : 'decimal'} aria-label={entier ? label : label + ', en ' + unit} value={saisie} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
         onChange={(e) => {
           const nettoye = nettoyerSaisieNumerique(e.target.value);
-          const valeur = saisieVersNombre(nettoye);
+          const nombre = saisieVersNombre(nettoye);
+          const valeur = entier && nombre !== null ? Math.trunc(nombre) : nombre;
           setSaisie(nettoye);
           setValeurConnue(valeur);
           if (onChange) onChange(valeur);

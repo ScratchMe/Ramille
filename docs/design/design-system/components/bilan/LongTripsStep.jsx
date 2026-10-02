@@ -1,5 +1,6 @@
 import React from 'react';
 import { BoiteDePrecision } from '../forms/BoiteDePrecision.jsx';
+import { ChampDuPlafond } from '../forms/ChampDuPlafond.jsx';
 import { Chip } from '../forms/Chip.jsx';
 import { GroupeDeChoix } from '../forms/GroupeDeChoix.jsx';
 import { IntituleDuChamp, useAncreDuChamp } from '../forms/IntituleDuChamp.jsx';
@@ -23,8 +24,13 @@ import { PrecisionChiffres } from './PrecisionChiffres.jsx';
 // La réponse au Oui / Non se dérive des compteurs, plus le « Oui » qu'ils ne savent pas dire : c'est l'écran du
 // questionnaire qui la tient (`reponse`, `repondre` — `reponseAuxLongsTrajets` et `compteursApresLaReponse`,
 // src/types/bilan.ts).
+//
+// **« 10+ » ouvre un champ, réclamé, dans chaque série** (02/10/2026, `v1-33` §6, `ChampDuPlafond`) : elle enregistrait
+// 10. Le champ se rend sous les puces de sa série, avant la boîte de la voiture, qui attend le nombre. `plafond(compte)`
+// dit que « 10+ » est la réponse d'une série ; dans le dépôt, l'écran du questionnaire en tient le drapeau.
 
-// `COUNT_CHOICES` de la source, recopiée : la dernière puce stocke sa valeur nominale et vaut « ce nombre ou plus ».
+// `CHOIX_DE_COMPTE` de la source (src/types/bilan.ts), recopiée : la dernière puce vaut « ce nombre ou plus » et ouvre
+// un champ.
 const COUNT_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const MAX_TRAJETS = COUNT_CHOICES[COUNT_CHOICES.length - 1];
 const LIBELLE_PLAFOND = MAX_TRAJETS + ' trajets ou plus';
@@ -56,19 +62,37 @@ const COLONNE = { display: 'flex', flexDirection: 'column' };
 // `field` de la source : l'intitulé, puis sa série — et, pour la voiture, la série et sa boîte.
 const CHAMP = { ...COLONNE, gap: 10 };
 
-export function LongTripsStep({ answers, update, reponse, repondre }) {
+export function LongTripsStep({ answers, update, reponse, repondre, plafond: plafondTouche = () => false, choisirLePlafond = () => {} }) {
+  const plafond = (compte) => plafondTouche(compte) || (answers[compte] !== null && answers[compte] >= MAX_TRAJETS);
   // Où mène ce qui manque : la question du titre (qui ne se marque pas), puis « le nombre de trajets », dont les trois
   // intitulés se marquent — le trajet qui manque peut venir de n'importe quelle série.
   const { bloc: blocDeLaQuestion } = useAncreDuChamp('fait_des_longs_trajets');
   const { bloc: blocDesSeries, marque: seriesMarquees } = useAncreDuChamp('nombre_de_longs_trajets');
   // Une série de 0 à « 10+ », en pilule, dans son groupe nommé ; une série sans réponse (`null`) n'a aucune puce cochée.
-  const serie = (intitule, valeur, choisir) => (
-    <GroupeDeChoix question={nomDeLaSerie(intitule)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-      {COUNT_CHOICES.map((n) => (
-        <Chip key={n} label={n === MAX_TRAJETS ? MAX_TRAJETS + '+' : String(n)} accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
-          role="radio" selected={valeur === n} onPress={() => choisir(n)} />
-      ))}
-    </GroupeDeChoix>
+  // « 10+ » ouvre le champ de la série, vide — sauf sur un nombre déjà au-delà.
+  const serie = (intitule, compte, patch = () => ({})) => (
+    <>
+      <GroupeDeChoix question={nomDeLaSerie(intitule)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {COUNT_CHOICES.map((n) => (
+          <Chip key={n} label={n === MAX_TRAJETS ? MAX_TRAJETS + '+' : String(n)} accessibilityLabel={n === MAX_TRAJETS ? LIBELLE_PLAFOND : undefined}
+            role="radio" selected={n === MAX_TRAJETS ? plafond(compte) : !plafond(compte) && answers[compte] === n}
+            onPress={() => {
+              if (n === MAX_TRAJETS) {
+                const dejaAuDela = plafond(compte);
+                choisirLePlafond(compte, true);
+                if (!dejaAuDela) update({ [compte]: null, ...patch(n) });
+                return;
+              }
+              choisirLePlafond(compte, false);
+              update({ [compte]: n, ...patch(n) });
+            }} />
+        ))}
+      </GroupeDeChoix>
+      {plafond(compte) && (
+        <ChampDuPlafond valeur={answers[compte]} unite="trajets" label={'Nombre de trajets ' + intitule.toLowerCase() + ' sur une année'}
+          onChange={(v) => { choisirLePlafond(compte, true); update({ [compte]: v }); }} />
+      )}
+    </>
   );
   const enVoiture = (answers.car_long_trips_per_year ?? 0) > 0;
 
@@ -89,12 +113,12 @@ export function LongTripsStep({ answers, update, reponse, repondre }) {
             <div ref={blocDesSeries} style={{ ...COLONNE, gap: 32, marginTop: 32 }}>
               <div style={CHAMP}>
                 <IntituleDuChamp type="small" themeColor="textTertiary" marque={seriesMarquees}>{EN_TRAIN}</IntituleDuChamp>
-                {serie(EN_TRAIN, answers.train_long_trips_per_year, (n) => update({ train_long_trips_per_year: n }))}
+                {serie(EN_TRAIN, 'train_long_trips_per_year')}
               </div>
 
               <div style={CHAMP}>
                 <IntituleDuChamp type="small" themeColor="textTertiary" marque={seriesMarquees}>{EN_AUTOCAR}</IntituleDuChamp>
-                {serie(EN_AUTOCAR, answers.coach_long_trips_per_year, (n) => update({ coach_long_trips_per_year: n }))}
+                {serie(EN_AUTOCAR, 'coach_long_trips_per_year')}
               </div>
 
               <div style={CHAMP}>
@@ -102,9 +126,7 @@ export function LongTripsStep({ answers, update, reponse, repondre }) {
                 {/* La série et sa boîte, enveloppées ensemble (`ChoixOuvrant` dans le dépôt) : la boîte s'ouvre à 8 sous les
                     puces comme sous un mode, et le haut de la série ne passe pas au-dessus du bord quand l'écran remonte. */}
                 <div style={COLONNE}>
-                  {serie(EN_VOITURE, answers.car_long_trips_per_year, (n) =>
-                    update({ car_long_trips_per_year: n, car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null })
-                  )}
+                  {serie(EN_VOITURE, 'car_long_trips_per_year', (n) => ({ car_long_trips_engine: n > 0 ? answers.car_long_trips_engine : null }))}
                   {/* Une seule boîte pour les deux : elles décrivent la même voiture. */}
                   {enVoiture && (
                     <BoiteDePrecision>
