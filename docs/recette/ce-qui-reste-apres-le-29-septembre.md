@@ -1,7 +1,7 @@
 # Recette — tout ce qui reste à recetter, au 29 septembre
 
-> **Écrite le 29/09/2026**, le soir de la fusion de `v1-31` (#296). C'est **la seule feuille
-> ouverte** : elle reprend les lignes jamais jouées des trois précédentes, et ne rejoue aucune ligne
+> **Écrite le 29/09/2026**, le soir de la fusion de `v1-31` (#296). Elle a été **la seule feuille
+> ouverte** jusqu'au 02/10/2026 (plus bas) : elle reprend les lignes jamais jouées des trois précédentes, et ne rejoue aucune ligne
 > revenue conforme. Elle remplace, pour leurs lignes restantes :
 >
 > - [`le-compte-et-les-modes.md`](le-compte-et-les-modes.md) — 12.1 à 12.3 et 14.3 (jouée le 28/09,
@@ -21,10 +21,10 @@
 > 02, `v1-13` §17), le 30/09/2026 (bloc 03, §18) et le 1er octobre (blocs 04 et 06, §19) ; les
 > jugements du bloc 05 tranchés le même jour par la personne qui pilote (§19).
 >
-> **Ses lignes 02.4 et 02.9, réécrites le 01/10/2026 pour la vague `v1-33`
-> ([#314](https://github.com/ScratchMe/Ramille/pull/314)), se jouent dans
+> **Sa ligne 02.4, réécrite le 01/10/2026 pour la vague `v1-33`
+> ([#314](https://github.com/ScratchMe/Ramille/pull/314)), se joue dans
 > [`ce-qui-reste-apres-le-1er-octobre.md`](ce-qui-reste-apres-le-1er-octobre.md)**, qui est
-> désormais la feuille ouverte au navigateur ; celle-ci ne garde que son bloc 07, au build natif.
+> désormais la seule feuille ouverte au navigateur ; celle-ci ne garde que son bloc 07, au build natif.
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **sur trois jours** — c'est le
 > calendrier ci-dessous qui décide de l'ordre, pas la numérotation.
