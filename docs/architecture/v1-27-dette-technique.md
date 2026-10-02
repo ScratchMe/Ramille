@@ -1874,3 +1874,17 @@ ce que l'app fait, et deux touchent au natif, donc à un build (le premier et le
 
 Et un cinquième, **écarté** et non reporté : effacer le nom et la photo que Google transmet, par un
 déclencheur sur les tables d'auth (fiche §1.4, « les autres voies »).
+
+### 12.31 Un engagement pris le 1er avant 6 h est interrogé sur le mois d'avant (02/10/2026)
+
+Relevé par la contre-lecture de D14 (`v1-33`), hors de son périmètre. `action_engagee_de_la_periode`
+ne borne pas `committed_at` : elle rend l'action engagée du cycle qui couvre le mois interrogé, quelle
+que soit la date de l'engagement. Le point du mois part le 1er à 6 h UTC et interroge le mois écoulé ;
+une action choisie le 1er entre minuit et 6 h UTC — « Ce mois-ci » ou « À ma prochaine occasion » —
+y est donc retrouvée, et la question demande « En octobre, as-tu fait… ? » pour une action choisie en
+novembre. D14 a fermé le cas de « Le mois prochain » (le point ne retient pas une action choisie le
+mois interrogé ou après) ; les deux autres échéances gardent la fenêtre de quelques heures par mois.
+**Pas corrigé** : la fenêtre est étroite, et la correction — borner la recherche sur `committed_at` —
+touche aussi `engagement_de_la_veille` et la boucle hebdomadaire, qui appellent la même fonction et
+n'ont pas le même calendrier. À reprendre avec D15, qui touchera de toute façon au sens de
+`committed_at` (`BOUCLE.md` §2).

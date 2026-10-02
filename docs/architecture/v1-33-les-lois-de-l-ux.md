@@ -322,12 +322,24 @@ et ce que la vague a relevé en chemin est en §9.
   plutôt que celle de l'engagement (paire SQL / TypeScript de la boucle, `BOUCLE.md`). L'autre voie,
   plus simple : retirer « Le mois prochain ». **Ce qu'on casse** : le point cesse de refermer
   l'engagement le mois même où l'action a lieu, si la règle est mal bornée.
+  **Livré le 02/10/2026** (`BOUCLE.md` §2) : bornée sur « postérieur » au mois du choix, lu en heure
+  de Paris — le mois où l'action a lieu reste interrogé, éprouvé par le test `43`. Et la feuille
+  ouverte après « C'est noté » nomme le mois du premier point qui l'interroge, décidé le même jour
+  avec la personne qui pilote : « Début décembre, je reviens te demander si tu l'as faite. » Avec
+  deux suites tranchées ce soir-là : la carte d'attente garde « au début du mois prochain » — elle
+  annonce le prochain contact, quel qu'en soit le sujet —, et la carte engagée comme le suivi relisent
+  une échéance relative au mois qu'elle vise (« en novembre » et non « le mois prochain »,
+  `formatIntention`).
 - **D15 — Changer ses jours oblige à libérer l'engagement** (P-11). La carte engagée n'offre que
   « Changer d'avis », qui libère et archive sans confirmation ni retour ; passer de « mardi et jeudi »
   à « mardi » coûte quatre gestes et une ligne d'archive. **Recommandation** : « Modifier les jours » /
   « Modifier l'échéance » sur la carte engagée, qui rouvre le sélecteur prérempli sans libérer — un
   RPC à étendre, donc un chantier à part. **Ce qu'on casse** : la règle « aucun chemin ne détruit un
-  engagement sans l'archiver », si la modification réécrit sans trace.
+  engagement sans l'archiver », si la modification réécrit sans trace. **Et D14 depuis le
+  02/10/2026** : sa règle et la relecture « en novembre » lisent `committed_at` comme le jour où
+  l'échéance a été choisie. Modifier l'échéance en gardant `committed_at` les ferait mentir toutes les
+  deux — « Ce mois-ci » choisi en septembre, changé en « Le mois prochain » en octobre, serait
+  interrogé le 1er novembre sur octobre (`BOUCLE.md` §2).
 - **D16 — « Choisir une action » de la carte de saison mène à la liste complète** (P-14), alors que les
   deux cartes choisies par le plan sont juste dessous. **Recommandation** : refermer la carte et
   amener la première piste dans la fenêtre ; la liste reste derrière « Voir toutes les pistes ».
@@ -390,7 +402,7 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
    suivi, le plan et le contexte —, puis les surfaces de service.
 3. **Les chantiers à part**, un par un, chacun avec sa migration, ses tests pgTAP recalculés par
    requête et sa contre-lecture : la quatrième fréquence des loisirs (D5, livrée le 02/10/2026), la question générique le
-   mois du choix (D14), « Modifier les jours » (D15), le champ sous « 10+ », et la réponse au point
+   mois du choix (D14, livrée le 02/10/2026), « Modifier les jours » (D15), le champ sous « 10+ », et la réponse au point
    corrigeable dans sa période.
 
 Puis les reports techniques de §4.2, en commençant par T-5 (les liens), qui touche trente et un

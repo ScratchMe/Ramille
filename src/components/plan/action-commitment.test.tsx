@@ -84,7 +84,7 @@ describe('ActionCommitment — jusqu’à la relecture', () => {
     await sEngager();
 
     // Le geste a abouti, la relecture n'est pas finie : rien ne se défait sous les yeux.
-    expect(onEngage).toHaveBeenCalledWith('commute');
+    expect(onEngage).toHaveBeenCalledWith({ poste: 'commute', echeance: null });
     expect(screen.queryByText('Je m’y engage')).toBeNull();
     expect(inactif('C’est noté')).toBe(true);
 
@@ -182,6 +182,17 @@ describe('ActionCommitment — « C’est noté » en attente', () => {
     expect(screen.getByText('Choisis au moins un jour.')).toBeTruthy();
     expect(dernierFocus()).toBe('lundi');
     expect(mockEngager).not.toHaveBeenCalled();
+  });
+
+  // **L'échéance part avec l'engagement** (`v1-33` D14, 02/10/2026) : la feuille des rappels en fait
+  // dire à Ramille un autre mois pour « Le mois prochain ». Éprouvé le même jour : l'échéance remise à
+  // `null` dans l'appel → ce test, seul.
+  it('emporte l’échéance choisie vers la feuille, avec le poste', async () => {
+    render(carte({ poste: 'leisure' }));
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByText('Le mois prochain'));
+    fireEvent.press(screen.getByText('C’est noté'));
+    await waitFor(() => expect(onEngage).toHaveBeenCalledWith({ poste: 'leisure', echeance: 'le_mois_prochain' }));
   });
 
   it('dit « Choisis une échéance. » pour une intention à échéance', () => {

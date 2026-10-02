@@ -38,6 +38,7 @@ import {
   pistesParPoste,
   separationsDesLignes,
 } from '@/types/plan';
+import type { EngagementPris } from '@/types/rappels';
 import { usePassageDEngagement } from './_layout';
 
 /**
@@ -393,14 +394,14 @@ export default function PistesScreen() {
                 inscrireRangee={inscrireRangee}
                 inscrireCarte={inscrireCarte}
                 carteMesuree={carteMesuree}
-                onEngage={(poste) => {
+                onEngage={(engagement) => {
                   // **Le drapeau se pose avant de partir**, jamais après ni sous condition : la
                   // feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
                   // seule fois où elle compte la perd pour de bon (`v1-17` §7.3). Le repli vers le
                   // plan garde le drapeau : `replace` reste dans cette pile, dont le layout le porte,
                   // et le plan monté à neuf l'attend jusqu'à sa première lecture
                   // (`useReprendreLEngagement`).
-                  passage.deposer({ poste });
+                  passage.deposer(engagement);
                   revenirOu('/plan');
                 }}
                 onChanged={rafraichir}
@@ -443,7 +444,7 @@ function Lignes({
   inscrireRangee: (id: string, noeud: View | null) => void;
   inscrireCarte: (id: string, noeud: View | null) => void;
   carteMesuree: (id: string) => void;
-  onEngage: (poste: string | null) => void;
+  onEngage: (engagement: EngagementPris) => void;
   onChanged: () => void;
   onRefus: (message: string | null) => void;
 }) {

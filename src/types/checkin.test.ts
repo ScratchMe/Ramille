@@ -4,6 +4,7 @@ import {
   COMPLEMENT_DE_MAINTIEN,
   JOURS_FRANCAIS,
   MOIS_FRANCAIS,
+  moisEnHeureDeParis,
   complementDeMaintien,
   varianteDeMaintien,
   composerQuestionDuPoint,
@@ -70,6 +71,41 @@ describe('moisFrancais', () => {
       'novembre',
       'décembre',
     ]);
+  });
+
+  // **Le mois d'un instant en heure de Paris, quel que soit le fuseau du téléphone** (contre-lecture
+  // de `v1-33` D14, 02/10/2026) : le serveur lit le mois d'un engagement à Paris, et un téléphone aux
+  // Antilles ou au Japon doit annoncer le même. La suite tourne sous `Europe/Paris`, où un
+  // `getMonth()` rendrait la bonne réponse **par accident** — et changer `process.env.TZ` dans un
+  // test Jest ne change pas le fuseau du processus (essayé le 02/10/2026 : la boucle sur trois
+  // fuseaux laissait passer `getMonth()`). D'où le piège : les accesseurs locaux de l'instant lèvent
+  // s'ils sont lus, donc le calcul ne peut passer que par l'UTC. Éprouvé le même jour : le corps
+  // remplacé par `instant.getMonth()` → les deux tests qui suivent, le piège levant ; l'heure
+  // d'été ignorée (toujours + 1 h) → « rend le mois… heure d'été comprise » et une assertion de
+  // `plan.test.ts` sur juillet.
+  const sansHeureLocale = (iso: string): Date => {
+    const instant = new Date(iso);
+    for (const accesseur of ['getMonth', 'getDate', 'getHours', 'getFullYear', 'getDay', 'getTimezoneOffset'] as const) {
+      instant[accesseur] = () => {
+        throw new Error(`${accesseur} lit l’heure du téléphone`);
+      };
+    }
+    return instant;
+  };
+
+  it('rend le mois en heure de Paris, heure d’été comprise', () => {
+    // L'hiver : UTC + 1.
+    expect(moisEnHeureDeParis(sansHeureLocale('2026-10-31T22:30:00Z'))).toBe(9);
+    expect(moisEnHeureDeParis(sansHeureLocale('2026-10-31T23:00:00Z'))).toBe(10);
+    expect(moisEnHeureDeParis(sansHeureLocale('2026-12-31T23:30:00Z'))).toBe(0);
+    // L'été : UTC + 2.
+    expect(moisEnHeureDeParis(sansHeureLocale('2026-03-31T21:30:00Z'))).toBe(2);
+    expect(moisEnHeureDeParis(sansHeureLocale('2026-03-31T22:30:00Z'))).toBe(3);
+    expect(moisEnHeureDeParis(sansHeureLocale('2026-07-31T22:30:00Z'))).toBe(7);
+  });
+
+  it('ne lit jamais l’horloge du téléphone', () => {
+    expect(() => moisEnHeureDeParis(sansHeureLocale('2026-10-15T10:00:00Z'))).not.toThrow();
   });
 
   /**

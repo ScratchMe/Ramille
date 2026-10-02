@@ -19,7 +19,10 @@
  *
  * Et depuis C4.2 (`v1-25`), ce que l'écran dit du **mot de la veille** — en fin de module.
  */
+import { RAMILLE } from '@/constants/mascotte';
 import type { LoopType } from '@/constants/postes';
+import { MOIS_FRANCAIS, moisEnHeureDeParis } from '@/types/checkin';
+import type { IntentionTiming } from '@/types/plan';
 import { finDePeriodeEnMots } from '@/types/saison';
 
 
@@ -357,6 +360,43 @@ export function laBoucleDuPointTourne(boucles: readonly LoopType[] | null, boucl
  */
 export function boucleDeLAction(poste: string | null): Boucle {
   return poste === 'commute' ? 'hebdo' : 'mensuel';
+}
+
+/**
+ * Ce qu'un engagement qui vient d'être pris emporte vers la feuille des rappels : son **poste**, qui
+ * dit quelle boucle l'interrogera (`boucleDeLAction`), et depuis le 02/10/2026 son **échéance**, qui
+ * dit quand (`ligneDAttenteDeLaFeuille`, `v1-33` D14). Des jours de la semaine n'en font pas une :
+ * l'échéance est nulle sur le trajet domicile-travail.
+ */
+export type EngagementPris = { poste: string | null; echeance: IntentionTiming | null };
+
+/**
+ * Ce que Ramille promet sur la feuille ouverte après « C'est noté » : le contact **sur l'action qu'on
+ * vient d'engager**, d'après sa boucle et l'échéance choisie.
+ *
+ * **« Le mois prochain » ne revient pas au début du mois prochain** (`v1-33` D14, 02/10/2026). Une
+ * action choisie en octobre pour novembre n'est pas interrogée par le point du 1er novembre, qui
+ * porte sur octobre — elle n'était pas encore à faire, et le serveur lui pose la question générique
+ * (`generate_extras_checkins`, test pgTAP `43`). C'est le point du 1er décembre qui la demande : la
+ * phrase le nomme, « Début décembre ». C'est la moitié client d'une paire — le mois nommé ici est le
+ * premier où le serveur interroge l'action ; changer l'une sans l'autre refait une promesse fausse.
+ *
+ * Le mois se lit en **heure de Paris**, comme le serveur (`moisEnHeureDeParis`) — pas sur l'horloge
+ * du téléphone, qui aux Antilles annoncerait un mois de trop pour un engagement pris le dernier soir
+ * du mois (contre-lecture du 02/10/2026). Et sur le jour où la feuille s'ouvre, qui suit
+ * l'engagement de quelques secondes — d'une lecture des préférences quand on revient des pistes.
+ */
+export function ligneDAttenteDeLaFeuille(
+  boucle: Boucle,
+  echeance: IntentionTiming | null,
+  aujourdhui: Date
+): string {
+  if (boucle === 'hebdo') return RAMILLE.engagementAttenteHebdo;
+  if (echeance === 'le_mois_prochain') {
+    const mois = MOIS_FRANCAIS[(moisEnHeureDeParis(aujourdhui) + 2) % 12];
+    return RAMILLE.engagementAttenteMoisNomme.replace('{mois}', mois);
+  }
+  return RAMILLE.engagementAttenteMensuel;
 }
 
 /** L'état de la permission système, tel que le téléphone le rapporte. */

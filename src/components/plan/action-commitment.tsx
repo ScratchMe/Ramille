@@ -20,6 +20,7 @@ import {
   type IntentionDay,
   type IntentionTiming,
 } from '@/types/plan';
+import type { EngagementPris } from '@/types/rappels';
 
 // Étape 6b — choisir une action et y attacher une intention d'implémentation (v1-07 §3.3).
 //
@@ -66,9 +67,10 @@ export function ActionCommitment({
    * personne vient de dire quand elle va agir. Le **poste** part avec, parce que la feuille qui
    * s'ouvre derrière promet un contact *sur cette action* : c'est lui qui dit quelle boucle
    * l'interrogera (relevé en recette le 14/09/2026, cf. `boucleDeLAction`), et depuis C4.2 si la
-   * question du mot de la veille peut se poser (`ouvertureDeLaFeuille`).
+   * question du mot de la veille peut se poser (`ouvertureDeLaFeuille`). L'**échéance** part aussi
+   * depuis le 02/10/2026 : « Le mois prochain » fait nommer à la feuille un autre mois (`v1-33` D14).
    */
-  onEngage?: (poste: string | null) => void;
+  onEngage?: (engagement: EngagementPris) => void;
   /**
    * Appelé quand le serveur **refuse** le remplacement (`RM001`), avec la phrase à afficher.
    *
@@ -260,7 +262,7 @@ export function ActionCommitment({
     // carte. Sur le plan, jusqu'à la lecture qui suit (`lectureAttendue`, audit P-1).
     if (lecturesCourantes.current !== undefined) setLectureAttendue(lecturesCourantes.current);
     onChanged();
-    onEngage?.(poste);
+    onEngage?.({ poste, echeance: kind === 'days' ? null : timing });
   };
 
   const release = async () => {

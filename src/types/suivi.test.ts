@@ -678,6 +678,7 @@ describe('decisionsParSaison', () => {
     actionText,
     intentionDays: [2, 4],
     intentionTiming: null,
+    committedAt: '2026-09-02T10:00:00Z',
     releasedAt,
   });
 
@@ -720,6 +721,13 @@ describe('decisionsParSaison', () => {
 
   it('rend une liste vide sans décision', () => {
     expect(decisionsParSaison([])).toEqual([]);
+  });
+
+  // La date de l'engagement, elle, reste : « Le mois prochain » se relit au mois qu'il visait
+  // (`formatIntention`, 02/10/2026).
+  it('garde le jour de l’engagement', () => {
+    const [ligne] = decisionsParSaison([brute('c1', '2026-09-01', 'A', null)]);
+    expect(ligne.committedAt).toBe('2026-09-02T10:00:00Z');
   });
 });
 

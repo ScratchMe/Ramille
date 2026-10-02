@@ -175,12 +175,12 @@ export async function loadDecisionsEngagees(): Promise<Lecture<DecisionDeSaison[
     supabase
       .from('plan_actions')
       .select(
-        'intention_days, intention_timing, action_templates(action_text), plan_cycles!plan_actions_plan_cycle_id_fkey(id, period_label, period_start)'
+        'committed_at, intention_days, intention_timing, action_templates(action_text), plan_cycles!plan_actions_plan_cycle_id_fkey(id, period_label, period_start)'
       )
       .not('committed_at', 'is', null),
     supabase
       .from('plan_action_commitments_archive')
-      .select('action_text, intention_days, intention_timing, released_at, plan_cycles(id, period_label, period_start)')
+      .select('action_text, committed_at, intention_days, intention_timing, released_at, plan_cycles(id, period_label, period_start)')
       .order('released_at', { ascending: false }),
   ]);
 
@@ -201,6 +201,7 @@ export async function loadDecisionsEngagees(): Promise<Lecture<DecisionDeSaison[
       actionText: gabarit.action_text,
       intentionDays: action.intention_days,
       intentionTiming: action.intention_timing,
+      committedAt: action.committed_at,
       releasedAt: null,
     });
   }
@@ -217,6 +218,7 @@ export async function loadDecisionsEngagees(): Promise<Lecture<DecisionDeSaison[
       actionText: ligne.action_text,
       intentionDays: ligne.intention_days,
       intentionTiming: ligne.intention_timing,
+      committedAt: ligne.committed_at,
       releasedAt: ligne.released_at,
     });
   }

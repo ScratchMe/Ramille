@@ -19,6 +19,7 @@ import { FORME_INSERABLE, estLeResiduelDesSortiesRares, formeInserable, type Loo
 import { formatKg } from '@/lib/format';
 import { defilementPourMontrer } from '@/types/mouvement';
 import { sousLeRepere2050 } from '@/types/palier';
+import { MOIS_FRANCAIS, moisEnHeureDeParis } from '@/types/checkin';
 import { laBoucleDuPointTourne } from '@/types/rappels';
 
 export { formeInserable };
@@ -123,16 +124,43 @@ export function formatIntentionDays(days: number[] | null | undefined): string |
   return `${avecArticle.slice(0, -1).join(', ')} et ${avecArticle[avecArticle.length - 1]}`;
 }
 
-export function formatIntentionTiming(timing: string | null | undefined): string | null {
+/**
+ * Le mois que vise une échéance relative, compté depuis celui de l'engagement : « Ce mois-ci » vise
+ * le mois du choix, « Le mois prochain » le suivant. Les autres échéances ne visent pas un mois.
+ */
+const MOIS_VISE: Partial<Record<IntentionTiming, number>> = { ce_mois: 0, le_mois_prochain: 1 };
+
+/**
+ * L'échéance telle qu'elle se relit.
+ *
+ * **Une échéance relative se relit au mois qu'elle vise** (décidé le 02/10/2026, contre-lecture de
+ * `v1-33` D14). « Le mois prochain », choisi en octobre, se relisait mot pour mot en novembre, où il
+ * veut dire décembre — alors que le point du 1er décembre demande « En novembre, as-tu fait… ? ».
+ * Quand la date de l'engagement est connue, la carte et le suivi disent donc « en novembre » ; le
+ * mois se lit en heure de Paris, comme le serveur (`moisEnHeureDeParis`). Sans elle — un appel qui ne
+ * la porte pas, une date illisible —, le libellé du choix, comme avant.
+ */
+export function formatIntentionTiming(
+  timing: string | null | undefined,
+  engageeLe: string | null = null
+): string | null {
+  const decalage = MOIS_VISE[timing as IntentionTiming];
+  if (decalage !== undefined && engageeLe !== null) {
+    const instant = new Date(engageeLe);
+    if (!Number.isNaN(instant.getTime())) {
+      return `en ${MOIS_FRANCAIS[(moisEnHeureDeParis(instant) + decalage) % 12]}`;
+    }
+  }
   return INTENTION_TIMINGS.find((t) => t.value === timing)?.label.toLowerCase() ?? null;
 }
 
 /** Phrase complète de rappel, quelle que soit la forme de l'intention. */
 export function formatIntention(
   days: number[] | null | undefined,
-  timing: string | null | undefined
+  timing: string | null | undefined,
+  engageeLe: string | null = null
 ): string | null {
-  return formatIntentionDays(days) ?? formatIntentionTiming(timing);
+  return formatIntentionDays(days) ?? formatIntentionTiming(timing, engageeLe);
 }
 
 /**

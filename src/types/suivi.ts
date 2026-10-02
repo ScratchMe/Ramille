@@ -577,6 +577,8 @@ export type DecisionDeSaison = {
   actionText: string;
   intentionDays: number[] | null;
   intentionTiming: string | null;
+  /** Le jour de l'engagement : « Le mois prochain » se relit au mois qu'il visait (`formatIntention`). */
+  committedAt: string | null;
 };
 
 export type DecisionBrute = DecisionDeSaison & {

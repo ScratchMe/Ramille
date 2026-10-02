@@ -99,7 +99,7 @@ export function engagementDeLaPeriodeCourante(
     // Le repli est celui des cartes du plan, pour qu'une ligne sans gabarit n'affiche pas un tiret
     // au milieu d'une phrase.
     action: engagee.action_templates?.action_text ?? 'Action à préciser.',
-    intention: formatIntention(engagee.intention_days, engagee.intention_timing),
+    intention: formatIntention(engagee.intention_days, engagee.intention_timing, engagee.committed_at),
   };
 }
 

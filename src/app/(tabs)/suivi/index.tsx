@@ -591,9 +591,9 @@ export default function Suivi() {
                     <ThemedText type="small" weight={600}>
                       {decision.actionText}
                     </ThemedText>
-                    {formatIntention(decision.intentionDays, decision.intentionTiming) && (
+                    {formatIntention(decision.intentionDays, decision.intentionTiming, decision.committedAt) && (
                       <ThemedText type="small" themeColor="textTertiary">
-                        {formatIntention(decision.intentionDays, decision.intentionTiming)}
+                        {formatIntention(decision.intentionDays, decision.intentionTiming, decision.committedAt)}
                       </ThemedText>
                     )}
                   </View>

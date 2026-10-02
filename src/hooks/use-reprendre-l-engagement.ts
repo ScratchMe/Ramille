@@ -1,6 +1,8 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 
+import type { EngagementPris } from '@/types/rappels';
+
 /**
  * Reprendre, au focus du plan, l'engagement déposé par l'écran des pistes (C5.2, `v1-17` §7.3) — et
  * **ne le consommer qu'une fois que la feuille des rappels peut être décidée**.
@@ -23,15 +25,15 @@ import { useCallback } from 'react';
  * de l'effet, et une fonction recréée à chaque rendu le rejouerait à chaque rendu.
  */
 export function useReprendreLEngagement(
-  reprendre: () => { poste: string | null } | null,
+  reprendre: () => EngagementPris | null,
   pret: boolean,
-  proposer: (poste: string | null) => unknown
+  proposer: (engagement: EngagementPris) => unknown
 ): void {
   useFocusEffect(
     useCallback(() => {
       if (!pret) return;
       const engagement = reprendre();
-      if (engagement !== null) void proposer(engagement.poste);
+      if (engagement !== null) void proposer(engagement);
     }, [reprendre, pret, proposer])
   );
 }

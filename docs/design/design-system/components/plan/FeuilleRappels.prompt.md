@@ -1,5 +1,7 @@
 S’ouvre une fois par appareil, juste après l’engagement. Ramille peut parler ici : aucun chiffre sur la feuille.
 
+**Ce que Ramille promet suit l'action qu'on vient d'engager** : « Lundi, … » pour le trajet, « Au début du mois prochain, … » pour les sorties et les voyages — et, pour une action de sorties choisie pour « Le mois prochain », le mois du premier point qui l'interroge : « Début décembre, je reviens te demander si tu l’as faite. » (`moisNomme`, `v1-33` D14, 02/10/2026). Ce point-là n'est pas celui du mois suivant, qui porte sur le mois du choix.
+
 ```jsx
 <FeuilleRappels boucle="hebdo" canal="push" permission="demandable" />
 ```
