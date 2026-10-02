@@ -238,8 +238,11 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
   Sans elle, aucun écran ne peut dire « ton plan t'attend » sans affirmer ce qu'il ne sait pas — tout
   le raisonnement de C1.4. Le préfixe historique n'est pas négociable : c'est par lui que
   `src/lib/compte.ts` balaie les marques locales depuis ses **deux** sorties, suppression de compte
-  **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse au seul appareil
-  restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut).
+  **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse à l'appareil
+  restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut) — **et
+  à un second chemin, vu en recette le 02/10/2026** (`v1-13` §20) : une session **anonyme** refusée,
+  par exemple purgée au bout de 90 jours, laisse ses marques à la session anonyme suivante, que rien
+  ne balaie ([#319](https://github.com/ScratchMe/Ramille/issues/319)).
   **Et un troisième effacement depuis C4.7, qui n'est pas une sortie** : retirer son seul bilan
   efface **cette marque-là et elle seule** (`effacerLaMarqueDeBilan`) — le compte n'est pas quitté,
   donc le balayage par préfixe serait de trop. Il ne vaut que pour l'appareil du geste : un autre

@@ -30,6 +30,8 @@
 //   - `S.page(nom)`, `S.texte(nom)` — la page, et son texte visible ;
 //   - `S.shot(nom, fichier)` — une capture de la fenêtre, dans le dossier des captures ;
 //   - `S.attendre(ms)` — une attente côté pilote, pour la minute de limite d'envoi par exemple.
+// Un troisième contexte, quand une feuille en demande trois : `S.C = S.A`, puis `S.nouvelle(nom, 'C')`
+// (RECETTE.md §2.6).
 // Tout ce qu'une étape ajoute à `S` (une fonction d'aide, un repère) reste pour les suivantes.
 //
 // **Deux prérequis de l'environnement d'agent, et le premier ne se voit qu'à l'usage :**

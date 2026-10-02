@@ -2,10 +2,12 @@
 
 > **Écrite le 02/10/2026**, le jour de la fusion de [#315](https://github.com/ScratchMe/Ramille/pull/315)
 > (la session refusée au démarrage), quelques heures après celle de
-> [#314](https://github.com/ScratchMe/Ramille/pull/314) (les lois de l'UX, `v1-33`, sur les décisions du 01/10). C'est **la seule
-> feuille ouverte au navigateur** ; celle du 29/09
-> ([`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md)) ne garde que son
-> bloc 07, qui attend le build natif. Elle reprend :
+> [#314](https://github.com/ScratchMe/Ramille/pull/314) (les lois de l'UX, `v1-33`, sur les décisions du 01/10). Elle a été, le
+> temps d'une journée, **la seule feuille ouverte au navigateur**, et jouée entière le jour même : elle
+> n'en laisse aucune. Il ne reste que le bloc 07 de celle du 29/09
+> ([`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md)), au build natif,
+> que la séance a complété de §11.25, §11.26 et de la moitié native de §11.27 (07.17 à 07.19). Elle
+> reprend :
 >
 > - **les lignes que #314 a réécrites le 01/10/2026 dans trois feuilles déjà jouées**, dont la
 >   nouvelle attente n'a jamais été regardée sur la production — une ligne réécrite est une ligne
@@ -40,7 +42,7 @@
 | 8 | Une session refusée au démarrage ne donne plus un compte vide | [#315](https://github.com/ScratchMe/Ramille/pull/315) ; `v1-13` §11.27, `v1-27` §12.27 |
 | 9 | Refermer : le compte de test supprimé, plus aucun e-mail | — |
 
-**Elle ne rejoue pas le reste.** Les lignes revenues conformes des quatre séances précédentes
+**Elle ne rejoue pas le reste.** Les lignes revenues conformes des cinq séances précédentes
 (`v1-13` §15 à §19) sont consignées dans les bases de leurs artefacts, et le parcours réel rejoue le
 chemin nominal à chaque PR, sur trois profils. Le prix est celui de `RECETTE.md` §2.5 : une
 régression sur un écran ancien que ni la CI ni une feuille ne regardent passera. **Et elle ne joue
@@ -272,7 +274,7 @@ jamais refermé.
 | 03.1 | L'agent lit le stockage local des trois fenêtres | B et C portent `traceverte.compte_rattache.v1` ; A, anonyme, ne le porte pas | |
 | 03.2 | **Quitter l'app dans A et dans B** — l'agent les mène sur `about:blank`, stockage gardé, comme on ferme un onglet. **C reste sur le plan, et on n'y touche plus** | — L'agent relève l'expiration du jeton stocké dans chaque fenêtre (`expires_at`) : c'est l'heure à partir de laquelle 03.4, 03.5 et 03.8 se jouent. Celle de C se relit encore après 03.3 : C est ouverte, et un rafraîchissement l'aurait déplacée | |
 | 03.3 | L'agent supprime en base les sessions de `…+ramille-p2` et du compte anonyme de A (`delete from auth.sessions where user_id in (…)`, les deux identifiants nommés), puis relit | **Zéro** session pour ces deux comptes ; aucune autre ligne touchée. Puis **attendre** l'expiration des jetons | |
-| 03.4 | **C**, laissée ouverte **sans rien y toucher**, une fois son jeton expiré — compter jusqu'à une minute de plus | L'écran « **Reconnecte-toi pour retrouver ton bilan** » se pose de lui-même sur le plan : « Ton bilan, ton plan et tes points sont rattachés à ton compte, pas à cet appareil. », « **J’ai déjà un compte** », « **Commencer un bilan sur cet appareil** » — le refus **en cours de route**. Jamais de questionnaire. L'agent note la requête qui l'a déclenché : le rafraîchissement en **400** (`POST /auth/v1/token`), ou une lecture du compte en **403** (`GET /auth/v1/user`, `session_not_found`) si quelque chose sur C a relu le compte avant l'expiration — `auth-js` retire alors la session sans attendre, d'où « sans rien y toucher » | |
+| 03.4 | **C**, laissée ouverte **sans rien y toucher**, une fois son jeton expiré — compter jusqu'à une minute et demie de plus : `auth-js` réessaie toutes les 90 s | L'écran « **Reconnecte-toi pour retrouver ton bilan** » se pose de lui-même sur le plan : « Ton bilan, ton plan et tes points sont rattachés à ton compte, pas à cet appareil. », « **J’ai déjà un compte** », « **Commencer un bilan sur cet appareil** » — le refus **en cours de route**. Jamais de questionnaire. L'agent note la requête qui l'a déclenché : le rafraîchissement en **400** (`POST /auth/v1/token`), ou une lecture du compte en **403** (`GET /auth/v1/user`, `session_not_found`) si quelque chose sur C a relu le compte avant l'expiration — `auth-js` retire alors la session sans attendre, d'où « sans rien y toucher » | |
 | 03.5 | **B**, jeton expiré : ouvrir `https://www.ramille.fr/` | **Le même écran**, au démarrage — jamais l'onboarding, jamais « Ton bilan n’est pas encore fait ». L'agent lit le réseau : le rafraîchissement du jeton en **400**, et **aucun** `POST /auth/v1/signup` ; et en base, aucun compte anonyme créé à cette minute. **C'est le défaut que #315 ferme** | |
 | 03.6 | B : « **J’ai déjà un compte** », puis le lien « **Retour** » de `/connexion/retrouver` | `/connexion/retrouver` s'affiche **sans** l'écran par-dessus ; au « Retour », **l'écran revient** : on est ressorti sans s'être reconnecté. (Le retour **du navigateur**, lui, suit l'historique — `v1-33` §9 — et peut sortir de l'app : il se note à part, ce n'est pas la ligne) | |
 | 03.7 | B : « J’ai déjà un compte », puis, sur `/connexion/retrouver`, ouvrir `https://www.ramille.fr/` dans le même onglet — l'app tuée puis rouverte | **L'écran revient** au démarrage : la marque a survécu au rechargement | |
@@ -286,7 +288,7 @@ jamais refermé.
 |---|---|---|---|
 | 04.1 | **B** : « Toi » → « **Supprimer mon compte** » → « **Supprimer définitivement** » | « C’est fait. » et « Revenir au début ». Au réseau, `POST /auth/v1/logout?scope=local` en **403 est attendu** (`v1-13` §16, n° 3) : ce n'est pas un écart. L'agent relit `auth.users` : plus de ligne pour l'alias | |
 | 04.2 | `/connexion/retrouver` avec `…+ramille-p2@gmail.com`, une minute au moins après le dernier code | L'écran ne dit rien, et c'est voulu. **Aucun e-mail n'arrive** : le compte n'existe plus | |
-| 04.3 | L'agent relève les comptes anonymes de la séance | Ceux qu'ont ouverts : le bloc 01 (A, sans session depuis 03.3) ; la fenêtre neuve de 02.8, avant que le code ne la rattache au compte ; 03.8 (A) ; et la racine de B après « Revenir au début » (04.1). Laissés à la purge des 90 jours. Leur canal est celui par défaut, « email », **sans adresse** : leur canal effectif est nul, et aucun message n'est en file | |
+| 04.3 | L'agent relève les comptes anonymes de la séance | Chaque fenêtre neuve en ouvre un au chargement, `/status` compris, et une reconnexion par code laisse le sien derrière elle : ceux du bloc 00, du bloc 01 (A, sans session depuis 03.3), de la fenêtre neuve de 02.8 avant le code, de 03.8 (A), de la fenêtre de 04.2, et de la racine de B si « Revenir au début » est touché en 04.1. Laissés à la purge des 90 jours. Leur canal est celui par défaut, « email », **sans adresse** : leur canal effectif est nul, et aucun message n'est en file | |
 
 ## Ce qui ne se joue pas ici
 
