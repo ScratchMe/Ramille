@@ -138,7 +138,10 @@ export default function Suivi() {
   // de `ok` comme de `empty`. Porté par la variante `ok` seule, le drapeau obligeait le repli à
   // écraser l'état vide, qui perdait alors son « Faire mon bilan » — la seule entrée du
   // questionnaire sur cet onglet, alors que le questionnaire se remplit très bien hors ligne.
-  const [relectureEnEchec, setRelectureEnEchec] = useState(false);
+  //
+  // **Et elle porte le genre de l'échec** (02/10/2026, `v1-33` §9) : la ligne disait « Vérifie ta
+  // connexion. » sur une erreur du serveur aussi. `null` quand la dernière relecture a tout lu.
+  const [relectureEnEchec, setRelectureEnEchec] = useState<GenreDEchec | null>(null);
 
   // Même idiome que l'autre onglet (`plan.tsx`, `refreshKey` / `rafraichir` et le nettoyage de
   // l'effet de chargement), délibérément — on cite les noms et non des numéros de ligne, qui se
@@ -189,7 +192,7 @@ export default function Suivi() {
     // même mensonge par omission que celui qu'on vient de corriger, en plus muet.
     const echecDeLecture = (genre: GenreDEchec) => {
       if (cancelled) return;
-      setRelectureEnEchec(true);
+      setRelectureEnEchec(genre);
       // `empty` est dérivé d'une lecture **réussie** au même titre que `ok` : seul `loading`
       // n'a jamais rien su, et c'est le seul que l'écran d'erreur plein écran remplace.
       setState((precedent) => (precedent.status === 'loading' ? { status: 'erreur', genre } : precedent));
@@ -257,7 +260,9 @@ export default function Suivi() {
                   : null,
             }
       );
-      setRelectureEnEchec(!decisions.ok || !boucles.ok);
+      // Ces deux lectures ne disent pas leur genre ; les deux premières viennent de réussir, donc le
+      // réseau a répondu : `serveur`, le repli de `src/types/lecture-en-echec.ts`.
+      setRelectureEnEchec(!decisions.ok || !boucles.ok ? 'serveur' : null);
     })();
 
     return () => {
@@ -288,13 +293,12 @@ export default function Suivi() {
   // d'une lecture réussie — le suivi et l'état vide — et le lien relance la même lecture que le
   // retour sur l'onglet.
   //
-  // **Elle parle encore de connexion quel que soit l'échec**, et c'est su : D19 (`v1-33`) n'a donné
-  // de phrase du serveur que pour l'écran d'erreur de cet onglet. Celle du plan dit « … ce que tu vois
-  // peut avoir changé depuis. », sans la connexion (`phraseDeLaLectureEnEchec`).
+  // **Elle ne parle de connexion que hors ligne** (02/10/2026, `v1-33` §9), comme celle du plan
+  // (`phraseDeLaLectureEnEchec`).
   const banniereRelecture = (centree = false) =>
-    relectureEnEchec ? (
+    relectureEnEchec !== null ? (
       <View style={[styles.relecture, centree && styles.relectureCentree]}>
-        <MessageInline message="Ton suivi n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion." />
+        <MessageInline message={phraseDeLaLectureEnEchec('relectureDuSuivi', relectureEnEchec)} />
         <TextLink
           label="Réessayer"
           onPress={rafraichir}

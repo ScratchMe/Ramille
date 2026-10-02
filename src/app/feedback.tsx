@@ -213,8 +213,18 @@ export default function Feedback() {
             <ThemedText type="small" themeColor="textTertiary" style={styles.compteur}>
               {trimmed.length} / {FEEDBACK_MAX_LENGTH}
             </ThemedText>
+            {/* **À l'encre de ce qui manque au toucher d'« Envoyer », comme le questionnaire, `/contexte`
+                et « C'est noté »** (02/10/2026, fin de `v1-33` D18) : la phrase restait en tertiaire, et
+                un bouton qui demande se disait encore de deux façons (audit T-19). **Pendant la frappe,
+                elle reste calme** (le 3.3.2 du 24/09/2026, plus haut) : rien n'a encore été demandé, et
+                un accent en gras dès le premier caractère se lirait comme un reproche. Un texte et non
+                un lien : il n'y a qu'un champ, et le toucher d'« Envoyer » y porte déjà le focus. */}
             {(tropCourt || demandeActive) && (
-              <ThemedText type="small" themeColor="textTertiary">
+              <ThemedText
+                type="small"
+                weight={demandeActive ? 600 : undefined}
+                themeColor={demandeActive ? 'accentText' : 'textTertiary'}
+              >
                 Trois caractères au moins pour pouvoir l’envoyer.
               </ThemedText>
             )}

@@ -336,6 +336,10 @@ qu'on prétend garder demande donc sa moitié négative.
   ne rend qu'à la demande. Sa première rédaction restait **verte** quand le retour passait pendant le
   calcul : le recul se cachait derrière `CalculEnCours`, et il a fallu faire échouer le calcul pour
   lire l'étape où le questionnaire revient.
+- **La relecture du suivi** (`src/tests/ecrans/suivi-relecture.test.tsx`, 02/10/2026) : la phrase vit
+  dans `src/types`, testée mot pour mot ; le fichier garde ce que l'écran en fait — le genre retenu,
+  la phrase de la relecture et non celle de l'écran d'erreur, la ligne effacée par une relecture
+  réussie. Le retour sur l'onglet est doublé pour que le test relance lui-même la lecture.
 - **Les longs trajets relus** (`src/tests/ecrans/longs-trajets-relus.test.tsx`) : la dérivation de la
   réponse est juste et testée dans `src/types`, c'est ce que l'écran lui passe qui ne l'était pas — un
   « Oui » relu des compteurs retombait sur « Non » au toucher d'un « 0 ». Le cas même que le critère

@@ -8,6 +8,9 @@
  *     gagne » ;
  *   - la phrase du plan, côté serveur, remise à « … Vérifie ta connexion. » → « aucune phrase du
  *     serveur ne parle de la connexion » et « les phrases, mot pour mot ».
+ *
+ * **Et le 02/10/2026, la relecture du suivi** : sa phrase du serveur remise à « … Vérifie ta
+ * connexion. » (l'écran d'avant) → les deux mêmes.
  */
 import {
   genreDeLEchec,
@@ -16,7 +19,7 @@ import {
   type EcranEnEchec,
 } from '@/types/lecture-en-echec';
 
-const ECRANS: EcranEnEchec[] = ['plan', 'relectureDuPlan', 'suivi', 'contexte'];
+const ECRANS: EcranEnEchec[] = ['plan', 'relectureDuPlan', 'suivi', 'relectureDuSuivi', 'contexte'];
 
 describe('genreDeLEchec', () => {
   it('un statut à zéro est une lecture hors ligne', () => {
@@ -77,6 +80,13 @@ describe('phraseDeLaLectureEnEchec', () => {
     );
     expect(phraseDeLaLectureEnEchec('suivi', 'serveur')).toBe('Ton suivi n’a pas pu être relu. Réessaie dans un instant.');
     expect(phraseDeLaLectureEnEchec('suivi', 'horsLigne')).toBe('Ton suivi n’a pas pu être relu. Vérifie ta connexion.');
+    // La relecture du suivi, validée le 02/10/2026 ; le hors-ligne tel qu'il était.
+    expect(phraseDeLaLectureEnEchec('relectureDuSuivi', 'serveur')).toBe(
+      'Ton suivi n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis.'
+    );
+    expect(phraseDeLaLectureEnEchec('relectureDuSuivi', 'horsLigne')).toBe(
+      'Ton suivi n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion.'
+    );
     expect(phraseDeLaLectureEnEchec('contexte', 'serveur')).toBe(
       'Tes réponses n’ont pas pu être lues. Réessaie dans un instant.'
     );

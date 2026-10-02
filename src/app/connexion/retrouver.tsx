@@ -258,7 +258,7 @@ export default function RetrouverMonCompte() {
                 refait pas — le libellé « Refaire mon bilan » a été retiré, et les phrases qui le
                 reprenaient suivent). Un bilan n'est pas défait ni recommencé : ce bilan-ci reste sur cet
                 appareil, et un autre s'ajoute. « ensemble » est détaché par la virgule : collé à « un
-                nouveau », il se lisait « un nouvel ensemble ». Texte à valider (`v1-33` §9). */}
+                nouveau », il se lisait « un nouvel ensemble ». Validé le 02/10/2026 (`v1-33` §9). */}
             <ThemedText type="body" themeColor="textSecondary">
               On pourra en faire un nouveau après, ensemble : ça va vite.
             </ThemedText>
