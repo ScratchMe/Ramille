@@ -593,7 +593,7 @@ import {
   releverParImage,
   releverPendant,
 } from './relever-par-image.mjs';
-import { servirExport } from './servir-export.mjs';
+import { decrireInfractions, releverLaCsp, servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
 const API = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -662,6 +662,10 @@ const exceptions = [];
 // Ce que l'app dit et ce que le réseau refuse : sur un échec, c'est ce qu'on lit en premier — une
 // requête en 401 ou en 42501 explique plus qu'une capture d'écran.
 const journal = [];
+// Les infractions à la CSP de `vercel.json`, que le serveur applique comme la production
+// (`servir-export.mjs`). Ce parcours est le seul endroit où la politique voit l'app **parler à une
+// base** — session, bilan, plan, point, compte — : c'est la mesure qu'aucun collecteur ne fait.
+const relevesCsp = [];
 
 /**
  * Un onglet neuf dans un contexte neuf.
@@ -682,6 +686,9 @@ async function nouvelOnglet({ contexte = null, reduire = false } = {}) {
     });
     // Le relevé image par image, posé dans chaque document avant son premier script.
     await contexte.addInitScript(releverParImage, null);
+    // Et celui des infractions à la CSP, une fois par contexte : un second onglet du même appareil
+    // en hérite.
+    relevesCsp.push(await releverLaCsp(contexte));
   }
   const onglet = await contexte.newPage();
   onglet.on('pageerror', (erreur) => exceptions.push(String(erreur)));
@@ -3169,6 +3176,13 @@ try {
   await rpc('delete_my_account', sansBoucle.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
+  const infractionsCsp = decrireInfractions(relevesCsp.flat());
+  assurer(
+    infractionsCsp.length === 0,
+    `la CSP de vercel.json, appliquée en production, a bloqué ${infractionsCsp.length} chargement(s) :\n` +
+      `${infractionsCsp.join('\n')}\nUne origine ou un script dont l'app a besoin manque à la politique` +
+      ' (VERCEL.md §2.2).'
+  );
   console.log(
     `Parcours réel joué de bout en bout : bilan ${ATTENDU.totalKg} kg, ${ATTENDU.pistes.length} pistes dans ` +
       `l'ordre attendu, engagement (les jours au clavier), point répondu, suivi, « Toi » et sa ligne de ` +
@@ -3179,7 +3193,7 @@ try {
       `profil sans boucle, à qui ni le plan ni le suivi ne promettent rien, et qui rattache son compte ` +
       `par code — Entrée envoie, le focus suit, et le retour ne rouvre ni le flux fini ni la session ` +
       `quittée. Chaque choix rendu répond à ` +
-      `son groupe nommé.`
+      `son groupe nommé. Aucune infraction à la CSP de production.`
   );
 } catch (erreur) {
   try {
@@ -3193,6 +3207,9 @@ try {
       `${erreur instanceof Ecart ? erreur.message : erreur instanceof Error ? erreur.stack : String(erreur)}\n\n` +
       `Capture : ${CAPTURE}\n` +
       (exceptions.length ? `Exceptions dans la page :\n${exceptions.join('\n')}\n` : '') +
+      (relevesCsp.flat().length
+        ? `Infractions à la CSP (une cause possible) :\n${decrireInfractions(relevesCsp.flat()).join('\n')}\n`
+        : '') +
       (journal.length ? `Console et réseau :\n${journal.slice(-25).join('\n')}\n` : '') +
       `Texte visible :\n${texte.slice(0, 1500)}`
   );

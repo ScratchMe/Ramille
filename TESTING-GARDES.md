@@ -3,7 +3,8 @@
 > **Quand ouvrir ce fichier.** Toucher à une garde de la CI (`scripts/verifier-*.mjs`) ou en voir
 > une rougir · jouer, étendre ou corriger le parcours réel · ajouter une constante qui recopie un
 > `check` · toucher aux gabarits d'e-mail, au chemin du compte, à ce que le lecteur d'écran reçoit
-> dans l'export, à la garde d'une animation ou aux migrations livrées · annoncer qu'un de ces
+> dans l'export, à la garde d'une animation, aux migrations livrées ou à la politique de sécurité
+> que les gardes servent (`servir-export.mjs`) · annoncer qu'un de ces
 > chemins est vérifié.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
@@ -675,3 +676,30 @@ modifiée, supprimée ou renommée. Trois choses à savoir avant d'y toucher :
 
 Le test (`scripts/verifier-migrations-livrees.test.ts`) joue le script dans de vrais dépôts git
 jetables, commit de fusion d'une PR compris ; neuf mutations datées en tête.
+
+### 2.16 La politique de sécurité du site, servie aux gardes qui ouvrent l'export
+
+**La `Content-Security-Policy` de `vercel.json` est appliquée depuis le 02/10/2026** (`VERCEL.md`
+§2.2), et une politique appliquée qui interdit une chose dont l'app a besoin ne casse pas une page :
+elle casse l'app entière, sur web, pour tout le monde, sans rien signaler côté serveur. Elle était
+auparavant en rapport seul, sans collecteur — donc sans mesure. La mesure, c'est désormais ici :
+
+- **`scripts/servir-export.mjs` sert les en-têtes de `vercel.json`**, la politique comprise, aux
+  quatre gardes navigateur — rendu, états, parcours réel, chemin du compte. Une seule chose change :
+  l'origine Supabase de `connect-src`, remplacée par celle avec laquelle l'export a été construit
+  (`EXPO_PUBLIC_SUPABASE_URL`, que les deux gardes d'export reçoivent désormais en CI comme
+  l'export lui-même). Sans la variable, le serveur refuse de démarrer.
+- **Chaque garde relève les infractions** (`releverLaCsp`, branché avant la première navigation sur
+  la page ou le contexte) et échoue à la première. Le parcours réel est le seul endroit où la
+  politique voit l'app parler à une base : session, bilan, plan, point, compte.
+- **`verifier-rendu-export.mjs` contrôle aussi, sans navigateur, chaque script écrit en dur dans
+  `dist/`** contre les empreintes de `script-src`, et donne l'empreinte à recopier. Il n'y en a qu'un
+  — celui d'Expo Router pour l'hydratation —, et c'est une montée d'Expo qui le changera un jour.
+- **`scripts/vercel-csp.test.ts` garde la forme** de la politique (appliquée, sans `'unsafe-inline'`
+  ni `'unsafe-eval'` pour les scripts, un seul projet Supabase nommé, aucun joker) et la
+  substitution du serveur ; six mutations datées en tête. Il ne sait pas si l'app a besoin d'une
+  origine : ce sont les quatre gardes qui le savent.
+
+Ce que rien de tout cela ne voit : une page servie par une Function (`/api/partage`), que les gardes
+navigateur n'ouvrent pas — elle a été mesurée en production le 02/10/2026, et ne charge que sa
+propre image et une feuille de style écrite en dur, que `style-src 'unsafe-inline'` couvre.

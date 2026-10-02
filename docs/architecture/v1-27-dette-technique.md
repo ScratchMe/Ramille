@@ -541,6 +541,13 @@ le jour venu.
    que le mode rapport existe pour éviter). Recommandation : **la laisser tant qu'il n'y a pas de
    trafic**, et rouvrir la question à la mise sur Play. Ce qu'on casse si on se trompe dans le sens
    « bloquant » : l'app entière, sur web, pour tout le monde.
+   **Rouverte le 02/10/2026, avant la mise sur Play, à la demande de la personne qui pilote, et
+   tranchée par une quatrième voie que ces trois-là ne voyaient pas : mesurer sans collecteur.** La
+   politique candidate a été injectée en rapport seul sur les dix-neuf routes de la production — aucune
+   infraction —, puis appliquée, plus stricte qu'avant (ni `'unsafe-inline'` ni `'unsafe-eval'` pour
+   les scripts, un seul projet Supabase nommé). Et le risque qui retenait le mode bloquant a sa garde :
+   les quatre gardes navigateur de la CI servent la politique appliquée et échouent à la première
+   infraction (`TESTING-GARDES.md` §2.16). Détail en `VERCEL.md` §2.2.
 
 ### 12.4 Examiné, et laissé tel quel
 

@@ -250,8 +250,8 @@ function plan(ctx) {
         ...[
           ['verifier-titres-export', {}],
           ['verifier-configuration-export', FACTICE],
-          ['verifier-rendu-export', {}],
-          ['verifier-etats-export', {}],
+          ['verifier-rendu-export', FACTICE],
+          ['verifier-etats-export', FACTICE],
           ['verifier-assetlinks-export', {}],
         ].map(([s, env]) => ({
           nom: s,

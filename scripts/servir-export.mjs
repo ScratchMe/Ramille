@@ -5,7 +5,7 @@
 // `cleanUrls`, et deux copies qui divergent feraient qu'un garde-fou sert la production et
 // l'autre non — sans que rien ne dise lequel a raison. La règle du dépôt vaut ici comme
 // ailleurs : ce qui doit rester d'accord s'écrit une fois.
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 
@@ -45,6 +45,94 @@ function resoudre(dist, url) {
   return null;
 }
 
+/**
+ * Les en-têtes que `vercel.json` pose sur toutes les routes, **Content-Security-Policy comprise**,
+ * servis tels quels — à un détail près, dit plus bas.
+ *
+ * **Pourquoi ce serveur les sert** (02/10/2026). La CSP du site est appliquée, et une politique
+ * appliquée qui interdit quelque chose dont l'app a besoin ne casse pas une page : elle casse l'app
+ * entière, sur web, pour tout le monde, et rien ne le signale côté serveur. Les quatre gardes qui
+ * ouvrent l'export dans un navigateur passent par ici : servir la politique de production, c'est
+ * faire jouer à chacun de leurs parcours la mesure qu'aucun collecteur ne fait, à chaque PR. Ils
+ * relèvent les infractions par `releverLaCsp()` ci-dessous et échouent à la première.
+ *
+ * **Le détail : l'origine Supabase.** La politique nomme le projet de production dans `connect-src`,
+ * et un export de CI parle à un autre (la stack locale, ou l'URL factice de l'export de rendu). Le
+ * serveur remplace donc cette seule source par l'origine avec laquelle l'export a été construit,
+ * lue dans `EXPO_PUBLIC_SUPABASE_URL`, et rien d'autre. Sans la variable, il refuse de démarrer
+ * plutôt que de servir une politique qui ferait échouer chaque requête pour une raison étrangère à
+ * ce qu'on éprouve.
+ */
+export function enTetesDeProduction(config, origineSupabase) {
+  const regles = config.headers ?? [];
+  for (const regle of regles) {
+    if (regle.source !== '/(.*)') {
+      throw new Error(
+        `vercel.json pose des en-têtes sur « ${regle.source} » : servir-export.mjs ne sait reproduire` +
+          ' que la règle « /(.*) ». Étendre resoudre() avant d’ajouter une règle, sinon les gardes' +
+          ' serviraient autre chose que la production.',
+      );
+    }
+  }
+  const enTetes = {};
+  for (const { key, value } of regles.flatMap((regle) => regle.headers)) {
+    enTetes[key.toLowerCase()] = /^content-security-policy/i.test(key) ? politiqueServie(value, origineSupabase) : value;
+  }
+  return enTetes;
+}
+
+/** La politique de `vercel.json`, l'origine Supabase de production remplacée par celle de l'export. */
+export function politiqueServie(politique, origineSupabase) {
+  return politique
+    .split(';')
+    .map((directive) => {
+      const [nom, ...sources] = directive.trim().split(/\s+/);
+      if (nom !== 'connect-src') return directive.trim();
+      const remplacees = sources.map((source) => {
+        if (!/^https:\/\/[^/]+\.supabase\.co$/.test(source)) return source;
+        if (!origineSupabase) {
+          throw new Error(
+            'La CSP de vercel.json nomme le projet Supabase de production, et EXPO_PUBLIC_SUPABASE_URL' +
+              ' n’est pas définie : impossible de servir la politique avec l’origine de cet export.' +
+              ' La renseigner comme pour l’export lui-même.',
+          );
+        }
+        return new URL(origineSupabase).origin;
+      });
+      return [nom, ...remplacees].join(' ');
+    })
+    .filter(Boolean)
+    .join('; ');
+}
+
+/**
+ * Branche sur une page ou un contexte Playwright le relevé des infractions à la CSP, **avant** la
+ * première navigation. Rend la liste, qui se remplit au fil des navigations : l'écouteur est
+ * réinstallé dans chaque document, et le relais par `exposeBinding` survit au changement de page,
+ * là où un tableau gardé dans `window` repartirait de zéro.
+ */
+export async function releverLaCsp(cible) {
+  const infractions = [];
+  await cible.exposeBinding('__signalerInfractionCsp', (_source, infraction) => infractions.push(infraction));
+  await cible.addInitScript(() => {
+    document.addEventListener('securitypolicyviolation', (evenement) => {
+      window.__signalerInfractionCsp({
+        directive: evenement.effectiveDirective,
+        bloque: evenement.blockedURI,
+        page: evenement.documentURI,
+      });
+    });
+  });
+  return infractions;
+}
+
+/** Une ligne lisible par infraction, pour les messages d'échec des gardes. */
+export function decrireInfractions(infractions) {
+  return infractions.map(
+    ({ directive, bloque, page }) => `${directive} a bloqué « ${bloque || 'inline'} » sur ${page}`,
+  );
+}
+
 /** Démarre le serveur sur un port libre et rend son adresse, plus de quoi le refermer. */
 /**
  * @param dist  le dossier d'export à servir
@@ -63,6 +151,10 @@ function resoudre(dist, url) {
  * machine où le port est pris : plus rien ne s'y casserait en silence.
  */
 export async function servirExport(dist, port = 0) {
+  const enTetes = enTetesDeProduction(
+    JSON.parse(readFileSync('vercel.json', 'utf8')),
+    process.env.EXPO_PUBLIC_SUPABASE_URL,
+  );
   const serveur = createServer((requete, reponse) => {
     const fichier = resoudre(dist, requete.url ?? '/');
     if (!fichier) {
@@ -70,6 +162,7 @@ export async function servirExport(dist, port = 0) {
       return;
     }
     reponse.writeHead(200, {
+      ...enTetes,
       'content-type': TYPES[extname(fichier)] ?? 'application/octet-stream',
     });
     createReadStream(fichier).pipe(reponse);
