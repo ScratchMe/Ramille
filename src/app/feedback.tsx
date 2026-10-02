@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { cadreDuChamp } from '@/components/auth/text-field';
+import { cadreDuChamp } from '@/components/cadre-du-champ';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
 import { GroupeDeChoix } from '@/components/bilan/groupe-de-choix';

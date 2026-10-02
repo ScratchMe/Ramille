@@ -5,9 +5,10 @@
 // compte doit offrir un chemin de suppression **dans l'app**. Ramille en crée un pour chaque
 // visiteur dès l'ouverture (session anonyme), donc la règle s'applique même à quelqu'un qui ne
 // s'est jamais inscrit.
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Share } from 'react-native';
 
+import { noterUneReconnexion } from '@/lib/connexion-prefs';
+import { concilierLesMarques, effacerLesMarquesLocales } from '@/lib/marques-locales';
 import { pendantUnDepartVolontaire, supabase } from '@/lib/supabase';
 import { APP_NAME } from '@/constants/produit';
 import { etatDuCompte, type EtatSuppression } from '@/types/compte-suppression';
@@ -149,47 +150,25 @@ export async function lireEtatDuCompte(): Promise<EtatSuppression> {
 }
 
 /**
- * Tout ce que cet appareil garde du produit, effacé après une suppression de compte.
+ * Une reconnexion par code vient d'ouvrir une session — `/connexion/retrouver`, ou l'adresse déjà
+ * prise de `/connexion/email`.
  *
- * **Le brouillon est la vraie raison de cette fonction** (A6-7). La suppression efface une ligne
- * d'`auth.users` et laisse la cascade faire le reste côté serveur, mais rien ne touchait
- * AsyncStorage : le brouillon de questionnaire — distances, zone d'habitation, motorisation, les
- * seules réponses de la personne dans le lot — survivait à un écran qui venait d'annoncer une
- * suppression définitive, et **repréremplissait** le questionnaire suivant (ordre brouillon >
- * dernier bilan > vide). Les autres clés sont des marques d'interface : les laisser
- * amputait durablement l'appareil de ses moments de renforcement (proposition de connexion plein
- * écran, feuille des rappels, annonce de rattachement), sans que rien ne le montre.
+ * **Les marques ne se balaient plus que si le compte change** ([#319](https://github.com/ScratchMe/Ramille/issues/319),
+ * 02/10/2026). Le balayage était sans condition, et il emportait aussi les marques du **même** compte
+ * revenu après un refus — son brouillon de re-bilan compris (`v1-27` §12.27, « ce qui reste »). Le
+ * propriétaire des marques dit désormais lequel des deux cas on vit ; sans propriétaire noté, on
+ * balaie, comme avant.
  *
- * **Le balayage se fait par préfixe, et c'est ce qui le garde juste dans le temps.** Une liste
- * écrite ici aurait oublié la clé suivante, du jour où quelqu'un en ajoute une ailleurs — le
- * même piège silencieux qu'une fonction de suppression qui énumérerait les tables. Le préfixe
- * `traceverte.` est commun à toutes (il est historique et se conserve : le renommer effacerait
- * les brouillons existants, cf. CLAUDE.md) et n'appartient qu'à nous : les clés de session du
- * SDK Supabase sont en `sb-…`, donc la déconnexion ci-dessous reste la seule à y toucher.
- *
- * Best-effort et **après** le succès du RPC : un AsyncStorage indisponible ne doit pas faire
- * échouer une suppression déjà effectuée côté serveur.
- *
- * **Exportée depuis le 20/09/2026, pour un troisième appelant : le changement d'utilisateur.**
- * Les deux premiers sont des sorties de cet appareil ; le troisième est une arrivée — un compte
- * retrouvé par code, depuis un appareil qui portait la session de quelqu'un d'autre. Sans
- * balayage, le compte retrouvé lit les marques de la session qu'on vient de quitter, dont
- * l'annonce de rattachement et l'étape du premier parcours, qui décide de la barre d'onglets.
- * C'est le défaut que le canvas v1-21 a relevé sur le retour de lien (`v1-27` §12.12), et le
- * chemin par code le reprend au bon endroit. Ce qui part avec, et qu'il faut savoir : le
- * brouillon de questionnaire. C'est le bon choix quand on change de compte — le brouillon
- * appartenait à l'autre session — et c'est déjà ce que fait la déconnexion.
+ * **Et la reconnexion se note** (`v1-27` §12.28) : le plan constate ensuite un compte rattaché sans
+ * annonce faite, et comptait ce constat comme un rattachement (`connexion_success`). Une reconnexion
+ * n'en est pas un : le compte l'était déjà.
  */
-const PREFIXE_CLES_LOCALES = 'traceverte.';
-
-export async function effacerLesMarquesLocales(): Promise<void> {
-  try {
-    const cles = await AsyncStorage.getAllKeys();
-    const aEffacer = cles.filter((cle) => cle.startsWith(PREFIXE_CLES_LOCALES));
-    if (aEffacer.length > 0) await AsyncStorage.multiRemove(aEffacer);
-  } catch {
-    // Au pire, un brouillon survit sur cet appareil — jamais un échec annoncé à tort.
-  }
+export async function apresUneReconnexion(): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const userId = data.session?.user.id;
+  if (userId) await concilierLesMarques(userId, 'balayer');
+  else await effacerLesMarquesLocales();
+  await noterUneReconnexion();
 }
 
 /**

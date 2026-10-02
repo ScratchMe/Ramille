@@ -34,6 +34,13 @@
  *   - `setRappels(prefs)` sans condition (l'état d'avant) → 5 ;
  *   - `prefs === null` retiré de la ligne de relecture → 5.
  *
+ * **Et un sixième le 02/10/2026** (`v1-27` §12.28) : 6. **une reconnexion ne se compte pas comme un
+ * rattachement** — le plan constate un compte rattaché sans annonce faite et émettait `connexion_success`,
+ * que la session vienne d'un rattachement ou d'une reconnexion par code. L'émission vit dans l'écran,
+ * aucune dérivation ne la porte, et le parcours réel ne lit pas la mesure. Deux mutations :
+ *   - la marque de reconnexion ignorée (l'état d'avant) → 6, « ne compte pas une reconnexion » ;
+ *   - l'émission jamais faite → 6, « compte un rattachement par email ».
+ *
  * **Ce qu'il coûte** : douze modules doublés pour monter l'écran — le transport, le stockage local
  * de quatre marques, la navigation et ses deux contextes de pile, la mesure, et les composants qui
  * tirent `react-native-svg`. C'est le prix d'un écran qui lit dix sources ; le relevé de
@@ -51,6 +58,13 @@ import { Colors } from '@/constants/theme';
 
 /** Ce que rend chaque lecture, par table ou par RPC — remplacé test par test. */
 const mockLire = jest.fn<Promise<unknown>, [string]>();
+/** L'utilisateur de la session, lu pour dire par quel chemin le compte a été rattaché. */
+const mockUtilisateur = jest.fn<Promise<unknown>, []>();
+/** L'annonce du rattachement déjà faite sur cet appareil ? La session vient-elle d'une reconnexion ? */
+const mockAnnonceVue = jest.fn<Promise<boolean>, []>();
+const mockReconnexion = jest.fn<Promise<boolean>, []>();
+const mockEtatDuRattachement = jest.fn<Promise<unknown>, []>();
+const mockTrack = jest.fn();
 
 jest.mock('@/lib/supabase', () => {
   // Un constructeur de requête qui se chaîne sur toutes les méthodes que l'écran appelle, et se
@@ -65,7 +79,7 @@ jest.mock('@/lib/supabase', () => {
     supabase: {
       from: (table: string) => requete(table),
       rpc: (nom: string) => mockLire(`rpc:${nom}`),
-      auth: { getUser: async () => ({ data: { user: null }, error: null }) },
+      auth: { getUser: () => mockUtilisateur() },
     },
   };
 });
@@ -90,9 +104,10 @@ jest.mock('@/app/(tabs)/_layout', () => {
 jest.mock('@/hooks/use-rafraichir-au-retour', () => ({ useRafraichirAuRetour: () => {} }));
 jest.mock('@/hooks/use-reprendre-l-engagement', () => ({ useReprendreLEngagement: () => {} }));
 jest.mock('@/hooks/use-track-focus', () => ({ useTrackFocus: () => {} }));
-jest.mock('@/lib/analytics', () => ({ track: () => {} }));
+jest.mock('@/lib/analytics', () => ({ track: (...args: unknown[]) => mockTrack(...args) }));
 jest.mock('@/lib/connexion-prefs', () => ({
-  aVuRattachementAnnonce: async () => true,
+  aVuRattachementAnnonce: () => mockAnnonceVue(),
+  vientDUneReconnexion: () => mockReconnexion(),
   marquerRattachementAnnonce: async () => {},
   aVuEngagementOrphelin: async () => true,
   marquerEngagementOrphelinVu: async () => {},
@@ -105,7 +120,7 @@ jest.mock('@/lib/saison-prefs', () => ({
   marquerLouvertureDeSaisonVue: (cycle: string) => mockMarquerLaSaison(cycle),
 }));
 jest.mock('@/lib/premier-parcours', () => ({ aVuLePremierPlan: async () => true, marquerLePremierPlanVu: async () => {} }));
-jest.mock('@/lib/compte', () => ({ lireEtatDuRattachement: async () => ({ kind: 'local' }) }));
+jest.mock('@/lib/compte', () => ({ lireEtatDuRattachement: () => mockEtatDuRattachement() }));
 /** Les réglages de rappel lus — `null` quand rien n'a été lu (`loadReminderPrefs`, T-6). */
 const mockPrefs = jest.fn<Promise<unknown>, []>();
 jest.mock('@/lib/notification-prefs', () => ({
@@ -167,6 +182,11 @@ const PREFS = {
 
 beforeEach(() => {
   mockLire.mockReset();
+  mockUtilisateur.mockReset().mockResolvedValue({ data: { user: null }, error: null });
+  mockAnnonceVue.mockReset().mockResolvedValue(true);
+  mockReconnexion.mockReset().mockResolvedValue(false);
+  mockEtatDuRattachement.mockReset().mockResolvedValue({ kind: 'local' });
+  mockTrack.mockReset();
   mockPrefs.mockReset().mockResolvedValue(PREFS);
   mockVuLaSaison.mockReset().mockResolvedValue(true);
   mockMarquerLaSaison.mockReset().mockResolvedValue(undefined);
@@ -429,5 +449,38 @@ describe('Plan — l’accent des deux points ouverts', () => {
     };
     expect(await couleur('Septembre 2026')).toBe(Colors.light.accentText);
     expect(await couleur('Semaine du 22 septembre')).toBe(Colors.light.textTertiary);
+  });
+});
+
+// ── Le rattachement constaté, et ce qui se compte ─────────────────────────────────────────────
+
+describe('Plan — un rattachement se compte, une reconnexion non (`v1-27` §12.28)', () => {
+  /** Un compte rattaché par email, dont l'annonce n'a jamais été faite sur cet appareil. */
+  function unCompteRattacheSansAnnonce() {
+    lectures();
+    mockAnnonceVue.mockResolvedValue(false);
+    mockEtatDuRattachement.mockResolvedValue({ kind: 'rattache', email: 'camille@exemple.fr' });
+    mockUtilisateur.mockResolvedValue({ data: { user: { identities: [{ provider: 'email' }] } }, error: null });
+  }
+  const ANNONCE = 'Ton compte est rattaché à camille@exemple.fr. Ton bilan te suit d’un appareil à l’autre.';
+  const succes = () => mockTrack.mock.calls.filter(([nom]) => nom === 'connexion_success');
+
+  it('compte un rattachement par email constaté, et l’annonce', async () => {
+    unCompteRattacheSansAnnonce();
+    render(<Plan />);
+    expect(await screen.findByText(ANNONCE)).toBeTruthy();
+    await waitFor(() => expect(succes()).toEqual([['connexion_success', { method: 'email' }]]));
+  });
+
+  it('ne compte pas une reconnexion, et l’annonce quand même — elle dit vrai', async () => {
+    unCompteRattacheSansAnnonce();
+    mockReconnexion.mockResolvedValue(true);
+    render(<Plan />);
+    expect(await screen.findByText(ANNONCE)).toBeTruthy();
+    // Le test d'une absence laisse au défaut le temps d'arriver : la lecture de la reconnexion a eu
+    // lieu, et c'est elle qui décide de l'émission (`TESTING.md` §1.1).
+    await waitFor(() => expect(mockReconnexion).toHaveBeenCalled());
+    await act(async () => {});
+    expect(succes()).toEqual([]);
   });
 });

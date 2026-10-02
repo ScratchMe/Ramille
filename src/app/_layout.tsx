@@ -26,7 +26,8 @@ import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
 import { track } from '@/lib/analytics';
 import { createSessionFromUrl } from '@/lib/auth';
-import { effacerLesMarquesLocales, lireEtatDuRattachement } from '@/lib/compte';
+import { lireEtatDuRattachement } from '@/lib/compte';
+import { effacerLesMarquesLocales } from '@/lib/marques-locales';
 import {
   afficherLesNotificationsAuPremierPlan,
   enregistrerLeJeton,

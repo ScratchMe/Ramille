@@ -468,17 +468,22 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   `getSession` voit alors « pas de session, pas d'erreur », et l'app crée une session anonyme — le
   défaut que C2.11 devait fermer (`v1-27` §12.27).
 - **`commitPlanAction` dit « Vérifie ta connexion et réessaie. » à toute erreur d'écriture** : D19 ne
-  couvre que les lectures.
+  couvre que les lectures. **Corrigé le 02/10/2026** (`v1-27` §12.29), pour toutes les écritures du
+  produit ; les phrases du serveur sont à valider.
 - **Deux lectures de l'entrée d'un re-bilan n'ont ni relecture ni « Réessayer »** : le préremplissage
   et l'engagement en cours. Depuis que les lectures ne sont plus rejouées (R-5), un raté réseau d'une
   seconde y donne un questionnaire vide, sans bandeau ni feuille — rien de faux n'est dit, mais neuf
-  étapes sont à refaire (`src/lib/supabase.ts`).
+  étapes sont à refaire (`src/lib/supabase.ts`). **Corrigé le 02/10/2026** (`v1-27` §12.29) : reprises
+  en arrière-plan, sans phrase de plus.
 - **`MARGE_DE_DEFILEMENT` et la mesure du défilement vivent deux fois**, dans le plan et dans la liste
-  des pistes ; le commentaire exige qu'elles restent égales, et rien ne les lie.
+  des pistes ; le commentaire exige qu'elles restent égales, et rien ne les lie. **Corrigé le
+  02/10/2026** : `src/lib/defilement.ts`.
 - **Sur web, le retour suit l'historique du navigateur** : depuis un plan atteint en naviguant, il
   revient à l'entrée d'avant, pas forcément hors de l'app. Le pendant d'Android, la pile, est vide.
-- **`cadreDuChamp` vit dans `auth/text-field.tsx`**, et le champ de distance l'importe de là.
+  **Examiné le 02/10/2026, et laissé** (`v1-27` §12.29) : le retour d'un navigateur lui appartient.
+- **`cadreDuChamp` vit dans `auth/text-field.tsx`**, et le champ de distance l'importe de là. **Corrigé
+  le 02/10/2026** : `src/components/cadre-du-champ.ts`.
 - **Les questions du contexte restent en `small` tertiaire** (D4), là où les autres étapes posent les
-  leurs en grand : à juger en dessin.
+  leurs en grand : à juger en dessin — toujours ouvert, et pas technique.
 
 **Ce qui ne se vérifie que sur appareil** est consigné en `v1-13` §11.26.

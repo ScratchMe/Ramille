@@ -20,6 +20,10 @@
  * pour la raison écrite en tête de `src/lib/supabase.test.ts`. Et les départs voulus passent par leurs
  * **vrais appelants** (`src/lib/compte.ts`) : garder la fonction ne garde pas ses appels.
  *
+ * **Et depuis le 02/10/2026, les marques locales suivent leur propriétaire**
+ * ([#319](https://github.com/ScratchMe/Ramille/issues/319)) : une session anonyme refusée laissait ses
+ * marques à la suivante. Les tests de la fin de ce fichier gardent la règle sur le même client réel.
+ *
  * **Éprouvé en le cassant, le 02/10/2026** (`TESTING.md` §1.1) : voir le relevé des mutations au bas
  * de ce fichier, joué une à une, le module restauré entre deux.
  *
@@ -57,6 +61,23 @@ const sessionAnonyme = (expiresAt: number) => ({
   expires_at: expiresAt,
   user: { id: 'anonyme-neuf', aud: 'authenticated', role: 'authenticated', is_anonymous: true },
 });
+
+/** Une session anonyme d'avant — purgée au bout de 90 jours d'inactivité, et dont le jeton est refusé. */
+const sessionAnonymePurgee = (expiresAt: number) => ({
+  ...sessionAnonyme(expiresAt),
+  access_token: 'jeton-purge',
+  refresh_token: 'rafraichissement-purge',
+  user: { id: 'anonyme-purge', aud: 'authenticated', role: 'authenticated', is_anonymous: true },
+});
+
+const PROPRIETAIRE = 'traceverte.proprietaire_des_marques.v1';
+/** Les marques que la recette du 02/10/2026 a vues survivre à la session anonyme refusée (#319). */
+const MARQUES_DE_L_ANONYME_PURGE: [string, string][] = [
+  ['traceverte.a_un_bilan.v1', '1'],
+  ['traceverte.premier_parcours.v1', 'fait'],
+  ['traceverte.premier_plan_vu.v1', '1'],
+  ['traceverte.bilan_draft.v1', '{"answers":{},"step":"context"}'],
+];
 
 const json = (statut: number, corps: unknown) =>
   new Response(JSON.stringify(corps), { status: statut, headers: { 'content-type': 'application/json' } });
@@ -247,7 +268,9 @@ describe('une session refusée', () => {
     const { ensureSession } = await nouveauLancement([[CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))]]);
     await ensureSession();
     await laisserSePoser();
-    const { effacerLesMarquesLocales } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+    const { effacerLesMarquesLocales } = jest.requireActual<typeof import('@/lib/marques-locales')>(
+      '@/lib/marques-locales'
+    );
 
     await effacerLesMarquesLocales();
     expect(await AsyncStorage.getItem(MARQUE_DU_COMPTE)).toBeNull();
@@ -286,6 +309,101 @@ describe('une session refusée', () => {
     expect(session?.user.id).toBe('anonyme-neuf');
     expect(creations).toHaveLength(1);
   });
+
+  // ── Les marques locales suivent leur propriétaire (#319) ─────────────────────────────────────
+
+  it('une session anonyme refusée ne laisse pas ses marques à la session anonyme suivante (#319)', async () => {
+    const { ensureSession } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionAnonymePurgee(dans(-3600)))],
+      [PROPRIETAIRE, 'anonyme-purge'],
+      ...MARQUES_DE_L_ANONYME_PURGE,
+    ]);
+
+    const session = await ensureSession();
+
+    expect(session?.user.id).toBe('anonyme-neuf');
+    for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
+    expect(await AsyncStorage.getItem(PROPRIETAIRE)).toBe('anonyme-neuf');
+  });
+
+  it('un brouillon écrit avant toute session survit à la première, qui devient propriétaire', async () => {
+    const BROUILLON: [string, string] = ['traceverte.bilan_draft.v1', '{"answers":{},"step":"commute_mode"}'];
+    const { ensureSession } = await nouveauLancement([BROUILLON]);
+
+    await ensureSession();
+
+    expect(await AsyncStorage.getItem(BROUILLON[0])).toBe(BROUILLON[1]);
+    expect(await AsyncStorage.getItem(PROPRIETAIRE)).toBe('anonyme-neuf');
+  });
+
+  it('les marques du propriétaire restent à chaque lancement', async () => {
+    const { ensureSession } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+      [PROPRIETAIRE, 'compte-reel'],
+      ...MARQUES_DE_L_ANONYME_PURGE,
+    ]);
+
+    await ensureSession();
+
+    for (const [cle, valeur] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBe(valeur);
+  });
+
+  it('une session d’un autre compte trouvée au lancement balaie les marques de l’ancien', async () => {
+    // Une reconnexion dont l'app a été tuée avant la suite (`apresUneReconnexion`) : c'est le lancement
+    // suivant qui fait le ménage.
+    const { ensureSession } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+      [PROPRIETAIRE, 'anonyme-de-cet-appareil'],
+      ...MARQUES_DE_L_ANONYME_PURGE,
+    ]);
+
+    await ensureSession();
+
+    for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
+    expect(await AsyncStorage.getItem(PROPRIETAIRE)).toBe('compte-reel');
+  });
+
+  it('une reconnexion du même compte, après un refus, garde ses marques — son brouillon compris', async () => {
+    const { ensureSession } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+      [PROPRIETAIRE, 'compte-reel'],
+      ...MARQUES_DE_L_ANONYME_PURGE,
+    ]);
+    await ensureSession();
+    const { apresUneReconnexion } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+
+    await apresUneReconnexion();
+
+    for (const [cle, valeur] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBe(valeur);
+    expect(await AsyncStorage.getItem('traceverte.session_retrouvee.v1')).toBe('1');
+  });
+
+  it('une reconnexion à un autre compte balaie les marques de la session quittée', async () => {
+    // La session de l'appareil était anonyme ; le code vient d'ouvrir celle du compte retrouvé.
+    await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+      [PROPRIETAIRE, 'anonyme-de-cet-appareil'],
+      ...MARQUES_DE_L_ANONYME_PURGE,
+    ]);
+    // **Après** le lancement : avant, ce serait un autre registre, donc un autre stockage (en-tête).
+    const { apresUneReconnexion } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+
+    await apresUneReconnexion();
+
+    for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
+    expect(await AsyncStorage.getItem(PROPRIETAIRE)).toBe('compte-reel');
+    expect(await AsyncStorage.getItem('traceverte.session_retrouvee.v1')).toBe('1');
+  });
+
+  it('une reconnexion sans propriétaire noté balaie, comme avant', async () => {
+    await nouveauLancement([[CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))], ...MARQUES_DE_L_ANONYME_PURGE]);
+    const { apresUneReconnexion } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+
+    await apresUneReconnexion();
+
+    for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
+    expect(await AsyncStorage.getItem(PROPRIETAIRE)).toBe('compte-reel');
+  });
 });
 
 /*
@@ -310,4 +428,16 @@ describe('une session refusée', () => {
  *   | l'écoute de `SIGNED_OUT` qui ne pose jamais le refus | « un refus en cours de route… », seul |
  *   | « Commencer » qui efface la marque sans lever l'état | « Commencer… », seul — par l'état lu juste après, avant toute relecture |
  *   | la marque écrite une seule fois par session (le cache d'avant) | « la marque balayée… », seul |
+ *
+ * **Et six pour les marques qui suivent leur propriétaire** (#319, 02/10/2026), rejouées sur ce fichier et
+ * `src/lib/compte.test.ts` :
+ *
+ *   | Ce qu'on casse | Ce qui tombe |
+ *   |---|---|
+ *   | la session anonyme créée n'est pas accueillie (le défaut d'avant, reproduit) | « une session anonyme refusée ne laisse pas… (#319) » et « un brouillon écrit avant toute session… » — le second par le propriétaire jamais noté |
+ *   | la session trouvée au lancement n'est pas accueillie | « une session d'un autre compte trouvée au lancement… », seul |
+ *   | un propriétaire inconnu toujours balayé | « un brouillon écrit avant toute session… », seul |
+ *   | le propriétaire plus reconnu (`rien` retiré) | « les marques du propriétaire restent… » et « une reconnexion du même compte… » |
+ *   | la reconnexion qui note sans balayer | « une reconnexion sans propriétaire noté balaie… », seul |
+ *   | la reconnexion qui ne se note pas (`v1-27` §12.28) | « une reconnexion du même compte… » et « une reconnexion à un autre compte… » |
  */

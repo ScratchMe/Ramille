@@ -10,6 +10,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '@/lib/supabase';
+import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
+import { genreDeLEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 import {
   reponseALaVeilleDe,
   type CanalPrefere,
@@ -80,17 +82,21 @@ export async function loadReminderPrefs(): Promise<ReminderPrefs | null> {
 /**
  * La réponse à l'opt-in du mot de la veille (C4.2). Jamais `jamais_propose` : une réponse ne se
  * retire pas, la base le refuse (`garder_la_reponse_au_mot_de_la_veille`) — c'est ce qui garantit
- * qu'un refus n'est pas reproposé. Rend `true` si l'écriture a abouti.
+ * qu'un refus n'est pas reproposé. Rend `null` si l'écriture a abouti, le genre de l'échec sinon
+ * (comme `setReminderChannel`, ci-dessous).
  */
-export async function setMotDeLaVeille(reponse: Exclude<ReponseALaVeille, 'jamais_propose'>): Promise<boolean> {
+export async function setMotDeLaVeille(
+  reponse: Exclude<ReponseALaVeille, 'jamais_propose'>
+): Promise<GenreDEchec | null> {
   const {
     data: { user },
+    error: erreurDeSession,
   } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user) return genreDeLaSessionManquante(erreurDeSession);
 
-  const { error } = await supabase.from('profiles').update({ mot_de_la_veille: reponse }).eq('id', user.id);
+  const { error, status } = await supabase.from('profiles').update({ mot_de_la_veille: reponse }).eq('id', user.id);
 
-  return !error;
+  return error ? genreDeLEchec(status) : null;
 }
 
 /**
@@ -130,19 +136,34 @@ async function leJetonDeCetAppareilEstActif(): Promise<boolean | null> {
   return !!data;
 }
 
-/** Renvoie `true` si l'écriture a abouti — l'appelant remet le réglage en place sinon. */
-export async function setReminderChannel(canal: CanalPrefere): Promise<boolean> {
+/**
+ * **`null` quand le choix est enregistré, le genre de l'échec sinon** (02/10/2026, `v1-33` §9) : les
+ * deux écrans qui l'appellent disaient « Vérifie ta connexion » à toute erreur, et un booléen ne leur
+ * laissait pas le choix. La phrase vient de `messageDEcriture` ; l'appelant remet le réglage en place
+ * sur un échec.
+ */
+export async function setReminderChannel(canal: CanalPrefere): Promise<GenreDEchec | null> {
   const {
     data: { user },
+    error: erreurDeSession,
   } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user) return genreDeLaSessionManquante(erreurDeSession);
 
-  const { error } = await supabase
+  const { error, status } = await supabase
     .from('profiles')
     .update({ reminder_channel: canal })
     .eq('id', user.id);
 
-  return !error;
+  return error ? genreDeLEchec(status) : null;
+}
+
+/**
+ * `getUser()` interroge le serveur : hors ligne, il rend une erreur de transport d'`auth-js`, que
+ * `estPanneDeTransport` reconnaît (`src/types/connexion.ts`). Toute autre absence d'utilisateur — une
+ * session qui manque — ne tient pas au réseau.
+ */
+function genreDeLaSessionManquante(erreur: ErreurAuth): GenreDEchec {
+  return estPanneDeTransport(erreur) ? 'horsLigne' : 'serveur';
 }
 
 // La feuille de proposition ne s'ouvre qu'une fois par appareil (v1-12 §6.1). Marque locale,

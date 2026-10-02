@@ -31,6 +31,7 @@ import { revenirOu } from '@/lib/navigation';
 import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-parcours';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { type EngagementEnCours } from '@/types/rebilan';
+import { relireEnArrierePlan } from '@/types/relecture-en-arriere-plan';
 import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
@@ -149,7 +150,7 @@ export default function BilanQuestionnaire() {
   // rechargé (alors le bandeau de préremplissage reste vrai), et vers quoi repartir si le
   // brouillon a plusieurs semaines. La lecture du brouillon ne l'attend pas : elle débloque
   // l'écran, et ce second aller-retour ne fait qu'affiner ce qui est déjà affiché — hors ligne
-  // il rend `null` et rien ne change.
+  // il échoue, se reprend deux fois en arrière-plan (`relireEnArrierePlan`), et rien ne change.
   useEffect(() => {
     let cancelled = false;
 
@@ -206,8 +207,18 @@ export default function BilanQuestionnaire() {
 
       // Enveloppé, parce que cette lecture n'est plus seulement celle du préremplissage : un
       // échec ne doit pas pouvoir coûter un questionnaire déjà affiché et déjà utilisable.
-      const previousAnswers = await loadLastSubmittedAnswers().catch(() => null);
+      //
+      // **Et repris en arrière-plan** (`v1-33` §9, 02/10/2026) : depuis que le client ne rejoue plus
+      // les lectures (R-5), un raté réseau d'une seconde laissait ici un questionnaire vide — neuf
+      // étapes à refaire. L'écran est déjà utilisable, donc la reprise ne retarde personne ; une
+      // réponse donnée entre-temps n'est pas écrasée (`reponseModifiee`, plus bas).
+      const lecture = await relireEnArrierePlan(
+        () => loadLastSubmittedAnswers().catch(() => ({ ok: false }) as const),
+        (resultat) => !resultat.ok,
+        { annule: () => cancelled }
+      );
       if (cancelled) return;
+      const previousAnswers = lecture.ok ? lecture.data : null;
 
       if (previousAnswers !== null) {
         // Un bilan soumis avant les règles d'aujourd'hui peut porter un état qu'elles
@@ -308,8 +319,14 @@ export default function BilanQuestionnaire() {
     (async () => {
       try {
         await ensureSession();
-        // La même lecture que la confirmation du retrait d'un bilan (C4.7), écrite une fois.
-        const lecture = await lireLEngagementEnCours();
+        // La même lecture que la confirmation du retrait d'un bilan (C4.7), écrite une fois — **et
+        // reprise en arrière-plan** comme le préremplissage (`v1-33` §9, 02/10/2026) : sur un raté d'une
+        // seconde, la feuille ne s'ouvrait jamais.
+        const lecture = await relireEnArrierePlan(
+          () => lireLEngagementEnCours().catch(() => ({ ok: false }) as const),
+          (resultat) => !resultat.ok,
+          { annule: () => quitte }
+        );
         // Une soumission déjà partie n'a plus rien à commencer (inatteignable en pratique : neuf
         // étapes ne se traversent pas le temps d'une lecture).
         if (quitte || !lecture.ok || lecture.data === null || soumissionEnCours.current) return;

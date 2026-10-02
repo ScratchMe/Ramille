@@ -25,6 +25,7 @@ import {
 } from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
 import { PHRASE_SANS_COMPTE_SUR_TOI, type EtatRattachement } from '@/types/compte';
+import { messageDEcriture } from '@/types/ecriture-en-echec';
 import { type CanalPrefere, type FenetreDeLaVeille } from '@/types/rappels';
 
 // « Toi » — tout ce qui touche au compte, sorti de /suivi (v1-11 §2.5).
@@ -187,10 +188,10 @@ export default function Compte() {
     const avant = rappels;
     setMessageCanal(null);
     setRappels((p) => (p ? { ...p, prefere: canal } : p));
-    const ok = await setReminderChannel(canal);
-    if (ok) return;
+    const echec = await setReminderChannel(canal);
+    if (!echec) return;
     setRappels(avant);
-    setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
+    setMessageCanal(messageDEcriture('Ton choix n’a pas été enregistré.', echec));
   };
 
   // Le mot de la veille, sur le même modèle : optimiste, remis en place et dit sur un échec. Il ne
@@ -200,10 +201,10 @@ export default function Compte() {
     const avant = rappels;
     setMessageCanal(null);
     setRappels((p) => (p ? { ...p, reponseALaVeille: reponse } : p));
-    const ok = await setMotDeLaVeille(reponse);
-    if (ok) return;
+    const echec = await setMotDeLaVeille(reponse);
+    if (!echec) return;
     setRappels(avant);
-    setMessageCanal('Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.');
+    setMessageCanal(messageDEcriture('Ton choix n’a pas été enregistré.', echec));
   };
 
   // **La place est gardée tant que les lectures ne sont pas revenues** (#305) : elles arrivent

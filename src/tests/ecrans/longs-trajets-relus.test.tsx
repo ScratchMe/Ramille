@@ -29,7 +29,9 @@ jest.mock('@/lib/bilan-draft', () => ({
   saveBilanDraft: jest.fn(),
   clearBilanDraft: jest.fn(async () => {}),
 }));
-jest.mock('@/lib/bilan-history', () => ({ loadLastSubmittedAnswers: jest.fn(async () => null) }));
+jest.mock('@/lib/bilan-history', () => ({
+  loadLastSubmittedAnswers: jest.fn(async () => ({ ok: true, data: null })),
+}));
 jest.mock('@/lib/engagement-en-cours', () => ({
   lireLEngagementEnCours: jest.fn(async () => ({ ok: true, data: null })),
 }));

@@ -1,4 +1,4 @@
-import { etatApres, jetonDuLien } from './desinscription';
+import { etatApres, jetonDuLien, phraseDeLaPanne } from './desinscription';
 
 describe('jetonDuLien', () => {
   const jeton = '3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b';
@@ -50,6 +50,19 @@ describe('etatApres', () => {
 
   // Et son revers : une panne ne doit pas se lire comme un lien mort, sinon personne ne réessaie.
   it('une panne de transport se distingue d’un lien refusé', () => {
-    expect(etatApres({ ok: false })).toBe('panne');
+    expect(etatApres({ ok: false, genre: 'horsLigne' })).toBe('panne');
+    expect(etatApres({ ok: false, genre: 'serveur' })).toBe('panne');
+  });
+});
+
+// La règle de D19 appliquée aux écritures (02/10/2026) : la connexion n'est nommée que hors ligne.
+// Éprouvé en le cassant le même jour : la phrase du hors-ligne rendue pour les deux genres fait tomber
+// ce test, seul. L'appel (`couperLesRappels`, qui passe le statut de la réponse) n'est gardé que par
+// relecture.
+describe('phraseDeLaPanne', () => {
+  it('nomme la connexion hors ligne, et seulement hors ligne', () => {
+    expect(phraseDeLaPanne('horsLigne')).toContain('Vérifie ta connexion');
+    expect(phraseDeLaPanne('serveur')).not.toContain('connexion');
+    expect(phraseDeLaPanne('serveur')).toContain('tes rappels ne sont pas encore coupés');
   });
 });

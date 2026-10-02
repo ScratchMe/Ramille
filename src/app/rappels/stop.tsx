@@ -11,7 +11,8 @@ import { APP_NAME } from '@/constants/produit';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { couperLesRappels } from '@/lib/desinscription';
-import { etatApres, jetonDuLien, type EtatDesinscription } from '@/types/desinscription';
+import { etatApres, jetonDuLien, phraseDeLaPanne, type EtatDesinscription } from '@/types/desinscription';
+import type { GenreDEchec } from '@/types/lecture-en-echec';
 
 // Sortie des rappels par le lien d'un email — C2.9 (#127), arbitrage D8, constats C-4 et A9-21.
 //
@@ -50,12 +51,16 @@ export default function StopRappels() {
   // d'onglet. Arriver puis réessayer lance deux appels et rien ne garantit l'ordre des réponses —
   // chaque nouvelle clé démonte l'effet précédent, donc seul le dernier lancé écrit.
   const [essai, setEssai] = useState(0);
+  // Le genre de la dernière panne : la phrase ne parle de connexion que hors ligne (02/10/2026).
+  const [genreDeLaPanne, setGenreDeLaPanne] = useState<GenreDEchec>('serveur');
 
   useEffect(() => {
     if (!jeton) return;
     let annule = false;
     couperLesRappels(jeton).then((resultat) => {
-      if (!annule) setReponse(etatApres(resultat));
+      if (annule) return;
+      if (!resultat.ok) setGenreDeLaPanne(resultat.genre);
+      setReponse(etatApres(resultat));
     });
     return () => {
       annule = true;
@@ -128,8 +133,7 @@ export default function StopRappels() {
                 {/* « N'a pas abouti » et non « n'est pas partie » : la demande a bien quitté le
                     navigateur, et le geste à faire est le même dans les deux cas. */}
                 <ThemedText themeColor="textSecondary" style={styles.corps}>
-                  Ta demande n’a pas abouti. Vérifie ta connexion et réessaie : tes rappels ne sont
-                  pas encore coupés.
+                  {phraseDeLaPanne(genreDeLaPanne)}
                 </ThemedText>
                 {/* Le passage par « en cours » se fait **ici**, dans le gestionnaire du bouton :
                     sans lui, un second échec rendrait exactement le même écran et le bouton

@@ -15,7 +15,7 @@ import { Spacing } from '@/constants/theme';
 import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { track } from '@/lib/analytics';
 import { demanderLaConnexion, demanderLeRattachement } from '@/lib/auth';
-import { effacerLesMarquesLocales } from '@/lib/compte';
+import { apresUneReconnexion } from '@/lib/compte';
 import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   lireAdresseDuLien,
@@ -198,7 +198,8 @@ export default function ConnexionEmail() {
       }
       await memoriserFluxDuCode('connexion');
       setEnvoi(false);
-      track('connexion_demande');
+      // Une reconnexion, pas un rattachement : la mesure les distingue (`v1-27` §12.28).
+      track('connexion_demande', { flux: 'connexion' });
       setPhase({ kind: 'code', flux: 'connexion', apresUnGeste: true });
       return;
     }
@@ -207,10 +208,12 @@ export default function ConnexionEmail() {
     setEnvoi(false);
     // **Une demande, pas un rattachement.** `connexion_success` n'est pas émis ici et ne l'a jamais
     // été depuis la correction du 11/09/2026 : il est émis par l'annonce de `/plan`, au constat de
-    // la bascule. L'écart entre les deux **est** le taux de codes jamais tapés — c'est-à-dire la
-    // mesure demandée le 20/09/2026, et elle ne tient que si ces deux émetteurs restent ce qu'ils
-    // sont : retirer celui du plan ferait lire zéro succès par email.
-    track('connexion_demande');
+    // la bascule. L'écart entre les demandes de **rattachement** et ces succès est le taux de codes
+    // jamais tapés — la mesure demandée le 20/09/2026. Elle ne tient que si ces deux émetteurs restent
+    // ce qu'ils sont (retirer celui du plan ferait lire zéro succès par email), que la branche de
+    // l'adresse déjà prise porte `flux: 'connexion'`, et que le plan ne compte pas une reconnexion
+    // (`v1-27` §12.28, 02/10/2026 — avant, les deux événements comptaient aussi des reconnexions).
+    track('connexion_demande', { flux: 'rattachement' });
     setPhase({ kind: 'code', flux: 'rattachement', apresUnGeste: true });
   };
 
@@ -226,8 +229,10 @@ export default function ConnexionEmail() {
       // du premier parcours (qui décide de la barre d'onglets), brouillon, et l'adresse mémorisée
       // elle-même. La racine route ensuite vers le plan si le compte retrouvé porte un bilan
       // complété, vers l'onboarding sinon. **Et la pile se vide derrière le flux** (01/10/2026,
-      // audit T-1, `terminerLeFlux`) : le retour ne ramène plus dans un flux terminé.
-      await effacerLesMarquesLocales();
+      // audit T-1, `terminerLeFlux`) : le retour ne ramène plus dans un flux terminé. Le balayage
+      // ne se fait que si le compte change, et la reconnexion se note pour la mesure
+      // (`apresUneReconnexion`).
+      await apresUneReconnexion();
       terminerLeFlux('/');
       return;
     }

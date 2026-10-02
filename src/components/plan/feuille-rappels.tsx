@@ -22,6 +22,7 @@ import {
   setReminderChannel,
   type ReminderPrefs,
 } from '@/lib/notification-prefs';
+import { messageDEcriture } from '@/types/ecriture-en-echec';
 import {
   affichageDeLaVeille,
   canalPreselectionne,
@@ -39,7 +40,8 @@ import {
 /** Ce que la première étape a enregistré, pour que la seconde referme la feuille sur le bon état. */
 type Retenu = { canal: CanalPrefere; jetonActif: boolean };
 
-const MESSAGE_D_ECHEC = 'Ton choix n’a pas été enregistré. Vérifie ta connexion et réessaie.';
+/** Le constat ; la suite dépend du genre de l'échec (`messageDEcriture`, 02/10/2026). */
+const CONSTAT_D_ECHEC = 'Ton choix n’a pas été enregistré.';
 
 /**
  * La feuille — le moment où Ramille explique comment le suivi va se passer, et demande la
@@ -165,10 +167,10 @@ export function FeuilleRappels({
     setOccupe(true);
     setErreur(null);
 
-    const ok = await setReminderChannel(canal);
-    if (!ok) {
+    const echec = await setReminderChannel(canal);
+    if (echec) {
       setOccupe(false);
-      setErreur(MESSAGE_D_ECHEC);
+      setErreur(messageDEcriture(CONSTAT_D_ECHEC, echec));
       return;
     }
 
@@ -211,10 +213,10 @@ export function FeuilleRappels({
   const repondreALaVeille = async (retenu: Retenu, reponse: 'oui' | 'refuse') => {
     setOccupe(true);
     setErreur(null);
-    const ok = await setMotDeLaVeille(reponse);
+    const echec = await setMotDeLaVeille(reponse);
     setOccupe(false);
-    if (!ok) {
-      setErreur(MESSAGE_D_ECHEC);
+    if (echec) {
+      setErreur(messageDEcriture(CONSTAT_D_ECHEC, echec));
       return;
     }
     refermerPuis(() => onFerme(retenu.canal, retenu.jetonActif, reponse));

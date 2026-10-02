@@ -14,7 +14,7 @@ import { SaisieDuCode } from '@/components/auth/saisie-du-code';
 import { Radius, Spacing } from '@/constants/theme';
 import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { demanderLaConnexion } from '@/lib/auth';
-import { effacerLesMarquesLocales, lireEtatDuCompte } from '@/lib/compte';
+import { apresUneReconnexion, lireEtatDuCompte } from '@/lib/compte';
 import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
 import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
@@ -307,11 +307,13 @@ export default function RetrouverMonCompte() {
           adresse={email.trim()}
           libelleBouton="Retrouver mon compte"
           onOuverte={async () => {
-            // **On change d'utilisateur ici**, et les marques locales décrivent celui qu'on
-            // quitte : annonce de rattachement, étape du premier parcours (qui décide de la
+            // **On change d'utilisateur ici, d'ordinaire**, et les marques locales décrivent celui
+            // qu'on quitte : annonce de rattachement, étape du premier parcours (qui décide de la
             // barre d'onglets), brouillon. Le retour de lien ne les balayait pas — le défaut
-            // relevé par le canvas v1-21 (`v1-27` §12.12) —, le chemin par code le fait.
-            await effacerLesMarquesLocales();
+            // relevé par le canvas v1-21 (`v1-27` §12.12) —, le chemin par code le fait. **Sauf
+            // quand c'est le même compte qui revient**, après un refus : ses marques restent
+            // (#319, `apresUneReconnexion`).
+            await apresUneReconnexion();
             // La racine route vers le plan si le compte retrouvé porte un bilan complété, vers
             // l'onboarding sinon — **la pile vidée d'abord** (01/10/2026, audit T-1) : depuis
             // l'accueil de l'onboarding, un `replace` seul y laissait l'onboarding, que le retour

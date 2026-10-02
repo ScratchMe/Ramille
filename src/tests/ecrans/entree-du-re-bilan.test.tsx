@@ -17,6 +17,9 @@
  *     l'étape d'entrée », seul ;
  *   - « Pas maintenant » qui referme sans ressortir (`onQuitter` qui ne fait que démonter la feuille) →
  *     « « Pas maintenant » ressort du questionnaire », seul ;
+ *   - [02/10/2026, la reprise en arrière-plan] la lecture du préremplissage appelée une fois, sans
+ *     `relireEnArrierePlan` (l'état d'avant) → « un préremplissage manqué une fois… », seul ;
+ *   - [idem] la lecture de l'engagement appelée une fois → « une feuille manquée une fois… », seul ;
  *   - la condition `lecture.data === null` retirée est un **mutant équivalent** : l'écran appelle alors
  *     `setFeuilleDeLEngagement(null)`, qui ne rend rien — la condition est redondante (relevé par la
  *     contre-lecture de la PR #314 ; la note d'origine la disait « pas jouable » pour une raison de
@@ -46,7 +49,9 @@ jest.mock('@/lib/bilan-draft', () => ({
   saveBilanDraft: jest.fn(),
   clearBilanDraft: jest.fn(async () => {}),
 }));
-jest.mock('@/lib/bilan-history', () => ({ loadLastSubmittedAnswers: jest.fn(async () => null) }));
+jest.mock('@/lib/bilan-history', () => ({
+  loadLastSubmittedAnswers: jest.fn(async () => ({ ok: true, data: null })),
+}));
 jest.mock('@/lib/engagement-en-cours', () => ({
   lireLEngagementEnCours: jest.fn(async () => ({ ok: true, data: null })),
 }));
@@ -97,7 +102,7 @@ beforeEach(() => {
   jest.mocked(router.replace).mockClear();
   jest.mocked(useLocalSearchParams).mockReturnValue({});
   jest.mocked(loadBilanDraft).mockResolvedValue(null);
-  jest.mocked(loadLastSubmittedAnswers).mockResolvedValue(PRECEDENT);
+  jest.mocked(loadLastSubmittedAnswers).mockResolvedValue({ ok: true, data: PRECEDENT });
   jest.mocked(lireLEngagementEnCours).mockResolvedValue({ ok: true, data: ENGAGEMENT });
 });
 
@@ -193,4 +198,31 @@ describe('le bandeau du re-bilan', () => {
     });
     expect(await screen.findByText(BANDEAU)).toBeTruthy();
   });
+});
+
+describe('les deux lectures de l’entrée, reprises en arrière-plan (`v1-33` §9, 02/10/2026)', () => {
+  // Temps réels : la première reprise part une seconde après l'échec (`DELAIS_DE_RELECTURE`).
+  test('un préremplissage manqué une fois arrive à la reprise', async () => {
+    jest.mocked(lireLEngagementEnCours).mockResolvedValue({ ok: true, data: null });
+    // Les appels des tests d'avant restent comptés : on ne compte que ceux de celui-ci.
+    jest
+      .mocked(loadLastSubmittedAnswers)
+      .mockClear()
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValue({ ok: true, data: PRECEDENT });
+    render(<BilanQuestionnaire />);
+
+    expect(await screen.findByText(BANDEAU, {}, { timeout: 4000 })).toBeTruthy();
+    expect(loadLastSubmittedAnswers).toHaveBeenCalledTimes(2);
+  }, 10000);
+
+  test('une feuille manquée une fois s’ouvre à la reprise', async () => {
+    jest
+      .mocked(lireLEngagementEnCours)
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValue({ ok: true, data: ENGAGEMENT });
+    render(<BilanQuestionnaire />);
+
+    expect(await screen.findByText(FEUILLE, {}, { timeout: 4000 })).toBeTruthy();
+  }, 10000);
 });

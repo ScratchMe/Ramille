@@ -27,6 +27,7 @@ import { formatKg } from '@/lib/format';
 import { revenirOu } from '@/lib/navigation';
 import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { ensureSession, supabase } from '@/lib/supabase';
+import { mesurerDansLaFenetre } from '@/lib/defilement';
 import { defilementPourMontrer } from '@/types/mouvement';
 import {
   annonceDeLaPiste,
@@ -68,9 +69,6 @@ type Etat =
   | { genre: 'chargement'; relance?: true }
   | { genre: 'erreur' }
   | { genre: 'pistes'; pistes: PisteDuPlan[] };
-
-/** Ce qu'on garde des deux côtés de la carte qu'on fait entrer dans la fenêtre (`defilementPourMontrer`). */
-const MARGE_DE_DEFILEMENT = Spacing.three;
 
 export default function PistesScreen() {
   const [etat, setEtat] = useState<Etat>({ genre: 'chargement' });
@@ -186,19 +184,12 @@ export default function PistesScreen() {
         // qui ne se mesure pas (sur web, react-native-web rend le nœud du DOM).
         const ecran = defilement.current?.getNativeScrollRef();
         if (!carte || !ecran) return;
-        ecran.measureInWindow((_x, hautDeLaFenetre, _largeur, hauteurFenetre) => {
-          carte.measureInWindow((_cx, hautDeLaCarte, _cLargeur, hauteurDeLaCarte) => {
-            const haut = hautDeLaCarte - hautDeLaFenetre;
-            const aDefiler = defilementPourMontrer({
-              haut,
-              bas: haut + hauteurDeLaCarte,
-              hauteurFenetre,
-              marge: MARGE_DE_DEFILEMENT,
-            });
-            if (aDefiler > 0) {
-              defilement.current?.scrollTo({ y: position.current + aDefiler, animated: !animationsReduites });
-            }
-          });
+        // La marge et la mesure sont communes avec le plan (`src/lib/defilement.ts`).
+        mesurerDansLaFenetre(ecran, carte, (mesure) => {
+          const aDefiler = defilementPourMontrer(mesure);
+          if (aDefiler > 0) {
+            defilement.current?.scrollTo({ y: position.current + aDefiler, animated: !animationsReduites });
+          }
         });
       };
       // Sous la préférence, rien ne grandit ni ne se replie : les hauteurs sont posées d'emblée.

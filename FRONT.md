@@ -498,11 +498,12 @@ exactement ce qui avait laissé passer le mauvais caractère.
   Gardé par la section L de `verifier-etats-export.mjs` et deux étapes du parcours réel ; les phases
   de `/compte/suppression` et le code de `/connexion/retrouver` ne sont gardés par rien.
 - **Le focus d'un champ est une forme, pas une couleur** (01/10/2026, `v1-33` Q-12, `cadreDuChamp`
-  dans `src/components/auth/text-field.tsx`). La bordure passe à l'accent au focus comme au
+  dans `src/components/cadre-du-champ.ts` depuis le 02/10/2026). La bordure passe à l'accent au focus comme au
   remplissage, à la même épaisseur (`Stroke.field`) — mais gris contre vert, le changement ne tient
   que 1,78:1, et il est nul sur un champ déjà rempli. L'anneau du navigateur reste donc et **change
   de place** : l'`<input>` le perd, le cadre arrondi le porte (`outline: auto`). Mesuré : 21:1 sur la
-  page, 18,5:1 sur le fond du champ ; aucune boîte ne bouge. `NumericField` l'importe de là.
+  page, 18,5:1 sur le fond du champ ; aucune boîte ne bouge. Les quatre champs l'importent de ce
+  module neutre — `NumericField` le prenait dans le fichier de la connexion jusqu'au 02/10/2026.
 - **Un bouton secondaire posé sur une carte grise ou teintée prend `onPanel`** : fond de l'écran et
   filet, au lieu du gris des panneaux. Gris sur gris, « Oui » et « Non » de la carte du point se
   lisaient comme du texte.
@@ -633,7 +634,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   nomment la cause, c'est ce qui manquait avant le 14/09. Mais le réseau est le cas d'échec **le
   plus probable en production**, et le seul où « réessaie dans un instant » est déjà toute la
   vérité. Le genre se calcule donc **une fois** et sert deux fois, la mesure et le détail.
-  **Et une erreur du serveur ne parle pas de la connexion** (`v1-33` D19, 01/10/2026). Le plan, le
+  **Et une erreur du serveur ne parle pas de la connexion** (`v1-33` D19, 01/10/2026 ; **les écritures
+  aussi depuis le 02/10/2026** — `messageDEcriture`, `src/types/ecriture-en-echec.ts`, phrases à
+  valider, `v1-27` §12.29). Le plan, le
   suivi et `/contexte` disaient « Vérifie ta connexion. » à toute lecture en échec, y compris sur un
   500. Le genre — `horsLigne` sur `status === 0`, `serveur` partout ailleurs, une promesse qui lève
   comprise — se calcule une fois, dans la lecture (l'effet de chargement du plan,

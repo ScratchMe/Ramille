@@ -80,6 +80,7 @@ import {
   aVuRattachementAnnonce,
   marquerEngagementOrphelinVu,
   marquerRattachementAnnonce,
+  vientDUneReconnexion,
 } from '@/lib/connexion-prefs';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import {
@@ -92,6 +93,7 @@ import {
 import { lirePermission } from '@/lib/rappels';
 import { supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
+import { mesurerDansLaFenetre } from '@/lib/defilement';
 import { defilementPourMontrer } from '@/types/mouvement';
 import {
   genreDeLEchec,
@@ -349,12 +351,6 @@ const VIDE_DE_CONTEXTE: ReponsesDeContexte = {
   household_vehicles: null,
   teletravail: null,
 };
-
-/**
- * Ce qu'on garde des deux côtés d'une carte qu'on amène dans la fenêtre — la valeur de la liste des
- * pistes, pour que les deux écrans s'arrêtent au même endroit sous la bande et au-dessus de la barre.
- */
-const MARGE_DE_DEFILEMENT = Spacing.three;
 
 /**
  * **La carte des deux lieux, et l'instant où elle est vue : rendue, l'écran au premier plan** (décision
@@ -665,16 +661,13 @@ export default function Plan() {
       // La fenêtre de défilement elle-même — le nœud qui défile, et non l'instance du composant.
       const ecran = defilement.current?.getNativeScrollRef();
       if (!carte || !ecran) return;
-      ecran.measureInWindow((_x, hautDeLaFenetre, _largeur, hauteurFenetre) => {
-        carte.measureInWindow((_cx, hautDeLaCarte, _cLargeur, hauteurDeLaCarte) => {
-          const haut = hautDeLaCarte - hautDeLaFenetre;
-          const mesure = { haut, bas: haut + hauteurDeLaCarte, hauteurFenetre, marge: MARGE_DE_DEFILEMENT };
-          const aDefiler = cas === 'ouverture' ? defilementPourMontrer(mesure) : defilementVersLaCarte(mesure);
-          if (aDefiler === 0) return;
-          defilement.current?.scrollTo({
-            y: Math.max(0, position.current + aDefiler),
-            animated: !animationsReduites,
-          });
+      // La marge et la mesure sont communes avec la liste des pistes (`src/lib/defilement.ts`).
+      mesurerDansLaFenetre(ecran, carte, (mesure) => {
+        const aDefiler = cas === 'ouverture' ? defilementPourMontrer(mesure) : defilementVersLaCarte(mesure);
+        if (aDefiler === 0) return;
+        defilement.current?.scrollTo({
+          y: Math.max(0, position.current + aDefiler),
+          animated: !animationsReduites,
         });
       });
     },
@@ -784,10 +777,11 @@ export default function Plan() {
   // que part `connexion_success`** (v1-13 C1.2). L'écran email l'émettait juste après
   // `updateUser({ email })`, où rien n'est encore rattaché : `etatDuRattachement` classe cet
   // instant en `a_confirmer`, et `is_anonymous` ne bascule qu'au clic du lien. Il n'y porte plus
-  // que `connexion_demande`, l'intention — l'écart entre les deux **est** le taux d'emails jamais
-  // confirmés, c'est-à-dire le chiffre cherché.
+  // que `connexion_demande`, l'intention — l'écart entre les demandes `flux = rattachement` et ces
+  // succès est le taux de codes jamais saisis, c'est-à-dire le chiffre cherché (`MESURE.md` §1).
   //
-  // Deux précautions qui font que ce chiffre veut dire quelque chose :
+  // Trois précautions qui font que ce chiffre veut dire quelque chose — la troisième, une reconnexion
+  // qui ne se compte pas, est écrite au point d'émission ci-dessous (`v1-27` §12.28) :
   //
   // — **Google n'est émis ici que sur web**, où l'écran de connexion ne peut pas le faire : sa
   //   redirection plein écran emporte la page avant la ligne suivante, et le retour d'OAuth
@@ -828,7 +822,15 @@ export default function Plan() {
       // web que sur natif, sans cause visible. Sur natif, l'écran de connexion constate la
       // session liée dans le geste même : le compter une seconde fois doublerait exactement la
       // branche à laquelle on compare l'email.
-      if (methode === 'email' || Platform.OS === 'web') {
+      //
+      // **Et une reconnexion ne se compte pas** (`v1-27` §12.28, 02/10/2026) : elle arrive ici dans
+      // le même état qu'un rattachement — un compte permanent, une annonce jamais faite sur cet
+      // appareil —, mais le compte l'était déjà. L'annonce, elle, reste : elle dit vrai.
+      const reconnexion = await vientDUneReconnexion();
+      // La garde d'annulation après chaque attente, comme plus haut : un effet relancé pendant cette
+      // lecture compterait le même rattachement deux fois.
+      if (annule) return;
+      if ((methode === 'email' || Platform.OS === 'web') && !reconnexion) {
         track('connexion_success', { method: methode });
       }
       await marquerRattachementAnnonce();
