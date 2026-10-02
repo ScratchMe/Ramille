@@ -24,7 +24,7 @@ import { RetourDeNotification } from '@/components/retour-de-notification';
 import { SessionRefusee } from '@/components/session-refusee';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
-import { track } from '@/lib/analytics';
+import { envoyerLesErreursEnAttente, track } from '@/lib/analytics';
 import { createSessionFromUrl } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import { effacerLesMarquesLocales } from '@/lib/marques-locales';
@@ -173,6 +173,9 @@ export default function RootLayout() {
           ouvertureDejaComptee = true;
           track('app_open', { origine: 'demarrage' });
         }
+        // Les pannes gardées faute de session ou de réseau partent maintenant qu'il y a une session
+        // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Sans session — un refus —, rien ne part.
+        void envoyerLesErreursEnAttente();
         void preparerLesCanauxAndroid();
         return enregistrerLeJetonPour(session?.user.id ?? null);
       })
@@ -214,7 +217,12 @@ export default function RootLayout() {
     const abonnement = AppState.addEventListener('change', (etat) => {
       const suite = suivreLEtatDeLApp(sejour, etat, Date.now());
       sejour = suite.sejour;
-      if (suite.ouverture) track('app_open', { origine: 'retour' });
+      if (suite.ouverture) {
+        track('app_open', { origine: 'retour' });
+        // Le retour au premier plan est l'autre moment où le réseau revient (un rappel ouvert dans le
+        // métro) : les pannes gardées partent aussi.
+        void envoyerLesErreursEnAttente();
+      }
     });
 
     // `?.` et pas un appel sec, bien que l'effet sorte désormais hors natif : la garde coûte un

@@ -263,7 +263,15 @@ export type UsageEventPropsByName = {
    *  **Deux propriétés, et jamais une troisième** : la catégorie et la route. Pas de message
    *  d'exception, pas de pile — un message d'erreur est du texte libre, et du texte libre dans
    *  `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la migration). */
-  app_error: { category: AppErrorCategory; route: string };
+  app_error: {
+    category: AppErrorCategory;
+    route: string;
+    /** **Envoyée plus tard** (02/10/2026, la file d'attente locale, `src/types/erreurs-en-attente.ts`) :
+     *  pas de session ou pas de réponse au moment de la panne. L'horodatage de la ligne est alors celui
+     *  de l'envoi, d'où `retard_h`, l'écart en heures. Absentes sur un envoi immédiat. */
+    differee?: true;
+    retard_h?: number;
+  };
   /** **Une soumission de bilan qui échoue, et le seul événement du produit qui mesure un
    *  échec.** Il existe parce que le défaut qu'il mesure était invisible des deux côtés : côté
    *  base, un bilan `completed` sans réponses ni résultat se lit comme un bilan réussi (A2-2) ;
