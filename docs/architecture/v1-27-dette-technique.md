@@ -892,6 +892,13 @@ un lien ne s'ouvrirait plus que sur l'appareil qui l'a demandé — **fait le m�
 `/connexion/email`, et la CSP en `Report-Only` sans collecteur (§12.3, dont ce moment **est** la
 condition de réouverture).
 
+*Note du 02/10/2026* : les quatre entrées `vercel.app` sont retirées (par Antoine, au tableau de
+bord ; la liste relue par l'API de management porte trois entrées, `redirect-urls.md` §3.1 bis),
+l'entrée `localhost:8081` était déjà absente le 21/09, et l'alias `traceverte-me-c4a3.vercel.app`
+répond 410. Restent la CSP, à rouvrir à la publication (checklist du registre, §4), et le
+pré-détournement d'adresse, dont le passage au code a retiré le gros du danger et laissé un
+reste assumé (§12.12).
+
 ### 12.10 Le passage en PKCE, et trois gardes qui ne pouvaient pas tomber (20/09/2026)
 
 Arbitré par la personne qui pilote le 20/09/2026 (« OK pour passer à PKCE »), après le relevé du
