@@ -61,7 +61,10 @@ réécrire à chaque livraison plutôt qu'à compléter :
 [`docs/design/v1-20-moment-anniversaire/`](../design/v1-20-moment-anniversaire/) — et pas encore
 construit, avec le reste de C4.8 ; la seconde vague des transitions (`v1-30` §6), après la recette sur appareil ;
 le thème sombre, après le lancement (`v1-29` §6.1) ; les déplacements professionnels, au backlog
-(§5). **Et avant de publier sur Play, ce qui reste n'est pas du code** : les vérifications sur
+(§5) ; et, **en décision depuis le 02/10/2026**, ce qui passe près de chez soi
+([`v1-34`](v1-34-ce-qui-passe-pres-de-chez-soi.md)) : une question factuelle à la place de l'accès
+aux transports, pour que la zone ne décide plus du métro et du tram et que le RER devienne
+proposable. **Et avant de publier sur Play, ce qui reste n'est pas du code** : les vérifications sur
 appareil de `v1-13` §11 — aucun build EAS n'est parti depuis le 14/09/2026, et le prochain se demande à
 la personne qui pilote, pas avant le 1er octobre (`v1-30` §9) —, la feuille web de [`docs/recette/`](../recette/), et la checklist de
 publication de `docs/exploitation/README.md` §4.

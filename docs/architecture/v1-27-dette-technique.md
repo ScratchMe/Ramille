@@ -1280,6 +1280,11 @@ seul gabarit serait cher — c'est une décision de produit, pas une correction.
 questionnaire demande quelque chose de ce genre pour une autre raison, ce gabarit-là est le premier
 à en profiter.
 
+**Réouverture proposée le 02/10/2026** : [`v1-34`](v1-34-ce-qui-passe-pres-de-chez-soi.md) remplace
+la question de l'accès par « Près de chez toi, qu'est-ce que tu pourrais prendre ? », dont la réponse
+« RER ou Transilien » est celle qui distingue l'Île-de-France. Ce paragraphe se ferme quand ses
+décisions sont rendues et le chantier livré.
+
 ### 12.17 Une garde du chemin du compte a rougi sans cause trouvée (21/09/2026)
 
 **Relevé en fusionnant C4.4, et corrigé une heure plus tard : ce n'est pas arrivé une fois mais
