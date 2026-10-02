@@ -120,12 +120,18 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
       quatre ordres à `authenticated` et à `service_role`, sur chaque table. Le recopier défait ce
       que la RLS ne sait pas faire — un `grant update` de table rend sans effet un privilège de
       colonne, et la RLS filtre des lignes, jamais des colonnes (plus bas) ;
-    * **la parade que sa documentation donne ne vise que `for role postgres`**. Les privilèges par
-      défaut du second créateur, `supabase_admin`, ne se lisent que dans `pg_default_acl`,
-      `postgres` ne peut pas les modifier, et le seul levier connu est un réglage du tableau de
-      bord (Integrations → Data API → Settings, « Default privileges for new entities ») dont on
-      n'a pas vérifié ce qu'il touche. Relever le catalogue avant et après l'échéance plutôt que
-      de supposer qu'elle a tout fermé.
+    * **la parade que sa documentation donne ne vise que `for role postgres`, et le réglage du
+      tableau de bord ne fait rien d'autre** (Integrations → Data API → Settings, « Default
+      privileges for new entities » ; mesuré le 02/10/2026 après l'avoir désactivé). Il réécrit
+      les privilèges par défaut de `postgres` et laisse ceux du second créateur, `supabase_admin`,
+      tels quels — que `postgres` ne peut pas modifier non plus. Ce qui compte est donc le
+      **propriétaire** des objets : tant que tout ce qui vit dans `public` est créé par
+      `postgres`, la moitié `supabase_admin` ne touche rien ;
+    * **et une fonction neuve reste exécutable par `anon`** une fois le réglage désactivé : il
+      retire `anon` et `authenticated` des privilèges par défaut du schéma, mais `EXECUTE` à
+      **PUBLIC** est le défaut global de PostgreSQL, qu'un `alter default privileges … in schema`
+      ne peut pas retirer (mesuré le 02/10/2026 : `proacl` nul, `anon` exécute). Le
+      `revoke execute … from public` par fonction (plus bas) reste la seule garde.
 - **`revoke execute … from anon, authenticated` ne révoque rien** : PostgreSQL accorde `EXECUTE`
   à **PUBLIC** à la création, et les deux rôles en héritent. Il faut `from public, anon,
   authenticated`. Un `create or replace` ne préserve pas non plus l'ACL qu'on croit.
@@ -322,13 +328,17 @@ Trois choses à retenir, portables :
    ne couvre que les objets créés par le rôle qui l'exécute. Les migrations tournant en
    `postgres`, c'est bien la moitié qui décide du sort de nos tables.
 2. **`postgres` ne peut pas toucher celle de `supabase_admin`** (`permission denied to change
-   default privileges`, constaté) : cette moitié-là se désactive au tableau de bord (« Default
-   privileges for new entities », sous **Integrations → Data API → Settings** selon la
-   documentation de Supabase — le registre le plaçait sous Database, où il n'a pas été trouvé le
-   28/09/2026), et se consigne dans `docs/exploitation/`.
-   **Elle est encore ouverte au 28/09/2026**, relevé du catalogue à l'appui, et l'échéance
-   Supabase du 30/10/2026 ne la fermera pas forcément (§1.4) : le registre porte le relevé et la
-   vérification du 31/10 (`docs/exploitation/README.md` §3.1 et §5).
+   default privileges`, constaté), **et le tableau de bord non plus**. Ce paragraphe a écrit
+   jusqu'au 02/10/2026 qu'elle s'y désactivait : le réglage « Default privileges for new
+   entities » (Integrations → Data API → Settings) a été désactivé, et le relevé de
+   `pg_default_acl` montre la ligne `postgres` réécrite et la ligne `supabase_admin` intacte
+   (§1.4). **Elle reste donc ouverte, et ne touche aucun de nos objets** : les 23 relations et
+   les 72 fonctions de `public` appartiennent à `postgres` — migrations passées par
+   `apply_migration` comprises — et `execute_sql` tourne sous `postgres` (relevé le
+   02/10/2026). Ce qui la rendrait réelle est un objet que Supabase créerait lui-même dans
+   `public` — une extension installée dans ce schéma depuis le tableau de bord, par exemple —,
+   et le relevé des propriétaires le dirait. Le registre porte les relevés et la vérification
+   du 31/10 (`docs/exploitation/README.md` §3.1 et §5).
 3. **Ni la CI ni pgTAP n'auraient vu l'oubli**, parce que la stack locale porte exactement les
    mêmes entrées que le distant. La garde qui manque est donc une **assertion**, pas une
    relecture : `31_gardes_sous_les_gardes.test.sql` en porte trois, dont une lue sur
