@@ -6,7 +6,7 @@ export const Confidentialite = () => (
   <LegalPage
     title="Politique de confidentialité"
     updatedAt="25 septembre 2026"
-    intro="Ramille collecte le strict nécessaire pour estimer l’empreinte carbone de tes déplacements et t’accompagner dans la durée. Cette page dit précisément quoi, pourquoi, pendant combien de temps, et ce que tu peux exiger."
+    intro="Ramille collecte ce qui sert à estimer l’empreinte carbone de tes déplacements et à t’accompagner dans la durée, et ses services techniques enregistrent d’eux-mêmes quelques données de fonctionnement. Cette page dit précisément quoi, pourquoi, pendant combien de temps, et ce que tu peux exiger."
     sections={[
       {
         heading: 'Ce que nous ne collectons pas',

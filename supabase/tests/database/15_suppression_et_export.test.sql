@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(31);
+select plan(46);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-suppr-a@test.local', 'x', now(), now()),
@@ -29,8 +29,9 @@ insert into public.assessment_answers (
 select public.recompute_assessment_results('91111111-1111-1111-1111-111111111111');
 select public.generate_plan_cycle_for_user('90000000-0000-0000-0000-000000000001');
 
-insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status, response_kind, response, responded_at)
-values ('90000000-0000-0000-0000-000000000001', 'commute', current_date, 'Semaine test', 'Trajet domicile-travail', 'answered', 'oui', true, now());
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, status, response_kind, response, responded_at, committed_question)
+values ('90000000-0000-0000-0000-000000000001', 'commute', current_date, 'Semaine test', 'Trajet domicile-travail', 'answered', 'oui', true, now(),
+        'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?');
 insert into public.feedback (user_id, kind, message) values ('90000000-0000-0000-0000-000000000001', 'idee', 'Un retour de test');
 insert into public.usage_events (user_id, name, platform) values ('90000000-0000-0000-0000-000000000001', 'app_open', 'web');
 
@@ -60,6 +61,21 @@ select c.user_id, c.id, 'email', 'pgtap-suppr-a@test.local', 'Ton point de la se
 from public.engagement_checkins c
 where c.user_id = '90000000-0000-0000-0000-000000000001';
 
+-- Le corps d'un vrai rappel finit par le lien de désinscription et son jeton, comme l'écrit
+-- `enqueue_checkin_reminders` : sans lui, l'assertion qui interdit le jeton dans l'export passait
+-- parce que le jeu d'essai ne le contenait pas (seconde contre-lecture du 02/10/2026).
+update public.notification_outbox
+   set body = body || E'\n\nPour ne plus recevoir ces rappels : https://www.ramille.fr/rappels/stop?jeton=' || unsubscribe_token::text
+ where user_id = '90000000-0000-0000-0000-000000000001' and channel = 'email';
+
+-- Une ligne push : le mot de la veille. Une ligne porte le texte des deux canaux, préparés pour le
+-- repli ; l'export ne doit rendre que celui du canal de la ligne. Créée une seconde plus tard, pour
+-- qu'elle vienne après l'e-mail dans l'export, trié par date de création.
+insert into public.notification_outbox (user_id, channel, genre, jour_vise, subject, body, push_body, status, sent_at, created_at)
+values ('90000000-0000-0000-0000-000000000001', 'push', 'veille', current_date + 1,
+        'Objet jamais parti', 'Corps jamais parti', 'Demain, tu as prévu de faire ton trajet à vélo.',
+        'sent', now(), now() + interval '1 second');
+
 -- Un engagement relâché : même raisonnement une fois de plus (C2.2). Ce sont les choix de la
 -- personne — l'action, les jours, la raison de l'arrêt — et la table n'est écrite que par le
 -- serveur, donc l'export est le seul endroit d'où elle peut les relire.
@@ -74,7 +90,53 @@ where pc.user_id = '90000000-0000-0000-0000-000000000001'
   and t.poste = 'commute'
 limit 1;
 
+-- Ce que Supabase Auth garde de la personne : une identité Google et une session, comme les pose
+-- la connexion (02/10/2026, `20261002195246`). La page de confidentialité promet que l'export rend
+-- « l'intégralité de ce que nous conservons sur toi », et ces deux tables n'y étaient pas. La
+-- seconde session, celle de B, épingle que l'export ne rend que les siennes. Les adresses IP sont
+-- prises dans la plage réservée à la documentation (RFC 5737).
+--
+-- Mutations jouées le 02/10/2026, chacune sur le fichier entier contre la stack locale :
+--   - l'export d'avant (sans identités, sans sessions, sans type de réponse), joué sur le fichier tel
+--     qu'il était alors : les assertions de
+--     l'identité Google, des sessions, de l'adresse IP et du genre de réponse tombent, quatre et
+--     elles seules ;
+--   - les sessions lues sans `where s.user_id = v_user_id` : seule « et seulement les siennes » tombe ;
+--   - l'identifiant de session ajouté aux sessions exportées : seule l'assertion qui l'interdit tombe.
+-- Et le même soir, après la première contre-lecture (la seconde migration, `20261002201448`) :
+--   - les identités lues sans `where i.user_id = v_user_id` : les deux assertions des identités
+--     tombent (« et seulement les siennes », et celle du nom, l'identité de B pouvant passer devant) ;
+--   - le jeton de désinscription ajouté aux rappels exportés : seule l'assertion qui l'interdit tombe ;
+--   - le corps de la première migration, sans les messages : le message du rappel, les métadonnées
+--     du compte et la question figée tombent, trois et elles seules.
+-- Et après la seconde contre-lecture (la troisième migration, `20261002203559`), le jeu d'essai portant
+-- enfin le lien de désinscription dans le corps du rappel :
+--   - le message rendu sans retirer le jeton : seule l'assertion qui interdit le jeton tombe ;
+--   - le corps de la seconde migration : le jeton, le message d'une ligne push qui n'est pas parti et
+--     l'adresse en attente tombent, trois et elles seules. Avant ce jeu d'essai, la fuite passait.
+insert into auth.identities (provider_id, user_id, identity_data, provider, created_at, last_sign_in_at)
+values ('pgtap-google-sub-0001', '90000000-0000-0000-0000-000000000001',
+        jsonb_build_object('sub', 'pgtap-google-sub-0001', 'email', 'pgtap-suppr-a@test.local',
+                           'name', 'Personne de Test', 'picture', 'https://exemple.invalid/photo.png'),
+        'google', now(), now());
+-- B a aussi une identité Google : sans elle, rien n'éprouve que l'export ne rend que les identités
+-- de la personne — et la fonction est `security definer`, donc l'oubli exporterait les noms de tous.
+insert into auth.identities (provider_id, user_id, identity_data, provider, created_at, last_sign_in_at)
+values ('pgtap-google-sub-0002', '90000000-0000-0000-0000-000000000002',
+        jsonb_build_object('sub', 'pgtap-google-sub-0002', 'name', 'Autre Personne'), 'google', now(), now());
+-- Supabase Auth recopie aussi ce que Google transmet dans les métadonnées du compte.
+update auth.users set raw_user_meta_data = jsonb_build_object('name', 'Personne de Test'),
+                      email_change = 'pgtap-attente@test.local'
+ where id = '90000000-0000-0000-0000-000000000001';
+insert into auth.sessions (id, user_id, created_at, updated_at, ip, user_agent) values
+  ('9a000000-0000-0000-0000-00000000aaaa', '90000000-0000-0000-0000-000000000001', now(), now(), '203.0.113.7', 'pgtap-navigateur-a'),
+  ('9a000000-0000-0000-0000-00000000bbbb', '90000000-0000-0000-0000-000000000002', now(), now(), '198.51.100.9', 'pgtap-navigateur-b');
+
 -- ── L'export ────────────────────────────────────────────────────────────────────────────
+
+select set_config('test.jeton_desinscription',
+  (select unsubscribe_token::text from public.notification_outbox
+    where user_id = '90000000-0000-0000-0000-000000000001' limit 1), true);
 
 select set_config('role', 'authenticated', true);
 select set_config('request.jwt.claims', json_build_object('sub', '90000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
@@ -118,8 +180,44 @@ select is_empty(
 -- silencieusement incomplet (RGPD art. 15).
 select is(
   jsonb_array_length(public.export_my_data() -> 'rappels_envoyes'),
-  1,
+  2,
   'l''export nomme les rappels déjà envoyés'
+);
+
+select ok(
+  public.export_my_data() #>> '{rappels_envoyes,0,message}' like '%Une seule question%',
+  'l''export rend le corps d''un rappel parti par e-mail'
+);
+
+select is(
+  public.export_my_data() #>> '{rappels_envoyes,0,destinataire}',
+  'pgtap-suppr-a@test.local',
+  'l''export dit à quelle adresse un rappel est parti'
+);
+
+select is(
+  public.export_my_data() #>> '{rappels_envoyes,1,notification}',
+  'Demain, tu as prévu de faire ton trajet à vélo.',
+  'l''export rend le texte d''une notification partie'
+);
+
+-- Le texte de l'e-mail préparé pour le repli n'est jamais parti sur une ligne push.
+select is(
+  public.export_my_data() #>> '{rappels_envoyes,1,objet}',
+  null,
+  'l''export ne rend pas un message qui n''est pas parti'
+);
+
+select is(
+  public.export_my_data() #>> '{rappels_envoyes,0,objet}',
+  'Ton point de la semaine',
+  'l''export rend le message de chaque rappel, que la page dit gardé six mois'
+);
+
+-- Le jeton de désinscription est une clé : quiconque l'a peut couper les rappels de la personne.
+select is_empty(
+  $$ select 1 where public.export_my_data()::text like '%' || current_setting('test.jeton_desinscription') || '%' $$,
+  'le jeton de désinscription n''apparaît nulle part dans l''export'
 );
 
 select is(
@@ -138,6 +236,63 @@ select is(
   public.export_my_data() #>> '{engagements_relaches,0,raison}',
   'rebilan',
   'l''export dit pourquoi chaque engagement s''est arrêté'
+);
+
+select is(
+  public.export_my_data() #>> '{identites_de_connexion,0,donnees_transmises,name}',
+  'Personne de Test',
+  'l''export rend ce que la connexion Google a transmis, nom compris'
+);
+
+select is(
+  jsonb_array_length(public.export_my_data() -> 'sessions'),
+  1,
+  'l''export rend les sessions de la personne, et seulement les siennes'
+);
+
+select is(
+  jsonb_array_length(public.export_my_data() -> 'identites_de_connexion'),
+  1,
+  'l''export rend les identités de la personne, et seulement les siennes'
+);
+
+select is(
+  public.export_my_data() #>> '{compte,adresse_en_attente_de_confirmation}',
+  'pgtap-attente@test.local',
+  'l''export rend l''adresse saisie pour un code et pas encore confirmée'
+);
+
+select is(
+  public.export_my_data() #>> '{compte,metadonnees,name}',
+  'Personne de Test',
+  'l''export rend les métadonnées du compte, où Supabase recopie ce que Google transmet'
+);
+
+select is(
+  public.export_my_data() #>> '{sessions,0,adresse_ip}',
+  '203.0.113.7',
+  'l''export dit l''adresse IP que la session garde'
+);
+
+-- Même raison que le jeton d'appareil : l'identifiant d'une session est une clé, pas un fait sur
+-- la personne.
+select is_empty(
+  $$ select 1 where public.export_my_data()::text like '%9a000000-0000-0000-0000-00000000aaaa%' $$,
+  'l''identifiant de la session n''apparaît nulle part dans l''export'
+);
+
+select is(
+  public.export_my_data() #>> '{points_de_suivi,0,question}',
+  'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
+  'l''export rend la question figée de chaque point, telle qu''elle a été posée'
+);
+
+-- Une réponse « sans objet » a un booléen nul : sans son type, elle s'exportait comme une absence
+-- de réponse.
+select is(
+  public.export_my_data() #>> '{points_de_suivi,0,type_de_reponse}',
+  'oui',
+  'l''export dit le genre de chaque réponse, pas seulement son booléen'
 );
 
 select is(
