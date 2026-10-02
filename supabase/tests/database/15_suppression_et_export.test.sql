@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(31);
+select plan(36);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-suppr-a@test.local', 'x', now(), now()),
@@ -73,6 +73,27 @@ cross join public.action_templates t
 where pc.user_id = '90000000-0000-0000-0000-000000000001'
   and t.poste = 'commute'
 limit 1;
+
+-- Ce que Supabase Auth garde de la personne : une identité Google et une session, comme les pose
+-- la connexion (02/10/2026, `20261002195246`). La page de confidentialité promet que l'export rend
+-- « l'intégralité de ce que nous conservons sur toi », et ces deux tables n'y étaient pas. La
+-- seconde session, celle de B, épingle que l'export ne rend que les siennes. Les adresses IP sont
+-- prises dans la plage réservée à la documentation (RFC 5737).
+--
+-- Mutations jouées le 02/10/2026, chacune sur le fichier entier contre la stack locale :
+--   - l'export d'avant (sans identités, sans sessions, sans genre de réponse) : les assertions de
+--     l'identité Google, des sessions, de l'adresse IP et du genre de réponse tombent, quatre et
+--     elles seules ;
+--   - les sessions lues sans `where s.user_id = v_user_id` : seule « et seulement les siennes » tombe ;
+--   - l'identifiant de session ajouté aux sessions exportées : seule l'assertion qui l'interdit tombe.
+insert into auth.identities (provider_id, user_id, identity_data, provider, created_at, last_sign_in_at)
+values ('pgtap-google-sub-0001', '90000000-0000-0000-0000-000000000001',
+        jsonb_build_object('sub', 'pgtap-google-sub-0001', 'email', 'pgtap-suppr-a@test.local',
+                           'name', 'Personne de Test', 'picture', 'https://exemple.invalid/photo.png'),
+        'google', now(), now());
+insert into auth.sessions (id, user_id, created_at, updated_at, ip, user_agent) values
+  ('9a000000-0000-0000-0000-00000000aaaa', '90000000-0000-0000-0000-000000000001', now(), now(), '203.0.113.7', 'pgtap-navigateur-a'),
+  ('9a000000-0000-0000-0000-00000000bbbb', '90000000-0000-0000-0000-000000000002', now(), now(), '198.51.100.9', 'pgtap-navigateur-b');
 
 -- ── L'export ────────────────────────────────────────────────────────────────────────────
 
@@ -138,6 +159,39 @@ select is(
   public.export_my_data() #>> '{engagements_relaches,0,raison}',
   'rebilan',
   'l''export dit pourquoi chaque engagement s''est arrêté'
+);
+
+select is(
+  public.export_my_data() #>> '{identites_de_connexion,0,donnees_transmises,name}',
+  'Personne de Test',
+  'l''export rend ce que la connexion Google a transmis, nom compris'
+);
+
+select is(
+  jsonb_array_length(public.export_my_data() -> 'sessions'),
+  1,
+  'l''export rend les sessions de la personne, et seulement les siennes'
+);
+
+select is(
+  public.export_my_data() #>> '{sessions,0,adresse_ip}',
+  '203.0.113.7',
+  'l''export dit l''adresse IP que la session garde'
+);
+
+-- Même raison que le jeton d'appareil : l'identifiant d'une session est une clé, pas un fait sur
+-- la personne.
+select is_empty(
+  $$ select 1 where public.export_my_data()::text like '%9a000000-0000-0000-0000-00000000aaaa%' $$,
+  'l''identifiant de la session n''apparaît nulle part dans l''export'
+);
+
+-- Une réponse « sans objet » a un booléen nul : sans son genre, elle s'exportait comme une
+-- absence de réponse.
+select is(
+  public.export_my_data() #>> '{points_de_suivi,0,type_de_reponse}',
+  'oui',
+  'l''export dit le genre de chaque réponse, pas seulement son booléen'
 );
 
 select is(

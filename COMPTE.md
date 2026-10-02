@@ -322,3 +322,14 @@ rattacher une table à `profiles` avec autre chose que `on delete cascade` — u
 vérifie la chaîne niveau par niveau. L'export est `security definer` pour une autre raison :
 `usage_events` n'ayant aucune policy de lecture, une fonction en `security invoker` rendrait un
 export silencieusement incomplet.
+
+**Et l'export énumère, à l'inverse de la suppression** : là où la cascade efface tout ce qui dépend
+d'`auth.users` sans qu'on nomme rien, l'export ne rend que les tables qu'il nomme. Une table qui
+garde quelque chose de la personne et qu'il oublie rend fausse la promesse de la page de
+confidentialité (« l'intégralité de ce que nous conservons sur toi », RGPD art. 15), sans que rien
+ne rougisse. C'est arrivé avec les tables d'auth : `auth.identities` (ce que la connexion Google
+transmet, nom et photo compris) et `auth.sessions` (l'adresse IP et l'appareil de chaque session)
+n'y sont entrées que le 02/10/2026 (`20261002195246_l_export_rend_les_identites_et_les_sessions.sql`),
+trouvées en préparant le formulaire de Play (`docs/exploitation/fiche-google-play.md` §1.4). **Une
+table neuve qui porte un `user_id` impose donc une ligne dans l'export**, et une assertion dans
+`15_suppression_et_export.test.sql` ; ni les clés ni les jetons n'y partent, seulement les faits.

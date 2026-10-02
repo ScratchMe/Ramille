@@ -292,6 +292,21 @@ export default function SuppressionCompte() {
 
             <MessageInline message={message} style={styles.corps} />
 
+            {/* **Ce qui reste après la suppression se dit ici, dans tous les états de la page** —
+                Google Play demande que l'adresse de suppression donnée dans la fiche dise ce qui
+                est supprimé, ce qui est gardé et combien de temps (`docs/exploitation/
+                fiche-google-play.md` §1.4, décidé le 02/10/2026). Hors des blocs d'état, pour que
+                le rendu statique le porte : c'est lui que lit quelqu'un qui ouvre l'adresse sans
+                compte, examinateur compris. Les deux durées sont celles de `/confidentialite` —
+                la règle du bucket des sauvegardes et le compteur du mois —, à toucher ensemble. */}
+            <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
+              La suppression efface ton compte et tout ce qui s’y rattache : bilans, résultats,
+              plan, points de suivi, retours, repères de parcours, sessions et identifiant de
+              notification. Nos sauvegardes chiffrées en gardent une copie jusqu’à 90 jours,
+              puis s’effacent d’elles-mêmes. Il ne reste ensuite qu’un compteur des suppressions
+              du mois, sans aucun identifiant.
+            </ThemedText>
+
             <ThemedText type="small" themeColor="textTertiary" style={styles.pied}>
               Une question, ou un blocage ? Écris à {CONTACT_EMAIL}.
             </ThemedText>
