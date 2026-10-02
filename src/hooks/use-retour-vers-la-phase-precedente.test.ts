@@ -10,11 +10,22 @@
  *   | l'action lue à l'abonnement plutôt qu'à l'appui (`precedente` au lieu de `action.current`) | « l'appui voit la phase courante… » — seulement |
  *   | la garde `Platform.OS !== 'android'` retirée | « hors d'Android… » — seulement |
  *   | `abonnement.remove()` retiré du nettoyage | « au démontage… » — seulement |
+ *
+ * **Et une le soir même, sur la garde du premier plan** (contre-lecture : le questionnaire et
+ * l'onboarding ne la portaient pas) :
+ *
+ *   | Ce qu'on casse | Ce qui tombe |
+ *   |---|---|
+ *   | `auPremierPlan` ignoré (`action.current = precedente`, la référence initiale de même) | « couvert par un autre écran… » — seulement |
  */
 import { renderHook } from '@testing-library/react-native';
 import { BackHandler, Platform } from 'react-native';
 
 import { useRetourVersLaPhasePrecedente } from './use-retour-vers-la-phase-precedente';
+
+// Le premier plan, réglable par test : `useIsFocused` n'a pas de navigateur ici.
+let mockAuPremierPlan = true;
+jest.mock('expo-router', () => ({ useIsFocused: () => mockAuPremierPlan }));
 
 type Ecouteur = () => boolean | null | undefined;
 
@@ -24,6 +35,7 @@ const retire = jest.fn();
 beforeEach(() => {
   ecouteurs = [];
   retire.mockClear();
+  mockAuPremierPlan = true;
   jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_evenement, ecouteur) => {
     ecouteurs.push(ecouteur as Ecouteur);
     return {
@@ -87,6 +99,20 @@ describe('useRetourVersLaPhasePrecedente', () => {
     rerender({ precedente: null });
     expect(appuyerSurRetour()).toBe(false);
     expect(BackHandler.addEventListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('couvert par un autre écran, le retour passe à la navigation, et revient avec le premier plan', () => {
+    surAndroid();
+    const reculer = jest.fn();
+    mockAuPremierPlan = false;
+    const { rerender } = renderHook(() => useRetourVersLaPhasePrecedente(reculer));
+    expect(appuyerSurRetour()).toBe(false);
+    expect(reculer).not.toHaveBeenCalled();
+
+    mockAuPremierPlan = true;
+    rerender({});
+    expect(appuyerSurRetour()).toBe(true);
+    expect(reculer).toHaveBeenCalledTimes(1);
   });
 
   it('au démontage, l’écoute est retirée', () => {

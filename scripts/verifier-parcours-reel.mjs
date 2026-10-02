@@ -39,10 +39,13 @@
 // **Ce qu'il ne fait pas, et ce n'est pas un oubli** : il ne couvre ni les états d'erreur — c'est le
 // travail de `verifier-etats-export.mjs` — ni les exclusions de cartes en général, qui vivent depuis
 // le 27/09/2026 dans `cartesDuPlan` (`src/types/plan.ts`, `v1-27` §4) et y sont épinglées sur
-// toutes les combinaisons d'états. Ce que le second profil en éprouve, c'est une partie de l'appel :
-// son nouveau bilan en voiture rend dues le même jour « Ton premier plan » et la carte des deux
-// lieux, la seule paire que l'écran empilait — deux arguments sur huit, nommés en tête (D1, D2). Un parcours qui voudrait tout voir
-// serait fragile, et un garde-fou fragile finit ignoré.
+// toutes les combinaisons d'états. Ce que le second profil en éprouvait, c'était une partie de
+// l'appel : son nouveau bilan en voiture rendait dues le même jour « Ton premier plan » et la carte
+// des deux lieux, la seule paire que l'écran empilait (D1, D2, en tête). **Depuis le 01/10/2026**
+// (`v1-33` §6, la carte vue une fois), la seconde est vue au premier plan du cycliste et n'est plus
+// jamais due à ce moment : la paire n'est plus jouée ici, seuls les tests de `cartesDuPlan` la
+// tiennent, et l'étape garde à la place que la carte ne revient pas. Un parcours qui voudrait tout
+// voir serait fragile, et un garde-fou fragile finit ignoré.
 //
 // ── Comment il tourne ────────────────────────────────────────────────────────────────────────────
 //
@@ -193,8 +196,9 @@
 // l'état d'avant la décision — deux cadres empilés, deux lignes de Ramille, « Ton plan » repoussé
 // sous le pli d'un écran de 420 px. **Depuis, les trois cartes sont une seule expression**, et D1
 // ne peut plus s'écrire : l'empilement est devenu inexprimable à l'écran comme dans la dérivation.
-// Ce que l'étape garde encore, c'est **deux** des arguments — `carteDuPremierPlan` et
-// `carteDesDeuxLieux` —, d'où D2. Les autres (`pointsAffiches`, `attenteDisponible`,
+// Ce que l'étape gardait ensuite, c'étaient **deux** des arguments — `carteDuPremierPlan` et
+// `carteDesDeuxLieux` —, d'où D2 ; depuis le 01/10/2026 elle n'en garde plus aucun, la carte des deux
+// lieux n'étant plus due à cette étape (PL15 à PL19, plus bas). Les autres (`pointsAffiches`, `attenteDisponible`,
 // `motsDuContexte`, `premierPlan`, `nombreDActions`, et `ouvertureDeSaison` au-delà d'un vrai à
 // tort) ne sont gardés par aucune étape de ce parcours : ce sont les tests de `cartesDuPlan` et la
 // relecture qui les tiennent.
@@ -358,7 +362,7 @@
 // bas, en glissant) ; **le même sous « réduire les animations »** (posé d'un coup) ; et **choisir « à la
 // place » depuis la liste** — le seul chemin qui passe `p_replace` depuis cet écran, jamais joué contre
 // une vraie stack : la carte s'ouvre sur la question, focus compris, rien de coché, « C'est noté »
-// inactif, puis la base relue dit que l'engagement a changé de ligne et que l'ancien est archivé en
+// inactif (en attente depuis le 01/10/2026, `v1-33` D13 : PL15 à PL17), puis la base relue dit que l'engagement a changé de ligne et que l'ancien est archivé en
 // `changement`. **Éprouvé en le cassant le 29/09/2026** : un témoin vert, puis un export par mutation
 // (cache Metro privé, `--clear`), la source restaurée après chaque export :
 //
@@ -2780,7 +2784,7 @@ try {
   );
   await page.setViewportSize(tailleDuParcours);
 
-  etape('cycliste — un nouveau bilan en voiture : le premier plan passe devant');
+  etape('cycliste — un nouveau bilan en voiture : le premier plan, sans la carte des deux lieux');
   await page.goto(`${base}/bilan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
   // Le questionnaire est prérempli par le bilan précédent : seul le mode change. On attend le

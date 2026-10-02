@@ -2323,6 +2323,10 @@ async function attendreLeTexte(page, texte) {
   const page = await ouvrir(ou, { [ADRESSE_DU_CODE]: 'camille@exemple.fr', [FLUX_DU_CODE]: 'rattachement' });
   try {
     await attendreLeTexte(page, 'Regarde tes emails');
+    // Le repos avant la lecture, comme L2 à L4 : L1 est une assertion **négative**, et le vol qu'elle
+    // guette viendrait de l'effet de `TitreDArrivee`, qui part après le rendu — lu trop tôt, il passerait
+    // (contre-lecture de la PR #314).
+    await page.waitForTimeout(REPOS);
     const surLaReprise = await page.evaluate(lireLeFocus);
     if (!surLaReprise.corps) {
       echecs.push(

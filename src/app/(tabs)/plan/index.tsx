@@ -1490,8 +1490,8 @@ export default function Plan() {
   // **Les cartes qui s'excluent, décidées hors du rendu** (`v1-27` §4, 27/09/2026). Les règles qui
   // les séparaient vivaient en prose dans les commentaires ci-dessous, et deux fois une paire leur
   // avait échappé ; `cartesDuPlan` les épingle sur toutes les combinaisons d'états, et le rendu les
-  // lit. Le reste de l'écran — trait de temps, cap, re-bilan, encarts de faits — garde ses propres
-  // dérivations, que `cartesDuPlan` nomme.
+  // lit — et depuis le 01/10/2026 l'intro et le trait de temps (audit P-5). Le reste de l'écran —
+  // cap, re-bilan, encarts de faits — garde ses propres dérivations, que `cartesDuPlan` nomme.
   const motsDeContexte = motsDuContexte(state.contexte ?? VIDE_DE_CONTEXTE);
   // **La carte des deux lieux ne décrit que ce que ce plan porte** (décision du 30/09/2026, `v1-27`
   // §12.23) : l'action, si le plan en a ; le point régulier, si une boucle tourne. Tant que les

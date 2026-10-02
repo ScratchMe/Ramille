@@ -57,8 +57,9 @@ colonne `rank` existe depuis l'increment 6 précisément pour que l'affichage d�
   (`v1-32`). Une garde de **partition** dans `plan.test.ts` épingle ce dont la promesse dépend : un
   groupement qui laisserait tomber une action recréerait ici, en silence, le `limit 2` que ce
   chantier a retiré du serveur.
-- **`actionsCount` décide de ce qu'un plan à zéro action tait**, et en un seul endroit,
-  `cartesDuPlan` : la félicitation à la place des cartes, ni encart de contexte ni note technique —
+- **`actionsCount` décide de ce qu'un plan à zéro action tait**, et `cartesDuPlan` en porte
+  l'essentiel (la carte du premier plan, les sorties de la carte de saison, le cap non chiffré et la
+  carte des deux lieux lisent le même fait chacune de son côté) : la félicitation à la place des cartes, ni encart de contexte ni note technique —
   et, depuis le 01/10/2026, ni l'intro (audit P-5, HANDOFF `v1-17` planche C). **L'intro ne compte plus rien** : elle comptait `enAvant.length` jusqu'à C5.3, qui l'a
   remplacée par une ligne fixe qui dit le principe — « Une action par saison, une seule. C'est pas à
   pas qu'on tient un cap. » —, et ce principe n'a pas de sens au-dessus d'aucune action.

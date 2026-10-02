@@ -111,7 +111,7 @@ export type StatutDuPoint = (typeof STATUT_DU_POINT)[keyof typeof STATUT_DU_POIN
  * semaine, `occasion` pour celle du mois (C2.1). Les deux autres ne portent sur aucune action :
  * `generique` est le repli sans engagement, `maintien` l'habitude déjà tenue.
  */
-const GENRES_DE_L_ENGAGEMENT: readonly string[] = ['engagement', 'occasion'];
+const GENRES_DE_L_ENGAGEMENT: readonly GenreDeQuestion[] = ['engagement', 'occasion'];
 
 /**
  * **Quel point affiché porte l'accent** (`emphasize` de `CheckinCard`) — une entrée par point, dans
@@ -125,11 +125,14 @@ const GENRES_DE_L_ENGAGEMENT: readonly string[] = ['engagement', 'occasion'];
  * de l'action engagée — son genre le dit, figé à la génération comme la question elle-même. Sans
  * engagement, et dès qu'un seul point est ouvert, la règle d'avant.
  *
- * Deux points composés sur une action se départagent par l'action **suivie aujourd'hui**
- * (`committed_action_text`, le libellé figé) : il en faut un changement d'action entre les deux
- * générations, la semaine sur le trajet puis le mois sur un voyage. S'ils ne se départagent pas — ni
- * l'un ni l'autre ne porte l'action suivie, plus rien n'est engagé —, la règle d'avant, plutôt que
- * deux accents.
+ * **Une question composée ne porte l'engagement que si elle porte l'action suivie aujourd'hui**
+ * (`committed_action_text`, le libellé figé à la génération). Composée sur une action qu'on a quittée
+ * depuis — « Changer d'avis », un nouveau bilan qui archive l'engagement —, elle ne referme plus rien,
+ * et la carte le dit (`questionSurActionQuittee`) : lui donner l'accent mettait en avant la question
+ * d'une action abandonnée (contre-lecture de la PR #314 : la première version ne filtrait par l'action
+ * que lorsque deux points étaient composés). Un seul point la porte : il prend l'accent ; aucun —
+ * plus rien n'est engagé, ou la question vise une action quittée —, la règle d'avant, plutôt qu'un
+ * accent sans objet.
  *
  * L'accent tombe une fois le point répondu (la carte le lit, `v1-14` §4.1) : un point répondu n'est
  * pas « ouvert », et ne compte pas parmi les deux.
@@ -147,12 +150,11 @@ export function accentDesPoints(
   const ouverts = points.filter((point) => point.status === STATUT_DU_POINT.enAttente);
   if (ouverts.length < 2) return auPosteDominant;
 
-  let surLEngagement = ouverts.filter((point) => GENRES_DE_L_ENGAGEMENT.includes(point.question_kind ?? ''));
-  if (surLEngagement.length > 1) {
-    surLEngagement = surLEngagement.filter(
-      (point) => actionEngagee !== null && point.committed_action_text === actionEngagee
-    );
-  }
+  if (actionEngagee === null) return auPosteDominant;
+  const surLEngagement = ouverts.filter(
+    (point) =>
+      GENRES_DE_L_ENGAGEMENT.some((genre) => genre === point.question_kind) && point.committed_action_text === actionEngagee
+  );
   if (surLEngagement.length !== 1) return auPosteDominant;
   const [lePoint] = surLEngagement;
   return points.map((point) => point === lePoint);

@@ -60,12 +60,13 @@ export function genreDesEchecs(genres: readonly (GenreDEchec | null)[]): GenreDE
 export type EcranEnEchec = 'plan' | 'relectureDuPlan' | 'suivi' | 'contexte';
 
 /**
- * **Mot pour mot, et hors ligne inchangé** (D19, textes donnés par la décision). La phrase du serveur
- * ne parle pas de la connexion ; elle garde le constat, et dit d'attendre plutôt que de chercher.
+ * **Hors ligne inchangé** (D19). La décision fixe l'intention — la phrase du serveur ne parle pas de
+ * la connexion ; elle garde le constat, et dit d'attendre plutôt que de chercher — et les phrases
+ * ci-dessous ont été écrites avec la vague, à valider (`v1-33` §9).
  *
- * **La ligne de relecture du suivi n'y est pas** : la décision n'en donne pas le texte, et elle dit
- * encore « Vérifie ta connexion. » quel que soit le genre — à l'intégration de l'écrire
- * (`src/app/(tabs)/suivi/index.tsx`, `banniereRelecture`).
+ * **La ligne de relecture du suivi n'y est pas** : sa phrase n'est pas écrite, et elle dit encore
+ * « Vérifie ta connexion. » quel que soit le genre (`src/app/(tabs)/suivi/index.tsx`,
+ * `banniereRelecture`, et `v1-33` §9).
  */
 const PHRASES: Record<EcranEnEchec, Record<GenreDEchec, string>> = {
   plan: {

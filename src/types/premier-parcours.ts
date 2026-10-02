@@ -50,7 +50,7 @@ export type EtatDuPremierParcours = {
  * celui du rendu statique).
  *
  * **La carte des deux lieux est vue une fois, puis partie, « Compris » touché ou non** (tension
- * tranchée le 01/10/2026, `v1-33` §6 ; audit P, T-3). Elle se fermait par son « Compris » seul (HANDOFF
+ * tranchée le 01/10/2026, `v1-33` §6, la carte « Plan et Suivi »). Elle se fermait par son « Compris » seul (HANDOFF
  * `v1-17`) : tant qu'on ne le touchait pas, elle occupait un bon tiers de la fenêtre à chaque visite et
  * repoussait le point sous le pli. Elle passe donc à `fait` **à l'instant où elle se rend** — c'est
  * l'écran qui le signale (`lesDeuxLieuxSontVus`), et la marque garde ses trois états, sans booléen de

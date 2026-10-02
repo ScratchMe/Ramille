@@ -182,6 +182,17 @@ et chacun a sa garde.
 | **Des rappels illisibles effaçaient la carte d'attente du plan** sans que la ligne de relecture s'allume — effet de bord de T-6, `loadReminderPrefs` rendant désormais `null` | T-6, dans cette PR | Le chantier B | La dernière lecture réussie est gardée, et l'échec compte dans la relecture (`FRONT.md` §1.2) |
 | **La garde de la carte engagée du parcours réel tombait sans défaut** une fois sur deux sous « réduire les animations » : le défilement posé d'un coup tombe parfois dans l'image même de la relecture | `v1-33` P-1 | La CI de la PR, et le chantier G sur sa branche | Lue aussi à l'appel de défilement, et rapportée à la position d'avant (`TESTING-GARDES.md` §2.14, règle 10) |
 
+**Et la contre-lecture du diff entier**, en trois relecteurs, a trouvé cinq défauts de plus, corrigés
+avant la fusion, chacun avec son test et sa mutation :
+
+| Le défaut | La correction |
+|---|---|
+| **Le retour matériel était pris par un écran couvert** : le questionnaire, caché sous `/feedback` (« Ton mode n'est pas dans la liste ? »), reculait d'une étape pendant que `/feedback` restait affiché — un retour qui paraît mort. Trois appelants portaient la garde du premier plan, le questionnaire et l'onboarding non | La garde vit dans `useRetourVersLaPhasePrecedente` (`EXPO.md` §1.7) |
+| **L'accent du point allait à une question composée sur une action quittée**, quand un seul point était composé | Le point doit porter l'action suivie aujourd'hui (`accentDesPoints`, `BOUCLE.md` §2) |
+| **« C'est noté » pouvait redevenir actif avant la relecture** : le nombre de lectures était lu au toucher, et une lecture terminée pendant l'aller-retour passait pour celle qui suit | Lu au retour du RPC |
+| **Un « Oui » aux longs trajets relu des compteurs retombait sur « Non »** au toucher d'un « 0 », et les séries disparaissaient sous le doigt | Toucher une série pose le « Oui » |
+| **Un code espacé suivi d'une date à tirets** rendait la date (T-16) | Les espaces seules avant les tirets |
+
 ## 5. Les questions de produit
 
 Chacune sous la forme de `CLAUDE.md` : le fait, ce qui est en jeu, la recommandation, ce qu'on casse si
@@ -380,6 +391,24 @@ fichiers et doit passer seul.
 
 ## 9. Ce qui reste ouvert après la PR #314
 
+**Des textes rendus sans décision qui les nomme mot pour mot, à valider** — la contre-lecture les a
+relevés : la décision fixait l'intention, la phrase a été écrite pendant la vague.
+
+- **D4** : « Comment sont les transports en commun près de chez toi ? » et « Combien de véhicules
+  motorisés dans ton foyer ? » — seule la question de la zone était donnée.
+- **D19**, les quatre phrases du serveur : « Ton plan n’a pas pu être relu. Réessaie dans un
+  instant. », « Ton plan n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé
+  depuis. », « Ton suivi n’a pas pu être relu. Réessaie dans un instant. », « Tes réponses n’ont pas
+  pu être lues. Réessaie dans un instant. »
+- **« refaire » retiré de trois phrases** (application de `v1-19` D1, comme R-7) : « Tu pourras donner
+  un chiffre plus précis dans un nouveau bilan : tes réponses seront préremplies. » (la distance du
+  trajet) ; la phrase du régime de re-bilan du suivi ; et « On pourra en faire un nouveau après,
+  ensemble : ça va vite. » sur l'écran de collision, où « ensemble » collé à « un nouveau » se lisait
+  « un nouvel ensemble ».
+- **D3** est rendu à l'**étape d'entrée** de la visite — la première d'ordinaire, celle d'un brouillon
+  repris ou de `?etape=` sinon — et non à la seule première étape ; la feuille du re-bilan se referme
+  par « Commencer », un libellé que la décision ne nommait pas.
+
 **Deux textes rendus tels que décidés, et à revoir** :
 
 - **La ligne d'aide sous la zone (D4) peut faire mal classer.** Rendue mot pour mot : « Urbain dense :
@@ -400,6 +429,15 @@ fichiers et doit passer seul.
   « Rattacher un compte » ; le chantier l'a étendue au « Réessayer » d'un échec, pour qu'il n'y ait
   qu'un principal.
 - **« Faire un nouveau bilan » le jour même** reste la tension de §6, non posée.
+- **Toucher le voile de la feuille du re-bilan sort du questionnaire**, comme « Pas maintenant » :
+  même question que pour la feuille des rappels, sur une feuille qui s'ouvre sans geste.
+- **La carte de saison et la carte des deux lieux dues le même jour** (un premier bilan fin novembre,
+  le plan ouvert en décembre) : « Choisir une action » referme la saison, la carte des deux lieux se
+  rend en tête et se note vue pendant que l'écran défile vers la première piste — elle peut partir
+  sans être entrée dans la fenêtre. Conforme à la règle écrite (« rendue, l'écran au premier plan »).
+- **D18 ne réduit les façons de dire un formulaire incomplet que de trois à deux** : la phrase de
+  `/feedback` reste en `small` tertiaire, là où le questionnaire, `/contexte` et D13 la disent en
+  `accentText` 600.
 
 **Des constats techniques, chacun pour une PR à part** :
 
@@ -410,6 +448,12 @@ fichiers et doit passer seul.
   défaut que C2.11 devait fermer (`v1-27` §12.27).
 - **`commitPlanAction` dit « Vérifie ta connexion et réessaie. » à toute erreur d'écriture** : D19 ne
   couvre que les lectures.
+- **Deux lectures de l'entrée d'un re-bilan n'ont ni relecture ni « Réessayer »** : le préremplissage
+  et l'engagement en cours. Depuis que les lectures ne sont plus rejouées (R-5), un raté réseau d'une
+  seconde y donne un questionnaire vide, sans bandeau ni feuille — rien de faux n'est dit, mais neuf
+  étapes sont à refaire (`src/lib/supabase.ts`).
+- **`MARGE_DE_DEFILEMENT` et la mesure du défilement vivent deux fois**, dans le plan et dans la liste
+  des pistes ; le commentaire exige qu'elles restent égales, et rien ne les lie.
 - **Sur web, le retour suit l'historique du navigateur** : depuis un plan atteint en naviguant, il
   revient à l'entrée d'avant, pas forcément hors de l'app. Le pendant d'Android, la pile, est vide.
 - **`cadreDuChamp` vit dans `auth/text-field.tsx`**, et le champ de distance l'importe de là.

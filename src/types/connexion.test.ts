@@ -469,6 +469,10 @@ describe('chiffresDuCode', () => {
    *   - une longueur au moins égale au lieu d'exacte (`>=`) → « ne prend pas un morceau… », « une
    *     saisie de moins de huit chiffres… » et « tronque à la longueur attendue… » : un morceau
    *     trop long passait pour un code, jusqu'au neuvième chiffre tapé.
+   *
+   * **Et le soir même, le code espacé suivi d'une date** (contre-lecture de la PR #314) : la passe
+   * des espaces seules retirée (espaces et tirets admis ensemble, la version d'avant) → « préfère un
+   * code espacé à une date à tirets… », seul.
    */
   it('garde la suite de huit chiffres d’un collé, même quand d’autres chiffres la précèdent', () => {
     expect(chiffresDuCode('Le 01/10, ton code : 84792469')).toBe('84792469');
@@ -480,6 +484,12 @@ describe('chiffresDuCode', () => {
     // Une date dont on admet les tirets compte huit chiffres — ici après le code, là où la règle de
     // « la dernière suite » la prendrait.
     expect(chiffresDuCode('Ton code : 84792469, envoyé le 01-10-2026')).toBe('84792469');
+  });
+
+  it('préfère un code espacé à une date à tirets qui le suit', () => {
+    expect(chiffresDuCode('Voici ton code : 847 924 69 — envoyé le 01-10-2026')).toBe('84792469');
+    // Un code à tirets reste lu, quand rien d'autre ne fait huit chiffres.
+    expect(chiffresDuCode('Ton code : 8479-2469')).toBe('84792469');
   });
 
   it('garde la dernière suite : le code vient après l’adresse dans l’e-mail de rattachement', () => {

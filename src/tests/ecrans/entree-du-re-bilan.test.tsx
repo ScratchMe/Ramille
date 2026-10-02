@@ -17,9 +17,10 @@
  *     l'étape d'entrée », seul ;
  *   - « Pas maintenant » qui referme sans ressortir (`onQuitter` qui ne fait que démonter la feuille) →
  *     « « Pas maintenant » ressort du questionnaire », seul ;
- *   - la feuille ouverte sans engagement lu (la condition `lecture.data === null` retirée, la feuille
- *     montée sur `null`)… n'est pas jouable : `FeuilleNouveauBilan` exige un engagement au typecheck.
- *     « Sans engagement, rien ne s'ouvre » garde la moitié qui l'est : une lecture qui échoue.
+ *   - la condition `lecture.data === null` retirée est un **mutant équivalent** : l'écran appelle alors
+ *     `setFeuilleDeLEngagement(null)`, qui ne rend rien — la condition est redondante (relevé par la
+ *     contre-lecture de la PR #314 ; la note d'origine la disait « pas jouable » pour une raison de
+ *     typage, que Jest ne vérifie pas). « Sans engagement, rien ne s'ouvre » garde la lecture qui échoue.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -37,6 +38,7 @@ import { EMPTY_BILAN_ANSWERS, type BilanAnswers } from '@/types/bilan';
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), push: jest.fn(), canGoBack: jest.fn(() => false), dismissAll: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
+  useIsFocused: () => true,
 }));
 jest.mock('@/lib/analytics', () => ({ track: jest.fn() }));
 jest.mock('@/lib/bilan-draft', () => ({

@@ -1,4 +1,4 @@
-import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -252,11 +252,8 @@ export default function ConnexionEmail() {
   // **Le retour matériel recule d'une phase** (01/10/2026, audit T-8) : sur Android, il quittait la
   // route depuis n'importe quelle phase. Il fait désormais ce que fait l'action déjà à l'écran pour
   // revenir en arrière — rien de nouveau —, et passe à la navigation quand il n'y a rien derrière.
-  // **Seulement au premier plan** : un écran couvert par un autre garde son écoute, et l'écoute la plus
-  // récente parle la première — sans cette garde, le retour pris sur l'écran du dessus reculerait
-  // une phase de celui-ci, caché.
-  const auPremierPlan = useIsFocused();
-  useRetourVersLaPhasePrecedente(auPremierPlan && phase.kind === 'code' ? revenirALAdresse : null);
+  // Seulement au premier plan : c'est le crochet qui le garde.
+  useRetourVersLaPhasePrecedente(phase.kind === 'code' ? revenirALAdresse : null);
 
   if (phase.kind === 'code') {
     return (

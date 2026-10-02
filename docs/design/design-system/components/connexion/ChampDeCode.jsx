@@ -7,7 +7,7 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // tenant d'abord —, pas les huit premiers chiffres (01/10/2026). Clavier numérique et remplissage « code à usage unique ».
 const LONGUEUR_DU_CODE = 8;
 const chiffresDuCode = (saisie) => {
-  for (const motif of [/\d+/g, /\d(?:[\s-]?\d)*/g]) {
+  for (const motif of [/\d+/g, /\d(?:\s?\d)*/g, /\d(?:[\s-]?\d)*/g]) {
     const codes = (saisie.match(motif) || []).map((s) => s.replace(/\D/g, '')).filter((c) => c.length === LONGUEUR_DU_CODE);
     if (codes.length > 0) return codes[codes.length - 1];
   }

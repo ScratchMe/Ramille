@@ -1,4 +1,4 @@
-La confirmation est un état du composant, jamais une boîte système. Aucune tentative de retenir la personne.
+La confirmation est un état de l’écran, jamais une boîte système. Aucune tentative de retenir la personne.
 
 ```jsx
 <MonCompte confirmation />

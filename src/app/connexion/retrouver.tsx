@@ -1,4 +1,4 @@
-import { useIsFocused, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -149,13 +149,10 @@ export default function RetrouverMonCompte() {
   // « Utiliser une autre adresse » —, et l'adresse ouverte depuis la collision ramène à la collision,
   // la phase vue juste avant ; aucun contrôle neuf à l'écran. Ailleurs, rien derrière : le retour
   // passe à la navigation.
-  // **Seulement au premier plan** : un écran couvert par un autre garde son écoute, et l'écoute la plus
-  // récente parle la première — sans cette garde, le retour pris sur l'écran du dessus reculerait
-  // une phase de celui-ci, caché.
-  const auPremierPlan = useIsFocused();
-  const phasePrecedente =
-    phase === 'code' ? revenirALAdresse : phase === 'saisie' && vientDeLaCollision ? () => allerA('collision') : null;
-  useRetourVersLaPhasePrecedente(auPremierPlan ? phasePrecedente : null);
+  // Seulement au premier plan : c'est le crochet qui le garde.
+  useRetourVersLaPhasePrecedente(
+    phase === 'code' ? revenirALAdresse : phase === 'saisie' && vientDeLaCollision ? () => allerA('collision') : null
+  );
 
   useEffect(() => {
     let annule = false;
@@ -257,11 +254,13 @@ export default function RetrouverMonCompte() {
               Tu as répondu au questionnaire ici, sans compte. En retrouvant le tien, c’est
               son historique qui s’ouvre — ce bilan-ci ne le rejoindra pas.
             </ThemedText>
-            {/* **« En faire un nouveau », jamais « le refaire »** (01/10/2026, `v1-19` D1 : le mot « refaire »
-                a été retiré partout). Un bilan n'est pas défait ni recommencé : ce bilan-ci reste sur cet
-                appareil, et un autre s'ajoute. */}
+            {/* **« En faire un nouveau », jamais « le refaire »** (01/10/2026, `v1-19` D1 : un bilan ne se
+                refait pas — le libellé « Refaire mon bilan » a été retiré, et les phrases qui le
+                reprenaient suivent). Un bilan n'est pas défait ni recommencé : ce bilan-ci reste sur cet
+                appareil, et un autre s'ajoute. « ensemble » est détaché par la virgule : collé à « un
+                nouveau », il se lisait « un nouvel ensemble ». Texte à valider (`v1-33` §9). */}
             <ThemedText type="body" themeColor="textSecondary">
-              On pourra en faire un nouveau ensemble après, ça va vite.
+              On pourra en faire un nouveau après, ensemble : ça va vite.
             </ThemedText>
             {/* **Le motif s'affiche ici aussi, et c'est le cas le plus fréquent.** Un appareil
                 qui a demandé un code porte presque toujours un bilan anonyme : `collision` est

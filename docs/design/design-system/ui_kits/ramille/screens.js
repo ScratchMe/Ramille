@@ -194,16 +194,18 @@ function Toi({ go, dark }) {
   const [canal, setCanal] = useState('push');
   return (
     <Phone dark={dark}>
-      <Scroll gap={24}>
+      {/* L'ordre et l'écart de l'écran (`v1-33` T-15) : le compte, puis les rappels, puis « Mes données »,
+          32 entre sections. */}
+      <Scroll gap={32}>
         <TextLink label="← Retour" type="small" themeColor="textTertiary" onPress={() => go('plan')} />
         <ThemedText type="screenTitle" as="h1">Toi</ThemedText>
-        <ChoixDeRappel canal={canal} onChoisir={setCanal} />
         <div style={{ background: 'var(--color-background-element)', borderRadius: 18, padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <ThemedText type="small" weight={600}>Ton compte</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">Aucun compte : ton bilan vit sur cet appareil. Un compte sert à le retrouver ailleurs.</ThemedText>
           <GoogleButton />
           <TextLink label="Utiliser un email à la place" type="linkPrimary" align="center" />
         </div>
+        <ChoixDeRappel canal={canal} onChoisir={setCanal} />
         <MonCompte />
       </Scroll>
     </Phone>

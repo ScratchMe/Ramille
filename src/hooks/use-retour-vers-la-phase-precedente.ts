@@ -1,3 +1,4 @@
+import { useIsFocused } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { BackHandler, Platform } from 'react-native';
 
@@ -18,16 +19,24 @@ import { BackHandler, Platform } from 'react-native';
  * une référence : l'abonnement ne se refait pas à chaque rendu, et l'appui voit toujours la phase
  * courante.
  *
+ * **Seulement au premier plan, et c'est le crochet qui le garde** (contre-lecture du 01/10/2026). Un
+ * écran couvert par un autre reste monté et garde son écoute ; or la plus récente parle la première,
+ * et celle de l'écran du dessus n'existe souvent pas. Sans cette garde, le retour pris sur `/feedback`,
+ * ouvert depuis « Ton mode n'est pas dans la liste ? », reculait d'une étape le questionnaire caché
+ * dessous, et `/feedback` restait affiché : un retour qui paraît mort, autant de fois qu'il y a
+ * d'étapes. Trois appelants la portaient à la main, deux l'avaient oubliée — elle vit donc ici.
+ *
  * Ne fait rien hors d'Android : sur web, le retour du navigateur est une navigation, et iOS n'a pas de
  * retour matériel.
  */
 export function useRetourVersLaPhasePrecedente(precedente: (() => void) | null): void {
-  const action = useRef(precedente);
+  const auPremierPlan = useIsFocused();
+  const action = useRef(auPremierPlan ? precedente : null);
   // Après le rendu et non pendant (règle des références de React) : l'appui arrive toujours après
-  // l'effet du rendu qui a changé de phase.
+  // l'effet du rendu qui a changé de phase — ou de premier plan.
   useEffect(() => {
-    action.current = precedente;
-  }, [precedente]);
+    action.current = auPremierPlan ? precedente : null;
+  }, [auPremierPlan, precedente]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;

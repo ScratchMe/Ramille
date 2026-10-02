@@ -98,8 +98,8 @@ export function CommuteDaysDistanceStep({
               phrase laissait attendre une relance. Ce qui existe vraiment, c'est le re-bilan — et
               il est préremplissable, donc peu coûteux : c'est ce qu'on dit à la place.
 
-              **« dans un nouveau bilan », jamais « en refaisant »** (01/10/2026, `v1-33` D3, et
-              `v1-19` D1) : un bilan ne se refait pas, il s'en ajoute un, qui n'efface rien. */}
+              **« dans un nouveau bilan », jamais « en refaisant »** (01/10/2026, comme R-7 de `v1-33`, en
+              application de `v1-19` D1 ; texte à valider, `v1-33` §9) : un bilan ne se refait pas, il s'en ajoute un, qui n'efface rien. */}
           <ThemedText type="small" themeColor="textTertiary">
             Une estimation suffit. Tu pourras donner un chiffre plus précis dans un nouveau bilan :
             tes réponses seront préremplies.

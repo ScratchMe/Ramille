@@ -227,7 +227,12 @@ marge, et une frontière ne la compte qu'une fois.
   est vide. Chez Ramille, un seul crochet le fait (`useRetourVersLaPhasePrecedente`, 01/10/2026) :
   l'action déjà présente à l'écran, ou `null` pour laisser passer. **Un `Modal` visible prend le
   retour avant lui** (`ReactModalHostView.kt` : la boîte de dialogue reçoit la touche et appelle
-  `onRequestClose`), donc un écran qui branche le crochet n'a pas à exclure ses feuilles.
+  `onRequestClose`), donc un écran qui branche le crochet n'a pas à exclure ses feuilles. **Et un écran
+  couvert par un autre garde son écoute** : la pile le laisse monté, et le dernier abonné parle le
+  premier — souvent avant l'écran du dessus, qui n'en a pas. L'écoute ne doit donc agir qu'au premier
+  plan (`useIsFocused`). Chez Ramille, c'est le crochet qui le garde, depuis que la contre-lecture du
+  01/10/2026 a trouvé le questionnaire reculant d'une étape, caché sous `/feedback`, pendant que
+  `/feedback` restait affiché : trois appelants portaient la garde à la main, deux l'avaient oubliée.
 - **La barre d'onglets change de disposition toute seule au-delà de 768 px de large.**
   `shouldUseHorizontalLabels` (bottom-tabs) fait passer le libellé **à côté** de l'icône dès que
   la place suffit, sauf si `tabBarLabelPosition` est posé. Tout ce qui est dessiné dans le slot

@@ -129,6 +129,17 @@ export function ActionCommitment({
    * déjà relue (la règle de la demande de `StepShell`).
    */
   const [lectureAttendue, setLectureAttendue] = useState<number | null>(null);
+  /**
+   * Le nombre de lectures **au retour du RPC**, pas au toucher (contre-lecture de la PR #314). Lu dans
+   * la fermeture de `submit`, il valait celui du toucher : une lecture terminée pendant l'aller-retour
+   * — un retour de l'app au premier plan — passait pour « la lecture qui suit », et « C'est noté »
+   * redevenait actif avant la vraie relecture, un second envoi possible. Tenu à jour dans un effet et
+   * non pendant le rendu (règle des références de React) : le retour du RPC arrive toujours après.
+   */
+  const lecturesCourantes = useRef(lectures);
+  useEffect(() => {
+    lecturesCourantes.current = lectures;
+  }, [lectures]);
   if (lectureAttendue !== null && committed) {
     setLectureAttendue(null);
     setBusy(false);
@@ -247,7 +258,7 @@ export function ActionCommitment({
     // bouton que la liste n'a plus —, et un `busy` rendu faux laissait « C'est noté » se retoucher une
     // seconde fois ; la relecture qui suit rend de toute façon la ligne engagée, qui n'est plus une
     // carte. Sur le plan, jusqu'à la lecture qui suit (`lectureAttendue`, audit P-1).
-    if (lectures !== undefined) setLectureAttendue(lectures);
+    if (lecturesCourantes.current !== undefined) setLectureAttendue(lecturesCourantes.current);
     onChanged();
     onEngage?.(poste);
   };

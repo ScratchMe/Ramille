@@ -1,4 +1,3 @@
-import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
@@ -107,21 +106,17 @@ export function MonCompte({
    * un envoi, où « Annuler » est désactivé, il ne fait rien plutôt que de quitter l'écran au milieu
    * d'une suppression ; compte supprimé, il fait « Revenir au début », la seule sortie que l'écran
    * laisse — revenir au plan d'un compte qui n'existe plus n'en est pas une. Sinon, il passe à la
-   * navigation. Seulement quand « Toi » est au premier plan : couvert par un autre écran, il
-   * garderait son écoute, et elle parlerait avant celle de l'écran du dessus.
+   * navigation. Seulement quand « Toi » est au premier plan, ce que le crochet garde lui-même.
    */
-  const auPremierPlan = useIsFocused();
   const enAction = busy !== null;
   useRetourVersLaPhasePrecedente(
-    !auPremierPlan
-      ? null
-      : supprime
-        ? () => terminerLeFlux('/')
-        : confirmation
-          ? () => {
-              if (!enAction) onConfirmation(false);
-            }
-          : null
+    supprime
+      ? () => terminerLeFlux('/')
+      : confirmation
+        ? () => {
+            if (!enAction) onConfirmation(false);
+          }
+        : null
   );
 
   const exporter = async () => {

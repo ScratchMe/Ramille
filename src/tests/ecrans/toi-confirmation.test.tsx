@@ -48,7 +48,7 @@ const mockEtat = jest.fn<Promise<EtatRattachement>, []>();
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
-  // `MonCompte` n'écoute le retour matériel qu'au premier plan : dans un test, l'écran l'est.
+  // Le retour matériel n'est écouté qu'au premier plan (le crochet le garde) : dans un test, l'écran l'est.
   useIsFocused: () => true,
 }));
 

@@ -83,13 +83,13 @@ Trois branches d'écran basculent d'un profil à l'autre, et aucune n'était jou
 la place des cartes, le cap qui **ne chiffre pas** (`cadreDuPlan`, C5.3), et l'absence de l'encart de
 contexte comme du lien vers les pistes.
 
-**Puis il refait un bilan en voiture** (27/09/2026, `v1-27` §4). Sa carte « Plan et Suivi » n'est
-pas refermée, et le nouveau bilan donne au même cycle ses premières actions : « Ton premier plan »
-est due le même jour — la seule paire de cartes d'ouverture que l'écran empilait. Les exclusions
-elles-mêmes sont épinglées dans Jest sur toutes les combinaisons d'états (`cartesDuPlan`) ; cette
-étape garde une partie de ce que Jest ne voit pas — **deux** des huit arguments que l'écran lui passe,
-`carteDuPremierPlan` et `carteDesDeuxLieux`. L'en-tête du script nomme les six autres, que rien ici ne
-garde.
+**Puis il refait un bilan en voiture** (27/09/2026, `v1-27` §4). Le nouveau bilan donne au même
+cycle ses premières actions, et « Ton premier plan » est due. Jusqu'au 01/10/2026, sa carte « Plan et
+Suivi » l'était aussi le même jour — la seule paire de cartes d'ouverture que l'écran empilait —, et
+l'étape gardait **deux** des huit arguments que l'écran passe à `cartesDuPlan`. **Depuis la décision
+« vue une fois, puis partie »** (`v1-33` §6), la carte des deux lieux est vue au premier plan du
+cycliste et ne revient plus : l'étape garde désormais qu'elle ne revient pas sans « Compris », et la
+paire n'est plus tenue que par les tests de `cartesDuPlan`, sur toutes les combinaisons d'états.
 
 **Et il finit par retirer ses deux bilans** (27/09/2026, C4.7, `v1-22`). Le bilan en voiture
 d'abord : c'est lui qui porte le plan, et le profil **s'y engage avant** — sans quoi rien ne gardait
@@ -199,8 +199,9 @@ point (`elementFromPoint`), puis ce que le clic y fait. **Et la vague produit du
 « C'est noté » en attente sur la liste (D13) — la ligne, le focus, et rien ne part : le guetteur de
 `commit_plan_action` armé avant le geste, et la base relue — et, chez le cycliste, la carte des deux
 lieux qui ne revient pas sans « Compris ». Mutations PL15 à PL19 en tête du script. **Une mesure introuvable y
-échoue, elle ne se saute jamais** — la première version d'une garde du jour sautait une mesure sans
-bruit, un titre cherché sans normaliser les insécables que `ThemedText` pose.
+échoue, elle ne se saute jamais** — la leçon vient d'une garde voisine du même jour, B6 bis de la
+section K de `verifier-etats-export.mjs`, dont la première version sautait une mesure sans bruit : un
+titre cherché sans normaliser les insécables que `ThemedText` pose.
 
 **L'étape « plan — l'onglet remonte en haut, et ramène à sa racine »** (01/10/2026, `v1-33` T-14)
 garde l'appel de `toucherDOnglet` dans ses deux sens : la remontée d'un onglet déjà à sa racine —

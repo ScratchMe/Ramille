@@ -21,8 +21,12 @@
  *     → « rend le sélecteur actif… » ;
  *   - la carte relue engagée qui ne remet pas le sélecteur à zéro (la première branche réduite à
  *     `setLectureAttendue(null)`) → « revient à « Je m'y engage » après « Changer d'avis » ».
+ *
+ * **Et le soir même, une quatrième** (contre-lecture de la PR #314) : le nombre de lectures lu au
+ * toucher, dans la fermeture de `submit` (la version d'avant) → « une lecture terminée pendant
+ * l'aller-retour… », seul.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { AccessibilityInfo } from 'react-native';
 
@@ -101,6 +105,26 @@ describe('ActionCommitment — jusqu’à la relecture', () => {
     expect(coche('mardi')).toBe(true);
   });
 
+  // Une lecture partie avant le toucher — un retour de l'app au premier plan — se termine pendant
+  // l'aller-retour de l'engagement : ce n'est pas « la lecture qui suit ».
+  it('une lecture terminée pendant l’aller-retour ne relâche pas « C’est noté »', async () => {
+    let repondre: (valeur: { ok: true }) => void = () => {};
+    mockEngager.mockReturnValue(new Promise((resoudre) => (repondre = resoudre)));
+    const { rerender } = render(carte());
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+
+    rerender(carte({ lectures: 4 }));
+    await act(async () => repondre({ ok: true }));
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+    expect(inactif('C’est noté')).toBe(true);
+
+    // La vraie relecture, elle, le relâche.
+    rerender(carte({ lectures: 5 }));
+    expect(inactif('C’est noté')).toBe(false);
+  });
+
   it('revient à « Je m’y engage » après « Changer d’avis »', async () => {
     const { rerender } = render(carte());
     await sEngager();
@@ -120,7 +144,7 @@ describe('ActionCommitment — jusqu’à la relecture', () => {
  * le joue sur la liste, pour une échéance ; ce fichier voit la forme en jours, sur le plan, que le
  * parcours ne touche pas incomplète — et le focus, qu'il lit là-bas sur une case d'option.
  *
- * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), cinq mutations jouées une à une, rien hors
+ * Éprouvé en le cassant, le 01/10/2026 (TESTING.md §1.1), six mutations jouées une à une, rien hors
  * de ce bloc ne tombant :
  *   - « C'est noté » remis `disabled` sur une intention incomplète (l'état d'avant) → les trois tests
  *     du bloc, le toucher ne faisant plus rien ;

@@ -104,8 +104,9 @@ export default function BilanQuestionnaire() {
   // retenue au premier rendu après la lecture du brouillon — qui a posé l'étape où l'on s'était arrêté,
   // ou celle que demande `?etape=`. Le bandeau du re-bilan ne se rend qu'à elle : répété sur les neuf
   // étapes, il devenait un bandeau qu'on ne lit plus, et ses 76 px faisaient passer la liste des modes
-  // sous le pied. Ce qu'on accepte en échange : qui reprend un re-bilan au milieu ne le relit pas — il
-  // voit ses réponses cochées. Retenue au rendu et non dans un effet, comme la demande de `StepShell` :
+  // sous le pied. Ce qu'on accepte en échange : passé l'étape d'entrée, il ne revient pas — on voit ses
+  // réponses cochées. (La décision disait « la première étape » ; c'est l'étape d'entrée de la visite,
+  // la première d'ordinaire, celle d'un brouillon repris ou de `?etape=` sinon.) Retenue au rendu et non dans un effet, comme la demande de `StepShell` :
   // un effet laisserait une image sans bandeau.
   const [etapeDEntree, setEtapeDEntree] = useState<BilanStepId | null>(null);
   if (draftLoaded && etapeDEntree === null) setEtapeDEntree(step);
@@ -362,6 +363,14 @@ export default function BilanQuestionnaire() {
   const repondreAuxLongsTrajets = (oui: boolean) => {
     setOuiAuxLongsTrajets(oui);
     update(compteursApresLaReponse(answers, oui));
+  };
+  // **Toucher une série, c'est répondre « Oui »** : les séries ne se voient que sous lui. Sans le
+  // drapeau, un « Oui » relu des compteurs — un re-bilan prérempli de deux trajets en train, un
+  // brouillon — retombait sur « Non » au toucher du « 0 » qui remet le train à zéro : trois zéros,
+  // et les séries disparaissaient sous le doigt (contre-lecture de la PR #314).
+  const mettreAJourLesSeries = (patch: Partial<BilanAnswers>) => {
+    setOuiAuxLongsTrajets(true);
+    update(patch);
   };
 
   const continuerLeBrouillon = () => setMontrerLaReprise(false);
@@ -804,7 +813,7 @@ export default function BilanQuestionnaire() {
       {step === 'long_trips' && (
         <LongTripsStep
           answers={answers}
-          update={update}
+          update={mettreAJourLesSeries}
           reponse={reponseAuxLongsTrajets(answers, horsColonnes)}
           repondre={repondreAuxLongsTrajets}
         />

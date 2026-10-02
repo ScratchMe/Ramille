@@ -998,8 +998,14 @@ describe('STATUT_DU_POINT', () => {
  *     la question de l'engagement ;
  *   - un point répondu compté parmi les ouverts (le filtre `status` retiré) → « un seul point ouvert :
  *     la règle d'avant » ;
- *   - le départage par l'action suivie retiré (deux candidats → la règle d'avant) → « deux questions
- *     composées… l'action suivie ».
+ *   - le filtre par l'action suivie retiré (tout point composé est candidat) → « deux questions
+ *     composées… l'action suivie » et « une question composée sur une action quittée… » (rejouée le
+ *     soir même sur la version corrigée).
+ *
+ * **Et le soir même, l'action quittée** (contre-lecture de la PR #314) : la première version ne
+ * comparait l'action que lorsque deux points étaient composés, et un seul point composé sur une action
+ * quittée prenait l'accent. Éprouvé : la version d'avant remise → « une question composée sur une
+ * action quittée… », seul.
  */
 describe('accentDesPoints', () => {
   const CYCLE = 'Trajet domicile-travail (Voiture thermique)';
@@ -1049,6 +1055,14 @@ describe('accentDesPoints', () => {
       false,
       true,
     ]);
+  });
+
+  // Engagé sur un vol en septembre, puis « Changer d'avis » : le point du mois reste composé sur le vol,
+  // que la carte signale comme une action quittée. Il ne referme plus rien.
+  it('une question composée sur une action quittée ne prend pas l’accent : la règle d’avant', () => {
+    const points = [semaine(), mois({ question_kind: 'occasion', committed_action_text: VOL })];
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: null })).toEqual([true, false]);
+    expect(accentDesPoints(points, { libelleDuCycle: CYCLE, actionEngagee: 'Vélo' })).toEqual([true, false]);
   });
 
   // Deux questions composées sur une action : il a fallu changer d'action entre les deux générations.

@@ -27,6 +27,12 @@
  *     seul : `handleBack` y rend la main à la pile, mais l'appui est pris ;
  *   - le recul sur l'étape d'avant dans l'ordre complet, sans passer par `previousStep` → « saute les étapes
  *     que les réponses excluent », seul.
+ *
+ * **Et le soir même, l'écran couvert** (contre-lecture de la PR #314) : « Ton mode n'est pas dans la
+ * liste ? » empile `/feedback` sur le questionnaire, qui reste monté et gardait son écoute — le retour
+ * pris sur `/feedback` reculait l'étape cachée dessous, et `/feedback` restait affiché. La garde vit dans
+ * le crochet ; ce test garde qu'elle s'applique **à cet écran**. Éprouvé : la garde du premier plan retirée
+ * du crochet → « couvert par un autre écran », seul.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -41,9 +47,11 @@ import { EMPTY_BILAN_ANSWERS, type BilanAnswers, type BilanStepId } from '@/type
 
 // ── Les doublures : le réseau, le stockage et la navigation. Les étapes, `StepShell` et le crochet sont vrais.
 
+let mockAuPremierPlan = true;
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), push: jest.fn(), canGoBack: jest.fn(() => false), dismissAll: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
+  useIsFocused: () => mockAuPremierPlan,
 }));
 jest.mock('@/lib/analytics', () => ({ track: jest.fn() }));
 jest.mock('@/lib/bilan-draft', () => ({
@@ -97,6 +105,7 @@ function appuyerSurRetour(): boolean {
 const osDOrigine = Platform.OS;
 beforeEach(() => {
   ecouteurs = [];
+  mockAuPremierPlan = true;
   Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
   jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_evenement, ecouteur) => {
     ecouteurs.push(ecouteur as Ecouteur);
@@ -159,6 +168,23 @@ describe('le retour matériel du questionnaire', () => {
     expect(await screen.findByText(TITRE_DES_JOURS)).toBeTruthy();
     expect(screen.queryByText(TITRE_DU_MODE)).toBeNull();
     expect(router.back).not.toHaveBeenCalled();
+  });
+
+  test('couvert par un autre écran, le retour passe à la navigation et l’étape cachée ne bouge pas', async () => {
+    // « Ton mode n'est pas dans la liste ? » a empilé `/feedback` : le questionnaire reste monté, sans le premier plan.
+    mockAuPremierPlan = false;
+    brouillonA('commute_mode');
+    render(<BilanQuestionnaire />);
+    await screen.findByText(TITRE_DU_MODE);
+
+    let pris = true;
+    act(() => {
+      pris = appuyerSurRetour();
+    });
+
+    expect(pris).toBe(false);
+    expect(screen.getByText(TITRE_DU_MODE)).toBeTruthy();
+    expect(screen.queryByText(TITRE_DES_JOURS)).toBeNull();
   });
 
   test('saute les étapes que les réponses excluent, comme « Retour »', async () => {

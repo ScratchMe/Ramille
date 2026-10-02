@@ -12,7 +12,8 @@ import { track } from '@/lib/analytics';
 import { type TitreFocalisable } from '@/lib/focus';
 import { BILAN_SECTION_LABEL, BILAN_STEP_ORDER } from '@/types/bilan';
 
-// Les mêmes libellés qu'en tête du questionnaire et que dans la restitution (C2.6) : l'annonce
+// Les mêmes libellés qu'en tête du questionnaire (C2.6 ; la restitution, elle, nomme des postes —
+// `POSTE_LABEL` —, pas des sections) : l'annonce
 // et ce qu'on trouve ensuite doivent porter le même nom, sans quoi la personne croit avoir
 // changé de sujet.
 //

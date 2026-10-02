@@ -250,8 +250,8 @@ périmerait en silence au prochain passage :
   reproche déguisé en information.
 - **Le bandeau « Tes réponses précédentes sont préremplies. Modifie ce qui a changé. » ne se dit
   qu'à l'étape d'entrée de la visite** (01/10/2026, `v1-33` D3) — la première, celle d'un brouillon
-  repris, celle de `?etape=`. Ce qu'on accepte : qui reprend au milieu ne le relit pas, il voit ses
-  réponses cochées. **Et la feuille « Ton plan va être recalculé » se dit à l'entrée** (`v1-33` §6,
+  repris, celle de `?etape=`. Ce qu'on accepte : passé l'étape d'entrée, il ne revient pas — on voit
+  ses réponses cochées. **Et la feuille « Ton plan va être recalculé » se dit à l'entrée** (`v1-33` §6,
   qui déplace `v1-19` D4) : elle arrivait au terme de neuf étapes pour dire « ton bilan actuel est
   toujours juste ». Mêmes conditions (`engagementDeLaPeriodeCourante`) ; « Commencer » la referme,
   « Pas maintenant » et le retour ressortent (`revenirOu('/')`). Sur web, le focus est sur

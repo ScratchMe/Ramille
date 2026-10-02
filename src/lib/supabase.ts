@@ -121,7 +121,11 @@ export const supabase = configurationSupabase.complete
         // ne rattrapait que le raté d'une seconde, au prix de sept secondes muettes quand la panne dure.
         //
         // **Ce que ça coûte, et c'est su** : un raté réseau d'une seconde, que le rejeu absorbait, allume
-        // désormais la ligne de relecture — qui porte son « Réessayer » ; et les 503 et 520 ne sont plus
+        // désormais la ligne de relecture — qui porte son « Réessayer ». **Sauf deux lectures qui n'en
+        // ont pas**, à l'entrée d'un re-bilan (contre-lecture de la PR #314) : le préremplissage
+        // (`loadLastSubmittedAnswers`, qui rend `null` sur un échec) et l'engagement en cours. Un raté
+        // là donne un questionnaire vide, sans bandeau ni feuille « Ton plan va être recalculé » — rien
+        // de faux n'y est dit, mais neuf étapes sont à refaire (`v1-33` §9, ouvert). Et les 503 et 520 ne sont plus
         // rejoués non plus (un 503 est le cache de schéma de PostgREST pas encore chargé, un 520 un raté de
         // Cloudflare : deux états passagers qui se voient maintenant comme un échec). Ne touche ni
         // `fetchAvecSecondeChance`, qui ne vise que le `401 PGRST303` d'un jeton trop neuf et est une
