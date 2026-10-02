@@ -1737,3 +1737,30 @@ la racine, rendue sans router, restait figée si le refus se levait sans la quit
   l'écran s'en va à la première session rouverte.
 
 **Ce qui reste à voir sur appareil** : `v1-13` §11.27.
+
+### 12.28 Une reconnexion se compte comme un rattachement (02/10/2026)
+
+**Relevé par la contre-lecture de la §8.5 quater du registre d'exploitation**, en écrivant les
+requêtes à enregistrer pour lire la mesure. `MESURE.md` §1, le commentaire de `src/app/connexion/email.tsx`
+et le registre disaient que l'écart entre `connexion_demande` et `connexion_success` **est** le taux
+de codes jamais saisis. C'était vrai le 11/09/2026, pour le seul chemin du rattachement ; deux
+chemins l'ont défait sans toucher à la mesure :
+
+- **depuis le 21/09/2026**, une adresse déjà prise sur `/connexion/email` part en code de connexion
+  vers le compte existant, et cette branche émet aussi `connexion_demande`, sans propriété qui la
+  distingue d'un rattachement ;
+- **une reconnexion par code**, par cette branche ou par `/connexion/retrouver`, appelle
+  `effacerLesMarquesLocales()`, qui efface `traceverte.rattachement_annonce.v1` ; le plan constate
+  ensuite un compte rattaché sans annonce faite, et émet `connexion_success`.
+
+Les deux événements comptent donc des reconnexions, et l'écart peut même devenir négatif : une
+reconnexion par `/connexion/retrouver` ajoute un succès sans demande en face.
+
+**Pourquoi ce n'est pas fait ici** : la PR qui le relève est documentaire, et la correction touche la
+mesure — une propriété sur `connexion_demande` (`flux`, `rattachement` ou `connexion`), donc une
+description du référentiel par migration et `src/types/analytics.ts` ; et, côté plan, ne pas émettre
+`connexion_success` quand la session ouverte était déjà permanente — ce que la marque de compte
+rattaché (`traceverte.compte_rattache.v1`, §12.27) pourrait dire, si elle survivait au balayage. En
+attendant, le registre (§8.5 quater) et `MESURE.md` §1 le disent, et le commentaire de
+`email.tsx`, qui l'affirme encore, se corrige avec la mesure.
+

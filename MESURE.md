@@ -59,7 +59,11 @@ pas dans un chiffre** (11/09/2026) :
   classe pourtant en `a_confirmer` : `is_anonymous` ne bascule qu'au clic du lien reçu — à la saisie du code depuis le 20/09/2026. Le chemin
   Google, lui, n'émettait qu'après une identité liée — les deux branches ne mesuraient pas le même
   fait, et leur comparaison était faussée du taux d'emails jamais confirmés, c'est-à-dire du
-  chiffre qu'on voulait lire. L'écart entre les deux **est** ce taux.
+  chiffre qu'on voulait lire. L'écart entre les deux **était** ce taux, et ne l'est plus : depuis
+  le 21/09/2026, une adresse déjà prise sur `/connexion/email` émet `connexion_demande` pour un
+  code de **connexion**, et une reconnexion par code efface les marques locales, après quoi le plan
+  constate un compte rattaché et émet `connexion_success`. Les deux comptent donc aussi des
+  reconnexions — relevé le 02/10/2026, `v1-27` §12.28, où vit la direction pour les séparer.
 
 ## 2. Ce que la purge et la suppression laissent : des compteurs, et quatre vues
 
