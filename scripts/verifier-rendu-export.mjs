@@ -225,9 +225,11 @@ if (!csp) {
   })(DIST);
   const manquantes = new Map();
   for (const fichier of pages) {
-    for (const [, attributs, corps] of readFileSync(fichier, 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
-      if (/\bsrc\s*=/.test(attributs)) continue;
-      const type = /\btype\s*=\s*["']?([^"'\s>]+)/.exec(attributs)?.[1]?.toLowerCase();
+    // Insensible à la casse, et la balise fermante tolère espaces et attributs : c'est ainsi que le
+    // navigateur la lit (CodeQL, 02/10/2026).
+    for (const [, attributs, corps] of readFileSync(fichier, 'utf8').matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
+      if (/\bsrc\s*=/i.test(attributs)) continue;
+      const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attributs)?.[1]?.toLowerCase();
       if (type && !['module', 'text/javascript', 'application/javascript'].includes(type)) continue;
       const empreinte = `'sha256-${createHash('sha256').update(corps, 'utf8').digest('base64')}'`;
       if (!scriptSrc.includes(empreinte)) {
