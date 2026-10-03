@@ -27,14 +27,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --page: #000000; --surface: #1A1C1A; --encre: #FFFFFF; --encre-2: #B0B4BA; --encre-3: #8A9088;
-    --filet: #2E3135; --accent: #3D9B6F; --accent-texte: #8FCBA9; --accent-appui: #2F7E59;
+    --filet: #2E3135; --accent: #3D9B6F; --accent-texte: #8FCBA9; --accent-appui: #2F7F59;
     --teinte: #1C2E22; --element: #212225; --sur-accent: #FFFFFF; --focus: #8FCBA9;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --page: #000000; --surface: #1A1C1A; --encre: #FFFFFF; --encre-2: #B0B4BA; --encre-3: #8A9088;
-  --filet: #2E3135; --accent: #3D9B6F; --accent-texte: #8FCBA9; --accent-appui: #2F7E59;
+  --filet: #2E3135; --accent: #3D9B6F; --accent-texte: #8FCBA9; --accent-appui: #2F7F59;
   --teinte: #1C2E22; --element: #212225; --sur-accent: #FFFFFF; --focus: #8FCBA9;
   color-scheme: dark;
 }
@@ -214,9 +214,10 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .statut { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--dp) * 30); padding: 0 calc(var(--dp) * 24); display: flex; align-items: center; font-weight: 600; font-size: calc(var(--dp) * 13); color: #131612; }
 .ecr { position: absolute; inset: calc(var(--dp) * 30) 0 0 0; }
 .entete { padding: calc(var(--dp) * 8) calc(var(--dp) * 24) 0; }
-.entete-ligne { display: flex; align-items: center; gap: calc(var(--dp) * 10); height: calc(var(--dp) * 32); }
+.entete-ligne { display: flex; align-items: center; gap: calc(var(--dp) * 8); height: calc(var(--dp) * 32); }
+.entete-etape { margin-left: auto; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); }
 .slot { width: calc(var(--dp) * 28); height: calc(var(--dp) * 28); flex: none; }
-.entete-section { font-weight: 600; font-size: calc(var(--dp) * 13); line-height: calc(var(--dp) * 18); letter-spacing: calc(var(--dp) * 0.3); text-transform: uppercase; color: var(--f-encre-3); }
+.entete-section { font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); }
 .rail { margin-top: calc(var(--dp) * 10); height: calc(var(--dp) * 6); border-radius: calc(var(--dp) * 3); background: var(--f-filet); overflow: hidden; }
 .rail-plein { height: 100%; width: 0; background: var(--f-accent); border-radius: inherit; }
 .q-pile { position: relative; }
@@ -226,7 +227,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .choix { display: flex; align-items: center; min-height: calc(var(--dp) * 52); padding: calc(var(--dp) * 8) calc(var(--dp) * 16); border-radius: calc(var(--dp) * 14); background: var(--f-element); border: calc(var(--dp) * 1.5) solid transparent; font-weight: 400; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: #131612; }
 .puces { margin-top: calc(var(--dp) * 20); display: flex; flex-wrap: wrap; gap: calc(var(--dp) * 8); }
 .puce { display: inline-flex; align-items: center; justify-content: center; min-width: calc(var(--dp) * 52); height: calc(var(--dp) * 44); padding: 0 calc(var(--dp) * 14); border-radius: calc(var(--dp) * 22); background: var(--f-element); border: calc(var(--dp) * 1.5) solid transparent; font-weight: 500; font-size: calc(var(--dp) * 15); color: #131612; }
-.puce-jour { border-radius: calc(var(--dp) * 14); height: calc(var(--dp) * 40); min-width: calc(var(--dp) * 46); padding: 0 calc(var(--dp) * 8); font-size: calc(var(--dp) * 14); }
+.puce-jour { border-radius: calc(var(--dp) * 14); height: calc(var(--dp) * 40); min-width: 0; flex: 1; padding: 0; font-size: calc(var(--dp) * 14); }
 .choisi { background: var(--f-teinte) !important; border-color: var(--f-accent) !important; font-weight: 600 !important; }
 .appui { background: var(--f-appui) !important; }
 .appui.choisi { background: var(--f-appui-choisi) !important; }
@@ -236,20 +237,19 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .bouton-2 { background: #FFFFFF; color: #131612; box-shadow: inset 0 0 0 calc(var(--dp) * 1) var(--f-filet); }
 .bouton-2.appui { background: var(--f-appui) !important; }
 .ecr-calcul { display: grid; place-content: center; justify-items: center; gap: calc(var(--dp) * 20); }
-.slot-calcul { width: calc(var(--dp) * 120); height: calc(var(--dp) * 120); }
+.slot-calcul { width: calc(var(--dp) * 72); height: calc(var(--dp) * 72); }
 .ecr-calcul p { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 24); color: #131612; }
 .ecr-bilan { padding: calc(var(--dp) * 20) calc(var(--dp) * 24); display: grid; align-content: start; gap: calc(var(--dp) * 22); }
 .b-titre { font-weight: 600; font-size: calc(var(--dp) * 26); line-height: calc(var(--dp) * 32); letter-spacing: calc(var(--dp) * -0.26); }
 .b-sous { font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); margin-top: calc(var(--dp) * 10) !important; }
 .b-total { font-weight: 600; font-size: calc(var(--dp) * 30); line-height: calc(var(--dp) * 36); letter-spacing: calc(var(--dp) * -0.6); margin-top: calc(var(--dp) * 2) !important; }
-.b-label { font-weight: 600; font-size: calc(var(--dp) * 13); line-height: calc(var(--dp) * 18); letter-spacing: calc(var(--dp) * 0.3); text-transform: uppercase; color: var(--f-encre-3); }
+.b-label { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: #131612; }
 .b-lignes { display: grid; gap: calc(var(--dp) * 12); margin-top: calc(var(--dp) * 10); }
 .b-ligne { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--dp) * 6) calc(var(--dp) * 8); font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); }
 .b-ligne b { font-weight: 600; }
 .b-barre { grid-column: 1 / -1; height: calc(var(--dp) * 12); border-radius: calc(var(--dp) * 6); background: var(--f-element); position: relative; }
 .b-barre i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: var(--f-attenue); }
 .b-barre i.fort { background: var(--f-accent); }
-.b-barre i.contour { background: transparent; box-shadow: inset 0 0 0 calc(var(--dp) * 1.5) var(--f-accent); }
 .b-source { font-family: var(--police-mono); font-size: calc(var(--dp) * 11); line-height: calc(var(--dp) * 16); color: var(--f-encre-3); }
 .bande { height: calc(var(--dp) * 52); display: grid; place-items: center; position: relative; border-bottom: 1px solid var(--f-filet); font-weight: 600; font-size: calc(var(--dp) * 17); }
 .bande svg { position: absolute; right: calc(var(--dp) * 14); top: calc(var(--dp) * 15); width: calc(var(--dp) * 22); height: calc(var(--dp) * 22); fill: none; stroke: #131612; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
@@ -265,25 +265,26 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .c-titre { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 23); }
 .c-gain { font-weight: 600; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: var(--f-accent-texte); }
 .c-gain span { font-weight: 400; color: var(--f-encre-3); }
-.c-jours { display: none; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-2); }
-.engagee .c-jours { display: block; }
 .pastille-bord { justify-self: start; display: inline-flex; align-items: center; height: calc(var(--dp) * 32); padding: 0 calc(var(--dp) * 14); border-radius: calc(var(--dp) * 16); box-shadow: inset 0 0 0 1px var(--f-champ); font-weight: 600; font-size: calc(var(--dp) * 14); color: var(--f-accent-texte); margin-top: calc(var(--dp) * 4); }
 .pastille-bord.appui { background: var(--f-appui); }
 .engagee .pastille-bord { display: none; }
 .depliage { overflow: hidden; height: 0; }
 .depliage-dedans { padding-top: calc(var(--dp) * 8); display: grid; gap: calc(var(--dp) * 10); }
 .depliage-dedans > p { font-weight: 600; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); }
-.jours { display: flex; gap: calc(var(--dp) * 6); }
+.jours { display: flex; gap: calc(var(--dp) * 5); }
 .point-hauteur { overflow: hidden; height: 0; }
 .point { background: var(--f-teinte); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 16); display: grid; margin-bottom: calc(var(--dp) * 4); }
 .point > div { grid-area: 1 / 1; }
-.pt-label { font-weight: 700; font-size: calc(var(--dp) * 12); line-height: calc(var(--dp) * 16); letter-spacing: calc(var(--dp) * 0.3); text-transform: uppercase; color: var(--f-accent-texte); }
+.lien-pistes { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); padding: calc(var(--dp) * 4) 0; }
+.pistes { display: grid; gap: calc(var(--dp) * 12); }
+.pt-label { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); }
+.pt-label.repondu { color: var(--f-encre-3); }
 .pt-q { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 23); margin-top: calc(var(--dp) * 6) !important; }
 .pt-boutons { display: flex; gap: calc(var(--dp) * 8); margin-top: calc(var(--dp) * 14); }
 .pt-boutons .bouton { flex: 1; height: calc(var(--dp) * 46); border-radius: calc(var(--dp) * 23); font-size: calc(var(--dp) * 15); }
 .lien { margin-top: calc(var(--dp) * 10) !important; font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); }
 .rep { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--dp) * 12); align-items: start; align-content: center; }
-.slot-rep { width: calc(var(--dp) * 42); height: calc(var(--dp) * 42); }
+.slot-rep { width: calc(var(--dp) * 40); height: calc(var(--dp) * 40); }
 .rep p.r { font-weight: 500; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: #131612; }
 .notif { position: absolute; top: calc(var(--dp) * 36); left: calc(var(--dp) * 10); right: calc(var(--dp) * 10); background: var(--f-element); border-radius: calc(var(--dp) * 22); padding: calc(var(--dp) * 12) calc(var(--dp) * 14); display: grid; grid-template-columns: auto 1fr; gap: calc(var(--dp) * 12); box-shadow: 0 calc(var(--dp) * 8) calc(var(--dp) * 24) rgba(19, 22, 18, 0.16); }
 .notif .ico { width: calc(var(--dp) * 38); height: calc(var(--dp) * 38); border-radius: calc(var(--dp) * 10); background: #FFFFFF; padding: calc(var(--dp) * 2); }
@@ -356,16 +357,16 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 
             <div class="ecr" id="e-q">
               <div class="entete">
-                <div class="entete-ligne"><span class="slot" id="slot-entete"></span><span class="entete-section" id="q-section">Domicile-travail</span></div>
+                <div class="entete-ligne"><span class="slot" id="slot-entete"></span><span class="entete-section" id="q-section">Domicile-travail</span><span class="entete-etape" id="q-etape">Étape 1 sur 9</span></div>
                 <div class="rail"><div class="rail-plein" id="rail"></div></div>
               </div>
               <div class="q-pile">
                 <div class="q" id="q1"><p class="q-titre">As-tu un trajet régulier pour le travail ou les études&nbsp;?</p>
                   <div class="choix-liste"><div class="choix" id="q1-oui">Oui</div><div class="choix">Non</div></div></div>
                 <div class="q" id="q2"><p class="q-titre">Quel est ton mode de transport principal pour ce trajet&nbsp;?</p>
-                  <div class="choix-liste"><div class="choix" id="q2-voiture">Voiture (seul)</div><div class="choix">Voiture (covoiturage)</div><div class="choix">Bus</div><div class="choix">Train</div><div class="choix">Vélo</div></div></div>
+                  <div class="choix-liste"><div class="choix" id="q2-voiture">Voiture (seul)</div><div class="choix">Voiture (covoiturage)</div><div class="choix">Deux-roues motorisé</div><div class="choix">Bus</div><div class="choix">Train</div></div></div>
                 <div class="q" id="q3"><p class="q-titre">À quelle fréquence fais-tu des trajets loisirs le week-end&nbsp;?</p>
-                  <div class="choix-liste"><div class="choix">Plusieurs fois par semaine</div><div class="choix" id="q3-une">Une fois par semaine</div><div class="choix">Rarement — une fois par mois ou moins</div></div></div>
+                  <div class="choix-liste"><div class="choix">Rarement — une fois par mois ou moins</div><div class="choix">Deux ou trois fois par mois</div><div class="choix" id="q3-une">Une fois par semaine</div><div class="choix">Plusieurs fois par semaine</div></div></div>
                 <div class="q" id="q4"><p class="q-titre">Combien de vols prends-tu dans une année type&nbsp;?</p>
                   <div class="puces"><div class="puce">0</div><div class="puce" id="q4-un">1</div><div class="puce">2</div><div class="puce">3</div><div class="puce">4</div></div></div>
               </div>
@@ -379,14 +380,15 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
               <div class="bb" id="bb2"><p class="b-label">Répartition par poste</p>
                 <div class="b-lignes">
                   <div class="b-ligne"><b>Trajet domicile-travail</b><b>1,2&nbsp;t</b><div class="b-barre"><i class="fort" style="width:63%"></i></div></div>
-                  <div class="b-ligne"><span>Voyages longue distance</span><span>0,4&nbsp;t</span><div class="b-barre"><i style="width:21%"></i></div></div>
                   <div class="b-ligne"><span>Loisirs du week-end</span><span>0,3&nbsp;t</span><div class="b-barre"><i style="width:16%"></i></div></div>
+                  <div class="b-ligne"><span>Voyages longue distance</span><span>0,4&nbsp;t</span><div class="b-barre"><i style="width:21%"></i></div></div>
                 </div></div>
               <div class="bb" id="bb3"><p class="b-label">Où tu te situes</p>
                 <div class="b-lignes">
-                  <div class="b-ligne"><b>Ton bilan</b><b>1,9&nbsp;t</b><div class="b-barre"><i class="fort" style="width:68%"></i></div></div>
-                  <div class="b-ligne"><span>Moyenne française</span><span>2,8&nbsp;t</span><div class="b-barre"><i style="width:100%"></i></div></div>
-                  <div class="b-ligne"><span>Repère 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i class="contour" style="width:21%"></i></div></div>
+                  <div class="b-ligne"><b>Toi</b><b>1,9&nbsp;t</b><div class="b-barre"><i class="fort" style="width:58%"></i></div></div>
+                  <div class="b-ligne"><span>Ton prochain palier</span><span>1,7&nbsp;t</span><div class="b-barre"><i style="width:52%"></i></div></div>
+                  <div class="b-ligne"><span>Moyenne en France</span><span>2,8&nbsp;t</span><div class="b-barre"><i style="width:85%"></i></div></div>
+                  <div class="b-ligne"><span>Repère transport 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i style="width:18%"></i></div></div>
                 </div>
                 <p class="b-source" style="margin-top:calc(var(--dp) * 12)">SDES, données 2017 · cible 2050&nbsp;: ADEME</p></div>
             </div>
@@ -398,35 +400,36 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                 <div class="point-hauteur" id="point-h">
                   <div class="point" id="point">
                     <div id="pt-q">
-                      <p class="pt-label">Ton point de la semaine</p>
-                      <p class="pt-q">La semaine dernière, as-tu fait ce trajet à vélo&nbsp;?</p>
-                      <div class="pt-boutons"><div class="bouton bouton-2" id="pt-non">Non</div><div class="bouton" id="pt-oui">Oui</div></div>
+                      <p class="pt-label" id="pt-label">Semaine du 05/10</p>
+                      <p class="pt-q">Mardi ou jeudi, as-tu fait ce trajet à deux&nbsp;?</p>
+                      <div class="pt-boutons"><div class="bouton bouton-2" id="pt-non">Non</div><div class="bouton bouton-2" id="pt-oui">Oui</div></div>
                       <p class="lien">Pas de trajet la semaine dernière</p>
                     </div>
                     <div class="rep" id="pt-r1"><div class="slot-rep" id="slot-rep1"></div><div><p class="r">Bien joué — chaque changement compte.</p><p class="lien">Modifier ma réponse</p></div></div>
                     <div class="rep" id="pt-r2"><div class="slot-rep" id="slot-rep2"></div><div><p class="r">Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.</p><p class="lien">Modifier ma réponse</p></div></div>
                   </div>
                 </div>
-                <div class="carte" id="c1"><p class="c-titre">Passer deux trajets sur cinq en train</p><p class="c-gain">−&nbsp;430&nbsp;kg&nbsp;CO₂e <span>par an</span></p></div>
-                <div class="carte" id="c2"><p class="c-titre">Faire ce trajet à deux au moins un jour sur deux</p><p class="c-gain">−&nbsp;300&nbsp;kg&nbsp;CO₂e <span>par an</span></p></div>
-                <div class="carte" id="c3">
-                  <p class="c-etiq"><span class="pastille"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.6 6.3 5 8.6l4.4-5"/></svg></span>Ton engagement</p>
-                  <p class="c-titre">Faire un trajet sur cinq à vélo</p>
-                  <p class="c-gain">−&nbsp;240&nbsp;kg&nbsp;CO₂e <span>par an</span></p>
-                  <p class="c-jours">Mardi et jeudi</p>
-                  <span class="pastille-bord" id="c3-engage">Je m’y engage</span>
-                  <div class="depliage" id="c3-dep"><div class="depliage-dedans" id="c3-dep-dedans">
-                    <p>Quels jours&nbsp;?</p>
-                    <div class="jours"><span class="puce puce-jour">Lun</span><span class="puce puce-jour" id="j-mar">Mar</span><span class="puce puce-jour">Mer</span><span class="puce puce-jour" id="j-jeu">Jeu</span><span class="puce puce-jour">Ven</span></div>
-                    <div class="bouton" id="c3-note">C’est noté</div>
-                  </div></div>
+                <div class="pistes" id="pistes">
+                  <div class="carte" id="c1"><p class="c-titre">Passer deux trajets sur cinq en train</p><p class="c-gain">−&nbsp;430&nbsp;kg&nbsp;CO₂e <span>par an · 23&nbsp;% de ton empreinte</span></p><span class="pastille-bord" id="c1-choix">Je m’y engage</span></div>
+                  <div class="carte" id="c2">
+                    <p class="c-etiq"><span class="pastille"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.6 6.3 5 8.6l4.4-5"/></svg></span>Ton engagement</p>
+                    <p class="c-titre">Faire ce trajet à deux au moins un jour sur deux</p>
+                    <p class="c-gain">−&nbsp;300&nbsp;kg&nbsp;CO₂e <span id="c2-ligne">par an · 16&nbsp;% de ton empreinte</span></p>
+                    <span class="pastille-bord" id="c2-engage">Je m’y engage</span>
+                    <div class="depliage" id="c2-dep"><div class="depliage-dedans" id="c2-dep-dedans">
+                      <p>Quels jours&nbsp;?</p>
+                      <div class="jours"><span class="puce puce-jour">L</span><span class="puce puce-jour" id="j-mar">M</span><span class="puce puce-jour">M</span><span class="puce puce-jour" id="j-jeu">J</span><span class="puce puce-jour">V</span><span class="puce puce-jour">S</span><span class="puce puce-jour">D</span></div>
+                      <div class="bouton" id="c2-note">C’est noté</div>
+                    </div></div>
+                  </div>
                 </div>
+                <p class="lien-pistes" id="lien-pistes">Voir toutes les pistes · 6</p>
               </div>
             </div>
 
             <div class="notif" id="notif">
               <div class="ico" id="notif-ico"></div>
-              <div><p class="n-app">Ramille · maintenant</p><p class="n-titre">Ton point de la semaine</p><p class="n-corps">La semaine dernière, as-tu fait ce trajet à vélo&nbsp;?</p></div>
+              <div><p class="n-app">Ramille · maintenant</p><p class="n-titre">Ton point de la semaine</p><p class="n-corps">Ton trajet domicile-travail · Mardi ou jeudi, as-tu fait ce trajet à deux&nbsp;?</p></div>
             </div>
             <div class="doigt" id="doigt"></div>
           </div>
@@ -452,7 +455,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
         <!-- 7 · Au fil des saisons -->
         <div class="x" id="s7-texte">
           <p class="k x-int" id="s7-titre" data-mots>Saison après saison, tu vois ce qui a changé.</p>
-          <p class="dit x-int" id="s7-dit">«&nbsp;Je note tes réponses ici, au fil des saisons.&nbsp;»</p>
+          <p class="dit x-int" id="s7-dit">«&nbsp;Je note tes réponses dans ton suivi, au fil des saisons.&nbsp;»</p>
         </div>
         <div id="saisons-etiq"></div>
 
@@ -495,9 +498,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     <ul class="regles">
       <li><strong>Ramille ne dit que ses propres répliques</strong>, recopiées mot pour mot de l’app&nbsp;: jamais un nombre dans sa bouche, et jamais près d’un chiffre lourd.</li>
       <li><strong>Les chiffres se posent, ils ne défilent jamais</strong>&nbsp;: un compteur montrerait de fausses valeurs en chemin. Les barres arrivent à leur longueur juste.</li>
-      <li><strong>Les deux seuls chiffres réels sont sourcés</strong> (SDES 2017, ADEME pour 2050). Le bilan et les gains du plan sont un profil d’exemple, et l’image le dit.</li>
-      <li><strong>Le mouvement de l’app</strong>&nbsp;: la sortie douce partout, une sortie plus rapide qu’une entrée, des enchaînements sous 300&nbsp;ms. Le rebond est réservé à l’arrivée de Ramille, qui reprend celle de l’écran de lancement.</li>
-      <li><strong>Aucun jugement, aucune célébration</strong>&nbsp;: pas de confetti, pas de score, pas de comparaison entre utilisateurs. Un «&nbsp;Non&nbsp;» reçoit la même place qu’un «&nbsp;Oui&nbsp;».</li>
+      <li><strong>Les chiffres de référence sont sourcés à l’écran</strong>&nbsp;: la moyenne française et sa répartition (SDES, 2017), et le repère transport 2050, dérivé de la cible de l’ADEME. Le bilan, le palier et les gains du plan sont un profil d’exemple, et l’image le dit.</li>
+      <li><strong>Le mouvement de l’app</strong>&nbsp;: la sortie douce pour ce qui entre et ce qui sort, une sortie plus rapide qu’une entrée, les mots d’un titre en moins de 300&nbsp;ms. Le dépassement est réservé à l’arrivée de Ramille, qui reprend l’écran de lancement&nbsp;; ailleurs, ce qui apparaît le fait en fondu.</li>
+      <li><strong>Aucun jugement, aucune célébration</strong>&nbsp;: pas de confetti, pas de score, pas de comparaison entre utilisateurs. «&nbsp;Oui&nbsp;» et «&nbsp;Non&nbsp;» ont le même bouton, et un «&nbsp;Non&nbsp;» reçoit la même place qu’un «&nbsp;Oui&nbsp;».</li>
       <li><strong>Sous «&nbsp;réduire les animations&nbsp;»</strong>, rien ne se lance seul&nbsp;: chaque chapitre s’affiche posé, et le film ne joue que sur demande.</li>
     </ul>
   </section>
@@ -509,30 +512,32 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 
   // ---------------------------------------------------------------- Temps et courbes
   const DUREE = 51;
+  // Le scénario rendu sous le film, qui en est aussi la version texte. Les insécables s'écrivent
+  // ici à la main : ce texte n'est pas rendu par `ThemedText`, qui les pose dans l'app.
   const CHAPITRES = [
     { titre: 'Tes trajets', debut: 0, pose: 3.9,
       image: 'Un point, puis un trait qui se dessine comme un itinéraire, et s’arrête à trois stations.',
-      texte: 'Chaque jour, tu te déplaces. · Chez toi, au travail, le week-end, en vacances. · Lequel pèse le plus ?' },
+      texte: 'Chaque jour, tu te déplaces. · Chez toi, au travail, le week-end, en vacances. · Lequel pèse le plus\u00a0?' },
     { titre: 'Ce qu’ils pèsent', debut: 6, pose: 9.2,
-      image: 'Le trait se tend et devient l’empreinte moyenne d’un Français, en cinq postes ; le transport, en vert, est le plus long.',
-      texte: 'En France, le transport est le premier poste de l’empreinte carbone. 2,8 t CO₂e par personne et par an (SDES, 2017). · Et les tiens, ils pèsent combien ?' },
+      image: 'Le trait se tend et devient l’empreinte moyenne en France, en cinq postes\u00a0; le transport, en vert, est le plus long.',
+      texte: 'En France, le transport est le premier poste de l’empreinte carbone\u00a0: 2,8\u00a0t\u00a0CO₂e par personne et par an (SDES, 2017). · Et les tiens, ils pèsent combien\u00a0?' },
     { titre: 'Ramille', debut: 12, pose: 17.6,
-      image: 'Le segment vert se replie en nervure, la feuille se dessine autour et se remplit : c’est le logo. Puis la nervure raccourcit et le visage apparaît.',
-      texte: 'Ramille : « Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme. » · Comprendre tes trajets, sans te juger.' },
+      image: 'Le segment vert se replie en nervure, la feuille se dessine autour et se remplit\u00a0: c’est le logo. Puis la nervure raccourcit et le visage apparaît, avec l’à-coup de l’écran de lancement.',
+      texte: 'Ramille\u00a0: «\u00a0Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme.\u00a0» · Comprendre tes trajets, sans te juger.' },
     { titre: 'Ton bilan', debut: 18.5, pose: 25.6,
-      image: 'Ramille descend se loger dans l’en-tête du questionnaire. Quatre vraies questions, le calcul, puis la restitution d’un profil d’exemple.',
-      texte: 'Ton bilan, en 5 minutes environ. · Tu vois quel déplacement pèse le plus, et où tu te situes entre la moyenne française et le repère 2050.' },
+      image: 'Ramille descend se loger dans l’en-tête du questionnaire. Quatre des neuf étapes, le calcul, puis la restitution d’un profil d’exemple.',
+      texte: 'Ton bilan, en 5\u00a0minutes environ. · Tu vois quel déplacement pèse le plus, et où tu te situes entre la moyenne française et le repère\u00a02050.' },
     { titre: 'Ton plan', debut: 26.5, pose: 31.6,
-      image: 'Trois pistes adaptées au profil. On choisit la troisième, deux jours, « C’est noté » : la carte devient l’engagement.',
+      image: 'Deux pistes en tête, les autres derrière un lien. On choisit la deuxième, deux jours, «\u00a0C’est noté\u00a0»\u00a0: elle devient l’engagement et passe en tête.',
       texte: 'Puis une action, à ton rythme. Ton plan ne propose que ce qui tient avec tes réponses. · Tu choisis tes jours. Ramille te fait signe lundi.' },
     { titre: 'Le point', debut: 33, pose: 35.9,
-      image: 'La notification du lundi, le point de la semaine. Un « Oui », puis la semaine suivante un « Non », chacun avec sa réplique. Un aplat vert pour finir.',
-      texte: 'Un point, de temps en temps. · Oui, non, ou pas de trajet : aucune réponse n’est un échec. · Pas de score. Pas de série. Aucun classement. Tes réponses restent privées.' },
+      image: 'La notification du lundi, puis le point de la semaine. Un «\u00a0Oui\u00a0», puis la semaine suivante un «\u00a0Non\u00a0», chacun avec sa réplique. Un aplat vert pour finir.',
+      texte: 'Un point, de temps en temps. Une seule question, sur ton action. · Oui, non, ou pas de trajet\u00a0: aucune réponse n’est un échec. · Pas de score. Pas de série. Aucun classement. Tes réponses restent privées.' },
     { titre: 'Au fil des saisons', debut: 40, pose: 44.7,
-      image: 'Le trait revient et traverse l’année ; à chaque saison, Ramille change d’accessoire : joues chaudes, bonnet, bourgeon, goutte de rosée.',
-      texte: 'Saison après saison, tu vois ce qui a changé. · Ramille : « Je note tes réponses ici, au fil des saisons. »' },
+      image: 'Le trait revient et traverse l’année. Ramille porte chaque saison\u00a0: les joues chaudes de l’automne, le bonnet, le bourgeon, la goutte de rosée.',
+      texte: 'Saison après saison, tu vois ce qui a changé. · Ramille\u00a0: «\u00a0Je note tes réponses dans ton suivi, au fil des saisons.\u00a0»' },
     { titre: 'À toi', debut: 45.5, pose: 50.5,
-      image: 'Le trait quitte la frise et finit en un point d’arrivée ; le point s’étire et devient le bouton.',
+      image: 'Le trait quitte la frise et finit en un point d’arrivée\u00a0; le point s’étire et devient le bouton.',
       texte: 'Comprendre tes trajets, sans te juger. · Découvrir mon impact · ramille.fr · Pas de compte à créer pour commencer.' },
   ];
 
@@ -564,7 +569,6 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     inOutSine: (x) => -(Math.cos(Math.PI * x) - 1) / 2,
     outQuad: (x) => 1 - (1 - x) * (1 - x),
     inOutQuad: (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2),
-    outBack: (x) => { const s = 1.4, c = s + 1; return 1 + c * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); },
   };
   const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
   const lerp = (a, b, k) => a + (b - a) * k;
@@ -580,8 +584,6 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     if (d < 0.24) return lerp(1.07, 0.975, E.inOutQuad((d - 0.11) / 0.13));
     return lerp(0.975, 1, E.outQuad((d - 0.24) / 0.19));
   }
-  // Son arrivée : 560 ms, easeOutBack(1,4), de 0,9 à 1.
-  const arrivee = (t, t0) => 0.9 + 0.1 * E.outBack(clamp((t - t0) / 0.56));
   // Le souffle : 1,035 en 1400 ms, sinus, aller-retour.
   const souffle = (t, t0) => (t <= t0 ? 0 : (1 - Math.cos((2 * Math.PI * (t - t0)) / 2.8)) / 2);
 
@@ -794,11 +796,11 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   $('m-scene').appendChild(mScene);
   const mEntete = creerMascotte(28, ['calm', 'happy']);
   $('slot-entete').appendChild(mEntete);
-  const mCalcul = creerMascotte(120, ['thinking']);
+  const mCalcul = creerMascotte(72, ['thinking']);
   $('slot-calcul').appendChild(mCalcul);
-  const mRep1 = creerMascotte(42, ['happy']);
+  const mRep1 = creerMascotte(40, ['happy']);
   $('slot-rep1').appendChild(mRep1);
-  const mRep2 = creerMascotte(42, ['encouraging']);
+  const mRep2 = creerMascotte(40, ['encouraging']);
   $('slot-rep2').appendChild(mRep2);
   const mIco = creerMascotte(38, ['calm']);
   $('notif-ico').appendChild(mIco);
@@ -958,7 +960,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     [$('s1-t1'), $('s1-t2')].forEach((el) => { el.style.visibility = 'visible'; });
     arrets.forEach((c, i) => {
       const a = F.arretsT[i];
-      const r = (G.fil * 1.15) * E.outBack(clamp((t - a) / 0.35)) * (1 - p(t, 5.5, 5.7));
+      const r = (G.fil * 1.15) * p(t, a, a + 0.3) * (1 - p(t, 5.5, 5.7));
       c.setAttribute('r', Math.max(0, r));
     });
     arretsEtiq.forEach((el, i) => montrer(el, t, F.arretsT[i] + 0.08, 5.5, { dy: G.etiqPlace[i] === 'dessus' ? -0.8 : 0.8 }));
@@ -986,7 +988,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     trace.setAttribute('opacity', visible ? 1 - p(t, 13.2, 13.4, E.lin) : 0);
     trace.setAttribute('stroke-dashoffset', F.longueurFeuille * (1 - p(t, 12.3, 13.15, E.inOutCubic)));
     pleine.setAttribute('opacity', visible ? p(t, 13.0, 13.35, E.lin) : 0);
-    point.setAttribute('r', visible ? 5 * E.outBack(clamp((t - 13.15) / 0.35)) * (1 - p(t, 14.3, 14.6)) : 0);
+    point.setAttribute('r', visible ? 5 * p(t, 13.15, 13.45) * (1 - p(t, 14.3, 14.6)) : 0);
 
     const texte = $('s3-texte');
     texte.style.visibility = t >= 13.5 && t < 18.5 ? 'visible' : 'hidden';
@@ -1010,9 +1012,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     el.style.visibility = op <= 0.001 ? 'hidden' : 'visible';
   }
   function saisonA(t) {
-    let s = null;
-    F.saisonsT.forEach((ts, i) => { if (t >= ts + 0.11) s = SAISONS[i]; });
-    return s;
+    let i = -1;
+    F.saisonsT.forEach((ts, j) => { if (t >= ts) i = j; });
+    return i;
   }
   function rendreMascotte(t) {
     const el = $('m-scene');
@@ -1034,17 +1036,20 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       poser(el, { cx: lerp(G.f3.cx, cible.cx, k), cy: lerp(G.f3.cy, cible.cy, k), s: lerp(G.f3.s, cible.s, k) }, 1, 1 - p(t, 19.22, 19.38, E.lin));
       return;
     }
-    // Scènes 7 et 8 : elle revient, porte les saisons, puis remonte au-dessus du bouton.
+    // Scènes 7 et 8 : elle revient, porte les saisons, puis remonte au-dessus du bouton. Le
+    // dépassement est réservé à son arrivée de la scène 3 (celle de l'écran de lancement) : ici elle
+    // apparaît en fondu, et chaque accessoire de saison apparaît en place, en fondu.
     const k = p(t, 45.5, 46.25);
     const pose = { cx: lerp(G.f7.cx, G.f8.cx, k), cy: lerp(G.f7.cy, G.f8.cy, k), s: lerp(G.f7.s, G.f8.s, k) };
-    let echelle = arrivee(t, 40.0);
-    F.saisonsT.forEach((ts) => { echelle *= acoup(t, ts); });
-    echelle *= acoup(t, 46.1);
+    const entree = p(t, 40.0, 40.4);
     const b = souffle(t, 40.7);
-    const finale = t >= 46.21;
-    regler(mScene, finale ? 'happy' : 'calm', finale ? null : saisonA(t), 1);
+    const finale = t >= 46.2;
+    const i = finale ? -1 : saisonA(t);
+    const saison = i < 0 ? null : SAISONS[i];
+    regler(mScene, finale ? 'happy' : 'calm', saison, 1);
+    if (saison && mScene._acc[saison]) mScene._acc[saison].style.opacity = p(t, F.saisonsT[i], F.saisonsT[i] + 0.2, E.lin);
     el.style.translate = `0 ${-0.4 * b}%`;
-    poser(el, pose, echelle * (1 + 0.035 * b), p(t, 40.0, 40.2, E.lin));
+    poser(el, pose, (0.96 + 0.04 * entree) * (1 + 0.035 * b), p(t, 40.0, 40.25, E.lin));
   }
 
   // ---------------------------------------------------------------- Le téléphone
@@ -1053,7 +1058,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     { t: 20.95, id: 'q2-voiture', choix: true }, { t: 21.35, id: 'b-suivant' },
     { t: 21.95, id: 'q3-une', choix: true }, { t: 22.35, id: 'b-suivant' },
     { t: 22.8, id: 'q4-un', choix: true }, { t: 23.05, id: 'b-suivant' },
-    { t: 27.9, id: 'c3-engage' }, { t: 28.6, id: 'j-mar', choix: true }, { t: 28.95, id: 'j-jeu', choix: true }, { t: 29.5, id: 'c3-note' },
+    { t: 27.9, id: 'c2-engage' }, { t: 28.6, id: 'j-mar', choix: true }, { t: 28.95, id: 'j-jeu', choix: true }, { t: 29.5, id: 'c2-note' },
     { t: 34.2, id: 'notif' }, { t: 35.3, id: 'pt-oui' }, { t: 37.15, id: 'pt-non' },
   ];
   function rendreTapes(t) {
@@ -1064,7 +1069,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       const appui = t >= tape.t && t < tape.t + 0.12;
       if (tape.id !== 'b-suivant') el.classList.toggle('appui', appui);
       if (tape.choix) el.classList.toggle('choisi', t >= tape.t + 0.12 && t < 38.5);
-      if (t >= tape.t - 0.2 && t < tape.t + 0.3) actif = tape;
+      if (t >= tape.t - 0.2 && t < tape.t + 0.14) actif = tape;
     }
     const suivant = TAPES.filter((x) => x.id === 'b-suivant').some((x) => t >= x.t && t < x.t + 0.12);
     $('b-suivant').classList.toggle('appui', suivant);
@@ -1072,7 +1077,8 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const ecran = $('tel-ecran').getBoundingClientRect(), r = $(actif.id).getBoundingClientRect();
     const k = 360 / ecran.width;
     const x = (r.left - ecran.left + r.width / 2) * k, y = (r.top - ecran.top + r.height / 2) * k;
-    const op = p(t, actif.t - 0.2, actif.t - 0.06, E.lin) * (1 - p(t, actif.t + 0.1, actif.t + 0.3, E.lin));
+    // Le doigt se lève vite : ce qu'il vient d'appuyer peut bouger juste après (un dépliage qui se referme).
+    const op = p(t, actif.t - 0.2, actif.t - 0.06, E.lin) * (1 - p(t, actif.t + 0.04, actif.t + 0.14, E.lin));
     doigt.style.opacity = op;
     doigt.style.transform = `translate(calc(var(--dp) * ${x.toFixed(1)}), calc(var(--dp) * ${y.toFixed(1)})) scale(${t >= actif.t && t < actif.t + 0.12 ? 0.86 : 1})`;
   }
@@ -1099,14 +1105,17 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     ecran('e-q', t, 18.5, 23.1, { din: 0.01 });
     const etapes = [['q1', 19.3, 20.4], ['q2', 20.4, 21.5], ['q3', 21.5, 22.5], ['q4', 22.5, null]];
     etapes.forEach(([id, a, b]) => entreeDp($(id), t, a, b, 8, 0));
-    const rails = [[19.3, 0.11], [20.4, 0.33], [21.5, 0.56], [22.5, 0.78], [23.05, 1]];
+    // Le film monte quatre des neuf étapes ; le rail et le compte suivent les vraies positions.
+    const rails = [[19.3, 1], [20.4, 3], [21.5, 5], [22.5, 7], [23.05, 8]];
     let largeur = 0;
-    rails.forEach(([a, v], j) => { if (t >= a) largeur = lerp(j ? rails[j - 1][1] : 0, v, p(t, a, a + 0.25)); });
+    rails.forEach(([a, v], j) => { if (t >= a) largeur = lerp(j ? rails[j - 1][1] : 0, v, p(t, a, a + 0.25)) / 9; });
     $('rail').style.width = `${largeur * 100}%`;
+    const etape = `Étape ${t < 20.4 ? 1 : t < 21.5 ? 3 : t < 22.5 ? 5 : 7} sur 9`;
+    if ($('q-etape').textContent !== etape) $('q-etape').textContent = etape;
     const section = t < 21.5 ? 'Domicile-travail' : t < 22.5 ? 'Loisirs du week-end' : 'Voyages longue distance';
     if ($('q-section').textContent !== section) $('q-section').textContent = section;
-    // À la dernière étape, l'en-tête sourit : c'est ce que rend l'app.
-    regler(mEntete, t >= 22.5 ? 'happy' : 'calm', null);
+    // L'en-tête ne sourit qu'à la dernière étape (`ProgressHeader`), que le film ne montre pas.
+    regler(mEntete, 'calm', null);
     $('slot-entete').style.opacity = p(t, 19.2, 19.36, E.lin);
 
     // Calcul, puis restitution
@@ -1120,16 +1129,31 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     // Le plan
     ecran('e-plan', t, 26.5, null);
     entreeDp($('p-titre'), t, 26.55, null);
-    entreeDp($('c1'), t, 26.62, null);
-    entreeDp($('c2'), t, 26.7, null);
-    entreeDp($('c3'), t, 26.78, null);
+    entreeDp($('lien-pistes'), t, 26.78, null);
     const ouvert = p(t, 28.0, 28.25) * (1 - p(t, 29.62, 29.82));
     // Hauteur naturelle relue à chaque image : elle suit la taille de la scène.
-    $('c3-dep').style.height = `${$('c3-dep-dedans').offsetHeight * ouvert}px`;
+    $('c2-dep').style.height = `${$('c2-dep-dedans').offsetHeight * ouvert}px`;
     const engagee = t >= 29.62;
-    $('c3').classList.toggle('engagee', engagee);
+    $('c2').classList.toggle('engagee', engagee);
     $('c1').classList.toggle('estompee', engagee);
-    $('c2').classList.toggle('estompee', engagee);
+    const ligne = engagee ? 'par an · le mardi et le jeudi · 16\u00a0% de ton empreinte' : 'par an · 16\u00a0% de ton empreinte';
+    if ($('c2-ligne').textContent !== ligne) $('c2-ligne').textContent = ligne;
+    const choix = engagee ? 'Choisir celle-ci à la place' : 'Je m’y engage';
+    if ($('c1-choix').textContent !== choix) $('c1-choix').textContent = choix;
+    // L'action engagée passe en tête (`ordonnerLesPistes`) : les deux cartes échangent leur place.
+    const c1 = $('c1'), c2 = $('c2');
+    const enTete = t >= 29.9;
+    c2.style.order = enTete ? '-1' : '0';
+    const ecart = parseFloat(getComputedStyle($('pistes')).rowGap) || 0;
+    const k = p(t, 29.9, 30.2);
+    const dy1 = enTete ? -(c2.offsetHeight + ecart) * (1 - k) : 0;
+    const dy2 = enTete ? (c1.offsetHeight + ecart) * (1 - k) : 0;
+    [[c1, 26.62, dy1], [c2, 26.7, dy2]].forEach(([el, a, dy]) => {
+      const e = p(t, a, a + 0.25);
+      el.style.opacity = e;
+      el.style.visibility = e <= 0.001 ? 'hidden' : 'visible';
+      el.style.transform = `translateY(calc(var(--dp) * ${(1 - e) * 8} + ${dy}px))`;
+    });
 
     // Le point
     const notifI = p(t, 33.2, 33.48), notifS = p(t, 34.3, 34.5);
@@ -1142,6 +1166,8 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     entreeDp($('pt-q'), t, t < 36 ? 34.5 : 36.55, qVisible ? null : (t < 36 ? 35.42 : 37.27), 0, 0);
     entreeDp($('pt-r1'), t, 35.42, 36.55, 0, 6);
     entreeDp($('pt-r2'), t, 37.27, null, 0, 6);
+    const semaine = t < 36.55 ? 'Semaine du 05/10' : 'Semaine du 12/10';
+    if ($('pt-label').textContent !== semaine) $('pt-label').textContent = semaine;
 
     rendreTapes(t);
   }
@@ -1158,10 +1184,10 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const i = p(t, 38.0, 38.28), s = p(t, 39.8, 40.0);
     m.style.visibility = i > 0 && s < 1 ? 'visible' : 'hidden';
     m.style.transform = `translateY(${(1 - i) * 100 + s * 100}%)`;
-    montrer($('m1'), t, 38.35, null, { dy: 1.6 });
-    montrer($('m2'), t, 38.7, null, { dy: 1.6 });
-    montrer($('m3'), t, 39.05, null, { dy: 1.6 });
-    montrer($('m4'), t, 39.35, null, { dy: 0.8 });
+    montrer($('m1'), t, 38.35, 39.8, { dy: 1.6 });
+    montrer($('m2'), t, 38.7, 39.8, { dy: 1.6 });
+    montrer($('m3'), t, 39.05, 39.8, { dy: 1.6 });
+    montrer($('m4'), t, 39.35, 39.8, { dy: 0.8 });
   }
 
   // ---------------------------------------------------------------- Scènes 7 et 8
@@ -1171,7 +1197,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     titre($('s7-titre'), t, 40.3, 45.15);
     montrer($('s7-dit'), t, 41.0, 45.15);
     saisonsPts.forEach((c, i) => {
-      const r = G.fil * 1.15 * E.outBack(clamp((t - F.saisonsT[i]) / 0.35)) * (1 - p(t, 45.3, 45.6));
+      const r = G.fil * 1.15 * p(t, F.saisonsT[i], F.saisonsT[i] + 0.3) * (1 - p(t, 45.3, 45.6));
       c.setAttribute('r', t >= 40 ? Math.max(0, r) : 0);
     });
     saisonsEtiq.forEach((el, i) => montrer(el, t, F.saisonsT[i] + 0.05, 45.25, { dy: 0.8 }));

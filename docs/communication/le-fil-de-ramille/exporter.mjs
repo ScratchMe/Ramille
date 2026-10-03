@@ -8,15 +8,18 @@
 // **Spline Sans vient du dépôt, pas du réseau.** La page publiée la charge depuis Google Fonts ;
 // ici, ces requêtes sont servies par les fichiers du kit (`docs/design/design-system/assets/fonts/`).
 // Sans cela, un export hors ligne tombait en silence sur la police du système — vu le 03/10/2026
-// dans un conteneur sans accès à Google Fonts. L'export refuse donc de partir si la police n'est
-// pas chargée. La chasse fixe des sources (Spline Sans Mono) n'est pas dans le dépôt : sans réseau,
-// les deux lignes de source prennent celle du système.
+// dans un conteneur sans accès à Google Fonts. L'export refuse donc de partir si l'une des quatre
+// graisses n'est pas chargée. La chasse fixe (Spline Sans Mono) n'est pas dans le dépôt : à l'export,
+// les trois lignes qui l'emploient — les deux sources et la légende du téléphone — prennent celle du
+// système, réseau ou pas.
 // Éprouvé le 03/10/2026 : le dossier des polices faussé → refus, code 1, aucune vidéo écrite ; remis
 // en place → l'image à 17,6 s est identique à celle de la page.
 //
 // Le film est une fonction pure du temps : `?export=<format>` affiche la scène seule, plein cadre,
 // et `window.__seek(t)` en rend l'image à l'instant t. Rien ne dépend de l'horloge, donc une image
-// exportée est exactement celle que la page montre au même instant.
+// exportée est celle que la page montre au même instant, à la chasse fixe près.
+//
+// La vidéo s'écrit dans le dossier temporaire du système, jamais dans le dépôt : elle se régénère.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -31,7 +34,7 @@ const GRAISSES = { 400: 'SplineSans_400Regular.ttf', 500: 'SplineSans_500Medium.
 const format = process.argv[2] === 'portrait' ? 'portrait' : 'paysage';
 const fps = Number(process.argv[3] ?? 30);
 const [largeur, hauteur] = format === 'portrait' ? [1080, 1920] : [1920, 1080];
-const sortie = path.join(process.cwd(), `le-fil-de-ramille-${format === 'portrait' ? '9x16' : '16x9'}.mp4`);
+const sortie = path.join(os.tmpdir(), `le-fil-de-ramille-${format === 'portrait' ? '9x16' : '16x9'}.mp4`);
 
 // La page publiée est un fragment : le service d'artefacts l'enveloppe. On fait de même ici.
 const fragment = fs.readFileSync(path.join(ICI, 'film.html'), 'utf8');
@@ -55,10 +58,14 @@ await page.route('https://fonts.gstatic.com/ramille/**', (r) => {
 });
 await page.goto(`file://${enveloppe}?export=${format}`);
 await page.evaluate(() => window.__pret);
-// `document.fonts.check` répond « oui » quand aucune face ne correspond : on compte les faces chargées.
-const chargees = await page.evaluate(() => [...document.fonts].filter((f) => f.family.replace(/"/g, '') === 'Spline Sans' && f.status === 'loaded').length);
-if (chargees === 0) {
-  console.error('Spline Sans n’est pas chargée : l’export serait dans la police du système.');
+// `document.fonts.check` répond « oui » quand aucune face ne correspond : on demande chaque graisse,
+// puis on compte celles qui sont réellement chargées.
+const chargees = await page.evaluate(async (graisses) => {
+  await Promise.all(graisses.map((g) => document.fonts.load(`${g} 16px "Spline Sans"`)));
+  return new Set([...document.fonts].filter((f) => f.family.replace(/"/g, '') === 'Spline Sans' && f.status === 'loaded').map((f) => f.weight)).size;
+}, Object.keys(GRAISSES));
+if (chargees < Object.keys(GRAISSES).length) {
+  console.error(`Spline Sans : ${chargees} graisse(s) chargée(s) sur ${Object.keys(GRAISSES).length}. L’export serait en partie dans la police du système.`);
   await navigateur.close();
   process.exit(1);
 }
