@@ -17,6 +17,11 @@
 // (`TABLEAUX_PAR_FEUILLE` ci-dessous, par nom de fichier) : la page de son artefact lit ces clés-là.
 // Une feuille non déclarée, ou une ancre absente, fait échouer le script en la nommant, plutôt que de
 // rendre une page à laquelle il manque un tableau.
+//
+// **Et depuis le 03/10/2026, une feuille peut déclarer aussi ses textes** (`TEXTES_PAR_FEUILLE`) : une
+// liste à puces ou un paragraphe, trouvés par la même ancre. La feuille du build d'octobre a ses
+// précautions, ce qu'elle ne joue pas et ce qu'elle ne prouve pas en listes ; recopiées dans la page,
+// elles auraient décroché à la première correction d'une contre-lecture, exactement comme une ligne.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -38,6 +43,24 @@ const TABLEAUX_PAR_FEUILLE = {
     pistes: "**Ce qu'il rend**",
     profil2: '### Profil 2',
     contexte: '**Et ce que `/contexte` en fait**',
+  },
+  // Écrite le 03/10/2026, pour le téléphone : un seul profil, et ses pistes disent le choix qu'elles ouvrent.
+  'le-build-d-octobre.md': {
+    sujets: '## Pourquoi cette séance',
+    calendrier: '## Le calendrier',
+    profil: '### Le profil',
+    pistes: "**Ce qu'il rend**",
+  },
+};
+
+/** Facultatif, par feuille : `cle: ['liste' | 'paragraphe', ancre]`. */
+const TEXTES_PAR_FEUILLE = {
+  'le-build-d-octobre.md': {
+    precautions: ['liste', '## Six précautions'],
+    rend: ['paragraphe', "**Ce qu'il rend**"],
+    pasIci: ['liste', '## Ce qui ne se joue pas ici'],
+    pasProuve: ['liste', '## Ce que cette séance ne prouve pas'],
+    atterrissent: ['paragraphe', '## Où atterrissent les constats'],
   },
 };
 
@@ -103,10 +126,43 @@ function tableauApres(md, ancre) {
   return rangs.slice(1).map((r) => r.map(enLigne));
 }
 
+/** Les lignes qui suivent l'ancre ; si l'ancre est un titre, à partir de la première ligne non vide après lui. */
+function lignesApres(md, ancre) {
+  const i = md.indexOf(ancre);
+  if (i === -1) throw new Error(`ancre introuvable dans la feuille : « ${ancre} »`);
+  const debut = md.lastIndexOf('\n', i) + 1;
+  const lignes = md.slice(debut).split('\n');
+  if (lignes[0].startsWith('#')) lignes.shift();
+  while (lignes.length && lignes[0].trim() === '') lignes.shift();
+  return lignes;
+}
+
+/** Le paragraphe qui commence à l'ancre (ou sous elle), jusqu'à la première ligne vide. */
+function paragrapheApres(md, ancre) {
+  const lignes = lignesApres(md, ancre);
+  const fin = lignes.findIndex((l) => l.trim() === '');
+  return enLigne((fin === -1 ? lignes : lignes.slice(0, fin)).join(' ').replace(/\s+/g, ' ').trim());
+}
+
+/** Les puces de la première liste après l'ancre ; une ligne en retrait continue la puce d'avant. */
+function listeApres(md, ancre) {
+  const puces = [];
+  for (const l of lignesApres(md, ancre)) {
+    if (l.startsWith('- ')) puces.push(l.slice(2));
+    else if (puces.length && /^\s+\S/.test(l)) puces[puces.length - 1] += ` ${l.trim()}`;
+    else break;
+  }
+  if (!puces.length) throw new Error(`aucune liste sous l'ancre : « ${ancre} »`);
+  return puces.map((p) => enLigne(p.replace(/\s+/g, ' ').trim()));
+}
+
 function extraire(md, nom) {
   const tableaux = TABLEAUX_PAR_FEUILLE[nom];
   if (!tableaux) throw new Error(`feuille non déclarée dans TABLEAUX_PAR_FEUILLE : « ${nom} »`);
   const donnees = Object.fromEntries(Object.entries(tableaux).map(([cle, ancre]) => [cle, tableauApres(md, ancre)]));
+  for (const [cle, [forme, ancre]] of Object.entries(TEXTES_PAR_FEUILLE[nom] ?? {})) {
+    donnees[cle] = forme === 'liste' ? listeApres(md, ancre) : paragrapheApres(md, ancre);
+  }
   donnees.blocs = [...md.matchAll(/^## Bloc (\d\d) — (.+)$/gm)].map((m) => {
     const debut = m.index + m[0].length;
     const fin = md.indexOf('\n## ', debut);

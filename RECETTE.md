@@ -273,8 +273,9 @@ destination légitime, et elle se note comme telle.
 | Le premier parcours — lot 5, C5.1 à C5.8 | `docs/recette/premier-parcours-web.md` | https://claude.ai/artifact/SKNjEeZLdRpxPPEJULNQ6y |
 | Ce qui est neuf depuis le 18/09/2026 — le compte, les modes, le design system, le retrait d'un bilan (écrite le 21/09, étendue le 27/09, **jouée le 28/09 par l'agent** — constats en `v1-13` §15 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/le-compte-et-les-modes.md` | https://claude.ai/artifact/RrPJDRDkCrQsvARqMaKeL6 |
 | Ce qui reste après la séance du 28/09/2026 — les correctifs de la soirée revus sur la production, le suivi sur deux jours, les jugements qui reviennent à la personne qui pilote (**blocs 00 et 01 joués le 29/09 par l'agent**, `v1-13` §16 ; ses lignes restantes passées à la feuille du 29/09) | `docs/recette/ce-qui-reste-apres-le-28-septembre.md` | https://claude.ai/artifact/39KtxfEBam38o9HB4rcn53 |
-| Tout ce qui reste à recetter au 29/09/2026 : l'écran du mode (`v1-31`) et « Toutes les pistes » (`v1-32`) sur la production, `/contexte` (§11.W.8), deux bilans de deux jours, le point du 1er octobre, les jugements, et un bloc final qui attend le build natif (**blocs 00 à 02 joués le 29/09 au soir, bloc 03 le 30/09, blocs 04 et 06 le 1er octobre, par l'agent** — `v1-13` §17 à §19 ; le bloc 05 tranché le 1er octobre par la personne qui pilote ; reste le bloc 07, au build natif) | `docs/recette/ce-qui-reste-apres-le-29-septembre.md` | https://claude.ai/artifact/4pWwnbinxhigiR7jJW4puR |
+| Tout ce qui reste à recetter au 29/09/2026 : l'écran du mode (`v1-31`) et « Toutes les pistes » (`v1-32`) sur la production, `/contexte` (§11.W.8), deux bilans de deux jours, le point du 1er octobre, les jugements, et un bloc final qui attend le build natif (**blocs 00 à 02 joués le 29/09 au soir, bloc 03 le 30/09, blocs 04 et 06 le 1er octobre, par l'agent** — `v1-13` §17 à §19 ; le bloc 05 tranché le 1er octobre par la personne qui pilote ; son bloc 07, au build natif, repris le 03/10 dans la feuille du build d'octobre) | `docs/recette/ce-qui-reste-apres-le-29-septembre.md` | https://claude.ai/artifact/4pWwnbinxhigiR7jJW4puR |
 | Ce qui reste au 02/10/2026, **jouée entière le jour même** — plus aucune feuille n'a de ligne à jouer au navigateur ; reste le bloc 07 de celle du 29/09, au build natif : les lignes réécrites par la vague `v1-33` ([#314](https://github.com/ScratchMe/Ramille/pull/314)) dans trois feuilles déjà jouées, l'encart orphelin dans un navigateur neuf (§11.W.8), l'e-mail de rattachement recopié au tableau de bord (§11.W.9) et la moitié web de la session refusée ([#315](https://github.com/ScratchMe/Ramille/pull/315), §11.27) — **jouée le 02/10 par l'agent**, `v1-13` §20 : 40 lignes conformes, un constat hors feuille | `docs/recette/ce-qui-reste-apres-le-1er-octobre.md` | https://claude.ai/artifact/7bdZ4dt91goXPSDrXwog5A |
+| **Le build d'octobre, sur téléphone** (écrite et contre-lue le 03/10/2026, **la seule feuille ouverte**) : le bloc 07 de la feuille du 29/09, les lignes A1 à A3 et B1 à B8 de `a-verifier-sur-le-build-de-recette.md`, et ce que les PR fusionnées depuis le 02/10 n'ont montré qu'au navigateur (§11.28 à §11.33, dont la réponse de Claude Design à l'étape du contexte) — un profil, le jour de l'installation, la semaine du point, puis le 1er décembre ; le bloc 09 et la ligne 11.5 demandent l'accord de la personne qui pilote le jour même | `docs/recette/le-build-d-octobre.md` | https://claude.ai/artifact/BEQ6LfuhFmEU5qZGUHXnKz |
 
 **L'artefact du premier parcours a été régénéré le 20/09/2026**, et c'est la première fois que la
 règle de §1.7 y est tenue : sa version d'origine gardait l'avancement dans le `localStorage`, c'est-à-dire
@@ -353,6 +354,30 @@ ses données sont un seul bloc JSON (`<script type="application/json" id="donnee
 propre à chaque feuille et déclarée dans le script (`TABLEAUX_PAR_FEUILLE`, par nom de fichier, depuis
 la feuille du 02/10/2026) : une feuille non déclarée ou une ancre absente le fait échouer en la nommant,
 plutôt que de rendre une page à laquelle il manque un tableau.
+
+**La sixième, écrite le 03/10/2026, est la première feuille sur appareil depuis le 14/09** : le
+premier build Android depuis cette date reprend le bloc 07 de celle du 29/09, les lignes de
+`a-verifier-sur-le-build-de-recette.md` et ce que les PR fusionnées depuis la séance du 02/10 n'ont
+montré qu'au navigateur. Trois choses de forme, à reprendre pour la prochaine séance sur téléphone :
+**un seul profil**, dont le plan porte les deux pistes qu'il faut engager dans l'ordre (la feuille des
+rappels ne s'ouvre qu'une fois par téléphone, et c'est elle qui décide de l'ordre du bloc d'engagement) ;
+**un calendrier en trois temps** (le jour de l'installation, la semaine du point, puis une date) dont le
+dernier bloc se compte à part, comme le bloc « après le build natif » de la quatrième ; et **un bloc de
+jugements**, la question à la place de l'attendu. Ses précautions, ce qu'elle ne joue pas et ce
+qu'elle ne prouve pas sont des listes, que le script extrait aussi (`TEXTES_PAR_FEUILLE`) : recopiées
+dans la page, elles auraient décroché à la première correction d'une contre-lecture.
+
+**Et ses deux contre-lectures, faites cette fois avant de la jouer, ont rendu dix-sept puis onze
+défauts certains, dont la moitié tenaient à l'état que laisse un bloc** — ce qu'aucune relecture ligne à ligne ne voit. Trois
+leçons, qui valent pour toute feuille longue :
+- **compter les bilans comme le plan les compte, pas comme le suivi les montre** : le suivi n'en garde
+  qu'un par jour, le dernier, alors que le retrait et le plan les voient tous — « retirer le seul
+  bilan qui reste » était faux d'un bilan, fait le même jour sous TalkBack ;
+- **suivre le brouillon d'un bloc à l'autre** : hors ligne, il passe devant la marque de bilan, donc un
+  brouillon laissé au bloc précédent masquait ce que la ligne voulait éprouver. La feuille dit désormais
+  où le sien naît, où il se termine, et pourquoi il ne masque rien entre les deux ;
+- **citer les lignes d'une autre feuille avec sa date** (« 07.1 du 29/09 ») : la feuille avait son
+  propre bloc 07, et une référence nue désignait deux lignes.
 
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est

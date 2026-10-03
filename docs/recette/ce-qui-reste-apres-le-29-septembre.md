@@ -28,6 +28,12 @@
 > bloc 07, au build natif, complété le même jour de `v1-13` §11.25, §11.26 et de la moitié native de
 > §11.27 (07.17 à 07.19).
 >
+> **Et ce bloc 07 a été repris le 03/10/2026, et mis à jour, dans
+> [`le-build-d-octobre.md`](le-build-d-octobre.md)**, la feuille du premier build Android depuis le
+> 14/09/2026 : c'est là qu'il se joue, avec ce que les PR du 02 et du 03/10 y ont changé. Ses lignes
+> ici ne se cochent plus ; chacune y est citée avec sa date (« 07.12 du 29/09 »), cette feuille-là
+> ayant son propre bloc 07.
+>
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **sur trois jours** — c'est le
 > calendrier ci-dessous qui décide de l'ordre, pas la numérotation.
 >
@@ -334,6 +340,9 @@ le lundi 5 (hebdomadaire).
 
 ## Bloc 07 — Après le build natif (non joué ici)
 
+> **Repris le 03/10/2026 dans [`le-build-d-octobre.md`](le-build-d-octobre.md)**, où il se joue : ce
+> qui suit est l'état du 02/10, gardé tel quel.
+>
 > **Rien de ce bloc ne se joue au navigateur**, et la séance au navigateur ne le coche pas : chaque
 > ligne renvoie à sa case de `v1-13` §11, qui dit tout ce qu'on y cherche. Demande un build EAS —
 > au plus un tous les deux jours — et un vrai téléphone Android, un modèle d'entrée de gamme si

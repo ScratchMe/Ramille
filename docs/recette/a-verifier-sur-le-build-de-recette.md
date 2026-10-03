@@ -13,6 +13,15 @@
 > ([`fiche-google-play.md`](../exploitation/fiche-google-play.md)) — et qui n'a été que **lue dans le
 > code**, jamais constatée sur un build. Un écart ici veut dire une page ou une déclaration à
 > corriger avant le test fermé, pas un défaut de l'app.
+>
+> **Versées le 03/10/2026 dans [`le-build-d-octobre.md`](le-build-d-octobre.md)**, la feuille de la
+> séance, où elles se jouent : A1 à A3 en 00.3 à 00.5, B1 et B1′ en 02.4 et 02.5, B5 en 02.8, B3 en
+> 03.3, 03.4 et 03.8, B4 en 03.9, B2 en 04.1, B7 en 04.2 et 04.3, B8 en 11.3, B3b et B6 en 12.4 et
+> 12.5. Trois libellés y sont corrigés d'après le code : sur Android, l'export s'appelle « Exporter mes
+> données » (« Télécharger mes données » est celui du web) ; le lien de « Toi » vers la politique
+> s'appelle « Confidentialité » ; et la page publique de suppression ne s'atteint pas depuis l'app —
+> « Supprimer mon compte », dans « Toi », ouvre la confirmation —, elle s'ouvre dans Chrome. Ce
+> document reste la liste d'origine, et ce qu'un écart y déclenche (§3) vaut toujours.
 
 ## 1. Ce que l'agent technique relève seul, sur l'artefact du build
 
