@@ -148,10 +148,14 @@ Quatre faits qui changent l'écriture de la commande :
 - **Le clone est superficiel (`--depth=10`).** Une base plus ancienne que dix commits n'y est
   pas, `git diff` échoue, donc le build se déclenche. Sûr, mais à savoir avant de déboguer : après
   dix fusions sautées d'affilée, la onzième construit quoi qu'il arrive.
-- **Un build sauté ne crée aucun déploiement** — « No build minutes consumed, no new production
-  deployment created ». Donc aucune fonction, donc rien au compteur : l'économie est réelle. Ne
-  pas confondre avec un build **annulé en cours**, qui a déjà exécuté la commande de build et
-  compte, lui.
+- **Un build sauté ne construit rien** — « No build minutes consumed, no new production
+  deployment created ». Donc aucune fonction, donc rien au Functions Storage : l'économie est
+  réelle. Ne pas confondre avec un build **annulé en cours**, qui a déjà exécuté la commande de
+  build et compte, lui. **Mais il laisse une trace** (relevé le 03/10/2026 sur l'API) : chaque
+  build sauté y figure comme un déploiement à l'état `CANCELED` — cinq fusions de Ramille du
+  02/10/2026, toutes de documentation (registre, recette, fiche Play).
+  Pour le plafond quotidien de déploiements, c'est peut-être la différence qui compte (§1.9) ; une
+  branche que `git.deploymentEnabled` coupe, elle, ne laisse rien (§1.4).
 - **La liste blanche se dit en chemins de racine, jamais en `**/*.md`.** Un `.md` sous `src/`
   peut être importé par l'app ; seul le `.md` de la racine est certainement inerte. Et tout ce
   qu'on *croit* inerte sans l'avoir vérifié (`vercel.json` lui-même, `package.json`,
@@ -256,7 +260,9 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
 
 - **L'outil MCP Vercel d'une session ne voit pas forcément le compte où vivent les projets** — sur
   Ramille, `list_deployments` a répondu 403 le 15/09/2026, puis répond depuis le 01/10/2026 — la liste
-  des déploiements et leur commit, pas l'usage ; chez Tour de Growth, l'unique équipe visible est restée
+  des déploiements et leur commit, pas l'usage, et pas les journaux de build
+  (`list_deployment_events` répond 404 sur un déploiement que `list_deployments` vient de lister,
+  relevé le 03/10/2026) ; chez Tour de Growth, l'unique équipe visible est restée
   vide. Conséquence : **l'agent ne peut pas lire les compteurs de
   consommation**, et la configuration se fait à la main dans le tableau de bord. Règle : *quand
   une ressource que je ne peux pas lire est en jeu, je demande le chiffre avant d'agir, pas
@@ -264,6 +270,27 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
 - **La région des fonctions est un réglage de projet**, pas de code. Une région par défaut aux
   États-Unis avec une base en Europe ajoute une seconde et plus par requête ; se vérifie avec
   `x-vercel-id` sur une vraie réponse.
+
+### 1.9 Le nombre de déploiements par jour a un plafond, et c'est celui du compte
+
+**Le 02/10/2026 à 23 h 17 UTC, Vercel a refusé le déploiement d'une fusion sur `main`** : aucun
+déploiement créé, la production restée sur le précédent, et pour seule trace un statut GitHub
+`Vercel` en échec sur le commit, « Deployment rate limited — retry in 24 hours ». Rien ne réessaie :
+le commit refusé n'est déployé que par le suivant qui passe, ou par un redéploiement à la main.
+Les deux fusions suivantes, à 23 h 31 et 23 h 58, ont été refusées de la même façon ; la troisième,
+à 0 h 51 UTC, est passée et a emporté les trois — une heure et demie après le premier refus, donc le
+plafond se libère au fil de l'eau, quoi qu'en dise le message, et non vingt-quatre heures plus tard.
+
+**Le plafond est celui du compte, partagé entre ses projets.** Sur les vingt-quatre heures
+précédentes, le compte portait 78 déploiements : 14 de Ramille, dont 5 fusions de documentation
+sautées par l'Ignored Build Step et listées comme annulées (§1.3), et 64 d'un autre projet, dont 48
+prévisualisations de branches à l'état annulé. Le chiffre exact du plafond ne se lit pas d'ici (§1.8), et ces
+78 ne disent pas lequel des enregistrements il compte ; ce qu'on sait, c'est qu'un projet bavard
+en prévisualisations bloque la production des autres. La parade est celle du §1.4 :
+`git.deploymentEnabled`, qui ne crée rien, plutôt qu'un Ignored Build Step, qui crée un annulé.
+
+**Ce qu'il faut regarder après une fusion qui doit partir** : le statut `Vercel` du commit sur
+GitHub, et l'en-tête ou le contenu servi — pas la CI, qui est verte quoi qu'il arrive.
 
 ---
 
@@ -322,7 +349,8 @@ retarde d'une nuit — est en §1.1.
   les 10 s par défaut (`v1-06` §3).
 - **`framework: null`** — l'export d'Expo est statique, la commande de build est
   `npm run vercel-build` et la sortie `dist/`.
-- **La `Content-Security-Policy` est appliquée** depuis le 02/10/2026, et stricte : les scripts du
+- **La `Content-Security-Policy` est appliquée** — fusionnée le 02/10/2026, en production depuis le
+  03/10/2026 à 2 h 51 (heure de Paris), le déploiement de sa fusion ayant été refusé (§1.9) —, et stricte : les scripts du
   site et une seule empreinte, celle du script d'hydratation qu'Expo Router écrit dans chaque page
   (ni `'unsafe-inline'` ni `'unsafe-eval'`) ; les styles écrits en dur, dont react-native-web a
   besoin ; les polices et images du site ; un seul projet Supabase, nommé. Elle était en
@@ -339,7 +367,12 @@ retarde d'une nuit — est en §1.1.
   en dur**, la seule valeur qu'aucune garde ne peut voir : `vercel-build` lance après l'export
   `scripts/verifier-origine-supabase-de-la-csp.mjs`, qui fait échouer un build de production dont
   `EXPO_PUBLIC_SUPABASE_URL` n'est pas l'origine de `connect-src` — le déploiement précédent reste
-  alors en ligne. Un changement de projet impose donc de changer les deux ensemble.
+  alors en ligne. Un changement de projet impose donc de changer les deux ensemble. **Il est bien
+  bloquant chez Vercel** : le journal d'un build de production qui le porte dit « build de
+  production, contrôle bloquant » (relevé le 03/10/2026 par la personne qui pilote — l'outil MCP
+  d'une session ne lit pas les journaux de build, §1.8), donc `VERCEL_ENV` est exposée au build.
+  Vérifiée en production le même jour : l'en-tête servi est celui de `vercel.json`, et les
+  dix-neuf routes montent sans une infraction.
 
 ### 2.3 La convention de fusion : on fusionne quand on veut, on mesure chaque déploiement
 

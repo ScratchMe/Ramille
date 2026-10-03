@@ -681,7 +681,7 @@ jetables, commit de fusion d'une PR compris ; neuf mutations datées en tête.
 
 ### 2.16 La politique de sécurité du site, servie aux gardes qui ouvrent l'export
 
-**La `Content-Security-Policy` de `vercel.json` est appliquée depuis le 02/10/2026** (`VERCEL.md`
+**La `Content-Security-Policy` de `vercel.json` est appliquée en production depuis le 03/10/2026** (`VERCEL.md`
 §2.2), et une politique appliquée qui interdit une chose dont l'app a besoin ne casse pas une page :
 elle casse l'app entière, sur web, pour tout le monde, sans rien signaler côté serveur. Elle était
 auparavant en rapport seul, sans collecteur — donc sans mesure. La mesure, c'est désormais ici :
@@ -709,7 +709,8 @@ auparavant en rapport seul, sans collecteur — donc sans mesure. La mesure, c'e
   Vercel, le seul endroit où la vraie variable existe : `vercel-build` lance après l'export
   `scripts/verifier-origine-supabase-de-la-csp.mjs`, qui fait échouer un build de production
   (`VERCEL_ENV=production`) dont `EXPO_PUBLIC_SUPABASE_URL` n'est pas l'origine de `connect-src`, et
-  se contente d'avertir ailleurs.
+  se contente d'avertir ailleurs. Il dit son mode dans le journal, et un build de production qui le
+  porte disait « contrôle bloquant » (03/10/2026).
 - **`scripts/vercel-csp.test.ts` garde la forme** de la politique (appliquée, sans `'unsafe-inline'`
   ni `'unsafe-eval'` pour les scripts, un seul projet Supabase nommé, aucun joker), la substitution
   du serveur et le contrôle du build ; dix mutations datées en tête. Il ne sait pas si l'app a besoin

@@ -550,7 +550,8 @@ le jour venu.
    seul projet Supabase nommé). Et le risque qui retenait le mode bloquant a ses gardes : les gardes
    navigateur de la CI servent la politique appliquée et échouent à la première infraction, écrans avec
    données compris, et le build de production refuse de partir si le projet Supabase configuré n'est
-   pas celui que la politique autorise (`TESTING-GARDES.md` §2.16). Détail en `VERCEL.md` §2.2.
+   pas celui que la politique autorise (`TESTING-GARDES.md` §2.16). Détail en `VERCEL.md` §2.2. En
+   production depuis le 03/10/2026, et vérifiée ce jour-là.
 
 ### 12.4 Examiné, et laissé tel quel
 
