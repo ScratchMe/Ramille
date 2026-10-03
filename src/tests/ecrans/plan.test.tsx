@@ -41,7 +41,7 @@
  *   - la marque de reconnexion ignorée (l'état d'avant) → 6, « ne compte pas une reconnexion » ;
  *   - l'émission jamais faite → 6, « compte un rattachement par email ».
  *
- * **Ce qu'il coûte** : douze modules doublés pour monter l'écran — le transport, le stockage local
+ * **Ce qu'il coûte** : onze modules doublés pour monter l'écran — le transport, le stockage local
  * de quatre marques, la navigation et ses deux contextes de pile, la mesure, et les composants qui
  * tirent `react-native-svg`. C'est le prix d'un écran qui lit dix sources ; le relevé de
  * `plan-pistes.test.tsx` en dit le reste.
@@ -140,9 +140,8 @@ jest.mock('@/lib/notification-prefs', () => ({
   lireLaFenetreDuMotDeLaVeille: async () => null,
 }));
 jest.mock('@/lib/rappels', () => ({ lirePermission: async () => 'fermee' }));
-// Ce qui dessine — la bande et son icône de compte, la mascotte, l'illustration, la feuille : rien de
-// ce que ce fichier garde, et `react-native-svg` ne se charge pas ici.
-jest.mock('@/components/bande-haute', () => ({ BandeHaute: () => null }));
+// Ce qui dessine — la mascotte, l'illustration, la feuille : rien de ce que ce fichier garde, et
+// `react-native-svg` ne se charge pas ici. La bande n'est plus à l'écran : sa pile la pose (`v1-33` T-13).
 jest.mock('@/components/mascot', () => ({ Mascot: () => null }));
 jest.mock('@/components/illustrations/empty-state-illustration', () => ({ EmptyStateIllustration: () => null }));
 /** Ce que la feuille des rappels reçoit, quand elle s'ouvre. */

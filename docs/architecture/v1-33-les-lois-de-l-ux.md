@@ -186,20 +186,26 @@ garde une forme par détour, et c'est T-10.
 le plan, le suivi, les pistes et `/contexte` (qui étaient en corps par défaut ou en `body`), « Toi » (en
 `small` tertiaire), et la restitution, seule à rester immédiate (`immediate`), parce que son HTML
 statique la porte et que la section D de `verifier-etats-export.mjs` la lit. Les quatre lignes qui
-n'attendaient pas étaient la restitution, `/compte/suppression`, `/rappels/stop` et `/status` : les
-trois dernières sont des pages qu'on ouvre à froid par leur adresse, dont la phrase est la première de
-la page — « Un instant, on … » —, remplacée au même corps par le résultat. Elles restent telles
-quelles, et `FRONT.md` §1.2 le dit. `/connexion/retrouver` reste muette pendant sa lecture, comme la
+n'attendaient pas étaient la restitution, `/compte/suppression`, `/rappels/stop` et `/status`.
+`/compte/suppression` et `/rappels/stop` sont des pages qu'on ouvre à froid par leur adresse, dont la
+phrase est la première de la page — « Un instant, on … » —, remplacée au même corps par le résultat :
+elles restent telles quelles, et `FRONT.md` §2.11 le dit. `/status` est une page de diagnostic
+(« Vérification… », sous « Connexion Supabase ») qu'aucun parcours n'atteint : laissée telle quelle. `/connexion/retrouver` reste muette pendant sa lecture, comme la
 vague l'a laissée.
 
 **T-13, fait le 03/10/2026.** La bande haute et la zone sûre du haut sont posées par chaque pile
 d'onglet, autour de sa `Stack` (`CadreDOnglet`, `src/components/cadre-d-onglet.tsx`), et plus par
 chaque écran : le relevé en comptait seize rendus pour quatre écrans (le plan six, le suivi et la
-restitution quatre chacun, les pistes deux). Un état ne peut plus oublier la bande — c'était R-9 —,
-et l'icône du compte n'est plus démontée quand l'écran change d'état. Ce qui bouge à l'œil : la bande
-ne glisse plus avec un écran poussé dans la pile (les pistes, une restitution), elle reste au-dessus.
+restitution quatre chacun, les pistes deux — quatorze au relevé de l'audit, seize depuis que R-9 a
+rendu la bande aux deux états de la restitution qui l'avaient perdue). Un état ne peut plus oublier
+la bande — c'était R-9 —, et elle ne se recrée plus à chaque écran poussé dans la pile. Ce qui bouge à
+l'œil : la bande ne glisse plus avec un écran poussé (les pistes, une restitution), elle reste
+au-dessus ; sur web la pile n'anime rien, donc ce point se voit sur appareil (`v1-13` §11.26).
 L'origine des défilements ne change pas — la bande occupe la même place —, et les gardes de P-1 et
-P-2 du parcours réel passent telles quelles. La garde : `src/tests/ecrans/cadre-des-piles.test.tsx`.
+P-2 du parcours réel passent telles quelles (rejeu complet du 03/10/2026). Les gardes :
+`src/tests/ecrans/cadre-des-piles.test.tsx` pour la bande et son ordre, et l'absence de bande dans
+l'écran par `restitution-du-bilan.test.tsx` et `plan-pistes.test.tsx` — une bande en double, le
+parcours réel la tolère.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
 « Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10

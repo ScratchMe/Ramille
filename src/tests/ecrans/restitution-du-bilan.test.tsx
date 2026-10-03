@@ -28,6 +28,10 @@
  *   - le chargement sans la bande haute (l'état d'avant R-9) → la même, seule, sur la bande. **Cette
  *     ligne ne vaut plus depuis le 03/10/2026** : l'écran ne rend plus la bande, sa pile la pose une
  *     fois autour de tous ses états (`v1-33` T-13), et c'est `cadre-des-piles.test.tsx` qui la garde ;
+ *     ici, c'est son absence qui se garde — `<BandeHaute />` remis dans le chargement → la même, seule,
+ *     sur une bande en double (03/10/2026) ;
+ *   - `immediate` retiré de la ligne de chargement → la même, et « la bannière de compte est dans le
+ *     premier rendu prêt… », qui la lit aussi : la ligne n'est pas là au premier rendu (03/10/2026) ;
  *   - le `.catch` de la lecture des bilans valides retiré → « une lecture tolérante qui échoue ou
  *     lève… », seul : l'écran d'erreur prend la place ;
  *   - le `.catch` de la fréquence des loisirs retiré → la même, seule ;
@@ -57,6 +61,7 @@ import { act, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import BilanResultat from '@/app/(tabs)/suivi/bilan';
+import { APP_NAME } from '@/constants/produit';
 
 // ── Les doublures ─────────────────────────────────────────────────────────────────────────────
 //
@@ -184,9 +189,10 @@ describe('la restitution d’un re-bilan', () => {
     render(<BilanResultat />);
     await act(async () => {});
 
-    // Le chargement se dit au premier rendu (`immediate`). La bande haute n'est plus à l'écran : sa pile
-    // la pose autour de tous ses états (`cadre-des-piles.test.tsx`).
+    // Le chargement se dit au premier rendu (`immediate`). Et l'écran ne rend pas la bande : sa pile la
+    // pose autour de tous ses états (`cadre-des-piles.test.tsx`), et une seconde se lirait en double.
     expect(screen.getByText('Chargement de ton bilan…')).toBeTruthy();
+    expect(screen.queryByText(APP_NAME)).toBeNull();
     // Un seul aller-retour : le résultat, les bilans valides, le cycle courant et la fréquence des
     // loisirs sont tous en vol avant que le premier ne réponde.
     expect(tablesEnAttente()).toEqual([
@@ -209,6 +215,7 @@ describe('la restitution d’un re-bilan', () => {
     expect(screen.getByText('Toi, aujourd’hui')).toBeTruthy();
     expect(screen.getByText(/^500 kg de moins que ton bilan de juin\.$/)).toBeTruthy();
     expect(screen.getByText('Ton prochain palier')).toBeTruthy();
+    expect(screen.queryByText(APP_NAME)).toBeNull();
     // Seul le cycle d'alors reste en vol, et il n'ajoute qu'une phrase.
     expect(tablesEnAttente()).toEqual(['plan_cycles']);
     expect(mockEnAttente[0].filtres).toContainEqual(['lte', 'period_start', '2026-06-02']);

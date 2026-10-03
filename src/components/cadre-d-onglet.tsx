@@ -14,7 +14,7 @@ import { ThemedView } from '@/components/themed-view';
  * l'erreur de la restitution les avaient perdus (R-9) — la bande arrivait avec le contenu, d'un saut
  * de 52 px. Le layout de chaque pile (`(tabs)/plan/_layout.tsx`, `(tabs)/suivi/_layout.tsx`) pose
  * désormais ce cadre autour de sa `Stack`, et un écran ne rend plus que son contenu : un état ne peut
- * plus oublier la bande, et l'icône du compte n'est plus démontée quand l'écran change d'état.
+ * plus oublier la bande, et elle ne se recrée plus à chaque écran poussé dans la pile.
  *
  * **Sans bord bas** : la barre d'onglets porte le sien. La bande reste au-dessus de la pile, donc
  * immobile quand on pousse les pistes ou une restitution — c'est là que viendra le retour dont iOS

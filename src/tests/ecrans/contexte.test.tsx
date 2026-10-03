@@ -14,7 +14,8 @@
  *   - le cas inchangé rendu actif (`disabled={enregistrement}`) → « reste inactif quand rien n'a
  *     changé » ;
  *   - la phrase de chargement montrée tout de suite (`useChargementVisible(…, true)`) → « se tait avant
- *     le délai » ;
+ *     le délai » — reformulée le 03/10/2026, l'écran passant par `LigneDAttente` (`v1-33` T-9) :
+ *     `demandee` posé en dur sur sa ligne ;
  *   - le « Retour » rendu seulement avec la phrase → « garde « Retour » pendant le chargement » ;
  *   - les ancres non fournies (`ChampsDeContexte` hors de `ContexteDesAncres`, l'état d'avant) → « mène
  *     à ce qui manque », par le focus qui ne part plus.

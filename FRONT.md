@@ -85,14 +85,6 @@ Quatre règles qui en découlent, et qui se sont toutes payées :
   marque ce chargement comme demandé** (`relance`) depuis que la ligne « Chargement… » attend
   300 ms (`FRONT-MOUVEMENT.md` §2.12) : hors ligne, l'échec revient bien avant, et l'écran d'erreur disparaissait puis
   revenait sans un mot — le même bouton mort, par une autre porte (`useChargementVisible`) ;
-- **la ligne « Chargement de ton … » passe par `LigneDAttente`, jamais par un `ThemedText` écrit à
-  côté du crochet** (`v1-33` T-9, 03/10/2026). L'audit en comptait huit formes — trois corps, deux
-  gris, quatre lignes qui n'attendaient pas : le délai était une règle que chaque écran recopiait.
-  Le composant porte la forme (`body`, `textSecondary`) et le délai ; `demandee` pour le chargement
-  d'un « Réessayer », `immediate` pour une page ouverte à froid dont le HTML statique doit la porter
-  — la restitution seule (`v1-30` §5.8). Les pages de service qui disent « Un instant, on … »
-  (`/rappels/stop`, `/compte/suppression`) n'en sont pas : leur phrase est la première de la page,
-  et le résultat la remplace au même corps ;
 - **une valeur par défaut posée sur un échec est du même mensonge.** Ce qu'on ne sait pas vaut
   `null`, et l'élément ne s'affiche pas — plutôt que de nommer le mauvais jour, le mauvais canal
   ou le mauvais rythme. C'était le cas de `loadReminderPrefs` jusqu'au 01/10/2026 (`v1-33` T-6) :
@@ -636,6 +628,14 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `ThemedView` plein (le fond pendant une transition de pile), et un écran ajouté à l'une des deux
   piles reçoit la bande sans rien écrire. La bande reste au-dessus de la pile : elle ne bouge pas
   quand on pousse les pistes ou une restitution.
+- **La ligne « Chargement de ton … » passe par `LigneDAttente`, jamais par un `ThemedText` écrit à
+  côté du crochet** (`v1-33` T-9, 03/10/2026). L'audit en comptait huit formes — trois corps, deux
+  gris, quatre lignes qui n'attendaient pas : le délai était une règle que chaque écran recopiait.
+  Le composant porte la forme (`body`, `textSecondary`) et le délai ; `demandee` pour le chargement
+  d'un « Réessayer », `immediate` pour une page ouverte à froid dont le HTML statique doit la porter
+  — la restitution seule (`v1-30` §5.8). Les pages de service qui disent « Un instant, on … »
+  (`/rappels/stop`, `/compte/suppression`) n'en sont pas : leur phrase est la première de la page,
+  et le résultat la remplace au même corps.
 - **Un écran d'onglet mesure ses affichages avec `useTrackFocus`, jamais `useTrackView`.**
   react-navigation garde l'écran monté quand on change d'onglet : au montage, l'événement ne
   part qu'une fois par session. Le compteur ne tombe pas à zéro, ce qui se verrait — il rend un
