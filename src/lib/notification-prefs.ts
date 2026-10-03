@@ -111,6 +111,28 @@ export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille 
 }
 
 /**
+ * L'enregistrement du jeton en cours, que la lecture du jeton attend (`v1-33` T-12, 03/10/2026).
+ *
+ * `enregistrerLeJeton` (`src/lib/rappels.ts`) réinscrit le jeton quand la permission est accordée,
+ * ou le désinscrit et efface sa marque sinon ; le démarrage le lance (`_layout.tsx`), la feuille des
+ * rappels et « Toi » aussi. Rien ne garantissait qu'une lecture partie au même moment le lise après :
+ * elle pouvait trouver la marque d'avant, et la carte d'attente promettait alors « Par notification
+ * sur ce téléphone » à qui venait de les couper — ou les taisait à qui venait de les rouvrir. Le
+ * risque est devenu réel quand la lecture du plan s'est mise à partir pendant l'écran de lancement,
+ * au moment même où le démarrage enregistre le jeton. Un échec de l'enregistrement ne bloque rien :
+ * la lecture lit alors ce qui est là.
+ */
+let enregistrementDuJeton: Promise<unknown> = Promise.resolve();
+
+/** Posé par `enregistrerLeJeton` : la prochaine lecture du jeton attend qu'il ait fini. */
+export function suivreLEnregistrementDuJeton(enregistrement: Promise<unknown>): void {
+  enregistrementDuJeton = enregistrement.then(
+    () => undefined,
+    () => undefined
+  );
+}
+
+/**
  * **Le jeton de cet appareil, pas un jeton de cette personne.** `push_tokens` en porte
  * plusieurs par compte (unicité sur le jeton, jamais sur l'utilisateur) et la RLS ne borne
  * qu'à la personne : une requête qui se contentait de `disabled_at is null` rendait vrai dès
@@ -122,6 +144,7 @@ export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille 
  * rend `null`** (01/10/2026) : « pas actif sur ce téléphone » serait un constat que rien n'a fait.
  */
 async function leJetonDeCetAppareilEstActif(): Promise<boolean | null> {
+  await enregistrementDuJeton;
   const jeton = await lireLeJetonDeCetAppareil();
   if (!jeton) return false;
 

@@ -207,16 +207,21 @@ P-2 du parcours réel passent telles quelles (rejeu complet du 03/10/2026). Les 
 l'écran par `restitution-du-bilan.test.tsx` et `plan-pistes.test.tsx` — une bande en double, le
 parcours réel la tolère.
 
-**T-12, fait le 03/10/2026.** La lecture du plan — ses trois allers-retours, et les préférences de
-rappel et la permission qui partaient avec — sort de l'écran pour `src/lib/lecture-du-plan.ts`
-(`lireLePlan`). La racine la lance dès qu'une lecture réussie désigne le plan, **avant** d'attendre le
-plancher, et le premier chargement de l'écran la reprend une fois, fraîche. La décision du plancher
+**T-12, fait le 03/10/2026.** La lecture du plan — trois lots de requêtes, dont le dernier en enchaîne
+deux, soit quatre allers-retours, préférences de rappel et permission comprises — sort de l'écran pour
+`src/lib/lecture-du-plan.ts` (`lireLePlan`). La racine la lance dès qu'une lecture réussie désigne le
+plan (`prechargeLePlan`), **avant** d'attendre le plancher, et le premier chargement de l'écran la
+reprend, une fois, pour la même session et fraîche. La contre-lecture a trouvé ce que ce départ plus
+tôt réveillait : la lecture du jeton d'appareil pouvait croiser son enregistrement au démarrage, et la
+carte d'attente annoncer le mauvais canal — elle l'attend désormais (`suivreLEnregistrementDuJeton`). La décision du plancher
 (`v1-13`, D13) ne bouge pas : il couvre désormais la lecture au lieu de la précéder. **Mesuré sur
 l'export web**, contre la stack locale, une latence posée sur chaque requête et six ouvertures par
 mesure, de « / » au plan qui montre son action : **2,94 → 1,78 s** à 300 ms, **2,14 → 1,64 s** à
 100 ms — le plan arrive désormais à peine après la fin de l'écran de lancement. Le gain sur appareil
-reste à relever (`v1-13` §11.26). La garde : `src/lib/lecture-du-plan.test.ts` (reprise une fois,
-jetée vieille), et le parcours réel passe tel quel.
+reste à relever (`v1-13` §11.26). Les gardes : `src/lib/lecture-du-plan.test.ts` (reprise au premier
+passage, une fois, même session, fraîche ; une lecture annulée s'arrête entre deux lots),
+`prechargeLePlan` dans `demarrage.test.ts`, l'attente du jeton dans `notification-prefs.test.ts`, et le
+parcours réel passe tel quel.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
 « Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10

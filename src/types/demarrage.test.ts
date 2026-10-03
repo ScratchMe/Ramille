@@ -1,4 +1,4 @@
-import { destinationDuDemarrage, lireLeBilan, type LectureDuBilan } from '@/types/demarrage';
+import { destinationDuDemarrage, lireLeBilan, prechargeLePlan, type LectureDuBilan } from '@/types/demarrage';
 
 describe('lireLeBilan', () => {
   it('une réponse du serveur est une lecture, qu’elle trouve un bilan ou non', () => {
@@ -130,5 +130,30 @@ describe('destinationDuDemarrage', () => {
     expect(destinationDuDemarrage(coupure, { brouillon: false, marqueDeBilan: false })).toEqual({
       vers: 'onboarding',
     });
+  });
+});
+
+/**
+ * La lecture du plan préchargée pendant l'écran de lancement (`v1-33` T-12, 03/10/2026). Éprouvé en le
+ * cassant le même jour : la condition sur la lecture retirée fait tomber « pas sur la marque d'une
+ * coupure », et lui seul ; la condition sur la destination retirée fait tomber « ni vers la reprise… »,
+ * et lui seul.
+ */
+describe('prechargeLePlan', () => {
+  const lue: LectureDuBilan = { etat: 'lue', bilanComplete: true };
+  const coupure: LectureDuBilan = { etat: 'coupure' };
+
+  it('précharge quand une lecture réussie désigne le plan', () => {
+    expect(prechargeLePlan(lue, { vers: 'plan' })).toBe(true);
+  });
+
+  it('pas sur la marque d’une coupure : l’écran du plan retentera sa propre lecture', () => {
+    expect(prechargeLePlan(coupure, { vers: 'plan' })).toBe(false);
+  });
+
+  it('ni vers la reprise, ni vers l’onboarding, ni vers l’écran d’échec', () => {
+    expect(prechargeLePlan({ etat: 'lue', bilanComplete: false }, { vers: 'reprise' })).toBe(false);
+    expect(prechargeLePlan({ etat: 'lue', bilanComplete: false }, { vers: 'onboarding' })).toBe(false);
+    expect(prechargeLePlan({ etat: 'erreur' }, { vers: 'echec' })).toBe(false);
   });
 });

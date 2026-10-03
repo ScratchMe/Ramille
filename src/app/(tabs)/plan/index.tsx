@@ -372,6 +372,9 @@ export default function Plan() {
   // jour ne se déduit pas de l'action qu'on vient de toucher — il faut relire le cycle.
   const [refreshKey, setRefreshKey] = useState(0);
   const rafraichir = useCallback(() => setRefreshKey((cle) => cle + 1), []);
+  // Le premier chargement de l'écran, le seul qui reprenne la lecture préchargée au lancement (`v1-33`
+  // T-12) : un rafraîchissement, une relance ou « Je m'y engage » relisent la base.
+  const premierChargement = useRef(true);
 
   // **Le plan est la destination du rappel, il doit donc être à jour quand on y arrive.**
   // Sans ça il ne se chargeait qu'une fois par lancement : appuyer sur une notification avec
@@ -831,9 +834,10 @@ export default function Plan() {
     // (`useRafraichirAuRetour`), et le plan est la destination du rappel — le remplacer par un
     // écran d'erreur à chaque ouverture hors ligne coûterait plus que la ligne qui le dit.
     //
-    // **Le genre se calcule ici, une fois** (D19, `FRONT.md` §2.11) : sur le statut de la lecture qui a
-    // échoué — `0` quand elle n'a pas eu de réponse —, et `serveur` quand rien ne le dit, une promesse
-    // qui lève par exemple (`src/types/lecture-en-echec.ts` dit pourquoi ce repli est le bon).
+    // **Le genre se calcule une fois** (D19, `FRONT.md` §2.11) : dans `lireLePlan`, sur le statut de la
+    // lecture qui a échoué — `0` quand elle n'a pas eu de réponse —, et ici `serveur` quand rien ne le
+    // dit, une promesse qui lève par exemple (`src/types/lecture-en-echec.ts` dit pourquoi ce repli est
+    // le bon).
     const echecDeLecture = (genre: GenreDEchec) => {
       if (cancelled) return;
       setRelectureEnEchec(genre);
@@ -852,18 +856,15 @@ export default function Plan() {
 
     (async () => {
       try {
-        // **Les deux premières lectures partent ensemble** (audit P-9, 01/10/2026). Elles partaient
-        // l'une après l'autre sans raison : la seconde ne lit rien de la première — aucun filtre sur
-        // le bilan, la RLS borne déjà à la personne —, et cet aller-retour de trop se payait à
-        // **chaque** retour au premier plan, c'est-à-dire à chaque notification ouverte. Les
-        // décisions, elles, se prennent dans **l'ordre d'avant**, un résultat après l'autre : l'échec
-        // du bilan, puis « pas de bilan » — qui gagne sur un cycle illisible, sans quoi quelqu'un sans
-        // bilan lirait une panne —, puis l'échec du cycle, puis « en préparation ».
-        // **La lecture vit dans `src/lib/lecture-du-plan.ts`** (`v1-33` T-12) : la racine la lance pendant
-        // l'écran de lancement, et ce premier chargement la reprend au lieu de la refaire.
-        const lecture = await lectureDuPlan();
+        // **La lecture vit dans `lireLePlan`** (`src/lib/lecture-du-plan.ts`, `v1-33` T-12), avec l'ordre de
+        // ses décisions (P-9) : la racine la lance pendant l'écran de lancement, et le **premier**
+        // chargement de l'écran la reprend au lieu de la refaire. Une lecture que l'écran ajoute se place
+        // là-bas, jamais ici — ici, elle repartirait après le plancher, et le gain fondrait.
+        const reprendre = premierChargement.current;
+        premierChargement.current = false;
+        const lecture = await lectureDuPlan({ reprendre, annulee: () => cancelled });
 
-        if (cancelled) return;
+        if (cancelled || lecture.genre === 'annulee') return;
 
         if (lecture.genre === 'echec') {
           echecDeLecture(lecture.echec);

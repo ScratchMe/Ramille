@@ -666,7 +666,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   valider, `v1-27` §12.29). Le plan, le
   suivi et `/contexte` disaient « Vérifie ta connexion. » à toute lecture en échec, y compris sur un
   500. Le genre — `horsLigne` sur `status === 0`, `serveur` partout ailleurs, une promesse qui lève
-  comprise — se calcule une fois, dans la lecture (l'effet de chargement du plan,
+  comprise — se calcule une fois, dans la lecture (`lireLePlan` pour le plan,
   `loadAssessmentHistory` / `loadAnsweredCheckins`, `lireLeContexteCourant`), et l'écran en tire sa
   phrase (`phraseDeLaLectureEnEchec`, `src/types/lecture-en-echec.ts`). `serveur` est le repli parce
   que « Réessaie dans un instant » reste vrai hors ligne, alors que « Vérifie ta connexion » est faux

@@ -12,20 +12,21 @@ import { RAISONS_ANNONCABLES } from '@/types/plan';
  *
  * **Le défaut.** La racine (`src/app/index.tsx`) lit la session et le dernier bilan, puis complète
  * jusqu'au plancher de l'écran de lancement (`DUREE_ANIMATION_LANCEMENT`, 1 450 ms) avant de router
- * vers le plan, qui ne commence **qu'alors** ses trois allers-retours : le bilan et les cycles, puis les
- * points, puis le reste. Le plancher se payait donc **avant** la lecture du plan au lieu de la couvrir :
- * une session en cache répond en ≈ 200 ms, et le temps restant jusqu'au plancher ne servait à rien.
+ * vers le plan, qui ne commençait **qu'alors** sa lecture : trois lots de requêtes, dont le dernier en
+ * enchaîne deux (`loadReminderPrefs` lit l'utilisateur avant le profil) — quatre allers-retours. Le
+ * plancher se payait donc **avant** la lecture du plan au lieu de la couvrir : une session en cache
+ * répond en ≈ 200 ms, et le temps restant jusqu'au plancher ne servait à rien.
  *
  * **Le remède** : la racine lance cette lecture dès qu'elle sait que le plan sera la destination
- * (`prechargerLePlan`), et elle court pendant le plancher ; le premier chargement de l'écran la reprend
- * (`lectureDuPlan`) au lieu de la refaire. Rien d'autre ne change : l'écran reçoit le même résultat
- * qu'avant, et en dérive les mêmes états.
+ * (`prechargerLePlan`, sur la décision de `prechargeLePlan`), et elle court pendant le plancher ; le
+ * premier chargement de l'écran la reprend (`lectureDuPlan`) au lieu de la refaire. Rien d'autre ne
+ * change : l'écran reçoit le même résultat qu'avant, et en dérive les mêmes états.
  *
- * **Ce qui se lit ici, et ce qui reste à l'écran.** Ici, le réseau et les deux lectures locales qui
- * partaient avec lui (les préférences de rappel et la permission) — tout ce qui précédait la première
- * écriture d'état. L'écran garde les dérivations et les marques « déjà vu », qui ne coûtent rien.
+ * **Ce qui se lit ici, et ce qui reste à l'écran.** Ici, tout ce qui précédait la première écriture
+ * d'état : les requêtes, les préférences de rappel (le réseau, elles aussi) et la permission. L'écran
+ * garde les dérivations et les marques « déjà vu », locales. **Une lecture que l'écran du plan ajoute se
+ * place dans `lireLePlan`** : dans l'effet de l'écran, elle repartirait après le plancher.
  */
-
 // **La borne basse de la lecture des points, et pourquoi elle existe** (C2.4 puis C2.10). La requête
 // ramenait les seuls points `pending` — un ou deux. Depuis qu'elle lit aussi les points répondus, elle
 // ramènerait tout l'historique d'un compte, soit une ligne par semaine qui s'accumule sans fin. Ce qui
@@ -56,7 +57,14 @@ function fenetreDesPoints(
  * Ce que la lecture rend : un échec (et son genre, D19), l'absence de bilan, un plan pas encore généré,
  * ou tout ce dont l'écran a besoin.
  */
-export async function lireLePlan() {
+export async function lireLePlan(annulee: () => boolean = () => false) {
+  // **Les deux premières lectures partent ensemble** (audit P-9, 01/10/2026). Elles partaient l'une
+  // après l'autre sans raison : la seconde ne lit rien de la première — aucun filtre sur le bilan, la
+  // RLS borne déjà à la personne —, et cet aller-retour de trop se payait à **chaque** retour au premier
+  // plan, c'est-à-dire à chaque notification ouverte. Les décisions, elles, se prennent dans **l'ordre
+  // d'avant**, un résultat après l'autre : l'échec du bilan, puis « pas de bilan » — qui gagne sur un
+  // cycle illisible, sans quoi quelqu'un sans bilan lirait une panne —, puis l'échec du cycle, puis
+  // « en préparation ».
   const [
     { data: assessment, error: erreurBilan, status: statutDuBilan },
     { data: cycles, error: cycleError, status: statutDuCycle },
@@ -96,6 +104,8 @@ export async function lireLePlan() {
       .limit(2),
   ]);
 
+  // Une lecture que l'écran a remplacée s'arrête entre deux lots : la suivante relit tout.
+  if (annulee()) return { genre: 'annulee' } as const;
   if (erreurBilan) return { genre: 'echec', echec: genreDeLEchec(statutDuBilan) } as const;
   if (!assessment) return { genre: 'sans_bilan' } as const;
 
@@ -116,7 +126,7 @@ export async function lireLePlan() {
   // clôturées côté serveur en `expired` (migration 20260904180000) : sans ça, un
   // utilisateur absent huit semaines retrouvait huit cartes identiques.
   //
-  // Le `keepLatestPerLoop` ci-dessous est une ceinture en plus de cette bretelle : si un
+  // Le `keepLatestPerLoop` de l'écran est une ceinture en plus de cette bretelle : si un
   // passage de cron était manqué, la table pourrait de nouveau porter deux périodes en
   // attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
   // la plus récente — une pile de rappels est le contraire de ce que cette boucle promet.
@@ -150,6 +160,7 @@ export async function lireLePlan() {
     .gte('period_start', fenetreDesPoints(new Date(), cyclePrecedent?.period_start))
     .order('period_start', { ascending: false });
 
+  if (annulee()) return { genre: 'annulee' } as const;
   if (erreurCheckins) return { genre: 'echec', echec: genreDeLEchec(statutDesPoints) } as const;
 
   // Quelle boucle concerne cette personne, donc quel jour Ramille peut nommer : le point
@@ -237,14 +248,30 @@ export type LectureDuPlan = Awaited<ReturnType<typeof lireLePlan>>;
 /**
  * Une lecture lancée par la racine, que le premier chargement du plan reprend.
  *
- * **Elle ne sert qu'une fois, et seulement fraîche.** Reprise, elle est oubliée : un retour sur
- * l'onglet ou au premier plan relit la base, comme avant. Et passé `FRAICHEUR_DU_PRECHARGEMENT`, elle
- * est jetée plutôt que montrée — le chemin du lancement la reprend bien avant, mais une lecture vieille
- * de plusieurs secondes dirait un plan qui a pu changer depuis.
+ * **Elle ne sert qu'une fois, au premier chargement, pour la même session, et seulement fraîche.**
+ * Demandée par un autre passage — un rafraîchissement, une relance, « Je m'y engage » —, elle est oubliée
+ * et la base relue, comme avant. Lancée sous une autre session — une racine remplacée pendant son
+ * plancher par un retour de connexion —, elle est jetée : elle dirait le plan de quelqu'un d'autre. Et
+ * passé `FRAICHEUR_DU_PRECHARGEMENT`, elle est jetée aussi : le chemin du lancement la reprend une
+ * seconde ou deux après l'avoir lancée, et une lecture plus vieille dirait un plan qui a pu changer.
+ * `Date.now()` n'est pas monotone : une horloge resynchronisée au démarrage la ferait jeter, ce qui
+ * coûte le gain et rien d'autre.
  */
-let prechargement: { lanceeA: number; lecture: Promise<LectureDuPlan> } | null = null;
+let prechargement: {
+  lanceeA: number;
+  utilisateur: Promise<string | null>;
+  lecture: Promise<LectureDuPlan>;
+} | null = null;
 
-export const FRAICHEUR_DU_PRECHARGEMENT = 10_000;
+export const FRAICHEUR_DU_PRECHARGEMENT = 5_000;
+
+/** L'utilisateur de la session courante, lu localement — `null` sans session, ou si elle est illisible. */
+function utilisateurDeLaSession(): Promise<string | null> {
+  return supabase.auth
+    .getSession()
+    .then(({ data }) => data.session?.user.id ?? null)
+    .catch(() => null);
+}
 
 /** Lancée par la racine quand le plan est la destination, avant d'attendre le plancher du lancement. */
 export function prechargerLePlan(maintenant: number = Date.now()): void {
@@ -252,13 +279,23 @@ export function prechargerLePlan(maintenant: number = Date.now()): void {
   // Une lecture qui lève sans que personne ne l'attende serait une promesse rejetée et orpheline : le
   // plan la reprendra, et c'est son `catch` qui dira l'échec.
   lecture.catch(() => {});
-  prechargement = { lanceeA: maintenant, lecture };
+  prechargement = { lanceeA: maintenant, utilisateur: utilisateurDeLaSession(), lecture };
 }
 
-/** Le premier chargement du plan reprend la lecture préchargée, fraîche ; sinon, il en lance une. */
-export function lectureDuPlan(maintenant: number = Date.now()): Promise<LectureDuPlan> {
+/**
+ * La lecture du plan : la préchargée quand c'est le premier chargement de l'écran (`reprendre`), qu'elle
+ * est fraîche et de la même session ; une lecture neuve sinon, que `annulee` arrête entre deux lots.
+ */
+export async function lectureDuPlan({
+  reprendre = false,
+  annulee = () => false,
+  maintenant = Date.now(),
+}: { reprendre?: boolean; annulee?: () => boolean; maintenant?: number } = {}): Promise<LectureDuPlan> {
   const enCours = prechargement;
   prechargement = null;
-  if (enCours !== null && maintenant - enCours.lanceeA < FRAICHEUR_DU_PRECHARGEMENT) return enCours.lecture;
-  return lireLePlan();
+  if (reprendre && enCours !== null && maintenant - enCours.lanceeA < FRAICHEUR_DU_PRECHARGEMENT) {
+    const [lanceePour, maintenantPour] = await Promise.all([enCours.utilisateur, utilisateurDeLaSession()]);
+    if (lanceePour !== null && lanceePour === maintenantPour) return enCours.lecture;
+  }
+  return lireLePlan(annulee);
 }
