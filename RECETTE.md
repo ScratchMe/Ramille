@@ -354,6 +354,18 @@ propre à chaque feuille et déclarée dans le script (`TABLEAUX_PAR_FEUILLE`, p
 la feuille du 02/10/2026) : une feuille non déclarée ou une ancre absente le fait échouer en la nommant,
 plutôt que de rendre une page à laquelle il manque un tableau.
 
+**La sixième, écrite le 03/10/2026, est la première feuille sur appareil depuis le 14/09** : le
+premier build Android depuis cette date reprend le bloc 07 de celle du 29/09, les lignes de
+`a-verifier-sur-le-build-de-recette.md` et ce que les PR fusionnées depuis la séance du 02/10 n'ont
+montré qu'au navigateur. Trois choses de forme, à reprendre pour la prochaine séance sur téléphone :
+**un seul profil**, dont le plan porte les deux pistes qu'il faut engager dans l'ordre (la feuille des
+rappels ne s'ouvre qu'une fois par téléphone, et c'est elle qui décide de l'ordre du bloc d'engagement) ;
+**un calendrier en trois temps** (le jour de l'installation, le lundi du point, puis une date) dont le
+dernier bloc se compte à part, comme le bloc « après le build natif » de la quatrième ; et **un bloc de
+jugements**, la question à la place de l'attendu. Ses précautions, ce qu'elle ne joue pas et ce
+qu'elle ne prouve pas sont des listes, que le script extrait aussi (`TEXTES_PAR_FEUILLE`) : recopiées
+dans la page, elles auraient décroché à la première correction d'une contre-lecture.
+
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est
 exactement ce que ce format existe pour ne plus reproduire.

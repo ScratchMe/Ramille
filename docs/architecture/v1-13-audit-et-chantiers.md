@@ -2202,6 +2202,12 @@ une ligne qui ne dit rien n'a pas été jouée, y compris quand le bloc qui la p
 sur autre chose. Ce que la séance a **trouvé** ne vit pas ici mais en §12 — elle a servi à voir, pas
 à établir.
 
+**Depuis le 03/10/2026, ce qui attend un téléphone ici se joue dans une seule feuille,
+[`le-build-d-octobre.md`](../recette/le-build-d-octobre.md)**, sur le premier build Android depuis le
+14/09 : elle cite chaque ligne de ce tableau qu'elle regarde par son numéro (« §11.19 »), à côté de
+l'étape qui la joue. Une ligne ne change pas d'état parce qu'elle y est citée : elle le dit en tête de
+sa case une fois la séance jouée, comme les autres.
+
 | # | Chantier | Ce qu'il faut faire, et ce qu'on cherche |
 |---|---|---|
 | 11.1 | C1.9 (accessibilité) | **Passage fait le 14/09/2026** (bloc 10 de la recette), sans constat : ce qui devait s'annoncer s'annonçait. Il a été fait en **sachant** quelles séries de 11.4 sont encore en `button`, donc il ne les a pas éprouvées — un second passage, après 11.4, reste utile et ne relèvera pas deux fois la même chose. Ce que la ligne demandait : un passage **TalkBack** sur onboarding, questionnaire, plan (prise d'engagement) et retour. On cherche : l'ordre de lecture du pager (les pages hors écran doivent être muettes), l'annonce « sélectionné » sur les puces et les lignes de choix, l'annonce d'en-tête sur les titres, le silence de la mascotte et des illustrations, le déplacement du focus au changement d'étape, et que les cibles tactiles atteignent 44 px sans que le texte bouge. |
