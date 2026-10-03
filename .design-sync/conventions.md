@@ -89,6 +89,11 @@ un constat de lecture.
   `StepShell`, on ne les redessine pas.
 - Le bouton principal est pleine largeur (54 de haut, rayon 27). Dans une rangée
   Retour + Suivant, Retour garde sa largeur et Suivant porte `flex`.
+- **Une sortie a deux places, et c'est l'écran qui décide, jamais son état** : un écran qui se
+  consulte (« Toi », les pages légales, « Toutes les pistes », un bilan relu) la porte en haut à
+  gauche, au-dessus du titre — `SortieDuDetour`, grise, avec son chevron ; un écran qui pose une
+  question (un flux, la connexion, un formulaire) la garde en bas, sous l'action principale — un
+  `TextLink`, ou le « Retour » à gauche de « Suivant ».
 - Le « Suivant » d'une étape incomplète est **en attente** (`enAttente`), comme le « C'est noté »
   d'une intention incomplète : l'apparence du désactivé — fond élément + texte tertiaire, jamais
   une opacité ; posé sur un encart gris, fond de la page et filet (`onPanel`) —, mais un bouton qui

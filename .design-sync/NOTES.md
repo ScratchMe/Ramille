@@ -450,6 +450,43 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
   futur, l'usage faux de `mesurer-les-cadres.cjs`, un constat produit qui ne vivait qu'ici, et un soupçon de
   mesure tronquée — infirmé en remesurant.
 
+## Relevé du 03/10/2026 — neuvième synchronisation, la puce à case et la sortie d'un écran
+
+Chemin atomique, skill 2.1.288. Elle porte ce que le kit a reçu depuis la huitième : la sortie d'un écran qui se
+consulte (#341, `SortieDuDetour`, et les pages légales et `TextLink` qui la posent), la réponse de Claude Design à
+l'étape du contexte (#343 : la question d'abord, la puce à case, le bouton grisé sur un encart) et l'alias mort
+retiré de `tokens/colors.css` (#346). Le pilote a trouvé **69 composants inchangés, 2 changés** (`ChampsDeContexte`,
+`ContextStep`) **et 1 ajouté** (`SortieDuDetour`), aucun retiré, `deletePaths` vide ; **10 à téléverser**, plus le
+bundle, le style et le README. 72 rendus, aucun mauvais, les deux `[RENDER_THIN]` connus, aucune histoire en
+double ; `props-check.py` sans écart, et le diff des `.d.ts` depuis l'arbre de la huitième ne montre que
+`SortieDuDetour`. 377 fichiers de contenu : la sentinelle, racine + jetons + guide (10), `_vendor/` seul, `fonts/`
+seul, les 72 aperçus, deux lots de composants (144, 144), la sentinelle de nouveau, `_ds_sync.json` seul. L'arbre
+synchronisé : `docs/design/design-system` tel que `main` le porte après la fusion de la PR de cette synchronisation.
+
+- **Le `ThemedText` du kit est un bloc** (`display: block`), quand un `Text` imbriqué reste dans la ligne dans le
+  dépôt. Dans `ChampsDeContexte`, le terme de chaque zone (« Urbain dense : ») passait donc seul à la ligne, au-dessus
+  de sa définition, pendant que l'app les écrit d'un tenant. Aucune garde ne le voit : seule la lecture de la
+  feuille l'a montré. Corrigé par `display: inline` sur le terme ; un relevé par script n'a trouvé aucun autre
+  `ThemedText` imbriqué dans le kit, mais le prochain aura besoin du même geste.
+- **Les cadres se mesurent après le dernier changement de source, pas avant.** Mesurés d'abord à 788 et 944 px,
+  ils ont fondu à 748 et 904 une fois les définitions remises d'un tenant : `ChampsDeContexte` 710 → 780,
+  `ContextStep` 870 → 935. Une mesure prise sur un cadre plus grand que le contenu reste valable, donc la seconde
+  n'a pas demandé d'élargir de nouveau.
+- **Sept composants partaient sans regrader** alors que leur source avait bougé (`ActionCommitment`, `Button`,
+  `Chip`, `IntituleDuChamp`, `StepShell`, `TextLink`, `LegalPage`) : relus par `--spot-check-components`, tous
+  conformes — la case des jours, « C'est noté » en attente ou désactivé sur l'encart, la sortie en haut et en bas
+  de la page légale.
+- **L'en-tête de conventions** : aucune phrase fausse, relues contre le code de l'app ; il ne disait rien de la place
+  d'une sortie, que #341 a tranchée. Une ligne ajoutée, tirée de la fiche de `SortieDuDetour` : un composant qui
+  porte une règle de composition gagne sa ligne dans l'en-tête, sans quoi l'agent de design ne l'apprend qu'en
+  ouvrant la fiche.
+- **Le processus a redémarré entre `finalize_plan` et le premier envoi**, comme à la huitième : le `planId` a tenu,
+  et l'envoi a repris après avoir vérifié que `ds-bundle/` portait le build final (verdict, ancre, correction
+  présente dans `_ds_bundle.js` — le `.jsx` de `ds-bundle/` n'est qu'un renvoi vers lui).
+- **Le système de design de la galerie a suivi le même jour**, à la main (section suivante) : le bundle de ce
+  build et les deux aperçus aux cadres remesurés, rien d'autre — les fiches et les types de ces composants n'avaient
+  pas bougé.
+
 ## Le système de design de la galerie — un second miroir, remis à jour le 03/10/2026
 
 À côté du projet Claude Design, la galerie d'artefacts de la personne qui pilote porte un système de design
@@ -472,10 +509,9 @@ garde ce qui y a été porté).
    (plus bas) ; les `@font-face` viennent de `tokens.json`.
 4. Avant l'envoi, la version en ligne doit être celle qu'on a lue — son identifiant ne bouge pas tant que
    personne n'enregistre — ; sinon, relire chaque fichier qu'on réécrit et refaire la fusion dessus. Les jetons
-   gardent tous leurs anciens noms, même ceux que le kit ne définit plus (`color-pagination-inactive`,
-   `radius-mode-item`, et les styles en `-line` nés d'un appariement raté à la migration ; `type-label-caps` reste
-   le nom de l'étiquette en capitales, que le kit appelle `--type-label-*`), gagnent les jetons neufs et deux
-   styles (`type-display`, `type-question`), un usage chacun — tiré des commentaires de `theme.ts` et du kit, ou
+   gardent leurs noms ; un nom que le kit ne définit plus reste, noté comme tel dans son usage, jusqu'à la décision
+   de la personne qui pilote (`type-label-caps` reste le nom de l'étiquette en capitales, que le kit appelle
+   `--type-label-*`). Ils gagnent les jetons neufs et deux styles (`type-display`, `type-question`), un usage chacun — tiré des commentaires de `theme.ts` et du kit, ou
    disant qu'aucun composant ne le lit —, et une provenance (`meta`). Le README est celui de `ds-bundle/`, plus une
    note datée et la section de migration gardée ; `guidelines/readme.md` est le `readme.md` du kit ; la licence
    de Spline Sans part dans `assets/notes/OFL-Spline-Sans.txt`.
@@ -493,7 +529,9 @@ garde ce qui y a été porté).
   une erreur, et le premier banc, qui compilait ses jetons depuis `tokens.json`, rendait « 72 aperçus, aucun en
   défaut ». D'où deux choses : le relevé statique des jetons du banc, et un repli dans `bundle.css` en
   `:where()`, sans poids, que la feuille servie emporte dès qu'elle déclare le jeton (vérifié dans les deux
-  thèmes). Le catalogue, lui, ne se répare pas d'ici : il faut une modification faite dans la page.
+  thèmes). Le catalogue, lui, ne se répare pas d'ici : il faut une modification faite dans la page. Une retouche
+  de la personne qui pilote a tout régénéré le jour même — 72 composants et leurs résumés, la feuille avec les
+  jetons neufs et leurs usages ; le repli ne sert donc plus, et reste pour le prochain envoi qui ajoutera un jeton.
 - **Les types de `ds-bundle/` coupent chaque commentaire à 120 caractères** (`.ds-sync/lib/dts.mjs`), en plein
   mot : 52 commentaires dans 26 fiches au premier envoi. Le convertisseur prend désormais ceux du kit. Le projet
   Claude Design reçoit, lui, les types tronqués à chaque synchronisation.
@@ -502,12 +540,14 @@ garde ce qui y a été porté).
   Les 72 aperçus se rendent sous l'un comme sous l'autre.
 - **Le kit portait un alias mort** : `--stroke-selected: var(--color-accent)` dans `tokens/colors.css`, que
   `tokens/spacing.css` redéclare à `1.5px` plus loin dans `styles.css`. Aucun fichier ne le lisait, ni comme
-  couleur ni comme épaisseur ; retiré du kit le jour même. La prochaine synchronisation vers Claude Design verra
-  donc un changement de style sans aucun effet visible.
+  couleur ni comme épaisseur ; retiré du kit le jour même. La neuvième synchronisation l'a téléversé comme un
+  changement de style, sans aucun effet visible.
 - **Ce n'est pas le « nettoyage » que la page propose** (`migrated-upgrading.md` du type) : il réécrit le README
-  en livre de marque et marque le système comme mis à niveau. Il n'a pas été demandé ; les fichiers portés à la
-  migration (`docs/`, `components/src/`, le rapport) restent, périmés, jusqu'à la décision de la personne qui
-  pilote.
+  en livre de marque et marque le système comme mis à niveau, et il n'a pas été demandé. Les restes de la
+  migration, eux, sont partis le soir même avec l'accord de la personne qui pilote : `color-pagination-inactive`,
+  `radius-mode-item` et les treize styles en `-line` (des interlignes pris pour des tailles), la copie du bundle et
+  du runtime de l'époque (`docs/`), les 28 fichiers d'appoint de `components/src/`. Le rapport de migration reste
+  dans `assets/notes/`.
 
 ## Risques de resynchronisation
 
