@@ -67,6 +67,10 @@ h2 { font-size: 22px; line-height: 28px; letter-spacing: -0.22px; font-weight: 6
 .format label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
 .icone-bouton { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 24px; border: 1px solid var(--filet); background: var(--surface); color: var(--encre); cursor: pointer; }
 .icone-bouton svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.son { display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px 0 12px; border-radius: 24px; border: 1px solid var(--filet); background: var(--surface); color: var(--encre); font: 500 14px/20px var(--police); cursor: pointer; }
+.son svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.son[aria-pressed="false"] { color: var(--encre-3); }
+.son:disabled { cursor: default; color: var(--encre-3); }
 button:focus-visible, input[type="range"]:focus-visible, .chap:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .chapitres { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -101,16 +105,23 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
   --f-teinte-2: #F3F8F4; --f-element: #F0F1EC; --f-filet: #DDE0D9; --f-champ: #858C86;
   --f-appui: #E4E6DF; --f-appui-choisi: #D6E7DC; --f-accent-appui: #14563A;
   position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--f-fond); color: var(--f-encre);
-  container-type: size; overflow: hidden; border-radius: 16px; font-family: var(--police);
+  overflow: hidden; border-radius: 16px; font-family: var(--police);
   -webkit-font-smoothing: antialiased; cursor: pointer; user-select: none; -webkit-user-select: none;
   box-shadow: 0 0 0 1px var(--filet);
+  contain: layout paint;
 }
 .scene.portrait { aspect-ratio: 9 / 16; width: min(100%, calc(78vh * 9 / 16)); }
+/* Le film se compose à taille fixe — 1600 × 900 px, ou 900 × 1600 — puis se met à l'échelle d'un
+   seul bloc. À une taille de lecteur, la mise en page est donc exactement celle de l'export : sans
+   cela, la taille minimale des polices du navigateur grossissait les petits textes du téléphone,
+   qui débordaient de leurs boîtes en 16:9. */
+.plateau { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; container-type: size; }
+.portrait .plateau { width: 900px; height: 1600px; }
 .scene *, .scene *::before, .scene *::after { box-sizing: border-box; }
 .scene p { margin: 0; }
 .fil-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.x { position: absolute; will-change: transform, opacity; }
-.mot { display: inline-block; will-change: transform, opacity; }
+.x { position: absolute; }
+.mot { display: inline-block; }
 
 /* Textes de scène */
 .k { font-weight: 600; font-size: 6.2cqmin; line-height: 1.08; letter-spacing: -0.02em; text-wrap: balance; }
@@ -131,9 +142,9 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .paysage #s2-legende { left: 35%; top: 71.5%; width: 55%; }
 .paysage #s2-source { left: 10%; top: 88%; width: 80%; }
 .paysage #s3-texte { left: 51%; top: 30%; width: 44%; }
-.paysage .bloc-tel { left: 47%; top: 30%; width: 46%; }
-.paysage #tel { left: 12%; top: 6%; height: 88%; width: auto; aspect-ratio: 9 / 18; }
-.paysage #legende-tel { left: 9.4%; top: 95.1%; width: 30%; text-align: center; }
+.paysage .bloc-tel { left: 48%; top: 30%; width: 45%; }
+.paysage #tel { left: 9%; top: 7%; width: 32cqw; height: 64cqw; }
+.paysage #legende-tel { left: 48%; top: 88%; width: 45%; }
 .paysage #s7-texte { left: 47.5%; top: 18%; width: 46%; }
 .paysage #s8-texte { left: 51%; top: 24%; width: 44%; }
 
@@ -147,7 +158,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .portrait #s2-source { left: 7.8%; top: 89%; width: 84%; }
 .portrait #s3-texte { left: 7.8%; top: 50%; width: 84%; text-align: center; }
 .portrait .bloc-tel { left: 7.8%; top: 5%; width: 84%; }
-.portrait #tel { left: 21%; top: 25.5%; width: 58%; height: auto; aspect-ratio: 9 / 18; }
+.portrait #tel { left: 21%; top: 25.5%; width: 58cqw; height: 116cqw; }
 .portrait #legende-tel { left: 21%; top: 92.6%; width: 58%; text-align: center; }
 .portrait #s7-texte { left: 7.8%; top: 7%; width: 84%; text-align: center; }
 .portrait #s8-texte { left: 7.8%; top: 46%; width: 84%; text-align: center; }
@@ -174,7 +185,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .mascotte-scene svg, .slot svg, .slot-calcul svg, .slot-rep svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
 /* Saisons */
-.saison-etiq { font-weight: 600; font-size: 3cqmin; color: var(--f-encre-2); white-space: nowrap; }
+.saison-etiq { font-weight: 600; font-size: 3cqmin; line-height: 1.2; color: var(--f-encre-2); white-space: nowrap; }
 .portrait .saison-etiq { font-size: 3.7cqmin; }
 
 /* Le manifeste : le seul aplat vert du film. */
@@ -206,7 +217,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .portrait .affiche-bouton svg { width: 3.4cqmin; height: 3.4cqmin; }
 
 /* ---------- Le téléphone (en dp) ---------- */
-#tel { position: absolute; background: #131612; padding: 1cqmin; border-radius: 5.2cqmin; box-shadow: 0 2.4cqmin 6cqmin rgba(19, 22, 18, 0.12); }
+#tel { position: absolute; will-change: transform, opacity; background: #131612; padding: 1cqmin; border-radius: 5.2cqmin; box-shadow: 0 2.4cqmin 6cqmin rgba(19, 22, 18, 0.12); }
 .portrait #tel { padding: 1.4cqmin; border-radius: 7.2cqmin; }
 .tel-ecran { position: relative; width: 100%; height: 100%; background: #FFFFFF; border-radius: 4.3cqmin; overflow: hidden; container-type: size; }
 .portrait .tel-ecran { border-radius: 5.9cqmin; }
@@ -236,10 +247,11 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .bouton.appui { background: var(--f-accent-appui) !important; }
 .bouton-2 { background: #FFFFFF; color: #131612; box-shadow: inset 0 0 0 calc(var(--dp) * 1) var(--f-filet); }
 .bouton-2.appui { background: var(--f-appui) !important; }
-.ecr-calcul { display: grid; place-content: center; justify-items: center; gap: calc(var(--dp) * 20); }
+.ecr-calcul { display: grid; align-content: start; justify-content: center; justify-items: center; gap: calc(var(--dp) * 20); padding-top: calc(var(--dp) * 200); }
 .slot-calcul { width: calc(var(--dp) * 72); height: calc(var(--dp) * 72); }
 .ecr-calcul p { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 24); color: #131612; }
-.ecr-bilan { padding: calc(var(--dp) * 20) calc(var(--dp) * 24); display: grid; align-content: start; gap: calc(var(--dp) * 22); }
+.ecr-bilan { overflow: hidden; }
+.defile { padding: calc(var(--dp) * 20) calc(var(--dp) * 24); display: grid; align-content: start; gap: calc(var(--dp) * 22); }
 .b-titre { font-weight: 600; font-size: calc(var(--dp) * 26); line-height: calc(var(--dp) * 32); letter-spacing: calc(var(--dp) * -0.26); }
 .b-sous { font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); margin-top: calc(var(--dp) * 10) !important; }
 .b-total { font-weight: 600; font-size: calc(var(--dp) * 30); line-height: calc(var(--dp) * 36); letter-spacing: calc(var(--dp) * -0.6); margin-top: calc(var(--dp) * 2) !important; }
@@ -253,7 +265,8 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .b-source { font-family: var(--police-mono); font-size: calc(var(--dp) * 11); line-height: calc(var(--dp) * 16); color: var(--f-encre-3); }
 .bande { height: calc(var(--dp) * 52); display: grid; place-items: center; position: relative; border-bottom: 1px solid var(--f-filet); font-weight: 600; font-size: calc(var(--dp) * 17); }
 .bande svg { position: absolute; right: calc(var(--dp) * 14); top: calc(var(--dp) * 15); width: calc(var(--dp) * 22); height: calc(var(--dp) * 22); fill: none; stroke: #131612; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.plan-corps { padding: calc(var(--dp) * 18) calc(var(--dp) * 20); display: grid; gap: calc(var(--dp) * 12); }
+.plan-corps { padding: calc(var(--dp) * 18) calc(var(--dp) * 20); display: grid; gap: calc(var(--dp) * 12); position: relative; }
+.bande { z-index: 1; background: #FFFFFF; }
 .p-titre { font-weight: 600; font-size: calc(var(--dp) * 26); line-height: calc(var(--dp) * 32); letter-spacing: calc(var(--dp) * -0.26); margin-bottom: calc(var(--dp) * 2) !important; }
 .carte { border: 1px solid var(--f-filet); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 14) calc(var(--dp) * 16); display: grid; gap: calc(var(--dp) * 6); background: #FFFFFF; }
 .carte.engagee { border: calc(var(--dp) * 2) solid var(--f-accent); background: var(--f-teinte-2); padding: calc(var(--dp) * 13) calc(var(--dp) * 15); }
@@ -310,12 +323,14 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   <header class="tete">
     <p class="surtitre">Proposition de motion design · 3 octobre 2026</p>
     <h1>Le fil de Ramille</h1>
-    <p class="chapeau">Un film de cinquante et une secondes pour faire comprendre Ramille et donner envie de faire son bilan. Un seul trait le traverse&nbsp;: il trace un trajet, devient la nervure de la feuille, puis mène jusqu’au bouton de la fin.</p>
+    <p class="chapeau">Un film d’une minute vingt pour faire comprendre Ramille et donner envie de faire son bilan. Un seul trait le traverse&nbsp;: il trace un trajet, devient la nervure de la feuille, puis mène jusqu’au bouton de la fin. La musique est composée pour lui, calée sur ses coupes.</p>
   </header>
 
   <section class="salle" aria-label="Le film">
+    <audio id="musique" src="musique.mp3" preload="auto"></audio>
     <div class="cadre" id="cadre">
       <div class="scene paysage" id="scene" role="img" aria-label="Le film de présentation de Ramille. Son texte complet et la description de chaque plan sont dans le scénario, plus bas sur la page.">
+        <div class="plateau" id="plateau">
         <svg class="fil-svg" id="fil-svg" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
           <g id="feuille-g">
             <path id="feuille-pleine" d="M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z" fill="#1F6F4A" opacity="0"/>
@@ -375,7 +390,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 
             <div class="ecr ecr-calcul" id="e-calcul"><div class="slot-calcul" id="slot-calcul"></div><p>Je calcule ton bilan…</p></div>
 
-            <div class="ecr ecr-bilan" id="e-bilan">
+            <div class="ecr ecr-bilan" id="e-bilan"><div class="defile" id="bilan-defile">
               <div class="bb" id="bb1"><p class="b-titre">Ton bilan transport</p><p class="b-sous">Estimation annuelle, tous déplacements</p><p class="b-total">1,9&nbsp;t&nbsp;CO₂e</p></div>
               <div class="bb" id="bb2"><p class="b-label">Répartition par poste</p>
                 <div class="b-lignes">
@@ -391,7 +406,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                   <div class="b-ligne"><span>Repère transport 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i style="width:18%"></i></div></div>
                 </div>
                 <p class="b-source" style="margin-top:calc(var(--dp) * 12)">SDES, données 2017 · cible 2050&nbsp;: ADEME</p></div>
-            </div>
+            </div></div>
 
             <div class="ecr" id="e-plan">
               <div class="bande">Ramille<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6"/></svg></div>
@@ -470,19 +485,21 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
           <p class="note-8 x-int" id="s8-note">Pas de compte à créer pour commencer.</p>
         </div>
 
-        <div class="affiche" id="affiche"><span class="affiche-bouton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="affiche-libelle">Lire le film · 0:51</span></span></div>
+        <div class="affiche" id="affiche"><span class="affiche-bouton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="affiche-libelle">Lire le film · 1:21</span></span></div>
+        </div>
       </div>
     </div>
 
     <div class="commandes">
       <button class="lecture" id="lecture" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" id="lecture-ico"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="lecture-libelle">Lire</span></button>
-      <span class="temps" id="temps" aria-live="off">0:00 / 0:51</span>
-      <div class="frise"><input type="range" id="frise" min="0" max="510" step="1" value="0" aria-label="Position dans le film"></div>
+      <span class="temps" id="temps" aria-live="off">0:00 / 1:21</span>
+      <div class="frise"><input type="range" id="frise" min="0" max="816" step="1" value="0" aria-label="Position dans le film"></div>
       <fieldset class="format">
         <legend>Format</legend>
         <label><input type="radio" name="format" id="f-paysage" value="paysage" checked><span>16:9</span></label>
         <label><input type="radio" name="format" id="f-portrait" value="portrait"><span>9:16</span></label>
       </fieldset>
+      <button class="son" id="son" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true" id="son-ico"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/></svg><span id="son-libelle">Son activé</span></button>
       <button class="icone-bouton" id="plein" type="button" aria-label="Plein écran"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     </div>
     <ol class="chapitres" id="chapitres"></ol>
@@ -499,48 +516,93 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       <li><strong>Ramille ne dit que ses propres répliques</strong>, recopiées mot pour mot de l’app&nbsp;: jamais un nombre dans sa bouche, et jamais près d’un chiffre lourd.</li>
       <li><strong>Les chiffres se posent, ils ne défilent jamais</strong>&nbsp;: un compteur montrerait de fausses valeurs en chemin. Les barres arrivent à leur longueur juste.</li>
       <li><strong>Les chiffres de référence sont sourcés à l’écran</strong>&nbsp;: la moyenne française et sa répartition (SDES, 2017), et le repère transport 2050, dérivé de la cible de l’ADEME. Le bilan, le palier et les gains du plan sont un profil d’exemple, et l’image le dit.</li>
-      <li><strong>Le mouvement de l’app</strong>&nbsp;: la sortie douce pour ce qui entre et ce qui sort, une sortie plus rapide qu’une entrée, les mots d’un titre en moins de 300&nbsp;ms. Le dépassement est réservé à l’arrivée de Ramille, qui reprend l’écran de lancement&nbsp;; ailleurs, ce qui apparaît le fait en fondu.</li>
+      <li><strong>Le mouvement de l’app, à un rythme de film</strong>&nbsp;: la sortie douce pour ce qui entre et ce qui sort, une sortie plus rapide qu’une entrée, rien qui rebondisse ni ne pulse. Tout s’enchaîne en fondu, et chaque texte reste posé au moins deux secondes et demie.</li>
+      <li><strong>La musique est originale</strong>, composée par un script du dépôt et calée sur l’image&nbsp;: une cloche à chaque station du trajet, le rythme qui entre avec le visage de Ramille, une respiration sous le manifeste, une cloche par saison, un accent quand le bouton apparaît.</li>
       <li><strong>Aucun jugement, aucune célébration</strong>&nbsp;: pas de confetti, pas de score, pas de comparaison entre utilisateurs. «&nbsp;Oui&nbsp;» et «&nbsp;Non&nbsp;» ont le même bouton, et un «&nbsp;Non&nbsp;» reçoit la même place qu’un «&nbsp;Oui&nbsp;».</li>
-      <li><strong>Sous «&nbsp;réduire les animations&nbsp;»</strong>, rien ne se lance seul&nbsp;: chaque chapitre s’affiche posé, et le film ne joue que sur demande.</li>
+      <li><strong>Sous «&nbsp;réduire les animations&nbsp;»</strong>, rien ne se lance seul&nbsp;: chaque chapitre s’affiche posé, et le film ne joue que sur demande. Le son ne part jamais sans la lecture, et se coupe d’un bouton.</li>
     </ul>
   </section>
 </div>
 
+<!-- Les points de synchronisation du film : la musique (`musique.py`) les lit ici, le film aussi.
+     Une seule source, donc un seul endroit à retoucher pour décaler une coupe et sa note. -->
+<script type="application/json" id="temps-du-film">
+{
+  "duree": 81.6,
+  "tempo": 100,
+  "arrets": [0.4, 2.4, 4.2, 6.0],
+  "barres": 10.1,
+  "logo": 21.6,
+  "visage": 24.0,
+  "notification": 50.6,
+  "reponses": [44.8, 53.65, 56.15],
+  "manifeste": { "entree": 57.4, "lignes": [58.2, 59.4, 60.6, 61.8], "sortie": 64.2 },
+  "saisons": [66.0, 67.2, 68.4, 69.6],
+  "bouton": 74.4
+}
+</script>
 <script>
 (() => {
   'use strict';
 
-  // ---------------------------------------------------------------- Temps et courbes
-  const DUREE = 51;
+  const $ = (id) => document.getElementById(id);
+  const SYNC = JSON.parse($('temps-du-film').textContent);
+  const DUREE = SYNC.duree;
+
+  // ---------------------------------------------------------------- Le minutage
+  // Tout le film tient dans cette table. Une mesure dure 2,4 s (100 battements par minute) : les
+  // coupes qui comptent tombent sur un temps, et la musique les lit dans le bloc JSON ci-dessus.
+  // Chaque texte reste au moins deux secondes et demie posé après son entrée.
+  const T = {
+    titre1: [0.9, 5.5], titre2: [6.0, 9.0], arretsSortie: 9.0,
+    versBarre: [8.9, 10.4], s2titre: [10.3, 15.3], chiffre: [11.2, 15.3], transport: [11.0, 15.3],
+    legende: [11.7, 15.3], source: [12.0, 18.4], autresSortie: 15.3, s2titre2: [15.8, 18.4], transportSortie: 18.3,
+    versVeine: [18.5, 20.1], contour: [19.9, 21.3], remplissage: [SYNC.logo - 0.4, SYNC.logo + 0.2],
+    pointLogo: [21.4, 21.8], nom3: 22.0, retrait: [23.0, 23.8], visage: [SYNC.visage - 0.25, SYNC.visage + 0.15],
+    sourire: [25.1, 25.5], dit3: 24.5, titre3: 25.5, sortie3: 28.3,
+    tel: [28.5, 29.6], vol: [28.5, 29.8], t4a: [29.1, 35.3], questions: [30.0, 31.3, 32.6, 33.9],
+    calcul: [35.1, 36.5], bilan: [36.5, 40.4], defile: [38.6, 39.8], t4b: [36.7, 40.4],
+    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.65, 43.15], engagee: SYNC.reponses[0], repli: [44.8, 45.2],
+    enTete: [45.35, 46.0], t5b: [46.1, 50.1],
+    notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [52.0, 52.4], point: [52.2, 52.8],
+    question1: [52.4, SYNC.reponses[1]], semaineSuivante: 55.0, question2: [55.1, SYNC.reponses[2]],
+    t6a: [50.7, 54.3], t6b: [54.8, 57.5], telSortie: [57.9, 58.3],
+    manif: [SYNC.manifeste.entree, SYNC.manifeste.sortie], manifTexteSortie: 63.8,
+    retour: 64.8, s7titre: [65.1, 71.5], s7dit: 66.0, vague: [65.1, 70.5], saisonsSortie: 71.4,
+    versBouton: [72.0, 73.2], queue: [72.3, 73.6], pointArrivee: [73.2, 73.5], bouton: [SYNC.bouton, SYNC.bouton + 0.6],
+    pose8: [71.9, 72.9], sansSaison: [72.2, 72.6], heureuse: [72.6, 72.9], nom8: 72.4, titre8: 72.8, url: 75.1, note8: 75.5,
+  };
+
   // Le scénario rendu sous le film, qui en est aussi la version texte. Les insécables s'écrivent
   // ici à la main : ce texte n'est pas rendu par `ThemedText`, qui les pose dans l'app.
   const CHAPITRES = [
-    { titre: 'Tes trajets', debut: 0, pose: 3.9,
-      image: 'Un point, puis un trait qui se dessine comme un itinéraire, et s’arrête à trois stations.',
-      texte: 'Chaque jour, tu te déplaces. · Chez toi, au travail, le week-end, en vacances. · Lequel pèse le plus\u00a0?' },
-    { titre: 'Ce qu’ils pèsent', debut: 6, pose: 9.2,
-      image: 'Le trait se tend et devient l’empreinte moyenne en France, en cinq postes\u00a0; le transport, en vert, est le plus long.',
-      texte: 'En France, le transport est le premier poste de l’empreinte carbone\u00a0: 2,8\u00a0t\u00a0CO₂e par personne et par an (SDES, 2017). · Et les tiens, ils pèsent combien\u00a0?' },
-    { titre: 'Ramille', debut: 12, pose: 17.6,
-      image: 'Le segment vert se replie en nervure, la feuille se dessine autour et se remplit\u00a0: c’est le logo. Puis la nervure raccourcit et le visage apparaît, avec l’à-coup de l’écran de lancement.',
-      texte: 'Ramille\u00a0: «\u00a0Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme.\u00a0» · Comprendre tes trajets, sans te juger.' },
-    { titre: 'Ton bilan', debut: 18.5, pose: 25.6,
+    { titre: 'Tes trajets', debut: 0, pose: 7.6,
+      image: 'Un point, puis un trait qui se dessine comme un itinéraire et marque l’arrêt à chaque station, sur une note.',
+      texte: 'Chaque jour, tu te déplaces. · Chez toi, au travail, le week-end, en vacances. · Lequel pèse le plus ?' },
+    { titre: 'Ce qu’ils pèsent', debut: 8.9, pose: 13.6,
+      image: 'Le trait se tend et devient l’empreinte moyenne en France, en cinq postes ; le transport, en vert, est le plus long.',
+      texte: 'En France, le transport est le premier poste de l’empreinte carbone : 2,8 t CO₂e par personne et par an (SDES, 2017). · Et les tiens, ils pèsent combien ?' },
+    { titre: 'Ramille', debut: 18.5, pose: 27.6,
+      image: 'Le segment vert se replie en nervure, la feuille se dessine autour et se remplit : c’est le logo. Puis la nervure raccourcit et le visage apparaît, au moment où le rythme entre.',
+      texte: 'Ramille : « Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme. » · Comprendre tes trajets, sans te juger.' },
+    { titre: 'Ton bilan', debut: 28.5, pose: 39.9,
       image: 'Ramille descend se loger dans l’en-tête du questionnaire. Quatre des neuf étapes, le calcul, puis la restitution d’un profil d’exemple.',
-      texte: 'Ton bilan, en 5\u00a0minutes environ. · Tu vois quel déplacement pèse le plus, et où tu te situes entre la moyenne française et le repère\u00a02050.' },
-    { titre: 'Ton plan', debut: 26.5, pose: 31.6,
-      image: 'Deux pistes en tête, les autres derrière un lien. On choisit la deuxième, deux jours, «\u00a0C’est noté\u00a0»\u00a0: elle devient l’engagement et passe en tête.',
+      texte: 'Ton bilan, en 5 minutes environ. · Tu vois quel déplacement pèse le plus, et où tu te situes entre la moyenne française et le repère 2050.' },
+    { titre: 'Ton plan', debut: 40.4, pose: 48.0,
+      image: 'Deux pistes en tête, les autres derrière un lien. On choisit la deuxième, deux jours, « C’est noté » : elle devient l’engagement et passe en tête.',
       texte: 'Puis une action, à ton rythme. Ton plan ne propose que ce qui tient avec tes réponses. · Tu choisis tes jours. Ramille te fait signe lundi.' },
-    { titre: 'Le point', debut: 33, pose: 35.9,
-      image: 'La notification du lundi, puis le point de la semaine. Un «\u00a0Oui\u00a0», puis la semaine suivante un «\u00a0Non\u00a0», chacun avec sa réplique. Un aplat vert pour finir.',
-      texte: 'Un point, de temps en temps. Une seule question, sur ton action. · Oui, non, ou pas de trajet\u00a0: aucune réponse n’est un échec. · Pas de score. Pas de série. Aucun classement. Tes réponses restent privées.' },
-    { titre: 'Au fil des saisons', debut: 40, pose: 44.7,
-      image: 'Le trait revient et traverse l’année. Ramille porte chaque saison\u00a0: les joues chaudes de l’automne, le bonnet, le bourgeon, la goutte de rosée.',
-      texte: 'Saison après saison, tu vois ce qui a changé. · Ramille\u00a0: «\u00a0Je note tes réponses dans ton suivi, au fil des saisons.\u00a0»' },
-    { titre: 'À toi', debut: 45.5, pose: 50.5,
-      image: 'Le trait quitte la frise et finit en un point d’arrivée\u00a0; le point s’étire et devient le bouton.',
+    { titre: 'Le point', debut: 50.4, pose: 54.1,
+      image: 'La notification du lundi, puis le point de la semaine. Un « Oui », puis la semaine suivante un « Non », chacun avec sa réplique. Puis un aplat vert, ligne après ligne, sur une respiration de la musique.',
+      texte: 'Un point, de temps en temps. Une seule question, sur ton action. · Oui, non, ou pas de trajet : aucune réponse n’est un échec. · Pas de score. Pas de série. Aucun classement. Tes réponses restent privées.' },
+    { titre: 'Au fil des saisons', debut: 64.6, pose: 70.9,
+      image: 'Le trait revient et traverse l’année, en marquant chaque saison d’une cloche. Ramille porte chacune : les joues chaudes de l’automne, le bonnet, le bourgeon, la goutte de rosée.',
+      texte: 'Saison après saison, tu vois ce qui a changé. · Ramille : « Je note tes réponses dans ton suivi, au fil des saisons. »' },
+    { titre: 'À toi', debut: 71.9, pose: 78.0,
+      image: 'Le trait quitte la frise et finit en un point d’arrivée ; le point s’étire et devient le bouton, sur l’accord qui conclut.',
       texte: 'Comprendre tes trajets, sans te juger. · Découvrir mon impact · ramille.fr · Pas de compte à créer pour commencer.' },
   ];
 
+  // ---------------------------------------------------------------- Courbes
   function bezier(x1, y1, x2, y2) {
     const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
     const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
@@ -559,33 +621,56 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       return sy(t);
     };
   }
-  // La « sortie douce » de l'app (Mouvement.courbe), partout.
+  // La « sortie douce » de l'app (Mouvement.courbe) pour tout ce qui entre et sort.
   const DOUCE = bezier(0.22, 1, 0.36, 1);
   const E = {
     lin: (x) => x,
-    douce: DOUCE,
-    outCubic: (x) => 1 - Math.pow(1 - x, 3),
     inOutCubic: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
     inOutSine: (x) => -(Math.cos(Math.PI * x) - 1) / 2,
-    outQuad: (x) => 1 - (1 - x) * (1 - x),
-    inOutQuad: (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2),
   };
   const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
   const lerp = (a, b, k) => a + (b - a) * k;
   const p = (t, a, b, ease = DOUCE) => (b <= a ? (t >= a ? 1 : 0) : ease(clamp((t - a) / (b - a))));
-  // Inverse de inOutSine : le moment où le tracé atteint une fraction donnée.
-  const invSine = (y) => Math.acos(1 - 2 * clamp(y)) / Math.PI;
-
-  // L'à-coup de l'écran de lancement : 1,07 en 110 ms, 0,975 en 130, 1 en 190.
-  function acoup(t, t0) {
-    const d = t - t0;
-    if (d <= 0 || d >= 0.43) return 1;
-    if (d < 0.11) return lerp(1, 1.07, E.outQuad(d / 0.11));
-    if (d < 0.24) return lerp(1.07, 0.975, E.inOutQuad((d - 0.11) / 0.13));
-    return lerp(0.975, 1, E.outQuad((d - 0.24) / 0.19));
-  }
-  // Le souffle : 1,035 en 1400 ms, sinus, aller-retour.
+  // Le souffle de la mascotte : 1,035 en 1400 ms, sinus, aller-retour.
   const souffle = (t, t0) => (t <= t0 ? 0 : (1 - Math.cos((2 * Math.PI * (t - t0)) / 2.8)) / 2);
+  // Un tracé qui marque l'arrêt à chaque nœud : vitesse nulle sur la station, puis il repart.
+  function parNoeuds(t, temps, fractions) {
+    if (t <= temps[0]) return fractions[0];
+    for (let i = 0; i < temps.length - 1; i++) {
+      if (t <= temps[i + 1]) return lerp(fractions[i], fractions[i + 1], E.inOutSine((t - temps[i]) / (temps[i + 1] - temps[i])));
+    }
+    return fractions[fractions.length - 1];
+  }
+  const fx = (v) => String(Math.round(v * 10000) / 10000);
+
+  // ---------------------------------------------------------------- Écritures sans redite
+  // Une valeur déjà posée ne se réécrit pas : la plupart des éléments ne bougent pas à une image
+  // donnée, et chaque écriture invalide le style. C'est ce qui tient la lecture à 60 images.
+  const DEJA = new WeakMap();
+  function S(el, prop, val) {
+    let c = DEJA.get(el);
+    if (!c) { c = {}; DEJA.set(el, c); }
+    if (c[prop] === val) return;
+    c[prop] = val;
+    el.style[prop] = val;
+  }
+  function A(el, attr, val) {
+    let c = DEJA.get(el);
+    if (!c) { c = {}; DEJA.set(el, c); }
+    const cle = '@' + attr;
+    if (c[cle] === val) return;
+    c[cle] = val;
+    el.setAttribute(attr, val);
+  }
+  function C(el, classe, oui) {
+    let c = DEJA.get(el);
+    if (!c) { c = {}; DEJA.set(el, c); }
+    const cle = '.' + classe;
+    if (c[cle] === oui) return;
+    c[cle] = oui;
+    el.classList.toggle(classe, oui);
+  }
+  function texte(el, val) { if (el.textContent !== val) el.textContent = val; }
 
   // ---------------------------------------------------------------- La mascotte (géométrie de src/types/mascot.ts)
   const VISAGE = {
@@ -646,6 +731,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     if (parent) parent.appendChild(e);
     return e;
   }
+  // Chaque expression a ses traits (yeux, bouche) et ses joues, en deux tons : d'ordinaire et
+  // d'automne. Séparés, ils se fondent les uns dans les autres au lieu de basculer d'une image à
+  // l'autre — c'était l'un des à-coups de la première version.
   let nClip = 0;
   function creerMascotte(size, humeurs) {
     const svg = sv('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true', focusable: 'false' });
@@ -655,21 +743,24 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     sv('path', { d: FEUILLE, fill: '#1F6F4A' }, svg);
     sv('path', { d: 'M50,18 C46,26 46,32 50,38', stroke: '#E4EFE8', 'stroke-width': geometrie('calm', size, false).vein, 'stroke-linecap': 'round', fill: 'none', opacity: 0.55 }, svg);
     const visage = sv('g', { 'clip-path': `url(#${id})` }, svg);
-    const faces = {};
-    for (const h of humeurs) for (const automne of [false, true]) {
-      const g = geometrie(h, size, automne);
-      const grp = sv('g', {}, visage);
-      grp.style.display = 'none';
-      g.blush.forEach((b) => sv('circle', { cx: b.cx, cy: b.cy, r: b.r, fill: g.blushColor, opacity: g.blushOpacity }, grp));
+    const joues = {}, traits = {};
+    for (const h of humeurs) {
+      for (const automne of [false, true]) {
+        const g = geometrie(h, size, automne);
+        const grp = sv('g', { opacity: 0 }, visage);
+        g.blush.forEach((b) => sv('circle', { cx: b.cx, cy: b.cy, r: b.r, fill: g.blushColor, opacity: g.blushOpacity }, grp));
+        joues[h + (automne ? '-automne' : '')] = grp;
+      }
+      const g = geometrie(h, size, false);
+      const grp = sv('g', { opacity: 0 }, visage);
       if (g.eyes === 'dots') g.eyeCircles.forEach((e) => sv('circle', { cx: e.cx, cy: e.cy, r: e.r, fill: '#131612' }, grp));
       else g.eyeArcs.forEach((d) => sv('path', { d, stroke: '#131612', 'stroke-width': g.eyeStroke, 'stroke-linecap': 'round', fill: 'none' }, grp));
       sv('path', { d: g.mouth, stroke: '#131612', 'stroke-width': g.mouthStroke, 'stroke-linecap': 'round', fill: 'none' }, grp);
-      faces[h + (automne ? '-automne' : '')] = grp;
+      traits[h] = grp;
     }
     const acc = {};
     for (const s of ['hiver', 'printemps', 'ete']) {
-      const grp = sv('g', {}, svg);
-      grp.style.display = 'none';
+      const grp = sv('g', { opacity: 0 }, svg);
       for (const e of accessoires(s, size)) {
         if (e.forme === 'cercle') sv('circle', { cx: e.cx, cy: e.cy, r: e.r, fill: e.c }, grp);
         else if (e.forme === 'trait') sv('path', { d: e.d, stroke: e.c, 'stroke-width': e.w, 'stroke-linecap': 'round', fill: 'none' }, grp);
@@ -677,18 +768,19 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       }
       acc[s] = grp;
     }
-    svg._faces = faces; svg._acc = acc; svg._visage = visage; svg._etat = '';
+    svg._joues = joues; svg._traits = traits; svg._acc = acc; svg._visage = visage;
     return svg;
   }
-  function regler(svg, humeur, saison, visage = 1) {
-    const cle = `${humeur}|${saison}`;
-    if (svg._etat !== cle) {
-      svg._etat = cle;
-      const face = humeur + (saison === 'automne' ? '-automne' : '');
-      for (const k in svg._faces) svg._faces[k].style.display = k === face ? '' : 'none';
-      for (const k in svg._acc) svg._acc[k].style.display = k === saison ? '' : 'none';
+  // `humeurs` : un poids par expression (leur somme fait 1) ; `automne` et `saisons` : des poids aussi.
+  function dessiner(svg, { humeurs, automne = 0, saisons = {}, visage = 1 }) {
+    for (const h in svg._traits) {
+      const w = humeurs[h] || 0;
+      A(svg._traits[h], 'opacity', fx(w));
+      A(svg._joues[h], 'opacity', fx(w * (1 - automne)));
+      A(svg._joues[h + '-automne'], 'opacity', fx(w * automne));
     }
-    svg._visage.style.opacity = visage;
+    for (const s in svg._acc) A(svg._acc[s], 'opacity', fx(saisons[s] || 0));
+    A(svg._visage, 'opacity', fx(visage));
   }
 
   // ---------------------------------------------------------------- Formes du fil
@@ -740,7 +832,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const e = pt(b);
     return d + `L${e[0].toFixed(1)},${e[1].toFixed(1)}`;
   }
-  const melange = (A, B, k) => (k <= 0 ? A : k >= 1 ? B : A.map((a, i) => [lerp(a[0], B[i][0], k), lerp(a[1], B[i][1], k)]));
+  const melange = (A0, B0, k) => (k <= 0 ? A0 : k >= 1 ? B0 : A0.map((a, i) => [lerp(a[0], B0[i][0], k), lerp(a[1], B0[i][1], k)]));
   function couleur(a, b, k) {
     const h = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
     const x = h(a), y = h(b);
@@ -781,11 +873,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   const VEINE_MASCOTTE = [[50, 18], [46, 26], [46, 32], [50, 38]];
 
   // ---------------------------------------------------------------- Le DOM
-  const $ = (id) => document.getElementById(id);
-  const scene = $('scene'), svgFil = $('fil-svg'), fil = $('fil');
-  let fmt = 'paysage', G = FORMATS.paysage, F = {};
+  const scene = $('scene'), plateau = $('plateau'), svgFil = $('fil-svg'), fil = $('fil');
+  let fmt = 'paysage', G = FORMATS.paysage, F = {}, M = {};
 
-  // Découpe en mots des titres animés.
   document.querySelectorAll('[data-mots]').forEach((el) => {
     const mots = el.innerHTML.split(' ');
     el.innerHTML = mots.map((m) => `<span class="mot">${m}</span>`).join(' ');
@@ -794,7 +884,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 
   const mScene = creerMascotte(100, ['calm', 'happy']);
   $('m-scene').appendChild(mScene);
-  const mEntete = creerMascotte(28, ['calm', 'happy']);
+  const mEntete = creerMascotte(28, ['calm']);
   $('slot-entete').appendChild(mEntete);
   const mCalcul = creerMascotte(72, ['thinking']);
   $('slot-calcul').appendChild(mCalcul);
@@ -804,11 +894,13 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   $('slot-rep2').appendChild(mRep2);
   const mIco = creerMascotte(38, ['calm']);
   $('notif-ico').appendChild(mIco);
-  regler(mEntete, 'calm', null); regler(mCalcul, 'thinking', null); regler(mRep1, 'happy', null);
-  regler(mRep2, 'encouraging', null); regler(mIco, 'calm', null);
+  dessiner(mEntete, { humeurs: { calm: 1 } });
+  dessiner(mCalcul, { humeurs: { thinking: 1 } });
+  dessiner(mRep1, { humeurs: { happy: 1 } });
+  dessiner(mRep2, { humeurs: { encouraging: 1 } });
+  dessiner(mIco, { humeurs: { calm: 1 } });
 
-  // Barres de la scène 2, arrêts de la scène 1, points des saisons.
-  const barres = POSTES_FR.map((poste, i) => sv('rect', { fill: i === 0 ? '#1F6F4A' : '#DDE0D9', rx: 3 }, $('barres')));
+  const barres = POSTES_FR.map((_, i) => sv('rect', { fill: i === 0 ? '#1F6F4A' : '#DDE0D9', rx: 3 }, $('barres')));
   const arrets = ETIQ_ARRETS.map((_, i) => sv('circle', { r: 0, fill: i === 0 ? '#1F6F4A' : '#FFFFFF', stroke: '#1F6F4A' }, $('arrets')));
   const arretsEtiq = ETIQ_ARRETS.map((txt) => {
     const d = document.createElement('div');
@@ -840,12 +932,13 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     scene.classList.toggle('portrait', fmt === 'portrait');
     scene.classList.toggle('paysage', fmt === 'paysage');
     svgFil.setAttribute('viewBox', `0 0 ${G.W} ${G.H}`);
+    M = {};
+    ajuster();
 
     const dense = catmull(G.route);
     F.route = reech(dense);
     const l = longueurs(dense), L = l[l.length - 1];
     F.arretsF = G.arrets.map((i) => l[Math.min(i * 28, l.length - 1)] / L);
-    F.arretsT = F.arretsF.map((f, i) => (i === 0 ? 0.05 : 0.2 + 3.2 * invSine(f)));
     F.arretsXY = F.arretsF.map((f) => F.route[Math.round(f * (N - 1))]);
 
     const b = G.barre;
@@ -859,11 +952,11 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     F.veineMascotte = reech(cubique(...VEINE_MASCOTTE.map((q) => enFeuille(G.f3, q))));
     F.vague = reech(catmull(G.vague));
     F.saisonsXY = G.saisonsF.map((f) => F.vague[Math.round(f * (N - 1))]);
-    F.saisonsT = G.saisonsF.map((f) => 40.4 + 3.9 * invSine(f));
     F.longueurFeuille = $('feuille-trace').getTotalLength();
 
-    $('feuille-g').setAttribute('transform', `translate(${G.f3.cx - 50 * G.f3.s} ${G.f3.cy - 50 * G.f3.s}) scale(${G.f3.s})`);
-    $('feuille-point-g').setAttribute('transform', `translate(${G.f3.cx - 50 * G.f3.s} ${G.f3.cy - 50 * G.f3.s}) scale(${G.f3.s})`);
+    const transfo = `translate(${G.f3.cx - 50 * G.f3.s} ${G.f3.cy - 50 * G.f3.s}) scale(${G.f3.s})`;
+    $('feuille-g').setAttribute('transform', transfo);
+    $('feuille-point-g').setAttribute('transform', transfo);
     $('feuille-trace').setAttribute('stroke-dasharray', `${F.longueurFeuille} ${F.longueurFeuille}`);
 
     const ecartEtiq = fmt === 'portrait' ? 36 : 30;
@@ -874,348 +967,374 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     fil.setAttribute('stroke-width', G.fil);
   }
 
+  // ---------------------------------------------------------------- Mesures, prises une fois par taille
+  // La position d'un élément sans les transformations qui l'animent : la chaîne des `offset*`.
+  function posStatique(el, jusqua = plateau) {
+    let x = 0, y = 0, n = el;
+    while (n && n !== jusqua) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+    return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+  }
+  // Le plateau mesure G.W × G.H px : une unité du film vaut un pixel du plateau.
+  const unites = () => G.W / plateau.clientWidth;
+  function ajuster() {
+    S(plateau, 'transform', `scale(${fx(scene.clientWidth / G.W)})`);
+  }
+  function mesure(cle, calcul) {
+    if (!(cle in M)) M[cle] = calcul();
+    return M[cle];
+  }
+  const dpPx = () => mesure('dp', () => $('tel-ecran').clientWidth / 360);
+
   // ---------------------------------------------------------------- Aides de rendu
   function montrer(el, t, a, b, o = {}) {
-    const din = o.din ?? 0.45, dout = o.dout ?? 0.2, dy = o.dy ?? 1.2, dx = o.dx ?? 0, unite = o.unite ?? 'cqmin';
+    const din = o.din ?? 0.6, dout = o.dout ?? 0.45, dy = o.dy ?? 1.2, unite = o.unite ?? 'cqmin';
     const i = p(t, a, a + din), s = b == null ? 0 : p(t, b, b + dout);
     const op = i * (1 - s);
-    el.style.opacity = op;
-    el.style.visibility = op <= 0.001 ? 'hidden' : 'visible';
-    if (op > 0.001) el.style.transform = `${el._base || ''} translate(${(1 - i) * dx}${unite}, ${(1 - i) * dy - s * dy * 0.35}${unite})`;
+    S(el, 'opacity', fx(op));
+    S(el, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
+    if (op > 0.001) S(el, 'transform', `${el._base || ''} translate(0, ${fx((1 - i) * dy - s * dy * 0.4)}${unite})`);
     return op;
   }
-  // Un titre entre mot à mot ; l'enchaînement complet tient sous 300 ms.
+  // Un titre entre mot à mot, puis reste posé ; il sort d'un bloc.
   function titre(el, t, a, b) {
-    const mots = el._mots || el.querySelector('[data-mots]')?._mots;
-    const sortie = b == null ? 0 : p(t, b, b + 0.2);
-    const pas = Math.min(0.05, 0.3 / Math.max(1, mots.length));
+    const mots = el._mots;
+    const sortie = b == null ? 0 : p(t, b, b + 0.45);
+    const pas = Math.min(0.06, 0.4 / Math.max(1, mots.length));
     let visible = false;
     mots.forEach((m, i) => {
-      const e = p(t, a + i * pas, a + i * pas + 0.5);
+      const e = p(t, a + i * pas, a + i * pas + 0.7);
       const op = e * (1 - sortie);
       if (op > 0.001) visible = true;
-      m.style.opacity = op;
-      m.style.transform = `translateY(${(1 - e) * 0.32 - sortie * 0.1}em)`;
+      S(m, 'opacity', fx(op));
+      S(m, 'transform', `translateY(${fx((1 - e) * 0.3 - sortie * 0.12)}em)`);
     });
-    el.style.visibility = visible ? 'visible' : 'hidden';
-    return visible;
+    S(el, 'visibility', visible ? 'visible' : 'hidden');
   }
-  // Tout se recalcule à chaque image, même hors de la fenêtre du bloc : un saut dans la frise ne
-  // doit rien laisser d'affiché (un enfant en `visibility: visible` passe outre son parent masqué).
   function bloc(id, t, a, b) {
     const el = $(id), k = el.querySelector('.k'), sous = el.querySelector('.k-sous');
-    const vu = t >= a - 0.01 && (b == null || t < b + 0.25);
-    el.style.visibility = vu ? 'visible' : 'hidden';
-    el.style.opacity = vu ? 1 : 0;
+    const vu = t >= a - 0.01 && t < b + 0.5;
+    S(el, 'visibility', vu ? 'visible' : 'hidden');
     titre(k, t, a, b);
-    if (sous) montrer(sous, t, a + 0.25, b);
+    if (sous) montrer(sous, t, a + 0.35, b);
   }
-  const cacher = (el) => { el.style.opacity = 0; el.style.visibility = 'hidden'; };
-  function rectEnUnites(el) {
-    const s = scene.getBoundingClientRect(), r = el.getBoundingClientRect();
-    const kx = G.W / s.width, ky = G.H / s.height;
-    return { x: (r.left - s.left) * kx, y: (r.top - s.top) * ky, w: r.width * kx, h: r.height * ky };
-  }
+  function cacher(el) { S(el, 'opacity', '0'); S(el, 'visibility', 'hidden'); }
 
   // ---------------------------------------------------------------- Le fil
-  const rayonDuPoint = () => G.fil * 0.9;
   function cheminFinal() {
-    const r = rectEnUnites($('s8-cta'));
-    const bout = [r.x + rayonDuPoint(), r.y + r.h / 2];
-    const avant = [bout[0] + G.avant[0], bout[1] + G.avant[1]];
-    return { P: reech(catmull([...G.final, avant, bout])), bout, rayon: r.h / 2 };
+    return mesure('final', () => {
+      const r = posStatique($('s8-cta')), k = unites();
+      const bout = [r.x * k + G.fil * 0.9, (r.y + r.h / 2) * k];
+      const avant = [bout[0] + G.avant[0], bout[1] + G.avant[1]];
+      return { P: reech(catmull([...G.final, avant, bout])), bout };
+    });
   }
   function rendreFil(t) {
-    let A = null, B = null, k = 0, f0 = 0, f1 = 1, w = G.fil, col = '#1F6F4A', op = 1;
-    const s3 = G.f3.s;
-    const bout = $('fil-bout');
-    bout.setAttribute('r', 0);
-    if (t < 0.2) A = null;
-    else if (t < 5.6) { A = F.route; f1 = p(t, 0.2, 3.4, E.inOutSine); }
-    else if (t < 6.6) { A = F.route; B = F.barre; k = p(t, 5.6, 6.6, E.inOutCubic); }
-    else if (t < 11.2) { A = F.barre; }
-    else if (t < 12.4) { A = F.barre; B = F.veineLogo; k = p(t, 11.2, 12.4, E.inOutCubic); w = lerp(G.fil, 4.5 * s3, k); }
-    else if (t < 14.3) { A = F.veineLogo; w = 4.5 * s3; col = couleur('#1F6F4A', '#E4EFE8', p(t, 13.0, 13.35, E.lin)); }
-    else if (t < 14.8) { A = F.veineLogo; B = F.veineMascotte; k = p(t, 14.3, 14.8, E.inOutCubic); w = lerp(4.5 * s3, 4 * s3, k); col = '#E4EFE8'; op = lerp(1, 0.55, k); }
-    else if (t < 40.4) A = null;
-    else if (t < 45.4) { A = F.vague; f1 = p(t, 40.4, 44.3, E.inOutSine); }
-    else if (t < 47.3) {
+    let A0 = null, B0 = null, k = 0, f0 = 0, f1 = 1, w = G.fil, col = '#1F6F4A', op = 1;
+    const s3 = G.f3.s, bout = $('fil-bout');
+    let rBout = 0;
+    if (t < T.versBarre[0]) { A0 = F.route; f1 = parNoeuds(t, SYNC.arrets, F.arretsF); }
+    else if (t < T.versBarre[1]) { A0 = F.route; B0 = F.barre; k = p(t, ...T.versBarre, E.inOutCubic); }
+    else if (t < T.versVeine[0]) { A0 = F.barre; }
+    else if (t < T.versVeine[1]) { A0 = F.barre; B0 = F.veineLogo; k = p(t, ...T.versVeine, E.inOutCubic); w = lerp(G.fil, 4.5 * s3, k); }
+    else if (t < T.retrait[0]) { A0 = F.veineLogo; w = 4.5 * s3; col = couleur('#1F6F4A', '#E4EFE8', p(t, ...T.remplissage, E.lin)); }
+    else if (t < T.retrait[1]) { A0 = F.veineLogo; B0 = F.veineMascotte; k = p(t, ...T.retrait, E.inOutCubic); w = lerp(4.5 * s3, 4 * s3, k); col = '#E4EFE8'; op = lerp(1, 0.55, k); }
+    else if (t < T.vague[0]) { A0 = null; }
+    else if (t < T.versBouton[0]) { A0 = F.vague; f1 = parNoeuds(t, [T.vague[0], ...SYNC.saisons, T.vague[1]], [0, ...G.saisonsF, 1]); }
+    else {
       const fin = cheminFinal();
-      A = F.vague; B = fin.P; k = p(t, 45.4, 46.4, E.inOutCubic); f0 = p(t, 45.75, 46.75, E.inOutCubic);
+      if (t < T.queue[1]) { A0 = F.vague; B0 = fin.P; k = p(t, ...T.versBouton, E.inOutCubic); f0 = p(t, ...T.queue, E.inOutCubic); }
       // Le point d'arrivée : il apparaît quand le trait l'atteint, puis devient le bouton.
-      const r = rayonDuPoint() * p(t, 46.3, 46.55) * (1 - p(t, 46.95, 47.2, E.lin));
-      bout.setAttribute('cx', fin.bout[0]); bout.setAttribute('cy', fin.bout[1]); bout.setAttribute('r', r);
+      rBout = G.fil * 0.9 * p(t, ...T.pointArrivee) * (1 - p(t, T.bouton[1] - 0.1, T.bouton[1] + 0.2, E.lin));
+      A(bout, 'cx', fx(fin.bout[0])); A(bout, 'cy', fx(fin.bout[1]));
     }
-    if (!A) { fil.setAttribute('d', ''); return; }
-    fil.setAttribute('d', tracer(melange(A, B || A, k), f0, f1));
-    fil.setAttribute('stroke-width', w);
-    fil.setAttribute('stroke', col);
-    fil.setAttribute('opacity', op);
+    A(bout, 'r', fx(rBout));
+    if (!A0) { A(fil, 'd', ''); return; }
+    A(fil, 'd', tracer(melange(A0, B0 || A0, k), f0, f1));
+    A(fil, 'stroke-width', fx(w));
+    A(fil, 'stroke', col);
+    A(fil, 'opacity', fx(op));
   }
 
   // ---------------------------------------------------------------- Scènes 1 à 3
   function rendreS1(t) {
-    titre($('s1-t1').firstElementChild, t, 0.5, 3.95);
-    titre($('s1-t2').firstElementChild, t, 4.2, 5.5);
-    [$('s1-t1'), $('s1-t2')].forEach((el) => { el.style.visibility = 'visible'; });
+    titre($('s1-t1').firstElementChild, t, ...T.titre1);
+    titre($('s1-t2').firstElementChild, t, ...T.titre2);
     arrets.forEach((c, i) => {
-      const a = F.arretsT[i];
-      const r = (G.fil * 1.15) * p(t, a, a + 0.3) * (1 - p(t, 5.5, 5.7));
-      c.setAttribute('r', Math.max(0, r));
+      const a = SYNC.arrets[i];
+      A(c, 'r', fx(G.fil * 1.15 * p(t, a, a + 0.4) * (1 - p(t, T.arretsSortie, T.arretsSortie + 0.45))));
     });
-    arretsEtiq.forEach((el, i) => montrer(el, t, F.arretsT[i] + 0.08, 5.5, { dy: G.etiqPlace[i] === 'dessus' ? -0.8 : 0.8 }));
+    arretsEtiq.forEach((el, i) => montrer(el, t, SYNC.arrets[i] + 0.05, T.arretsSortie, { dy: G.etiqPlace[i] === 'dessus' ? -0.8 : 0.8 }));
   }
   function rendreS2(t) {
     const b = G.barre;
     barres.forEach((r, i) => {
-      const entree = p(t, 6.6 + i * 0.05, 7.05 + i * 0.05);
-      const sortie = i === 0 ? p(t, 11.0, 11.2) : p(t, 10.0, 10.2);
+      const entree = p(t, SYNC.barres + i * 0.1, SYNC.barres + 0.6 + i * 0.1);
+      const sortie = i === 0 ? p(t, T.transportSortie, T.transportSortie + 0.5) : p(t, T.autresSortie, T.autresSortie + 0.5);
       const h = b.h * entree * (1 - sortie);
-      r.setAttribute('x', F.barres[i].x); r.setAttribute('width', F.barres[i].w);
-      r.setAttribute('y', b.y - h / 2); r.setAttribute('height', Math.max(0, h));
+      A(r, 'x', fx(F.barres[i].x)); A(r, 'width', fx(F.barres[i].w));
+      A(r, 'y', fx(b.y - h / 2)); A(r, 'height', fx(Math.max(0, h)));
     });
-    titre($('s2-titre').firstElementChild, t, 6.75, 9.3);
-    montrer($('s2-chiffre'), t, 7.3, 9.9);
-    montrer($('s2-transport'), t, 7.15, 9.9, { dy: 0.6 });
-    montrer($('s2-legende'), t, 7.45, 9.9, { dy: 0.6 });
-    montrer($('s2-source'), t, 7.6, 10.9, { dy: 0.4 });
-    titre($('s2-titre2').firstElementChild, t, 9.55, 11.0);
-    [$('s2-titre'), $('s2-titre2')].forEach((el) => { el.style.visibility = 'visible'; });
+    titre($('s2-titre').firstElementChild, t, ...T.s2titre);
+    montrer($('s2-chiffre'), t, ...T.chiffre);
+    montrer($('s2-transport'), t, ...T.transport, { dy: 0.6 });
+    montrer($('s2-legende'), t, ...T.legende, { dy: 0.6 });
+    montrer($('s2-source'), t, ...T.source, { dy: 0.4 });
+    titre($('s2-titre2').firstElementChild, t, ...T.s2titre2);
   }
   function rendreS3(t) {
     const trace = $('feuille-trace'), pleine = $('feuille-pleine'), point = $('feuille-point');
-    const visible = t >= 12.2 && t < 14.85;
-    trace.setAttribute('opacity', visible ? 1 - p(t, 13.2, 13.4, E.lin) : 0);
-    trace.setAttribute('stroke-dashoffset', F.longueurFeuille * (1 - p(t, 12.3, 13.15, E.inOutCubic)));
-    pleine.setAttribute('opacity', visible ? p(t, 13.0, 13.35, E.lin) : 0);
-    point.setAttribute('r', visible ? 5 * p(t, 13.15, 13.45) * (1 - p(t, 14.3, 14.6)) : 0);
+    const visible = t >= T.contour[0] - 0.1 && t < T.retrait[1] + 0.05;
+    A(trace, 'opacity', visible ? fx(1 - p(t, T.remplissage[1] - 0.3, T.remplissage[1], E.lin)) : '0');
+    A(trace, 'stroke-dashoffset', fx(F.longueurFeuille * (1 - p(t, ...T.contour, E.inOutCubic))));
+    A(pleine, 'opacity', visible ? fx(p(t, ...T.remplissage, E.lin)) : '0');
+    A(point, 'r', visible ? fx(5 * p(t, ...T.pointLogo) * (1 - p(t, T.retrait[0], T.retrait[0] + 0.4))) : '0');
 
-    const texte = $('s3-texte');
-    texte.style.visibility = t >= 13.5 && t < 18.5 ? 'visible' : 'hidden';
-    const nom = $('s3-nom');
-    const iNom = p(t, 13.55, 13.97, E.outCubic), sNom = p(t, 18.2, 18.4);
-    nom.style.opacity = iNom * (1 - sNom);
-    nom.style.transform = `translateY(${(1 - iNom) * 1.2}cqmin)`;
-    montrer($('s3-dit'), t, 15.4, 18.2);
-    titre($('s3-titre'), t, 16.1, 18.2);
+    S($('s3-texte'), 'visibility', t >= T.nom3 - 0.1 && t < T.sortie3 + 0.6 ? 'visible' : 'hidden');
+    montrer($('s3-nom'), t, T.nom3, T.sortie3, { din: 0.8 });
+    montrer($('s3-dit'), t, T.dit3, T.sortie3);
+    titre($('s3-titre'), t, T.titre3, T.sortie3);
   }
 
   // ---------------------------------------------------------------- La mascotte de la scène
   function poser(el, pose, echelle, op) {
     const w = 100 * pose.s;
-    el.style.left = pct(pose.cx - w / 2, G.W);
-    el.style.top = pct(pose.cy - w / 2, G.H);
-    el.style.width = pct(w, G.W);
-    el.style.height = pct(w, G.H);
-    el.style.transform = `scale(${echelle})`;
-    el.style.opacity = op;
-    el.style.visibility = op <= 0.001 ? 'hidden' : 'visible';
+    S(el, 'left', pct(pose.cx - w / 2, G.W));
+    S(el, 'top', pct(pose.cy - w / 2, G.H));
+    S(el, 'width', pct(w, G.W));
+    S(el, 'height', pct(w, G.H));
+    S(el, 'transform', `scale(${fx(echelle)})`);
+    S(el, 'opacity', fx(op));
+    S(el, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
   }
-  function saisonA(t) {
-    let i = -1;
-    F.saisonsT.forEach((ts, j) => { if (t >= ts) i = j; });
-    return i;
+  function poidsSaisons(t) {
+    const S0 = SYNC.saisons, w = {};
+    SAISONS.forEach((nom, i) => {
+      const debut = p(t, S0[i] - 0.2, S0[i] + 0.2, E.lin);
+      const fin = i < SAISONS.length - 1 ? p(t, S0[i + 1] - 0.2, S0[i + 1] + 0.2, E.lin) : p(t, ...T.sansSaison, E.lin);
+      w[nom] = debut * (1 - fin);
+    });
+    return w;
+  }
+  function decalageDuTel(t) {
+    // translateY du téléphone, en px de la scène (voir `rendreTel`).
+    const i = p(t, ...T.tel);
+    return (1 - i) * 0.14 * plateau.clientHeight;
   }
   function rendreMascotte(t) {
     const el = $('m-scene');
-    if (t < 14.8 || (t >= 19.45 && t < 40)) { cacher(el); return; }
-    if (t < 18.45) {
-      const b = souffle(t, 15.4);
-      regler(mScene, t < 15.06 ? 'calm' : 'happy', null, p(t, 14.8, 14.95, E.lin));
-      el.style.translate = `0 ${-0.4 * b}%`;
-      poser(el, G.f3, acoup(t, 14.95) * (1 + 0.035 * b), 1);
+    if (t < T.retrait[1] || (t >= T.vol[1] + 0.15 && t < T.retour)) { cacher(el); return; }
+    if (t < T.vol[0]) {
+      const b = souffle(t, T.visage[1]);
+      const k = p(t, ...T.sourire, E.lin);
+      dessiner(mScene, { humeurs: { calm: 1 - k, happy: k }, visage: p(t, ...T.visage, E.lin) });
+      S(el, 'translate', `0 ${fx(-0.4 * b)}%`);
+      poser(el, G.f3, 1 + 0.035 * b, 1);
       return;
     }
-    if (t < 19.45) {
+    if (t < T.vol[1] + 0.15) {
       // Elle descend se loger dans l'en-tête du questionnaire.
-      const r = rectEnUnites($('slot-entete'));
-      const cible = { cx: r.x + r.w / 2, cy: r.y + r.h / 2, s: r.w / 100 };
-      const k = p(t, 18.45, 19.25, E.inOutCubic);
-      regler(mScene, 'calm', null, 1);
-      el.style.translate = '0 0';
-      poser(el, { cx: lerp(G.f3.cx, cible.cx, k), cy: lerp(G.f3.cy, cible.cy, k), s: lerp(G.f3.s, cible.s, k) }, 1, 1 - p(t, 19.22, 19.38, E.lin));
+      const slot = mesure('slot', () => posStatique($('slot-entete')));
+      const ku = unites();
+      const cible = { cx: (slot.x + slot.w / 2) * ku, cy: (slot.y + slot.h / 2 + decalageDuTel(t)) * ku, s: (slot.w * ku) / 100 };
+      const k = p(t, ...T.vol, E.inOutCubic);
+      const kh = p(t, T.vol[0], T.vol[0] + 0.3, E.lin);
+      dessiner(mScene, { humeurs: { calm: kh, happy: 1 - kh } });
+      S(el, 'translate', '0 0');
+      poser(el, { cx: lerp(G.f3.cx, cible.cx, k), cy: lerp(G.f3.cy, cible.cy, k), s: lerp(G.f3.s, cible.s, k) }, 1, 1 - p(t, T.vol[1] - 0.1, T.vol[1] + 0.15, E.lin));
       return;
     }
-    // Scènes 7 et 8 : elle revient, porte les saisons, puis remonte au-dessus du bouton. Le
-    // dépassement est réservé à son arrivée de la scène 3 (celle de l'écran de lancement) : ici elle
-    // apparaît en fondu, et chaque accessoire de saison apparaît en place, en fondu.
-    const k = p(t, 45.5, 46.25);
+    // Scènes 7 et 8 : elle revient, porte les saisons, puis remonte au-dessus du bouton.
+    const k = p(t, ...T.pose8);
     const pose = { cx: lerp(G.f7.cx, G.f8.cx, k), cy: lerp(G.f7.cy, G.f8.cy, k), s: lerp(G.f7.s, G.f8.s, k) };
-    const entree = p(t, 40.0, 40.4);
-    const b = souffle(t, 40.7);
-    const finale = t >= 46.2;
-    const i = finale ? -1 : saisonA(t);
-    const saison = i < 0 ? null : SAISONS[i];
-    regler(mScene, finale ? 'happy' : 'calm', saison, 1);
-    if (saison && mScene._acc[saison]) mScene._acc[saison].style.opacity = p(t, F.saisonsT[i], F.saisonsT[i] + 0.2, E.lin);
-    el.style.translate = `0 ${-0.4 * b}%`;
-    poser(el, pose, (0.96 + 0.04 * entree) * (1 + 0.035 * b), p(t, 40.0, 40.25, E.lin));
+    const b = souffle(t, T.retour + 0.8);
+    const w = poidsSaisons(t);
+    const h = p(t, ...T.heureuse, E.lin);
+    dessiner(mScene, { humeurs: { calm: 1 - h, happy: h }, automne: w.automne, saisons: { hiver: w.hiver, printemps: w.printemps, ete: w.ete } });
+    S(el, 'translate', `0 ${fx(-0.4 * b)}%`);
+    poser(el, pose, (0.92 + 0.08 * p(t, T.retour, T.retour + 0.8)) * (1 + 0.035 * b), p(t, T.retour, T.retour + 0.5, E.lin));
   }
 
   // ---------------------------------------------------------------- Le téléphone
   const TAPES = [
-    { t: 19.85, id: 'q1-oui', choix: true }, { t: 20.25, id: 'b-suivant' },
-    { t: 20.95, id: 'q2-voiture', choix: true }, { t: 21.35, id: 'b-suivant' },
-    { t: 21.95, id: 'q3-une', choix: true }, { t: 22.35, id: 'b-suivant' },
-    { t: 22.8, id: 'q4-un', choix: true }, { t: 23.05, id: 'b-suivant' },
-    { t: 27.9, id: 'c2-engage' }, { t: 28.6, id: 'j-mar', choix: true }, { t: 28.95, id: 'j-jeu', choix: true }, { t: 29.5, id: 'c2-note' },
-    { t: 34.2, id: 'notif' }, { t: 35.3, id: 'pt-oui' }, { t: 37.15, id: 'pt-non' },
+    { t: 30.65, id: 'q1-oui', choix: true }, { t: 31.05, id: 'b-suivant' },
+    { t: 31.95, id: 'q2-voiture', choix: true }, { t: 32.35, id: 'b-suivant' },
+    { t: 33.25, id: 'q3-une', choix: true }, { t: 33.65, id: 'b-suivant' },
+    { t: 34.5, id: 'q4-un', choix: true }, { t: 34.9, id: 'b-suivant' },
+    { t: 42.5, id: 'c2-engage' }, { t: 43.55, id: 'j-mar', choix: true }, { t: 44.05, id: 'j-jeu', choix: true }, { t: 44.65, id: 'c2-note' },
+    { t: 51.9, id: 'notif' }, { t: 53.5, id: 'pt-oui' }, { t: 56.0, id: 'pt-non' },
   ];
   function rendreTapes(t) {
     const doigt = $('doigt');
     let actif = null;
     for (const tape of TAPES) {
-      const el = $(tape.id);
-      const appui = t >= tape.t && t < tape.t + 0.12;
-      if (tape.id !== 'b-suivant') el.classList.toggle('appui', appui);
-      if (tape.choix) el.classList.toggle('choisi', t >= tape.t + 0.12 && t < 38.5);
-      if (t >= tape.t - 0.2 && t < tape.t + 0.14) actif = tape;
+      if (tape.id !== 'b-suivant') C($(tape.id), 'appui', t >= tape.t && t < tape.t + 0.14);
+      if (tape.choix) C($(tape.id), 'choisi', t >= tape.t + 0.14 && t < 58.5);
+      if (t >= tape.t - 0.25 && t < tape.t + 0.25) actif = tape;
     }
-    const suivant = TAPES.filter((x) => x.id === 'b-suivant').some((x) => t >= x.t && t < x.t + 0.12);
-    $('b-suivant').classList.toggle('appui', suivant);
-    if (!actif) { doigt.style.opacity = 0; return; }
-    const ecran = $('tel-ecran').getBoundingClientRect(), r = $(actif.id).getBoundingClientRect();
-    const k = 360 / ecran.width;
-    const x = (r.left - ecran.left + r.width / 2) * k, y = (r.top - ecran.top + r.height / 2) * k;
-    // Le doigt se lève vite : ce qu'il vient d'appuyer peut bouger juste après (un dépliage qui se referme).
-    const op = p(t, actif.t - 0.2, actif.t - 0.06, E.lin) * (1 - p(t, actif.t + 0.04, actif.t + 0.14, E.lin));
-    doigt.style.opacity = op;
-    doigt.style.transform = `translate(calc(var(--dp) * ${x.toFixed(1)}), calc(var(--dp) * ${y.toFixed(1)})) scale(${t >= actif.t && t < actif.t + 0.12 ? 0.86 : 1})`;
+    C($('b-suivant'), 'appui', TAPES.some((x) => x.id === 'b-suivant' && t >= x.t && t < x.t + 0.14));
+    if (!actif) { S(doigt, 'opacity', '0'); return; }
+    // Position prise une fois, au premier passage : l'élément est alors au repos.
+    const pos = mesure('tape-' + actif.id + '-' + actif.t, () => {
+      const r = posStatique($(actif.id), $('tel-ecran')), d = dpPx();
+      return { x: (r.x + r.w / 2) / d, y: (r.y + r.h / 2) / d };
+    });
+    const op = p(t, actif.t - 0.25, actif.t - 0.08, E.lin) * (1 - p(t, actif.t + 0.06, actif.t + 0.25, E.lin));
+    const appui = Math.sin(Math.PI * clamp((t - actif.t + 0.08) / 0.3));
+    S(doigt, 'opacity', fx(op));
+    S(doigt, 'transform', `translate(calc(var(--dp) * ${fx(pos.x)}), calc(var(--dp) * ${fx(pos.y)})) scale(${fx(1 - 0.12 * appui)})`);
   }
-  function ecran(id, t, a, b, o = {}) {
-    return montrer($(id), t, a, b, { din: o.din ?? 0.2, dout: o.dout ?? 0.15, dy: o.dy ?? 0, dx: 0, unite: 'cqmin' });
+  function ecran(id, t, a, b) {
+    return montrer($(id), t, a, b, { din: 0.4, dout: 0.4, dy: 0 });
   }
-  function entreeDp(el, t, a, b, dx = 0, dy = 8) {
-    const i = p(t, a, a + 0.25), s = b == null ? 0 : p(t, b, b + 0.1, E.lin), op = i * (1 - s);
-    el.style.opacity = op;
-    el.style.visibility = op <= 0.001 ? 'hidden' : 'visible';
-    el.style.transform = `translate(calc(var(--dp) * ${(1 - i) * dx}), calc(var(--dp) * ${(1 - i) * dy}))`;
+  function entreeDp(el, t, a, b, o = {}) {
+    const dx = o.dx ?? 0, dy = o.dy ?? 10, din = o.din ?? 0.45, dout = o.dout ?? 0.25, decal = o.decal ?? 0;
+    const i = p(t, a, a + din), s = b == null ? 0 : p(t, b, b + dout), op = i * (1 - s);
+    S(el, 'opacity', fx(op));
+    S(el, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
+    S(el, 'transform', `translate(calc(var(--dp) * ${fx((1 - i) * dx)}), calc(var(--dp) * ${fx((1 - i) * dy)} + ${fx(decal)}px))`);
   }
   function rendreTel(t) {
     const tel = $('tel');
-    const i = p(t, 18.5, 19.1), s = p(t, 38.05, 38.25);
+    const i = p(t, ...T.tel), s = p(t, ...T.telSortie);
     const op = i * (1 - s);
-    tel.style.opacity = op;
-    tel.style.visibility = op <= 0.001 ? 'hidden' : 'visible';
-    tel.style.transform = `translateY(${(1 - i) * 8 + s * 4}cqh)`;
-    montrer($('legende-tel'), t, 23.95, 38.0, { dy: 0.3 });
-    if (op <= 0.001) return;
+    S(tel, 'opacity', fx(op));
+    S(tel, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
+    S(tel, 'transform', `translateY(${fx((1 - i) * 14 + s * 6)}cqh)`);
+    montrer($('legende-tel'), t, T.bilan[0] + 0.1, T.manif[0], { dy: 0.3 });
+    if (op <= 0.001) { S($('doigt'), 'opacity', '0'); return; }
 
-    // Questionnaire
-    ecran('e-q', t, 18.5, 23.1, { din: 0.01 });
-    const etapes = [['q1', 19.3, 20.4], ['q2', 20.4, 21.5], ['q3', 21.5, 22.5], ['q4', 22.5, null]];
-    etapes.forEach(([id, a, b]) => entreeDp($(id), t, a, b, 8, 0));
+    // Le questionnaire
+    ecran('e-q', t, T.tel[0] - 0.1, T.calcul[0]);
+    const Q = T.questions;
+    ['q1', 'q2', 'q3', 'q4'].forEach((id, k) => entreeDp($(id), t, Q[k], Q[k + 1] ?? null, { dx: 14, dy: 0, din: 0.4 }));
     // Le film monte quatre des neuf étapes ; le rail et le compte suivent les vraies positions.
-    const rails = [[19.3, 1], [20.4, 3], [21.5, 5], [22.5, 7], [23.05, 8]];
+    const rails = [[Q[0], 1], [Q[1], 3], [Q[2], 5], [Q[3], 7], [34.9, 8]];
     let largeur = 0;
-    rails.forEach(([a, v], j) => { if (t >= a) largeur = lerp(j ? rails[j - 1][1] : 0, v, p(t, a, a + 0.25)) / 9; });
-    $('rail').style.width = `${largeur * 100}%`;
-    const etape = `Étape ${t < 20.4 ? 1 : t < 21.5 ? 3 : t < 22.5 ? 5 : 7} sur 9`;
-    if ($('q-etape').textContent !== etape) $('q-etape').textContent = etape;
-    const section = t < 21.5 ? 'Domicile-travail' : t < 22.5 ? 'Loisirs du week-end' : 'Voyages longue distance';
-    if ($('q-section').textContent !== section) $('q-section').textContent = section;
-    // L'en-tête ne sourit qu'à la dernière étape (`ProgressHeader`), que le film ne montre pas.
-    regler(mEntete, 'calm', null);
-    $('slot-entete').style.opacity = p(t, 19.2, 19.36, E.lin);
+    rails.forEach(([a, v], j) => { if (t >= a) largeur = lerp(j ? rails[j - 1][1] : 0, v, p(t, a, a + 0.4)) / 9; });
+    S($('rail'), 'width', `${fx(largeur * 100)}%`);
+    const n = t < Q[1] ? 0 : t < Q[2] ? 1 : t < Q[3] ? 2 : 3;
+    texte($('q-etape'), `Étape ${[1, 3, 5, 7][n]} sur 9`);
+    texte($('q-section'), ['Domicile-travail', 'Domicile-travail', 'Loisirs du week-end', 'Voyages longue distance'][n]);
+    S($('slot-entete'), 'opacity', fx(p(t, T.vol[1] - 0.1, T.vol[1] + 0.1, E.lin)));
 
-    // Calcul, puis restitution
-    ecran('e-calcul', t, 23.1, 23.95);
-    mCalcul.style.transform = `scale(${1 + 0.035 * souffle(t, 23.1)})`;
-    ecran('e-bilan', t, 23.95, 26.5, { din: 0.01 });
-    entreeDp($('bb1'), t, 23.95, null);
-    entreeDp($('bb2'), t, 24.08, null);
-    entreeDp($('bb3'), t, 24.2, null);
+    // Le calcul, puis la restitution, qui défile si le cadre coupe l'écran
+    ecran('e-calcul', t, ...T.calcul);
+    S(mCalcul, 'transform', `scale(${fx(1 + 0.035 * souffle(t, T.calcul[0]))})`);
+    ecran('e-bilan', t, ...T.bilan);
+    entreeDp($('bb1'), t, T.bilan[0] + 0.1, null);
+    entreeDp($('bb2'), t, T.bilan[0] + 0.3, null);
+    entreeDp($('bb3'), t, T.bilan[0] + 0.5, null);
+    if (t >= T.bilan[0] && t < T.bilan[1] + 0.5) {
+      const defile = mesure('defile', () => {
+        const ecr = posStatique($('tel-ecran')), d = dpPx();
+        const bas = ecr.y + 30 * d + $('bilan-defile').offsetHeight + 12 * d;
+        const visible = Math.min(plateau.clientHeight, ecr.y + ecr.h);
+        return Math.max(0, bas - visible);
+      });
+      S($('bilan-defile'), 'transform', `translateY(${fx(-defile * p(t, ...T.defile, E.inOutCubic))}px)`);
+    }
 
     // Le plan
-    ecran('e-plan', t, 26.5, null);
-    entreeDp($('p-titre'), t, 26.55, null);
-    entreeDp($('lien-pistes'), t, 26.78, null);
-    const ouvert = p(t, 28.0, 28.25) * (1 - p(t, 29.62, 29.82));
-    // Hauteur naturelle relue à chaque image : elle suit la taille de la scène.
-    $('c2-dep').style.height = `${$('c2-dep-dedans').offsetHeight * ouvert}px`;
-    const engagee = t >= 29.62;
-    $('c2').classList.toggle('engagee', engagee);
-    $('c1').classList.toggle('estompee', engagee);
-    const ligne = engagee ? 'par an · le mardi et le jeudi · 16\u00a0% de ton empreinte' : 'par an · 16\u00a0% de ton empreinte';
-    if ($('c2-ligne').textContent !== ligne) $('c2-ligne').textContent = ligne;
-    const choix = engagee ? 'Choisir celle-ci à la place' : 'Je m’y engage';
-    if ($('c1-choix').textContent !== choix) $('c1-choix').textContent = choix;
+    ecran('e-plan', t, T.plan, null);
+    entreeDp($('p-titre'), t, T.plan + 0.2, null);
+    entreeDp($('lien-pistes'), t, T.plan + 0.65, null);
+    const ouvert = p(t, ...T.depliage) * (1 - p(t, ...T.repli));
+    if (ouvert > 0 && ouvert < 1) S($('c2-dep'), 'height', `${fx(mesure('dep', () => $('c2-dep-dedans').offsetHeight) * ouvert)}px`);
+    else S($('c2-dep'), 'height', ouvert >= 1 ? 'auto' : '0px');
+    const engagee = t >= T.engagee;
+    C($('c2'), 'engagee', engagee);
+    C($('c1'), 'estompee', engagee);
+    texte($('c2-ligne'), engagee ? 'par an · le mardi et le jeudi · 16 % de ton empreinte' : 'par an · 16 % de ton empreinte');
+    texte($('c1-choix'), engagee ? 'Choisir celle-ci à la place' : 'Je m’y engage');
     // L'action engagée passe en tête (`ordonnerLesPistes`) : les deux cartes échangent leur place.
     const c1 = $('c1'), c2 = $('c2');
-    const enTete = t >= 29.9;
-    c2.style.order = enTete ? '-1' : '0';
-    const ecart = parseFloat(getComputedStyle($('pistes')).rowGap) || 0;
-    const k = p(t, 29.9, 30.2);
-    const dy1 = enTete ? -(c2.offsetHeight + ecart) * (1 - k) : 0;
-    const dy2 = enTete ? (c1.offsetHeight + ecart) * (1 - k) : 0;
-    [[c1, 26.62, dy1], [c2, 26.7, dy2]].forEach(([el, a, dy]) => {
-      const e = p(t, a, a + 0.25);
-      el.style.opacity = e;
-      el.style.visibility = e <= 0.001 ? 'hidden' : 'visible';
-      el.style.transform = `translateY(calc(var(--dp) * ${(1 - e) * 8} + ${dy}px))`;
-    });
+    const enTete = t >= T.enTete[0];
+    S(c2, 'order', enTete ? '-1' : '0');
+    // En montant, la carte engagée passe devant l'autre : elles se croisent.
+    S(c2, 'position', 'relative');
+    S(c2, 'zIndex', enTete ? '1' : '0');
+    let dy1 = 0, dy2 = 0;
+    if (enTete) {
+      const k = p(t, ...T.enTete);
+      if (k < 1) {
+        const h = mesure('cartes', () => ({ h1: c1.offsetHeight, h2: c2.offsetHeight, ecart: parseFloat(getComputedStyle($('pistes')).rowGap) || 0 }));
+        dy1 = -(h.h2 + h.ecart) * (1 - k);
+        dy2 = (h.h1 + h.ecart) * (1 - k);
+      }
+    }
+    entreeDp(c1, t, T.plan + 0.35, null, { decal: dy1 });
+    entreeDp(c2, t, T.plan + 0.5, null, { decal: dy2 });
+    // Le dépliage pousse « C'est noté » vers le bas ; si le cadre le coupe, le plan défile le temps
+    // du choix, puis revient quand l'engagement remonte en tête.
+    let defilePlan = 0;
+    if (t >= T.depliage[0] && t < T.enTete[1]) {
+      const besoin = mesure('defilePlan', () => {
+        const d = posStatique($('c2-dep-dedans'));
+        return Math.max(0, d.y + d.h + 16 * dpPx() - plateau.clientHeight);
+      });
+      defilePlan = besoin * p(t, T.depliage[0], T.depliage[1] + 0.1) * (1 - p(t, ...T.enTete));
+    }
+    S($('plan-corps'), 'transform', `translateY(${fx(-defilePlan)}px)`);
 
-    // Le point
-    const notifI = p(t, 33.2, 33.48), notifS = p(t, 34.3, 34.5);
+    // La notification, puis le point de la semaine
     const notif = $('notif');
-    notif.style.opacity = notifI * (1 - notifS) > 0.001 ? 1 : 0;
-    notif.style.visibility = notifI * (1 - notifS) > 0.001 ? 'visible' : 'hidden';
-    notif.style.transform = `translateY(${(-1 + notifI) * 140 - notifS * 140}%)`;
-    $('point-h').style.height = `${$('point').offsetHeight * p(t, 34.45, 34.7)}px`;
-    const qVisible = (t < 35.42) || (t >= 36.55 && t < 37.27);
-    entreeDp($('pt-q'), t, t < 36 ? 34.5 : 36.55, qVisible ? null : (t < 36 ? 35.42 : 37.27), 0, 0);
-    entreeDp($('pt-r1'), t, 35.42, 36.55, 0, 6);
-    entreeDp($('pt-r2'), t, 37.27, null, 0, 6);
-    const semaine = t < 36.55 ? 'Semaine du 05/10' : 'Semaine du 12/10';
-    if ($('pt-label').textContent !== semaine) $('pt-label').textContent = semaine;
+    const ni = p(t, ...T.notif), ns = p(t, ...T.notifSortie);
+    const nv = ni * (1 - ns) > 0.001;
+    S(notif, 'visibility', nv ? 'visible' : 'hidden');
+    S(notif, 'transform', `translateY(${fx((-1 + ni) * 140 - ns * 140)}%)`);
+    const ouv = p(t, ...T.point);
+    if (ouv > 0 && ouv < 1) S($('point-h'), 'height', `${fx(mesure('point', () => $('point').offsetHeight) * ouv)}px`);
+    else S($('point-h'), 'height', ouv >= 1 ? 'auto' : '0px');
+    const semaine2 = t >= T.semaineSuivante;
+    entreeDp($('pt-q'), t, semaine2 ? T.question2[0] : T.question1[0], semaine2 ? T.question2[1] : T.question1[1], { dy: 6, dout: 0.2 });
+    entreeDp($('pt-r1'), t, T.question1[1], T.semaineSuivante, { dy: 6, dout: 0.25 });
+    entreeDp($('pt-r2'), t, T.question2[1], null, { dy: 6 });
+    texte($('pt-label'), semaine2 ? 'Semaine du 12/10' : 'Semaine du 05/10');
+    C($('pt-label'), 'repondu', (t >= T.question1[1] && t < T.semaineSuivante) || t >= T.question2[1]);
 
     rendreTapes(t);
   }
   function rendreTextesTel(t) {
-    bloc('t4a', t, 18.7, 23.75);
-    bloc('t4b', t, 23.95, 26.3);
-    bloc('t5a', t, 26.6, 29.85);
-    bloc('t5b', t, 30.0, 32.8);
-    bloc('t6a', t, 33.2, 36.35);
-    bloc('t6b', t, 36.5, 37.95);
+    bloc('t4a', t, ...T.t4a);
+    bloc('t4b', t, ...T.t4b);
+    bloc('t5a', t, ...T.t5a);
+    bloc('t5b', t, ...T.t5b);
+    bloc('t6a', t, ...T.t6a);
+    bloc('t6b', t, ...T.t6b);
   }
   function rendreManifeste(t) {
     const m = $('manif');
-    const i = p(t, 38.0, 38.28), s = p(t, 39.8, 40.0);
-    m.style.visibility = i > 0 && s < 1 ? 'visible' : 'hidden';
-    m.style.transform = `translateY(${(1 - i) * 100 + s * 100}%)`;
-    montrer($('m1'), t, 38.35, 39.8, { dy: 1.6 });
-    montrer($('m2'), t, 38.7, 39.8, { dy: 1.6 });
-    montrer($('m3'), t, 39.05, 39.8, { dy: 1.6 });
-    montrer($('m4'), t, 39.35, 39.8, { dy: 0.8 });
+    const i = p(t, T.manif[0], T.manif[0] + 0.7), s = p(t, T.manif[1], T.manif[1] + 0.7);
+    S(m, 'visibility', i > 0 && s < 1 ? 'visible' : 'hidden');
+    S(m, 'transform', `translateY(${fx((1 - i) * 100 + s * 100)}%)`);
+    ['m1', 'm2', 'm3', 'm4'].forEach((id, k) => montrer($(id), t, SYNC.manifeste.lignes[k], T.manifTexteSortie, { din: 0.7, dy: k < 3 ? 2 : 1 }));
   }
 
   // ---------------------------------------------------------------- Scènes 7 et 8
   function rendreS7(t) {
-    const texte = $('s7-texte');
-    texte.style.visibility = t >= 40.2 && t < 45.5 ? 'visible' : 'hidden';
-    titre($('s7-titre'), t, 40.3, 45.15);
-    montrer($('s7-dit'), t, 41.0, 45.15);
+    S($('s7-texte'), 'visibility', t >= T.s7titre[0] - 0.1 && t < T.s7titre[1] + 0.6 ? 'visible' : 'hidden');
+    titre($('s7-titre'), t, ...T.s7titre);
+    montrer($('s7-dit'), t, T.s7dit, T.s7titre[1]);
     saisonsPts.forEach((c, i) => {
-      const r = G.fil * 1.15 * p(t, F.saisonsT[i], F.saisonsT[i] + 0.3) * (1 - p(t, 45.3, 45.6));
-      c.setAttribute('r', t >= 40 ? Math.max(0, r) : 0);
+      const r = G.fil * 1.15 * p(t, SYNC.saisons[i], SYNC.saisons[i] + 0.4) * (1 - p(t, T.saisonsSortie, T.saisonsSortie + 0.45));
+      A(c, 'r', fx(t >= T.retour ? Math.max(0, r) : 0));
     });
-    saisonsEtiq.forEach((el, i) => montrer(el, t, F.saisonsT[i] + 0.05, 45.25, { dy: 0.8 }));
+    saisonsEtiq.forEach((el, i) => montrer(el, t, SYNC.saisons[i] + 0.05, T.saisonsSortie, { dy: 0.8 }));
   }
   function rendreS8(t) {
-    $('s8-texte').style.visibility = t >= 45.8 ? 'visible' : 'hidden';
-    montrer($('s8-nom'), t, 45.9, null, { din: 0.42 });
-    titre($('s8-titre'), t, 46.2, null);
-    const cta = $('s8-cta'), k = p(t, 46.85, 47.3);
+    S($('s8-texte'), 'visibility', t >= T.nom8 - 0.1 ? 'visible' : 'hidden');
+    montrer($('s8-nom'), t, T.nom8, null, { din: 0.8 });
+    titre($('s8-titre'), t, T.titre8, null);
+    const cta = $('s8-cta'), k = p(t, ...T.bouton);
     // Le bouton s'étire depuis le point d'arrivée du trait : même centre, même rayon au départ.
-    const sc = scene.getBoundingClientRect(), r = cta.getBoundingClientRect();
-    const rp = (rayonDuPoint() * sc.width) / G.W;
-    const haut = r.height ? ((r.height / 2 - rp) / r.height) * 100 : 45;
-    const droite = r.width ? ((r.width - 2 * rp) / r.width) * 100 : 95;
-    cta.style.clipPath = `inset(${lerp(haut, 0, k)}% ${lerp(droite, 0, k)}% ${lerp(haut, 0, k)}% 0 round 999px)`;
-    cta.style.visibility = t >= 46.85 ? 'visible' : 'hidden';
-    montrer($('s8-url'), t, 47.2, null, { dy: 0.6 });
-    montrer($('s8-note'), t, 47.4, null, { dy: 0.6 });
+    const r = mesure('cta', () => ({ w: cta.offsetWidth, h: cta.offsetHeight }));
+    const rp = (G.fil * 0.9) / unites();
+    const haut = r.h ? ((r.h / 2 - rp) / r.h) * 100 : 45;
+    const droite = r.w ? ((r.w - 2 * rp) / r.w) * 100 : 95;
+    S(cta, 'clipPath', `inset(${fx(lerp(haut, 0, k))}% ${fx(lerp(droite, 0, k))}% ${fx(lerp(haut, 0, k))}% 0 round 999px)`);
+    S(cta, 'visibility', t >= T.bouton[0] ? 'visible' : 'hidden');
+    montrer($('s8-url'), t, T.url, null, { dy: 0.6 });
+    montrer($('s8-note'), t, T.note8, null, { dy: 0.6 });
   }
 
   // ---------------------------------------------------------------- Rendu d'une image
@@ -1236,40 +1355,60 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     majCommandes();
   }
 
-  // ---------------------------------------------------------------- Lecture et commandes
+  // ---------------------------------------------------------------- Lecture, son et commandes
   const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let enLecture = false, origine = 0, depart = 0, raf = 0, affiche = true;
+  const audio = $('musique');
+  let enLecture = false, origine = 0, depart = 0, raf = 0, affiche = true, sonActif = true, sonDispo = true;
   const fmtTemps = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const ICO_LIRE = '<path d="M7 4.5v15l12.5-7.5z"/>';
   const ICO_PAUSE = '<path d="M7 4.5h3.6v15H7zM13.4 4.5H17v15h-3.6z"/>';
 
   function majCommandes() {
-    $('temps').textContent = `${fmtTemps(tCourant)} / ${fmtTemps(DUREE)}`;
+    texte($('temps'), `${fmtTemps(tCourant)} / ${fmtTemps(DUREE)}`);
     if (document.activeElement !== $('frise')) $('frise').value = Math.round(tCourant * 10);
     const courant = CHAPITRES.reduce((acc, c, i) => (tCourant >= c.debut - 0.001 ? i : acc), 0);
-    document.querySelectorAll('.chap').forEach((b, i) => b.setAttribute('aria-current', String(i === courant)));
+    document.querySelectorAll('.chap').forEach((b, i) => A(b, 'aria-current', String(i === courant)));
+  }
+  function majSon() {
+    const bouton = $('son');
+    bouton.disabled = !sonDispo;
+    bouton.setAttribute('aria-pressed', String(sonActif && sonDispo));
+    texte($('son-libelle'), !sonDispo ? 'Son indisponible' : sonActif ? 'Son activé' : 'Son coupé');
+  }
+  function lancerLeSon() {
+    if (!sonActif || !sonDispo) return;
+    try { audio.currentTime = tCourant; } catch (e) { /* le média n'est pas encore prêt : il partira de zéro */ }
+    const promesse = audio.play();
+    if (promesse) promesse.catch(() => {});
   }
   function boucle(now) {
     const t = depart + (now - origine) / 1000;
-    if (t >= DUREE) { rendre(DUREE); arreter(); return; }
+    if (t >= DUREE) { rendre(DUREE); arreter(true); return; }
+    // L'image suit l'horloge de la page ; le son est recalé s'il s'en écarte.
+    if (sonActif && sonDispo && !audio.paused && Math.abs(audio.currentTime - t) > 0.15) {
+      try { audio.currentTime = t; } catch (e) { /* recalage impossible : on garde l'image */ }
+    }
     rendre(t);
     raf = requestAnimationFrame(boucle);
   }
   function lire() {
-    if (affiche) { affiche = false; $('affiche').hidden = true; if (tCourant >= CHAPITRES[2].pose - 0.01 && tCourant <= CHAPITRES[2].pose + 0.01) tCourant = 0; }
+    if (affiche) { affiche = false; $('affiche').hidden = true; if (Math.abs(tCourant - CHAPITRES[2].pose) < 0.01) tCourant = 0; }
     if (tCourant >= DUREE - 0.05) tCourant = 0;
     enLecture = true;
     depart = tCourant;
     origine = performance.now();
     $('lecture-ico').innerHTML = ICO_PAUSE;
-    $('lecture-libelle').textContent = 'Pause';
+    texte($('lecture-libelle'), 'Pause');
+    lancerLeSon();
     raf = requestAnimationFrame(boucle);
   }
-  function arreter() {
+  function arreter(finNaturelle = false) {
     enLecture = false;
     cancelAnimationFrame(raf);
+    // À la fin, l'accord final sonne jusqu'au bout ; sur une pause, le son s'arrête avec l'image.
+    if (!finNaturelle) audio.pause();
     $('lecture-ico').innerHTML = ICO_LIRE;
-    $('lecture-libelle').textContent = tCourant >= DUREE - 0.05 ? 'Revoir' : 'Lire';
+    texte($('lecture-libelle'), tCourant >= DUREE - 0.05 ? 'Revoir' : 'Lire');
   }
   function aller(t) {
     if (affiche) { affiche = false; $('affiche').hidden = true; }
@@ -1281,6 +1420,13 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   $('lecture').addEventListener('click', () => (enLecture ? arreter() : lire()));
   scene.addEventListener('click', () => (enLecture ? arreter() : lire()));
   $('frise').addEventListener('input', (e) => { if (enLecture) arreter(); if (affiche) { affiche = false; $('affiche').hidden = true; } rendre(Number(e.target.value) / 10); });
+  $('son').addEventListener('click', () => {
+    sonActif = !sonActif;
+    majSon();
+    if (!sonActif) audio.pause();
+    else if (enLecture) lancerLeSon();
+  });
+  audio.addEventListener('error', () => { sonDispo = false; majSon(); });
 
   const liste = $('chapitres');
   CHAPITRES.forEach((c, i) => {
@@ -1331,7 +1477,8 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     fmt = 'portrait';
   }
   $(fmt === 'portrait' ? 'f-portrait' : 'f-paysage').checked = true;
-  if (reduit) $('affiche-libelle').textContent = 'Lire le film · 0:51 · les chapitres s’ouvrent posés';
+  if (reduit) texte($('affiche-libelle'), `Lire le film · ${fmtTemps(DUREE)} · les chapitres s’ouvrent posés`);
+  majSon();
 
   function demarrer() {
     preparer();
@@ -1339,10 +1486,12 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     else if (affiche) rendre(CHAPITRES[2].pose);
     else rendre(tCourant);
   }
+  // Une taille qui change invalide les mesures ; l'image se refait à la nouvelle taille.
+  // La mise en page ne dépend plus de la taille du lecteur : seule l'échelle se refait.
+  if (window.ResizeObserver) new ResizeObserver(() => ajuster()).observe(scene);
   window.__seek = (t) => rendre(t);
   window.__duree = DUREE;
   window.__pret = (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { demarrer(); return true; });
   demarrer();
-  window.addEventListener('resize', () => { if (!enLecture) rendre(tCourant); });
 })();
 </script>

@@ -20,6 +20,7 @@
 // exportée est celle que la page montre au même instant, à la chasse fixe près.
 //
 // La vidéo s'écrit dans le dossier temporaire du système, jamais dans le dépôt : elle se régénère.
+// La musique (`musique.mp3`, rendue par `musique.py`) y est mêlée telle quelle, depuis l'instant 0.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -72,10 +73,17 @@ if (chargees < Object.keys(GRAISSES).length) {
 
 const duree = await page.evaluate(() => window.__duree);
 const total = Math.round(duree * fps) + fps; // une seconde de tenue sur la dernière image
+const musique = path.join(ICI, 'musique.mp3');
+if (!fs.existsSync(musique)) {
+  console.error('musique.mp3 manque : la rendre d’abord avec musique.py.');
+  await navigateur.close();
+  process.exit(1);
+}
 const ffmpeg = spawn(
   'ffmpeg',
-  ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-movflags', '+faststart', sortie],
+  ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-', '-i', musique,
+    '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-c:a', 'aac', '-b:a', '192k',
+    '-shortest', '-movflags', '+faststart', sortie],
   { stdio: ['pipe', 'inherit', 'inherit'] }
 );
 for (let i = 0; i < total; i++) {

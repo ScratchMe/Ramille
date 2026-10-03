@@ -5,9 +5,9 @@ document et revient à la personne qui pilote : c'est ce qu'on montre du produit
 
 ## Ce que c'est
 
-Un motion design de 51 secondes pour faire comprendre Ramille et donner envie de faire son bilan,
-en deux formats tirés de la même source : **16:9** (un écran, une page web, une fiche de store) et
-**9:16** (un téléphone, les réseaux).
+Un motion design d'une minute vingt et une, en musique, pour faire comprendre Ramille et donner
+envie de faire son bilan, en deux formats tirés de la même source : **16:9** (un écran, une page
+web, une fiche de store) et **9:16** (un téléphone, les réseaux).
 
 **L'idée tient en un trait.** Le logo le dit déjà : la nervure de la feuille est un itinéraire
 tracé jusqu'à un point d'arrivée (commentaire de `assets/images/logo-mark.svg`). Le film prend ce
@@ -16,16 +16,22 @@ replie en nervure, la feuille se dessine autour et devient Ramille ; il revient 
 les saisons, et finit en un point d'arrivée qui s'étire et devient le bouton « Découvrir mon
 impact ».
 
-| Temps | Chapitre | Ce qu'il dit |
-|---|---|---|
-| 0:00 | Tes trajets | Chaque jour, tu te déplaces. Lequel pèse le plus ? |
-| 0:06 | Ce qu'ils pèsent | Le transport, premier poste de l'empreinte : 2,8 t CO₂e (SDES, 2017) |
-| 0:12 | Ramille | Le logo, puis le visage ; « Comprendre tes trajets, sans te juger. » |
-| 0:18 | Ton bilan | Quatre des neuf étapes, le calcul, la restitution |
-| 0:26 | Ton plan | Deux pistes en tête, on en choisit une, deux jours, « C'est noté » : elle passe en tête |
-| 0:33 | Le point | La notification du lundi, un « Oui » puis un « Non » ; pas de score, pas de série |
-| 0:40 | Au fil des saisons | La mascotte porte les quatre saisons, sur un an |
-| 0:45 | À toi | ramille.fr · Pas de compte à créer pour commencer |
+| Temps | Chapitre | Ce qu'il dit | La musique |
+|---|---|---|---|
+| 0:00 | Tes trajets | Chaque jour, tu te déplaces. Lequel pèse le plus ? | Nappe et marimba ; une cloche par station |
+| 0:08 | Ce qu'ils pèsent | Le transport, premier poste de l'empreinte : 2,8 t CO₂e (SDES, 2017) | La basse entre |
+| 0:18 | Ramille | Le logo, puis le visage ; « Comprendre tes trajets, sans te juger. » | Un souffle monte ; le rythme entre avec le visage (0:24) |
+| 0:28 | Ton bilan | Quatre des neuf étapes, le calcul, la restitution | Le refrain |
+| 0:40 | Ton plan | Deux pistes en tête, on en choisit une, deux jours, « C'est noté » : elle passe en tête | Une cloche à l'engagement |
+| 0:50 | Le point | La notification du lundi, un « Oui » puis un « Non » ; pas de score, pas de série, aucun classement | Une cloche par réponse ; sans batterie sous le manifeste, une cloche par ligne |
+| 1:04 | Au fil des saisons | La mascotte porte les quatre saisons, sur un an | Le rythme revient ; une cloche par saison |
+| 1:11 | À toi | ramille.fr · Pas de compte à créer pour commencer | Un accent sur le bouton (1:14), l'accord final |
+
+**Le rythme a été repris le 03/10/2026**, sur le premier retour de la personne qui pilote : la
+version de 51 secondes ne laissait pas le temps de lire — le manifeste passait en moins de deux
+secondes —, avait des à-coups, et n'avait pas de son. Chaque texte reste désormais posé au moins
+deux secondes et demie, le manifeste sept ; tout s'enchaîne en fondu, sans pulsation d'échelle ; et
+les coupes tombent sur la grille de la musique, une mesure de 2,4 s.
 
 Le scénario plan par plan, avec ce qu'on voit et ce qui est écrit, est rendu sous le film par la
 page elle-même : c'est aussi sa version texte.
@@ -36,17 +42,29 @@ page elle-même : c'est aussi sa version texte.
   `<html>` ni `<head>` : le service d'artefacts l'enveloppe. Le film est une **fonction pure du
   temps** (`rendre(t)`), sans bibliothèque : la lecture, la frise, les chapitres et l'export ne
   font que choisir un instant.
-- **`exporter.mjs`** — l'export vidéo, image par image (Playwright, déjà dans les dépendances de
-  développement, et `ffmpeg`). Les MP4 s'écrivent dans le dossier temporaire du système, jamais
-  dans le dépôt : ils se régénèrent après toute retouche, en un peu plus d'une minute par format
-  (75 s mesurées le 03/10/2026). Spline Sans y est servie par les fichiers du kit, et l'export
-  refuse de partir si l'une des quatre graisses manque ; la chasse fixe, absente du dépôt, prend
-  celle du système sur les trois lignes qui l'emploient.
+  **Il se compose à taille fixe** (1600 × 900 px, ou 900 × 1600) et se met à l'échelle d'un bloc :
+  le 16:9 « débordait » à la taille d'un lecteur, ses petits textes passant sous la taille minimale
+  des polices du navigateur. Ses **points de synchronisation** sont dans son bloc JSON
+  `temps-du-film`, que la musique lit aussi.
+- **`musique.py`** et **`musique.mp3`** — la musique, originale : le script la compose et la rend
+  (`pip install numpy scipy`, et `ffmpeg`), le MP3 est ce que la page joue. Elle est déterministe,
+  donc le même script rend le même fichier, et elle n'emprunte rien à personne. Ses niveaux ont été
+  réglés à la mesure — part d'aigus et niveau de chaque piste, attaque à chaque rendez-vous — faute
+  de pouvoir l'écouter dans l'environnement où elle a été écrite : **c'est à l'oreille qu'elle se
+  juge**, et elle se remplace sans toucher au film si elle ne convient pas.
+- **`exporter.mjs`** — l'export vidéo, image par image et en musique (Playwright, déjà dans les
+  dépendances de développement, et `ffmpeg`). Les MP4 s'écrivent dans le dossier temporaire du
+  système, jamais dans le dépôt : ils se régénèrent après toute retouche, en un peu plus d'une
+  minute par format. Spline Sans y est servie par les fichiers du kit, et l'export refuse de partir
+  si l'une des quatre graisses manque ; la chasse fixe, absente du dépôt, prend celle du système sur
+  les trois lignes qui l'emploient.
+- **`verifier.mjs`** — rien ne déborde : chaque quart de seconde, dans les deux formats, à la
+  taille de l'export et à trois tailles de lecteur. À relancer après toute retouche du film.
 
 ## Ce que le film reprend de l'app, et d'où
 
-Rien n'y est inventé : quand l'app change, le film doit suivre, et **aucune garde ne le vérifie** —
-c'est à relire avant chaque diffusion.
+Rien n'y est inventé : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
+textes** (`verifier.mjs` ne voit que les débordements) — c'est à relire avant chaque diffusion.
 
 - **Les répliques de Ramille** sont recopiées mot pour mot de `RAMILLE`
   (`src/constants/mascotte.ts`) : `presentation`, `calcul`, `checkinOui`, `checkinNon`,
@@ -69,16 +87,15 @@ c'est à relire avant chaque diffusion.
   dernière étape — le film n'en montre que quatre sur neuf, donc il ne sourit pas.
 - **La mascotte** est dessinée par un portage de `mascotFaceGeometry` et `mascotSeasonGeometry`
   (`src/types/mascot.ts`), compensation optique comprise, aux tailles de l'app : 28 dp dans
-  l'en-tête, 72 au calcul, 40 dans une réplique. Son à-coup reprend
-  `src/components/ecran-lancement.tsx` ; son souffle, `src/components/mascot.tsx`.
-- **Le mouvement** suit `.claude/skills/mouvement/SKILL.md` : la sortie douce pour ce qui entre et
-  ce qui sort, une sortie plus rapide qu'une entrée, les mots d'un titre en moins de 300 ms, et le
-  dépassement réservé à l'arrivée de Ramille, qui reprend l'écran de lancement — les accessoires
-  de saison, les arrêts et les points apparaissent en fondu. Le tracé du trait et ses
-  métamorphoses suivent leurs propres courbes, qui n'ont pas d'équivalent dans l'app. **Aucun
-  chiffre ne défile** (les barres arrivent à leur longueur juste), aucune célébration, aucun son.
-  Sous « réduire les animations », rien ne se lance seul : les chapitres s'ouvrent posés et le film
-  ne joue que sur demande.
+  l'en-tête, 72 au calcul, 40 dans une réplique. Son souffle reprend `src/components/mascot.tsx` ;
+  ses expressions et ses saisons passent de l'une à l'autre en fondu.
+- **Le mouvement** prend à `.claude/skills/mouvement/SKILL.md` ce qui vaut pour un film : la
+  sortie douce pour ce qui entre et ce qui sort, une sortie plus rapide qu'une entrée, rien qui
+  rebondisse. Ses durées, elles, sont celles d'un film et non d'une interface. L'à-coup de l'écran
+  de lancement n'y est plus : il se lisait comme une saccade. **Aucun chiffre ne défile** (les
+  barres arrivent à leur longueur juste), aucune célébration. Sous « réduire les animations », rien
+  ne se lance seul : les chapitres s'ouvrent posés, le film et sa musique ne jouent que sur demande,
+  et le son se coupe d'un bouton.
 - **Les chiffres de référence** viennent de `src/constants/carbon-reference.ts`, avec leur source
   à l'écran : la moyenne française et sa répartition en cinq postes (SDES, 2017), et le repère
   transport 2050, qui est une **dérivation** de la cible de 2 t de l'ADEME — d'où le mot
@@ -107,8 +124,9 @@ c'est à relire avant chaque diffusion.
    Recommandation : garder les trois phrases si ce chantier n'est pas prévu, sinon ne garder
    qu'« Aucun classement ». Ce qu'on casse si on se trompe : un film qui contredit le produit le
    jour où cette porte s'ouvre.
-4. **Le son.** La page est muette. La règle « aucun son » est celle de l'app ; pour une vidéo
-   diffusée ailleurs, une musique sans voix suffirait (le texte est à l'écran), une voix
-   imposerait de réécrire le rythme du film autour d'elle.
+4. **La musique.** Elle est originale et calée sur le film, mais elle a été composée sans être
+   écoutée : à juger à l'oreille. Si elle ne convient pas, deux voies — retoucher `musique.py`
+   (tempo, instruments, niveaux), ou une piste sous licence, à couper sur la grille de 2,4 s ; une
+   piste sous licence ne se verse pas dans un dépôt public sans vérifier qu'elle le permet.
 5. **Le profil d'exemple.** Le garder tel quel, ou le remplacer par un profil de recette calculé
    par la base, pour que les kilos affichés soient ceux que l'estimateur rendrait vraiment.
