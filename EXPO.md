@@ -280,14 +280,18 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   patch (11/09, 15/09 et 18/09/2026 chez Ramille — trois fois en huit jours, donc à attendre
   plutôt qu'à diagnostiquer). Épingler la version de l'outil n'épingle pas ce qu'il attend. L'étape reste bloquante — c'est ce qu'on veut savoir avant un build — et la conduite
   est `npx expo install --fix`, puis rejouer typecheck, lint, tests et export.
-- **Sans `android.permissions`, le prebuild pose les permissions de son gabarit**, et un
-  `app.json` qui n'en déclare aucune n'en demande donc pas « aucune ». Relevé chez Ramille le
-  03/10/2026 sur le manifeste fusionné d'un APK (SDK 57) : `READ_EXTERNAL_STORAGE`,
-  `WRITE_EXTERNAL_STORAGE` et `SYSTEM_ALERT_WINDOW`, plus `BIND_GET_INSTALL_REFERRER_SERVICE` qu'apporte
-  `expo-application`, dépendance transitive. Ce qui ne sert pas se retire par
-  `android.blockedPermissions`, et le manifeste du build suivant est le seul endroit où le constater
-  — rien dans le dépôt ni la CI ne le montre. La fiche de la boutique, elle, déclare ce que le
-  manifeste demande.
+- **Un `app.json` qui ne déclare aucune permission n'en demande pas « aucune », et
+  `android.permissions` n'y peut rien** : la clé ne fait qu'**ajouter**. Le prebuild pose les
+  permissions de son gabarit, des greffons qu'Expo applique d'office en ajoutent (`expo-file-system`,
+  que tire `expo`), et les manifestes des bibliothèques s'y fusionnent. Relevé chez Ramille le
+  03/10/2026 sur le manifeste fusionné d'un APK (SDK 57) : `READ_EXTERNAL_STORAGE` et
+  `WRITE_EXTERNAL_STORAGE` (le gabarit et `expo-file-system`, plafonnées à Android 12 par
+  `maxSdkVersion`), `SYSTEM_ALERT_WINDOW` (le gabarit, pour l'overlay de développement) et
+  `BIND_GET_INSTALL_REFERRER_SERVICE` (la bibliothèque Maven `installreferrer`, via
+  `expo-application`). **Seul `android.blockedPermissions` retire** — il pose `tools:node="remove"`,
+  qui l'emporte sur les trois chemins —, et le manifeste du build suivant est le seul endroit où le
+  constater : rien dans le dépôt ni la CI ne le montre. La fiche de la boutique, elle, déclare ce
+  que le manifeste demande.
 - **`app.config.js` étend `app.json`** et n'a qu'un rôle : brancher un fichier fourni par une
   variable d'environnement de type *fichier* (`google-services.json` chez EAS) sans le mettre dans
   le dépôt. Lu par le CLI au build, jamais replié dans le bundle.
