@@ -392,6 +392,30 @@ racine + jetons + guide (10), `_vendor/` seul, `fonts/` seul, les 69 aperçus, d
   conversation a survécu, et l'envoi a repris après avoir vérifié l'arbre et `ds-bundle/`. Une remise à zéro
   du contexte, elle, le perdrait : nouveau `finalize_plan`, nouvelle approbation.
 
+### Seconde passe, le même jour — main avait bougé le kit pendant le premier envoi
+
+Trois fusions sont arrivées sur `main` entre le relevé et la PR de cette synchronisation : les liens à trois
+apparences (#335), l'attente et la bande haute écrites une fois (#336), le plancher du lancement (#337). Le
+projet portait donc un kit déjà en retard. Seconde passe sur la branche fusionnée, l'ancre fraîchement
+téléversée en `--remote` : **5 changés** (`ActionCard`, `CheckinCard`, `FeuilleDuBas`, `GoogleButton`,
+`TextLink`), **2 ajoutés** (`CadreDOnglet`, `LigneDAttente`, fiches venues avec #336), 10 à téléverser, 71
+rendus, aucun mauvais. 374 fichiers par le même enchaînement, en trois lots de contenu (128, 128, 116),
+aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était bien celle du premier envoi.
+
+- **#336 avait écrit, de son côté, des fiches que cette synchronisation écrivait aussi** :
+  `ChampDuPlafond.tsx` (trois états figés) et `LeisureFrequencyStep.tsx` (qui gardait encore
+  `commute_has_regular_trip` et l'histoire devenue identique). Les conflits ont été tranchés pour les versions
+  de cette branche, qui les contiennent : quatre états avec `useState` pour l'une, la quatrième fréquence pour
+  l'autre. Deux sessions qui touchent `previews/` le même jour se croisent sans que rien ne le dise avant la
+  fusion — c'est le relevé de fichiers de `CLAUDE.md`, appliqué à `.design-sync/`.
+- **`CheckinCard` a gagné un état sans gagner d'histoire** — exactement le risque relevé le matin même :
+  `correction`, `reponseEnPlace`, `onModify`, `onCancel` (v1-33 §6, « Modifier ma réponse »). Les cartes
+  répondues montraient déjà le lien, mais rien ne montrait la carte rouverte. Histoire `EnCorrection` ajoutée.
+- **`LigneDAttente` / `PendantLeDelai` est vide, et c'est voulu** : la ligne se tait les 300 premières
+  millisecondes. Une cellule blanche n'y est pas un défaut de rendu ; elle est notée bonne avec cette raison.
+- **L'en-tête de conventions** : #336 y a ajouté que `BandeHaute` est posée par sa pile (`CadreDOnglet`).
+  Tous les noms existent dans le build.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
