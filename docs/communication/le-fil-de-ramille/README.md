@@ -2,8 +2,8 @@
 
 **Statut** : validé par la personne qui pilote le 03/10/2026, **pas encore diffusé** — il attend la
 publication sur Google Play. Ce qui a été décidé, et ce qu'il reste à faire ce jour-là, est en fin
-de document. **Le 4:5 et les chiffres recalculés sont venus après la validation**, le même jour, et
-attendent son regard.
+de document. Le 4:5, les chiffres recalculés et les trois jours du covoiturage, venus après, ont été
+validés le même jour.
 
 ## Ce que c'est
 
@@ -27,7 +27,7 @@ impact ».
 | 0:08 | Ce qu'ils pèsent | Le transport, premier poste de l'empreinte : 2,8 t CO₂e (SDES, 2017) | La basse entre |
 | 0:18 | Ramille | Le logo, puis le visage ; « Comprendre tes trajets, sans te juger. » | Un souffle monte ; le rythme entre avec le visage (0:24) |
 | 0:28 | Ton bilan | Quatre des neuf étapes, le calcul, la restitution | Le rythme ; la mélodie alterne deux motifs de quatre mesures |
-| 0:40 | Ton plan | Deux pistes en tête, on en choisit une, deux jours, « C'est noté » : elle passe en tête | Une cloche à l'engagement |
+| 0:40 | Ton plan | Deux pistes en tête, on en choisit une, trois jours, « C'est noté » : elle passe en tête | Une cloche à l'engagement |
 | 0:50 | Le point | La notification du lundi, un « Oui » puis un « Non » ; pas de score, pas de série, aucun classement | Une cloche par réponse ; sans batterie sous le manifeste (1:02), une cloche par ligne |
 | 1:09 | Au fil des saisons | La mascotte porte les quatre saisons, sur un an | Le rythme revient ; une cloche par saison |
 | 1:16 | À toi | ramille.fr · Pas de compte à créer pour commencer | Un accent sur le bouton (1:19), l'accord final |
@@ -182,6 +182,19 @@ date, on maintient pas de score, pas de série, pas de classement. »
    périurbain qui va au travail en voiture —, et ses chiffres sont devenus ceux que l'app rend :
    **fait le 03/10/2026** par `profil-d-exemple.sql` (la proposition montrait 1,9 t, 1,7 t, 430 et
    300 kg, écrits à la main ; le calcul rend 2,1 t, 1,8 t, 412 et 320 kg).
+
+6. **Le 4:5 convient** (regardé le même jour, après sa composition).
+7. **Trois jours pour le covoiturage, le lundi, le mercredi et le vendredi** (même jour, sur une
+   question de la contre-lecture). L'action mise en avant dit « au moins un jour sur deux », et le
+   film en choisissait deux sur cinq : un spectateur attentif y lisait une contradiction, dans un
+   film qui veut montrer une app précise. La question du point se lit désormais comme l'app la
+   compose (`jours_francais`) : « Lundi ou mercredi ou vendredi, as-tu fait ce trajet à deux ? ». Les
+   chiffres ne bougent pas : le gain est celui de l'action, pas des jours choisis. Écartée : un profil
+   à quatre jours par semaine, où deux jours auraient fait un sur deux — le covoiturage y sort des
+   deux pistes mises en avant, et l'histoire du film ne serait plus celle de l'app.
+
+8. **En 16:9, « Pas de compte à créer pour commencer » descend** (même jour) : la note collait au
+   bouton ; elle prend l'écart qui sépare l'accroche du bouton.
 
 **Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
 minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
