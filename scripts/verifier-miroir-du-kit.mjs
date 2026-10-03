@@ -65,6 +65,7 @@ const SANS_INTERFACE = new Map([
   ['src/components/titre-de-page.tsx', 'pose les métadonnées du document (titre, description, Open Graph) — rien ne se rend dans la page'],
   ['src/components/retour-de-notification.tsx', 'écoute l’ouverture d’une notification et navigue — rend `null`'],
   ['src/components/bilan/choix-ouvrant.tsx', 'enveloppe un choix et ce qui s’ouvre sous lui pour donner à l’écran sa borne de défilement — une vue qui ne porte que l’écart que lui donne son écran, rien ne se dessine'],
+  ['src/components/au-dessus-du-clavier.tsx', 'rembourre l’écran de la hauteur du clavier sur Android, et ne rend que ses enfants sur web — rien ne se dessine'],
 ]);
 
 /**
