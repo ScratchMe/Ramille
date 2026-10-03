@@ -22,8 +22,6 @@ const defaultWeightByType = {
   small: 500,
   smallBold: 700,
   subtitle: 600,
-  link: 500,
-  linkPrimary: 600,
   code: 500,
   // Cinq types adossés à `TypeScale` (cf. theme.ts) : ils portent les tailles que les
   // écrans redéclaraient un par un. `title`/`subtitle` restent tels quels — les migrer est
@@ -120,8 +118,6 @@ export function ThemedText({
         type === 'small' && baseSizes.small,
         type === 'smallBold' && baseSizes.smallBold,
         type === 'subtitle' && baseSizes.subtitle,
-        type === 'link' && baseSizes.link,
-        type === 'linkPrimary' && [baseSizes.linkPrimary, { color: theme.accentText }],
         type === 'code' && [baseSizes.code, { fontFamily: Fonts.mono }],
         type === 'screenTitle' && baseSizes.screenTitle,
         type === 'salient' && baseSizes.salient,
@@ -144,8 +140,6 @@ const baseSizes = {
   default: { fontSize: 16, lineHeight: 24 },
   title: { fontSize: 48, lineHeight: 52 },
   subtitle: { fontSize: 32, lineHeight: 44 },
-  link: { lineHeight: 30, fontSize: 14 },
-  linkPrimary: { lineHeight: 30, fontSize: 14 },
   code: { fontSize: 12 },
   screenTitle: TypeScale.screen,
   salient: TypeScale.salient,

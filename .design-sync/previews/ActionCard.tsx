@@ -55,6 +55,6 @@ export const AvecDetail = () => (
     intention="le lundi et le vendredi"
     engagee
   >
-    <TextLink label="Changer d’avis" type="small" themeColor="textTertiary" style={{ textDecoration: 'underline' }} />
+    <TextLink label="Changer d’avis" apparence="souligne" />
   </ActionCard>
 );

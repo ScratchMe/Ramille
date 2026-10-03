@@ -11,7 +11,6 @@ import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 // La confirmation est tenue par l'écran hôte dans le dépôt (`confirmation` + `onConfirmation(ouverte)`), pour que
 // « Rattacher un compte » passe en secondaire tant qu'elle est ouverte ; le kit, sans état, la prend en prop.
 export function MonCompte({ confirmation = false, occupe = null, supprime = false, onExporter, onDemanderSuppression, onAnnuler, onSupprimer, onRevenir, message }) {
-  const SOULIGNE = { textDecoration: 'underline' };
   const carte = { background: 'var(--color-background)', border: '1px solid var(--color-border)', borderRadius: 18, padding: 24, display: 'flex', flexDirection: 'column', gap: 8 };
   // Après la suppression, la carte dit que c'est fait, ce qui est parti, et laisse Ramille dire au revoir — sans
   // retenir personne. Le seul geste est de revenir au début, où une session neuve et vide attend.
@@ -34,12 +33,12 @@ export function MonCompte({ confirmation = false, occupe = null, supprime = fals
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
         <Button title={occupe === 'export' ? 'Génération…' : 'Télécharger mes données'} variant="secondary" onPress={onExporter} disabled={inactif} />
         {!confirmation ? (
-          <TextLink label="Supprimer mon compte" hint="Demande une confirmation avant de supprimer quoi que ce soit" onPress={onDemanderSuppression} disabled={inactif} type="small" themeColor="textTertiary" style={SOULIGNE} />
+          <TextLink label="Supprimer mon compte" apparence="souligne" hint="Demande une confirmation avant de supprimer quoi que ce soit" onPress={onDemanderSuppression} disabled={inactif} />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ThemedText type="small" themeColor="textSecondary">Tes bilans, ton plan, tes points de suivi et tes retours seront supprimés définitivement. Cette action est irréversible.</ThemedText>
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-              <TextLink label="Annuler" onPress={onAnnuler} disabled={inactif} type="small" themeColor="textTertiary" style={SOULIGNE} />
+              <TextLink label="Annuler" apparence="souligne" onPress={onAnnuler} disabled={inactif} />
               <Button title={occupe === 'suppression' ? 'Suppression…' : 'Supprimer définitivement'} onPress={onSupprimer} disabled={inactif} flex />
             </div>
           </div>

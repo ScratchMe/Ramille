@@ -25,7 +25,7 @@ export function CarteDOuverture({ ouverture, sorties = [], ligne, visage, onSort
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
           {sorties.map((s) =>
             s.forme === 'lien'
-              ? <TextLink key={s.cle} label={s.label} onPress={() => onSortie && onSortie(s.cle)} type="small" weight={600} themeColor="accentText" />
+              ? <TextLink key={s.cle} label={s.label} apparence="action" onPress={() => onSortie && onSortie(s.cle)} />
               // `onPanel` : sur la carte teintée, un secondaire gris s'y confondait.
               : <Button key={s.cle} title={s.label} variant={s.forme === 'primaire' ? 'primary' : 'secondary'} onPanel onPress={() => onSortie && onSortie(s.cle)} />
           )}

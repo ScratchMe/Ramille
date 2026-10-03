@@ -116,11 +116,9 @@ export function EtapeTransition({
               promesse et devient une ligne en base. */}
           <TextLink
             label="Ce qu’on enregistre, et pourquoi"
+            apparence="discret"
             onPress={() => router.push('/confidentialite')}
             role="link"
-            type="small"
-            weight={600}
-            themeColor="textTertiary"
             style={styles.legal}
             containerStyle={styles.legalCible}
           />

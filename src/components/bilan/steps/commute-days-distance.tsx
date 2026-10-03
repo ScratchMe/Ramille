@@ -138,12 +138,12 @@ export function CommuteDaysDistanceStep({
               précision plus tard (audit A2-18). */}
           <TextLink
             label="Je connais la distance exacte"
+            apparence="action"
             hint="Revient à la saisie en kilomètres"
             onPress={() => {
               setUnknown(false);
               update({ commute_distance_bracket: null });
             }}
-            type="linkPrimary"
           />
         </View>
       ) : (
@@ -170,12 +170,12 @@ export function CommuteDaysDistanceStep({
           )}
           <TextLink
             label="Je ne sais pas"
+            apparence="action"
             hint="Propose des tranches de distance à la place"
             onPress={() => {
               setUnknown(true);
               update({ commute_distance_km: null });
             }}
-            type="linkPrimary"
           />
         </View>
       )}

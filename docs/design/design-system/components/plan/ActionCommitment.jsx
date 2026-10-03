@@ -26,13 +26,12 @@ const DAYS = [[1, 'L', 'lundi'], [2, 'M', 'mardi'], [3, 'M', 'mercredi'], [4, 'J
 // vol. Les valeurs sont celles du dépôt, que la base enregistre.
 const TIMINGS_LOISIRS = [['ce_mois', 'Ce mois-ci'], ['le_mois_prochain', 'Le mois prochain'], ['prochaine_occasion', 'À ma prochaine occasion']];
 const TIMINGS_VOYAGES = [['au_prochain_voyage', 'À mon prochain projet de voyage'], ['avant_le_prochain_bilan', 'Avant mon prochain bilan']];
-const SOULIGNE = { textDecoration: 'underline' };
 export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etatDemande = 'idle', days = [], timing = null, otherActionCommitted, surLeChoix = false, onAnnuler, relecture = false, demande = false, onEngage, onPick, onToggleDay, onTiming, onCancel, onSubmit, onRelease, onModify }) {
   const state = surLeChoix && etatDemande === 'idle' ? 'picking' : etatDemande;
   if (state === 'committed') return (
     <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 24 }}>
-      <TextLink label={kind === 'days' ? 'Modifier les jours' : 'Modifier l’échéance'} hint="Rouvre le choix, sans libérer cette action" onPress={onModify} type="small" themeColor="textTertiary" style={SOULIGNE} />
-      <TextLink label="Changer d’avis" hint="Libère cette action ; tu pourras en choisir une autre" onPress={onRelease} type="small" themeColor="textTertiary" style={SOULIGNE} />
+      <TextLink label={kind === 'days' ? 'Modifier les jours' : 'Modifier l’échéance'} apparence="souligne" hint="Rouvre le choix, sans libérer cette action" onPress={onModify} />
+      <TextLink label="Changer d’avis" apparence="souligne" hint="Libère cette action ; tu pourras en choisir une autre" onPress={onRelease} />
     </div>
   );
   if (state === 'idle') return <div style={{ marginTop: 16 }}><Button title={otherActionCommitted ? 'Choisir celle-ci à la place' : 'Je m’y engage'} variant="secondary" onPress={onPick || onEngage} /></div>;
@@ -56,7 +55,7 @@ export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etat
           </GroupeDeChoix>}
       {demande && manque && <ThemedText type="small" weight={600} themeColor="accentText">{manque}</ThemedText>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <TextLink label="Annuler" onPress={onAnnuler || onCancel} type="small" themeColor="textTertiary" style={SOULIGNE} />
+        <TextLink label="Annuler" apparence="souligne" onPress={onAnnuler || onCancel} />
         <Button title="C’est noté" onPress={onSubmit} enAttente={!complete} disabled={relecture} flex />
       </div>
     </div>

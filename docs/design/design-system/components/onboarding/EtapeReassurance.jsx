@@ -17,7 +17,7 @@ export function EtapeReassurance({ onSuivant, onPrecedent, onConfidentialite, st
           <ThemedText type="display">Pas de jugement. Un état des lieux honnête.</ThemedText>
           <ThemedText weight={400} themeColor="textSecondary" style={corps}>Vivre en zone rurale, travailler loin, avoir besoin de sa voiture : ce sont des contraintes, pas des fautes. On en tient compte dans ton bilan.</ThemedText>
           <ThemedText weight={400} themeColor="textSecondary" style={corps}>Tes réponses restent privées. Aucun classement, aucune comparaison avec d’autres utilisateurs.</ThemedText>
-          <TextLink label="Ce qu’on enregistre, et pourquoi" onPress={onConfidentialite} role="link" type="small" weight={600} themeColor="textSecondary" />
+          <TextLink label="Ce qu’on enregistre, et pourquoi" apparence="discret" onPress={onConfidentialite} role="link" />
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>

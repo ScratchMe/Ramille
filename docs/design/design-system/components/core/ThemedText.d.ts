@@ -1,6 +1,6 @@
 /** Texte typé de Ramille — chaque `type` porte taille, interligne et poids ; les titres sont des en-têtes, avec leur niveau. */
 export interface ThemedTextProps {
-  type?: 'default' | 'small' | 'smallBold' | 'title' | 'subtitle' | 'link' | 'linkPrimary' | 'code' | 'screenTitle' | 'salient' | 'cardTitle' | 'body' | 'display';
+  type?: 'default' | 'small' | 'smallBold' | 'title' | 'subtitle' | 'code' | 'screenTitle' | 'salient' | 'cardTitle' | 'body' | 'display';
   themeColor?: 'text' | 'textSecondary' | 'textTertiary' | 'accent' | 'accentText';
   weight?: 400 | 500 | 600 | 700;
   /**

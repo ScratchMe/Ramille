@@ -677,6 +677,7 @@ export default function BilanResultat() {
             <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
             <TextLink
               label="Revenir à mon suivi"
+              apparence="action"
               onPress={() => router.replace('/suivi')}
               role="link"
             />
@@ -717,12 +718,10 @@ export default function BilanResultat() {
             <ThemedText themeColor="textSecondary">{BILAN_RETIRE.corps}</ThemedText>
             <TextLink
               label={BILAN_RETIRE.sortie}
+              apparence="action"
               // Une destination, pas un dépilement — la règle de « Revenir à mon suivi » plus bas.
               onPress={() => router.replace('/suivi')}
               role="link"
-              type="small"
-              weight={600}
-              themeColor="accentText"
               style={styles.editLink}
             />
           </ScrollView>
@@ -946,6 +945,8 @@ export default function BilanResultat() {
                 aucun libellé n'a changé. */}
             <TextLink
               label="Un chiffre me semble faux"
+              // Souligné (`v1-33` T-5) : la méthode dépliée finit juste au-dessus, du même gris au même corps.
+              apparence="souligne"
               onPress={() =>
                 router.push({
                   pathname: '/feedback',
@@ -959,8 +960,6 @@ export default function BilanResultat() {
                 })
               }
               role="link"
-              type="small"
-              themeColor="textTertiary"
               containerStyle={styles.lienDuTotal}
             />
             {/* **Le geste de retrait vit ici, sur la restitution du bilan concerné** (C4.7, D4 de
@@ -1001,14 +1000,12 @@ export default function BilanResultat() {
                   <View style={styles.confirmationActions}>
                     <TextLink
                       label={confirmation.annuler}
+                      apparence="souligne"
                       onPress={() => {
                         setConfirmationOuverte(null);
                         setMessageDuRetrait(null);
                       }}
                       disabled={retraitEnCours}
-                      type="small"
-                      themeColor="textTertiary"
-                      style={styles.lienSouligne}
                     />
                     <Button
                       title={retraitEnCours ? confirmation.enCours : confirmation.confirmer}
@@ -1023,11 +1020,10 @@ export default function BilanResultat() {
                 <>
                   <TextLink
                     label={LIEN_DU_RETRAIT}
+                    apparence="souligne"
                     hint={INDICE_DU_RETRAIT}
                     onPress={() => void ouvrirLaConfirmation()}
                     disabled={lectureDeLaConfirmation}
-                    type="small"
-                    themeColor="textTertiary"
                     containerStyle={styles.lienDuTotal}
                   />
                   {/* La relecture au toucher a échoué : la confirmation ne s'ouvre pas, et on le dit
@@ -1220,10 +1216,8 @@ export default function BilanResultat() {
           <View style={styles.actionsSecondaires}>
             <TextLink
               label="Partager mon bilan"
+              apparence="action"
               onPress={() => void partagerLeBilan()}
-              type="small"
-              weight={600}
-              themeColor="accentText"
               style={styles.editLink}
             />
             {/* Annoncé par un lecteur d'écran (région vivante de `MessageInline`) : le repli
@@ -1263,10 +1257,9 @@ export default function BilanResultat() {
                 coûteuse ; le libellé dit enfin ce qu'elle fait. */}
             <TextLink
               label="Faire un nouveau bilan"
+              apparence="discret"
               onPress={() => router.push('/bilan')}
               role="link"
-              type="small"
-              themeColor="textTertiary"
               style={styles.editLink}
             />
             {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
@@ -1274,15 +1267,13 @@ export default function BilanResultat() {
             {mode !== 'nouveau' && (
               <TextLink
                 label="Revenir à mon suivi"
+                apparence="action"
                 // **Une destination, pas un dépilement.** `router.back()` ramenait à l'écran
                 // précédent, qui n'est pas toujours le suivi : « Revoir mon bilan » ouvre
                 // cette page depuis le plan, et le lien renvoyait donc… au plan (retour
                 // d'appareil du 07/09/2026). Un lien qui nomme sa destination doit y aller.
                 onPress={() => router.replace('/suivi')}
                 role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
                 style={styles.editLink}
               />
             )}
@@ -1435,6 +1426,5 @@ const styles = StyleSheet.create({
   // compte » — « Annuler » souligné à gauche, le bouton plein qui prend le reste (`MonCompte`).
   confirmation: { borderRadius: 20, padding: 20, gap: Spacing.three },
   confirmationActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
-  lienSouligne: { textDecorationLine: 'underline' },
   retireTitre: { marginTop: Spacing.two },
 });

@@ -1,3 +1,6 @@
+/** Trois apparences, et pas une de plus (`v1-33` T-5) — le corps est `small` partout. */
+export type ApparenceDuLien = 'action' | 'discret' | 'souligne';
+
 /**
  * Texte cliquable — le libellé accessible EST le texte ; cible de 48 px de haut.
  *
@@ -7,6 +10,8 @@
  */
 export interface TextLinkProps {
   label: string;
+  /** `action` : accentText 600 · `discret` : textTertiary · `souligne` : textTertiary, souligné au repos. */
+  apparence: ApparenceDuLien;
   onPress?: () => void;
   disabled?: boolean;
   /** `link` pour une navigation (« Voir toutes les pistes »), `button` pour une action dans l'écran courant. */
@@ -15,11 +20,8 @@ export interface TextLinkProps {
   hint?: string;
   /** Le lien ouvre et referme un contenu, et voici s'il est ouvert. Laisser `undefined` sur un lien qui n'ouvre rien. */
   expanded?: boolean;
-  type?: 'default' | 'small' | 'link' | 'linkPrimary' | 'body' | 'code';
-  themeColor?: 'text' | 'textSecondary' | 'textTertiary' | 'accentText';
-  weight?: 400 | 500 | 600 | 700;
-  /** Style du texte — `{ textDecoration: 'underline' }` pour un lien souligné, `{ textAlign: 'center' }` pour un lien centré. */
-  style?: React.CSSProperties;
+  /** L'alignement du texte, et rien d'autre — `{ textAlign: 'center' }` pour un lien centré. */
+  style?: Pick<React.CSSProperties, 'textAlign'>;
   /** Style de la cible (alignement, marge) — le texte, lui, ne bouge pas. */
   containerStyle?: React.CSSProperties;
   /** @deprecated Absent du dépôt, qui centre par `style` ; gardé parce que `ui_kits/ramille/` s'en sert. */

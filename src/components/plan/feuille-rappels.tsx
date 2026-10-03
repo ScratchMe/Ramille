@@ -315,11 +315,9 @@ export function FeuilleRappels({
             {ligne.lienVersLesReglages && (
               <TextLink
                 label="Ouvrir les réglages du téléphone"
+                apparence="action"
                 onPress={() => void Linking.openSettings()}
                 role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
                 containerStyle={styles.reglages}
               />
             )}
@@ -340,15 +338,13 @@ export function FeuilleRappels({
             {ligne.porteVersLeCompte && (
               <TextLink
                 label="Rattacher un compte"
+                apparence="action"
                 onPress={() => {
                   void marquerFeuilleDeRappelVue();
                   onFerme(prefs.prefere, prefs.jetonActif, prefs.reponseALaVeille);
                   router.push({ pathname: '/connexion', params: { source: 'rappels' } });
                 }}
                 role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
                 containerStyle={styles.reglages}
               />
             )}

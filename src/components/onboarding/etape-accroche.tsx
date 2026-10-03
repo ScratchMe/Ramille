@@ -95,14 +95,15 @@ export function EtapeAccroche({
               bouton — sur un écran dont la promesse est « pas besoin de compte ». Elle est
               pourtant ce qui fait le gros du travail de v1-10 : proposée ici, elle attrape la
               personne qui change d'appareil **avant** qu'elle refasse un bilan, donc elle
-              supprime la collision au lieu de la gérer (docs/design/v1-10-retrouver-son-compte). */}
+              supprime la collision au lieu de la gérer (docs/design/v1-10-retrouver-son-compte).
+              **Gris et souligné** (`v1-33` T-5, 03/10/2026) : discret comme v1-10 l'a décidé, et souligné
+              parce que « Pas de compte à créer pour commencer. », juste au-dessus, est du même gris au
+              même corps — sans le soulignement, le lien s'y lisait comme la fin de la phrase. */}
           <TextLink
             label="J’ai déjà un compte"
+            apparence="souligne"
             onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'onboarding' } })}
             role="link"
-            type="small"
-            weight={600}
-            themeColor="textSecondary"
             style={styles.dejaUnCompte}
             containerStyle={styles.dejaUnCompteCible}
           />

@@ -73,11 +73,9 @@ export function LegalPage({
 
             <TextLink
               label="Retour"
+              apparence="action"
               onPress={() => revenirOu('/')}
               role="link"
-              type="small"
-              weight={600}
-              themeColor="accentText"
               containerStyle={styles.backLink}
             />
 

@@ -46,6 +46,12 @@ body {
 [data-appui='lien']:active:not(:disabled) > * {
   text-decoration: underline !important;
 }
+/* Un lien déjà souligné au repos (`apparence="souligne"`) : le souligner ne changerait rien, donc sa cible prend
+   la teinte des surfaces neutres sous le doigt, au rayon de l'encadré — le texte ne bouge pas. */
+[data-appui='lien-souligne']:active:not(:disabled) {
+  background: var(--color-background-pressed) !important;
+  border-radius: var(--radius-notice);
+}
 
 /* L'indicateur d'attente — l'`ActivityIndicator` du dépôt, à sa taille « small » (20) et dans la couleur du texte
    qui l'entoure. Une rotation ne s'écrit pas en style en ligne, d'où cette règle ; un composant l'emploie par

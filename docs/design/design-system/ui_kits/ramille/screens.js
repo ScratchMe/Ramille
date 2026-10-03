@@ -104,8 +104,8 @@ function Restitution({ go }) {
           <ThemedText type="small" themeColor="textTertiary">Estimation annuelle, tous déplacements</ThemedText>
           <ThemedText type="salient" style={{ fontVariantNumeric: 'tabular-nums' }}>3,4 t CO₂e</ThemedText>
           <BlocMethode />
-          <TextLink label="Un chiffre me semble faux" role="link" type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'flex-start' }} />
-          <TextLink label="Ce bilan ne me ressemble pas" type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'flex-start' }} />
+          <TextLink label="Un chiffre me semble faux" apparence="souligne" role="link" containerStyle={{ alignItems: 'flex-start' }} />
+          <TextLink label="Ce bilan ne me ressemble pas" apparence="souligne" containerStyle={{ alignItems: 'flex-start' }} />
         </div>
         <div style={{ background: 'var(--color-background-element)', borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <ThemedText type="small" weight={600}>Répartition par poste</ThemedText>
@@ -126,8 +126,8 @@ function Restitution({ go }) {
           <ThemedText type="code" themeColor="textTertiary">SDES, données 2017 · cible 2050 : ADEME</ThemedText>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
-          <TextLink label="Partager mon bilan" type="small" weight={600} themeColor="accentText" align="center" />
-          <TextLink label="Faire un nouveau bilan" role="link" type="small" themeColor="textTertiary" align="center" onPress={() => go('bilan')} />
+          <TextLink label="Partager mon bilan" apparence="action" align="center" />
+          <TextLink label="Faire un nouveau bilan" apparence="discret" role="link" align="center" onPress={() => go('bilan')} />
         </div>
       </Scroll>
       <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', flexShrink: 0 }}><Button title="Voir ce que je peux faire" onPress={() => go('plan')} /></div>
@@ -197,13 +197,13 @@ function Toi({ go, dark }) {
       {/* L'ordre et l'écart de l'écran (`v1-33` T-15) : le compte, puis les rappels, puis « Mes données »,
           32 entre sections. */}
       <Scroll gap={32}>
-        <TextLink label="← Retour" type="small" themeColor="textTertiary" onPress={() => go('plan')} />
+        <TextLink label="← Retour" apparence="discret" onPress={() => go('plan')} />
         <ThemedText type="screenTitle" as="h1">Toi</ThemedText>
         <div style={{ background: 'var(--color-background-element)', borderRadius: 18, padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <ThemedText type="small" weight={600}>Ton compte</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">Aucun compte : ton bilan vit sur cet appareil. Un compte sert à le retrouver ailleurs.</ThemedText>
           <GoogleButton />
-          <TextLink label="Utiliser un email à la place" type="linkPrimary" align="center" />
+          <TextLink label="Utiliser un email à la place" apparence="action" align="center" />
         </div>
         <ChoixDeRappel canal={canal} onChoisir={setCanal} />
         <MonCompte />

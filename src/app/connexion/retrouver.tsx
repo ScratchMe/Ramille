@@ -372,12 +372,12 @@ export default function RetrouverMonCompte() {
         <ThemedText type="small" themeColor="textTertiary" style={styles.hint}>
           Tu n’as jamais créé de compte ? Reviens en arrière : tout est accessible sans.
         </ThemedText>
+        {/* Souligné (`v1-33` T-5) : gris sous une phrase grise du même corps, il s'y lisait comme sa fin. */}
         <TextLink
           label="Retour"
+          apparence="souligne"
           onPress={revenirOuRacine}
           role="link"
-          type="small"
-          themeColor="textTertiary"
           style={styles.hint}
         />
       </View>

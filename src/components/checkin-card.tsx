@@ -375,12 +375,10 @@ export function CheckinCard({
                   centré —, bien en deçà d'un bouton. */}
               <TextLink
                 label={libelleSansObjet(checkin)}
+                apparence="souligne"
                 onPress={() => answer('sans_objet')}
                 disabled={saving}
-                type="small"
-                themeColor="textTertiary"
                 containerStyle={styles.sansObjet}
-                style={styles.lien}
                 hint={`Aucune occasion pour ${formeInserable(checkin.poste, checkin.loop_type)} sur cette période`}
               />
               {/* Les boutons restent actifs : l'échec est une panne, pas un refus. */}
@@ -393,15 +391,13 @@ export function CheckinCard({
           {correction && (
             <TextLink
               label="Annuler"
+              apparence="souligne"
               onPress={() => {
                 gesteDeCorrection.current = 'annuler';
                 setCorrection(false);
               }}
               disabled={saving}
-              type="small"
-              themeColor="textTertiary"
               containerStyle={styles.sansObjet}
-              style={styles.lien}
             />
           )}
         </>
@@ -437,6 +433,7 @@ export function CheckinCard({
           <TextLink
             ref={leLienModifier}
             label="Modifier ma réponse"
+            apparence="souligne"
             hint="Rouvre les trois réponses de ce point"
             onPress={() => {
               gesteDeCorrection.current = 'ouvrir';
@@ -444,9 +441,6 @@ export function CheckinCard({
               setErreur(null);
               setCorrection(true);
             }}
-            type="small"
-            themeColor="textTertiary"
-            style={styles.lien}
           />
         </Apparition>
       )}
@@ -467,7 +461,4 @@ const styles = StyleSheet.create({
   // Centré sous les deux boutons : le lien doit se lire comme une sortie commune aux deux, pas
   // comme une suite du bouton de gauche.
   sansObjet: { alignItems: 'center' },
-  // Souligné au repos, comme les liens tertiaires d'`ActionCommitment` : sous le doigt, `TextLink`
-  // lui donne alors la teinte appuyée plutôt qu'un soulignement qu'il porte déjà.
-  lien: { textDecorationLine: 'underline' },
 });

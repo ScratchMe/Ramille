@@ -14,6 +14,6 @@ export const EnCours = () => <GoogleButton loading />;
 export const DansLEcranDeConnexion = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
     <GoogleButton />
-    <TextLink label="Utiliser un email à la place" type="linkPrimary" style={{ textAlign: 'center' }} />
+    <TextLink label="Utiliser un email à la place" apparence="action" style={{ textAlign: 'center' }} />
   </div>
 );

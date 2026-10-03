@@ -48,13 +48,13 @@ export function CheckinCard({ periodLabel, question, emphasize = true, answered 
                 <Button title="Oui" variant="secondary" onPanel flex onPress={() => onAnswer && onAnswer('oui')} />
               </div>
               {/* Souligné au repos, comme « Annuler » et « Changer d'avis » (01/10/2026, audit P-7). */}
-              <TextLink label={sansObjet} onPress={() => onAnswer && onAnswer('sans_objet')} type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'center' }} style={{ textDecoration: 'underline' }} />
+              <TextLink label={sansObjet} apparence="souligne" onPress={() => onAnswer && onAnswer('sans_objet')} containerStyle={{ alignItems: 'center' }} />
               {/* Une panne, pas un refus : les boutons restent, il n'y a qu'à recommencer. */}
               <MessageInline message={erreur} />
             </>
           )}
           {correction && (
-            <TextLink label="Annuler" onPress={() => onCancel && onCancel()} type="small" themeColor="textTertiary" containerStyle={{ alignItems: 'center' }} style={{ textDecoration: 'underline' }} />
+            <TextLink label="Annuler" apparence="souligne" onPress={() => onCancel && onCancel()} containerStyle={{ alignItems: 'center' }} />
           )}
         </>
       ) : (
@@ -66,7 +66,7 @@ export function CheckinCard({ periodLabel, question, emphasize = true, answered 
               elle ne compte jamais. Une fois, jamais au-delà de deux, jamais un badge. */}
           {renforcement && <ThemedText type="body">{renforcement}</ThemedText>}
           {pied && <ThemedText type="small" themeColor="textTertiary">{pied}</ThemedText>}
-          <TextLink label="Modifier ma réponse" onPress={() => onModify && onModify()} type="small" themeColor="textTertiary" style={{ textDecoration: 'underline' }} />
+          <TextLink label="Modifier ma réponse" apparence="souligne" onPress={() => onModify && onModify()} />
         </>
       )}
     </div>

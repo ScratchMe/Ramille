@@ -165,11 +165,9 @@ export default function Contexte() {
                 bilan, donc le repli sans pile est la racine, comme là-bas. */}
             <TextLink
               label="Retour"
+              apparence="action"
               onPress={() => revenirOu('/')}
               role="link"
-              type="small"
-              weight={600}
-              themeColor="accentText"
             />
           </View>
         </SafeAreaView>
@@ -219,11 +217,9 @@ export default function Contexte() {
                 état vide à montrer (contre-lecture du 28/09/2026). */}
             <TextLink
               label="Retour"
+              apparence="action"
               onPress={() => revenirOu('/')}
               role="link"
-              type="small"
-              weight={600}
-              themeColor="accentText"
             />
           </View>
         </SafeAreaView>
@@ -346,10 +342,8 @@ export default function Contexte() {
           {demande && manque !== null && (
             <TextLink
               label={`Il manque encore ${manque.phrase}.`}
+              apparence="action"
               onPress={mener}
-              type="small"
-              weight={600}
-              themeColor="accentText"
             />
           )}
 
@@ -367,11 +361,9 @@ export default function Contexte() {
 
           <TextLink
             label="Retour"
+            apparence="action"
             onPress={() => revenirOu('/plan')}
             role="link"
-            type="small"
-            weight={600}
-            themeColor="accentText"
             style={styles.retour}
           />
         </ScrollView>

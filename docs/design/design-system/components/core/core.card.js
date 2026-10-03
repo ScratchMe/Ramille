@@ -18,8 +18,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       {/* « Suivant » d'une étape incomplète : l'apparence du désactivé, mais il agit (`enAttente`). */}
       <div style={{display:'flex',gap:16}}><Button title="Retour" variant="secondary" style={{width:'auto'}} /><Button title="Suivant" flex enAttente /></div>
       <div style={{display:'flex',gap:8,background:'var(--color-background-selected)',borderRadius:18,padding:18}}><Button title="Non" variant="secondary" onPanel flex /><Button title="Oui" variant="secondary" onPanel flex /></div>
-      <TextLink label="Faire un nouveau bilan" role="link" type="small" themeColor="textTertiary" style={{textAlign:'center'}} />
-      <TextLink label="Utiliser un email à la place" role="link" type="linkPrimary" style={{textAlign:'center'}} />
+      <TextLink label="Faire un nouveau bilan" apparence="discret" role="link" style={{textAlign:'center'}} />
+      <TextLink label="Utiliser un email à la place" apparence="action" role="link" style={{textAlign:'center'}} />
       <MessageInline message="L’envoi n’a pas abouti. Vérifie l’adresse et réessaie." />
       <OnboardingDots total={4} activeIndex={1} />
     </div>
@@ -27,7 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <FeuilleDuBas titre="Ton plan va être recalculé">
         <ThemedText type="body" themeColor="textSecondary">L’action que tu suis — Faire un trajet sur cinq à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.</ThemedText>
         <Button title="Commencer" />
-        <TextLink label="Pas maintenant" type="small" weight={600} themeColor="accentText" style={{textAlign:'center'}} />
+        <TextLink label="Pas maintenant" apparence="action" style={{textAlign:'center'}} />
       </FeuilleDuBas>
     </div>
   </div>

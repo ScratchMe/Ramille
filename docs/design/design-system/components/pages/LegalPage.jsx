@@ -49,7 +49,7 @@ export function LegalPage({ title, updatedAt, intro, sections = [], onRetour }) 
             {section.blocks.map((block, i) => <Bloc key={i} block={block} />)}
           </div>
         ))}
-        <TextLink label="Retour" onPress={onRetour} role="link" type="small" weight={600} themeColor="accentText" containerStyle={{ padding: '8px 0' }} />
+        <TextLink label="Retour" apparence="action" onPress={onRetour} role="link" containerStyle={{ padding: '8px 0' }} />
         <div style={{ marginTop: 32 }}>
           <ThemedText type="small" themeColor="textTertiary">
             Un projet personnel d’<a href={EDITOR_CV_URL} target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>{EDITOR_NAME}</a>.

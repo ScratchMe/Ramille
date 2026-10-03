@@ -14,7 +14,7 @@ export const AvecTitre = () => (
       Rien ne presse : une habitude met du temps à prendre. Si tes trajets n’ont pas changé, ton bilan actuel est toujours juste.
     </ThemedText>
     <Button title="Commencer" />
-    <TextLink label="Pas maintenant" type="small" weight={600} themeColor="accentText" style={{ textAlign: 'center' }} />
+    <TextLink label="Pas maintenant" apparence="action" style={{ textAlign: 'center' }} />
   </FeuilleDuBas>
 );
 

@@ -155,13 +155,31 @@ phases). L'état de chaque ligne est celui de la PR qui porte ce document.
 
 | ID | Le constat | Pourquoi pas maintenant |
 |---|---|---|
-| T-5 | Sept apparences de `TextLink` (le kit en documente quatre) ; « J'ai déjà un compte » en cinq ; des « Retour » gris collés à une phrase grise du même corps | Trente et un fichiers : il entrerait en conflit avec chaque chantier de la vague. À faire seul, juste après |
+| T-5 | Sept apparences de `TextLink` (le kit en documente quatre) ; « J'ai déjà un compte » en cinq ; des « Retour » gris collés à une phrase grise du même corps | Trente et un fichiers : il entrerait en conflit avec chaque chantier de la vague. À faire seul, juste après. **Fait le 03/10/2026**, plus bas |
 | T-9 | Huit formes d'attente, dont quatre qui n'attendent pas les 300 ms | Un composant `LigneDAttente` partagé, même raison que T-5 ; les deux cas les plus visibles (`/contexte`, `/connexion/retrouver`) sont traités dans la vague |
 | T-10 | « Retour » : trois styles, trois places selon le détour | Une décision de dessin : déplacer « Plus tard » détacherait la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2) |
 | T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil |
 | T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux |
 | T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView` |
 | T-7 (glissé) | La poignée de la feuille promet un glissé qui n'existe pas | Un seuil de glissé se juge au doigt |
+
+**T-5, fait le 03/10/2026.** `TextLink` prend une `apparence` obligatoire et ne prend plus ni `type`,
+ni `themeColor`, ni `weight` ; de son `style`, il ne lit que l'alignement. Trois apparences, au corps
+`small` : `action` (`accentText` 600), `discret` (`textTertiary`) et `souligne` (le même gris, souligné
+au repos). La correspondance : l'accent 600 et `linkPrimary` deviennent `action`, comme les six liens
+au corps par défaut (16 px, l'encre du texte) posés sous un bouton principal, qui se lisaient comme
+du texte ; le gris devient `discret`, le gris souligné `souligne`, et les deux liens de transparence en
+`textSecondary` ou tertiaire 600 (« Ce qu'on enregistre, et pourquoi », « Comment ce chiffre est
+calculé ») deviennent `discret`. **Un lien discret qu'une phrase du même gris touche passe en
+`souligne`** — c'était le troisième constat de T-5 : « Retour » sous « Reviens en arrière », « Plus
+tard » sur `/connexion`, l'« Annuler » de `/feedback`, « Renvoyer un code » et « Utiliser une autre
+adresse », les pages légales de « Toi », les deux liens de contestation sous la méthode dépliée de la
+restitution — et tout « Annuler » posé à côté d'un bouton de confirmation (`/compte/suppression`
+rejoint `MonCompte` et le retrait d'un bilan). « J'ai déjà un compte » garde **deux** formes de lien :
+`action` sous le bouton principal d'un écran vide et sur `/connexion/email`, et `souligne` sur
+l'accroche de l'onboarding, où v1-10 l'a voulu discret. Les types `link` et `linkPrimary` de
+`ThemedText` sont partis, dans le dépôt comme dans le kit. La règle : `FRONT.md` §2.4. « Retour »
+garde une forme par détour, et c'est T-10.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
 « Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10
@@ -415,7 +433,7 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
    corrigeable dans sa période (livrée le 02/10/2026).
 
 Puis les reports techniques de §4.2, en commençant par T-5 (les liens), qui touche trente et un
-fichiers et doit passer seul.
+fichiers et doit passer seul — fait le 03/10/2026.
 
 ## 9. Ce qui reste ouvert après la PR #314
 
@@ -477,7 +495,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   à la feuille du re-bilan ? **Non, tranché le 02/10/2026** : le voile ferme toutes les feuilles.
 - **« Réessayer » en secondaire pendant la confirmation de suppression** : la décision visait
   « Rattacher un compte » ; le chantier l'a étendue au « Réessayer » d'un échec, pour qu'il n'y ait
-  qu'un principal.
+  qu'un principal. **Validé le 03/10/2026.**
 - **« Faire un nouveau bilan » le jour même** reste la tension de §6, non posée.
 - **Toucher le voile de la feuille du re-bilan sort du questionnaire**, comme « Pas maintenant » :
   même question que pour la feuille des rappels, sur une feuille qui s'ouvre sans geste — même
@@ -500,7 +518,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   défaut que C2.11 devait fermer (`v1-27` §12.27).
 - **`commitPlanAction` dit « Vérifie ta connexion et réessaie. » à toute erreur d'écriture** : D19 ne
   couvre que les lectures. **Corrigé le 02/10/2026** (`v1-27` §12.29), pour toutes les écritures du
-  produit ; les phrases du serveur sont à valider.
+  produit ; les phrases du serveur sont **validées le 03/10/2026**.
 - **Deux lectures de l'entrée d'un re-bilan n'ont ni relecture ni « Réessayer »** : le préremplissage
   et l'engagement en cours. Depuis que les lectures ne sont plus rejouées (R-5), un raté réseau d'une
   seconde y donne un questionnaire vide, sans bandeau ni feuille — rien de faux n'est dit, mais neuf

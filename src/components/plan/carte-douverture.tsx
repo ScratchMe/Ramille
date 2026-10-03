@@ -126,10 +126,8 @@ export function CarteDOuverture({
               <TextLink
                 key={sortie.cle}
                 label={sortie.label}
+                apparence="action"
                 onPress={() => onSortie(sortie.cle)}
-                type="small"
-                weight={600}
-                themeColor="accentText"
               />
             ) : (
               // `onPanel` : la carte est teintée, et un secondaire gris s'y confondait (1,06:1) —

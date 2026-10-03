@@ -12,9 +12,8 @@ export function MissingModeLink({ context }) {
   return (
     <TextLink
       label="Ton mode n’est pas dans la liste ? Dis-le-nous."
+      apparence="discret"
       role="link"
-      type="small"
-      themeColor="textTertiary"
       containerStyle={{ alignItems: 'center' }}
       style={{ textAlign: 'center' }}
     />

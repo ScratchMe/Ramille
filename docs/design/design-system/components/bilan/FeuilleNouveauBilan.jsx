@@ -26,7 +26,7 @@ export function FeuilleNouveauBilan({ engagement, onCommencer, onQuitter, voile,
       <ThemedText type="body" themeColor="textSecondary">{phrase(engagement)}</ThemedText>
       <ThemedText type="small" themeColor="textTertiary">Rien ne presse : une habitude met du temps à prendre. Si tes trajets n’ont pas changé, ton bilan actuel est toujours juste.</ThemedText>
       <Button title="Commencer" onPress={onCommencer} />
-      <TextLink label="Pas maintenant" onPress={onQuitter} type="small" weight={600} themeColor="accentText" style={{ textAlign: 'center' }} containerStyle={{ alignItems: 'center' }} />
+      <TextLink label="Pas maintenant" apparence="action" onPress={onQuitter} style={{ textAlign: 'center' }} containerStyle={{ alignItems: 'center' }} />
     </FeuilleDuBas>
   );
 }
