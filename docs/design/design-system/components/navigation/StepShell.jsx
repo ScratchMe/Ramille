@@ -243,7 +243,7 @@ export function StepShell({ section, step, total, children, onBack, onNext, next
             et le focus qui part vers la question fait déjà l'annonce. */}
         {demandeActive && (
           <Apparition>
-            <TextLink label={'Il manque encore ' + manque.phrase + '.'} onPress={mener} type="small" weight={600} themeColor="accentText" />
+            <TextLink label={'Il manque encore ' + manque.phrase + '.'} apparence="action" onPress={mener} />
           </Apparition>
         )}
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>

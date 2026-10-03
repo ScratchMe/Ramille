@@ -110,10 +110,8 @@ export function TextField({
         {rightActionLabel && (
           <TextLink
             label={rightActionLabel}
+            apparence="action"
             onPress={() => onRightAction?.()}
-            type="small"
-            weight={600}
-            themeColor="accentText"
           />
         )}
       </View>

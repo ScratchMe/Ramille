@@ -255,11 +255,11 @@ export default function Feedback() {
             et aucune réponse : il n’existe pas de canal pour t’en adresser une.
           </ThemedText>
 
+          {/* Souligné (`v1-33` T-5) : la phrase grise juste au-dessus le touche, au même corps. */}
           <TextLink
             label="Annuler"
+            apparence="souligne"
             onPress={() => revenirOu('/')}
-            type="small"
-            themeColor="textTertiary"
             style={styles.cancel}
           />
         </ScrollView>

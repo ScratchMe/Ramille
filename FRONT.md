@@ -385,6 +385,18 @@ exactement ce qui avait laissé passer le mauvais caractère.
   tout. Un `Pressable` nu reste légitime quand la cible porte plusieurs textes (la bannière de
   `src/app/(tabs)/suivi/bilan.tsx`), à condition de lui donner un `accessibilityLabel` qui les
   recompose.
+- **Un lien a trois apparences, et le composant seul sait ce qu'elles veulent dire** (`apparence`,
+  03/10/2026, `v1-33` T-5) : `action` (`accentText` 600 — ce qui fait avancer, ou l'autre chemin sous un
+  bouton principal), `discret` (`textTertiary` — ce qui se propose sans pousser) et `souligne` (le même
+  gris, souligné au repos — **un lien discret qu'une phrase de la même encre touche**, ou posé dans une
+  carte, et tout « Annuler » à côté d'un bouton de confirmation). Le corps est `small` partout. `TextLink`
+  ne prend plus ni `type`, ni `themeColor`, ni `weight`, et son `style` ne règle que l'alignement : le
+  relevé de l'audit comptait **sept** apparences là où le kit en documentait quatre, « J'ai déjà un
+  compte » en cinq formes, et des « Retour » gris qui se lisaient comme la fin de la phrase grise posée
+  au-dessus d'eux. Une huitième ne s'écrit plus sans toucher au composant. Désactivé, un lien prend
+  l'encre tertiaire. **« Retour » garde une forme et une place par détour** (bouton, lien d'accent, lien
+  gris, souligné quand une phrase le touche) : le ramener à une seule est T-10, une décision de dessin
+  encore ouverte.
 - **Sous le doigt, une surface prend sa teinte appuyée, tout de suite et sans animation** (décision
   du 24/09/2026, `v1-29`) : `accentPressed` sur l'accent (bouton principal, puce pleine),
   `backgroundPressed` sur une surface neutre, `backgroundSelectedPressed` sur une surface choisie,

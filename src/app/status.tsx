@@ -54,7 +54,7 @@ export default function StatusScreen() {
           )}
         </ThemedView>
 
-        <TextLink label="Revenir à l’app →" onPress={() => router.push('/')} role="link" type="linkPrimary" />
+        <TextLink label="Revenir à l’app →" apparence="action" onPress={() => router.push('/')} role="link" />
       </SafeAreaView>
     </ThemedView>
   );

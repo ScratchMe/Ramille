@@ -1308,11 +1308,9 @@ export default function Plan() {
             <View aria-busy={relectureDemandee}>
               <TextLink
                 label="Réessayer"
+                apparence="action"
                 onPress={relire}
                 disabled={relectureDemandee}
-                type="small"
-                weight={600}
-                themeColor={relectureDemandee ? 'textTertiary' : 'accentText'}
               />
             </View>
           </>
@@ -1383,6 +1381,7 @@ export default function Plan() {
               />
               <TextLink
                 label="Commencer un bilan sur cet appareil"
+                apparence="action"
                 onPress={() => router.push('/bilan')}
                 role="link"
               />
@@ -1413,6 +1412,7 @@ export default function Plan() {
                 lien que l'accueil de l'onboarding, et même libellé. */}
             <TextLink
               label="J’ai déjà un compte"
+              apparence="action"
               onPress={() =>
                 router.push({ pathname: '/connexion/retrouver', params: { source: 'plan_vide' } })
               }
@@ -1475,6 +1475,7 @@ export default function Plan() {
             </View>
             <TextLink
               label="Revoir mon bilan"
+              apparence="action"
               onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: state.assessmentId } })}
               role="link"
             />
@@ -1803,11 +1804,9 @@ export default function Plan() {
         {pistes.masquees > 0 && (
           <TextLink
             label={`Voir toutes les pistes · ${actionsCount}`}
+            apparence="action"
             onPress={() => router.push('/plan/pistes')}
             role="link"
-            type="small"
-            weight={600}
-            themeColor="accentText"
             style={styles.lienPistes}
           />
         )}
@@ -1878,13 +1877,11 @@ export default function Plan() {
                   écran : un même geste, deux apparences. */}
               <TextLink
                 label="Compris"
+                apparence="action"
                 onPress={() => {
                   void marquerEngagementOrphelinVu(orphelin.id);
                   setOrphelin(null);
                 }}
-                type="small"
-                weight={600}
-                themeColor="accentText"
               />
             </ThemedView>
           )}
@@ -1908,11 +1905,9 @@ export default function Plan() {
               <View aria-busy={relectureDemandee}>
                 <TextLink
                   label="Voir la saison"
+                  apparence="action"
                   onPress={relire}
                   disabled={relectureDemandee}
-                  type="small"
-                  weight={600}
-                  themeColor={relectureDemandee ? 'textTertiary' : 'accentText'}
                 />
               </View>
             </ThemedView>
@@ -2088,12 +2083,10 @@ export default function Plan() {
                   {porteDeLAttente && (
                     <TextLink
                       label={porteDeLAttente.libelle}
+                      apparence="action"
                       onPress={() => router.push(porteDeLAttente.vers)}
                       role="link"
                       hint="Ouvre l’écran « Toi »."
-                      type="small"
-                      weight={600}
-                      themeColor="accentText"
                       containerStyle={styles.calmePorte}
                     />
                   )}
@@ -2140,13 +2133,11 @@ export default function Plan() {
                   appartenant à ce qui suit. */}
               <TextLink
                 label="Modifier ces réponses"
+                apparence="action"
                 onPress={() => router.push('/contexte')}
                 // Elle ouvre `/contexte` : une navigation, donc un lien (24/09/2026, `v1-29`).
                 role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
-                style={styles.contextePorte}
+                containerStyle={styles.contextePorte}
               />
             </ThemedView>
           )}
@@ -2214,11 +2205,9 @@ export default function Plan() {
                   liraient comme deux gestes. */}
               <TextLink
                 label="Faire un nouveau bilan"
+                apparence="action"
                 onPress={() => router.push('/bilan')}
                 role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
               />
             </ThemedView>
           )}
@@ -2233,10 +2222,9 @@ export default function Plan() {
               a refusée. En fin de flux, il ne coûte rien. */}
           <TextLink
             label="Revoir mon bilan"
+            apparence="discret"
             onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: assessmentId } })}
             role="link"
-            type="small"
-            themeColor="textTertiary"
             style={styles.lienBilan}
           />
         </ScrollView>

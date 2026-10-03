@@ -232,10 +232,9 @@ export default function Compte() {
             {!supprime && (
               <TextLink
                 label="Retour"
+                apparence="discret"
                 onPress={() => revenirOu('/')}
                 role="link"
-                type="small"
-                themeColor="textTertiary"
                 containerStyle={styles.retour}
               />
             )}
@@ -314,11 +313,9 @@ export default function Compte() {
                           Un fait et une porte, pas une relance : ni « pense à », ni bouton de renvoi ici. */}
                       <TextLink
                         label="Saisir le code"
+                        apparence="action"
                         onPress={() => router.push({ pathname: '/connexion/email', params: { reprise: '1' } })}
                         role="link"
-                        type="small"
-                        weight={600}
-                        themeColor="accentText"
                       />
                     </>
                   )}
@@ -403,35 +400,29 @@ export default function Compte() {
                       d'un compte sans bilan, qui est le seul où ce lien ne mène à rien à corriger. */}
                   <TextLink
                     label="Mon contexte de mobilité"
+                    apparence="action"
                     onPress={() => router.push('/contexte')}
                     role="link"
-                    type="small"
-                    weight={600}
-                    themeColor="accentText"
                   />
                   <TextLink
                     label="Un retour à nous faire ?"
+                    apparence="action"
                     onPress={() => router.push('/feedback')}
                     role="link"
-                    type="small"
-                    weight={600}
-                    themeColor="accentText"
                   />
                 </>
               )}
               <TextLink
                 label="Confidentialité"
+                apparence="discret"
                 onPress={() => router.push('/confidentialite')}
                 role="link"
-                type="small"
-                themeColor="textTertiary"
               />
               <TextLink
                 label="Conditions d’utilisation"
+                apparence="discret"
                 onPress={() => router.push('/conditions')}
                 role="link"
-                type="small"
-                themeColor="textTertiary"
               />
               {/* Une phrase adressée à la personne, donc en Spline Sans : la chasse fixe est
                   réservée aux sources et aux codes techniques (24/09/2026, `v1-29`). */}

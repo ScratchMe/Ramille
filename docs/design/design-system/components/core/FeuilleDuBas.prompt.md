@@ -5,7 +5,7 @@ Le cadre d'une feuille du bas : voile, feuille, poignée et titre. Ce que la feu
   <ThemedText type="body" themeColor="textSecondary">L’action que tu suis — Faire un trajet sur cinq à vélo — et le moment que tu avais choisi restent engagés si ton nouveau plan propose encore cette action. Sinon, elle ne sera plus engagée.</ThemedText>
   <ThemedText type="small" themeColor="textTertiary">Rien ne presse : une habitude met du temps à prendre. Si tes trajets n’ont pas changé, ton bilan actuel est toujours juste.</ThemedText>
   <Button title="Commencer" />
-  <TextLink label="Pas maintenant" onPress={fermer} type="small" weight={600} themeColor="accentText" style={{ textAlign: 'center' }} />
+  <TextLink label="Pas maintenant" apparence="action" onPress={fermer} style={{ textAlign: 'center' }} />
 </FeuilleDuBas>
 ```
 

@@ -46,7 +46,7 @@ export function BlocMethode({ dateDuBilan = null, ouvertAuDepart = false }) {
   const [ouvert, setOuvert] = React.useState(ouvertAuDepart);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <TextLink label="Comment ce chiffre est calculé" onPress={() => setOuvert((v) => !v)} expanded={ouvert} type="small" weight={600} themeColor="textSecondary" containerStyle={{ alignItems: 'flex-start' }} />
+      <TextLink label="Comment ce chiffre est calculé" apparence="discret" onPress={() => setOuvert((v) => !v)} expanded={ouvert} containerStyle={{ alignItems: 'flex-start' }} />
       {ouvert && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {sectionsDeMethode(dateDuBilan).map((section) => (

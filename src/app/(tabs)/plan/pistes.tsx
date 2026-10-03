@@ -259,12 +259,10 @@ export default function PistesScreen() {
       label="Retour au plan"
       // **Jamais un `router.back()` nu** : rechargé, ou ouvert par son adresse, cet écran n'a rien
       // derrière lui dans la pile, et le lien ne faisait alors rien (recette du 28/09/2026).
+      apparence="action"
       onPress={() => revenirOu('/plan')}
       // Une navigation, donc un lien (24/09/2026, `v1-29`).
       role="link"
-      type="small"
-      weight={600}
-      themeColor="accentText"
     />
   );
 
@@ -295,6 +293,7 @@ export default function PistesScreen() {
             {etat.genre === 'erreur' && (
               <TextLink
                 label="Réessayer"
+                apparence="action"
                 onPress={() => {
                   // Repasser par « chargement » dans ce gestionnaire, et jamais dans `rafraichir` :
                   // sans ce passage, un second échec rend exactement le même écran et le bouton a
@@ -303,9 +302,6 @@ export default function PistesScreen() {
                   setEtat({ genre: 'chargement', relance: true });
                   rafraichir();
                 }}
-                type="small"
-                weight={600}
-                themeColor="accentText"
               />
             )}
             {retour}

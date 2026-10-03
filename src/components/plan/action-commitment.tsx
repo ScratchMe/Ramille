@@ -377,6 +377,7 @@ export function ActionCommitment({
           <TextLink
             ref={leLienModifier}
             label={kind === 'days' ? 'Modifier les jours' : 'Modifier l’échéance'}
+            apparence="souligne"
             hint="Rouvre le choix, sans libérer cette action"
             onPress={() => {
               geste.current = 'ouvrir';
@@ -389,18 +390,13 @@ export function ActionCommitment({
               onOuvert?.();
             }}
             disabled={busy}
-            type="small"
-            themeColor="textTertiary"
-            style={styles.link}
           />
           <TextLink
             label="Changer d’avis"
+            apparence="souligne"
             hint="Libère cette action ; tu pourras en choisir une autre"
             onPress={release}
             disabled={busy}
-            type="small"
-            themeColor="textTertiary"
-            style={styles.link}
           />
         </View>
         {/* Sous les deux liens et non dans leur rangée, qui passe à la ligne : un échec de « Changer
@@ -500,6 +496,7 @@ export function ActionCommitment({
       <View style={styles.pickerActions}>
         <TextLink
           label="Annuler"
+          apparence="souligne"
           onPress={() => {
             if (onAnnuler && !modification) {
               onAnnuler();
@@ -520,9 +517,6 @@ export function ActionCommitment({
             }
           }}
           disabled={busy}
-          type="small"
-          themeColor="textTertiary"
-          style={styles.link}
         />
         {/* **En attente, jamais inactif, tant qu'il manque quelque chose** (D13) : il a l'apparence du
             désactivé et agit — son toucher demande (`demander`). `disabled` reste pour ce qui
@@ -538,7 +532,6 @@ const styles = StyleSheet.create({
   picker: { marginTop: Spacing.three, borderRadius: Radius.field, padding: Spacing.four, gap: Spacing.three },
   timingColumn: { gap: Spacing.two },
   pickerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
-  link: { textDecorationLine: 'underline' },
   piedDeLaCarteEngagee: { gap: Spacing.two },
   liensDeLaCarteEngagee: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: Spacing.four },
 });

@@ -310,9 +310,9 @@ export default function ConnexionEmail() {
           <MessageInline message={message} />
           <TextLink
             label="J’ai déjà un compte"
+            apparence="action"
             onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'email' } })}
             role="link"
-            type="linkPrimary"
           />
         </View>
       </View>
@@ -325,10 +325,9 @@ export default function ConnexionEmail() {
         />
         <TextLink
           label="Revenir aux autres options"
+          apparence="discret"
           onPress={revenirOuRacine}
           role="link"
-          type="small"
-          themeColor="textTertiary"
           style={styles.backLink}
         />
       </View>

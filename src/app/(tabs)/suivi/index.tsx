@@ -301,10 +301,8 @@ export default function Suivi() {
         <MessageInline message={phraseDeLaLectureEnEchec('relectureDuSuivi', relectureEnEchec)} />
         <TextLink
           label="Réessayer"
+          apparence="action"
           onPress={rafraichir}
-          type="small"
-          weight={600}
-          themeColor="accentText"
         />
       </View>
     ) : null;
@@ -371,6 +369,7 @@ export default function Suivi() {
                 son plan et ses points sont rattachés à son compte, pas à l'appareil. */}
             <TextLink
               label="J’ai déjà un compte"
+              apparence="action"
               onPress={() =>
                 router.push({ pathname: '/connexion/retrouver', params: { source: 'suivi_vide' } })
               }
@@ -704,11 +703,9 @@ export default function Suivi() {
                     {groupe.points.length > POINTS_VISIBLES && (
                       <TextLink
                         label={deplie ? 'Replier' : 'Voir tout'}
+                        apparence="action"
                         onPress={() => basculerLeGroupe(groupe.libelle)}
                         expanded={deplie}
-                        type="small"
-                        weight={600}
-                        themeColor="accentText"
                       />
                     )}
                   </View>

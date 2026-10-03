@@ -1,7 +1,7 @@
 Une action chiffrée. Engagée : bordure accent 2 px, fond tinted, étiquette avec coche. Non retenue : estompée sans perdre son bouton.
 
 ```jsx
-<ActionCard titre="Faire un trajet sur cinq à vélo" gainKg={184} partPercent={7} intention="le mardi et le jeudi" premierPas="Repère un itinéraire cyclable avant ton premier jour." engagee><TextLink label="Changer d’avis" type="small" themeColor="textTertiary" style={{ textDecoration: 'underline' }} /></ActionCard>
+<ActionCard titre="Faire un trajet sur cinq à vélo" gainKg={184} partPercent={7} intention="le mardi et le jeudi" premierPas="Repère un itinéraire cyclable avant ton premier jour." engagee><TextLink label="Changer d’avis" apparence="souligne" /></ActionCard>
 <ActionCard titre="Travailler depuis chez toi un jour par semaine" gainKg={240} partPercent={9} estompee />
 ```
 

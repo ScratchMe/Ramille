@@ -229,18 +229,16 @@ export function SaisieDuCode({
             quitter la route — une action sur place (contre-lecture du 25/09/2026). */}
         <TextLink
           label="Renvoyer un code"
+          apparence="discret"
           onPress={() => void surRenvoi()}
           role="button"
-          type="small"
-          themeColor="textTertiary"
           style={styles.centre}
         />
         <TextLink
           label="Utiliser une autre adresse"
+          apparence="discret"
           onPress={onAutreAdresse}
           role="button"
-          type="small"
-          themeColor="textTertiary"
           style={styles.centre}
         />
         {/* **Le pied suit la voix, et sa promesse a dû rétrécir pour rester vraie.** Il disait « tu

@@ -98,11 +98,9 @@ export function EtapeAccroche({
               supprime la collision au lieu de la gérer (docs/design/v1-10-retrouver-son-compte). */}
           <TextLink
             label="J’ai déjà un compte"
+            apparence="action"
             onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'onboarding' } })}
             role="link"
-            type="small"
-            weight={600}
-            themeColor="textSecondary"
             style={styles.dejaUnCompte}
             containerStyle={styles.dejaUnCompteCible}
           />

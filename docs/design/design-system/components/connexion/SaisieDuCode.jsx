@@ -50,8 +50,8 @@ export function SaisieDuCode({ voix = 'parti', adresse, libelleBouton, codeIniti
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 'auto' }}>
         <Button title={occupe ? 'Vérification…' : libelleBouton} onPress={() => onValider && onValider(code)} disabled={occupe || !plausible} />
-        <TextLink label="Renvoyer un code" onPress={() => { setCode(''); if (onRenvoyer) onRenvoyer(); }} role="button" type="small" themeColor="textTertiary" style={centre} containerStyle={{ alignItems: 'center' }} />
-        <TextLink label="Utiliser une autre adresse" onPress={onAutreAdresse} role="button" type="small" themeColor="textTertiary" style={centre} containerStyle={{ alignItems: 'center' }} />
+        <TextLink label="Renvoyer un code" apparence="discret" onPress={() => { setCode(''); if (onRenvoyer) onRenvoyer(); }} role="button" style={centre} containerStyle={{ alignItems: 'center' }} />
+        <TextLink label="Utiliser une autre adresse" apparence="discret" onPress={onAutreAdresse} role="button" style={centre} containerStyle={{ alignItems: 'center' }} />
         {voix === 'parti' && <ThemedText type="small" themeColor="textTertiary" style={centre}>Si tu quittes cet écran, ton adresse reste gardée ici : tu peux reprendre depuis « Toi ».</ThemedText>}
       </div>
     </div>

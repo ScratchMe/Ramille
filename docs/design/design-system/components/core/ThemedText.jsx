@@ -7,8 +7,6 @@ const SIZES = {
   smallBold: { fontSize: 14, lineHeight: '20px', fontWeight: 700 },
   title: { fontSize: 48, lineHeight: '52px', fontWeight: 600 },
   subtitle: { fontSize: 32, lineHeight: '44px', fontWeight: 600 },
-  link: { fontSize: 14, lineHeight: '30px', fontWeight: 500 },
-  linkPrimary: { fontSize: 14, lineHeight: '30px', fontWeight: 600, color: 'var(--color-accent-text)' },
   // La chasse fixe : sources et codes techniques seulement, jamais une phrase adressée à la personne.
   code: { fontSize: 12, lineHeight: '18px', fontWeight: 500, fontFamily: 'var(--font-mono)' },
   screenTitle: { fontSize: 26, lineHeight: '32px', letterSpacing: '-0.26px', fontWeight: 600 },
