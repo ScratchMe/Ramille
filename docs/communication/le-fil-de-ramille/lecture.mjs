@@ -34,8 +34,25 @@
 // conclure. Et la fluidité mesurée ici est celle de cette machine : elle voit une image lourde, pas
 // l'absence d'une optimisation qu'une machine rapide absorbe.
 //
-// Éprouvé le 03/10/2026, en cassant ce qu'il garde (`FILM=<copie faussée>`) — chaque mutation vue,
-// le témoin à zéro. MUTATIONS
+// Éprouvé le 03/10/2026, en cassant ce qu'il garde (`FILM=<copie faussée>`) — neuf mutations, une
+// par contrôle, chacune vue, le témoin à zéro et aucun dossier temporaire laissé :
+//   - la boucle de 46b5993 remise (l'image sur l'horloge de la page, le son recalé au-delà de
+//     0,15 s) → « le son saute », 47 sauts en 15 s avec la latence simulée — le défaut entendu ;
+//     sans latence, aucun : c'est bien le retard d'un vrai son qui le déclenchait ;
+//   - le démarrage qui lit aussi `networkState` → « le son ne joue pas » aux trois passages et
+//     « le bouton du son est désactivé » : il vaut « aucune source » le temps que le chargement
+//     démarre, et coupait le son à chaque ouverture ;
+//   - l'image qui ne passe jamais sur l'horloge du son → « l'image ne suit pas le son », 0,37 s
+//     d'écart avec le son plus rapide ;
+//   - une image qui coûte 30 ms → « lecture saccadée » aux deux formats (31,6 ms par image). Retirer
+//     le cache d'écriture, lui, ne la fait pas tomber sur cette machine : la garde voit une image
+//     lourde, pas une optimisation qu'une machine rapide absorbe ;
+//   - le bouton qui ne met plus le son en pause → « le bouton ne coupe pas le son » ;
+//   - le bouton qui ne relance plus le son → « le son ne repart pas avec l'image » ;
+//   - un chapitre qui se joue sous « réduire les animations » → « le chapitre se joue » ;
+//   - un chapitre qui ne se lance plus sans la préférence → « le chapitre ne se joue pas » (et le
+//     bouton du son, qui suppose une lecture en cours, le dit aussi) ;
+//   - une exception lancée par la page → « erreur de la page », à chaque ouverture.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
