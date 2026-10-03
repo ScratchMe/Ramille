@@ -13,6 +13,7 @@ import { LigneDAttente } from '@/components/ligne-d-attente';
 import { MessageInline } from '@/components/message-inline';
 import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste';
 import { PastilleEngagee } from '@/components/plan/pastille-engagee';
+import { SortieDuDetour } from '@/components/sortie-du-detour';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -252,21 +253,16 @@ export default function PistesScreen() {
       ? (etat.pistes.find((a) => a.committed_at !== null)?.id ?? null)
       : null;
 
-  const retour = (
-    <TextLink
-      label="Retour au plan"
-      apparence="action"
-      // **Jamais un `router.back()` nu** : rechargé, ou ouvert par son adresse, cet écran n'a rien
-      // derrière lui dans la pile, et le lien ne faisait alors rien (recette du 28/09/2026).
-      onPress={() => revenirOu('/plan')}
-      // Une navigation, donc un lien (24/09/2026, `v1-29`).
-      role="link"
-    />
-  );
+  // **En haut à gauche, dans tous les états** (`v1-33` T-10, 03/10/2026) : cet écran se consulte, sa
+  // sortie va là où on la cherche — et ne descend pas au milieu de l'écran quand la lecture échoue.
+  // **Jamais un `router.back()` nu** : rechargé, ou ouvert par son adresse, cet écran n'a rien
+  // derrière lui dans la pile, et le lien ne faisait alors rien (recette du 28/09/2026).
+  const retour = <SortieDuDetour label="Retour au plan" onPress={() => revenirOu('/plan')} />;
 
   if (etat.genre !== 'pistes') {
     return (
       <ThemedView style={styles.container}>
+        <View style={styles.sortieDeLEtat}>{retour}</View>
         <View style={styles.etatSimple}>
           {/* L'écran ne dit jamais « tu n'as rien » sur un échec de lecture : il dit qu'il n'a pas
               pu lire, et propose de réessayer (règle de C1.4). Les pistes existent, c'est la
@@ -293,7 +289,6 @@ export default function PistesScreen() {
               }}
             />
           )}
-          {retour}
         </View>
       </ThemedView>
     );
@@ -604,6 +599,8 @@ function Lignes({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
+  // La sortie à la place qu'elle a au-dessus de la liste : la marge de `scroll`, sous la bande.
+  sortieDeLEtat: { paddingHorizontal: Spacing.four, paddingTop: Spacing.four },
   etatSimple: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   // Le `gap` du groupe est nul parce que la tête porte ses propres marges, et qu'un `gap` par-dessus
   // les rajouterait.

@@ -34,6 +34,10 @@
  *   - le retour matériel qui ne prévient plus l'écran → 1, le retour, seul ;
  *   - le retour matériel qui prend même confirmation fermée → 1, « il ne prend rien », seul — c'est la
  *     moitié négative : l'écoute que `MonCompte` laisse à la navigation.
+ *
+ * **Et le 03/10/2026, la sortie de l'écran** (`v1-33` T-10) : « Toi » se consulte, sa sortie est en haut,
+ * au-dessus du titre — c'est l'écran qui a servi de modèle à la règle, et le seul test de sa place, ses
+ * doublures étant ici. Une mutation : la sortie rendue sous le titre → « la sortie est au-dessus… », seul.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
@@ -192,5 +196,14 @@ describe('« Réessayer », l’autre principal de l’écran', () => {
     await screen.findByRole('button', { name: 'Supprimer définitivement' });
     expect(estSecondaire('Réessayer')).toBe(true);
     expect(estPrincipal('Supprimer définitivement')).toBe(true);
+  });
+});
+
+describe('la sortie de « Toi »', () => {
+  test('la sortie est au-dessus du titre, en haut à gauche', async () => {
+    await monterSansCompte();
+    const texte = JSON.stringify(screen.toJSON());
+    expect(screen.getByRole('link', { name: 'Retour' })).toBeTruthy();
+    expect(texte.indexOf('"Retour"')).toBeLessThan(texte.indexOf('"Toi"'));
   });
 });

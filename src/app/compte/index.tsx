@@ -8,6 +8,7 @@ import { ChoixDeRappel } from '@/components/compte/choix-de-rappel';
 import { MonCompte } from '@/components/compte/mon-compte';
 import { LigneDAttente } from '@/components/ligne-d-attente';
 import { MessageInline } from '@/components/message-inline';
+import { SortieDuDetour } from '@/components/sortie-du-detour';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -224,15 +225,8 @@ export default function Compte() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.contenu} showsVerticalScrollIndicator={false}>
           <View style={styles.page}>
-            {!supprime && (
-              <TextLink
-                label="Retour"
-                apparence="discret"
-                onPress={() => revenirOu('/')}
-                role="link"
-                containerStyle={styles.retour}
-              />
-            )}
+            {/* La sortie d'un écran qui se consulte : en haut à gauche, avec son chevron (`v1-33` T-10). */}
+            {!supprime && <SortieDuDetour label="Retour" onPress={() => revenirOu('/')} />}
             <ThemedText type="screenTitle">Toi</ThemedText>
 
             {!supprime && (
@@ -437,7 +431,6 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   contenu: { padding: Spacing.four, paddingBottom: Spacing.six },
   page: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.three },
-  retour: { alignSelf: 'flex-start' },
   bouton: { marginTop: Spacing.one },
   // **32 entre les sections, 16 dedans** (01/10/2026, audit T-15) : le compte et les rappels sont
   // deux sections, et « Mes données » la troisième — d'où la marge du bas, qui s'ajoute à l'écart de

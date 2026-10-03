@@ -1,0 +1,1558 @@
+<title>Le fil de Ramille</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<style>
+/* Mise en page : une salle de projection. Le film en tête, ses commandes dessous, puis le
+   scénario plan par plan (qui sert aussi de version texte), et les règles qu'il tient.
+   La page suit le thème ; le film, lui, est une image : il garde la palette claire de l'app,
+   comme la mascotte, dont l'encre ne bascule jamais. */
+:root {
+  --page: #F6F8F3;
+  --surface: #FFFFFF;
+  --encre: #131612;
+  --encre-2: #39403B;
+  --encre-3: #5E655F;
+  --filet: #DDE0D9;
+  --accent: #1F6F4A;
+  --accent-texte: #14563A;
+  --accent-appui: #14563A;
+  --teinte: #E4EFE8;
+  --element: #F0F1EC;
+  --sur-accent: #FFFFFF;
+  --focus: #1F6F4A;
+  --police: "Spline Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --police-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #000000; --surface: #1A1C1A; --encre: #FFFFFF; --encre-2: #B0B4BA; --encre-3: #8A9088;
+    --filet: #2E3135; --accent: #3D9B6F; --accent-texte: #8FCBA9; --accent-appui: #2F7F59;
+    --teinte: #1C2E22; --element: #212225; --sur-accent: #FFFFFF; --focus: #8FCBA9;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #000000; --surface: #1A1C1A; --encre: #FFFFFF; --encre-2: #B0B4BA; --encre-3: #8A9088;
+  --filet: #2E3135; --accent: #3D9B6F; --accent-texte: #8FCBA9; --accent-appui: #2F7F59;
+  --teinte: #1C2E22; --element: #212225; --sur-accent: #FFFFFF; --focus: #8FCBA9;
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+body { background: var(--page); color: var(--encre); font-family: var(--police); font-size: 15px; line-height: 22px; }
+.page { max-width: 1120px; margin-inline: auto; padding-inline: 16px; padding-block: 32px 64px; display: grid; gap: 40px; }
+.tete { display: grid; gap: 8px; max-width: 760px; }
+.surtitre { font-size: 13px; line-height: 18px; letter-spacing: 0.3px; text-transform: uppercase; font-weight: 600; color: var(--encre-3); margin: 0; }
+h1 { font-size: 32px; line-height: 38px; letter-spacing: -0.64px; font-weight: 600; margin: 0; text-wrap: balance; }
+.chapeau { margin: 0; color: var(--encre-2); font-size: 16px; line-height: 24px; max-width: 64ch; }
+h2 { font-size: 22px; line-height: 28px; letter-spacing: -0.22px; font-weight: 600; margin: 0; text-wrap: balance; }
+
+/* ---------- La salle ---------- */
+.salle { display: grid; gap: 16px; }
+.cadre { position: relative; display: grid; justify-items: center; }
+.commandes { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.lecture { display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px 0 16px; border-radius: 24px; border: 0; background: var(--accent); color: var(--sur-accent); font: 600 15px/22px var(--police); cursor: pointer; }
+.lecture:active { background: var(--accent-appui); }
+.lecture svg { width: 18px; height: 18px; fill: currentColor; }
+.temps { font: 500 13px/18px var(--police-mono); color: var(--encre-3); font-variant-numeric: tabular-nums; min-width: 92px; }
+.frise { flex: 1 1 260px; min-width: 0; display: grid; gap: 6px; }
+.frise input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; height: 24px; }
+.format { display: inline-flex; gap: 4px; padding: 4px; border-radius: 22px; background: var(--element); border: 0; margin: 0; }
+.format legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.format label { display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 18px; font: 500 14px/20px var(--police); color: var(--encre-2); cursor: pointer; }
+.format input { position: absolute; opacity: 0; pointer-events: none; }
+.format input:checked + span { font-weight: 600; color: var(--encre); }
+.format label:has(input:checked) { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.format label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.icone-bouton { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 24px; border: 1px solid var(--filet); background: var(--surface); color: var(--encre); cursor: pointer; }
+.icone-bouton svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.son { display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px 0 12px; border-radius: 24px; border: 1px solid var(--filet); background: var(--surface); color: var(--encre); font: 500 14px/20px var(--police); cursor: pointer; }
+.son svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.son[aria-pressed="false"] { color: var(--encre-3); }
+.son:disabled { cursor: default; color: var(--encre-3); }
+button:focus-visible, input[type="range"]:focus-visible, .chap:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.chapitres { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.chap { width: 100%; text-align: left; display: grid; gap: 2px; padding: 10px 12px; min-height: 56px; border-radius: 14px; border: 1px solid var(--filet); background: var(--surface); color: var(--encre); font: 500 14px/20px var(--police); cursor: pointer; }
+.chap small { font: 500 12px/16px var(--police-mono); color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.chap[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--teinte); font-weight: 600; }
+@media (max-width: 720px) { .chapitres { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- Le scénario ---------- */
+.bloc-texte { display: grid; gap: 16px; }
+.scenario { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--filet); }
+.scenario li { display: grid; grid-template-columns: 92px minmax(0, 1fr) minmax(0, 1fr); gap: 8px 24px; padding-block: 16px; border-bottom: 1px solid var(--filet); }
+.scenario .tc { font: 500 13px/20px var(--police-mono); color: var(--encre-3); font-variant-numeric: tabular-nums; }
+.scenario h3 { margin: 0 0 4px; font-size: 15px; line-height: 22px; font-weight: 600; }
+.scenario p { margin: 0; color: var(--encre-2); }
+.scenario .ecrit { color: var(--encre); }
+.scenario .etiquette { display: block; font-size: 12px; line-height: 16px; letter-spacing: 0.3px; text-transform: uppercase; font-weight: 600; color: var(--encre-3); margin-bottom: 4px; }
+@media (max-width: 720px) { .scenario li { grid-template-columns: minmax(0, 1fr); } }
+.regles { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--encre-2); max-width: 72ch; }
+.regles strong { color: var(--encre); font-weight: 600; }
+code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: var(--element); padding: 1px 5px; border-radius: 6px; }
+
+/* ================================================================
+   LE FILM — une image, donc une seule palette : celle de l'app en clair.
+   Unités : cqmin pour le texte (même taille absolue en 16:9 et 9:16 à 1080p),
+   pourcentages de la scène pour les positions, et dans le téléphone des « dp »
+   (100cqi / 360), pour reprendre les valeurs du design system telles quelles.
+   ================================================================ */
+.scene {
+  --f-encre: #131612; --f-encre-2: #39403B; --f-encre-3: #5E655F; --f-fond: #FFFFFF;
+  --f-accent: #1F6F4A; --f-accent-texte: #14563A; --f-attenue: #A9C8B6; --f-teinte: #E4EFE8;
+  --f-teinte-2: #F3F8F4; --f-element: #F0F1EC; --f-filet: #DDE0D9; --f-champ: #858C86;
+  --f-appui: #E4E6DF; --f-appui-choisi: #D6E7DC; --f-accent-appui: #14563A;
+  position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--f-fond); color: var(--f-encre);
+  overflow: hidden; border-radius: 16px; font-family: var(--police);
+  -webkit-font-smoothing: antialiased; cursor: pointer; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 0 0 1px var(--filet);
+  contain: layout paint;
+}
+.scene.portrait { aspect-ratio: 9 / 16; width: min(100%, calc(78vh * 9 / 16)); }
+/* Le film se compose à taille fixe — 1600 × 900 px, ou 900 × 1600 — puis se met à l'échelle d'un
+   seul bloc. À une taille de lecteur, la mise en page est donc exactement celle de l'export : quand
+   il se recomposait à chaque taille, sa mise en page ne suivait plus la proportion à très petite
+   taille, et les textes du téléphone sortaient de leurs boîtes en 16:9. */
+.plateau { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; container-type: size; }
+.portrait .plateau { width: 900px; height: 1600px; }
+.scene *, .scene *::before, .scene *::after { box-sizing: border-box; }
+.scene p { margin: 0; }
+.fil-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.x { position: absolute; }
+.mot { display: inline-block; }
+
+/* Textes de scène */
+.k { font-weight: 600; font-size: 6.2cqmin; line-height: 1.08; letter-spacing: -0.02em; text-wrap: balance; }
+.k-sous { font-weight: 500; font-size: 2.9cqmin; line-height: 1.35; color: var(--f-encre-2); margin-top: 1.6cqmin; text-wrap: pretty; }
+.portrait .k { font-size: 7cqmin; }
+.portrait .k-sous { font-size: 3.7cqmin; }
+.etiq { font-weight: 600; font-size: 3cqmin; line-height: 1.2; color: var(--f-encre); white-space: nowrap; transform-origin: 50% 50%; }
+.portrait .etiq { font-size: 3.9cqmin; }
+.mono { font-family: var(--police-mono); font-weight: 400; font-size: 1.75cqmin; line-height: 1.45; color: var(--f-encre-3); }
+.portrait .mono { font-size: 2.5cqmin; }
+
+/* Placement par format — paysage */
+.paysage #s1-t1, .paysage #s1-t2 { left: 5.6%; top: 11%; width: 64%; }
+.paysage #s1-t1 .k, .paysage #s1-t2 .k { font-size: 8cqmin; }
+.paysage #s2-titre, .paysage #s2-titre2 { left: 10%; top: 10.5%; width: 80%; }
+.paysage #s2-chiffre { left: 10%; top: 33%; }
+.paysage #s2-transport { left: 10%; top: 71.5%; }
+.paysage #s2-legende { left: 35%; top: 71.5%; width: 55%; }
+.paysage #s2-source { left: 10%; top: 88%; width: 80%; }
+.paysage #s3-texte { left: 51%; top: 30%; width: 44%; }
+.paysage .bloc-tel { left: 48%; top: 30%; width: 45%; }
+.paysage #tel { left: 9%; top: 5%; width: 32cqw; height: 64cqw; transform-origin: 50% 0; }
+.paysage #legende-tel { left: 48%; top: 88%; width: 45%; }
+.paysage #s7-texte { left: 47.5%; top: 18%; width: 46%; }
+.paysage #s8-texte { left: 51%; top: 24%; width: 44%; }
+
+/* Placement par format — portrait */
+.portrait #s1-t1, .portrait #s1-t2 { left: 7.8%; top: 8%; width: 84%; }
+.portrait #s1-t2 .k { font-size: 9.6cqmin; }
+.portrait #s2-titre, .portrait #s2-titre2 { left: 7.8%; top: 8%; width: 84%; }
+.portrait #s2-chiffre { left: 7.8%; top: 33%; }
+.portrait #s2-transport { left: 7.8%; top: 60.6%; }
+.portrait #s2-legende { left: 7.8%; top: 65%; width: 84%; }
+.portrait #s2-source { left: 7.8%; top: 89%; width: 84%; }
+.portrait #s3-texte { left: 7.8%; top: 50%; width: 84%; text-align: center; }
+.portrait .bloc-tel { left: 7.8%; top: 5%; width: 84%; }
+.portrait #tel { left: 21%; top: 25.5%; width: 58cqw; height: 116cqw; }
+.portrait #legende-tel { left: 21%; top: 92.6%; width: 58%; text-align: center; }
+.portrait #s7-texte { left: 7.8%; top: 7%; width: 84%; text-align: center; }
+.portrait #s8-texte { left: 7.8%; top: 46%; width: 84%; text-align: center; }
+
+/* Le chiffre de la scène 2 : un chiffre, jamais un titre — il se pose, il ne défile pas. */
+.chiffre { font-weight: 600; font-size: 13cqmin; line-height: 1; letter-spacing: -0.03em; color: var(--f-accent); }
+.chiffre-unite { font-weight: 500; font-size: 2.9cqmin; line-height: 1.3; color: var(--f-encre-2); margin-top: 1.4cqmin; }
+.portrait .chiffre { font-size: 17cqmin; }
+.portrait .chiffre-unite { font-size: 3.8cqmin; }
+.transport { font-weight: 600; font-size: 2.6cqmin; color: var(--f-accent-texte); }
+.portrait .transport { font-size: 3.6cqmin; }
+.legende { font-weight: 500; font-size: 2.2cqmin; line-height: 1.4; color: var(--f-encre-3); }
+.portrait .legende { font-size: 3.2cqmin; }
+.portrait .legende span { display: block; }
+
+/* Ramille, son nom, sa voix */
+.nom { font-weight: 600; font-size: 11.5cqmin; line-height: 1; letter-spacing: -0.03em; color: var(--f-encre); }
+.portrait .nom { font-size: 15cqmin; }
+.dit { font-weight: 500; font-size: 3.2cqmin; line-height: 1.38; color: var(--f-encre-2); margin-top: 2.4cqmin; max-width: 34em; }
+.portrait .dit { font-size: 3.8cqmin; margin-inline: auto; }
+.titre-3 { font-weight: 600; font-size: 5.4cqmin; line-height: 1.1; letter-spacing: -0.02em; margin-top: 3.2cqmin; text-wrap: balance; }
+.portrait .titre-3 { font-size: 7cqmin; }
+.mascotte-scene { position: absolute; z-index: 5; transform-origin: 50% 50%; will-change: transform, opacity; overflow: visible; }
+.mascotte-scene svg, .slot svg, .slot-calcul svg, .slot-rep svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Saisons */
+.saison-etiq { font-weight: 600; font-size: 3cqmin; line-height: 1.2; color: var(--f-encre-2); white-space: nowrap; }
+.portrait .saison-etiq { font-size: 3.7cqmin; }
+
+/* Le manifeste : le seul aplat vert du film. */
+#manif { position: absolute; z-index: 6; visibility: hidden; inset: 0; background: var(--f-accent); color: #FFFFFF; will-change: transform; }
+#manif .lignes { position: absolute; left: 9%; top: 24%; width: 82%; display: grid; gap: 0.6cqmin; }
+.manif-l { font-weight: 600; font-size: 10cqmin; line-height: 1.04; letter-spacing: -0.03em; }
+.manif-n { font-weight: 500; font-size: 3.2cqmin; line-height: 1.35; margin-top: 3.4cqmin; color: #E4EFE8; }
+.portrait #manif .lignes { left: 7.8%; top: 30%; width: 84%; }
+.portrait .manif-l { font-size: 12.5cqmin; }
+.portrait .manif-n { font-size: 4.2cqmin; }
+
+/* L'appel final */
+.accroche-8 { font-weight: 600; font-size: 5.4cqmin; line-height: 1.1; letter-spacing: -0.02em; margin-top: 3cqmin; text-wrap: balance; }
+.portrait .accroche-8 { font-size: 6.6cqmin; }
+.cta-ligne { margin-top: 4.4cqmin; display: flex; align-items: center; gap: 3cqmin; flex-wrap: wrap; }
+.portrait .cta-ligne { justify-content: center; }
+.cta { display: inline-flex; align-items: center; height: 9cqmin; padding: 0 5cqmin; border-radius: 4.5cqmin; background: var(--f-accent); color: #FFFFFF; font-weight: 600; font-size: 3cqmin; white-space: nowrap; will-change: clip-path; }
+.portrait .cta { height: 11cqmin; border-radius: 5.5cqmin; font-size: 4cqmin; padding: 0 6cqmin; }
+.url { font-weight: 600; font-size: 3.4cqmin; color: var(--f-accent-texte); }
+.portrait .url { font-size: 4.4cqmin; width: 100%; }
+.note-8 { font-weight: 500; font-size: 2.4cqmin; color: var(--f-encre-3); margin-top: 2.2cqmin; }
+.portrait .note-8 { font-size: 3.3cqmin; margin-top: 6cqmin; }
+.portrait .cta-ligne { row-gap: 3.6cqmin; }
+
+/* Affiche (avant la lecture) */
+.affiche { position: absolute; z-index: 10; inset: 0; display: grid; place-items: end start; padding: 3cqmin; pointer-events: none; }
+.affiche-bouton { display: inline-flex; align-items: center; gap: 1.6cqmin; height: 8cqmin; padding: 0 3.6cqmin 0 2.8cqmin; border-radius: 4cqmin; background: #131612; color: #FFFFFF; font: 600 2.6cqmin/1 var(--police); }
+.portrait .affiche-bouton { height: 10cqmin; border-radius: 5cqmin; font-size: 3.6cqmin; }
+.affiche-bouton svg { width: 2.6cqmin; height: 2.6cqmin; fill: currentColor; }
+.portrait .affiche-bouton svg { width: 3.4cqmin; height: 3.4cqmin; }
+
+/* ---------- Le téléphone (en dp) ---------- */
+#tel { position: absolute; will-change: transform, opacity; background: #131612; padding: 1cqmin; border-radius: 5.2cqmin; box-shadow: 0 2.4cqmin 6cqmin rgba(19, 22, 18, 0.12); }
+.portrait #tel { padding: 1.4cqmin; border-radius: 7.2cqmin; }
+.tel-ecran { position: relative; width: 100%; height: 100%; background: #FFFFFF; border-radius: 4.3cqmin; overflow: hidden; container-type: size; }
+.portrait .tel-ecran { border-radius: 5.9cqmin; }
+.tel-ecran * { --dp: calc(100cqi / 360); }
+.statut { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--dp) * 30); padding: 0 calc(var(--dp) * 24); display: flex; align-items: center; font-weight: 600; font-size: calc(var(--dp) * 13); color: #131612; }
+.ecr { position: absolute; inset: calc(var(--dp) * 30) 0 0 0; }
+.entete { padding: calc(var(--dp) * 8) calc(var(--dp) * 24) 0; }
+.entete-ligne { display: flex; align-items: center; gap: calc(var(--dp) * 8); height: calc(var(--dp) * 32); }
+.entete-etape { margin-left: auto; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); }
+.slot { width: calc(var(--dp) * 28); height: calc(var(--dp) * 28); flex: none; }
+.entete-section { font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); }
+.rail { margin-top: calc(var(--dp) * 10); height: calc(var(--dp) * 6); border-radius: calc(var(--dp) * 3); background: var(--f-filet); overflow: hidden; }
+.rail-plein { height: 100%; width: 0; background: var(--f-accent); border-radius: inherit; }
+.q-pile { position: relative; }
+.q { position: absolute; top: calc(var(--dp) * 24); left: calc(var(--dp) * 24); right: calc(var(--dp) * 24); }
+.q-titre { font-weight: 600; font-size: calc(var(--dp) * 22); line-height: calc(var(--dp) * 28); letter-spacing: calc(var(--dp) * -0.22); color: #131612; }
+.choix-liste { margin-top: calc(var(--dp) * 20); display: grid; gap: calc(var(--dp) * 8); }
+.choix { display: flex; align-items: center; min-height: calc(var(--dp) * 52); padding: calc(var(--dp) * 8) calc(var(--dp) * 16); border-radius: calc(var(--dp) * 14); background: var(--f-element); border: calc(var(--dp) * 1.5) solid transparent; font-weight: 400; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: #131612; }
+.puces { margin-top: calc(var(--dp) * 20); display: flex; flex-wrap: wrap; gap: calc(var(--dp) * 8); }
+.puce { display: inline-flex; align-items: center; justify-content: center; min-width: calc(var(--dp) * 52); height: calc(var(--dp) * 44); padding: 0 calc(var(--dp) * 14); border-radius: calc(var(--dp) * 22); background: var(--f-element); border: calc(var(--dp) * 1.5) solid transparent; font-weight: 500; font-size: calc(var(--dp) * 15); color: #131612; }
+.puce-jour { border-radius: calc(var(--dp) * 14); height: calc(var(--dp) * 40); min-width: 0; flex: 1; padding: 0; font-size: calc(var(--dp) * 14); }
+.choisi { background: var(--f-teinte) !important; border-color: var(--f-accent) !important; font-weight: 600 !important; }
+.appui { background: var(--f-appui) !important; }
+.appui.choisi { background: var(--f-appui-choisi) !important; }
+.pied { position: absolute; left: 0; right: 0; bottom: 0; padding: calc(var(--dp) * 16) calc(var(--dp) * 24) calc(var(--dp) * 24); background: #FFFFFF; }
+.bouton { display: flex; align-items: center; justify-content: center; height: calc(var(--dp) * 54); border-radius: calc(var(--dp) * 27); background: var(--f-accent); color: #FFFFFF; font-weight: 600; font-size: calc(var(--dp) * 16); }
+.bouton.appui { background: var(--f-accent-appui) !important; }
+.bouton-2 { background: #FFFFFF; color: #131612; box-shadow: inset 0 0 0 calc(var(--dp) * 1) var(--f-filet); }
+.bouton-2.appui { background: var(--f-appui) !important; }
+.ecr-calcul { display: grid; align-content: start; justify-content: center; justify-items: center; gap: calc(var(--dp) * 20); padding-top: calc(var(--dp) * 200); }
+.slot-calcul { width: calc(var(--dp) * 72); height: calc(var(--dp) * 72); }
+.ecr-calcul p { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 24); color: #131612; }
+.ecr-bilan { overflow: hidden; }
+.defile { padding: calc(var(--dp) * 20) calc(var(--dp) * 24); display: grid; align-content: start; gap: calc(var(--dp) * 22); }
+.b-titre { font-weight: 600; font-size: calc(var(--dp) * 26); line-height: calc(var(--dp) * 32); letter-spacing: calc(var(--dp) * -0.26); }
+.b-sous { font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); margin-top: calc(var(--dp) * 10) !important; }
+.b-total { font-weight: 600; font-size: calc(var(--dp) * 30); line-height: calc(var(--dp) * 36); letter-spacing: calc(var(--dp) * -0.6); margin-top: calc(var(--dp) * 2) !important; }
+.b-label { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: #131612; }
+.b-lignes { display: grid; gap: calc(var(--dp) * 12); margin-top: calc(var(--dp) * 10); }
+.b-ligne { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--dp) * 6) calc(var(--dp) * 8); font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); }
+.b-ligne b { font-weight: 600; }
+.b-barre { grid-column: 1 / -1; height: calc(var(--dp) * 12); border-radius: calc(var(--dp) * 6); background: var(--f-element); position: relative; }
+.b-barre i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: var(--f-attenue); }
+.b-barre i.fort { background: var(--f-accent); }
+.b-source { font-family: var(--police-mono); font-size: calc(var(--dp) * 11); line-height: calc(var(--dp) * 16); color: var(--f-encre-3); }
+.bande { height: calc(var(--dp) * 52); display: grid; place-items: center; position: relative; border-bottom: 1px solid var(--f-filet); font-weight: 600; font-size: calc(var(--dp) * 17); }
+.bande svg { position: absolute; right: calc(var(--dp) * 14); top: calc(var(--dp) * 15); width: calc(var(--dp) * 22); height: calc(var(--dp) * 22); fill: none; stroke: #131612; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.plan-corps { padding: calc(var(--dp) * 18) calc(var(--dp) * 20); display: grid; gap: calc(var(--dp) * 12); position: relative; }
+.bande { z-index: 1; background: #FFFFFF; }
+.p-titre { font-weight: 600; font-size: calc(var(--dp) * 26); line-height: calc(var(--dp) * 32); letter-spacing: calc(var(--dp) * -0.26); margin-bottom: calc(var(--dp) * 2) !important; }
+.carte { border: 1px solid var(--f-filet); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 14) calc(var(--dp) * 16); display: grid; gap: calc(var(--dp) * 6); background: #FFFFFF; }
+.carte.engagee { border: calc(var(--dp) * 2) solid var(--f-accent); background: var(--f-teinte-2); padding: calc(var(--dp) * 13) calc(var(--dp) * 15); }
+.carte.estompee { border-color: var(--f-element); }
+.c-etiq { display: none; align-items: center; gap: calc(var(--dp) * 8); font-weight: 700; font-size: calc(var(--dp) * 13); line-height: calc(var(--dp) * 18); letter-spacing: calc(var(--dp) * 0.3); text-transform: uppercase; color: var(--f-accent-texte); }
+.engagee .c-etiq { display: flex; }
+.pastille { width: calc(var(--dp) * 20); height: calc(var(--dp) * 20); border-radius: 50%; background: var(--f-accent); display: grid; place-items: center; }
+.pastille svg { width: calc(var(--dp) * 12); height: calc(var(--dp) * 12); fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.c-titre { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 23); }
+.c-gain { font-weight: 600; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: var(--f-accent-texte); }
+.c-gain span { font-weight: 400; color: var(--f-encre-3); }
+.pastille-bord { justify-self: start; display: inline-flex; align-items: center; height: calc(var(--dp) * 32); padding: 0 calc(var(--dp) * 14); border-radius: calc(var(--dp) * 16); box-shadow: inset 0 0 0 1px var(--f-champ); font-weight: 600; font-size: calc(var(--dp) * 14); color: var(--f-accent-texte); margin-top: calc(var(--dp) * 4); }
+.pastille-bord.appui { background: var(--f-appui); }
+.engagee .pastille-bord { display: none; }
+.depliage { overflow: hidden; height: 0; }
+.depliage-dedans { padding-top: calc(var(--dp) * 8); display: grid; gap: calc(var(--dp) * 10); }
+.depliage-dedans > p { font-weight: 600; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); }
+.jours { display: flex; gap: calc(var(--dp) * 5); }
+.point-hauteur { overflow: hidden; height: 0; }
+.point { background: var(--f-teinte); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 16); display: grid; margin-bottom: calc(var(--dp) * 4); }
+.point > div { grid-area: 1 / 1; }
+.lien-pistes { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); padding: calc(var(--dp) * 4) 0; }
+.pistes { display: grid; gap: calc(var(--dp) * 12); }
+.pt-label { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); }
+.pt-label.repondu { color: var(--f-encre-3); }
+.pt-q { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 23); margin-top: calc(var(--dp) * 6) !important; }
+.pt-boutons { display: flex; gap: calc(var(--dp) * 8); margin-top: calc(var(--dp) * 14); }
+.pt-boutons .bouton { flex: 1; height: calc(var(--dp) * 46); border-radius: calc(var(--dp) * 23); font-size: calc(var(--dp) * 15); }
+.lien { margin-top: calc(var(--dp) * 10) !important; font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); }
+.rep { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--dp) * 12); align-items: start; align-content: center; }
+.slot-rep { width: calc(var(--dp) * 40); height: calc(var(--dp) * 40); }
+.rep p.r { font-weight: 500; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: #131612; }
+.notif { position: absolute; top: calc(var(--dp) * 36); left: calc(var(--dp) * 10); right: calc(var(--dp) * 10); background: var(--f-element); border-radius: calc(var(--dp) * 22); padding: calc(var(--dp) * 12) calc(var(--dp) * 14); display: grid; grid-template-columns: auto 1fr; gap: calc(var(--dp) * 12); box-shadow: 0 calc(var(--dp) * 8) calc(var(--dp) * 24) rgba(19, 22, 18, 0.16); }
+.notif .ico { width: calc(var(--dp) * 38); height: calc(var(--dp) * 38); border-radius: calc(var(--dp) * 10); background: #FFFFFF; padding: calc(var(--dp) * 2); }
+.notif .ico svg { width: 100%; height: 100%; display: block; }
+.n-app { font-size: calc(var(--dp) * 12); line-height: calc(var(--dp) * 16); color: var(--f-encre-3); }
+.n-titre { font-weight: 600; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 20); }
+.n-corps { font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-2); }
+.doigt { position: absolute; left: 0; top: 0; width: calc(var(--dp) * 34); height: calc(var(--dp) * 34); margin: calc(var(--dp) * -17) 0 0 calc(var(--dp) * -17); border-radius: 50%; background: rgba(19, 22, 18, 0.22); box-shadow: 0 0 0 calc(var(--dp) * 2) rgba(255, 255, 255, 0.9); opacity: 0; pointer-events: none; }
+
+/* Export vidéo (local) : la scène seule, plein cadre. */
+html.export, html.export body { margin: 0; padding: 0; background: #FFFFFF; overflow: hidden; }
+html.export .page { max-width: none; padding: 0; display: block; }
+html.export .page > :not(.salle), html.export .commandes, html.export .chapitres, html.export .affiche { display: none !important; }
+html.export .scene { width: 100vw !important; height: 100vh !important; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+
+/* Plein écran */
+.cadre:fullscreen { background: #131612; display: grid; place-items: center; }
+.cadre:fullscreen .scene { width: min(100vw, calc(100vh * 16 / 9)); border-radius: 0; }
+.cadre:fullscreen .scene.portrait { width: min(100vw, calc(100vh * 9 / 16)); }
+</style>
+
+<div class="page">
+  <header class="tete">
+    <p class="surtitre">Proposition de motion design · 3 octobre 2026</p>
+    <h1>Le fil de Ramille</h1>
+    <p class="chapeau">Un film d’une minute vingt-six pour faire comprendre Ramille et donner envie de faire son bilan. Un seul trait le traverse&nbsp;: il trace un trajet, devient la nervure de la feuille, puis mène jusqu’au bouton de la fin. La musique est composée pour lui, calée sur ses coupes.</p>
+  </header>
+
+  <section class="salle" aria-label="Le film">
+    <audio id="musique" src="musique.mp3" preload="auto"></audio>
+    <div class="cadre" id="cadre">
+      <div class="scene paysage" id="scene" role="img" aria-label="Le film de présentation de Ramille. Son texte complet et la description de chaque plan sont dans le scénario, plus bas sur la page.">
+        <div class="plateau" id="plateau">
+        <svg class="fil-svg" id="fil-svg" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+          <g id="feuille-g">
+            <path id="feuille-pleine" d="M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z" fill="#1F6F4A" opacity="0"/>
+            <path id="feuille-trace" d="M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z" fill="none" stroke="#1F6F4A" stroke-width="2.4" stroke-linejoin="round" opacity="0"/>
+          </g>
+          <path id="fil" fill="none" stroke="#1F6F4A" stroke-linecap="round" stroke-linejoin="round"/>
+          <g id="barres"></g>
+          <g id="feuille-point-g"><circle id="feuille-point" cx="50" cy="82" r="0" fill="#E4EFE8"/></g>
+          <g id="arrets"></g>
+          <g id="saisons-points"></g>
+          <circle id="fil-bout" r="0" fill="#1F6F4A"/>
+        </svg>
+
+        <!-- 1 · Tes trajets -->
+        <div class="x" id="s1-t1"><p class="k" data-mots>Chaque jour, tu te déplaces.</p></div>
+        <div class="x" id="s1-t2"><p class="k" data-mots>Lequel pèse le plus&nbsp;?</p></div>
+        <div id="arrets-etiq"></div>
+
+        <!-- 2 · Ce qu'ils pèsent -->
+        <div class="x" id="s2-titre"><p class="k" data-mots>En France, le transport est le premier poste de l’empreinte carbone.</p></div>
+        <div class="x" id="s2-chiffre"><p class="chiffre">2,8&nbsp;t</p><p class="chiffre-unite">CO₂e par personne et par an, en moyenne</p></div>
+        <div class="x" id="s2-transport"><p class="transport">Transport</p></div>
+        <div class="x" id="s2-legende"><p class="legende"><span>Logement 2,2&nbsp;t · Alimentation 2,1&nbsp;t ·</span> <span>Services 1,5&nbsp;t · Équipements 0,9&nbsp;t</span></p></div>
+        <div class="x" id="s2-source"><p class="mono">Source&nbsp;: SDES, données 2017 · empreinte moyenne, tous postes&nbsp;: 9,5&nbsp;t&nbsp;CO₂e par personne et par an</p></div>
+        <div class="x" id="s2-titre2"><p class="k" data-mots>Et les tiens, ils pèsent combien&nbsp;?</p></div>
+
+        <!-- 3 · Ramille -->
+        <div class="mascotte-scene" id="m-scene"></div>
+        <div class="x" id="s3-texte">
+          <p class="nom x-int" id="s3-nom">Ramille</p>
+          <p class="dit x-int" id="s3-dit">«&nbsp;Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme.&nbsp;»</p>
+          <p class="titre-3 x-int" id="s3-titre" data-mots>Comprendre tes trajets, sans te juger.</p>
+        </div>
+
+        <!-- 4 à 6 · Le téléphone -->
+        <div class="x" id="tel">
+          <div class="tel-ecran" id="tel-ecran">
+            <div class="statut">8:12</div>
+
+            <div class="ecr" id="e-q">
+              <div class="entete">
+                <div class="entete-ligne"><span class="slot" id="slot-entete"></span><span class="entete-section" id="q-section">Domicile-travail</span><span class="entete-etape" id="q-etape">Étape 1 sur 9</span></div>
+                <div class="rail"><div class="rail-plein" id="rail"></div></div>
+              </div>
+              <div class="q-pile">
+                <div class="q" id="q1"><p class="q-titre">As-tu un trajet régulier pour le travail ou les études&nbsp;?</p>
+                  <div class="choix-liste"><div class="choix" id="q1-oui">Oui</div><div class="choix">Non</div></div></div>
+                <div class="q" id="q2"><p class="q-titre">Quel est ton mode de transport principal pour ce trajet&nbsp;?</p>
+                  <div class="choix-liste"><div class="choix" id="q2-voiture">Voiture (seul)</div><div class="choix">Voiture (covoiturage)</div><div class="choix">Deux-roues motorisé</div><div class="choix">Bus</div><div class="choix">Train</div></div></div>
+                <div class="q" id="q3"><p class="q-titre">À quelle fréquence fais-tu des trajets loisirs le week-end&nbsp;?</p>
+                  <div class="choix-liste"><div class="choix">Rarement — une fois par mois ou moins</div><div class="choix">Deux ou trois fois par mois</div><div class="choix" id="q3-une">Une fois par semaine</div><div class="choix">Plusieurs fois par semaine</div></div></div>
+                <div class="q" id="q4"><p class="q-titre">Combien de vols prends-tu dans une année type&nbsp;?</p>
+                  <div class="puces"><div class="puce">0</div><div class="puce" id="q4-un">1</div><div class="puce">2</div><div class="puce">3</div><div class="puce">4</div></div></div>
+              </div>
+              <div class="pied"><div class="bouton" id="b-suivant">Suivant</div></div>
+            </div>
+
+            <div class="ecr ecr-calcul" id="e-calcul"><div class="slot-calcul" id="slot-calcul"></div><p>Je calcule ton bilan…</p></div>
+
+            <div class="ecr ecr-bilan" id="e-bilan"><div class="defile" id="bilan-defile">
+              <div class="bb" id="bb1"><p class="b-titre">Ton bilan transport</p><p class="b-sous">Estimation annuelle, tous déplacements</p><p class="b-total">1,9&nbsp;t&nbsp;CO₂e</p></div>
+              <div class="bb" id="bb2"><p class="b-label">Répartition par poste</p>
+                <div class="b-lignes">
+                  <div class="b-ligne"><b>Trajet domicile-travail</b><b>1,2&nbsp;t</b><div class="b-barre"><i class="fort" style="width:63%"></i></div></div>
+                  <div class="b-ligne"><span>Loisirs du week-end</span><span>0,3&nbsp;t</span><div class="b-barre"><i style="width:16%"></i></div></div>
+                  <div class="b-ligne"><span>Voyages longue distance</span><span>0,4&nbsp;t</span><div class="b-barre"><i style="width:21%"></i></div></div>
+                </div></div>
+              <div class="bb" id="bb3"><p class="b-label">Où tu te situes</p>
+                <div class="b-lignes">
+                  <div class="b-ligne"><b>Toi</b><b>1,9&nbsp;t</b><div class="b-barre"><i class="fort" style="width:58%"></i></div></div>
+                  <div class="b-ligne"><span>Ton prochain palier</span><span>1,7&nbsp;t</span><div class="b-barre"><i style="width:52%"></i></div></div>
+                  <div class="b-ligne"><span>Moyenne en France</span><span>2,8&nbsp;t</span><div class="b-barre"><i style="width:85%"></i></div></div>
+                  <div class="b-ligne"><span>Repère transport 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i style="width:18%"></i></div></div>
+                </div>
+                <p class="b-source" style="margin-top:calc(var(--dp) * 12)">SDES, données 2017 · cible 2050&nbsp;: ADEME</p></div>
+            </div></div>
+
+            <div class="ecr" id="e-plan">
+              <div class="bande">Ramille<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6"/></svg></div>
+              <div class="plan-corps" id="plan-corps">
+                <p class="p-titre" id="p-titre">Ton plan</p>
+                <div class="point-hauteur" id="point-h">
+                  <div class="point" id="point">
+                    <div id="pt-q">
+                      <p class="pt-label" id="pt-label">Semaine du 05/10</p>
+                      <p class="pt-q">Mardi ou jeudi, as-tu fait ce trajet à deux&nbsp;?</p>
+                      <div class="pt-boutons"><div class="bouton bouton-2" id="pt-non">Non</div><div class="bouton bouton-2" id="pt-oui">Oui</div></div>
+                      <p class="lien">Pas de trajet la semaine dernière</p>
+                    </div>
+                    <div class="rep" id="pt-r1"><div class="slot-rep" id="slot-rep1"></div><div><p class="r">Bien joué — chaque changement compte.</p><p class="lien">Modifier ma réponse</p></div></div>
+                    <div class="rep" id="pt-r2"><div class="slot-rep" id="slot-rep2"></div><div><p class="r">Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.</p><p class="lien">Modifier ma réponse</p></div></div>
+                  </div>
+                </div>
+                <div class="pistes" id="pistes">
+                  <div class="carte" id="c1"><p class="c-titre">Passer deux trajets sur cinq en train</p><p class="c-gain">−&nbsp;430&nbsp;kg&nbsp;CO₂e <span>par an · 23&nbsp;% de ton empreinte</span></p><span class="pastille-bord" id="c1-choix">Je m’y engage</span></div>
+                  <div class="carte" id="c2">
+                    <p class="c-etiq"><span class="pastille"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.6 6.3 5 8.6l4.4-5"/></svg></span>Ton engagement</p>
+                    <p class="c-titre">Faire ce trajet à deux au moins un jour sur deux</p>
+                    <p class="c-gain">−&nbsp;300&nbsp;kg&nbsp;CO₂e <span id="c2-ligne">par an · 16&nbsp;% de ton empreinte</span></p>
+                    <span class="pastille-bord" id="c2-engage">Je m’y engage</span>
+                    <div class="depliage" id="c2-dep"><div class="depliage-dedans" id="c2-dep-dedans">
+                      <p>Quels jours&nbsp;?</p>
+                      <div class="jours"><span class="puce puce-jour">L</span><span class="puce puce-jour" id="j-mar">M</span><span class="puce puce-jour">M</span><span class="puce puce-jour" id="j-jeu">J</span><span class="puce puce-jour">V</span><span class="puce puce-jour">S</span><span class="puce puce-jour">D</span></div>
+                      <div class="bouton" id="c2-note">C’est noté</div>
+                    </div></div>
+                  </div>
+                </div>
+                <p class="lien-pistes" id="lien-pistes">Voir toutes les pistes · 6</p>
+              </div>
+            </div>
+
+            <div class="notif" id="notif">
+              <div class="ico" id="notif-ico"></div>
+              <div><p class="n-app">Ramille · maintenant</p><p class="n-titre">Ton point de la semaine</p><p class="n-corps">Ton trajet domicile-travail · Mardi ou jeudi, as-tu fait ce trajet à deux&nbsp;?</p></div>
+            </div>
+            <div class="doigt" id="doigt"></div>
+          </div>
+        </div>
+        <div class="x" id="legende-tel"><p class="mono">Écrans de l’app · profil d’exemple</p></div>
+        <div class="x bloc-tel" id="t4a"><p class="k" data-mots>Ton bilan, en 5&nbsp;minutes environ.</p><p class="k-sous">Quelques questions sur tes déplacements habituels.</p></div>
+        <div class="x bloc-tel" id="t4b"><p class="k" data-mots>Tu vois quel déplacement pèse le plus.</p><p class="k-sous">Et où tu te situes, entre la moyenne française et le repère&nbsp;2050.</p></div>
+        <div class="x bloc-tel" id="t5a"><p class="k" data-mots>Puis une action, à ton rythme.</p><p class="k-sous">Ton plan ne propose que ce qui tient avec tes réponses.</p></div>
+        <div class="x bloc-tel" id="t5b"><p class="k" data-mots>Tu choisis tes jours.</p><p class="k-sous">Ramille te fait signe lundi.</p></div>
+        <div class="x bloc-tel" id="t6a"><p class="k" data-mots>Un point, de temps en temps.</p><p class="k-sous">Une seule question, sur ton action.</p></div>
+        <div class="x bloc-tel" id="t6b"><p class="k" data-mots>Oui, non, ou pas de trajet.</p><p class="k-sous">Aucune réponse n’est un échec.</p></div>
+
+        <!-- 6 · Le manifeste -->
+        <div id="manif">
+          <div class="lignes">
+            <p class="manif-l x-int" id="m1">Pas de score.</p>
+            <p class="manif-l x-int" id="m2">Pas de série.</p>
+            <p class="manif-l x-int" id="m3">Aucun classement.</p>
+            <p class="manif-n x-int" id="m4">Tes réponses restent privées.</p>
+          </div>
+        </div>
+
+        <!-- 7 · Au fil des saisons -->
+        <div class="x" id="s7-texte">
+          <p class="k x-int" id="s7-titre" data-mots>Saison après saison, tu vois ce qui a changé.</p>
+          <p class="dit x-int" id="s7-dit">«&nbsp;Je note tes réponses dans ton suivi, au fil des saisons.&nbsp;»</p>
+        </div>
+        <div id="saisons-etiq"></div>
+
+        <!-- 8 · À toi -->
+        <div class="x" id="s8-texte">
+          <p class="nom x-int" id="s8-nom">Ramille</p>
+          <p class="accroche-8 x-int" id="s8-titre" data-mots>Comprendre tes trajets, sans te juger.</p>
+          <div class="cta-ligne">
+            <span class="cta" id="s8-cta">Découvrir mon impact</span>
+            <span class="url x-int" id="s8-url">ramille.fr</span>
+          </div>
+          <p class="note-8 x-int" id="s8-note">Pas de compte à créer pour commencer.</p>
+        </div>
+
+        <div class="affiche" id="affiche"><span class="affiche-bouton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="affiche-libelle">Lire le film · 1:26</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="commandes">
+      <button class="lecture" id="lecture" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" id="lecture-ico"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="lecture-libelle">Lire</span></button>
+      <span class="temps" id="temps" aria-live="off">0:00 / 1:26</span>
+      <div class="frise"><input type="range" id="frise" min="0" max="864" step="1" value="0" aria-label="Position dans le film"></div>
+      <fieldset class="format">
+        <legend>Format</legend>
+        <label><input type="radio" name="format" id="f-paysage" value="paysage" checked><span>16:9</span></label>
+        <label><input type="radio" name="format" id="f-portrait" value="portrait"><span>9:16</span></label>
+      </fieldset>
+      <button class="son" id="son" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true" id="son-ico"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/></svg><span id="son-libelle">Son activé</span></button>
+      <button class="icone-bouton" id="plein" type="button" aria-label="Plein écran"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+    <ol class="chapitres" id="chapitres"></ol>
+  </section>
+
+  <section class="bloc-texte" aria-labelledby="titre-scenario">
+    <h2 id="titre-scenario">Le scénario, plan par plan</h2>
+    <ol class="scenario" id="scenario"></ol>
+  </section>
+
+  <section class="bloc-texte" aria-labelledby="titre-regles">
+    <h2 id="titre-regles">Ce que le film tient de l’app</h2>
+    <ul class="regles">
+      <li><strong>Ramille ne dit que ses propres répliques</strong>, recopiées mot pour mot de l’app&nbsp;: jamais un nombre dans sa bouche, et jamais près d’un chiffre lourd.</li>
+      <li><strong>Les chiffres se posent, ils ne défilent jamais</strong>&nbsp;: un compteur montrerait de fausses valeurs en chemin. Les barres arrivent à leur longueur juste.</li>
+      <li><strong>Les chiffres de référence sont sourcés à l’écran</strong>&nbsp;: la moyenne française et sa répartition (SDES, 2017), et le repère transport 2050, dérivé de la cible de l’ADEME. Le bilan, le palier et les gains du plan sont un profil d’exemple, et l’image le dit.</li>
+      <li><strong>Le mouvement de l’app, à un rythme de film</strong>&nbsp;: la sortie douce pour ce qui entre et ce qui sort, une sortie plus rapide qu’une entrée, rien qui rebondisse. Seule Ramille respire, du souffle qu’elle a dans l’app. Tout s’enchaîne en fondu, et chaque texte de la scène, comme chaque réplique de Ramille, reste posé au moins deux secondes et demie.</li>
+      <li><strong>La musique est originale</strong>, composée par un script du dépôt et calée sur l’image&nbsp;: une cloche à chaque station du trajet, le rythme qui entre avec le visage de Ramille, une respiration sous le manifeste, une cloche par saison, un accent quand le bouton apparaît.</li>
+      <li><strong>Aucun jugement, aucune célébration</strong>&nbsp;: pas de confetti, pas de score, pas de comparaison entre utilisateurs. «&nbsp;Oui&nbsp;» et «&nbsp;Non&nbsp;» ont le même bouton, et un «&nbsp;Non&nbsp;» reçoit la même place qu’un «&nbsp;Oui&nbsp;».</li>
+      <li><strong>Sous «&nbsp;réduire les animations&nbsp;»</strong>, rien ne se lance seul&nbsp;: chaque chapitre s’affiche posé, et le film ne joue que sur demande. Le son ne part jamais sans la lecture, et se coupe d’un bouton.</li>
+    </ul>
+  </section>
+</div>
+
+<!-- Les points de synchronisation du film : la musique (`musique.py`) les lit ici, le film aussi.
+     Une seule source : une coupe déplacée ici emmène sa note, et ce que la table `T` y accroche. -->
+<script type="application/json" id="temps-du-film">
+{
+  "duree": 86.4,
+  "tempo": 100,
+  "arrets": [0.45, 2.4, 4.2, 6.0],
+  "barres": 10.05,
+  "logo": 21.6,
+  "visage": 24.0,
+  "notification": 50.25,
+  "reponses": [44.85, 54.75, 59.25],
+  "manifeste": { "entree": 62.2, "lignes": [63.0, 64.2, 65.4, 66.0], "sortie": 69.4 },
+  "saisons": [70.2, 71.4, 72.6, 73.8],
+  "bouton": 79.2
+}
+</script>
+<script>
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const SYNC = JSON.parse($('temps-du-film').textContent);
+  const DUREE = SYNC.duree;
+
+  // ---------------------------------------------------------------- Le minutage
+  // Tout le film tient dans cette table, à 100 battements par minute (une mesure = 2,4 s). Les
+  // points de synchronisation sont dans le bloc JSON ci-dessus, que la musique lit aussi : chacun
+  // tombe sur une double croche, le visage, le bouton et la fin sur une barre — `musique.py` refuse
+  // de se rendre sinon. **Ce qui s'accroche à l'un d'eux en dérive** : le logo et le visage, les
+  // appuis, l'engagement et l'échange des cartes, la notification et le point, le manifeste et ce
+  // qui l'entoure, les saisons et la fin. Le reste se compte en absolu, chapitre par chapitre ; si
+  // une coupe bouge, `verifier.mjs` dit ce qui ne se lit plus.
+  // Chaque texte de la scène, et chaque réplique de Ramille, reste posé au moins deux secondes et
+  // demie : `verifier.mjs` le mesure.
+  const Q = [30.0, 31.3, 32.6, 33.9];
+  const LOGO = SYNC.logo, [ENGAGEE, OUI, NON] = SYNC.reponses;
+  const MANIF = SYNC.manifeste, BOUTON = SYNC.bouton;
+  const T = {
+    titre1: [0.9, 5.3], titre2: [5.75, 9.0], arretsSortie: 9.0,
+    versBarre: [8.9, 10.4], s2titre: [10.3, 14.85], chiffre: [11.2, 14.85], transport: [11.0, 14.85],
+    legende: [11.7, 14.85], source: [12.0, 18.6], autresSortie: 14.85, s2titre2: [15.3, 18.6], transportSortie: 18.4,
+    versVeine: [18.6, 20.1], contour: [LOGO - 1.7, LOGO - 0.3], remplissage: [LOGO - 0.4, LOGO + 0.2],
+    pointLogo: [LOGO - 0.2, LOGO + 0.2], nom3: LOGO + 0.4,
+    retrait: [SYNC.visage - 1.0, SYNC.visage - 0.2], visage: [SYNC.visage - 0.25, SYNC.visage + 0.15],
+    sourire: [SYNC.visage + 1.1, SYNC.visage + 1.5], dit3: SYNC.visage + 0.3, titre3: SYNC.visage + 0.8, sortie3: 28.3,
+    tel: [28.5, 29.6], vol: [28.5, 29.8], t4a: [29.1, 35.3], questions: Q,
+    // En 16:9, le téléphone se tient à 83 % le temps du questionnaire, « Suivant » compris, puis
+    // reprend sa taille pendant le calcul : la restitution et le plan défilent s'il les coupe.
+    calcul: [35.1, 36.5], bilan: [36.5, 40.4], defile: [38.6, 39.8], t4b: [36.7, 40.4],
+    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.65, 43.15], engagee: ENGAGEE,
+    repli: [ENGAGEE, ENGAGEE + 0.4], enTete: [ENGAGEE + 0.55, ENGAGEE + 1.2], t5b: [46.1, 50.1],
+    notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [OUI - 1.7, OUI - 1.3], point: [OUI - 1.5, OUI - 0.9],
+    question1: [OUI - 1.3, OUI], semaineSuivante: OUI + 3.0, question2: [OUI + 3.1, NON],
+    t6a: [50.7, 55.0], t6b: [55.45, MANIF.entree - 0.2], telSortie: [MANIF.entree + 0.2, MANIF.entree + 0.6],
+    manif: [MANIF.entree, MANIF.sortie], manifTexteSortie: MANIF.sortie - 0.2,
+    // Le trait des saisons part sous l'aplat qui s'en va : parti à la fin de l'aplat, il avait 0,45 s
+    // pour atteindre la première saison et filait 2,5 fois plus vite qu'ensuite.
+    retour: MANIF.sortie + 0.2, s7titre: [MANIF.sortie + 0.5, BOUTON - 2.9], s7dit: MANIF.sortie + 1.4,
+    vague: [MANIF.sortie, SYNC.saisons[3] + 1.8], saisonsSortie: BOUTON - 2.4,
+    versBouton: [BOUTON - 2.4, BOUTON - 1.2], queue: [BOUTON - 2.1, BOUTON - 0.8], pointArrivee: [BOUTON - 1.2, BOUTON - 0.9],
+    bouton: [BOUTON, BOUTON + 0.6], pose8: [BOUTON - 2.5, BOUTON - 1.5], sansSaison: [BOUTON - 2.2, BOUTON - 1.8],
+    heureuse: [BOUTON - 1.8, BOUTON - 1.5], nom8: BOUTON - 2.0, titre8: BOUTON - 1.6, url: BOUTON + 0.7, note8: BOUTON + 1.1,
+  };
+  // Le doigt se lève avant que sa cible ne bouge : la notification s'envole, la carte engagée change
+  // de mise en page. Appuyé 0,1 s avant, il partait avec elles (contre-lecture du 03/10/2026).
+  const LEVE = 0.22;
+  T.tapNotif = T.notifSortie[0] - LEVE;
+
+  // Le scénario rendu sous le film, qui en est aussi la version texte. Les insécables s'écrivent
+  // ici à la main : ce texte n'est pas rendu par `ThemedText`, qui les pose dans l'app.
+  const CHAPITRES = [
+    { titre: 'Tes trajets', debut: 0, pose: 7.6,
+      image: 'Un point, puis un trait qui se dessine comme un itinéraire et marque l’arrêt à chaque station, sur une note.',
+      texte: 'Chaque jour, tu te déplaces. · Chez toi, au travail, le week-end, en vacances. · Lequel pèse le plus ?' },
+    { titre: 'Ce qu’ils pèsent', debut: 8.9, pose: 13.6,
+      image: 'Le trait se tend et devient l’empreinte moyenne en France, en cinq postes ; le transport, en vert, est le plus long.',
+      texte: 'En France, le transport est le premier poste de l’empreinte carbone : 2,8 t CO₂e par personne et par an (SDES, 2017). · Et les tiens, ils pèsent combien ?' },
+    { titre: 'Ramille', debut: 18.5, pose: 27.6,
+      image: 'Le segment vert se replie en nervure, la feuille se dessine autour et se remplit : c’est le logo. Puis la nervure raccourcit et le visage apparaît, au moment où le rythme entre.',
+      texte: 'Ramille : « Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme. » · Comprendre tes trajets, sans te juger.' },
+    { titre: 'Ton bilan', debut: 28.5, pose: 39.9,
+      image: 'Ramille descend se loger dans l’en-tête du questionnaire. Quatre des neuf étapes, le calcul, puis la restitution d’un profil d’exemple.',
+      texte: 'Ton bilan, en 5 minutes environ. · Tu vois quel déplacement pèse le plus, et où tu te situes entre la moyenne française et le repère 2050.' },
+    { titre: 'Ton plan', debut: 40.4, pose: 48.0,
+      image: 'Deux pistes en tête, les autres derrière un lien. On choisit la deuxième, deux jours, « C’est noté » : elle devient l’engagement et passe en tête.',
+      texte: 'Puis une action, à ton rythme. Ton plan ne propose que ce qui tient avec tes réponses. · Tu choisis tes jours. Ramille te fait signe lundi.' },
+    { titre: 'Le point', debut: 50.1, pose: 56.5,
+      image: 'La notification du lundi, puis le point de la semaine. Un « Oui », puis la semaine suivante un « Non », chacun avec sa réplique. Puis un aplat vert, ligne après ligne, sur une respiration de la musique.',
+      texte: 'Un point, de temps en temps. Une seule question, sur ton action. · Oui, non, ou pas de trajet : aucune réponse n’est un échec. · Pas de score. Pas de série. Aucun classement. Tes réponses restent privées.' },
+    { titre: 'Au fil des saisons', debut: 69.4, pose: 75.5,
+      image: 'Le trait revient et traverse l’année, en marquant chaque saison d’une cloche. Ramille porte chacune : les joues chaudes de l’automne, le bonnet, le bourgeon, la goutte de rosée.',
+      texte: 'Saison après saison, tu vois ce qui a changé. · Ramille : « Je note tes réponses dans ton suivi, au fil des saisons. »' },
+    { titre: 'À toi', debut: 76.7, pose: 83.0,
+      image: 'Le trait quitte la frise et finit en un point d’arrivée ; le point s’étire et devient le bouton, sur l’accord qui conclut.',
+      texte: 'Comprendre tes trajets, sans te juger. · Découvrir mon impact · ramille.fr · Pas de compte à créer pour commencer.' },
+  ];
+
+  // ---------------------------------------------------------------- Courbes
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (t) => ((ax * t + bx) * t + cx) * t;
+    const sy = (t) => ((ay * t + by) * t + cy) * t;
+    return (x) => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let lo = 0, hi = 1, t = x;
+      for (let i = 0; i < 40; i++) {
+        const v = sx(t);
+        if (Math.abs(v - x) < 1e-6) break;
+        if (v < x) lo = t; else hi = t;
+        t = (lo + hi) / 2;
+      }
+      return sy(t);
+    };
+  }
+  // La « sortie douce » de l'app (Mouvement.courbe) pour tout ce qui entre et sort.
+  const DOUCE = bezier(0.22, 1, 0.36, 1);
+  const E = {
+    lin: (x) => x,
+    inOutCubic: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
+    inOutSine: (x) => -(Math.cos(Math.PI * x) - 1) / 2,
+  };
+  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const p = (t, a, b, ease = DOUCE) => (b <= a ? (t >= a ? 1 : 0) : ease(clamp((t - a) / (b - a))));
+  // Le souffle de la mascotte : 1,035 en 1400 ms, sinus, aller-retour.
+  const souffle = (t, t0) => (t <= t0 ? 0 : (1 - Math.cos((2 * Math.PI * (t - t0)) / 2.8)) / 2);
+  // Un tracé qui marque l'arrêt à chaque nœud : vitesse nulle sur la station, puis il repart.
+  function parNoeuds(t, temps, fractions) {
+    if (t <= temps[0]) return fractions[0];
+    for (let i = 0; i < temps.length - 1; i++) {
+      if (t <= temps[i + 1]) return lerp(fractions[i], fractions[i + 1], E.inOutSine((t - temps[i]) / (temps[i + 1] - temps[i])));
+    }
+    return fractions[fractions.length - 1];
+  }
+  const fx = (v) => String(Math.round(v * 10000) / 10000);
+
+  // ---------------------------------------------------------------- Écritures sans redite
+  // Une valeur déjà posée ne se réécrit pas : la plupart des éléments ne bougent pas à une image
+  // donnée, et chaque écriture invalide le style. C'est ce qui tient la lecture à 60 images.
+  const DEJA = new WeakMap();
+  function S(el, prop, val) {
+    let c = DEJA.get(el);
+    if (!c) { c = {}; DEJA.set(el, c); }
+    if (c[prop] === val) return;
+    c[prop] = val;
+    el.style[prop] = val;
+  }
+  function A(el, attr, val) {
+    let c = DEJA.get(el);
+    if (!c) { c = {}; DEJA.set(el, c); }
+    const cle = '@' + attr;
+    if (c[cle] === val) return;
+    c[cle] = val;
+    el.setAttribute(attr, val);
+  }
+  function C(el, classe, oui) {
+    let c = DEJA.get(el);
+    if (!c) { c = {}; DEJA.set(el, c); }
+    const cle = '.' + classe;
+    if (c[cle] === oui) return;
+    c[cle] = oui;
+    el.classList.toggle(classe, oui);
+  }
+  function texte(el, val) { if (el.textContent !== val) el.textContent = val; }
+
+  // ---------------------------------------------------------------- La mascotte (géométrie de src/types/mascot.ts)
+  const VISAGE = {
+    calm:        { eyes: 'dots',  eyeSpread: 11, eyeShiftX: 0,  eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 0,    mouthHalfWidth: 8,  mouthY: 62, mouthDepth: 3,   blushSpread: 17, blushY: 60, blushRadius: 5,   blushOpacity: 0.55 },
+    happy:       { eyes: 'happy', eyeSpread: 11, eyeShiftX: 0,  eyeY: 49, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: -2.5, mouthHalfWidth: 10, mouthY: 60, mouthDepth: 6,   blushSpread: 17, blushY: 59, blushRadius: 5.4, blushOpacity: 0.6 },
+    encouraging: { eyes: 'soft',  eyeSpread: 11, eyeShiftX: 0,  eyeY: 51, eyeRadius: 4.2, eyeArcHalfWidth: 4, eyeArcDepth: 1.5,  mouthHalfWidth: 7,  mouthY: 63, mouthDepth: 1.5, blushSpread: 17, blushY: 60, blushRadius: 5,   blushOpacity: 0.55 },
+    thinking:    { eyes: 'dots',  eyeSpread: 11, eyeShiftX: -1, eyeY: 47, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 0,    mouthHalfWidth: 5,  mouthY: 63, mouthDepth: 0,   blushSpread: 17, blushY: 61, blushRadius: 4.6, blushOpacity: 0.4 },
+    resting:     { eyes: 'soft',  eyeSpread: 11, eyeShiftX: 0,  eyeY: 50, eyeRadius: 4.2, eyeArcHalfWidth: 5, eyeArcDepth: 2.5,  mouthHalfWidth: 6,  mouthY: 63, mouthDepth: 1.5, blushSpread: 17, blushY: 60, blushRadius: 5,   blushOpacity: 0.5 },
+  };
+  const FEUILLE = 'M50,8 C78,26 84,56 50,92 C16,56 22,26 50,8 Z';
+  const COULEUR = { accentMuted: '#A9C8B6', mascotAccessory: '#E4EFE8', mascotWarm: '#C99A6B', rosee: '#FFFFFF' };
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const optique = (size) => (size >= 42 ? 1 : Math.min(42 / Math.max(size, 1), 1.5));
+  const quad = (cx, hw, y, d) => `M${r2(cx - hw)},${r2(y)} Q${r2(cx)},${r2(y + d * 2)} ${r2(cx + hw)},${r2(y)}`;
+
+  function geometrie(mood, size, automne) {
+    const f = VISAGE[mood], k = optique(size), kp = 1 + (k - 1) * 0.2;
+    const eyeY = 58 + (f.eyeY - 58) * kp, mouthY = 58 + (f.mouthY - 58) * kp, blushY = 58 + (f.blushY - 58) * kp;
+    const spread = f.eyeSpread * kp, shift = f.eyeShiftX * kp;
+    const cotes = [-1, 1];
+    return {
+      eyes: f.eyes,
+      eyeCircles: cotes.map((c) => ({ cx: r2(50 + c * r2(spread) + shift), cy: r2(eyeY), r: r2(f.eyeRadius * k) })),
+      eyeArcs: cotes.map((c) => quad(50 + c * r2(spread) + shift, f.eyeArcHalfWidth * k, eyeY, f.eyeArcDepth * k)),
+      eyeStroke: r2(3.4 * k),
+      mouth: quad(50, f.mouthHalfWidth * k, mouthY, f.mouthDepth * k),
+      mouthStroke: r2(3.2 * k),
+      blush: cotes.map((c) => ({ cx: 50 + c * f.blushSpread, cy: r2(blushY), r: r2(f.blushRadius * kp * (automne ? 1.18 : 1)) })),
+      blushOpacity: automne ? Math.min(0.9, f.blushOpacity + 0.25) : f.blushOpacity,
+      blushColor: automne ? COULEUR.mascotWarm : COULEUR.accentMuted,
+      vein: r2(4 * k),
+    };
+  }
+  function accessoires(saison, size) {
+    const k = optique(size);
+    if (saison === 'hiver') return [
+      { forme: 'aire', d: 'M31,34 C37,24 44,18 50,15 C56,18 63,24 69,34 C62,29 56,27 50,27 C44,27 38,29 31,34 Z', c: COULEUR.mascotWarm },
+      { forme: 'trait', d: 'M31,34 C38,29 44,27 50,27 C56,27 62,29 69,34', c: COULEUR.mascotAccessory, w: r2(4.4 * k) },
+      { forme: 'cercle', cx: 50, cy: 12, r: r2(7.1 * k), c: COULEUR.mascotAccessory },
+      { forme: 'cercle', cx: 50, cy: 12, r: r2(3.9 * k), c: COULEUR.mascotWarm },
+    ];
+    if (saison === 'printemps') return [
+      { forme: 'cercle', cx: 45.8, cy: 18.5, r: r2(3 * k), c: COULEUR.mascotAccessory },
+      { forme: 'cercle', cx: 54.2, cy: 18.5, r: r2(3 * k), c: COULEUR.mascotAccessory },
+      { forme: 'cercle', cx: 50, cy: 14, r: r2(3 * k), c: COULEUR.mascotAccessory },
+      { forme: 'cercle', cx: 50, cy: 17.5, r: r2(1.8 * k), c: COULEUR.mascotWarm },
+    ];
+    if (saison === 'ete') return [
+      { forme: 'aire', d: 'M58,33 C58,29 61,25 61,25 C61,25 64,29 64,33 C64,34.8 62.6,36 61,36 C59.4,36 58,34.8 58,33 Z', c: COULEUR.rosee, o: 0.85 },
+    ];
+    return [];
+  }
+
+  const NS = 'http://www.w3.org/2000/svg';
+  function sv(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const a in attrs) e.setAttribute(a, attrs[a]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  // Chaque expression a ses traits (yeux, bouche) et ses joues, en deux tons : d'ordinaire et
+  // d'automne. Séparés, ils se fondent les uns dans les autres au lieu de basculer d'une image à
+  // l'autre — c'était l'un des à-coups de la première version.
+  let nClip = 0;
+  function creerMascotte(size, humeurs) {
+    const svg = sv('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true', focusable: 'false' });
+    const id = 'feuille-' + (++nClip);
+    const cp = sv('clipPath', { id }, sv('defs', {}, svg));
+    sv('path', { d: FEUILLE }, cp);
+    sv('path', { d: FEUILLE, fill: '#1F6F4A' }, svg);
+    sv('path', { d: 'M50,18 C46,26 46,32 50,38', stroke: '#E4EFE8', 'stroke-width': geometrie('calm', size, false).vein, 'stroke-linecap': 'round', fill: 'none', opacity: 0.55 }, svg);
+    const visage = sv('g', { 'clip-path': `url(#${id})` }, svg);
+    const joues = {}, traits = {};
+    for (const h of humeurs) {
+      for (const automne of [false, true]) {
+        const g = geometrie(h, size, automne);
+        const grp = sv('g', { opacity: 0 }, visage);
+        g.blush.forEach((b) => sv('circle', { cx: b.cx, cy: b.cy, r: b.r, fill: g.blushColor, opacity: g.blushOpacity }, grp));
+        joues[h + (automne ? '-automne' : '')] = grp;
+      }
+      const g = geometrie(h, size, false);
+      const grp = sv('g', { opacity: 0 }, visage);
+      if (g.eyes === 'dots') g.eyeCircles.forEach((e) => sv('circle', { cx: e.cx, cy: e.cy, r: e.r, fill: '#131612' }, grp));
+      else g.eyeArcs.forEach((d) => sv('path', { d, stroke: '#131612', 'stroke-width': g.eyeStroke, 'stroke-linecap': 'round', fill: 'none' }, grp));
+      sv('path', { d: g.mouth, stroke: '#131612', 'stroke-width': g.mouthStroke, 'stroke-linecap': 'round', fill: 'none' }, grp);
+      traits[h] = grp;
+    }
+    const acc = {};
+    for (const s of ['hiver', 'printemps', 'ete']) {
+      const grp = sv('g', { opacity: 0 }, svg);
+      for (const e of accessoires(s, size)) {
+        if (e.forme === 'cercle') sv('circle', { cx: e.cx, cy: e.cy, r: e.r, fill: e.c }, grp);
+        else if (e.forme === 'trait') sv('path', { d: e.d, stroke: e.c, 'stroke-width': e.w, 'stroke-linecap': 'round', fill: 'none' }, grp);
+        else sv('path', { d: e.d, fill: e.c, opacity: e.o ?? 1 }, grp);
+      }
+      acc[s] = grp;
+    }
+    svg._joues = joues; svg._traits = traits; svg._acc = acc; svg._visage = visage;
+    return svg;
+  }
+  // `humeurs` : un poids par expression (leur somme fait 1) ; `automne` et `saisons` : des poids aussi.
+  function dessiner(svg, { humeurs, automne = 0, saisons = {}, visage = 1 }) {
+    for (const h in svg._traits) {
+      const w = humeurs[h] || 0;
+      A(svg._traits[h], 'opacity', fx(w));
+      A(svg._joues[h], 'opacity', fx(w * (1 - automne)));
+      A(svg._joues[h + '-automne'], 'opacity', fx(w * automne));
+    }
+    for (const s in svg._acc) A(svg._acc[s], 'opacity', fx(saisons[s] || 0));
+    A(svg._visage, 'opacity', fx(visage));
+  }
+
+  // ---------------------------------------------------------------- Formes du fil
+  const N = 240;
+  function catmull(pts, seg = 28) {
+    const out = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || pts[i + 1];
+      for (let j = 0; j < seg; j++) {
+        const t = j / seg, t2 = t * t, t3 = t2 * t;
+        const c = (a, b, c2, d) => 0.5 * (2 * b + (-a + c2) * t + (2 * a - 5 * b + 4 * c2 - d) * t2 + (-a + 3 * b - 3 * c2 + d) * t3);
+        out.push([c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1])]);
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+  function cubique(a, b, c, d, n = 80) {
+    const out = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, u = 1 - t;
+      out.push([u * u * u * a[0] + 3 * u * u * t * b[0] + 3 * u * t * t * c[0] + t * t * t * d[0], u * u * u * a[1] + 3 * u * u * t * b[1] + 3 * u * t * t * c[1] + t * t * t * d[1]]);
+    }
+    return out;
+  }
+  function longueurs(pts) {
+    const l = [0];
+    for (let i = 1; i < pts.length; i++) l.push(l[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return l;
+  }
+  function reech(pts, n = N) {
+    const l = longueurs(pts), L = l[l.length - 1], out = [];
+    let j = 0;
+    for (let i = 0; i < n; i++) {
+      const cible = (L * i) / (n - 1);
+      while (j < l.length - 2 && l[j + 1] < cible) j++;
+      const seg = l[j + 1] - l[j] || 1, k = clamp((cible - l[j]) / seg);
+      out.push([lerp(pts[j][0], pts[j + 1][0], k), lerp(pts[j][1], pts[j + 1][1], k)]);
+    }
+    return out;
+  }
+  function tracer(P, f0, f1) {
+    const n = P.length - 1, a = clamp(f0) * n, b = clamp(f1) * n;
+    if (b - a < 0.02) return '';
+    const pt = (x) => { const i = Math.min(Math.floor(x), n - 1), fr = x - i; return [lerp(P[i][0], P[i + 1][0], fr), lerp(P[i][1], P[i + 1][1], fr)]; };
+    const s = pt(a);
+    let d = `M${s[0].toFixed(1)},${s[1].toFixed(1)}`;
+    for (let i = Math.floor(a) + 1; i < b; i++) d += `L${P[i][0].toFixed(1)},${P[i][1].toFixed(1)}`;
+    const e = pt(b);
+    return d + `L${e[0].toFixed(1)},${e[1].toFixed(1)}`;
+  }
+  const melange = (A0, B0, k) => (k <= 0 ? A0 : k >= 1 ? B0 : A0.map((a, i) => [lerp(a[0], B0[i][0], k), lerp(a[1], B0[i][1], k)]));
+  function couleur(a, b, k) {
+    const h = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+    const x = h(a), y = h(b);
+    return '#' + x.map((v, i) => Math.round(lerp(v, y[i], clamp(k))).toString(16).padStart(2, '0')).join('');
+  }
+  const enFeuille = (pose, [x, y]) => [pose.cx + (x - 50) * pose.s, pose.cy + (y - 50) * pose.s];
+
+  // ---------------------------------------------------------------- Les deux formats
+  const FORMATS = {
+    paysage: {
+      W: 1600, H: 900, fil: 10,
+      route: [[100, 700], [250, 610], [400, 700], [560, 640], [700, 520], [880, 600], [1050, 480], [1230, 560], [1400, 450], [1500, 500]],
+      arrets: [0, 4, 7, 9], etiqPlace: ['dessous', 'dessus', 'dessous', 'dessous'],
+      barre: { x0: 160, x1: 1440, y: 600, h: 64 },
+      f3: { cx: 470, cy: 450, s: 5.0 }, f7: { cx: 450, cy: 380, s: 3.9 }, f8: { cx: 470, cy: 440, s: 4.5 },
+      vague: [[60, 772], [260, 708], [480, 776], [710, 706], [940, 774], [1170, 704], [1390, 770], [1560, 726]],
+      saisonsF: [0.14, 0.38, 0.62, 0.86], saisonsPlace: ['dessous', 'dessous', 'dessous', 'dessous'],
+      final: [[70, 820], [380, 852], [680, 806]], avant: [-90, 150],
+    },
+    portrait: {
+      W: 900, H: 1600, fil: 12,
+      route: [[120, 1440], [330, 1350], [200, 1210], [420, 1120], [650, 1190], [760, 1030], [560, 910], [300, 830], [480, 700], [760, 640]],
+      arrets: [0, 4, 7, 9], etiqPlace: ['dessous', 'dessous', 'gauche', 'dessus'],
+      barre: { x0: 70, x1: 830, y: 900, h: 72 },
+      f3: { cx: 450, cy: 520, s: 5.0 }, f7: { cx: 450, cy: 680, s: 4.6 }, f8: { cx: 450, cy: 470, s: 4.6 },
+      vague: [[90, 1300], [190, 1262], [345, 1336], [500, 1264], [650, 1334], [790, 1266], [880, 1300]],
+      // Une saison sur chaque crête ou creux de la vague, son nom du côté libre : sur une pente,
+      // « Printemps » touchait le trait.
+      saisonsF: [0.114, 0.321, 0.518, 0.709], saisonsPlace: ['dessus', 'dessous', 'dessus', 'dessous'],
+      final: [[60, 1520], [300, 1484], [160, 1384]], avant: [-100, 110],
+    },
+  };
+  const POSTES_FR = [
+    { cle: 'transport', t: 2.8 }, { cle: 'logement', t: 2.2 }, { cle: 'alimentation', t: 2.1 }, { cle: 'services', t: 1.5 }, { cle: 'equipements', t: 0.9 },
+  ];
+  const ETIQ_ARRETS = ['Chez toi', 'Au travail', 'Le week-end', 'En vacances'];
+  const SAISONS = ['automne', 'hiver', 'printemps', 'ete'];
+  const ETIQ_SAISONS = ['Automne', 'Hiver', 'Printemps', 'Été'];
+  const VEINE_LOGO = [[50, 20], [42, 44], [42, 64], [50, 82]];
+  const VEINE_MASCOTTE = [[50, 18], [46, 26], [46, 32], [50, 38]];
+
+  // ---------------------------------------------------------------- Le DOM
+  const scene = $('scene'), plateau = $('plateau'), svgFil = $('fil-svg'), fil = $('fil');
+  let fmt = 'paysage', G = FORMATS.paysage, F = {}, M = {};
+
+  document.querySelectorAll('[data-mots]').forEach((el) => {
+    const mots = el.innerHTML.split(' ');
+    el.innerHTML = mots.map((m) => `<span class="mot">${m}</span>`).join(' ');
+    el._mots = [...el.querySelectorAll('.mot')];
+  });
+
+  const mScene = creerMascotte(100, ['calm', 'happy']);
+  $('m-scene').appendChild(mScene);
+  const mEntete = creerMascotte(28, ['calm']);
+  $('slot-entete').appendChild(mEntete);
+  const mCalcul = creerMascotte(72, ['thinking']);
+  $('slot-calcul').appendChild(mCalcul);
+  const mRep1 = creerMascotte(40, ['happy']);
+  $('slot-rep1').appendChild(mRep1);
+  const mRep2 = creerMascotte(40, ['encouraging']);
+  $('slot-rep2').appendChild(mRep2);
+  const mIco = creerMascotte(38, ['calm']);
+  $('notif-ico').appendChild(mIco);
+  dessiner(mEntete, { humeurs: { calm: 1 } });
+  dessiner(mCalcul, { humeurs: { thinking: 1 } });
+  dessiner(mRep1, { humeurs: { happy: 1 } });
+  dessiner(mRep2, { humeurs: { encouraging: 1 } });
+  dessiner(mIco, { humeurs: { calm: 1 } });
+
+  const barres = POSTES_FR.map((_, i) => sv('rect', { fill: i === 0 ? '#1F6F4A' : '#DDE0D9', rx: 3 }, $('barres')));
+  const arrets = ETIQ_ARRETS.map((_, i) => sv('circle', { r: 0, fill: i === 0 ? '#1F6F4A' : '#FFFFFF', stroke: '#1F6F4A' }, $('arrets')));
+  const arretsEtiq = ETIQ_ARRETS.map((txt) => {
+    const d = document.createElement('div');
+    d.className = 'x';
+    d.innerHTML = `<p class="etiq">${txt}</p>`;
+    $('arrets-etiq').appendChild(d);
+    return d;
+  });
+  const saisonsPts = SAISONS.map(() => sv('circle', { r: 0, fill: '#FFFFFF', stroke: '#1F6F4A' }, $('saisons-points')));
+  const saisonsEtiq = ETIQ_SAISONS.map((txt) => {
+    const d = document.createElement('div');
+    d.className = 'x';
+    d.innerHTML = `<p class="saison-etiq">${txt}</p>`;
+    $('saisons-etiq').appendChild(d);
+    return d;
+  });
+
+  const pct = (u, total) => `${(u / total) * 100}%`;
+  // Une étiquette se pose du côté où le trait ne passe pas.
+  function placerAuPoint(el, [x, y], place, ecart) {
+    const gauche = place === 'gauche';
+    el.style.left = pct(gauche ? x - ecart : x, G.W);
+    el.style.top = pct(place === 'dessous' ? y + ecart : place === 'dessus' ? y - ecart : y, G.H);
+    el._base = gauche ? 'translate(-100%, -50%)' : place === 'dessous' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)';
+  }
+
+  function preparer() {
+    G = FORMATS[fmt];
+    scene.classList.toggle('portrait', fmt === 'portrait');
+    scene.classList.toggle('paysage', fmt === 'paysage');
+    svgFil.setAttribute('viewBox', `0 0 ${G.W} ${G.H}`);
+    ajuster();
+
+    const dense = catmull(G.route);
+    F.route = reech(dense);
+    const l = longueurs(dense), L = l[l.length - 1];
+    F.arretsF = G.arrets.map((i) => l[Math.min(i * 28, l.length - 1)] / L);
+    F.arretsXY = F.arretsF.map((f) => F.route[Math.round(f * (N - 1))]);
+
+    const b = G.barre;
+    F.barre = reech([[b.x0, b.y], [b.x1, b.y]]);
+    const total = POSTES_FR.reduce((s, x) => s + x.t, 0), ecart = 6;
+    const utile = b.x1 - b.x0 - ecart * (POSTES_FR.length - 1);
+    let x = b.x0;
+    F.barres = POSTES_FR.map((poste) => { const w = (utile * poste.t) / total, r = { x, w }; x += w + ecart; return r; });
+
+    F.veineLogo = reech(cubique(...VEINE_LOGO.map((q) => enFeuille(G.f3, q))));
+    F.veineMascotte = reech(cubique(...VEINE_MASCOTTE.map((q) => enFeuille(G.f3, q))));
+    F.vague = reech(catmull(G.vague));
+    F.saisonsXY = G.saisonsF.map((f) => F.vague[Math.round(f * (N - 1))]);
+    F.longueurFeuille = $('feuille-trace').getTotalLength();
+
+    const transfo = `translate(${G.f3.cx - 50 * G.f3.s} ${G.f3.cy - 50 * G.f3.s}) scale(${G.f3.s})`;
+    $('feuille-g').setAttribute('transform', transfo);
+    $('feuille-point-g').setAttribute('transform', transfo);
+    $('feuille-trace').setAttribute('stroke-dasharray', `${F.longueurFeuille} ${F.longueurFeuille}`);
+
+    const ecartEtiq = fmt === 'portrait' ? 36 : 30;
+    arrets.forEach((c, i) => { c.setAttribute('cx', F.arretsXY[i][0]); c.setAttribute('cy', F.arretsXY[i][1]); c.setAttribute('stroke-width', G.fil * 0.55); });
+    arretsEtiq.forEach((el, i) => placerAuPoint(el, F.arretsXY[i], G.etiqPlace[i], ecartEtiq));
+    saisonsPts.forEach((c, i) => { c.setAttribute('cx', F.saisonsXY[i][0]); c.setAttribute('cy', F.saisonsXY[i][1]); c.setAttribute('stroke-width', G.fil * 0.55); });
+    saisonsEtiq.forEach((el, i) => placerAuPoint(el, F.saisonsXY[i], G.saisonsPlace[i], ecartEtiq));
+    // Par `A()`, comme dans `rendreFil` : écrite en direct, elle échappait au cache, qui la croyait
+    // déjà posée — le trait gardait l'épaisseur de l'autre format.
+    A(fil, 'stroke-width', fx(G.fil));
+    mesurer();
+  }
+
+  // ---------------------------------------------------------------- Mesures, prises une fois par format
+  // La position d'un élément sans les transformations qui l'animent : la chaîne des `offset*`.
+  // Le plateau mesure G.W × G.H px : une unité du film vaut un pixel du plateau.
+  function posStatique(el, jusqua = plateau) {
+    let x = 0, y = 0, n = el;
+    while (n && n !== jusqua) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+    return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+  }
+  // La position d'un élément tel qu'il est rendu, transformations comprises, en unités du film.
+  function posVivante(el) {
+    const pr = plateau.getBoundingClientRect(), r = el.getBoundingClientRect(), k = G.W / pr.width;
+    return { x: (r.left - pr.left) * k, y: (r.top - pr.top) * k, w: r.width * k, h: r.height * k };
+  }
+  function ajuster() {
+    S(plateau, 'transform', `scale(${fx(scene.clientWidth / G.W)})`);
+  }
+  // Chaque mesure se prend dans l'état de l'instant qu'elle sert, rendu exprès : jamais « au premier
+  // passage ». La version du 03/10/2026 mesurait le défilement du plan à la première image de sa
+  // fenêtre, où l'état change (l'engagement, puis l'échange des cartes) : un saut dans la frise
+  // donnait trois images différentes pour le même instant.
+  function mesurer() {
+    const garde = tCourant;
+    M = { dp: $('tel-ecran').clientWidth / 360, defilePlan: 0 };
+    const cta = $('s8-cta');
+    M.cta = { w: cta.offsetWidth, h: cta.offsetHeight };
+    const r = posStatique(cta);
+    const bout = [r.x + G.fil * 0.9, r.y + r.h / 2];
+    const avant = [bout[0] + G.avant[0], bout[1] + G.avant[1]];
+    M.final = { P: reech(catmull([...G.final, avant, bout])), bout };
+    // La restitution, téléphone à sa taille : ce que le cadre coupe de son bas.
+    const ecr = posStatique($('tel-ecran'));
+    M.defile = Math.max(0, ecr.y + 30 * M.dp + $('bilan-defile').offsetHeight + 12 * M.dp - Math.min(G.H, ecr.y + ecr.h));
+    // Le choix des jours, déplié, avant l'engagement : « C'est noté » doit entrer dans le cadre.
+    rendre(T.depliage[1] + 0.05);
+    M.dep = $('c2-dep-dedans').offsetHeight;
+    const d = posStatique($('c2-dep-dedans'));
+    M.defilePlan = Math.max(0, d.y + d.h + 16 * M.dp - G.H);
+    // L'engagement pris, juste avant que les deux cartes échangent leur place.
+    rendre(T.enTete[0] - 0.01);
+    M.cartes = { h1: $('c1').offsetHeight, h2: $('c2').offsetHeight, ecart: parseFloat(getComputedStyle($('pistes')).rowGap) || 0 };
+    rendre(T.point[1]);
+    M.point = $('point').offsetHeight;
+    tCourant = garde;
+  }
+
+  // ---------------------------------------------------------------- Aides de rendu
+  function montrer(el, t, a, b, o = {}) {
+    const din = o.din ?? 0.6, dout = o.dout ?? 0.45, dy = o.dy ?? 1.2, unite = o.unite ?? 'cqmin';
+    const i = p(t, a, a + din), s = b == null ? 0 : p(t, b, b + dout);
+    const op = i * (1 - s);
+    S(el, 'opacity', fx(op));
+    S(el, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
+    S(el, 'transform', `${el._base || ''} translate(0, ${fx((1 - i) * dy - s * dy * 0.4)}${unite})`);
+    return op;
+  }
+  // Un titre entre mot à mot, puis reste posé ; il sort d'un bloc.
+  function titre(el, t, a, b) {
+    const mots = el._mots;
+    const sortie = b == null ? 0 : p(t, b, b + 0.45);
+    const pas = Math.min(0.06, 0.4 / Math.max(1, mots.length));
+    let visible = false;
+    mots.forEach((m, i) => {
+      const e = p(t, a + i * pas, a + i * pas + 0.7);
+      const op = e * (1 - sortie);
+      if (op > 0.001) visible = true;
+      S(m, 'opacity', fx(op));
+      S(m, 'transform', `translateY(${fx((1 - e) * 0.3 - sortie * 0.12)}em)`);
+    });
+    S(el, 'visibility', visible ? 'visible' : 'hidden');
+  }
+  function bloc(id, t, a, b) {
+    const el = $(id), k = el.querySelector('.k'), sous = el.querySelector('.k-sous');
+    const vu = t >= a - 0.01 && t < b + 0.5;
+    S(el, 'visibility', vu ? 'visible' : 'hidden');
+    titre(k, t, a, b);
+    if (sous) montrer(sous, t, a + 0.35, b);
+  }
+
+  // ---------------------------------------------------------------- Le fil
+  function rendreFil(t) {
+    let A0 = null, B0 = null, k = 0, f0 = 0, f1 = 1, w = G.fil, col = '#1F6F4A', op = 1;
+    const s3 = G.f3.s, bout = $('fil-bout');
+    let rBout = 0;
+    if (t < T.versBarre[0]) { A0 = F.route; f1 = parNoeuds(t, SYNC.arrets, F.arretsF); }
+    else if (t < T.versBarre[1]) { A0 = F.route; B0 = F.barre; k = p(t, ...T.versBarre, E.inOutCubic); }
+    else if (t < T.versVeine[0]) { A0 = F.barre; }
+    else if (t < T.versVeine[1]) { A0 = F.barre; B0 = F.veineLogo; k = p(t, ...T.versVeine, E.inOutCubic); w = lerp(G.fil, 4.5 * s3, k); }
+    else if (t < T.retrait[0]) { A0 = F.veineLogo; w = 4.5 * s3; col = couleur('#1F6F4A', '#E4EFE8', p(t, ...T.remplissage, E.lin)); }
+    else if (t < T.retrait[1]) { A0 = F.veineLogo; B0 = F.veineMascotte; k = p(t, ...T.retrait, E.inOutCubic); w = lerp(4.5 * s3, 4 * s3, k); col = '#E4EFE8'; op = lerp(1, 0.55, k); }
+    else if (t < T.vague[0]) { A0 = null; }
+    else if (t < T.versBouton[0]) { A0 = F.vague; f1 = parNoeuds(t, [T.vague[0], ...SYNC.saisons, T.vague[1]], [0, ...G.saisonsF, 1]); }
+    else {
+      const fin = M.final;
+      if (t < T.queue[1]) { A0 = F.vague; B0 = fin.P; k = p(t, ...T.versBouton, E.inOutCubic); f0 = p(t, ...T.queue, E.inOutCubic); }
+      // Le point d'arrivée : il apparaît quand le trait l'atteint, puis devient le bouton.
+      rBout = G.fil * 0.9 * p(t, ...T.pointArrivee) * (1 - p(t, T.bouton[1] - 0.1, T.bouton[1] + 0.15, E.lin));
+    }
+    A(bout, 'cx', fx(M.final.bout[0])); A(bout, 'cy', fx(M.final.bout[1]));
+    A(bout, 'r', fx(rBout));
+    // Tout s'écrit à chaque image, trait vide compris : l'image ne garde rien de la précédente.
+    A(fil, 'd', A0 ? tracer(melange(A0, B0 || A0, k), f0, f1) : '');
+    A(fil, 'stroke-width', fx(w));
+    A(fil, 'stroke', col);
+    A(fil, 'opacity', fx(op));
+  }
+
+  // ---------------------------------------------------------------- Scènes 1 à 3
+  function rendreS1(t) {
+    titre($('s1-t1').firstElementChild, t, ...T.titre1);
+    titre($('s1-t2').firstElementChild, t, ...T.titre2);
+    arrets.forEach((c, i) => {
+      const a = SYNC.arrets[i];
+      A(c, 'r', fx(G.fil * 1.15 * p(t, a, a + 0.4) * (1 - p(t, T.arretsSortie, T.arretsSortie + 0.3))));
+    });
+    arretsEtiq.forEach((el, i) => montrer(el, t, SYNC.arrets[i] + 0.05, T.arretsSortie, { dy: G.etiqPlace[i] === 'dessus' ? -0.8 : 0.8 }));
+  }
+  function rendreS2(t) {
+    const b = G.barre;
+    barres.forEach((r, i) => {
+      const entree = p(t, SYNC.barres + i * 0.1, SYNC.barres + 0.6 + i * 0.1);
+      const sortie = i === 0 ? p(t, T.transportSortie, T.transportSortie + 0.5) : p(t, T.autresSortie, T.autresSortie + 0.5);
+      const h = b.h * entree * (1 - sortie);
+      A(r, 'x', fx(F.barres[i].x)); A(r, 'width', fx(F.barres[i].w));
+      A(r, 'y', fx(b.y - h / 2)); A(r, 'height', fx(Math.max(0, h)));
+    });
+    titre($('s2-titre').firstElementChild, t, ...T.s2titre);
+    montrer($('s2-chiffre'), t, ...T.chiffre);
+    montrer($('s2-transport'), t, ...T.transport, { dy: 0.6 });
+    montrer($('s2-legende'), t, ...T.legende, { dy: 0.6 });
+    montrer($('s2-source'), t, ...T.source, { dy: 0.4 });
+    titre($('s2-titre2').firstElementChild, t, ...T.s2titre2);
+  }
+  function rendreS3(t) {
+    const trace = $('feuille-trace'), pleine = $('feuille-pleine'), point = $('feuille-point');
+    const visible = t >= T.contour[0] - 0.1 && t < T.retrait[1] + 0.05;
+    A(trace, 'opacity', visible ? fx(1 - p(t, T.remplissage[1] - 0.3, T.remplissage[1], E.lin)) : '0');
+    A(trace, 'stroke-dashoffset', fx(F.longueurFeuille * (1 - p(t, ...T.contour, E.inOutCubic))));
+    A(pleine, 'opacity', visible ? fx(p(t, ...T.remplissage, E.lin)) : '0');
+    A(point, 'r', visible ? fx(5 * p(t, ...T.pointLogo) * (1 - p(t, T.retrait[0], T.retrait[0] + 0.3))) : '0');
+
+    S($('s3-texte'), 'visibility', t >= T.nom3 - 0.1 && t < T.sortie3 + 0.6 ? 'visible' : 'hidden');
+    montrer($('s3-nom'), t, T.nom3, T.sortie3, { din: 0.8 });
+    montrer($('s3-dit'), t, T.dit3, T.sortie3);
+    titre($('s3-titre'), t, T.titre3, T.sortie3);
+  }
+
+  // ---------------------------------------------------------------- La mascotte de la scène
+  function poser(el, pose, echelle, op) {
+    const w = 100 * pose.s;
+    S(el, 'left', pct(pose.cx - w / 2, G.W));
+    S(el, 'top', pct(pose.cy - w / 2, G.H));
+    S(el, 'width', pct(w, G.W));
+    S(el, 'height', pct(w, G.H));
+    S(el, 'transform', `scale(${fx(echelle)})`);
+    S(el, 'opacity', fx(op));
+    S(el, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
+  }
+  function poidsSaisons(t) {
+    const S0 = SYNC.saisons, w = {};
+    SAISONS.forEach((nom, i) => {
+      const debut = p(t, S0[i] - 0.2, S0[i] + 0.2, E.lin);
+      const fin = i < SAISONS.length - 1 ? p(t, S0[i + 1] - 0.2, S0[i + 1] + 0.2, E.lin) : p(t, ...T.sansSaison, E.lin);
+      w[nom] = debut * (1 - fin);
+    });
+    return w;
+  }
+  function rendreMascotte(t) {
+    const el = $('m-scene');
+    if (t < T.retrait[1] || (t >= T.vol[1] + 0.15 && t < T.retour)) {
+      // Cachée, elle reprend une pose fixe : l'image ne garde rien de la précédente.
+      dessiner(mScene, { humeurs: { calm: 1 } });
+      S(el, 'translate', '0 0');
+      poser(el, G.f3, 1, 0);
+      return;
+    }
+    if (t < T.vol[0]) {
+      // Le souffle s'éteint avant le vol, qui part à l'échelle 1 : coupé net, il sautait de 3 %.
+      const b = souffle(t, T.visage[1]) * (1 - p(t, T.vol[0] - 0.6, T.vol[0], E.inOutSine));
+      const k = p(t, ...T.sourire, E.lin);
+      dessiner(mScene, { humeurs: { calm: 1 - k, happy: k }, visage: p(t, ...T.visage, E.lin) });
+      S(el, 'translate', `0 ${fx(-0.4 * b)}%`);
+      poser(el, G.f3, 1 + 0.035 * b, 1);
+      return;
+    }
+    if (t < T.vol[1] + 0.15) {
+      // Elle descend se loger dans l'en-tête du questionnaire, là où il est à cette image : le
+      // téléphone monte et, en 16:9, se tient réduit.
+      const slot = posVivante($('slot-entete'));
+      const cible = { cx: slot.x + slot.w / 2, cy: slot.y + slot.h / 2, s: slot.w / 100 };
+      const k = p(t, ...T.vol, E.inOutCubic);
+      const kh = p(t, T.vol[0], T.vol[0] + 0.3, E.lin);
+      dessiner(mScene, { humeurs: { calm: kh, happy: 1 - kh } });
+      S(el, 'translate', '0 0');
+      poser(el, { cx: lerp(G.f3.cx, cible.cx, k), cy: lerp(G.f3.cy, cible.cy, k), s: lerp(G.f3.s, cible.s, k) }, 1, 1 - p(t, T.vol[1] - 0.1, T.vol[1] + 0.15, E.lin));
+      return;
+    }
+    // Scènes 7 et 8 : elle revient, porte les saisons, puis remonte au-dessus du bouton.
+    const k = p(t, ...T.pose8);
+    const pose = { cx: lerp(G.f7.cx, G.f8.cx, k), cy: lerp(G.f7.cy, G.f8.cy, k), s: lerp(G.f7.s, G.f8.s, k) };
+    const b = souffle(t, T.retour + 0.8);
+    const w = poidsSaisons(t);
+    const h = p(t, ...T.heureuse, E.lin);
+    dessiner(mScene, { humeurs: { calm: 1 - h, happy: h }, automne: w.automne, saisons: { hiver: w.hiver, printemps: w.printemps, ete: w.ete } });
+    S(el, 'translate', `0 ${fx(-0.4 * b)}%`);
+    poser(el, pose, (0.92 + 0.08 * p(t, T.retour, T.retour + 0.8)) * (1 + 0.035 * b), p(t, T.retour, T.retour + 0.5, E.lin));
+  }
+
+  // ---------------------------------------------------------------- Le téléphone
+  // Les appuis dérivent des coupes qu'ils provoquent. Le doigt se montre 0,28 s avant chacun et se
+  // lève en 0,22 s : deux appuis à moins d'une demi-seconde l'un de l'autre le feraient sauter.
+  const TAPES = [
+    ...Q.flatMap((q, k) => [{ t: q + 0.55, id: ['q1-oui', 'q2-voiture', 'q3-une', 'q4-un'][k], choix: true }, { t: q + 1.05, id: 'b-suivant' }]),
+    { t: T.depliage[0] - LEVE, id: 'c2-engage' },
+    { t: T.depliage[1] + 0.4, id: 'j-mar', choix: true }, { t: T.depliage[1] + 0.9, id: 'j-jeu', choix: true },
+    { t: T.engagee - LEVE, id: 'c2-note' },
+    { t: T.tapNotif, id: 'notif' }, { t: SYNC.reponses[1] - 0.15, id: 'pt-oui' }, { t: SYNC.reponses[2] - 0.15, id: 'pt-non' },
+  ];
+  function rendreTapes(t) {
+    const doigt = $('doigt');
+    let actif = null;
+    for (const tape of TAPES) {
+      if (tape.id !== 'b-suivant') C($(tape.id), 'appui', t >= tape.t && t < tape.t + 0.14);
+      if (tape.choix) C($(tape.id), 'choisi', t >= tape.t + 0.14 && t < T.telSortie[1]);
+      if (t >= tape.t - 0.28 && t < tape.t + LEVE) actif = tape;
+    }
+    C($('b-suivant'), 'appui', TAPES.some((x) => x.id === 'b-suivant' && t >= x.t && t < x.t + 0.14));
+    A(doigt, 'data-cible', actif ? actif.id : '');
+    if (!actif) { S(doigt, 'opacity', '0'); S(doigt, 'transform', 'none'); return; }
+    // Le doigt se pose où la cible est rendue à cette image — défilement du plan compris —, en dp de
+    // l'écran : sa mise en page vivante, ramenée à l'échelle du téléphone.
+    const ecr = $('tel-ecran'), re = ecr.getBoundingClientRect(), rc = $(actif.id).getBoundingClientRect();
+    const k = ecr.offsetWidth / re.width / M.dp;
+    const x = (rc.left + rc.width / 2 - re.left) * k, y = (rc.top + rc.height / 2 - re.top) * k;
+    const op = p(t, actif.t - 0.28, actif.t - 0.08, E.lin) * (1 - p(t, actif.t + 0.06, actif.t + LEVE, E.lin));
+    const appui = Math.sin(Math.PI * clamp((t - actif.t + 0.08) / 0.3));
+    S(doigt, 'opacity', fx(op));
+    S(doigt, 'transform', `translate(calc(var(--dp) * ${fx(x)}), calc(var(--dp) * ${fx(y)})) scale(${fx(1 - 0.12 * appui)})`);
+  }
+  function ecran(id, t, a, b) {
+    return montrer($(id), t, a, b, { din: 0.4, dout: 0.3, dy: 0 });
+  }
+  function entreeDp(el, t, a, b, o = {}) {
+    const dx = o.dx ?? 0, dy = o.dy ?? 10, din = o.din ?? 0.45, dout = o.dout ?? 0.25, decal = o.decal ?? 0;
+    const i = p(t, a, a + din), s = b == null ? 0 : p(t, b, b + dout), op = i * (1 - s);
+    S(el, 'opacity', fx(op));
+    S(el, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
+    S(el, 'transform', `translate(calc(var(--dp) * ${fx((1 - i) * dx)}), calc(var(--dp) * ${fx((1 - i) * dy)} + ${fx(decal)}px))`);
+  }
+  function rendreTel(t) {
+    const tel = $('tel');
+    const i = p(t, ...T.tel), s = p(t, ...T.telSortie);
+    const op = i * (1 - s);
+    S(tel, 'opacity', fx(op));
+    S(tel, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
+    const echelle = fmt === 'paysage' ? lerp(0.83, 1, p(t, ...T.calcul, E.inOutCubic)) : 1;
+    S(tel, 'transform', `translateY(${fx((1 - i) * 14 + s * 6)}cqh) scale(${fx(echelle)})`);
+    montrer($('legende-tel'), t, T.bilan[0] + 0.1, T.manif[0], { dy: 0.3 });
+    // Le contenu se rend même téléphone caché : sinon il garderait l'état de la dernière image.
+
+    // Le questionnaire
+    ecran('e-q', t, T.tel[0] - 0.1, T.calcul[0]);
+    ['q1', 'q2', 'q3', 'q4'].forEach((id, k) => entreeDp($(id), t, Q[k], Q[k + 1] ?? null, { dx: 14, dy: 0, din: 0.4 }));
+    // Le film monte quatre des neuf étapes ; le rail et le compte suivent les vraies positions.
+    const rails = [[Q[0], 1], [Q[1], 3], [Q[2], 5], [Q[3], 7], [Q[3] + 1.05, 8]];
+    let largeur = 0;
+    rails.forEach(([a, v], j) => { if (t >= a) largeur = lerp(j ? rails[j - 1][1] : 0, v, p(t, a, a + 0.4)) / 9; });
+    S($('rail'), 'width', `${fx(largeur * 100)}%`);
+    const n = t < Q[1] ? 0 : t < Q[2] ? 1 : t < Q[3] ? 2 : 3;
+    texte($('q-etape'), `Étape ${[1, 3, 5, 7][n]} sur 9`);
+    texte($('q-section'), ['Domicile-travail', 'Domicile-travail', 'Loisirs du week-end', 'Voyages longue distance'][n]);
+    S($('slot-entete'), 'opacity', fx(p(t, T.vol[1] - 0.1, T.vol[1] + 0.1, E.lin)));
+
+    // Le calcul, puis la restitution, qui défile si le cadre coupe l'écran
+    ecran('e-calcul', t, ...T.calcul);
+    S(mCalcul, 'transform', `scale(${fx(1 + 0.035 * souffle(t, T.calcul[0]))})`);
+    ecran('e-bilan', t, ...T.bilan);
+    entreeDp($('bb1'), t, T.bilan[0] + 0.1, null);
+    entreeDp($('bb2'), t, T.bilan[0] + 0.3, null);
+    entreeDp($('bb3'), t, T.bilan[0] + 0.5, null);
+    S($('bilan-defile'), 'transform', `translateY(${fx(-M.defile * p(t, ...T.defile, E.inOutCubic))}px)`);
+
+    // Le plan
+    ecran('e-plan', t, T.plan, null);
+    entreeDp($('p-titre'), t, T.plan + 0.2, null);
+    entreeDp($('lien-pistes'), t, T.plan + 0.65, null);
+    const ouvert = p(t, ...T.depliage) * (1 - p(t, ...T.repli));
+    if (ouvert > 0 && ouvert < 1) S($('c2-dep'), 'height', `${fx(M.dep * ouvert)}px`);
+    else S($('c2-dep'), 'height', ouvert >= 1 ? 'auto' : '0px');
+    const engagee = t >= T.engagee;
+    C($('c2'), 'engagee', engagee);
+    C($('c1'), 'estompee', engagee);
+    texte($('c2-ligne'), engagee ? 'par an · le mardi et le jeudi · 16 % de ton empreinte' : 'par an · 16 % de ton empreinte');
+    texte($('c1-choix'), engagee ? 'Choisir celle-ci à la place' : 'Je m’y engage');
+    // L'action engagée passe en tête (`ordonnerLesPistes`) : les deux cartes échangent leur place.
+    const c1 = $('c1'), c2 = $('c2');
+    const enTete = t >= T.enTete[0];
+    S(c2, 'order', enTete ? '-1' : '0');
+    // En montant, la carte engagée passe devant l'autre : elles se croisent.
+    S(c2, 'position', 'relative');
+    S(c2, 'zIndex', enTete ? '1' : '0');
+    let dy1 = 0, dy2 = 0;
+    if (enTete) {
+      const k = p(t, ...T.enTete);
+      if (k < 1) {
+        const h = M.cartes;
+        dy1 = -(h.h2 + h.ecart) * (1 - k);
+        dy2 = (h.h1 + h.ecart) * (1 - k);
+      }
+    }
+    entreeDp(c1, t, T.plan + 0.35, null, { decal: dy1 });
+    entreeDp(c2, t, T.plan + 0.5, null, { decal: dy2 });
+    // Le dépliage pousse « C'est noté » vers le bas ; si le cadre le coupe, le plan défile le temps
+    // du choix, puis revient quand l'engagement remonte en tête.
+    const defilePlan = M.defilePlan * p(t, T.depliage[0], T.depliage[1] + 0.1) * (1 - p(t, ...T.enTete));
+    S($('plan-corps'), 'transform', `translateY(${fx(-defilePlan)}px)`);
+
+    // La notification, puis le point de la semaine
+    const notif = $('notif');
+    const ni = p(t, ...T.notif), ns = p(t, ...T.notifSortie);
+    const nv = ni * (1 - ns) > 0.001;
+    S(notif, 'visibility', nv ? 'visible' : 'hidden');
+    S(notif, 'transform', `translateY(${fx((-1 + ni) * 140 - ns * 140)}%)`);
+    const ouv = p(t, ...T.point);
+    if (ouv > 0 && ouv < 1) S($('point-h'), 'height', `${fx(M.point * ouv)}px`);
+    else S($('point-h'), 'height', ouv >= 1 ? 'auto' : '0px');
+    const semaine2 = t >= T.semaineSuivante;
+    entreeDp($('pt-q'), t, semaine2 ? T.question2[0] : T.question1[0], semaine2 ? T.question2[1] : T.question1[1], { dy: 6, dout: 0.2 });
+    entreeDp($('pt-r1'), t, T.question1[1], T.semaineSuivante, { dy: 6, dout: 0.25 });
+    entreeDp($('pt-r2'), t, T.question2[1], null, { dy: 6 });
+    texte($('pt-label'), semaine2 ? 'Semaine du 12/10' : 'Semaine du 05/10');
+    C($('pt-label'), 'repondu', (t >= T.question1[1] && t < T.semaineSuivante) || t >= T.question2[1]);
+
+    rendreTapes(t);
+  }
+  function rendreTextesTel(t) {
+    bloc('t4a', t, ...T.t4a);
+    bloc('t4b', t, ...T.t4b);
+    bloc('t5a', t, ...T.t5a);
+    bloc('t5b', t, ...T.t5b);
+    bloc('t6a', t, ...T.t6a);
+    bloc('t6b', t, ...T.t6b);
+  }
+  function rendreManifeste(t) {
+    const m = $('manif');
+    const i = p(t, T.manif[0], T.manif[0] + 0.7), s = p(t, T.manif[1], T.manif[1] + 0.55);
+    S(m, 'visibility', i > 0 && s < 1 ? 'visible' : 'hidden');
+    S(m, 'transform', `translateY(${fx((1 - i) * 100 + s * 100)}%)`);
+    ['m1', 'm2', 'm3', 'm4'].forEach((id, k) => montrer($(id), t, SYNC.manifeste.lignes[k], T.manifTexteSortie, { din: 0.7, dy: k < 3 ? 2 : 1 }));
+  }
+
+  // ---------------------------------------------------------------- Scènes 7 et 8
+  function rendreS7(t) {
+    S($('s7-texte'), 'visibility', t >= T.s7titre[0] - 0.1 && t < T.s7titre[1] + 0.6 ? 'visible' : 'hidden');
+    titre($('s7-titre'), t, ...T.s7titre);
+    montrer($('s7-dit'), t, T.s7dit, T.s7titre[1]);
+    saisonsPts.forEach((c, i) => {
+      const r = G.fil * 1.15 * p(t, SYNC.saisons[i], SYNC.saisons[i] + 0.4) * (1 - p(t, T.saisonsSortie, T.saisonsSortie + 0.3));
+      A(c, 'r', fx(t >= T.retour ? Math.max(0, r) : 0));
+    });
+    saisonsEtiq.forEach((el, i) => montrer(el, t, SYNC.saisons[i] + 0.05, T.saisonsSortie, { dy: G.saisonsPlace[i] === 'dessus' ? -0.8 : 0.8 }));
+  }
+  function rendreS8(t) {
+    S($('s8-texte'), 'visibility', t >= T.nom8 - 0.1 ? 'visible' : 'hidden');
+    montrer($('s8-nom'), t, T.nom8, null, { din: 0.8 });
+    titre($('s8-titre'), t, T.titre8, null);
+    const cta = $('s8-cta'), k = p(t, ...T.bouton);
+    // Le bouton s'étire depuis le point d'arrivée du trait : même centre, même rayon au départ.
+    const r = M.cta;
+    const rp = G.fil * 0.9;
+    const haut = r.h ? ((r.h / 2 - rp) / r.h) * 100 : 45;
+    const droite = r.w ? ((r.w - 2 * rp) / r.w) * 100 : 95;
+    S(cta, 'clipPath', `inset(${fx(lerp(haut, 0, k))}% ${fx(lerp(droite, 0, k))}% ${fx(lerp(haut, 0, k))}% 0 round 999px)`);
+    S(cta, 'visibility', t >= T.bouton[0] ? 'visible' : 'hidden');
+    montrer($('s8-url'), t, T.url, null, { dy: 0.6 });
+    montrer($('s8-note'), t, T.note8, null, { dy: 0.6 });
+  }
+
+  // ---------------------------------------------------------------- Rendu d'une image
+  let tCourant = 0;
+  function rendre(t) {
+    tCourant = clamp(t, 0, DUREE);
+    t = tCourant;
+    rendreFil(t);
+    rendreS1(t);
+    rendreS2(t);
+    rendreS3(t);
+    rendreTel(t);
+    rendreTextesTel(t);
+    rendreManifeste(t);
+    rendreS7(t);
+    rendreS8(t);
+    rendreMascotte(t);
+    majCommandes();
+  }
+
+  // ---------------------------------------------------------------- Lecture, son et commandes
+  const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const audio = $('musique');
+  let enLecture = false, raf = 0, affiche = true, sonActif = true, sonDispo = true;
+  // L'horloge : le son la donne quand il joue, la page sinon. L'image ne fait jamais sauter le son —
+  // la version du 03/10/2026 le recalait dès qu'il s'écartait de 0,15 s ; sur un vrai navigateur,
+  // le son démarre avec quelques centaines de millisecondes de retard, chaque recalage en ajoutait,
+  // et le son sautait à peu près chaque seconde. C'est désormais l'image qui suit le son.
+  let horloge = 'page', dernier = 0, sonEnAttente = false, attenteDepuis = 0;
+  const fmtTemps = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const ICO_LIRE = '<path d="M7 4.5v15l12.5-7.5z"/>';
+  const ICO_PAUSE = '<path d="M7 4.5h3.6v15H7zM13.4 4.5H17v15h-3.6z"/>';
+
+  function majCommandes() {
+    texte($('temps'), `${fmtTemps(tCourant)} / ${fmtTemps(DUREE)}`);
+    if (document.activeElement !== $('frise')) $('frise').value = Math.round(tCourant * 10);
+    const courant = CHAPITRES.reduce((acc, c, i) => (tCourant >= c.debut - 0.001 ? i : acc), 0);
+    document.querySelectorAll('.chap').forEach((b, i) => A(b, 'aria-current', String(i === courant)));
+  }
+  function majSon() {
+    const bouton = $('son');
+    bouton.disabled = !sonDispo;
+    bouton.setAttribute('aria-pressed', String(sonActif && sonDispo));
+    texte($('son-libelle'), !sonDispo ? 'Son indisponible' : sonActif ? 'Son activé' : 'Son coupé');
+  }
+  // Le son ne se place qu'ici : au lancement, après un saut dans la frise, ou quand on le rallume.
+  function lancerLeSon() {
+    horloge = 'page';
+    if (!sonActif || !sonDispo) return;
+    try { if (Math.abs(audio.currentTime - tCourant) > 0.05) audio.currentTime = tCourant; } catch (e) { /* le média n'est pas prêt : il partira de zéro */ }
+    sonEnAttente = true;
+    attenteDepuis = performance.now();
+    const promesse = audio.play();
+    if (promesse) promesse.catch(() => { sonEnAttente = false; horloge = 'page'; });
+  }
+  audio.addEventListener('playing', () => { sonEnAttente = false; if (enLecture && sonActif) horloge = 'son'; });
+  audio.addEventListener('waiting', () => { if (horloge === 'son') { sonEnAttente = true; attenteDepuis = performance.now(); } });
+  function boucle(now) {
+    const dt = Math.min(0.1, Math.max(0, (now - dernier) / 1000));
+    dernier = now;
+    let t = tCourant;
+    // Un son qui ne démarre pas (ou ne se recharge pas) en 1,2 s ne retient pas l'image : elle repart
+    // sur l'horloge de la page, et le son la rejoindra s'il arrive.
+    if (sonEnAttente && now - attenteDepuis > 1200) { sonEnAttente = false; horloge = 'page'; }
+    if (horloge === 'son') {
+      // L'image suit le son : elle accélère ou ralentit d'au plus 25 % pour le rejoindre, sans à-coup ;
+      // un écart d'une demi-seconde (onglet resté en arrière-plan) se rattrape d'un coup.
+      if (!sonEnAttente) {
+        const ecart = audio.currentTime - t;
+        t = Math.abs(ecart) > 0.5 ? audio.currentTime : t + dt * (1 + clamp(ecart * 2, -0.25, 0.25));
+      }
+    } else if (!sonEnAttente) {
+      t += dt;
+    }
+    if (t >= DUREE) { rendre(DUREE); arreter(true); return; }
+    rendre(t);
+    raf = requestAnimationFrame(boucle);
+  }
+  function lire() {
+    if (affiche) { affiche = false; $('affiche').hidden = true; if (Math.abs(tCourant - CHAPITRES[2].pose) < 0.01) tCourant = 0; }
+    if (tCourant >= DUREE - 0.05) tCourant = 0;
+    enLecture = true;
+    dernier = performance.now();
+    $('lecture-ico').innerHTML = ICO_PAUSE;
+    texte($('lecture-libelle'), 'Pause');
+    lancerLeSon();
+    raf = requestAnimationFrame(boucle);
+  }
+  function arreter(finNaturelle = false) {
+    enLecture = false;
+    horloge = 'page';
+    sonEnAttente = false;
+    cancelAnimationFrame(raf);
+    // À la fin, l'accord final sonne jusqu'au bout ; sur une pause, le son s'arrête avec l'image.
+    if (!finNaturelle) audio.pause();
+    $('lecture-ico').innerHTML = ICO_LIRE;
+    texte($('lecture-libelle'), tCourant >= DUREE - 0.05 ? 'Revoir' : 'Lire');
+  }
+  function aller(t) {
+    if (affiche) { affiche = false; $('affiche').hidden = true; }
+    const relancer = enLecture;
+    if (enLecture) arreter();
+    rendre(t);
+    if (relancer) lire();
+  }
+  $('lecture').addEventListener('click', () => (enLecture ? arreter() : lire()));
+  scene.addEventListener('click', () => (enLecture ? arreter() : lire()));
+  $('frise').addEventListener('input', (e) => { if (enLecture) arreter(); if (affiche) { affiche = false; $('affiche').hidden = true; } rendre(Number(e.target.value) / 10); });
+  $('son').addEventListener('click', () => {
+    sonActif = !sonActif;
+    majSon();
+    if (!sonActif) { audio.pause(); horloge = 'page'; sonEnAttente = false; }
+    else if (enLecture) lancerLeSon();
+  });
+  audio.addEventListener('error', () => { sonDispo = false; majSon(); });
+
+  const liste = $('chapitres');
+  CHAPITRES.forEach((c, i) => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chap';
+    b.innerHTML = `<small>${fmtTemps(c.debut)}</small><span>${i + 1}. ${c.titre}</span>`;
+    // Sous « réduire les animations », un chapitre s'ouvre posé ; sinon il se joue.
+    b.addEventListener('click', () => { if (reduit) { aller(c.pose); } else { aller(c.debut); if (!enLecture) lire(); } });
+    li.appendChild(b);
+    liste.appendChild(li);
+  });
+  const scen = $('scenario');
+  CHAPITRES.forEach((c, i) => {
+    const fin = i < CHAPITRES.length - 1 ? CHAPITRES[i + 1].debut : DUREE;
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="tc">${fmtTemps(c.debut)} – ${fmtTemps(fin)}</span>
+      <div><h3>${i + 1}. ${c.titre}</h3><p>${c.image}</p></div>
+      <div><span class="etiquette">À l’écran</span><p class="ecrit">${c.texte}</p></div>`;
+    scen.appendChild(li);
+  });
+
+  document.querySelectorAll('input[name="format"]').forEach((r) => r.addEventListener('change', (e) => {
+    fmt = e.target.value;
+    preparer();
+    rendre(tCourant);
+  }));
+  $('plein').addEventListener('click', () => {
+    const c = $('cadre');
+    try {
+      const promesse = document.fullscreenElement ? document.exitFullscreen() : c.requestFullscreen?.();
+      promesse?.catch?.(() => {});
+    } catch (e) { /* plein écran refusé : la page reste utilisable */ }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest('input, button, fieldset')) return;
+    if (e.code === 'Space') { e.preventDefault(); enLecture ? arreter() : lire(); }
+  });
+
+  // ---------------------------------------------------------------- Démarrage
+  const params = new URLSearchParams(location.search);
+  const exportFmt = params.get('export');
+  if (exportFmt) {
+    document.documentElement.classList.add('export');
+    fmt = exportFmt === 'portrait' ? 'portrait' : 'paysage';
+  } else if (window.matchMedia('(max-width: 640px)').matches) {
+    fmt = 'portrait';
+  }
+  $(fmt === 'portrait' ? 'f-portrait' : 'f-paysage').checked = true;
+  $('frise').max = String(Math.round(DUREE * 10));
+  texte($('affiche-libelle'), `Lire le film · ${fmtTemps(DUREE)}${reduit ? ' · les chapitres s’ouvrent posés' : ''}`);
+  // Un son qui a échoué avant que l'écouteur `error` soit posé ne le déclenchera plus : on le lit ici.
+  // `audio.error` seul : `networkState` vaut « aucune source » le temps que le chargement démarre, et
+  // le lire coupait le son à chaque ouverture (vu le 03/10/2026, dans la lecture réelle).
+  if (audio.error) sonDispo = false;
+  majSon();
+
+  function demarrer() {
+    preparer();
+    if (exportFmt) { $('affiche').hidden = true; affiche = false; rendre(0); }
+    else if (affiche) rendre(CHAPITRES[2].pose);
+    else rendre(tCourant);
+  }
+  // La mise en page ne dépend pas de la taille du lecteur : seule l'échelle se refait.
+  if (window.ResizeObserver) new ResizeObserver(() => ajuster()).observe(scene);
+  window.__seek = (t) => rendre(t);
+  window.__duree = DUREE;
+  window.__T = T;
+  window.__appuis = TAPES.map((x) => x.t);
+  window.__pret = (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { demarrer(); return true; });
+  demarrer();
+})();
+</script>

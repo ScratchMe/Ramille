@@ -197,7 +197,7 @@ function Toi({ go, dark }) {
       {/* L'ordre et l'écart de l'écran (`v1-33` T-15) : le compte, puis les rappels, puis « Mes données »,
           32 entre sections. */}
       <Scroll gap={32}>
-        <TextLink label="← Retour" apparence="discret" onPress={() => go('plan')} />
+        <SortieDuDetour label="Retour" onPress={() => go('plan')} />
         <ThemedText type="screenTitle" as="h1">Toi</ThemedText>
         <div style={{ background: 'var(--color-background-element)', borderRadius: 18, padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <ThemedText type="small" weight={600}>Ton compte</ThemedText>

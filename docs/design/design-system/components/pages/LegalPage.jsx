@@ -1,11 +1,12 @@
 import React from 'react';
-import { TextLink } from '../core/TextLink.jsx';
+import { SortieDuDetour } from '../navigation/SortieDuDetour.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/legal/legal-page.tsx — le gabarit des deux pages légales (confidentialité, conditions) : date de
 // mise à jour, titre, introduction, sections faites de paragraphes, de puces (un tiret cadratin tertiaire) ou de
 // définitions. Une mesure de lecture de 480 au plus, centrée. Les titres de section sont des en-têtes de niveau 2 en
 // 18/26 — un `subtitle` en porterait le rôle mais aussi les 32 px. Ce sont les seules surfaces publiques du produit, lues
-// hors app et sans session : d'où leur pied, avec un vrai lien vers l'éditeur (une ancre, pas un bouton).
+// hors app et sans session : d'où leur pied, avec un vrai lien vers l'éditeur (une ancre, pas un bouton). Deux sorties
+// (`v1-33` T-10) : en haut, au-dessus de la date, et à la fin, pour qui a tout lu.
 const EDITOR_NAME = 'Antoine Berthaud';
 const EDITOR_CV_URL = 'https://cv.antoine.berthaud.me/';
 const corps = { fontSize: 15, lineHeight: '23px' };
@@ -38,6 +39,7 @@ export function LegalPage({ title, updatedAt, intro, sections = [], onRetour }) 
   return (
     <div style={{ padding: '24px 24px 64px', background: 'var(--color-background)' }}>
       <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <SortieDuDetour label="Retour" onPress={onRetour} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <ThemedText type="small" themeColor="textTertiary">Dernière mise à jour : {updatedAt}</ThemedText>
           <ThemedText type="title" weight={600} style={{ fontSize: 30, lineHeight: '36px', letterSpacing: '-0.3px' }}>{title}</ThemedText>
@@ -49,7 +51,7 @@ export function LegalPage({ title, updatedAt, intro, sections = [], onRetour }) 
             {section.blocks.map((block, i) => <Bloc key={i} block={block} />)}
           </div>
         ))}
-        <TextLink label="Retour" apparence="action" onPress={onRetour} role="link" containerStyle={{ padding: '8px 0' }} />
+        <SortieDuDetour label="Retour" onPress={onRetour} />
         <div style={{ marginTop: 32 }}>
           <ThemedText type="small" themeColor="textTertiary">
             Un projet personnel d’<a href={EDITOR_CV_URL} target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>{EDITOR_NAME}</a>.
