@@ -15,6 +15,16 @@ des rangées à choix unique, et la marque d'une puce cochée, qui fait bouger s
 Un quatrième, plus petit, vient d'un autre écran et a été joint ensuite : un bouton en attente qui
 disparaît sur l'encart gris où il est posé (§4.5).
 
+**La réponse, le 03/10/2026** : un canvas Claude Design (privé, celui de la personne qui pilote),
+<https://claude.ai/artifact/7yxeHrHFuUKYuoRjJcuNBN>. Il est construit sur les valeurs du kit tel que
+synchronisé ce jour-là, et non sur l'artefact « Ramille » de la galerie, figé au 16/09/2026. Il porte :
+- les captures d'aujourd'hui ;
+- une proposition en six écrans, dont un prototype qu'on touche ;
+- trois marques de puce cochée ;
+- le bouton en attente posé sur un encart.
+
+Le choix entre ces options reste à faire avec la personne qui pilote.
+
 **Ce brief demande l'UX autant que l'UI.** La personne arrive à la dernière étape d'un questionnaire
 de neuf. On lui pose quatre questions sur l'endroit où elle vit. Elle doit comprendre sans chercher
 ce que veut dire « Périurbain » et ce qu'elle doit cocher, puis finir.

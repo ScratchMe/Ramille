@@ -257,6 +257,9 @@ on s'en fiche. sinon OK ».
   rejoint le brief (§4.5) plutôt qu'une correction faite à la main ; et les conventions que Claude Design
   lit disent désormais comment une série à cocher se compose — sans quoi le canvas risquait de
   redessiner la question des transports en choix unique.
+- **Le brief est parti à Claude Design le même jour** : un canvas,
+  <https://claude.ai/artifact/7yxeHrHFuUKYuoRjJcuNBN> (privé). Ses options, la recommandation comprise,
+  attendent la décision de la personne qui pilote avant toute PR.
 
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 
