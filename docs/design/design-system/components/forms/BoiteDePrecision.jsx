@@ -16,7 +16,7 @@ import { contexteDesAncres } from './IntituleDuChamp.jsx';
 //
 // À l'ouverture, l'écran remonte juste assez pour qu'elle finisse 16 au-dessus du pied, sans jamais faire passer le
 // choix au-dessus du bord (8) — seulement quand elle suit une réponse, jamais au préremplissage. Le focus reste sur
-// le choix qu'on vient de toucher. Dans le dépôt, c'est un `Depliage` suivi (hauteur animée 250 ms, fondu 200 ms),
+// le choix qu'on vient de toucher. Dans le dépôt, c'est un `Depliage` suivi (hauteur animée 250 ms, fondu 200 ms, sur web ; posé sur Android),
 // et la borne est le haut du `ChoixOuvrant` qui enveloppe le choix et sa boîte ; le kit pose la boîte à sa hauteur
 // finale, et prend pour borne l'élément qui l'enveloppe avec son choix.
 export function BoiteDePrecision({ children }) {

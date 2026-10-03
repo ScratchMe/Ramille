@@ -142,7 +142,7 @@ voyage est en `FRONT.md` §1.
     apparaître ne fait rien défiler. « Voir les autres modes » ne défile pas : ce qu'il révèle est
     sous le doigt.
   **Et le défilement de la plateforme est borné au contenu au moment où il part**, alors qu'un dépli
-  part de zéro : sur une étape qui tenait dans la zone (« Oui » de B1.6, « Oui » des longs trajets),
+  part de zéro (sur web ; posé sur Android depuis le 03/10/2026, `FRONT-MOUVEMENT.md` §2.12) : sur une étape qui tenait dans la zone (« Oui » de B1.6, « Oui » des longs trajets),
   la zone ne remontait pas, la cible calculée étant pourtant juste (01/10/2026). `StepShell` réserve
   la hauteur finale (`minHeight`, depuis la hauteur **naturelle** : `flexGrow` étire le contenu à la
   zone) le temps de l'ouverture ; garde B6 bis, section K de `verifier-etats-export.mjs`.

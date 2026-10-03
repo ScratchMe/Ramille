@@ -97,6 +97,25 @@ describe('ce que la bibliothèque ne coupe pas d’elle-même', () => {
 });
 
 /**
+ * **Une hauteur ne s'anime pas sur Android** (03/10/2026, recette du build d'octobre, lignes 01.4 à
+ * 01.8). Ce test garde le calcul, pas l'appel : que `Depliage` et `HauteurSuivie` le lisent, et que
+ * l'écran des pistes défile tout de suite là où rien ne grandit, seul un téléphone le montre — les
+ * gardes de l'export ne jouent que le web.
+ *
+ * **Éprouvé en le cassant le 03/10/2026**, une mutation sur un fichier égal au commit, restauré depuis
+ * sa copie : la fonction qui rend toujours `true` fait tomber « pose sur Android » — seulement.
+ */
+describe('hauteurSAnime', () => {
+  it('pose sur Android', () => {
+    expect(hauteurSAnime('android')).toBe(false);
+  });
+
+  it('anime sur le web, où ses gardes la relèvent image par image', () => {
+    expect(hauteurSAnime('web')).toBe(true);
+  });
+});
+
+/**
  * **Le défilement jusqu'à « C'est noté »** (29/09/2026, `v1-32` §4.4, planche B2) : juste assez pour
  * montrer le bas de la carte ouverte, jamais au point de faire passer son titre sous la bande.
  *
@@ -114,18 +133,6 @@ describe('ce que la bibliothèque ne coupe pas d’elle-même', () => {
  *   | la marge oubliée en haut | « arrête le haut sous le bord » et « ne remonte jamais » |
  *   | plus de plancher à zéro | « ne défile pas quand le bas est déjà dans la fenêtre » et « ne remonte jamais » |
  */
-describe('hauteurSAnime', () => {
-  // Le 03/10/2026, sur le premier build qui portait `Depliage`, rien de ce qui s'ouvre sous un choix ne
-  // s'ouvrait sur Android ; posé, il s'affichait (recette du build d'octobre, lignes 01.4 à 01.8).
-  it('pose sur Android', () => {
-    expect(hauteurSAnime('android')).toBe(false);
-  });
-
-  it('anime sur le web, où ses gardes la relèvent image par image', () => {
-    expect(hauteurSAnime('web')).toBe(true);
-  });
-});
-
 describe('defilementPourMontrer', () => {
   const fenetre = { hauteurFenetre: 700, marge: 16 };
 

@@ -160,7 +160,7 @@ phases). L'état de chaque ligne est celui de la PR qui porte ce document.
 | T-10 | « Retour » : trois styles, trois places selon le détour | Une décision de dessin : déplacer « Plus tard » détacherait la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2). **Tranché et fait le 03/10/2026**, plus bas |
 | T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil. **Fait le 03/10/2026**, plus bas |
 | T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux. **Fait le 03/10/2026**, plus bas |
-| T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView` |
+| T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView`. **Mesuré le 03/10/2026** sur le build de recette (ligne 01.3 de `docs/recette/le-build-d-octobre.md`) : le pied et « Suivant » restaient sous le clavier. **Fait le même soir** — `AuDessusDuClavier` sur les cinq écrans à champ (`EXPO.md` §1.11) —, à vérifier sur le prochain build |
 | T-7 (glissé) | La poignée de la feuille promet un glissé qui n'existe pas | Un seuil de glissé se juge au doigt |
 
 **T-5, fait le 03/10/2026.** `TextLink` prend une `apparence` obligatoire et ne prend plus ni `type`,

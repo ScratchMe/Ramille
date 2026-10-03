@@ -608,6 +608,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
 
 ### 2.8 Web et natif : les pièges déjà payés
 
+- **Un écran qui porte un champ se pose dans `AuDessusDuClavier`**, sans quoi le pied et son bouton
+  restent sous le clavier d'Android : `EXPO.md` §1.11 et §2.3.
+
 - **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`, et le
   `ThemeProvider` du layout racine porte la même décision) : `EXPO.md` §2.2.
 - **`public/robots.txt` et `public/sitemap.xml` sont la cinquième garde d'export, et ils

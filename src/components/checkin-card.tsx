@@ -277,8 +277,8 @@ export function CheckinCard({
       </ThemedText>
       {/* **La réplique apparaît au lieu de remplacer la question d'un coup** (27/09/2026, `v1-30`
           §5.7) : la carte passe de la hauteur de la question à celle de la réplique
-          (`HauteurSuivie`), donc le plan de dessous suit au lieu de sauter, et la réplique apparaît en
-          fondu. Un point déjà répondu à l'arrivée sur le plan n'a pas d'apparition à soi
+          (`HauteurSuivie`), donc le plan de dessous suit au lieu de sauter — sur web ; posé sur Android
+          depuis le 03/10/2026 (`hauteurSAnime`) —, et la réplique apparaît en fondu. Un point déjà répondu à l'arrivée sur le plan n'a pas d'apparition à soi
           (`SansApparitionAuMontage`). Le focus part au geste, sans attendre le fondu — ce
           qu'`entering` de reanimated empêchait sur web en masquant la réplique (`src/lib/mouvement.tsx`). */}
       <HauteurSuivie styleDuContenu={styles.corps}>
