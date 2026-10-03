@@ -57,7 +57,8 @@
  * ligne de table, parce que `etatDeLaBanniere` ne voit pas ce que l’écran lui passe. Six mutations,
  * relevées sur chaque test.
  */
-import { act, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import React from 'react';
 
 import BilanResultat from '@/app/(tabs)/suivi/bilan';
@@ -410,14 +411,18 @@ describe('la restitution d’un re-bilan', () => {
 
 // **La place de la sortie** (`v1-33` T-10, décidé le 03/10/2026). Cet écran se consulte : sa sortie est en
 // haut, au-dessus de « Ton bilan transport », dans **chacun** de ses états — la relecture, où elle était
-// la dernière ligne d'une page de 1 390 px ; l'échec, où elle était sous « Réessayer » ; le bilan retiré,
-// où elle finissait sa phrase. Et aucune après le questionnaire, où l'écran pousse vers le plan. Le
-// parcours réel touche « Revenir à mon suivi » par son nom, où qu'il soit : rien d'autre ne lit sa place.
+// la dernière ligne d'une page de 1 390 px ; son chargement, où elle manquait ; l'échec, où elle était
+// sous « Réessayer » ; le bilan retiré, où elle finissait sa phrase. Et aucune après le questionnaire, où
+// l'écran prêt pousse vers le plan. Ni le parcours réel ni aucune autre suite ne lit sa place ; le
+// parcours ne touche même pas « Revenir à mon suivi » — d'où, ici aussi, sa destination : le suivi par
+// `router.replace`, jamais un dépilement (retour d'appareil du 07/09/2026).
 //
-// Éprouvé en cassant ce qu'il garde, le 03/10/2026 — quatre mutations, chacune faisant tomber le sien et
+// Éprouvé en cassant ce qu'il garde, le 03/10/2026 — six mutations, chacune faisant tomber le sien et
 // aucun autre :
 //   - la sortie de la relecture remise en fin de page → « en relecture… » ;
+//   - sa destination rendue en dépilement (`router.back()`) → la même ;
 //   - `mode !== 'nouveau'` retiré de sa garde → « après le questionnaire… » ;
+//   - la sortie retirée du chargement → « le chargement d'une relecture… » ;
 //   - la sortie de l'échec remise sous « Réessayer » → « un échec de lecture… » ;
 //   - la sortie du retrait remise après sa phrase → « un bilan retiré… ».
 describe('la sortie de l’écran', () => {
@@ -443,6 +448,26 @@ describe('la sortie de l’écran', () => {
     expect(textes[0]).toBe(SORTIE);
     expect(textes.indexOf(SORTIE)).toBe(textes.lastIndexOf(SORTIE));
     expect(textes.indexOf(SORTIE)).toBeLessThan(textes.indexOf('Ton bilan transport'));
+
+    // Une destination, pas un dépilement : ouverte depuis le plan, la page ramènerait au plan.
+    fireEvent.press(screen.getByRole('link', { name: SORTIE }));
+    expect(router.replace).toHaveBeenCalledWith('/suivi');
+  });
+
+  it('le chargement d’une relecture la garde en haut ; celui qui suit le questionnaire, non', async () => {
+    mockParams = { id: 'b1' };
+    render(<BilanResultat />);
+    await act(async () => {});
+    expect(screen.getByText('Chargement de ton bilan…')).toBeTruthy();
+    expect(textesDansLOrdre(screen.toJSON())[0]).toBe(SORTIE);
+    screen.unmount();
+
+    mockEnAttente.length = 0;
+    mockParams = { id: 'b2', nouveau: '1' };
+    render(<BilanResultat />);
+    await act(async () => {});
+    expect(screen.getByText('Chargement de ton bilan…')).toBeTruthy();
+    expect(screen.queryByText(SORTIE)).toBeNull();
   });
 
   it('après le questionnaire, il n’y en a pas : l’écran pousse vers le plan', async () => {

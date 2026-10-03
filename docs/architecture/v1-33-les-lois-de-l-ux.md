@@ -234,18 +234,26 @@ place se décide par ce que fait l'écran, jamais par son état. **Un écran qui
 pages légales, « Toutes les pistes », un bilan relu — a sa sortie en haut à gauche, au-dessus du titre,
 un chevron et son libellé en gris (`SortieDuDetour`), dans chacun de ses états : l'échec des pistes et de
 la restitution, et le bilan retiré, la gardent au même endroit, là où elle descendait sous « Réessayer »
-ou finissait une phrase. Les pages légales gardent en plus celle de leur fin. **Un écran qui pose une
+ou finissait une phrase, et le chargement d'une relecture, qui n'en avait pas, la porte désormais — sa
+place est tenue vide dès le HTML statique, qui ne sait pas encore s'il s'agit d'une relecture. Les
+pages légales gardent en plus celle de leur fin. **Un écran qui pose une
 question** — les flux, la connexion, `/contexte`, `/feedback` — garde la sienne en bas, sous l'action
 principale : le seul changement y est le vert du « Retour » de `/contexte`, passé au gris. Aucun libellé
 ne change. L'autre voie, la correction proposée par l'audit — tout en haut à gauche —, a été écartée :
 sur la connexion, elle détachait « Plus tard » de sa phrase ou faisait deux sorties vers le plan ; sur
 `/connexion/retrouver`, « Reviens en arrière » perdait son lien ; et sur un formulaire, la sortie quittait
 l'endroit où l'on décide. `BILAN_RETIRE.sortie` est parti : la sortie du bilan retiré est celle de la
-restitution. **Le seul pari** est le bilan relu : qui le lit jusqu'au bout n'y trouve plus de lien en bas,
+restitution. Le chevron est le cinquième tracé du produit (grille 24, trait 1,9), ajouté à l'iconographie
+du kit. **La contre-lecture du même jour** a relevé neuf points, tous corrigés avant la PR : une règle
+écrite plus large que la décision (« jamais `action` » attrapait le « Pas maintenant » d'une feuille, que
+la décision n'a pas touché), le tracé absent de l'iconographie du kit, le chargement de la relecture sans
+sortie, deux commentaires périmés, une phrase de test fausse sur le parcours réel et la destination de
+« Revenir à mon suivi » gardée nulle part, la forme `discret` recopiée sans garde, deux « Retour » de
+`/contexte` non gardés, et un toucher différent entre le kit et le dépôt. **Le seul pari** est le bilan relu : qui le lit jusqu'au bout n'y trouve plus de lien en bas,
 et garde l'onglet « Suivi », qui ramène à la liste (T-14) — à juger sur appareil (`v1-13` §11.26). Les
 gardes : `sortie-du-detour.test.tsx` pour la forme, et la place écran par écran dans
 `plan-pistes.test.tsx`, `restitution-du-bilan.test.tsx`, `toi-confirmation.test.tsx`,
-`legal-page.test.tsx` et `contexte.test.tsx` — quatorze mutations, chacune attrapée par le test qui la
+`legal-page.test.tsx` et `contexte.test.tsx` — vingt mutations, chacune attrapée par le test qui la
 vise.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et

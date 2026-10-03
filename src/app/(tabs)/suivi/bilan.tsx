@@ -11,7 +11,7 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { ControlHeight, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
@@ -652,9 +652,18 @@ export default function BilanResultat() {
   // **La ligne reste immédiate** (`immediate`) : cet écran n'attend pas le délai des autres, et c'est
   // décidé (`v1-30` §5.8) — le HTML statique la porte, et la garde D de `verifier-etats-export.mjs`
   // la lit.
+  //
+  // **La place de la sortie est tenue dès le HTML statique** (`v1-33` T-10, contre-lecture du
+  // 03/10/2026) : hors ligne, ce chargement dure plusieurs secondes, et une relecture y restait sans
+  // sortie à l'écran. Le HTML est rendu sans chaîne de requête, donc sans savoir s'il s'agit d'une
+  // relecture : il porte la place, vide, et la sortie l'occupe après l'hydratation — sans que la
+  // ligne bouge. Après le questionnaire, la place reste vide : l'écran pousse vers le plan.
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
+        <View style={styles.sortieDeLEtat}>
+          {apresHydratation && mode !== 'nouveau' ? sortie : <View style={styles.placeDeLaSortie} />}
+        </View>
         <View style={styles.centered}>
           {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
               lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
@@ -1200,8 +1209,8 @@ export default function BilanResultat() {
             au milieu du contenu. Ce qui reste collé, c'est le seul pas suivant.
 
             **Ce bloc ne porte plus les liens de contestation** (D11, 01/10/2026) : ils sont sous le
-            total, là où le chiffre se lit. Restent le partage et le nouveau bilan — et, en
-            relecture, le retour au suivi. */}
+            total, là où le chiffre se lit. Restent le partage et le nouveau bilan ; le retour au
+            suivi d'une relecture est monté en tête de l'écran (`v1-33` T-10). */}
         <View style={styles.actionsSecondaires}>
           <TextLink
             label="Partager mon bilan"
@@ -1251,11 +1260,11 @@ export default function BilanResultat() {
             role="link"
             style={styles.editLink}
           />
-          {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
-              plan à un onglet de là — donc rien de collé en bas non plus, et sa sortie est en haut. */}
         </View>
       </ScrollView>
 
+      {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son plan à un
+          onglet de là — donc rien de collé en bas, et sa sortie est en tête de l'écran. */}
       {mode === 'nouveau' && (
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
           {/* Plus jamais désactivé pour une raison de compte : il mène au plan, et le plan
@@ -1348,6 +1357,8 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
+  // La hauteur de la cible de `SortieDuDetour`, que le chargement tient avant de savoir s'il la rend.
+  placeDeLaSortie: { height: ControlHeight.target },
   // L'écran d'erreur tient dans le conteneur centré : la phrase a besoin de gouttières (sinon
   // elle touche les bords sur un téléphone étroit) et d'air sous elle.
   erreurTexte: { textAlign: 'center', paddingHorizontal: Spacing.four, marginBottom: Spacing.four },

@@ -47,7 +47,8 @@ commenter, et le produit ne commente pas.
   `tokens/mouvement.css`) : sous « réduire les animations », les durées valent zéro et tout se
   pose.
 - **Pas de bibliothèque d'icônes** : trois tracés dessinés dans le dépôt (onglet Plan, onglet
-  Suivi, compte), plus la coche de l'action engagée. N'en invente pas un quatrième.
+  Suivi, compte), plus la coche de l'action engagée et le chevron de `SortieDuDetour` (décidé le
+  03/10/2026, `v1-33` T-10). N'en invente pas un sixième.
 
 ## Les chiffres
 
