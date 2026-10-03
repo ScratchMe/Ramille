@@ -119,6 +119,10 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .plateau { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; container-type: size; }
 .portrait .plateau { width: 900px; height: 1600px; }
 .scene *, .scene *::before, .scene *::after { box-sizing: border-box; }
+/* Ce zéro l'emporte sur toute marge posée par une seule classe (`.k-sous`, `.dit`…) : une marge sur un
+   paragraphe de la scène s'écrit avec le format devant (`.paysage .note-8`), en `!important` (les
+   paragraphes du téléphone, `.b-sous` ou `.pt-q`) ou dans un style en ligne — sinon elle ne s'applique
+   pas. Six de ces marges mortes ont été retirées le 03/10/2026, sans rien changer à l'image. */
 .scene p { margin: 0; }
 .fil-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .x { position: absolute; }
@@ -126,7 +130,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 
 /* Textes de scène */
 .k { font-weight: 600; font-size: 6.2cqmin; line-height: 1.08; letter-spacing: -0.02em; text-wrap: balance; }
-.k-sous { font-weight: 500; font-size: 2.9cqmin; line-height: 1.35; color: var(--f-encre-2); margin-top: 1.6cqmin; text-wrap: pretty; }
+.k-sous { font-weight: 500; font-size: 2.9cqmin; line-height: 1.35; color: var(--f-encre-2); text-wrap: pretty; }
 .portrait .k { font-size: 7cqmin; }
 .portrait .k-sous { font-size: 3.7cqmin; }
 .etiq { font-weight: 600; font-size: 3cqmin; line-height: 1.2; color: var(--f-encre); white-space: nowrap; transform-origin: 50% 50%; }
@@ -188,7 +192,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 
 /* Le chiffre de la scène 2 : un chiffre, jamais un titre — il se pose, il ne défile pas. */
 .chiffre { font-weight: 600; font-size: 13cqmin; line-height: 1; letter-spacing: -0.03em; color: var(--f-accent); }
-.chiffre-unite { font-weight: 500; font-size: 2.9cqmin; line-height: 1.3; color: var(--f-encre-2); margin-top: 1.4cqmin; }
+.chiffre-unite { font-weight: 500; font-size: 2.9cqmin; line-height: 1.3; color: var(--f-encre-2); }
 .portrait .chiffre { font-size: 17cqmin; }
 .portrait .chiffre-unite { font-size: 3.8cqmin; }
 .transport { font-weight: 600; font-size: 2.6cqmin; color: var(--f-accent-texte); }
@@ -200,9 +204,9 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 /* Ramille, son nom, sa voix */
 .nom { font-weight: 600; font-size: 11.5cqmin; line-height: 1; letter-spacing: -0.03em; color: var(--f-encre); }
 .portrait .nom { font-size: 15cqmin; }
-.dit { font-weight: 500; font-size: 3.2cqmin; line-height: 1.38; color: var(--f-encre-2); margin-top: 2.4cqmin; max-width: 34em; }
+.dit { font-weight: 500; font-size: 3.2cqmin; line-height: 1.38; color: var(--f-encre-2); max-width: 34em; }
 .portrait .dit { font-size: 3.8cqmin; margin-inline: auto; }
-.titre-3 { font-weight: 600; font-size: 5.4cqmin; line-height: 1.1; letter-spacing: -0.02em; margin-top: 3.2cqmin; text-wrap: balance; }
+.titre-3 { font-weight: 600; font-size: 5.4cqmin; line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
 .portrait .titre-3 { font-size: 7cqmin; }
 .mascotte-scene { position: absolute; z-index: 5; transform-origin: 50% 50%; will-change: transform, opacity; overflow: visible; }
 .mascotte-scene svg, .slot svg, .slot-calcul svg, .slot-rep svg { width: 100%; height: 100%; display: block; overflow: visible; }
@@ -215,13 +219,13 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 #manif { position: absolute; z-index: 6; visibility: hidden; inset: 0; background: var(--f-accent); color: #FFFFFF; will-change: transform; }
 #manif .lignes { position: absolute; left: 9%; top: 24%; width: 82%; display: grid; gap: 0.6cqmin; }
 .manif-l { font-weight: 600; font-size: 10cqmin; line-height: 1.04; letter-spacing: -0.03em; }
-.manif-n { font-weight: 500; font-size: 3.2cqmin; line-height: 1.35; margin-top: 3.4cqmin; color: #E4EFE8; }
+.manif-n { font-weight: 500; font-size: 3.2cqmin; line-height: 1.35; color: #E4EFE8; }
 .portrait #manif .lignes { left: 7.8%; top: 30%; width: 84%; }
 .portrait .manif-l { font-size: 12.5cqmin; }
 .portrait .manif-n { font-size: 4.2cqmin; }
 
 /* L'appel final */
-.accroche-8 { font-weight: 600; font-size: 5.4cqmin; line-height: 1.1; letter-spacing: -0.02em; margin-top: 3cqmin; text-wrap: balance; }
+.accroche-8 { font-weight: 600; font-size: 5.4cqmin; line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
 .portrait .accroche-8 { font-size: 6.6cqmin; }
 .cta-ligne { margin-top: 4.4cqmin; display: flex; align-items: center; gap: 3cqmin; flex-wrap: wrap; }
 .portrait .cta-ligne { justify-content: center; }
@@ -229,7 +233,11 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .portrait .cta { height: 11cqmin; border-radius: 5.5cqmin; font-size: 4cqmin; padding: 0 6cqmin; }
 .url { font-weight: 600; font-size: 3.4cqmin; color: var(--f-accent-texte); }
 .portrait .url { font-size: 4.4cqmin; width: 100%; }
-.note-8 { font-weight: 500; font-size: 2.4cqmin; color: var(--f-encre-3); margin-top: 2.2cqmin; }
+.note-8 { font-weight: 500; font-size: 2.4cqmin; color: var(--f-encre-3); }
+/* En 16:9, le même écart qu'entre l'accroche et le bouton (03/10/2026). La marge posée sur `.note-8`
+   seul ne s'appliquait pas : `.scene p { margin: 0 }` l'emporte en spécificité, et la note collait
+   au bouton. */
+.paysage .note-8 { margin-top: 4.4cqmin; }
 .portrait .note-8 { font-size: 3.3cqmin; margin-top: 6cqmin; }
 .portrait .cta-ligne { row-gap: 3.6cqmin; }
 
@@ -441,7 +449,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                   <div class="point" id="point">
                     <div id="pt-q">
                       <p class="pt-label" id="pt-label">Semaine du 05/10</p>
-                      <p class="pt-q">Mardi ou jeudi, as-tu fait ce trajet à deux&nbsp;?</p>
+                      <p class="pt-q">Lundi ou mercredi ou vendredi, as-tu fait ce trajet à deux&nbsp;?</p>
                       <div class="pt-boutons"><div class="bouton bouton-2" id="pt-non">Non</div><div class="bouton bouton-2" id="pt-oui">Oui</div></div>
                       <p class="lien">Pas de trajet la semaine dernière</p>
                     </div>
@@ -458,7 +466,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                     <span class="pastille-bord" id="c2-engage">Je m’y engage</span>
                     <div class="depliage" id="c2-dep"><div class="depliage-dedans" id="c2-dep-dedans">
                       <p>Quels jours&nbsp;?</p>
-                      <div class="jours"><span class="puce puce-jour">L</span><span class="puce puce-jour" id="j-mar">M</span><span class="puce puce-jour">M</span><span class="puce puce-jour" id="j-jeu">J</span><span class="puce puce-jour">V</span><span class="puce puce-jour">S</span><span class="puce puce-jour">D</span></div>
+                      <div class="jours"><span class="puce puce-jour" id="j-lun">L</span><span class="puce puce-jour">M</span><span class="puce puce-jour" id="j-mer">M</span><span class="puce puce-jour">J</span><span class="puce puce-jour" id="j-ven">V</span><span class="puce puce-jour">S</span><span class="puce puce-jour">D</span></div>
                       <div class="bouton" id="c2-note">C’est noté</div>
                     </div></div>
                   </div>
@@ -469,7 +477,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 
             <div class="notif" id="notif">
               <div class="ico" id="notif-ico"></div>
-              <div><p class="n-app">Ramille · maintenant</p><p class="n-titre">Ton point de la semaine</p><p class="n-corps">Ton trajet domicile-travail · Mardi ou jeudi, as-tu fait ce trajet à deux&nbsp;?</p></div>
+              <div><p class="n-app">Ramille · maintenant</p><p class="n-titre">Ton point de la semaine</p><p class="n-corps">Ton trajet domicile-travail · Lundi ou mercredi ou vendredi, as-tu fait ce trajet à deux&nbsp;?</p></div>
             </div>
             <div class="doigt" id="doigt"></div>
           </div>
@@ -600,7 +608,10 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     // En 16:9, le téléphone se tient à 83 % le temps du questionnaire, « Suivant » compris, puis
     // reprend sa taille pendant le calcul : la restitution et le plan défilent s'il les coupe.
     calcul: [35.1, 36.5], bilan: [36.5, 40.4], defile: [38.6, 39.8], t4b: [36.7, 40.4],
-    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.65, 43.15], engagee: ENGAGEE,
+    // Le dépliage se compte depuis l'engagement, comme ce qui le suit : les trois jours et « C'est
+    // noté » y tiennent à trois centièmes près (doigt levé du vendredi à 44,32 s, montré sur le bouton
+    // à 44,35), et une date absolue les ferait se chevaucher au premier recul de la musique.
+    plan: 40.4, t5a: [40.9, 45.6], depliage: [ENGAGEE - 2.65, ENGAGEE - 2.15], engagee: ENGAGEE,
     repli: [ENGAGEE, ENGAGEE + 0.4], enTete: [ENGAGEE + 0.55, ENGAGEE + 1.2], t5b: [46.1, 50.1],
     notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [OUI - 1.7, OUI - 1.3], point: [OUI - 1.5, OUI - 0.9],
     question1: [OUI - 1.3, OUI], semaineSuivante: OUI + 3.0, question2: [OUI + 3.1, NON],
@@ -635,7 +646,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       image: 'Ramille descend se loger dans l’en-tête du questionnaire. Quatre des neuf étapes, le calcul, puis la restitution d’un profil d’exemple.',
       texte: 'Ton bilan, en 5 minutes environ. · Tu vois quel déplacement pèse le plus, et où tu te situes entre la moyenne française et le repère 2050.' },
     { titre: 'Ton plan', debut: 40.4, pose: 48.0,
-      image: 'Deux pistes en tête, les autres derrière un lien. On choisit la deuxième, deux jours, « C’est noté » : elle devient l’engagement et passe en tête.',
+      image: 'Deux pistes en tête, les autres derrière un lien. On choisit la deuxième, trois jours, « C’est noté » : elle devient l’engagement et passe en tête.',
       texte: 'Puis une action, à ton rythme. Ton plan ne propose que ce qui tient avec tes réponses. · Tu choisis tes jours. Ramille te fait signe lundi.' },
     { titre: 'Le point', debut: 50.1, pose: 56.5,
       image: 'La notification du lundi, puis le point de la semaine. Un « Oui », puis la semaine suivante un « Non », chacun avec sa réplique. Puis un aplat vert, ligne après ligne, sur une respiration de la musique.',
@@ -1242,7 +1253,10 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   const TAPES = [
     ...Q.flatMap((q, k) => [{ t: q + 0.55, id: ['q1-oui', 'q2-voiture', 'q3-une', 'q4-un'][k], choix: true }, { t: q + 1.05, id: 'b-suivant' }]),
     { t: T.depliage[0] - LEVE, id: 'c2-engage' },
-    { t: T.depliage[1] + 0.4, id: 'j-mar', choix: true }, { t: T.depliage[1] + 0.9, id: 'j-jeu', choix: true },
+    // Trois jours, pour « au moins un jour sur deux » (décidé le 03/10/2026) : avec l'appui de « C'est
+    // noté », quatre appuis à une demi-seconde, d'où le dépliage avancé.
+    { t: T.depliage[1] + 0.4, id: 'j-lun', choix: true }, { t: T.depliage[1] + 0.9, id: 'j-mer', choix: true },
+    { t: T.depliage[1] + 1.4, id: 'j-ven', choix: true },
     { t: T.engagee - LEVE, id: 'c2-note' },
     { t: T.tapNotif, id: 'notif' }, { t: SYNC.reponses[1] - 0.15, id: 'pt-oui' }, { t: SYNC.reponses[2] - 0.15, id: 'pt-non' },
   ];
@@ -1320,7 +1334,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const engagee = t >= T.engagee;
     C($('c2'), 'engagee', engagee);
     C($('c1'), 'estompee', engagee);
-    texte($('c2-ligne'), engagee ? 'par an · le mardi et le jeudi · 15 % de ton empreinte' : 'par an · 15 % de ton empreinte');
+    texte($('c2-ligne'), engagee ? 'par an · le lundi, le mercredi et le vendredi · 15 % de ton empreinte' : 'par an · 15 % de ton empreinte');
     texte($('c1-choix'), engagee ? 'Choisir celle-ci à la place' : 'Je m’y engage');
     // L'action engagée passe en tête (`ordonnerLesPistes`) : les deux cartes échangent leur place.
     const c1 = $('c1'), c2 = $('c2');

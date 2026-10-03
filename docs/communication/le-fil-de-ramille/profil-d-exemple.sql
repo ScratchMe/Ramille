@@ -98,4 +98,12 @@ join public.action_templates t on t.id = pa.action_template_id
 where c.user_id = 'f11f11f1-0000-4000-8000-000000000001'
 order by pa.rank;
 
+\echo '— Ce que la carte d''une piste mise en avant porte sous son gain, et le premier pas, montré une fois'
+\echo '  l''action engagée (action-card.tsx)'
+select pa.rank, pa.detail_text as detail, pa.first_step as premier_pas
+from public.plan_actions pa
+join public.plan_cycles c on c.id = pa.plan_cycle_id
+where c.user_id = 'f11f11f1-0000-4000-8000-000000000001' and pa.rank <= 2
+order by pa.rank;
+
 rollback;

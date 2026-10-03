@@ -2,8 +2,8 @@
 
 **Statut** : validé par la personne qui pilote le 03/10/2026, **pas encore diffusé** — il attend la
 publication sur Google Play. Ce qui a été décidé, et ce qu'il reste à faire ce jour-là, est en fin
-de document. **Le 4:5 et les chiffres recalculés sont venus après la validation**, le même jour, et
-attendent son regard.
+de document. Le 4:5, les chiffres recalculés et les trois jours du covoiturage, venus après, ont été
+validés le même jour.
 
 ## Ce que c'est
 
@@ -27,7 +27,7 @@ impact ».
 | 0:08 | Ce qu'ils pèsent | Le transport, premier poste de l'empreinte : 2,8 t CO₂e (SDES, 2017) | La basse entre |
 | 0:18 | Ramille | Le logo, puis le visage ; « Comprendre tes trajets, sans te juger. » | Un souffle monte ; le rythme entre avec le visage (0:24) |
 | 0:28 | Ton bilan | Quatre des neuf étapes, le calcul, la restitution | Le rythme ; la mélodie alterne deux motifs de quatre mesures |
-| 0:40 | Ton plan | Deux pistes en tête, on en choisit une, deux jours, « C'est noté » : elle passe en tête | Une cloche à l'engagement |
+| 0:40 | Ton plan | Deux pistes en tête, on en choisit une, trois jours, « C'est noté » : elle passe en tête | Une cloche à l'engagement |
 | 0:50 | Le point | La notification du lundi, un « Oui » puis un « Non » ; pas de score, pas de série, aucun classement | Une cloche par réponse ; sans batterie sous le manifeste (1:02), une cloche par ligne |
 | 1:09 | Au fil des saisons | La mascotte porte les quatre saisons, sur un an | Le rythme revient ; une cloche par saison |
 | 1:16 | À toi | ramille.fr · Pas de compte à créer pour commencer | Un accent sur le bouton (1:19), l'accord final |
@@ -97,7 +97,8 @@ page elle-même : c'est aussi sa version texte.
 
 ## Ce que le film reprend de l'app, et d'où
 
-Rien n'y est inventé : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
+Rien n'y est inventé — **sauf la mise en forme de l'écran du plan, qui ne suit plus l'app** (fin de
+cette section) : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
 textes** (`verifier.mjs` voit la mise en page et le temps, pas ce qui est écrit) — c'est à relire
 avant chaque diffusion.
 
@@ -141,6 +142,30 @@ avant chaque diffusion.
   chaque barre, les pistes dans l'ordre du plan et leurs gains. Leur forme est celle des écrans :
   `formatTonnes`, `formatTonnesShort`, `ligneDuGain`. **Quand le calcul change, on le rejoue, et le
   film suit** ; les chiffres du jour sont dans la décision datée, plus bas.
+- **Ce qui ne suit plus l'app : l'écran du plan** (relevé par la contre-lecture du 03/10/2026, **pas
+  encore repris**). Ses textes et ses chiffres sont justes ; sa forme, non. Le film a simplifié cet
+  écran dès sa composition, et l'app l'a encore changé les 02 et 03/10/2026 (#331, #343). Or l'image
+  porte « Écrans de l'app » : chaque écart est à reprendre **avant la diffusion**, et la liste de
+  contrôle de Play le rappelle (`docs/exploitation/README.md` §4). Comparé à
+  `src/components/plan/action-commitment.tsx` et `action-card.tsx` :
+  - **le choix des jours** : dans l'app, il **remplace** « Je m'y engage » par un encart gris, où
+    « Quels jours ? » s'écrit en petit ; les jours vont sur une **grille de quatre colonnes**, chacun
+    avec sa **case à cocher** et une seule graisse, cochés en vert plein ; « Annuler » se tient à côté
+    de « C'est noté », qui reste **en attente** — grisé, posé sur l'encart — tant qu'aucun jour n'est
+    choisi. Le film garde « Je m'y engage » au-dessus, aligne les sept jours sur une rangée sans case
+    et montre « C'est noté » vert d'emblée ;
+  - **« Je m'y engage » et « Choisir celle-ci à la place »** sont des boutons secondaires pleine
+    largeur (54 dp, fond gris, texte noir) ; le film en fait des pastilles à filet, texte vert ;
+  - **la carte d'une piste** porte le gain seul sur sa ligne, en 20 dp, « par an · … » dessous, puis
+    le détail « Sur tes 5 trajets par semaine. » ; le film met le gain et la ligne côte à côte, sans
+    le détail ;
+  - **la carte engagée** porte en plus le premier pas — « PREMIER PAS · Demande autour de toi qui
+    fait le même trajet, avant de choisir un jour. » — et les liens « Modifier les jours » et
+    « Changer d'avis ».
+
+  Le détail et le premier pas de chaque piste sont imprimés par `profil-d-exemple.sql`. Reprendre
+  ces écarts allonge le choix des jours et la carte engagée : le défilement du plan et les appuis
+  du doigt se recalent, et `verifier.mjs` dit où.
 
 ## Décidé le 03/10/2026
 
@@ -182,6 +207,19 @@ date, on maintient pas de score, pas de série, pas de classement. »
    périurbain qui va au travail en voiture —, et ses chiffres sont devenus ceux que l'app rend :
    **fait le 03/10/2026** par `profil-d-exemple.sql` (la proposition montrait 1,9 t, 1,7 t, 430 et
    300 kg, écrits à la main ; le calcul rend 2,1 t, 1,8 t, 412 et 320 kg).
+
+6. **Le 4:5 convient** (regardé le même jour, après sa composition).
+7. **Trois jours pour le covoiturage, le lundi, le mercredi et le vendredi** (même jour, sur une
+   question de la contre-lecture). L'action mise en avant dit « au moins un jour sur deux », et le
+   film en choisissait deux sur cinq : un spectateur attentif y lisait une contradiction, dans un
+   film qui veut montrer une app précise. La question du point se lit désormais comme l'app la
+   compose (`jours_francais`) : « Lundi ou mercredi ou vendredi, as-tu fait ce trajet à deux ? ». Les
+   chiffres ne bougent pas : le gain est celui de l'action, pas des jours choisis. Écartée : un profil
+   à quatre jours par semaine, où deux jours auraient fait un sur deux — le covoiturage y sort des
+   deux pistes mises en avant, et l'histoire du film ne serait plus celle de l'app.
+
+8. **En 16:9, « Pas de compte à créer pour commencer » descend** (même jour) : la note collait au
+   bouton ; elle prend l'écart qui sépare l'accroche du bouton.
 
 **Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
 minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
