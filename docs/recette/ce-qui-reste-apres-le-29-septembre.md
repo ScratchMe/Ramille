@@ -28,7 +28,7 @@
 > bloc 07, au build natif, complété le même jour de `v1-13` §11.25, §11.26 et de la moitié native de
 > §11.27 (07.17 à 07.19).
 >
-> **Et ce bloc 07 a été repris le 03/10/2026, ligne à ligne, dans
+> **Et ce bloc 07 a été repris le 03/10/2026, et mis à jour, dans
 > [`le-build-d-octobre.md`](le-build-d-octobre.md)**, la feuille du premier build Android depuis le
 > 14/09/2026 : c'est là qu'il se joue, avec ce que les PR du 02 et du 03/10 y ont changé. Ses lignes
 > ici ne se cochent plus ; chacune y est citée avec sa date (« 07.12 du 29/09 »), cette feuille-là
