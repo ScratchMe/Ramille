@@ -97,7 +97,8 @@ page elle-même : c'est aussi sa version texte.
 
 ## Ce que le film reprend de l'app, et d'où
 
-Rien n'y est inventé : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
+Rien n'y est inventé — **sauf la mise en forme de l'écran du plan, qui ne suit plus l'app** (fin de
+cette section) : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
 textes** (`verifier.mjs` voit la mise en page et le temps, pas ce qui est écrit) — c'est à relire
 avant chaque diffusion.
 
@@ -141,6 +142,30 @@ avant chaque diffusion.
   chaque barre, les pistes dans l'ordre du plan et leurs gains. Leur forme est celle des écrans :
   `formatTonnes`, `formatTonnesShort`, `ligneDuGain`. **Quand le calcul change, on le rejoue, et le
   film suit** ; les chiffres du jour sont dans la décision datée, plus bas.
+- **Ce qui ne suit plus l'app : l'écran du plan** (relevé par la contre-lecture du 03/10/2026, **pas
+  encore repris**). Ses textes et ses chiffres sont justes ; sa forme, non. Le film a simplifié cet
+  écran dès sa composition, et l'app l'a encore changé les 02 et 03/10/2026 (#331, #343). Or l'image
+  porte « Écrans de l'app » : chaque écart est à reprendre **avant la diffusion**, et la liste de
+  contrôle de Play le rappelle (`docs/exploitation/README.md` §4). Comparé à
+  `src/components/plan/action-commitment.tsx` et `action-card.tsx` :
+  - **le choix des jours** : dans l'app, il **remplace** « Je m'y engage » par un encart gris, où
+    « Quels jours ? » s'écrit en petit ; les jours vont sur une **grille de quatre colonnes**, chacun
+    avec sa **case à cocher** et une seule graisse, cochés en vert plein ; « Annuler » se tient à côté
+    de « C'est noté », qui reste **en attente** — grisé, posé sur l'encart — tant qu'aucun jour n'est
+    choisi. Le film garde « Je m'y engage » au-dessus, aligne les sept jours sur une rangée sans case
+    et montre « C'est noté » vert d'emblée ;
+  - **« Je m'y engage » et « Choisir celle-ci à la place »** sont des boutons secondaires pleine
+    largeur (54 dp, fond gris, texte noir) ; le film en fait des pastilles à filet, texte vert ;
+  - **la carte d'une piste** porte le gain seul sur sa ligne, en 20 dp, « par an · … » dessous, puis
+    le détail « Sur tes 5 trajets par semaine. » ; le film met le gain et la ligne côte à côte, sans
+    le détail ;
+  - **la carte engagée** porte en plus le premier pas — « PREMIER PAS · Demande autour de toi qui
+    fait le même trajet, avant de choisir un jour. » — et les liens « Modifier les jours » et
+    « Changer d'avis ».
+
+  Le détail et le premier pas de chaque piste sont imprimés par `profil-d-exemple.sql`. Reprendre
+  ces écarts allonge le choix des jours et la carte engagée : le défilement du plan et les appuis
+  du doigt se recalent, et `verifier.mjs` dit où.
 
 ## Décidé le 03/10/2026
 

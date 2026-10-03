@@ -120,7 +120,8 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .portrait .plateau { width: 900px; height: 1600px; }
 .scene *, .scene *::before, .scene *::after { box-sizing: border-box; }
 /* Ce zéro l'emporte sur toute marge posée par une seule classe (`.k-sous`, `.dit`…) : une marge sur un
-   paragraphe de la scène s'écrit avec le format devant (`.paysage .note-8`), sinon elle ne s'applique
+   paragraphe de la scène s'écrit avec le format devant (`.paysage .note-8`), en `!important` (les
+   paragraphes du téléphone, `.b-sous` ou `.pt-q`) ou dans un style en ligne — sinon elle ne s'applique
    pas. Six de ces marges mortes ont été retirées le 03/10/2026, sans rien changer à l'image. */
 .scene p { margin: 0; }
 .fil-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -607,7 +608,10 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     // En 16:9, le téléphone se tient à 83 % le temps du questionnaire, « Suivant » compris, puis
     // reprend sa taille pendant le calcul : la restitution et le plan défilent s'il les coupe.
     calcul: [35.1, 36.5], bilan: [36.5, 40.4], defile: [38.6, 39.8], t4b: [36.7, 40.4],
-    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.2, 42.7], engagee: ENGAGEE,
+    // Le dépliage se compte depuis l'engagement, comme ce qui le suit : les trois jours et « C'est
+    // noté » y tiennent à trois centièmes près (doigt levé du vendredi à 44,32 s, montré sur le bouton
+    // à 44,35), et une date absolue les ferait se chevaucher au premier recul de la musique.
+    plan: 40.4, t5a: [40.9, 45.6], depliage: [ENGAGEE - 2.65, ENGAGEE - 2.15], engagee: ENGAGEE,
     repli: [ENGAGEE, ENGAGEE + 0.4], enTete: [ENGAGEE + 0.55, ENGAGEE + 1.2], t5b: [46.1, 50.1],
     notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [OUI - 1.7, OUI - 1.3], point: [OUI - 1.5, OUI - 0.9],
     question1: [OUI - 1.3, OUI], semaineSuivante: OUI + 3.0, question2: [OUI + 3.1, NON],
