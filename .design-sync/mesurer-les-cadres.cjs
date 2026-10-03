@@ -1,5 +1,5 @@
 // La plus basse ligne peinte de chaque capture brute, pour régler `cfg.overrides.<Nom>.viewport` sur une mesure et
-// non sur une estimation (NOTES.md, « Complétion du kit » et relevé du 03/10/2026). À lancer depuis la racine du
+// non sur une estimation (NOTES.md, « Complétion du kit » et relevé de la huitième synchronisation). À lancer depuis la racine du
 // dépôt, après un `package-build.mjs` complet aux cadres élargis (un changement de cadre ne passe pas par
 // `preview-rebuild.mjs`, qui refuse en `[CONFIG_STALE]`) puis une capture des composants mesurés — les noms séparés
 // par des virgules pour la capture, par des espaces pour la mesure :
@@ -10,6 +10,9 @@
 // `pngjs` n'est pas une dépendance du dépôt : il arrive par transitivité (`expo-notifications` → `@expo/image-utils`
 // → `parse-png`) et se trouve à la racine de `node_modules` parce que npm l'y remonte. S'il disparaît,
 // `npm install --no-save pngjs` le remet le temps d'une mesure.
+//
+// **Mesurer après le dernier changement de source**, pas avant : à la neuvième synchronisation, une correction du kit
+// faite après la mesure a raccourci les deux étapes de 40 px, et il a fallu remesurer.
 //
 // Le cadre à écrire est la plus haute des mesures d'un composant, plus une marge d'une trentaine de pixels. Une
 // mesure égale à la hauteur du cadre veut dire que le contenu touche le bord : élargir et remesurer.
