@@ -95,7 +95,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 
 /* ================================================================
    LE FILM — une image, donc une seule palette : celle de l'app en clair.
-   Unités : cqmin pour le texte (même taille absolue en 16:9 et 9:16 à 1080p),
+   Unités : cqmin pour le texte (même taille absolue en 16:9, 9:16 et 4:5 à 1080p),
    pourcentages de la scène pour les positions, et dans le téléphone des « dp »
    (100cqi / 360), pour reprendre les valeurs du design system telles quelles.
    ================================================================ */
@@ -111,6 +111,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
   contain: layout paint;
 }
 .scene.portrait { aspect-ratio: 9 / 16; width: min(100%, calc(78vh * 9 / 16)); }
+.scene.quatre-cinq { aspect-ratio: 4 / 5; width: min(100%, calc(78vh * 4 / 5)); }
 /* Le film se compose à taille fixe — 1600 × 900 px, ou 900 × 1600 — puis se met à l'échelle d'un
    seul bloc. À une taille de lecteur, la mise en page est donc exactement celle de l'export : quand
    il se recomposait à chaque taille, sa mise en page ne suivait plus la proportion à très petite
@@ -162,6 +163,28 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .portrait #legende-tel { left: 21%; top: 92.6%; width: 58%; text-align: center; }
 .portrait #s7-texte { left: 7.8%; top: 7%; width: 84%; text-align: center; }
 .portrait #s8-texte { left: 7.8%; top: 46%; width: 84%; text-align: center; }
+
+/* Placement par format — 4:5, le fil d'actualité (décidé le 03/10/2026). C'est une orientation
+   portrait, donc il porte aussi la classe `portrait` et en reprend tout ; il ne redit ici que ce que
+   sa hauteur change : 1125 px au lieu de 1600, à la même largeur et à la même unité de texte. Le
+   téléphone y tient en entier, plus petit, sans défilement ni réduction. Les deux classes, parce que
+   les règles du 9:16 sur le téléphone et le manifeste viennent plus bas et l'emporteraient sinon. */
+.portrait.quatre-cinq .plateau { height: 1125px; }
+.portrait.quatre-cinq #s2-titre, .portrait.quatre-cinq #s2-titre2 { top: 7%; }
+.portrait.quatre-cinq #s2-chiffre { top: 29%; }
+.portrait.quatre-cinq #s2-transport { top: 61.5%; }
+.portrait.quatre-cinq #s2-legende { top: 66%; }
+.portrait.quatre-cinq #s3-texte { top: 49%; }
+.portrait.quatre-cinq .bloc-tel { top: 4%; }
+.portrait.quatre-cinq .bloc-tel .k { font-size: 6.4cqmin; }
+.portrait.quatre-cinq .bloc-tel .k-sous { font-size: 3.3cqmin; }
+.portrait.quatre-cinq #tel { left: 28.5%; top: 25%; width: 43cqw; height: 86cqw; padding: 1.1cqmin; border-radius: 5.4cqmin; }
+.portrait.quatre-cinq .tel-ecran { border-radius: 4.4cqmin; }
+.portrait.quatre-cinq #legende-tel { left: 7.8%; top: 95%; width: 84%; }
+.portrait.quatre-cinq #s7-texte { top: 6%; }
+.portrait.quatre-cinq #s8-texte { top: 45%; }
+.portrait.quatre-cinq #manif .lignes { top: 22%; }
+.portrait.quatre-cinq .manif-l { font-size: 11cqmin; }
 
 /* Le chiffre de la scène 2 : un chiffre, jamais un titre — il se pose, il ne défile pas. */
 .chiffre { font-weight: 600; font-size: 13cqmin; line-height: 1; letter-spacing: -0.03em; color: var(--f-accent); }
@@ -318,6 +341,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 .cadre:fullscreen { background: #131612; display: grid; place-items: center; }
 .cadre:fullscreen .scene { width: min(100vw, calc(100vh * 16 / 9)); border-radius: 0; }
 .cadre:fullscreen .scene.portrait { width: min(100vw, calc(100vh * 9 / 16)); }
+.cadre:fullscreen .scene.quatre-cinq { width: min(100vw, calc(100vh * 4 / 5)); }
 </style>
 
 <div class="page">
@@ -499,6 +523,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
         <legend>Format</legend>
         <label><input type="radio" name="format" id="f-paysage" value="paysage" checked><span>16:9</span></label>
         <label><input type="radio" name="format" id="f-portrait" value="portrait"><span>9:16</span></label>
+        <label><input type="radio" name="format" id="f-quatre-cinq" value="quatre-cinq"><span>4:5</span></label>
       </fieldset>
       <button class="son" id="son" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true" id="son-ico"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/></svg><span id="son-libelle">Son activé</span></button>
       <button class="icone-bouton" id="plein" type="button" aria-label="Plein écran"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -861,7 +886,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   }
   const enFeuille = (pose, [x, y]) => [pose.cx + (x - 50) * pose.s, pose.cy + (y - 50) * pose.s];
 
-  // ---------------------------------------------------------------- Les deux formats
+  // ---------------------------------------------------------------- Les trois formats
   const FORMATS = {
     paysage: {
       W: 1600, H: 900, fil: 10,
@@ -885,6 +910,17 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       saisonsF: [0.114, 0.321, 0.518, 0.709], saisonsPlace: ['dessus', 'dessous', 'dessus', 'dessous'],
       final: [[60, 1520], [300, 1484], [160, 1384]], avant: [-100, 110],
     },
+  };
+  // Le 4:5 reprend les tracés du 9:16, ramenés dans 1125 px : le trajet entre 400 et 1000, la vague
+  // 400 px plus haut, la mascotte plus petite.
+  FORMATS['quatre-cinq'] = {
+    ...FORMATS.portrait,
+    H: 1125, fil: 11,
+    route: FORMATS.portrait.route.map(([x, y]) => [x, Math.round(400 + (y - 640) * 0.75)]),
+    barre: { x0: 70, x1: 830, y: 640, h: 64 },
+    f3: { cx: 450, cy: 330, s: 3.6 }, f7: { cx: 450, cy: 520, s: 3.4 }, f8: { cx: 450, cy: 290, s: 3.6 },
+    vague: FORMATS.portrait.vague.map(([x, y]) => [x, y - 400]),
+    final: [[60, 1060], [300, 1030], [160, 950]],
   };
   const POSTES_FR = [
     { cle: 'transport', t: 2.8 }, { cle: 'logement', t: 2.2 }, { cle: 'alimentation', t: 2.1 }, { cle: 'services', t: 1.5 }, { cle: 'equipements', t: 0.9 },
@@ -952,8 +988,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 
   function preparer() {
     G = FORMATS[fmt];
-    scene.classList.toggle('portrait', fmt === 'portrait');
+    scene.classList.toggle('portrait', fmt !== 'paysage');
     scene.classList.toggle('paysage', fmt === 'paysage');
+    scene.classList.toggle('quatre-cinq', fmt === 'quatre-cinq');
     svgFil.setAttribute('viewBox', `0 0 ${G.W} ${G.H}`);
     ajuster();
 
@@ -981,7 +1018,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     $('feuille-point-g').setAttribute('transform', transfo);
     $('feuille-trace').setAttribute('stroke-dasharray', `${F.longueurFeuille} ${F.longueurFeuille}`);
 
-    const ecartEtiq = fmt === 'portrait' ? 36 : 30;
+    const ecartEtiq = fmt === 'paysage' ? 30 : 36;
     arrets.forEach((c, i) => { c.setAttribute('cx', F.arretsXY[i][0]); c.setAttribute('cy', F.arretsXY[i][1]); c.setAttribute('stroke-width', G.fil * 0.55); });
     arretsEtiq.forEach((el, i) => placerAuPoint(el, F.arretsXY[i], G.etiqPlace[i], ecartEtiq));
     saisonsPts.forEach((c, i) => { c.setAttribute('cx', F.saisonsXY[i][0]); c.setAttribute('cy', F.saisonsXY[i][1]); c.setAttribute('stroke-width', G.fil * 0.55); });
@@ -1527,11 +1564,11 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   const exportFmt = params.get('export');
   if (exportFmt) {
     document.documentElement.classList.add('export');
-    fmt = exportFmt === 'portrait' ? 'portrait' : 'paysage';
+    fmt = FORMATS[exportFmt] ? exportFmt : 'paysage';
   } else if (window.matchMedia('(max-width: 640px)').matches) {
     fmt = 'portrait';
   }
-  $(fmt === 'portrait' ? 'f-portrait' : 'f-paysage').checked = true;
+  $(`f-${fmt}`).checked = true;
   $('frise').max = String(Math.round(DUREE * 10));
   texte($('affiche-libelle'), `Lire le film · ${fmtTemps(DUREE)}${reduit ? ' · les chapitres s’ouvrent posés' : ''}`);
   // Un son qui a échoué avant que l'écouteur `error` soit posé ne le déclenchera plus : on le lit ici.

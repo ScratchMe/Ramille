@@ -4,8 +4,8 @@
 //
 // `CHROMIUM=/chemin/vers/chrome` remplace le navigateur de Playwright, comme pour l'export.
 //
-// **Chaque quart de seconde, dans les deux formats, à la taille de l'export et à trois tailles de
-// lecteur (cinq cas)**, sur les éléments entièrement visibles à cet instant :
+// **Chaque quart de seconde, dans les trois formats, à la taille de l'export et à trois tailles de
+// lecteur (dix cas)**, sur les éléments entièrement visibles à cet instant :
 //   - un texte qui sort de l'écran du téléphone, ou de la scène, à l'horizontale ;
 //   - un texte qui sort de la scène par le haut ou le bas (hors du téléphone, que le 16:9 coupe
 //     exprès par le bas) ;
@@ -18,7 +18,7 @@
 //     fois déplié (16 dp) ;
 //   - un appui que le cadre coupe, ou un doigt qui tombe à côté de sa cible.
 //
-// **Aux deux formats de l'export, en plus** :
+// **Aux trois formats de l'export, en plus** :
 //   - **le temps de lire, par pas de 0,05 s** : chaque texte de la scène, chaque réplique de
 //     Ramille et la notification restent entièrement visibles — opaques, dans le cadre, sous aucun
 //     aplat — au moins 2,5 s, et un texte qui ne l'est jamais sort à 0,00 s. Un titre se lit quand
@@ -39,7 +39,7 @@
 // ne suivait plus la proportion — les textes du téléphone sortaient de leurs boîtes (14 et 19
 // constats à 760 et 390 px). Ce n'était pas la taille minimale des polices, comme on l'a d'abord
 // écrit : Chromium y calcule les plus petits à 5,3 et 2,6 px, sans plancher. Depuis que le film se
-// compose à 1600 × 900 px et se met à l'échelle d'un bloc, les sept cas rendent le même résultat.
+// compose à taille fixe et se met à l'échelle d'un bloc, chaque taille rend le même résultat que l'export.
 //
 // Éprouvé le 03/10/2026, en cassant ce qu'il garde (`FILM=<copie faussée>`) — chaque mutation vue,
 // le témoin à zéro. Tous les contrôles, sauf le relais des erreurs de la page :
@@ -66,7 +66,11 @@
 //   - les saisons du 9:16 toutes nommées dessous → « étiquette sur le trait » sur « Printemps » ;
 //   - `montrer()` qui n'écrit plus la transformation d'un élément caché → « dépend de l'ordre des
 //     sauts » et « aller-retour de format » ;
-//   - une écriture directe dans `preparer()`, hors du cache → « aller-retour de format ».
+//   - une écriture directe dans `preparer()`, hors du cache → « aller-retour de format » ;
+//   - le téléphone du 4:5 rendu à la taille de celui du 9:16 → « appui hors cadre » sur « Suivant »
+//     et « chevauchement » avec sa légende, aux trois cas 4:5 — ils voient bien leur format.
+// Et en ajoutant le 4:5, l'aller-retour de format est tombé sur un défaut du contrôle lui-même :
+// `changerDeFormat` ne connaissait que deux formats, et « revenir au 4:5 » passait au 16:9.
 // L'épaisseur du trait écrite en direct, le défaut d'origine, ne se reproduit plus : les rendus de
 // référence de `mesurer()` remettent le cache d'accord. C'est la dernière mutation qui garde la famille.
 // Un libellé long dans un bouton à hauteur fixe qui passe sur deux lignes, lui, tient : ce n'est
@@ -95,11 +99,14 @@ const faces = Object.entries(GRAISSES)
 const CAS = [
   { nom: 'export 16:9', l: 1920, h: 1080, q: '?export=paysage', export: true },
   { nom: 'export 9:16', l: 1080, h: 1920, q: '?export=portrait', export: true },
+  { nom: 'export 4:5', l: 1080, h: 1350, q: '?export=quatre-cinq', export: true },
   { nom: 'lecteur 1280, 16:9', l: 1280, h: 900, fmt: 'paysage' },
   { nom: 'lecteur 1280, 9:16', l: 1280, h: 900, fmt: 'portrait' },
   { nom: 'lecteur 760, 16:9', l: 760, h: 900, fmt: 'paysage' },
   { nom: 'téléphone 390, 16:9', l: 390, h: 844, fmt: 'paysage' },
   { nom: 'téléphone 390, 9:16', l: 390, h: 844, fmt: 'portrait' },
+  { nom: 'lecteur 1280, 4:5', l: 1280, h: 900, fmt: 'quatre-cinq' },
+  { nom: 'téléphone 390, 4:5', l: 390, h: 844, fmt: 'quatre-cinq' },
 ];
 
 // Exécuté dans la page avant toute mesure : les aides que les trois contrôles partagent.
@@ -273,7 +280,7 @@ function empreintes(temps) {
   });
 }
 function changerDeFormat(fmt) {
-  const r = document.getElementById(fmt === 'portrait' ? 'f-portrait' : 'f-paysage');
+  const r = document.getElementById(`f-${fmt}`);
   r.checked = true;
   r.dispatchEvent(new Event('change'));
 }
@@ -291,7 +298,7 @@ for (const c of CAS) {
   });
   await page.goto(`file://${enveloppe}${c.q ?? ''}`);
   await page.evaluate(() => window.__pret);
-  if (c.fmt) await page.click(c.fmt === 'portrait' ? 'label:has(#f-portrait)' : 'label:has(#f-paysage)');
+  if (c.fmt) await page.click(`label:has(#f-${c.fmt})`);
   await page.evaluate(installer);
   const duree = await page.evaluate(() => window.__duree);
   const constats = new Map();
@@ -307,7 +314,7 @@ for (const c of CAS) {
       if (d < LIRE) noter(`moins de ${LIRE} s pour lire — ${id} «${texte}» : ${d.toFixed(2)} s`, 0);
     }
     for (const [cible, t] of await page.evaluate(doigtImmobile)) noter(`doigt qui bouge pendant son appui — ${cible}`, t);
-    const fmt = c.q.endsWith('portrait') ? 'portrait' : 'paysage';
+    const fmt = c.q.slice('?export='.length);
     const temps = [];
     for (let t = 0; t <= duree; t += 0.5) temps.push(Math.round(t * 100) / 100);
     const reference = await page.evaluate(empreintes, temps);

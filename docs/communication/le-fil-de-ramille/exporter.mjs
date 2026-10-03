@@ -1,7 +1,8 @@
 // Exporte « Le fil de Ramille » en vidéo, image par image.
 //
-//   node docs/communication/le-fil-de-ramille/exporter.mjs paysage   # 1920 × 1080
-//   node docs/communication/le-fil-de-ramille/exporter.mjs portrait  # 1080 × 1920
+//   node docs/communication/le-fil-de-ramille/exporter.mjs paysage      # 16:9, 1920 × 1080
+//   node docs/communication/le-fil-de-ramille/exporter.mjs portrait     # 9:16, 1080 × 1920
+//   node docs/communication/le-fil-de-ramille/exporter.mjs quatre-cinq  # 4:5, 1080 × 1350
 //
 // Il faut `ffmpeg` dans le PATH. `CHROMIUM=/chemin/vers/chrome` remplace le navigateur de Playwright.
 //
@@ -32,10 +33,15 @@ import { chromium } from 'playwright';
 const ICI = path.dirname(fileURLToPath(import.meta.url));
 const POLICES = path.join(ICI, '../../design/design-system/assets/fonts');
 const GRAISSES = { 400: 'SplineSans_400Regular.ttf', 500: 'SplineSans_500Medium.ttf', 600: 'SplineSans_600SemiBold.ttf', 700: 'SplineSans_700Bold.ttf' };
-const format = process.argv[2] === 'portrait' ? 'portrait' : 'paysage';
+const FORMATS = {
+  paysage: { taille: [1920, 1080], nom: '16x9' },
+  portrait: { taille: [1080, 1920], nom: '9x16' },
+  'quatre-cinq': { taille: [1080, 1350], nom: '4x5' },
+};
+const format = FORMATS[process.argv[2]] ? process.argv[2] : 'paysage';
 const fps = Number(process.argv[3] ?? 30);
-const [largeur, hauteur] = format === 'portrait' ? [1080, 1920] : [1920, 1080];
-const sortie = path.join(os.tmpdir(), `le-fil-de-ramille-${format === 'portrait' ? '9x16' : '16x9'}.mp4`);
+const [largeur, hauteur] = FORMATS[format].taille;
+const sortie = path.join(os.tmpdir(), `le-fil-de-ramille-${FORMATS[format].nom}.mp4`);
 
 // La page publiée est un fragment : le service d'artefacts l'enveloppe. On fait de même ici.
 const fragment = fs.readFileSync(path.join(ICI, 'film.html'), 'utf8');

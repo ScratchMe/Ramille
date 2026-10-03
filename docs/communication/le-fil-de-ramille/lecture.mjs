@@ -23,7 +23,7 @@
 //     tomber (contre-lecture du 03/10/2026) ;
 // et aussi :
 //   - **la fluidité**, sur 6 s du chapitre le plus chargé (le vol de la mascotte, le questionnaire,
-//     les appuis), aux deux formats : 60 images par seconde en moyenne, et presque aucune image de
+//     les appuis), aux trois formats : 60 images par seconde en moyenne, et presque aucune image de
 //     plus de 25 ms ;
 //   - **le bouton du son** : coupé, la musique s'arrête et le bouton le dit ; remis, elle repart à
 //     moins de 0,3 s de l'image ;
@@ -132,9 +132,9 @@ try {
   }
 
   // 2. La fluidité, sur le chapitre le plus chargé ; 3. le bouton du son.
-  for (const format of ['paysage', 'portrait']) {
+  for (const format of ['paysage', 'portrait', 'quatre-cinq']) {
     const page = await ouvrir();
-    await page.click(format === 'portrait' ? 'label:has(#f-portrait)' : 'label:has(#f-paysage)');
+    await page.click(`label:has(#f-${format})`);
     await page.click('.chap >> nth=3');
     await page.evaluate(() => {
       window.__images = [];

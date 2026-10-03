@@ -7,8 +7,11 @@ de document.
 ## Ce que c'est
 
 Un motion design d'une minute vingt-six, en musique, pour faire comprendre Ramille et donner
-envie de faire son bilan, en deux formats tirés de la même source : **16:9** (un écran, une page
-web, une fiche de store) et **9:16** (un téléphone, les réseaux).
+envie de faire son bilan, en trois formats tirés de la même source : **16:9** (la fiche Google
+Play), **9:16** (les Stories, Reels, Shorts et TikTok) et **4:5** (les fils d'Instagram, de Facebook
+et de LinkedIn). Le 4:5 a été ajouté le 03/10/2026, sur une question de la personne qui pilote : posté
+dans un fil, le 9:16 y est recadré au centre et ses titres sortent du cadre, et le 16:9 y reste
+petit.
 
 **L'idée tient en un trait.** Le logo le dit déjà : la nervure de la feuille est un itinéraire
 tracé jusqu'à un point d'arrivée (commentaire de `assets/images/logo-mark.svg`). Le film prend ce
@@ -72,7 +75,7 @@ page elle-même : c'est aussi sa version texte.
   minute par format. Spline Sans y est servie par les fichiers du kit, et l'export refuse de partir
   si l'une des quatre graisses manque ; la chasse fixe, absente du dépôt, prend celle du système sur
   les trois lignes qui l'emploient.
-- **`verifier.mjs`** — chaque quart de seconde, dans les deux formats, à la taille de l'export et
+- **`verifier.mjs`** — chaque quart de seconde, dans les trois formats, à la taille de l'export et
   à trois tailles de lecteur : rien ne déborde ni ne se chevauche, aucune étiquette ne touche le
   trait, le cadre ne coupe ni un appui ni ce que le téléphone doit montrer, et le doigt tombe sur sa
   cible. À l'export, en plus : le temps de lire chaque texte de la scène, chaque réplique de Ramille
@@ -149,7 +152,7 @@ date, on maintient pas de score, pas de série, pas de classement. »
 
 1. **Où il sert.** Le 16:9 en vidéo de la fiche Google Play, le 9:16 pour les Stories, Reels,
    Shorts et TikTok, et un **4:5** (1080 × 1350) pour les fils d'Instagram, de Facebook et de
-   LinkedIn — décidé le même jour, et composé à part. **Pas dans l'app pour l'instant** :
+   LinkedIn — décidé et composé le même jour. **Pas dans l'app pour l'instant** :
    l'onboarding dit déjà tout cela en quatre écrans, et une étape de plus coûte plus en abandon
    qu'elle ne rapporte en clarté (commentaire de `src/components/onboarding/etape-transition.tsx`).
    **Pas sur ramille.fr non plus, pour l'instant** (décidé le même jour, sur une seconde question) :
