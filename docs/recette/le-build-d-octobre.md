@@ -12,12 +12,14 @@
 >   (A1 à A3 pour l'agent, B1 à B8 sur le téléphone), avec leurs libellés corrigés : sur Android,
 >   l'export s'appelle « Exporter mes données », le lien de « Toi » s'appelle « Confidentialité », et la
 >   page de suppression ne s'ouvre que dans Chrome ;
-> - **les vingt-trois PR fusionnées depuis la dernière séance** (02/10/2026, `v1-13` §20), dont
->   §11.28 à §11.32 : le champ sous « 10+ », la quatrième fréquence des sorties, ce qui passe près de
->   chez soi (`v1-34`), la feuille qui nomme le mois, « Modifier les jours », la réponse au point
->   qui se corrige, les liens, les sorties à deux places, la bande haute, la ligne de chargement, le
->   lancement, l'export et les pages publiques, et les marques locales qui suivent leur propriétaire
->   ([#319](https://github.com/ScratchMe/Ramille/issues/319), corrigée par [#323](https://github.com/ScratchMe/Ramille/pull/323)).
+> - **les PR fusionnées depuis la dernière séance** (02/10/2026, `v1-13` §20), dont §11.28 à §11.33 :
+>   le champ sous « 10+ », la quatrième fréquence des sorties, ce qui passe près de chez soi
+>   (`v1-34`), la feuille qui nomme le mois, « Modifier les jours », la réponse au point qui se
+>   corrige, les liens, les sorties à deux places, la bande haute, la ligne de chargement, le
+>   lancement, l'export et les pages publiques, les marques locales qui suivent leur propriétaire
+>   ([#319](https://github.com/ScratchMe/Ramille/issues/319), corrigée par [#323](https://github.com/ScratchMe/Ramille/pull/323)),
+>   et la réponse de Claude Design à l'étape du contexte ([#343](https://github.com/ScratchMe/Ramille/pull/343)) :
+>   la question d'abord, la puce à case, le bouton grisé sur un encart.
 >
 > À jouer **sur un téléphone Android 13 ou plus récent**, sur l'APK `preview` du build, branché sur la
 > production, **en trois temps** : le jour de l'installation, la semaine qui suit, puis plus tard.
@@ -27,11 +29,11 @@
 | Blocs | Sujet | D'où ça vient |
 |---|---|---|
 | 00 | Ce que le build embarque, relevé par l'agent sur l'APK : l'identifiant publicitaire, Firebase, les permissions | `a-verifier-sur-le-build-de-recette.md` A1 à A3 ; la fiche Play |
-| 01 | Le questionnaire au doigt : l'écran du mode, le second mode vierge, le champ sous « 10+ », la quatrième fréquence, les transports cochés | `v1-13` §11.19, §11.16, §11.31 ; `v1-33` D5 ; `v1-34` ([#330](https://github.com/ScratchMe/Ramille/pull/330)) |
+| 01 | Le questionnaire au doigt : l'écran du mode, le second mode vierge, le champ sous « 10+ », la quatrième fréquence, les transports cochés et le dessin de leur étape | `v1-13` §11.19, §11.16, §11.31, §11.33 ; `v1-33` D5 ; `v1-34` ([#330](https://github.com/ScratchMe/Ramille/pull/330), #343) |
 | 02 | Le premier parcours, la bande haute et les sorties en haut | §11.17, §11.26 (T-13, T-10) |
 | 02, 04 | Le compte Google, le lien du plan, l'export et les pages publiques | B1, B1′, B2, B5, B7 ; [#324](https://github.com/ScratchMe/Ramille/pull/324) |
-| 03 | La feuille des rappels, les notifications, le jeton, « Modifier l’échéance » et « Modifier les jours » | §11.29, §11.30, §11.22, §11.24 ; B3, B4 |
-| 01, 04, 05 | Le retour matériel, le clavier, le voile, la ligne de chargement, le lancement, hors ligne | §11.26, §11.5 ; [#323](https://github.com/ScratchMe/Ramille/pull/323), [#336](https://github.com/ScratchMe/Ramille/pull/336), [#337](https://github.com/ScratchMe/Ramille/pull/337) |
+| 03 | La feuille des rappels, les notifications, le jeton, « Modifier l’échéance » et « Modifier les jours » | §11.29, §11.30, §11.22, §11.24, §11.33 ; B3, B4 |
+| 01, 04, 05 | Le retour matériel, le clavier, le voile, la ligne de chargement, le lancement, hors ligne, la police à 200 % | §11.26, §11.5, §11.33 ; [#323](https://github.com/ScratchMe/Ramille/pull/323), [#336](https://github.com/ScratchMe/Ramille/pull/336), [#337](https://github.com/ScratchMe/Ramille/pull/337) |
 | 06 | TalkBack, en une passe | §11.1 et ce que les décisions récentes y ajoutent |
 | 07 | Le mouvement, avec et sans « Supprimer les animations » | §11.21 |
 | 08 | La semaine qui suit : le point, sa notification, sa réponse corrigée, le mot de la veille, les deux canaux | §11.32, §11.22 |
@@ -45,8 +47,9 @@
 (`v1-13` §15 à §20) ont vu, sur la production, tout ce que le web peut montrer de ces écrans. Elle
 regarde ce que seul un téléphone montre — le doigt, le retour matériel, le clavier, TalkBack, les
 notifications, les liens, AsyncStorage, Reanimated — et ce que le web n'a pas encore vu des PR du
-02 et du 03/10. **Et la mise en page de l'étape du contexte ne se juge pas ici** : Claude Design doit
-encore la reprendre (`v1-34` §8) ; on y regarde son comportement.
+02 et du 03/10. **Et l'étape du contexte s'y voit pour la première fois dessinée** : la réponse de
+Claude Design, livrée le 03/10 (#343, `v1-34` §10), n'a été mesurée que sur l'export, sans taille de
+police (§11.33).
 
 ## Le calendrier
 
@@ -171,7 +174,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
 | 00.1 | Dans Chrome, `https://www.ramille.fr/status` (`RECETTE.md` §2.2) | « OK — N modes de transport en base ». Autre chose : on arrête, le défaut est côté configuration | |
-| 00.2 | Désinstaller toute version précédente, puis installer l'APK depuis la page du build sur expo.dev | Relever le numéro du build et le **commit construit**. L'agent l'inscrit au registre d'exploitation (§3.3, la table des builds) et vérifie qu'il porte au moins `1b5b024` ([#341](https://github.com/ScratchMe/Ramille/pull/341)) | |
+| 00.2 | Désinstaller toute version précédente, puis installer l'APK depuis la page du build sur expo.dev | Relever le numéro du build et le **commit construit**. L'agent l'inscrit au registre d'exploitation (§3.3, la table des builds) et vérifie qu'il porte au moins `f6407cd` ([#343](https://github.com/ScratchMe/Ramille/pull/343), la réponse de Claude Design) | |
 | 00.3 | **[agent]** Le manifeste Android fusionné de l'APK : la permission `com.google.android.gms.permission.AD_ID` (A1) | **Absente** : la fiche Play répond « non » à l'identifiant publicitaire. Présente : la retirer avant le build de production, ou changer la réponse | |
 | 00.4 | **[agent]** L'initialisation automatique de Firebase Cloud Messaging (A2) | **Active** : la page de confidentialité dit que FCM reçoit l'identifiant de l'appareil dès le premier lancement. Inactive : la page en dit trop, à corriger, non bloquant | |
 | 00.5 | **[agent]** La liste des permissions demandées (A3) | Internet, notifications, et ce qu'`expo-notifications` apporte. Autre chose : relire le formulaire « Sécurité des données » | |
@@ -193,7 +196,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 | 01.7 | **Les vols, le champ sous « 10+ »** (§11.31) : « 10+ », « Suivant », puis taper **25**, puis **30** dans la part des courts, puis **250**, puis **10**, effacer un chiffre et taper **6** ; enfin toucher **0** | « 10+ » ouvre « Environ combien, sur une année ? », vide, et l'écran y défile **juste assez**. « Suivant » : « Il manque encore le nombre de vols. », le focus dans le champ, **un clavier numérique sans virgule**. 25 : « Sur ces 25, combien sont courts ? » arrive en champ, et 30 s'y affiche 25. 250 : « C’est beaucoup pour une année : vérifie le chiffre. ». De 10 à 16, **le champ reste ouvert et le clavier levé**. « 0 » referme le champ | |
 | 01.8 | **Les longs trajets** : « Oui », « 10+ » sous « En voiture », « Suivant » champ vide, puis **14** ; enfin **Non** | « Il manque encore le nombre de trajets en voiture. » ; 14 fait apparaître « Quelle motorisation ? ». « Non » referme tout | |
 | 01.9 | Le brouillon : à cette étape, **fermer l'app** (la tuer), passer en mode avion, la rouvrir ; puis couper le mode avion | « On reprend là où tu en étais. » et « Continuer mon bilan », **hors ligne** ; le questionnaire reprend à l'étape quittée (§11.5, « brouillon seul » ; 07.7 du 29/09) | |
-| 01.10 | **Le contexte** (`v1-34`) : zone **Périurbain** ; « Près de chez toi… » : cocher **Métro ou tram**, puis **Rien de tout ça**, puis **RER ou Transilien** ; tout décocher, « Voir mon bilan » ; enfin **RER ou Transilien** et **Bus**, véhicules **1**, télétravail **Aucun** | L'aide de la zone : « Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne. ». Sous la question des transports : « Coche tout ce qui passe assez souvent pour t’en servir. ». « Rien de tout ça » **décoche** les autres, et une autre puce la décoche. Tout décoché : « Il manque encore ce qui passe près de chez toi. ». **La mise en page ne se juge pas** | |
+| 01.10 | **Le contexte** (`v1-34`) : zone **Périurbain** ; « Près de chez toi… » : cocher **Métro ou tram**, puis **Rien de tout ça**, puis **RER ou Transilien** ; tout décocher, « Voir mon bilan » ; enfin **RER ou Transilien** et **Bus**, véhicules **1**, télétravail **Aucun** | Chaque question à l'encre, son aide dessous, plus claire (#343). L'aide de la zone, **une ligne par zone** : « Urbain dense : une grande ville et sa proche banlieue. », « Périurbain : sa couronne, ou une ville moyenne ou petite. », « Rural : un bourg, un village, la campagne. ». Sous la question des transports : « Coche tout ce qui passe assez souvent pour t’en servir. ». Chaque puce porte **sa case**, cochée avec la coche de l'action engagée ; « Rien de tout ça » est **sur sa ligne**, **décoche** les autres, et une autre puce la décoche. Tout décoché : « Il manque encore ce qui passe près de chez toi. ». Dès que l'étape défile, **un filet** sous la phrase de Ramille, sans rien déplacer (§11.33) | |
 | 01.11 | « **Voir mon bilan** », et le **retour matériel** pendant le calcul | Le retour matériel **ne fait rien** pendant le calcul (§11.26, T-8). Puis la restitution | |
 
 ## Bloc 02 — La restitution, le premier parcours, « Toi » et le compte Google (J0)
@@ -222,8 +225,8 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 | 03.3 | Dans la feuille : « **Par notification sur ce téléphone** » → « **Autoriser les notifications** » → l'invite d'Android → **Autoriser** (B3) | La feuille redescend, le plan revient avec l'action engagée | |
 | 03.4 | **[agent]** En base : `select platform, created_at, disabled_at, disabled_reason from public.push_tokens where user_id = '<id>';` (sans afficher `token`) | Une ligne `android`, `disabled_at` vide | |
 | 03.5 | La carte engagée ; « **Modifier l’échéance** », puis « **Annuler** » ; à 360 dp si le téléphone le permet | « TON ENGAGEMENT », « Prendre le RER pour deux sorties sur cinq », « par an · **en novembre** · … » (§11.29) — et non « le mois prochain ». « Modifier l’échéance » et « Changer d’avis », soulignés. « Modifier l’échéance » rouvre « Quand ? » sur « Le mois prochain » (§11.30) ; « Annuler » rend la carte. À 360 dp, les deux liens passent à la ligne sans se chevaucher | |
-| 03.6 | Sur la carte de « Passer deux trajets sur cinq en RER » : « **Choisir celle-ci à la place** » → « Quels jours ? » → **mardi** (la **deuxième** puce « M ») et **jeudi** → « **C’est noté** » | À 360 dp, « Quels jours ? » tient sur **quatre colonnes** (07.2 du 29/09, §11.24). La feuille se rouvre, **directement** sur « Et la veille de tes jours de trajet, je te fais signe aussi ? », avec sa date (« Par notification, jusqu’au … »). « **Oui, la veille aussi** » | |
-| 03.7 | La carte engagée du RER ; « **Modifier les jours** » : décocher jeudi, « C’est noté » ; puis tout décocher, « C’est noté » ; puis remettre **mardi et jeudi**, « C’est noté » | « par an · le mardi et le jeudi · … », « PREMIER PAS », « Vérifie l'horaire qui te convient, puis essaie-le une fois. ». « Modifier les jours » rouvre « Quels jours ? » **avec mardi et jeudi cochés**. Jeudi décoché : le bouton reste inactif jusqu'à la relecture, la carte revient avec « le mardi », et **aucune feuille** ne s'ouvre (§11.30). Tout décoché : « Choisis au moins un jour. ». **[agent]** L'archive porte une ligne `modification` par changement, et la sortie de 03.2 en `changement` | |
+| 03.6 | Sur la carte de « Passer deux trajets sur cinq en RER » : « **Choisir celle-ci à la place** » → « Quels jours ? » → **mardi** (la **deuxième** puce « M ») et **jeudi** → « **C’est noté** » | À 360 dp, « Quels jours ? » tient sur **quatre colonnes**, une case et une initiale par cellule (07.2 du 29/09, §11.24, §11.33). La feuille se rouvre, **directement** sur « Et la veille de tes jours de trajet, je te fais signe aussi ? », avec sa date (« Par notification, jusqu’au … »). « **Oui, la veille aussi** » | |
+| 03.7 | La carte engagée du RER ; « **Modifier les jours** » : décocher jeudi, « C’est noté » ; puis tout décocher, « C’est noté » ; puis remettre **mardi et jeudi**, « C’est noté » | « par an · le mardi et le jeudi · … », « PREMIER PAS », « Vérifie l'horaire qui te convient, puis essaie-le une fois. ». « Modifier les jours » rouvre « Quels jours ? » **avec mardi et jeudi cochés**. Jeudi décoché : le bouton reste inactif jusqu'à la relecture, la carte revient avec « le mardi », et **aucune feuille** ne s'ouvre (§11.30). « C’est noté » en attente, puis grisé pendant l'envoi, **garde un bord** sur l'encart du choix des jours (§11.33). Tout décoché : « Choisis au moins un jour. ». **[agent]** L'archive porte une ligne `modification` par changement, et la sortie de 03.2 en `changement` | |
 | 03.8 | « Toi » → « Les rappels » : « **Sans rappel** » ; **[agent]** la même requête qu'en 03.4 ; puis revenir à « **Par notification sur ce téléphone** » | Le jeton reste enregistré sous « Sans rappel » — `disabled_at` vide (B3). Au retour sur la notification, le réglage du mot de la veille réapparaît sous les rappels | |
 | 03.9 | Couper les notifications de Ramille dans les réglages d'Android, **tuer** l'app, la rouvrir ; **[agent]** la requête ; puis **les rouvrir**, tuer, rouvrir ; **[agent]** de nouveau | Au départ à froid, **dès le premier affichage**, la carte d'attente du plan dit « Je te fais signe lundi. » (ou « au début du mois prochain » : plus haut, ce qui dépend du jour) et « Par email, à … — les notifications sont coupées sur ce téléphone. » ([#337](https://github.com/ScratchMe/Ramille/pull/337)) ; en base, `disabled_at` posé, `disabled_reason` = `permission retirée` (B4). Rouvertes : « Par notification sur ce téléphone. », et `disabled_at` de nouveau vide. **Ne pas laisser les notifications coupées** : un vrai e-mail partirait lundi | |
 
@@ -238,6 +241,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 | 04.5 | « Toi » → « **Supprimer mon compte** », puis le **retour matériel** | La confirmation s'ouvre sur place ; le retour matériel **la referme**, sans rien supprimer (§11.26, T-8) | |
 | 04.6 | « Revoir mon bilan » → « **Faire un nouveau bilan** » ; sur la feuille « Ton plan va être recalculé », toucher **le voile**, au-dessus d'elle | La feuille se referme, et l'on revient au bilan relu, comme avec « Pas maintenant » (§11.26, T-7) — sans brouillon : aucune réponse n'a changé | |
 | 04.7 | À 360 dp si le téléphone le permet : « Toi », « Toutes les pistes », un bilan relu | Le trait du chevron de la sortie (« ‹ Retour », « ‹ Retour au plan », « ‹ Revenir à mon suivi ») tombe sur la marge du titre (§11.26) | |
+| 04.8 | Dans les réglages d'Android, la **taille de police au plus grand** (200 % si le téléphone le permet) ; « Toi » → « **Mon contexte de mobilité** », puis « Annuler » ou la sortie ; sur le plan, « Modifier les jours », puis « Annuler » ; remettre la taille de police | Dans les transports, une pilule dont le libellé passe à la ligne (« Train (TER, Intercités) ») le fait **à côté de sa case**, sans déborder de la puce. La grille des jours, une case et une initiale par cellule, passe à **trois colonnes** plutôt que de rogner (§11.33) | |
 
 ## Bloc 05 — Le lancement, hors ligne, et les états d'échec (J0)
 
@@ -259,7 +263,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 |---|---|---|---|
 | 06.1 | Sur le plan, « Revoir mon bilan » ; puis l'onglet « Suivi », et revenir | Une restitution relue a sa sortie « ‹ Revenir à mon suivi » **en haut**, au-dessus de « Ton bilan transport » (T-10). L'ordre de lecture suit l'écran ; les titres sont annoncés comme titres ; la mascotte est muette (07.11 du 29/09, §11.1) | |
 | 06.2 | « **Faire un nouveau bilan** » | La feuille « Ton plan va être recalculé » nomme l'action du RER et « le moment que tu avais choisi ». « Commencer » | |
-| 06.3 | Le questionnaire, étape par étape. **À l'écran du mode** : choisir **Voiture (covoiturage)** sans sa taille, toucher « Suivant » gris, puis revenir à **Voiture (seul)** → **Thermique**. **Au mode des sorties** : « Voir les autres modes », puis laisser **Voiture (seul)** | Le focus va au titre à chaque changement d'étape ; les puces et les rangées choisies s'annoncent comme **choisies** (noter le mot que dit TalkBack) ; « Suivant » gris s'annonce sans « indisponible », et son toucher envoie le focus au groupe qui manque (07.1 du 29/09, §11.19) ; les sorties : « **Deux ou trois fois par mois** » **cochée** (§11.28) ; « Voir les autres modes » envoie le focus sur un mode qui entre en fondu, et TalkBack l'annonce (§11.21) ; les vols : la puce « 10 vols ou plus » ; **la série des transports s'annonce en cases à cocher**, RER et Bus annoncés comme cochés (`v1-34`) | |
+| 06.3 | Le questionnaire, étape par étape. **À l'écran du mode** : choisir **Voiture (covoiturage)** sans sa taille, toucher « Suivant » gris, puis revenir à **Voiture (seul)** → **Thermique**. **Au mode des sorties** : « Voir les autres modes », puis laisser **Voiture (seul)** | Le focus va au titre à chaque changement d'étape ; les puces et les rangées choisies s'annoncent comme **choisies** (noter le mot que dit TalkBack) ; « Suivant » gris s'annonce sans « indisponible », et son toucher envoie le focus au groupe qui manque (07.1 du 29/09, §11.19) ; les sorties : « **Deux ou trois fois par mois** » **cochée** (§11.28) ; « Voir les autres modes » envoie le focus sur un mode qui entre en fondu, et TalkBack l'annonce (§11.21) ; les vols : la puce « 10 vols ou plus » ; **la série des transports s'annonce en cases à cocher** : « case à cocher, cochée » sur RER et Bus, **sans lire la case** dessinée (`v1-34`, §11.33) | |
 | 06.4 | Aux vols, « 10+ » puis revenir à « 0 » | Le champ s'annonce « Nombre de vols sur une année », sans « en vols » (§11.31) | |
 | 06.5 | « Voir mon bilan », puis le plan ; sur la carte engagée : « Modifier les jours », puis « Annuler » ; puis « Modifier les jours », un jour décoché, « C’est noté », et le remettre | Les deux liens s'annoncent avec leur précision, « Rouvre le choix, sans libérer cette action » ; le focus va à la question, puis, après « C’est noté », à la carte qui annonce « Action engagée » et la nouvelle intention ; après « Annuler », sur « Modifier les jours » (§11.30) | |
 | 06.6 | Sur le plan, « Choisir celle-ci à la place » sur une autre carte, puis « Annuler ». Puis « Toutes les pistes », « **Choisir à la place** » sur une piste — l'action du RER étant engagée —, « C’est noté » sans rien choisir, puis « Annuler » | Sur le plan : le focus va à la question, puis revient au bouton (§11.24). Sur la liste : après « Choisir à la place », la question est annoncée (« Quand ? » ou « Quels jours ? ») ; « C’est noté » en attente : le focus va sur **le premier choix** (D13) ; après « Annuler », la rangée est annoncée avec son libellé entier (07.2 du 29/09, §11.24) | |
@@ -354,10 +358,9 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 
 ## Ce qui ne se joue pas ici
 
-- **La mise en page de l'étape du contexte** : Claude Design la reprend (`v1-34` §8). Son comportement
-  se joue en 01.10 ; son dessin se jugera sur le build qui la portera.
-- **« C’est noté » en attente qui se fond dans l'encart gris du choix des jours** : une question
-  ouverte côté design (brief de `v1-34`, §4.5) — pas un écart.
+- **« Oui » et « Non » du point, et « Retirer ce bilan », pendant leur envoi** : §11.33 leur donne un
+  bord sur l'encart, mais l'envoi dure une fraction de seconde. Vu, il se note ; pas vu, la ligne reste
+  muette sur ce point — le web l'a mesuré sur l'export.
 - **Le point du 1er novembre**, si la séance l'enjambe : la sortie de 03.2 ayant été remplacée par le
   RER en 03.6, il arrive avec la question générale des sorties, pas avec celle de « Prendre le RER
   pour deux sorties sur cinq » — pas un écart. Le serveur est gardé par pgTAP.
