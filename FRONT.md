@@ -621,6 +621,21 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `(tabs)/` lui donne un onglet : c'est presque toujours une erreur. **Ne jamais créer de route
   dynamique `[id]`** : l'export statique exige `generateStaticParams`, sans quoi la page n'est
   pas produite et Vercel répond 404 sans rien signaler — d'où `?id=` partout.
+- **Un écran d'onglet ne rend ni la bande haute ni la zone sûre du haut : sa pile les pose**
+  (`CadreDOnglet`, dans `(tabs)/plan/_layout.tsx` et `(tabs)/suivi/_layout.tsx`, `v1-33` T-13,
+  03/10/2026). Chaque écran les rendait état par état — seize fois pour quatre écrans —, et le
+  chargement de la restitution les avait perdues (R-9). Un écran rend son contenu dans un
+  `ThemedView` plein (le fond pendant une transition de pile), et un écran ajouté à l'une des deux
+  piles reçoit la bande sans rien écrire. La bande reste au-dessus de la pile : elle ne bouge pas
+  quand on pousse les pistes ou une restitution.
+- **La ligne « Chargement de ton … » passe par `LigneDAttente`, jamais par un `ThemedText` écrit à
+  côté du crochet** (`v1-33` T-9, 03/10/2026). L'audit en comptait huit formes — trois corps, deux
+  gris, quatre lignes qui n'attendaient pas : le délai était une règle que chaque écran recopiait.
+  Le composant porte la forme (`body`, `textSecondary`) et le délai ; `demandee` pour le chargement
+  d'un « Réessayer », `immediate` pour une page ouverte à froid dont le HTML statique doit la porter
+  — la restitution seule (`v1-30` §5.8). Les pages de service qui disent « Un instant, on … »
+  (`/rappels/stop`, `/compte/suppression`) n'en sont pas : leur phrase est la première de la page,
+  et le résultat la remplace au même corps.
 - **Un écran d'onglet mesure ses affichages avec `useTrackFocus`, jamais `useTrackView`.**
   react-navigation garde l'écran monté quand on change d'onglet : au montage, l'événement ne
   part qu'une fois par session. Le compteur ne tombe pas à zéro, ce qui se verrait — il rend un

@@ -156,10 +156,10 @@ phases). L'état de chaque ligne est celui de la PR qui porte ce document.
 | ID | Le constat | Pourquoi pas maintenant |
 |---|---|---|
 | T-5 | Sept apparences de `TextLink` (le kit en documente quatre) ; « J'ai déjà un compte » en cinq ; des « Retour » gris collés à une phrase grise du même corps | Trente et un fichiers : il entrerait en conflit avec chaque chantier de la vague. À faire seul, juste après. **Fait le 03/10/2026**, plus bas |
-| T-9 | Huit formes d'attente, dont quatre qui n'attendent pas les 300 ms | Un composant `LigneDAttente` partagé, même raison que T-5 ; les deux cas les plus visibles (`/contexte`, `/connexion/retrouver`) sont traités dans la vague |
+| T-9 | Huit formes d'attente, dont quatre qui n'attendent pas les 300 ms | Un composant `LigneDAttente` partagé, même raison que T-5 ; les deux cas les plus visibles (`/contexte`, `/connexion/retrouver`) sont traités dans la vague. **Fait le 03/10/2026**, plus bas |
 | T-10 | « Retour » : trois styles, trois places selon le détour | Une décision de dessin : déplacer « Plus tard » détacherait la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2) |
 | T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil |
-| T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux |
+| T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux. **Fait le 03/10/2026**, plus bas |
 | T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView` |
 | T-7 (glissé) | La poignée de la feuille promet un glissé qui n'existe pas | Un seuil de glissé se juge au doigt |
 
@@ -180,6 +180,32 @@ rejoint `MonCompte` et le retrait d'un bilan). « J'ai déjà un compte » garde
 l'accroche de l'onboarding, où v1-10 l'a voulu discret. Les types `link` et `linkPrimary` de
 `ThemedText` sont partis, dans le dépôt comme dans le kit. La règle : `FRONT.md` §2.4. « Retour »
 garde une forme par détour, et c'est T-10.
+
+**T-9, fait le 03/10/2026.** `LigneDAttente` (`src/components/ligne-d-attente.tsx`) porte la forme — `body`,
+`textSecondary` — et le délai de `v1-30` §5.8 ; les six lignes « Chargement de ton … » passent par elle :
+le plan, le suivi, les pistes et `/contexte` (qui étaient en corps par défaut ou en `body`), « Toi » (en
+`small` tertiaire), et la restitution, seule à rester immédiate (`immediate`), parce que son HTML
+statique la porte et que la section D de `verifier-etats-export.mjs` la lit. Les quatre lignes qui
+n'attendaient pas étaient la restitution, `/compte/suppression`, `/rappels/stop` et `/status`.
+`/compte/suppression` et `/rappels/stop` sont des pages qu'on ouvre à froid par leur adresse, dont la
+phrase est la première de la page — « Un instant, on … » —, remplacée au même corps par le résultat :
+elles restent telles quelles, et `FRONT.md` §2.11 le dit. `/status` est une page de diagnostic
+(« Vérification… », sous « Connexion Supabase ») qu'aucun parcours n'atteint : laissée telle quelle. `/connexion/retrouver` reste muette pendant sa lecture, comme la
+vague l'a laissée.
+
+**T-13, fait le 03/10/2026.** La bande haute et la zone sûre du haut sont posées par chaque pile
+d'onglet, autour de sa `Stack` (`CadreDOnglet`, `src/components/cadre-d-onglet.tsx`), et plus par
+chaque écran : le relevé en comptait seize rendus pour quatre écrans (le plan six, le suivi et la
+restitution quatre chacun, les pistes deux — quatorze au relevé de l'audit, seize depuis que R-9 a
+rendu la bande aux deux états de la restitution qui l'avaient perdue). Un état ne peut plus oublier
+la bande — c'était R-9 —, et elle ne se recrée plus à chaque écran poussé dans la pile. Ce qui bouge à
+l'œil : la bande ne glisse plus avec un écran poussé (les pistes, une restitution), elle reste
+au-dessus ; sur web la pile n'anime rien, donc ce point se voit sur appareil (`v1-13` §11.26).
+L'origine des défilements ne change pas — la bande occupe la même place —, et les gardes de P-1 et
+P-2 du parcours réel passent telles quelles (rejeu complet du 03/10/2026). Les gardes :
+`src/tests/ecrans/cadre-des-piles.test.tsx` pour la bande et son ordre, et l'absence de bande dans
+l'écran par `restitution-du-bilan.test.tsx` et `plan-pistes.test.tsx` — une bande en double, le
+parcours réel la tolère.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
 « Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10

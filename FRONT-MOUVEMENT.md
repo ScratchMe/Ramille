@@ -100,7 +100,7 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   retour, et un choix validé après un `await` arrive pendant la sortie — ou juste après. `fermer(apres)`
   remplace alors le rappel en attente, ou l'appelle aussitôt si la sortie est finie — ignoré, le
   choix partait en base sans que l'écran le reçoive.
-- **« Chargement… » attend 300 ms avant de se dire** (`useChargementVisible`), pour ne plus
+- **« Chargement… » attend 300 ms avant de se dire** (`LigneDAttente`, `useChargementVisible`), pour ne plus
   clignoter une image avant un contenu rapide — **sauf** après « Réessayer », où c'est la seule
   preuve que le geste a été pris (`FRONT.md` §1.2).
 - **Un `gap` que le parent donnait à ses enfants se reprend** quand `HauteurSuivie` les enveloppe

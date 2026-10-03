@@ -8,9 +8,8 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BandeHaute } from '@/components/bande-haute';
+import { LigneDAttente } from '@/components/ligne-d-attente';
 import { MessageInline } from '@/components/message-inline';
 import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste';
 import { PastilleEngagee } from '@/components/plan/pastille-engagee';
@@ -19,7 +18,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { POSTE_LABEL } from '@/constants/postes';
 import { Mouvement, Radius, Spacing, Stroke, TypeScale } from '@/constants/theme';
-import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { donnerLeFocus } from '@/lib/focus';
@@ -266,47 +264,37 @@ export default function PistesScreen() {
     />
   );
 
-  // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : en arrivant sur
-  // l'écran, il clignotait une image avant les pistes. L'échec, lui, se dit tout de suite, et le
-  // chargement d'un « Réessayer » aussi (`useChargementVisible`).
-  const chargementVisible = useChargementVisible(
-    etat.genre === 'chargement',
-    etat.genre === 'chargement' && etat.relance === true
-  );
-
   if (etat.genre !== 'pistes') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <BandeHaute />
-          <View style={styles.etatSimple}>
-            {/* L'écran ne dit jamais « tu n'as rien » sur un échec de lecture : il dit qu'il n'a pas
-                pu lire, et propose de réessayer (règle de C1.4). Les pistes existent, c'est la
-                lecture qui a manqué. */}
-            {(etat.genre !== 'chargement' || chargementVisible) && (
-              <ThemedText type="body" themeColor="textSecondary">
-                {etat.genre === 'chargement'
-                  ? 'Chargement de tes pistes…'
-                  : 'Tes pistes n’ont pas pu être chargées.'}
-              </ThemedText>
-            )}
-            {etat.genre === 'erreur' && (
-              <TextLink
-                label="Réessayer"
-                apparence="action"
-                onPress={() => {
-                  // Repasser par « chargement » dans ce gestionnaire, et jamais dans `rafraichir` :
-                  // sans ce passage, un second échec rend exactement le même écran et le bouton a
-                  // l'air mort ; dedans, il ferait clignoter l'écran à chaque retour au premier plan.
-                  // `relance` le montre tout de suite, l'échec revenant bien sous le délai de la ligne.
-                  setEtat({ genre: 'chargement', relance: true });
-                  rafraichir();
-                }}
-              />
-            )}
-            {retour}
-          </View>
-        </SafeAreaView>
+        <View style={styles.etatSimple}>
+          {/* L'écran ne dit jamais « tu n'as rien » sur un échec de lecture : il dit qu'il n'a pas
+              pu lire, et propose de réessayer (règle de C1.4). Les pistes existent, c'est la
+              lecture qui a manqué. */}
+          {/* Le chargement attend 300 ms, sauf après « Réessayer » ; l'échec se dit tout de suite. */}
+          {etat.genre === 'chargement' ? (
+            <LigneDAttente demandee={etat.relance === true}>Chargement de tes pistes…</LigneDAttente>
+          ) : (
+            <ThemedText type="body" themeColor="textSecondary">
+              Tes pistes n’ont pas pu être chargées.
+            </ThemedText>
+          )}
+          {etat.genre === 'erreur' && (
+            <TextLink
+              label="Réessayer"
+              apparence="action"
+              onPress={() => {
+                // Repasser par « chargement » dans ce gestionnaire, et jamais dans `rafraichir` :
+                // sans ce passage, un second échec rend exactement le même écran et le bouton a
+                // l'air mort ; dedans, il ferait clignoter l'écran à chaque retour au premier plan.
+                // `relance` le montre tout de suite, l'échec revenant bien sous le délai de la ligne.
+                setEtat({ genre: 'chargement', relance: true });
+                rafraichir();
+              }}
+            />
+          )}
+          {retour}
+        </View>
       </ThemedView>
     );
   }
@@ -315,106 +303,103 @@ export default function PistesScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <BandeHaute />
-        <ScrollView
-          ref={defilement}
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          onScroll={surDefilement}
-          scrollEventThrottle={16}
-        >
-          {retour}
+      <ScrollView
+        ref={defilement}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        onScroll={surDefilement}
+        scrollEventThrottle={16}
+      >
+        {retour}
 
-          <ThemedText type="screenTitle">Toutes les pistes</ThemedText>
+        <ThemedText type="screenTitle">Toutes les pistes</ThemedText>
+        <ThemedText type="body" themeColor="textSecondary">
+          {/* **La phrase dit l'ordre, et l'ordre ne bouge plus** (décision n° 2) : « du plus gros
+              gain au plus petit » est vrai de chaque groupe, engagement ou non. Seul ce que le
+              choix fait change — mettre l'action en tête du plan, ou remplacer la tienne
+              (`introDesPistes`). */}
+          {introDesPistes(engageeId !== null)}
+        </ThemedText>
+
+        {/* **Le refus se dit ici, juste au-dessus de la liste**, et non en tête d'écran : les
+            lignes commencent quelques lignes plus bas, donc la phrase reste dans le champ de
+            vision de la personne qui vient de toucher « C'est noté ». La ligne se relit à chaque
+            refus — `onRefus(null)` est appelé avant le RPC —, donc elle ne survit pas à une
+            tentative réussie. */}
+        {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
+
+        {/* **Un écran atteignable sans porte doit savoir ne rien avoir à montrer**
+            (contre-lecture du lot 5). La porte du plan ne s'affiche qu'au-delà de deux pistes,
+            mais l'adresse existe sur web et se tape : sans cette phrase, un plan à zéro action —
+            tout cycliste et tout profil sédentaire depuis C2.5 — rendait un titre suivi d'une
+            promesse de tri au-dessus de rien. On le dit, et on ne le dit qu'après une lecture
+            **réussie** : l'échec, lui, a son propre écran juste au-dessus (règle de C1.4). */}
+        {groupes.length === 0 && (
           <ThemedText type="body" themeColor="textSecondary">
-            {/* **La phrase dit l'ordre, et l'ordre ne bouge plus** (décision n° 2) : « du plus gros
-                gain au plus petit » est vrai de chaque groupe, engagement ou non. Seul ce que le
-                choix fait change — mettre l'action en tête du plan, ou remplacer la tienne
-                (`introDesPistes`). */}
-            {introDesPistes(engageeId !== null)}
+            Ton plan ne porte aucune piste pour cette période.
           </ThemedText>
+        )}
 
-          {/* **Le refus se dit ici, juste au-dessus de la liste**, et non en tête d'écran : les
-              lignes commencent quelques lignes plus bas, donc la phrase reste dans le champ de
-              vision de la personne qui vient de toucher « C'est noté ». La ligne se relit à chaque
-              refus — `onRefus(null)` est appelé avant le RPC —, donc elle ne survit pas à une
-              tentative réussie. */}
-          {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
+        {groupes.map((groupe) => (
+          <View key={groupe.poste ?? 'sans-poste'} style={styles.groupe}>
+            {/* **Une étiquette de section, et non un titre de carte** (planche A2 du canvas
+                `v1-17`, #234 ; puis canvas `v1-30`). Rendue en `cardTitle` à l'origine, elle
+                concurrençait les titres d'action ; en `small` tertiaire ensuite, elle s'effaçait
+                face à des titres passés en 16 `text` (plainte du 18/09/2026). D'où l'étiquette
+                capitale de `TypeScale.label`, 600, tertiaire : discrète par la taille, nette par
+                la forme — et elle suffit à découper parce que les lignes portent un filet.
 
-          {/* **Un écran atteignable sans porte doit savoir ne rien avoir à montrer**
-              (contre-lecture du lot 5). La porte du plan ne s'affiche qu'au-delà de deux pistes,
-              mais l'adresse existe sur web et se tape : sans cette phrase, un plan à zéro action —
-              tout cycliste et tout profil sédentaire depuis C2.5 — rendait un titre suivi d'une
-              promesse de tri au-dessus de rien. On le dit, et on ne le dit qu'après une lecture
-              **réussie** : l'échec, lui, a son propre écran juste au-dessus (règle de C1.4). */}
-          {groupes.length === 0 && (
-            <ThemedText type="body" themeColor="textSecondary">
-              Ton plan ne porte aucune piste pour cette période.
+                **Les capitales sont un style, pas le texte** (`textTransform`) : la chaîne reste
+                en casse normale, et le lecteur d'écran lit « Voyages longue distance » au lieu de
+                l'épeler.
+
+                **Le rôle d'en-tête s'écrit ici** : `ThemedText` ne le déduit que de `title`,
+                `subtitle`, `screenTitle` et `display`. Il le pose au niveau 2, sous le titre de
+                l'écran. */}
+            <ThemedText
+              type="small"
+              weight={600}
+              themeColor="textTertiary"
+              accessibilityRole="header"
+              style={styles.teteDeGroupe}
+            >
+              {groupe.poste !== null
+                ? (POSTE_LABEL[groupe.poste as keyof typeof POSTE_LABEL] ?? 'Tes trajets')
+                : 'Tes trajets'}
             </ThemedText>
-          )}
-
-          {groupes.map((groupe) => (
-            <View key={groupe.poste ?? 'sans-poste'} style={styles.groupe}>
-              {/* **Une étiquette de section, et non un titre de carte** (planche A2 du canvas
-                  `v1-17`, #234 ; puis canvas `v1-30`). Rendue en `cardTitle` à l'origine, elle
-                  concurrençait les titres d'action ; en `small` tertiaire ensuite, elle s'effaçait
-                  face à des titres passés en 16 `text` (plainte du 18/09/2026). D'où l'étiquette
-                  capitale de `TypeScale.label`, 600, tertiaire : discrète par la taille, nette par
-                  la forme — et elle suffit à découper parce que les lignes portent un filet.
-
-                  **Les capitales sont un style, pas le texte** (`textTransform`) : la chaîne reste
-                  en casse normale, et le lecteur d'écran lit « Voyages longue distance » au lieu de
-                  l'épeler.
-
-                  **Le rôle d'en-tête s'écrit ici** : `ThemedText` ne le déduit que de `title`,
-                  `subtitle`, `screenTitle` et `display`. Il le pose au niveau 2, sous le titre de
-                  l'écran. */}
-              <ThemedText
-                type="small"
-                weight={600}
-                themeColor="textTertiary"
-                accessibilityRole="header"
-                style={styles.teteDeGroupe}
-              >
-                {groupe.poste !== null
-                  ? (POSTE_LABEL[groupe.poste as keyof typeof POSTE_LABEL] ?? 'Tes trajets')
-                  : 'Tes trajets'}
-              </ThemedText>
-              <Lignes
-                pistes={groupe.pistes}
-                enChoix={enChoix}
-                engageeId={engageeId}
-                onChoisir={choisir}
-                onAnnuler={annuler}
-                inscrireRangee={inscrireRangee}
-                inscrireCarte={inscrireCarte}
-                carteMesuree={carteMesuree}
-                onEngage={(engagement) => {
-                  // **Le drapeau se pose avant de partir**, jamais après ni sous condition : la
-                  // feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
-                  // seule fois où elle compte la perd pour de bon (`v1-17` §7.3). Le repli vers le
-                  // plan garde le drapeau : `replace` reste dans cette pile, dont le layout le porte,
-                  // et le plan monté à neuf l'attend jusqu'à sa première lecture
-                  // (`useReprendreLEngagement`).
-                  passage.deposer(engagement);
-                  revenirOu('/plan');
-                }}
-                onChanged={rafraichir}
-                onRefus={(message) => {
-                  // Le refus `RM001` veut presque toujours dire que l'état a changé depuis
-                  // l'affichage : on relit plutôt que de parler de réseau, et la carte reste
-                  // ouverte (`enChoix` ne bouge pas) pour que le message porte sur une action qu'on
-                  // voit encore. Relue, elle lit « une autre est engagée », et un nouvel essai part
-                  // avec le remplacement.
-                  setRefusDeRemplacement(message);
-                  rafraichir();
-                }}
-              />
-            </View>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
+            <Lignes
+              pistes={groupe.pistes}
+              enChoix={enChoix}
+              engageeId={engageeId}
+              onChoisir={choisir}
+              onAnnuler={annuler}
+              inscrireRangee={inscrireRangee}
+              inscrireCarte={inscrireCarte}
+              carteMesuree={carteMesuree}
+              onEngage={(engagement) => {
+                // **Le drapeau se pose avant de partir**, jamais après ni sous condition : la
+                // feuille des rappels ne s'ouvre qu'une fois par appareil, donc la manquer la
+                // seule fois où elle compte la perd pour de bon (`v1-17` §7.3). Le repli vers le
+                // plan garde le drapeau : `replace` reste dans cette pile, dont le layout le porte,
+                // et le plan monté à neuf l'attend jusqu'à sa première lecture
+                // (`useReprendreLEngagement`).
+                passage.deposer(engagement);
+                revenirOu('/plan');
+              }}
+              onChanged={rafraichir}
+              onRefus={(message) => {
+                // Le refus `RM001` veut presque toujours dire que l'état a changé depuis
+                // l'affichage : on relit plutôt que de parler de réseau, et la carte reste
+                // ouverte (`enChoix` ne bouge pas) pour que le message porte sur une action qu'on
+                // voit encore. Relue, elle lit « une autre est engagée », et un nouvel essai part
+                // avec le remplacement.
+                setRefusDeRemplacement(message);
+                rafraichir();
+              }}
+            />
+          </View>
+        ))}
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -618,7 +603,6 @@ function Lignes({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
   scroll: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   etatSimple: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
   // Le `gap` du groupe est nul parce que la tête porte ses propres marges, et qu'un `gap` par-dessus

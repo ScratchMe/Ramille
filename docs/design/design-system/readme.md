@@ -44,10 +44,10 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 - Marques copiées : `assets/images/logo-mark.svg`, `mascot-mark.svg`, `favicon-mark.svg`, `icon.png`, `splash-icon.png`, `google-oauth-logo.png` (le logo de **Ramille** téléversé sur l'écran de consentement de Google — pas une référence du « G », que `GoogleButton` dessine en SVG et qui ne se redessine jamais).
 
 ## Composants (une partie du dépôt)
-core/ ThemedText · ThemedView · Button · TextLink · MessageInline · OnboardingDots · FeuilleDuBas · TitreDArrivee
+core/ ThemedText · ThemedView · Button · TextLink · MessageInline · LigneDAttente · OnboardingDots · FeuilleDuBas · TitreDArrivee
 forms/ GroupeDeChoix · Chip · ChoiceRow · LigneDeCanal · ModeListItem · BoiteDePrecision · PrecisionMode · IntituleDuChamp · NumericField · ChampDuPlafond · TextField · GoogleButton
 mascotte/ Mascot · RamilleDit · CalculEnCours · EcranLancement
-navigation/ CompteBouton · BandeHaute · OngletIcone · BarreOnglets · ProgressHeader · StepShell
+navigation/ CompteBouton · BandeHaute · CadreDOnglet · OngletIcone · BarreOnglets · ProgressHeader · StepShell
 plan/ CheckinCard · ActionCard · ActionCommitment · CarteDePiste · CarteDOuverture · PastilleEngagee · TraitDeTemps · FeuilleRappels
 suivi/ EcartParPoste · BarreContour · BlocMethode
 bilan/ CommuteHasTripStep · CommuteDaysDistanceStep · CommuteModeStep · CommuteExtraStep · LeisureFrequencyStep · LeisureDetailStep · FlightsStep · LongTripsStep · ContextStep · ChampsDeContexte · PrecisionChiffres · MissingModeLink · FeuilleNouveauBilan

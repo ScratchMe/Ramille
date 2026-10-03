@@ -6,13 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { ChoixDeRappel } from '@/components/compte/choix-de-rappel';
 import { MonCompte } from '@/components/compte/mon-compte';
+import { LigneDAttente } from '@/components/ligne-d-attente';
 import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useTrackView } from '@/hooks/use-track-view';
 import { lireEtatDuRattachement, seDeconnecterDeCetAppareil } from '@/lib/compte';
 import { revenirOu, terminerLeFlux } from '@/lib/navigation';
@@ -73,7 +73,7 @@ export default function Compte() {
   const [fenetre, setFenetre] = useState<FenetreDeLaVeille | null>(null);
   const [messageCanal, setMessageCanal] = useState<string | null>(null);
   const [cle, setCle] = useState(0);
-  // Un « Réessayer » : sa ligne de chargement se dit tout de suite (`useChargementVisible`).
+  // Un « Réessayer » : sa ligne de chargement se dit tout de suite (`LigneDAttente`).
   const [relance, setRelance] = useState(false);
   const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
   const [erreurDeconnexion, setErreurDeconnexion] = useState<string | null>(null);
@@ -219,11 +219,6 @@ export default function Compte() {
   // relevé : il est porté par l'état `indisponible`, qui coexiste avec la confirmation de la même façon.
   // Aucun texte ne change, et la hauteur non plus : la variante secondaire n'a pas de filet ici.
   const variantePrincipale = confirmationOuverte ? 'secondary' : 'primary';
-  // Muette les 300 premières millisecondes, comme les onglets — la place suffit à tenir l'écran, et une
-  // phrase qui clignote une image ne dit rien —, sauf après « Réessayer » : hors ligne, l'échec revient
-  // bien sous ce délai, et sans la ligne le bouton aurait l'air mort (`FRONT.md` §1.2).
-  const chargementVisible = useChargementVisible(enLecture, relance);
-
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -242,11 +237,10 @@ export default function Compte() {
 
             {!supprime && (
               <View style={[styles.compteEtRappels, enLecture && styles.enLecture]}>
-                {chargementVisible && (
-                  <ThemedText type="small" themeColor="textTertiary">
-                    Chargement de ton compte…
-                  </ThemedText>
-                )}
+                {/* Muette les 300 premières millisecondes, comme les onglets — la place suffit à tenir
+                    l'écran —, sauf après « Réessayer » : hors ligne, l'échec revient bien sous ce délai,
+                    et sans la ligne le bouton aurait l'air mort (`FRONT.md` §1.2). */}
+                {enLecture && <LigneDAttente demandee={relance}>Chargement de ton compte…</LigneDAttente>}
                 {/* **Trois sections, et un écart qui les sépare** (01/10/2026, audit T-15) : le compte, les
                     rappels, puis « Mes données ». Tout était espacé de 16, sections comprises — à l'œil,
                     « Rattacher un compte » et « Les rappels » étaient aussi proches que deux lignes de canal.

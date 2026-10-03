@@ -1,12 +1,14 @@
 import { Stack } from 'expo-router';
 import { createContext, useContext, useMemo, useRef } from 'react';
 
+import { CadreDOnglet } from '@/components/cadre-d-onglet';
 import type { EngagementPris } from '@/types/rappels';
 
 // Pile de l'onglet Plan : l'écran lui-même, et la liste complète des pistes (`plan/pistes`).
 // Même forme que `suivi/_layout.tsx`, et pour la même raison — une pile imbriquée dans un
 // onglet garde la barre visible avec cet onglet actif, ce qui est la seule façon d'avoir la
-// barre sur l'écran des pistes sans dupliquer un composant de barre.
+// barre sur l'écran des pistes sans dupliquer un composant de barre. La bande haute et la zone sûre
+// sont posées ici, autour de la pile, et non dans chaque écran (`CadreDOnglet`, `v1-33` T-13).
 
 /**
  * Ce qu'un engagement pris sur l'écran des pistes laisse au plan (C5.2, décidé en `v1-17` §7.3) : un
@@ -95,7 +97,9 @@ export default function PlanLayout() {
 
   return (
     <PassageDEngagement.Provider value={passage}>
-      <Stack screenOptions={{ headerShown: false }} />
+      <CadreDOnglet>
+        <Stack screenOptions={{ headerShown: false }} />
+      </CadreDOnglet>
     </PassageDEngagement.Provider>
   );
 }

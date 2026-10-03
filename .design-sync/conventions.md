@@ -77,7 +77,7 @@ un constat de lecture.
   reste n'est pas un lieu — le questionnaire et l'onboarding sont des **flux** plein écran
   sans barre, le compte est un **détour**. Un troisième onglet est presque toujours une erreur.
 - Un écran d'onglet porte `BandeHaute` en haut (52 px, le nom centré, `CompteBouton` à
-  droite) et `BarreOnglets` en bas. **Le nom, pas le visage** : la mascotte n'est pas un logo
+  droite) — posée par sa pile (`CadreDOnglet`), jamais par l'écran — et `BarreOnglets` en bas. **Le nom, pas le visage** : la mascotte n'est pas un logo
   d'en-tête.
 - Un écran de questionnaire, c'est `StepShell` : en-tête `ProgressHeader`, contenu défilant,
   **pied collant** hors défilement pour le bouton principal. `entree` et `reponsesDonnees` sont
