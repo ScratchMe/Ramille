@@ -171,12 +171,14 @@ describe('/contexte — une lecture en échec (D19)', () => {
 
 /**
  * **Le contexte pose des questions** (D4 de `v1-33`, 01/10/2026) : chaque série est nommée par sa
- * question — le texte affiché et le nom du groupe sont une seule chaîne —, et la zone porte sa ligne
- * d'aide. Les deux écrans partagent `ChampsDeContexte` ; celui-ci se monte sans `StepShell`.
+ * question — le texte affiché et le nom du groupe sont une seule chaîne —, et la zone porte sa
+ * définition, une ligne par zone depuis le 03/10/2026. Les deux écrans partagent `ChampsDeContexte` ;
+ * celui-ci se monte sans `StepShell`.
  *
  * Éprouvé en le cassant, le 01/10/2026 : la ligne d'aide retirée de la zone fait tomber ce test, et
  * lui seul ; le groupe de la zone nommé par l'ancien intitulé (`question` → `'Type de zone'` dans
- * `GroupeDeChoix`) aussi.
+ * `GroupeDeChoix`) aussi. **Et le 03/10/2026**, sur l'assertion refaite : les trois lignes de la
+ * définition refondues en un seul texte font tomber ce test, et lui seul dans le fichier.
  */
 describe('/contexte — les questions du contexte', () => {
   it('nomme chaque groupe par sa question, et dit sous la zone ce que veut dire chaque réponse', async () => {
@@ -194,12 +196,15 @@ describe('/contexte — les questions du contexte', () => {
       const groupe = await screen.findByLabelText(question);
       expect(groupe.props.role).toBe(role);
     }
-    // L'aide de la zone redevient une définition (D6 de `v1-34`) : la zone ne décide plus du métro.
-    expect(
-      screen.getByText(
-        'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.'
-      )
-    ).toBeTruthy();
+    // L'aide de la zone redevient une définition (D6 de `v1-34`) : la zone ne décide plus du métro. Une
+    // ligne par zone depuis le 03/10/2026 (canvas de l'étape du contexte), les mêmes mots.
+    for (const ligne of [
+      'Urbain dense : une grande ville et sa proche banlieue.',
+      'Périurbain : sa couronne, ou une ville moyenne ou petite.',
+      'Rural : un bourg, un village, la campagne.',
+    ]) {
+      expect(screen.getByText(ligne)).toBeTruthy();
+    }
     expect(screen.getByText('Coche tout ce qui passe assez souvent pour t’en servir.')).toBeTruthy();
   });
 

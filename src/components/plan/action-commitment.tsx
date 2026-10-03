@@ -455,6 +455,10 @@ export function ActionCommitment({
               radius={Radius.chip}
               // Le sélecteur est un encart teinté : sans le fond de la page, la puce n'a pas de bord.
               nestedBackground
+              // Sa largeur vient de la cellule de la grille, pas de son padding (03/10/2026) : la case
+              // d'une puce à cocher, l'écart et l'initiale n'y tiennent qu'avec la marge serrée d'une puce
+              // équirépartie — une cellule de 48 utiles à 360 dp.
+              flex
             />
           ))}
         </GroupeDeChoix>
@@ -520,8 +524,10 @@ export function ActionCommitment({
         />
         {/* **En attente, jamais inactif, tant qu'il manque quelque chose** (D13) : il a l'apparence du
             désactivé et agit — son toucher demande (`demander`). `disabled` reste pour ce qui
-            n'agit vraiment pas : l'aller-retour d'un engagement, jusqu'à la relecture (`busy`). */}
-        <Button title="C’est noté" onPress={submit} enAttente={manque !== null} disabled={busy} flex />
+            n'agit vraiment pas : l'aller-retour d'un engagement, jusqu'à la relecture (`busy`). Et il est
+            **posé sur l'encart** (`onPanel`, 03/10/2026, brief de l'étape du contexte §4.5) : grisé, il en
+            prenait le gris et n'avait plus de bord — il y prend le fond de l'écran et un filet. */}
+        <Button title="C’est noté" onPress={submit} enAttente={manque !== null} disabled={busy} flex onPanel />
       </View>
     </ThemedView>
   );

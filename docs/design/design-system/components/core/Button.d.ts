@@ -11,7 +11,9 @@ export interface ButtonProps {
   flex?: boolean;
   /**
    * Le bouton est posé sur une surface grise ou teintée (la carte du point) : un secondaire y prend
-   * le fond de l'écran et un filet `border`, au lieu du gris des panneaux. Sans effet sur le principal.
+   * le fond de l'écran et un filet `border`, au lieu du gris des panneaux. Un bouton grisé (en attente ou
+   * désactivé) aussi, depuis le 03/10/2026 : « C'est noté » en attente se fondait dans l'encart du choix des
+   * jours. Sans effet sur le principal actif.
    */
   onPanel?: boolean;
   /** Précision annoncée après le titre sur Android (« Répondre oui pour ton trajet domicile-travail »). Sans effet sur web. */

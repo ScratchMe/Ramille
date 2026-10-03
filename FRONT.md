@@ -543,7 +543,21 @@ exactement ce qui avait laissé passer le mauvais caractère.
   module neutre — `NumericField` le prenait dans le fichier de la connexion jusqu'au 02/10/2026.
 - **Un bouton secondaire posé sur une carte grise ou teintée prend `onPanel`** : fond de l'écran et
   filet, au lieu du gris des panneaux. Gris sur gris, « Oui » et « Non » de la carte du point se
-  lisaient comme du texte.
+  lisaient comme du texte. **Un bouton grisé aussi, depuis le 03/10/2026** (brief de l'étape du
+  contexte §4.5, décidé sur canvas) : en attente ou désactivé, posé sur un encart, il prend le fond de
+  l'écran et le filet, l'encre restant tertiaire — « C'est noté » en attente avait le gris de l'encart
+  du choix des jours et n'était plus qu'un libellé sans bord. La règle vit dans `surfaceDuBouton`
+  (`src/types/surface-du-bouton.ts`), testée ; le principal actif ne change pas.
+- **Une puce garde sa graisse, cochée ou non, et une puce qui se cumule porte une case** (03/10/2026,
+  canvas de l'étape du contexte, option B). Le 600 de la puce cochée élargissait son libellé de 3 à
+  4 px, et dans une rangée qui passe à la ligne une voisine sautait à la ligne suivante au toucher :
+  `Chip` est en 500 partout, le fond et l'encre portent seuls la sélection. Une puce `checkbox` porte
+  une case de 18, toujours là — vide au repos, blanche avec la coche de l'action engagée
+  (`TRACE_DE_LA_COCHE`, `src/components/coche.ts`, le seul tracé de coche du dépôt) quand elle est cochée —, qui dit qu'on peut en cocher
+  plusieurs avant qu'on touche et garde la largeur de la puce. Une puce à cocher dans une grille (les
+  jours de l'engagement) prend `flex` : la case, l'écart et l'initiale n'y tiennent qu'avec la marge
+  serrée d'une puce équirépartie. Les rangées pleine largeur (`ChoiceRow`, `ModeListItem`) gardent
+  leur 600 : elles ne passent pas à la ligne.
 - **La chasse fixe (`type="code"`) est réservée aux sources et aux codes techniques** — une
   référence ADEME, un code d'erreur, une clé de configuration —, jamais à une phrase adressée à la
   personne : « Ton mode n’est pas dans la liste ? Dis-le-nous. » en 12 px gris à chasse fixe se

@@ -586,7 +586,9 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   l'app (`src/components/plan/action-commitment.tsx`). **Tranché le 03/10/2026** : pas de correction
   à la main, la question va au brief de Claude Design
   ([`docs/design/v1-34-l-etape-du-contexte/BRIEF.md`](../design/v1-34-l-etape-du-contexte/BRIEF.md)
-  §4.5), parce que la réponse vaut pour tout bouton posé dans un encart.
+  §4.5), parce que la réponse vaut pour tout bouton posé dans un encart. **Corrigé le 03/10/2026**, sur
+  la réponse du canvas : grisé et posé sur un encart, un bouton prend le fond de l'écran et un filet
+  (`surfaceDuBouton`), et « C'est noté » passe `onPanel`.
 - **D18 ne réduit les façons de dire un formulaire incomplet que de trois à deux** : la phrase de
   `/feedback` reste en `small` tertiaire, là où le questionnaire, `/contexte` et D13 la disent en
   `accentText` 600. **Fait le 02/10/2026.**
@@ -616,6 +618,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
 - **`cadreDuChamp` vit dans `auth/text-field.tsx`**, et le champ de distance l'importe de là. **Corrigé
   le 02/10/2026** : `src/components/cadre-du-champ.ts`.
 - **Les questions du contexte restent en `small` tertiaire** (D4), là où les autres étapes posent les
-  leurs en grand : à juger en dessin — toujours ouvert, et pas technique.
+  leurs en grand : à juger en dessin. **Tranché et fait le 03/10/2026**, sur le canvas de l'étape du
+  contexte : en `default` 600 à l'encre, leurs aides dessous plus claires (`v1-34` §10).
 
 **Ce qui ne se vérifie que sur appareil** est consigné en `v1-13` §11.26.

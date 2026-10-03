@@ -48,7 +48,7 @@ export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etat
         // Les jours se cumulent : des `checkbox` dans un `group`, sur quatre colonnes au plus — trois quand une
         // cible de 48 n'y tiendrait plus.
         ? <GroupeDeChoix question={question} cumulable colonnes={4}>
-            {DAYS.map(([v, s, l]) => <Chip key={v} label={s} accessibilityLabel={l} role="checkbox" selected={days.includes(v)} onPress={() => onToggleDay && onToggleDay(v)} radius={14} nestedBackground />)}
+            {DAYS.map(([v, s, l]) => <Chip key={v} label={s} accessibilityLabel={l} role="checkbox" selected={days.includes(v)} onPress={() => onToggleDay && onToggleDay(v)} radius={14} nestedBackground flex />)}
           </GroupeDeChoix>
         : <GroupeDeChoix question={question} style={{ gap: 8 }}>
             {timings.map(([v, l]) => <Chip key={v} label={l} role="radio" selected={timing === v} onPress={() => onTiming && onTiming(v)} radius={16 /* Radius.field */} selectedStyle="outline" nestedBackground />)}
@@ -56,7 +56,8 @@ export function ActionCommitment({ kind = 'days', poste = 'leisure', state: etat
       {demande && manque && <ThemedText type="small" weight={600} themeColor="accentText">{manque}</ThemedText>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
         <TextLink label="Annuler" apparence="souligne" onPress={onAnnuler || onCancel} />
-        <Button title="C’est noté" onPress={onSubmit} enAttente={!complete} disabled={relecture} flex />
+        {/* Posé sur l'encart (03/10/2026, brief de l'étape du contexte §4.5) : grisé, il en prenait le gris. */}
+        <Button title="C’est noté" onPress={onSubmit} enAttente={!complete} disabled={relecture} flex onPanel />
       </div>
     </div>
   );
