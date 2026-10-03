@@ -75,8 +75,10 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   (lien du retrait et comparaison, palier, nom du résiduel, bannière), jamais l'écran. Avant, la
   barre « Ton bilan précédent » s'insérait au-dessus de « Toi » après le premier rendu, et la
   bannière de compte, lue par un effet à part, décalait le total de 92 px une image après lui. Le
-  chargement et l'erreur gardent le cadre de l'état prêt (bande haute, `SafeAreaView` sans bord bas,
-  R-9). Garde : `src/tests/ecrans/restitution-du-bilan.test.tsx`, à réponses retenues.
+  chargement et l'erreur gardent le cadre de l'état prêt (R-9) — et depuis le 03/10/2026 ils ne
+  peuvent plus le perdre : la bande et la zone sûre sont posées par la pile, autour de tous les états
+  (`CadreDOnglet`, `FRONT.md` §2.11). Garde : `src/tests/ecrans/restitution-du-bilan.test.tsx`, à
+  réponses retenues, et `cadre-des-piles.test.tsx` pour la bande.
 - **L'ordre de la restitution est une décision, et un test d'écran la garde** (01/10/2026, `v1-33` D9
   et D11). Carte dominante, puis le total — « Estimation annuelle, tous déplacements », le chiffre,
   « Comment ce chiffre est calculé » —, puis « Un chiffre me semble faux » et le lien du retrait avec

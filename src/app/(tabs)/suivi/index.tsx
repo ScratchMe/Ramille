@@ -2,11 +2,10 @@ import { router, useScrollToTop } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
 import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
+import { LigneDAttente } from '@/components/ligne-d-attente';
 import { Mascot } from '@/components/mascot';
 import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
@@ -15,7 +14,6 @@ import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing, Stroke } from '@/constants/theme';
-import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackFocus } from '@/hooks/use-track-focus';
@@ -307,22 +305,13 @@ export default function Suivi() {
       </View>
     ) : null;
 
-  // « Chargement… » attend `DELAI_AVANT_CHARGEMENT` avant de se dire (`v1-30` §5.8) : au premier
-  // passage sur l'onglet, il clignotait une image avant le suivi.
-  const chargementVisible = useChargementVisible(
-    state.status === 'loading',
-    state.status === 'loading' && state.relance === true
-  );
-
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <BandeHaute />
-          <View style={styles.centered}>
-            {chargementVisible && <ThemedText themeColor="textSecondary">Chargement de ton suivi…</ThemedText>}
-          </View>
-        </SafeAreaView>
+        <View style={styles.centered}>
+          {/* Muette 300 ms : au premier passage sur l'onglet, elle clignotait une image (`v1-30` §5.8). */}
+          <LigneDAttente demandee={state.relance === true}>Chargement de ton suivi…</LigneDAttente>
+        </View>
       </ThemedView>
     );
   }
@@ -332,17 +321,14 @@ export default function Suivi() {
   if (state.status === 'erreur') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <BandeHaute />
-          <View style={styles.centered}>
-            {/* La connexion ne se nomme qu'hors ligne (D19, `phraseDeLaLectureEnEchec`). */}
-            <MessageInline
-              message={phraseDeLaLectureEnEchec('suivi', state.genre)}
-              style={styles.erreurTexte}
-            />
-            <Button title="Réessayer" onPress={reessayerDepuisLErreur} />
-          </View>
-        </SafeAreaView>
+        <View style={styles.centered}>
+          {/* La connexion ne se nomme qu'hors ligne (D19, `phraseDeLaLectureEnEchec`). */}
+          <MessageInline
+            message={phraseDeLaLectureEnEchec('suivi', state.genre)}
+            style={styles.erreurTexte}
+          />
+          <Button title="Réessayer" onPress={reessayerDepuisLErreur} />
+        </View>
       </ThemedView>
     );
   }
@@ -350,33 +336,30 @@ export default function Suivi() {
   if (state.status === 'empty') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <BandeHaute />
-          <View style={styles.emptySafeArea}>
-            {banniereRelecture(true)}
-            <EmptyStateIllustration style={styles.emptyIllustration} />
-            <ThemedText type="screenTitle">
-              Ton suivi commence au premier bilan
-            </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-              C’est lui qui donne le point de départ. Ensuite, tu verras ton empreinte évoluer
-              dans le temps. Environ 5 minutes.
-            </ThemedText>
-            <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
-            {/* **Le même lien que sur l'état sans bilan du plan** (C2.11) : un appareil neuf n'a que
-                ces deux écrans, et l'un comme l'autre n'offrait que « Faire mon bilan » — donc
-                l'invitation à refaire de zéro ce que la personne a déjà fait ailleurs. Son bilan,
-                son plan et ses points sont rattachés à son compte, pas à l'appareil. */}
-            <TextLink
-              label="J’ai déjà un compte"
-              apparence="action"
-              onPress={() =>
-                router.push({ pathname: '/connexion/retrouver', params: { source: 'suivi_vide' } })
-              }
-              role="link"
-            />
-          </View>
-        </SafeAreaView>
+        <View style={styles.emptySafeArea}>
+          {banniereRelecture(true)}
+          <EmptyStateIllustration style={styles.emptyIllustration} />
+          <ThemedText type="screenTitle">
+            Ton suivi commence au premier bilan
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
+            C’est lui qui donne le point de départ. Ensuite, tu verras ton empreinte évoluer
+            dans le temps. Environ 5 minutes.
+          </ThemedText>
+          <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
+          {/* **Le même lien que sur l'état sans bilan du plan** (C2.11) : un appareil neuf n'a que
+              ces deux écrans, et l'un comme l'autre n'offrait que « Faire mon bilan » — donc
+              l'invitation à refaire de zéro ce que la personne a déjà fait ailleurs. Son bilan,
+              son plan et ses points sont rattachés à son compte, pas à l'appareil. */}
+          <TextLink
+            label="J’ai déjà un compte"
+            apparence="action"
+            onPress={() =>
+              router.push({ pathname: '/connexion/retrouver', params: { source: 'suivi_vide' } })
+            }
+            role="link"
+          />
+        </View>
       </ThemedView>
     );
   }
@@ -433,348 +416,343 @@ export default function Suivi() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* Hors du ScrollView : la bande ne défile pas (cf. bande-haute.tsx). */}
-        <BandeHaute />
-        <ScrollView
-          ref={defilement}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Le dire coûte une ligne, et c'est la seule façon de ne pas laisser croire qu'un
-              « Oui » donné à l'instant a été enregistré ici. */}
-          {banniereRelecture()}
-          <View style={styles.intro}>
-            <ThemedText type="screenTitle">
-              Ton suivi
-            </ThemedText>
-            {/* **« Fais un nouveau bilan », et plus « Refais ton bilan »** (01/10/2026, audit R-7) :
-                l'application de `v1-19` D1 à une phrase qu'elle n'avait pas relue — elle venait du
-                canvas `v1-17`, antérieur. « Refaire » laisse croire qu'on efface celui qu'on
-                regarde, sur l'écran même qui montre qu'un bilan s'ajoute. */}
-            <ThemedText type="body" themeColor="textSecondary">
-              {history.length === 1
-                ? 'Ton point de départ. Fais un nouveau bilan quand tes habitudes changent : tu verras l’écart ici.'
-                : `${history.length} bilans depuis le ${formatDate(first.submittedAt)}.`}
-            </ThemedText>
-          </View>
+      <ScrollView
+        ref={defilement}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Le dire coûte une ligne, et c'est la seule façon de ne pas laisser croire qu'un
+            « Oui » donné à l'instant a été enregistré ici. */}
+        {banniereRelecture()}
+        <View style={styles.intro}>
+          <ThemedText type="screenTitle">
+            Ton suivi
+          </ThemedText>
+          {/* **« Fais un nouveau bilan », et plus « Refais ton bilan »** (01/10/2026, audit R-7) :
+              l'application de `v1-19` D1 à une phrase qu'elle n'avait pas relue — elle venait du
+              canvas `v1-17`, antérieur. « Refaire » laisse croire qu'on efface celui qu'on
+              regarde, sur l'écran même qui montre qu'un bilan s'ajoute. */}
+          <ThemedText type="body" themeColor="textSecondary">
+            {history.length === 1
+              ? 'Ton point de départ. Fais un nouveau bilan quand tes habitudes changent : tu verras l’écart ici.'
+              : `${history.length} bilans depuis le ${formatDate(first.submittedAt)}.`}
+          </ThemedText>
+        </View>
 
-          {/* Évolution de l'empreinte — le cœur de l'écran. Chaque bilan est un point de
-              l'histoire de la personne, jamais un classement. */}
+        {/* Évolution de l'empreinte — le cœur de l'écran. Chaque bilan est un point de
+            l'histoire de la personne, jamais un classement. */}
+        <ThemedView type="backgroundElement" style={styles.card}>
+          <ThemedText weight={600} type="small">
+            Ton empreinte transport, bilan après bilan
+          </ThemedText>
+          <View style={styles.bars}>
+            {history.map((snapshot, index) => (
+              // Chaque bilan s'ouvre en relecture (v1-11 flux 3) : l'écran de résultat prend
+              // déjà un identifiant, seul le lien manquait — une entrée de l'historique
+              // qu'on ne peut pas ouvrir est une impasse.
+              //
+              // `Pressable` nu et non `TextLink` : la cible porte trois textes et, dès deux
+              // bilans, une barre, et le libellé annoncé doit les recomposer (cf. CLAUDE.md).
+              //
+              // **Un lien, et une surface qui répond au doigt** (24/09/2026, `v1-29`). La ligne
+              // ouvre un autre écran : `link` et non `button`. Et rien ne répondait au toucher, ce
+              // qui se lit « l'app n'a pas pris mon geste » : la teinte `backgroundPressed` vient
+              // tout de suite, sans animation. La marge négative et le rembourrage égal donnent de
+              // l'air à cette teinte sans déplacer un pixel du contenu.
+              <Pressable
+                key={snapshot.assessmentId}
+                onPress={() =>
+                  router.push({ pathname: '/suivi/bilan', params: { id: snapshot.assessmentId } })
+                }
+                accessibilityRole="link"
+                accessibilityLabel={`Bilan du ${formatDate(snapshot.submittedAt)}, ${formatTonnes(snapshot.totalKg)}`}
+                accessibilityHint="Ouvre le détail de ce bilan"
+                style={({ pressed }) => [
+                  styles.historyRow,
+                  pressed && { backgroundColor: theme.backgroundPressed },
+                ]}
+              >
+                <View style={styles.historyHeader}>
+                  <ThemedText
+                    type="small"
+                    weight={index === history.length - 1 ? 600 : 400}
+                    themeColor={index === history.length - 1 ? 'text' : 'textSecondary'}
+                  >
+                    {formatDate(snapshot.submittedAt)}
+                  </ThemedText>
+                  <ThemedText
+                    type="small"
+                    weight={index === history.length - 1 ? 600 : 400}
+                    themeColor={index === history.length - 1 ? 'text' : 'textSecondary'}
+                    style={styles.chiffres}
+                  >
+                    {formatTonnes(snapshot.totalKg)}
+                  </ThemedText>
+                </View>
+                {barres !== null && (
+                  <View style={[styles.barRail, { backgroundColor: theme.border }]}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        {
+                          width: `${barres[index]}%`,
+                          backgroundColor: index === history.length - 1 ? theme.accent : theme.accentMuted,
+                        },
+                      ]}
+                    />
+                  </View>
+                )}
+                <ThemedText type="small" themeColor="textTertiary">
+                  Poste principal : {posteDeLHistorique(snapshot.dominantPoste, snapshot.dominantLabel)}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+          {previous && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {variationNote(previous.totalKg, latest.totalKg)}
+            </ThemedText>
+          )}
+          {/* **L'horizon 2050, en mots et seulement sous la moyenne** (C2.7, point 7). Le suivi ne
+              le mentionnait nulle part, alors que c'est le seul écran qui montre une trajectoire.
+              Au-dessus de la moyenne, l'écart est un gouffre que rien ne rattrape et le nommer
+              découragerait (`showsTarget2050`) ; en dessous, il tombe à un facteur deux à quatre et
+              redevient crédible. En mots, sans barre et **sans compter les paliers restants** — la
+              clause de fin est celle de `palierNote`, pour que les deux écrans parlent d'une voix.
+              Et sous le repère, la ligne dit qu'on y est, comme la restitution (`ligneDHorizon2050`). */}
+          {horizon2050 !== null && (
+            <ThemedText type="small" themeColor="textTertiary">
+              {horizon2050}
+            </ThemedText>
+          )}
+        </ThemedView>
+
+        {/* **L'écart par poste** (C2.7, point 3, planche D1). Le suivi ne montrait que le total :
+            un effort tenu tout l'hiver sur le trajet quotidien disparaissait derrière un vol de
+            l'été, et rien ne le disait. La comparaison est **poste à poste** — le poste dominant
+            peut changer d'un bilan à l'autre, et c'est le plus souvent une réussite. */}
+        {ecarts !== null && ecarts.length > 0 && (
           <ThemedView type="backgroundElement" style={styles.card}>
             <ThemedText weight={600} type="small">
-              Ton empreinte transport, bilan après bilan
+              Par poste
             </ThemedText>
-            <View style={styles.bars}>
-              {history.map((snapshot, index) => (
-                // Chaque bilan s'ouvre en relecture (v1-11 flux 3) : l'écran de résultat prend
-                // déjà un identifiant, seul le lien manquait — une entrée de l'historique
-                // qu'on ne peut pas ouvrir est une impasse.
-                //
-                // `Pressable` nu et non `TextLink` : la cible porte trois textes et, dès deux
-                // bilans, une barre, et le libellé annoncé doit les recomposer (cf. CLAUDE.md).
-                //
-                // **Un lien, et une surface qui répond au doigt** (24/09/2026, `v1-29`). La ligne
-                // ouvre un autre écran : `link` et non `button`. Et rien ne répondait au toucher, ce
-                // qui se lit « l'app n'a pas pris mon geste » : la teinte `backgroundPressed` vient
-                // tout de suite, sans animation. La marge négative et le rembourrage égal donnent de
-                // l'air à cette teinte sans déplacer un pixel du contenu.
-                <Pressable
-                  key={snapshot.assessmentId}
-                  onPress={() =>
-                    router.push({ pathname: '/suivi/bilan', params: { id: snapshot.assessmentId } })
-                  }
-                  accessibilityRole="link"
-                  accessibilityLabel={`Bilan du ${formatDate(snapshot.submittedAt)}, ${formatTonnes(snapshot.totalKg)}`}
-                  accessibilityHint="Ouvre le détail de ce bilan"
-                  style={({ pressed }) => [
-                    styles.historyRow,
-                    pressed && { backgroundColor: theme.backgroundPressed },
+            <EcartParPoste ecarts={ecarts} loisirsOccasionnels={latest.loisirsOccasionnels} />
+          </ThemedView>
+        )}
+
+        {/* **Ce que la personne a décidé, saison après saison** (C2.7, point 4). Le suivi ne lisait
+            jamais `plan_cycles` ni `plan_actions` : le seul choix personnel que le produit demande
+            — une action, des jours — ne laissait aucune trace passé la saison.
+
+            **Jamais un statut tenu / pas tenu**, et jamais un chiffre présenté comme un résultat
+            obtenu : le produit ne sait pas si l'action a été menée, seulement ce que la personne a
+            répondu aux points, qui vivent dans leur propre carte. C'est une liste de décisions.
+
+            `decisions === null` veut dire « pas lu » : la carte ne s'affiche pas, plutôt que
+            d'affirmer que rien n'a jamais été engagé. */}
+        {decisions !== null && decisions.length > 0 && (
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText weight={600} type="small">
+              Ce que tu as décidé, saison après saison
+            </ThemedText>
+            <View style={styles.decisions}>
+              {decisions.map((decision, index) => (
+                <View
+                  key={decision.cycleId}
+                  style={[
+                    styles.decisionRow,
+                    index > 0 && { borderTopWidth: Stroke.hairline, borderTopColor: theme.border },
                   ]}
                 >
-                  <View style={styles.historyHeader}>
-                    <ThemedText
-                      type="small"
-                      weight={index === history.length - 1 ? 600 : 400}
-                      themeColor={index === history.length - 1 ? 'text' : 'textSecondary'}
-                    >
-                      {formatDate(snapshot.submittedAt)}
-                    </ThemedText>
-                    <ThemedText
-                      type="small"
-                      weight={index === history.length - 1 ? 600 : 400}
-                      themeColor={index === history.length - 1 ? 'text' : 'textSecondary'}
-                      style={styles.chiffres}
-                    >
-                      {formatTonnes(snapshot.totalKg)}
-                    </ThemedText>
-                  </View>
-                  {barres !== null && (
-                    <View style={[styles.barRail, { backgroundColor: theme.border }]}>
-                      <View
-                        style={[
-                          styles.barFill,
-                          {
-                            width: `${barres[index]}%`,
-                            backgroundColor: index === history.length - 1 ? theme.accent : theme.accentMuted,
-                          },
-                        ]}
-                      />
-                    </View>
-                  )}
-                  <ThemedText type="small" themeColor="textTertiary">
-                    Poste principal : {posteDeLHistorique(snapshot.dominantPoste, snapshot.dominantLabel)}
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {decision.periodLabel}
                   </ThemedText>
-                </Pressable>
+                  <ThemedText type="small" weight={600}>
+                    {decision.actionText}
+                  </ThemedText>
+                  {formatIntention(decision.intentionDays, decision.intentionTiming, decision.committedAt) && (
+                    <ThemedText type="small" themeColor="textTertiary">
+                      {formatIntention(decision.intentionDays, decision.intentionTiming, decision.committedAt)}
+                    </ThemedText>
+                  )}
+                </View>
               ))}
             </View>
-            {previous && (
-              <ThemedText type="small" themeColor="textSecondary">
-                {variationNote(previous.totalKg, latest.totalKg)}
-              </ThemedText>
-            )}
-            {/* **L'horizon 2050, en mots et seulement sous la moyenne** (C2.7, point 7). Le suivi ne
-                le mentionnait nulle part, alors que c'est le seul écran qui montre une trajectoire.
-                Au-dessus de la moyenne, l'écart est un gouffre que rien ne rattrape et le nommer
-                découragerait (`showsTarget2050`) ; en dessous, il tombe à un facteur deux à quatre et
-                redevient crédible. En mots, sans barre et **sans compter les paliers restants** — la
-                clause de fin est celle de `palierNote`, pour que les deux écrans parlent d'une voix.
-                Et sous le repère, la ligne dit qu'on y est, comme la restitution (`ligneDHorizon2050`). */}
-            {horizon2050 !== null && (
+          </ThemedView>
+        )}
+
+        {/* Période calme : la personne a des bilans mais aucun point de suivi répondu. Jusqu'ici
+            l'écran ne montrait rien du tout à cet endroit, ce qui se lit comme un manque —
+            alors que c'est exactement le contraire qu'il faut dire. Yeux clos, registre
+            paisible (canvas docs/design/v1-08-mascotte, artboard « États calmes »).
+
+            La maquette annonçait « ton prochain point arrive lundi » : on ne le dit pas, la
+            cadence dépend de la boucle (hebdomadaire pour le domicile-travail, mensuelle pour
+            les extras) et une date fausse serait pire que pas de date. C'est ce qui distingue
+            cette carte de celle du plan, qui *peut* nommer le jour parce qu'elle sait de
+            quelle boucle il s'agit (v1-12 §6.2).
+
+            **Et sans boucle, elle ne parle pas de réponses** (décision du 30/09/2026, `v1-27`
+            §12.23) : « Je note tes réponses ici » et la note sur les périodes sans réponse
+            s'adressaient, à chaque visite, à qui n'en aura jamais. `carteDuSuiviSansPoint`
+            choisit la ligne et la note ; la carte, elle, reste. */}
+        {checkins.length === 0 && (
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <View style={styles.checkinsHeader}>
+              <Mascot mood="resting" size={40} />
+              <View style={styles.checkinsHeaderText}>
+                <ThemedText weight={600}>{sansPoint.ligne}</ThemedText>
+              </View>
+            </View>
+            {sansPoint.note && (
               <ThemedText type="small" themeColor="textTertiary">
-                {horizon2050}
+                {sansPoint.note}
               </ThemedText>
             )}
           </ThemedView>
+        )}
 
-          {/* **L'écart par poste** (C2.7, point 3, planche D1). Le suivi ne montrait que le total :
-              un effort tenu tout l'hiver sur le trajet quotidien disparaissait derrière un vol de
-              l'été, et rien ne le disait. La comparaison est **poste à poste** — le poste dominant
-              peut changer d'un bilan à l'autre, et c'est le plus souvent une réussite. */}
-          {ecarts !== null && ecarts.length > 0 && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText weight={600} type="small">
-                Par poste
-              </ThemedText>
-              <EcartParPoste ecarts={ecarts} loisirsOccasionnels={latest.loisirsOccasionnels} />
-            </ThemedView>
-          )}
+        {/* **Ce que la personne a fait, jamais ce qu'elle a manqué** — et depuis C2.7, groupé par
+            saison (point 5, planche D2).
 
-          {/* **Ce que la personne a décidé, saison après saison** (C2.7, point 4). Le suivi ne lisait
-              jamais `plan_cycles` ni `plan_actions` : le seul choix personnel que le produit demande
-              — une action, des jours — ne laissait aucune trace passé la saison.
+            Trois choses réparées ici. La liste était coupée à **huit en silence**, sous un
+            compteur global qui en annonçait davantage : chaque groupe porte maintenant son vrai
+            total, et la troncature est visible et réversible. L'écran affirmait « Tu réponds
+            régulièrement : c'est déjà ça qui compte. » **dès le premier point** — une phrase
+            fausse, et condescendante quand elle est vraie. Et une mascotte souriante trônait
+            au-dessus de ce qui peut être une colonne de « Pas cette fois » : le canvas l'a
+            retirée, elle revient en bas de l'écran, `calm`, et seulement quand il y a une
+            différence à voir.
 
-              **Jamais un statut tenu / pas tenu**, et jamais un chiffre présenté comme un résultat
-              obtenu : le produit ne sait pas si l'action a été menée, seulement ce que la personne a
-              répondu aux points, qui vivent dans leur propre carte. C'est une liste de décisions.
-
-              `decisions === null` veut dire « pas lu » : la carte ne s'affiche pas, plutôt que
-              d'affirmer que rien n'a jamais été engagé. */}
-          {decisions !== null && decisions.length > 0 && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText weight={600} type="small">
-                Ce que tu as décidé, saison après saison
-              </ThemedText>
-              <View style={styles.decisions}>
-                {decisions.map((decision, index) => (
-                  <View
-                    key={decision.cycleId}
-                    style={[
-                      styles.decisionRow,
-                      index > 0 && { borderTopWidth: Stroke.hairline, borderTopColor: theme.border },
-                    ]}
-                  >
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {decision.periodLabel}
-                    </ThemedText>
-                    <ThemedText type="small" weight={600}>
-                      {decision.actionText}
-                    </ThemedText>
-                    {formatIntention(decision.intentionDays, decision.intentionTiming, decision.committedAt) && (
-                      <ThemedText type="small" themeColor="textTertiary">
-                        {formatIntention(decision.intentionDays, decision.intentionTiming, decision.committedAt)}
-                      </ThemedText>
-                    )}
-                  </View>
-                ))}
-              </View>
-            </ThemedView>
-          )}
-
-          {/* Période calme : la personne a des bilans mais aucun point de suivi répondu. Jusqu'ici
-              l'écran ne montrait rien du tout à cet endroit, ce qui se lit comme un manque —
-              alors que c'est exactement le contraire qu'il faut dire. Yeux clos, registre
-              paisible (canvas docs/design/v1-08-mascotte, artboard « États calmes »).
-
-              La maquette annonçait « ton prochain point arrive lundi » : on ne le dit pas, la
-              cadence dépend de la boucle (hebdomadaire pour le domicile-travail, mensuelle pour
-              les extras) et une date fausse serait pire que pas de date. C'est ce qui distingue
-              cette carte de celle du plan, qui *peut* nommer le jour parce qu'elle sait de
-              quelle boucle il s'agit (v1-12 §6.2).
-
-              **Et sans boucle, elle ne parle pas de réponses** (décision du 30/09/2026, `v1-27`
-              §12.23) : « Je note tes réponses ici » et la note sur les périodes sans réponse
-              s'adressaient, à chaque visite, à qui n'en aura jamais. `carteDuSuiviSansPoint`
-              choisit la ligne et la note ; la carte, elle, reste. */}
-          {checkins.length === 0 && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <View style={styles.checkinsHeader}>
-                <Mascot mood="resting" size={40} />
-                <View style={styles.checkinsHeaderText}>
-                  <ThemedText weight={600}>{sansPoint.ligne}</ThemedText>
-                </View>
-              </View>
-              {sansPoint.note && (
-                <ThemedText type="small" themeColor="textTertiary">
-                  {sansPoint.note}
-                </ThemedText>
-              )}
-            </ThemedView>
-          )}
-
-          {/* **Ce que la personne a fait, jamais ce qu'elle a manqué** — et depuis C2.7, groupé par
-              saison (point 5, planche D2).
-
-              Trois choses réparées ici. La liste était coupée à **huit en silence**, sous un
-              compteur global qui en annonçait davantage : chaque groupe porte maintenant son vrai
-              total, et la troncature est visible et réversible. L'écran affirmait « Tu réponds
-              régulièrement : c'est déjà ça qui compte. » **dès le premier point** — une phrase
-              fausse, et condescendante quand elle est vraie. Et une mascotte souriante trônait
-              au-dessus de ce qui peut être une colonne de « Pas cette fois » : le canvas l'a
-              retirée, elle revient en bas de l'écran, `calm`, et seulement quand il y a une
-              différence à voir.
-
-              **Les trois libellés sont au même niveau typographique** : un « Changement fait » en
-              accent au-dessus d'un « Pas cette fois » en tertiaire classait les réponses, alors que
-              la troisième n'est pas un échec et que la seconde n'en est pas un non plus. La
-              reconnaissance vit dans le compteur et dans le mot de Ramille, pas dans la couleur
-              d'une ligne. */}
-          {checkins.length > 0 && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText weight={600} type="small">
-                Tes points
-              </ThemedText>
-              <ThemedText weight={600}>
-                {answeredYes === 0
-                  ? `${checkins.length} point${checkins.length > 1 ? 's' : ''} répondu${checkins.length > 1 ? 's' : ''}`
-                  : `${answeredYes} fois où tu as changé quelque chose`}
-              </ThemedText>
-              {/* Voix produit, et une attribution plutôt qu'un encouragement : ce n'est pas le
-                  produit qui a fait le trajet. */}
-              {answeredYes > 0 && (
-                <ThemedText type="small" themeColor="textSecondary">
-                  Ces fois-là, c’est toi qui as choisi le trajet.
-                </ThemedText>
-              )}
-              {groupes.map((groupe) => {
-                const deplie = groupesDeplies.includes(groupe.libelle);
-                const visibles = deplie ? groupe.points : groupe.points.slice(0, POINTS_VISIBLES);
-                return (
-                  <View key={groupe.libelle} style={styles.groupe}>
-                    <View style={styles.groupeEntete}>
-                      <ThemedText type="small" weight={600}>
-                        {groupe.libelle}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textTertiary" style={styles.chiffres}>
-                        {groupe.points.length} point{groupe.points.length > 1 ? 's' : ''}
-                      </ThemedText>
-                    </View>
-                    <View style={styles.checkinList}>
-                      {visibles.map((checkin) => (
-                        <View key={checkin.id} style={styles.checkinRow}>
-                          <ThemedText
-                            type="small"
-                            themeColor="textSecondary"
-                            style={styles.checkinPeriod}
-                          >
-                            {LOOP_LABEL[checkin.loopType]} ·{' '}
-                            {libellePeriodeAffiche(checkin.periodLabel, checkin.periodStart)}
-                          </ThemedText>
-                          <ThemedText type="small" weight={600} themeColor="textSecondary">
-                            {libelleDeReponse(checkin.reponse)}
-                          </ThemedText>
-                        </View>
-                      ))}
-                    </View>
-                    {/* **Le lien dit qu'il déplie** (24/09/2026, `v1-29`) : « Voir tout » s'annonçait
-                        comme un bouton quelconque, sans rien dire de l'état du groupe. `expanded`
-                        donne cet état à `TextLink`, à qui il revient de le faire dire « réduit » ou
-                        « développé » au lecteur d'écran — la même prop que le bloc de méthode. */}
-                    {groupe.points.length > POINTS_VISIBLES && (
-                      <TextLink
-                        label={deplie ? 'Replier' : 'Voir tout'}
-                        apparence="action"
-                        onPress={() => basculerLeGroupe(groupe.libelle)}
-                        expanded={deplie}
-                      />
-                    )}
-                  </View>
-                );
-              })}
-            </ThemedView>
-          )}
-
-          {/* **Elle ne se dit que sur une baisse réelle** (C2.7, point 1). Posée en bas et non au
-              sommet de la carte des points : elle constate un écart entre deux bilans, pas une
-              colonne de réponses — et jamais collée au total, qui est un chiffre lourd. Elle ne dit
-              ni le pourcentage ni les kilos ; les deux sont au-dessus, en voix produit. */}
-          {baisse && (
-            <RamilleDit ligne={RAMILLE.suiviDifference} mood="calm" size={36} themeColor="text" />
-          )}
-
-          {phraseRebilan !== null && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              {/* **Le titre dit ce qui a déclenché la carte, et pas toujours l'âge** (contre-lecture
-                  du 19/09/2026). Il disait l'âge en toutes circonstances, par la dérivation partagée
-                  avec le plan — ce qui était juste tant que le déclencheur tenait à 182 jours. Depuis
-                  que C6.3 compte en **bascules de saison**, un bilan de la veille d'une bascule se
-                  propose : le titre annonçait alors « Ton dernier bilan a moins d'un mois » au-dessus
-                  d'une invitation à en refaire un. `titreDuRebilan` donne à chaque régime ce qu'il
-                  peut dire de vrai, et l'âge ne revient qu'à partir de deux bascules, où il vaut au
-                  moins trois mois. */}
-              <ThemedText weight={600} type="small">
-                {titreRebilan}
-              </ThemedText>
+            **Les trois libellés sont au même niveau typographique** : un « Changement fait » en
+            accent au-dessus d'un « Pas cette fois » en tertiaire classait les réponses, alors que
+            la troisième n'est pas un échec et que la seconde n'en est pas un non plus. La
+            reconnaissance vit dans le compteur et dans le mot de Ramille, pas dans la couleur
+            d'une ligne. */}
+        {checkins.length > 0 && (
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText weight={600} type="small">
+              Tes points
+            </ThemedText>
+            <ThemedText weight={600}>
+              {answeredYes === 0
+                ? `${checkins.length} point${checkins.length > 1 ? 's' : ''} répondu${checkins.length > 1 ? 's' : ''}`
+                : `${answeredYes} fois où tu as changé quelque chose`}
+            </ThemedText>
+            {/* Voix produit, et une attribution plutôt qu'un encouragement : ce n'est pas le
+                produit qui a fait le trajet. */}
+            {answeredYes > 0 && (
               <ThemedText type="small" themeColor="textSecondary">
-                {phraseRebilan}
+                Ces fois-là, c’est toi qui as choisi le trajet.
               </ThemedText>
-              {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1). Aucun bilan
-                  n'est jamais effacé : chaque soumission est une ligne de plus, l'historique
-                  ci-dessus les montre toutes, et `emission_factor(mode_id, date)` garde chacune
-                  reproductible aux facteurs de sa date. Le texte juste au-dessus disait déjà la
-                  bonne chose — une actualisation — pendant que le bouton disait l'inverse, à deux
-                  lignes d'écart. */}
-              <Button title="Faire un nouveau bilan" onPress={() => router.push('/bilan')} />
-            </ThemedView>
-          )}
+            )}
+            {groupes.map((groupe) => {
+              const deplie = groupesDeplies.includes(groupe.libelle);
+              const visibles = deplie ? groupe.points : groupe.points.slice(0, POINTS_VISIBLES);
+              return (
+                <View key={groupe.libelle} style={styles.groupe}>
+                  <View style={styles.groupeEntete}>
+                    <ThemedText type="small" weight={600}>
+                      {groupe.libelle}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textTertiary" style={styles.chiffres}>
+                      {groupe.points.length} point{groupe.points.length > 1 ? 's' : ''}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.checkinList}>
+                    {visibles.map((checkin) => (
+                      <View key={checkin.id} style={styles.checkinRow}>
+                        <ThemedText
+                          type="small"
+                          themeColor="textSecondary"
+                          style={styles.checkinPeriod}
+                        >
+                          {LOOP_LABEL[checkin.loopType]} ·{' '}
+                          {libellePeriodeAffiche(checkin.periodLabel, checkin.periodStart)}
+                        </ThemedText>
+                        <ThemedText type="small" weight={600} themeColor="textSecondary">
+                          {libelleDeReponse(checkin.reponse)}
+                        </ThemedText>
+                      </View>
+                    ))}
+                  </View>
+                  {/* **Le lien dit qu'il déplie** (24/09/2026, `v1-29`) : « Voir tout » s'annonçait
+                      comme un bouton quelconque, sans rien dire de l'état du groupe. `expanded`
+                      donne cet état à `TextLink`, à qui il revient de le faire dire « réduit » ou
+                      « développé » au lecteur d'écran — la même prop que le bloc de méthode. */}
+                  {groupe.points.length > POINTS_VISIBLES && (
+                    <TextLink
+                      label={deplie ? 'Replier' : 'Voir tout'}
+                      apparence="action"
+                      onPress={() => basculerLeGroupe(groupe.libelle)}
+                      expanded={deplie}
+                    />
+                  )}
+                </View>
+              );
+            })}
+          </ThemedView>
+        )}
 
-        </ScrollView>
+        {/* **Elle ne se dit que sur une baisse réelle** (C2.7, point 1). Posée en bas et non au
+            sommet de la carte des points : elle constate un écart entre deux bilans, pas une
+            colonne de réponses — et jamais collée au total, qui est un chiffre lourd. Elle ne dit
+            ni le pourcentage ni les kilos ; les deux sont au-dessus, en voix produit. */}
+        {baisse && (
+          <RamilleDit ligne={RAMILLE.suiviDifference} mood="calm" size={36} themeColor="text" />
+        )}
 
-        {/* **Le pied a porté un lien vers le questionnaire, il n'en porte plus** (C6.1,
-            `v1-19` D2). Il ne se rendait que sous `!suggestRebilan` : le produit proposait donc un
-            nouveau bilan **précisément quand il avait décidé de ne pas le suggérer**, et les deux
-            régimes se complétaient pour qu'il y ait toujours une offre à l'écran. Ce n'était pas un
-            rythme, c'était une offre permanente sous deux formes.
+        {phraseRebilan !== null && (
+          <ThemedView type="backgroundElement" style={styles.card}>
+            {/* **Le titre dit ce qui a déclenché la carte, et pas toujours l'âge** (contre-lecture
+                du 19/09/2026). Il disait l'âge en toutes circonstances, par la dérivation partagée
+                avec le plan — ce qui était juste tant que le déclencheur tenait à 182 jours. Depuis
+                que C6.3 compte en **bascules de saison**, un bilan de la veille d'une bascule se
+                propose : le titre annonçait alors « Ton dernier bilan a moins d'un mois » au-dessus
+                d'une invitation à en refaire un. `titreDuRebilan` donne à chaque régime ce qu'il
+                peut dire de vrai, et l'âge ne revient qu'à partir de deux bascules, où il vaut au
+                moins trois mois. */}
+            <ThemedText weight={600} type="small">
+              {titreRebilan}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {phraseRebilan}
+            </ThemedText>
+            {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1). Aucun bilan
+                n'est jamais effacé : chaque soumission est une ligne de plus, l'historique
+                ci-dessus les montre toutes, et `emission_factor(mode_id, date)` garde chacune
+                reproductible aux facteurs de sa date. Le texte juste au-dessus disait déjà la
+                bonne chose — une actualisation — pendant que le bouton disait l'inverse, à deux
+                lignes d'écart. */}
+            <Button title="Faire un nouveau bilan" onPress={() => router.push('/bilan')} />
+          </ThemedView>
+        )}
 
-            **Le rendre inconditionnel n'aurait rien réglé** — c'est l'erreur qu'a rattrapée la
-            contre-lecture de ce chantier : le lien aurait toujours été là, et deux fois quand la
-            carte s'affiche. Ce qui manquait n'était pas la symétrie, c'était le silence : le suivi
-            se regarde sans qu'on y propose quoi que ce soit, et l'insistance vient de la carte
-            ci-dessus **quand elle a une raison de venir**.
+      </ScrollView>
 
-            **Le chemin, lui, ne disparaît pas** (`v1-19` D6 n'impose rien) : la restitution d'un
-            bilan porte « Faire un nouveau bilan » en permanence, à un toucher d'ici, et c'est sa
-            place — on y a justement un bilan sous les yeux. Le canal de retour et le compte avaient
-            déjà rejoint l'écran « Toi » (v1-11 §2.5) ; ce lien parti, le bandeau n'a plus rien à
-            porter et s'en va avec, styles compris. */}
-      </SafeAreaView>
+      {/* **Le pied a porté un lien vers le questionnaire, il n'en porte plus** (C6.1,
+          `v1-19` D2). Il ne se rendait que sous `!suggestRebilan` : le produit proposait donc un
+          nouveau bilan **précisément quand il avait décidé de ne pas le suggérer**, et les deux
+          régimes se complétaient pour qu'il y ait toujours une offre à l'écran. Ce n'était pas un
+          rythme, c'était une offre permanente sous deux formes.
+
+          **Le rendre inconditionnel n'aurait rien réglé** — c'est l'erreur qu'a rattrapée la
+          contre-lecture de ce chantier : le lien aurait toujours été là, et deux fois quand la
+          carte s'affiche. Ce qui manquait n'était pas la symétrie, c'était le silence : le suivi
+          se regarde sans qu'on y propose quoi que ce soit, et l'insistance vient de la carte
+          ci-dessus **quand elle a une raison de venir**.
+
+          **Le chemin, lui, ne disparaît pas** (`v1-19` D6 n'impose rien) : la restitution d'un
+          bilan porte « Faire un nouveau bilan » en permanence, à un toucher d'ici, et c'est sa
+          place — on y a justement un bilan sous les yeux. Le canal de retour et le compte avaient
+          déjà rejoint l'écran « Toi » (v1-11 §2.5) ; ce lien parti, le bandeau n'a plus rien à
+          porter et s'en va avec, styles compris. */}
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   // Largeur maximale du contenu, comme les pages légales et les écrans de compte (A5-21).
   // Sur un écran large, les barres de 14 px s'étiraient sur toute la fenêtre et les lignes de

@@ -1,10 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BandeHaute } from '@/components/bande-haute';
 import { Button } from '@/components/button';
+import { LigneDAttente } from '@/components/ligne-d-attente';
 import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
@@ -634,27 +633,24 @@ export default function BilanResultat() {
     setState({ status: 'retire', submittedAt, vientDeRetirer: true });
   };
 
-  // **Le chargement et l'erreur gardent le cadre de l'écran prêt** (01/10/2026, audit R-9) : la même
-  // `SafeAreaView` sans bord bas, la bande haute, puis une zone centrée — la forme de
-  // `suivi/index.tsx`. Ils n'avaient qu'un texte centré : la bande arrivait avec le contenu, d'un
-  // saut de 52 px, et la ligne se posait plus haut que celle du suivi. À la sortie du questionnaire,
-  // trois mises en page se suivaient pour une seule arrivée.
+  // **Le chargement et l'erreur gardent le cadre de l'écran prêt** (01/10/2026, audit R-9) : une zone
+  // centrée, la forme de `suivi/index.tsx`. Ils n'avaient qu'un texte centré, sans la bande : elle
+  // arrivait avec le contenu, d'un saut de 52 px. **Depuis le 03/10/2026, la bande et la zone sûre ne
+  // sont plus à l'écran** (`v1-33` T-13) : la pile les rend une fois (`CadreDOnglet`, `_layout.tsx`),
+  // donc aucun état ne peut plus les oublier.
   //
-  // **La ligne reste immédiate** : cet écran n'attend pas le délai de `useChargementVisible`, et
-  // c'est décidé (`v1-30` §5.8) — le HTML statique la porte, et la garde D de
-  // `verifier-etats-export.mjs` la lit.
+  // **La ligne reste immédiate** (`immediate`) : cet écran n'attend pas le délai des autres, et c'est
+  // décidé (`v1-30` §5.8) — le HTML statique la porte, et la garde D de `verifier-etats-export.mjs`
+  // la lit.
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <BandeHaute />
-          <View style={styles.centered}>
-            {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
-                lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
-                écran ne fait que le relire, y compris juste après le questionnaire (A3-16). */}
-            <ThemedText themeColor="textSecondary">Chargement de ton bilan…</ThemedText>
-          </View>
-        </SafeAreaView>
+        <View style={styles.centered}>
+          {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
+              lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
+              écran ne fait que le relire, y compris juste après le questionnaire (A3-16). */}
+          <LigneDAttente immediate>Chargement de ton bilan…</LigneDAttente>
+        </View>
       </ThemedView>
     );
   }
@@ -668,21 +664,18 @@ export default function BilanResultat() {
   if (state.status === 'error') {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <BandeHaute />
-          <View style={styles.centered}>
-            <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
-              Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
-            </ThemedText>
-            <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
-            <TextLink
-              label="Revenir à mon suivi"
-              apparence="action"
-              onPress={() => router.replace('/suivi')}
-              role="link"
-            />
-          </View>
-        </SafeAreaView>
+        <View style={styles.centered}>
+          <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
+            Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
+          </ThemedText>
+          <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
+          <TextLink
+            label="Revenir à mon suivi"
+            apparence="action"
+            onPress={() => router.replace('/suivi')}
+            role="link"
+          />
+        </View>
       </ThemedView>
     );
   }
@@ -698,34 +691,31 @@ export default function BilanResultat() {
     );
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <BandeHaute />
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.enTete}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.enTete}>
+            <ThemedText type="small" themeColor="textTertiary">
+              Ton bilan transport
+            </ThemedText>
+            {state.submittedAt && (
               <ThemedText type="small" themeColor="textTertiary">
-                Ton bilan transport
+                Bilan du {formatDate(state.submittedAt)}
               </ThemedText>
-              {state.submittedAt && (
-                <ThemedText type="small" themeColor="textTertiary">
-                  Bilan du {formatDate(state.submittedAt)}
-                </ThemedText>
-              )}
-            </View>
-            {/* Le focus sur le titre **seulement quand l'état arrive sous le doigt** : le bouton
-                pressé vient de disparaître avec la restitution, et le focus avec lui. Ouvert par un
-                favori, l'écran ne le vole à personne (`TitreDArrivee`). */}
-            {state.vientDeRetirer ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
-            <ThemedText themeColor="textSecondary">{BILAN_RETIRE.corps}</ThemedText>
-            <TextLink
-              label={BILAN_RETIRE.sortie}
-              apparence="action"
-              // Une destination, pas un dépilement — la règle de « Revenir à mon suivi » plus bas.
-              onPress={() => router.replace('/suivi')}
-              role="link"
-              style={styles.editLink}
-            />
-          </ScrollView>
-        </SafeAreaView>
+            )}
+          </View>
+          {/* Le focus sur le titre **seulement quand l'état arrive sous le doigt** : le bouton
+              pressé vient de disparaître avec la restitution, et le focus avec lui. Ouvert par un
+              favori, l'écran ne le vole à personne (`TitreDArrivee`). */}
+          {state.vientDeRetirer ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
+          <ThemedText themeColor="textSecondary">{BILAN_RETIRE.corps}</ThemedText>
+          <TextLink
+            label={BILAN_RETIRE.sortie}
+            apparence="action"
+            // Une destination, pas un dépilement — la règle de « Revenir à mon suivi » plus bas.
+            onPress={() => router.replace('/suivi')}
+            role="link"
+            style={styles.editLink}
+          />
+        </ScrollView>
       </ThemedView>
     );
   }
@@ -799,504 +789,499 @@ export default function BilanResultat() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* Même bande que les deux onglets : elle ne défile pas, et c'est là que viendra le
-            bouton retour dont iOS aura besoin sur cet écran de détail. */}
-        <BandeHaute />
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {banniere === 'anonyme' && (
-            <Pressable
-              // Sans `id` : `/connexion` ne lit plus le résultat du bilan.
-              onPress={() => router.push({ pathname: '/connexion', params: { source: 'resultat_cta' } })}
-              // La bannière porte deux textes mais un seul geste : sans libellé explicite, un
-              // lecteur d'écran les annoncerait l'un après l'autre sans dire qu'il s'agit d'une
-              // seule cible. Le libellé les recompose en une phrase.
-              accessibilityRole="link"
-              // « Le garder » supposait qu'il pouvait se perdre là où il est déjà en base, et
-              // « enregistré » disait la mauvaise chose : ce qui est vrai, c'est qu'il n'est
-              // accessible que d'ici. Un fait, pas une menace — et l'action dit ce qu'elle fait.
-              accessibilityLabel="Ce bilan n’est accessible que depuis cet appareil. Le retrouver ailleurs, en rattachant un compte."
-              // La surface répond au doigt (24/09/2026, `v1-29`) : la teinte `backgroundPressed`,
-              // tout de suite et sans animation — rien ne disait que le geste avait été pris.
-              style={({ pressed }) => [
-                styles.banner,
-                { backgroundColor: pressed ? theme.backgroundPressed : theme.backgroundElement },
-              ]}
-            >
-              <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
-                Ce bilan n’est accessible que depuis cet appareil.
-              </ThemedText>
-              <ThemedText type="small" weight={600} themeColor="accentText">
-                Le retrouver ailleurs
-              </ThemedText>
-            </Pressable>
-          )}
-
-          <View style={styles.enTete}>
-            <ThemedText type="small" themeColor="textTertiary">
-              Ton bilan transport
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {banniere === 'anonyme' && (
+          <Pressable
+            // Sans `id` : `/connexion` ne lit plus le résultat du bilan.
+            onPress={() => router.push({ pathname: '/connexion', params: { source: 'resultat_cta' } })}
+            // La bannière porte deux textes mais un seul geste : sans libellé explicite, un
+            // lecteur d'écran les annoncerait l'un après l'autre sans dire qu'il s'agit d'une
+            // seule cible. Le libellé les recompose en une phrase.
+            accessibilityRole="link"
+            // « Le garder » supposait qu'il pouvait se perdre là où il est déjà en base, et
+            // « enregistré » disait la mauvaise chose : ce qui est vrai, c'est qu'il n'est
+            // accessible que d'ici. Un fait, pas une menace — et l'action dit ce qu'elle fait.
+            accessibilityLabel="Ce bilan n’est accessible que depuis cet appareil. Le retrouver ailleurs, en rattachant un compte."
+            // La surface répond au doigt (24/09/2026, `v1-29`) : la teinte `backgroundPressed`,
+            // tout de suite et sans animation — rien ne disait que le geste avait été pris.
+            style={({ pressed }) => [
+              styles.banner,
+              { backgroundColor: pressed ? theme.backgroundPressed : theme.backgroundElement },
+            ]}
+          >
+            <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
+              Ce bilan n’est accessible que depuis cet appareil.
             </ThemedText>
-            {/* **La date, en relecture seulement** (A3-15). Rien ne distinguait à l'écran un
-                bilan d'aujourd'hui d'un bilan d'il y a un an : mêmes cartes, mêmes barres, même
-                « Estimation annuelle » — sur le seul écran du produit qui matérialise le passé.
-                Après le questionnaire elle n'apprendrait rien, c'est aujourd'hui. */}
-            {mode === 'relecture' && submittedAt && (
-              <ThemedText type="small" themeColor="textTertiary">
-                Bilan du {formatDate(submittedAt)}
-              </ThemedText>
-            )}
-          </View>
-
-          <ThemedView type="backgroundSelected" style={styles.dominantCard}>
-            {hasEmissions ? (
-              <>
-                {/* **« Le déplacement qui pèse le plus » était faux quand le départage joue**
-                    (24/09/2026, `v1-29`) : à 5 % près le serveur retient le poste le plus régulier,
-                    et le profil de la recette voyait le domicile-travail (1,9 t) coiffé de cette
-                    étiquette au-dessus d'une barre de voyages à 2,0 t. L'étiquette se dérive des
-                    mêmes kilos que les barres ci-dessous — rien n'est recalculé ici. */}
-                <ThemedText type="small" weight={600} themeColor="accentText">
-                  {etiquetteDuPosteDominant(results)}
-                </ThemedText>
-                {/* **Le type `display`, et plus un `subtitle` surchargé** (24/09/2026, `v1-29`) :
-                    32/38/−0,64 y était recopié à la main. Il s'annonce en en-tête de **niveau 1**, le
-                    défaut du type, et c'est juste ici : l'écran n'en a pas d'autre — « Ramille », dans
-                    la bande haute, n'est plus un en-tête depuis le 24/09/2026, et les intitulés des
-                    cartes n'en sont pas. C'est le titre de ce qu'on vient lire. */}
-                <ThemedText type="display">{dominantHeadline(results)}</ThemedText>
-                <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
-                  {`${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`}
-                </ThemedText>
-              </>
-            ) : (
-              // **Profil sans émission : tout le haut de carte change** (A3-14). Le SQL force
-              // `dominant_poste = 'commute'` par défaut quand le total est nul, si bien que le
-              // seul écran de félicitation du produit s'ouvrait sur « Le déplacement qui pèse le
-              // plus / Ton trajet domicile-travail » — une désignation de coupable qui n'existe
-              // pas, contredite deux lignes plus bas par la mascotte. Intitulé neutre, et plus
-              // de `dominantHeadline` du tout.
-              //
-              // La phrase est à elle (A3-13) : elle vivait ici, à la deuxième personne, donc
-              // hors du test qui garde sa voix. Aucun chiffre n'est affiché dans cette branche de
-              // la carte, donc la mascotte n'est jamais à côté d'un chiffre lourd. **Depuis D9 le
-              // total est juste dessous**, et la règle tient quand même : cette branche n'existe que
-              // pour un total de zéro (`bilanSansEmissions`, `<= 0`), donc son voisin dit « 0 kg
-              // CO₂e » — le contraire d'un chiffre lourd. Si la borne s'élargissait à « presque
-              // rien », la règle serait à relire.
-              <>
-                <ThemedText type="small" weight={600} themeColor="accentText">
-                  Ton bilan
-                </ThemedText>
-                <RamilleDit ligne={RAMILLE.bilanQuasiNul} mood="happy" size={36} />
-              </>
-            )}
-          </ThemedView>
-
-          {/* **Le total vient juste après la carte dominante** (décision D9 du 01/10/2026, audit R-1).
-              La répartition par poste s'était glissée entre les deux, sans qu'aucun document ne l'ait
-              décidé : le handoff donne l'ordre « carte dominante, total *après la carte*, Où tu te
-              situes » (`docs/design/README.md`, Restitution), et la planche E du canvas de `v1-14` pose
-              le total sous la carte. Mesuré à 390 × 844 à la sortie du questionnaire (session anonyme,
-              bannière de compte en tête) : le chiffre se rendait à 766–802 px, **sous le pied collant,
-              qui commence à 758** — au premier regard, une phrase de compte, une étiquette, un titre,
-              puis trois barres, et le seul chiffre saillant de l'écran hors champ ; la personne prenait
-              la part d'un poste pour son résultat. Il se rend à 526–562, au-dessus du pied, sans qu'un
-              mot ait changé. **Ce que l'ordre coûte, et c'est décidé** : la lecture « les postes, puis
-              leur somme » — une addition qu'on voit se faire — disparaît, et la répartition passe sous
-              le pli. Le bloc porte aussi la méthode et la contestation (ci-dessous) : il grandit
-              d'environ cent pixels, tous sous le chiffre. */}
-          <View style={styles.totalBlock}>
-            <ThemedText type="small" themeColor="textTertiary">
-              Estimation annuelle, tous déplacements
+            <ThemedText type="small" weight={600} themeColor="accentText">
+              Le retrouver ailleurs
             </ThemedText>
-            {/* **Le jeton, pas une recopie** (A3-22). Le chiffre le plus important du produit
-                redéclarait 26 / 32 à la main, c'est-à-dire exactement `TypeScale.screen` — le
-                jeton des *titres d'écran*. `salient` est celui des chiffres saillants (ce total, le
-                cap de la saison sur le plan) : il vaut 30, et la hiérarchie tient puisque la
-                décision dominante reste au-dessus, à 32. L'écart entre deux bilans, que
-                `theme.ts` range encore parmi eux, se dit ici dans une phrase en `body`, sous les
-                barres (`v1-14` §5) — aucun écran ne l'écrit en `salient`. */}
-            <ThemedText type="salient" style={styles.chiffres}>
-              {formatTonnes(results.total_co2_kg_year)}
-            </ThemedText>
-            {/* **La question « d'où vient ce chiffre ? » se pose ici et nulle part ailleurs**
-                (C3.2). Sous le total, replié, parce que c'est le moment où elle naît — et parce
-                que ce total ne se compare à aucun autre simulateur sans savoir qu'il compte la
-                fabrication. La date passée est celle de **soumission** : c'est elle qui fige les
-                facteurs (`emission_factor(mode, date)`), donc elle qui date la méthode. */}
-            <BlocMethode dateDuBilan={submittedAt} />
-            {/* **Le seul endroit où un chiffre se conteste** (C3.9, constat A6-9). La restitution
-                affiche une empreinte calculée à partir de moyennes nationales et de réponses
-                approchées : quelqu'un qui connaît son trajet mieux que nous doit pouvoir le dire
-                là où il lit le résultat, pas dans un écran de retour qu'il faudrait aller
-                chercher. La catégorie est **préremplie et modifiable** — c'est la personne qui
-                sait si c'est un chiffre, un mode manquant ou autre chose. Le contexte part avec :
-                sans l'identifiant du bilan, un retour sur un chiffre n'est pas exploitable.
-
-                **Sous le total, après sa méthode, depuis le 01/10/2026** (décision D11, audit R-3). Ce
-                lien et celui du retrait fermaient la page, à ≈ 650 px du chiffre qu'ils contestent :
-                à cette distance « Un chiffre me semble faux » se rapportait à la pile de liens et non
-                au total, et les deux derniers liens lus avant le pas suivant étaient deux façons de
-                désavouer son bilan. La fin de la page est désormais la phrase du cap, le partage et un
-                nouveau bilan. **Ce que ça coûte, et c'est décidé** : posée sous le chiffre, la
-                contestation peut se lire comme une invitation à douter au moment même où il apparaît.
-                L'ordre en tient compte : la méthode d'abord, qui répond à « d'où vient ce chiffre ? »,
-                puis ces deux liens pour qui n'est pas convaincu. Alignés à gauche comme la méthode, et
-                aucun libellé n'a changé. */}
-            <TextLink
-              label="Un chiffre me semble faux"
-              // Souligné (`v1-33` T-5) : la méthode dépliée finit juste au-dessus, du même gris au même corps.
-              apparence="souligne"
-              onPress={() =>
-                router.push({
-                  pathname: '/feedback',
-                  // **Le nom de l'écran, pas l'identifiant du bilan** (corrigé le 14/09/2026). Le
-                  // commentaire de `/feedback`, la phrase qu'il affiche et la politique de
-                  // confidentialité disent tous les trois « le contexte est le nom de l'écran
-                  // d'origine, rien de plus » : y glisser un uuid rendait les trois faux d'un coup,
-                  // pour une information qui ne manque pas — le bilan d'une personne se retrouve par
-                  // son compte et la date de son retour.
-                  params: { kind: 'chiffre', context: 'restitution du bilan' },
-                })
-              }
-              role="link"
-              containerStyle={styles.lienDuTotal}
-            />
-            {/* **Le geste de retrait vit ici, sur la restitution du bilan concerné** (C4.7, D4 de
-                `v1-22`) : c'est le seul écran où l'on voit le chiffre qui choque, donc le seul où le
-                geste a un sens — et pas dans l'historique, où il serait à portée de pouce sans rien
-                à côté. Juste après « Un chiffre me semble faux », son voisin : l'un conteste le
-                calcul, l'autre retire la réponse. Les deux ont suivi le total ensemble (D11).
-
-                La confirmation reprend la forme de « Supprimer mon compte » (`MonCompte`) : le lien
-                s'efface, un encart dit ce qui va se passer, « Annuler » et le bouton plein. Ce qu'il
-                dit dépend de la place du bilan (`confirmationDuRetrait`), relue au toucher ; quand
-                elle n'a pas pu être lue au chargement, le lien ne se rend pas du tout.
-
-                **Le lien n'ajoute aucun décalage en arrivant, et c'est ce qui permet de le loger sous le
-                total.** `place` arrive dans l'état `ok`, avec le résultat et dans le même aller-retour :
-                le lien existe dès le premier rendu prêt ou n'existera pas, jamais après. Un lien qui
-                se rendrait une fois une lecture finie, sous un chiffre déjà lu, déplacerait tout ce
-                qui le suit ; celui-ci ne déplace rien, et ce qui s'ouvre au toucher (l'encart, ou le
-                message d'échec) s'ouvre à la place du lien, sous le doigt qui l'a demandé. */}
-            {place !== null &&
-              (confirmation !== null ? (
-                <ThemedView type="backgroundElement" style={styles.confirmation}>
-                  {/* Le lien pressé vient de disparaître : le focus va à ce qui le remplace (`FRONT.md`
-                      §2.4), et le lecteur d'écran lit la question avant ses deux réponses. */}
-                  <TitreDArrivee>
-                    <ThemedText type="small" weight={600}>
-                      {confirmation.titre}
-                    </ThemedText>
-                  </TitreDArrivee>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {confirmation.corps}
-                  </ThemedText>
-                  {confirmation.engagement !== null && (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {confirmation.engagement}
-                    </ThemedText>
-                  )}
-                  <View style={styles.confirmationActions}>
-                    <TextLink
-                      label={confirmation.annuler}
-                      apparence="souligne"
-                      onPress={() => {
-                        setConfirmationOuverte(null);
-                        setMessageDuRetrait(null);
-                      }}
-                      disabled={retraitEnCours}
-                    />
-                    <Button
-                      title={retraitEnCours ? confirmation.enCours : confirmation.confirmer}
-                      onPress={() => void retirer()}
-                      disabled={retraitEnCours}
-                      flex
-                    />
-                  </View>
-                  <MessageInline message={messageDuRetrait} />
-                </ThemedView>
-              ) : (
-                <>
-                  <TextLink
-                    label={LIEN_DU_RETRAIT}
-                    apparence="souligne"
-                    hint={INDICE_DU_RETRAIT}
-                    onPress={() => void ouvrirLaConfirmation()}
-                    disabled={lectureDeLaConfirmation}
-                    containerStyle={styles.lienDuTotal}
-                  />
-                  {/* La relecture au toucher a échoué : la confirmation ne s'ouvre pas, et on le dit
-                      ici, sous le lien, puisque l'encart qui porte d'ordinaire ce message n'existe pas. */}
-                  <MessageInline message={messageDuRetrait} />
-                </>
-              ))}
-          </View>
-
-          <ThemedView type="backgroundElement" style={styles.compareCard}>
-            <ThemedText weight={600} type="small">
-              Répartition par poste
-            </ThemedText>
-            <View style={styles.bars}>
-              {POSTE_BREAKDOWN.map((poste) => {
-                // **Pas de poste mis en avant quand il n'y a rien à peser** (A3-14) : le SQL
-                // désigne `commute` par défaut sur un total nul, et la répartition mettait donc
-                // en gras et en accent un poste à « 0 kg CO₂e », juste sous une carte qui vient
-                // de dire qu'il n'y a presque rien à compter.
-                const dominant = hasEmissions && poste.key === results.dominant_poste;
-                return (
-                  <CompareRow
-                    key={poste.key}
-                    label={nomDuPoste(poste.key, 'label', loisirsOccasionnels) ?? POSTE_LABEL[poste.key]}
-                    value={formatTonnes(results[poste.co2Key])}
-                    percent={Math.max(shareOfTotal(results[poste.co2Key]), 3)}
-                    bold={dominant}
-                    accentColor={dominant ? theme.accent : theme.accentMuted}
-                  />
-                );
-              })}
-            </View>
-          </ThemedView>
-
-          <ThemedView type="backgroundElement" style={styles.compareCard}>
-            <ThemedText weight={600} type="small">
-              Où tu te situes
-            </ThemedText>
-            {/* **Deux registres dans la même carte, et c'est délibéré** (A5-3, A10-3). Les deux
-                lignes de repère — la moyenne française, le repère 2050 — restent au dixième de
-                tonne : c'est l'échelle de comparaison, elle ne descend jamais sous la tonne et
-                une unité unique est ce qui rend les barres lisibles entre elles. Les deux lignes
-                qui sont **les chiffres de la personne** passent, elles, par `formatTonnes` sous
-                la tonne : sans ça, un profil sobre lisait « Toi — 0,0 t » et « Ton prochain
-                palier — 0,0 t », deux libellés chiffrés identiques sur deux barres de longueurs
-                différentes, trente pixels sous un total qui disait « 40 kg CO₂e ». */}
-            <View style={styles.bars}>
-              {/* **Le bilan précédent, en contour, au-dessus du sien** (C2.7, point 2, planche E).
-                  La restitution d'un re-bilan était identique à celle du premier : le seul écran
-                  atteint en sortant du questionnaire ne répondait pas à « est-ce que ça a bougé ? ».
-
-                  En contour et non en barre pleine atténuée : deux pleins se lisent comme deux
-                  résultats, et celui d'aujourd'hui doit rester le sien. Le mois nomme la barre — sur
-                  deux bilans de la même année, « ton bilan précédent » seul ne situe rien. */}
-              {precedent && (
-                <CompareRow
-                  label={`Ton bilan précédent · ${moisLocalDe(precedent.submittedAt) ?? 'précédent'}`}
-                  value={
-                    precedentT < 1 ? formatTonnes(precedent.totalKg) : formatTonnesShort(precedentT)
-                  }
-                  percent={barPercent(precedentT)}
-                  contour
-                  accentColor={theme.accentMuted}
-                />
-              )}
-              <CompareRow
-                // « Toi, aujourd'hui » dès qu'il y a une barre d'avant : « Toi » seul, au-dessus de
-                // « ton bilan précédent », laisserait les deux barres se disputer le même sujet.
-                label={precedent ? 'Toi, aujourd’hui' : 'Toi'}
-                value={totalT < 1 ? formatTonnes(results.total_co2_kg_year) : formatTonnesShort(totalT)}
-                percent={barPercent(totalT)}
-                bold
-                accentColor={theme.accent}
-              />
-              {/* Le palier vient juste après « Toi », avant la moyenne : la comparaison qui
-                  compte est celle entre où l'on est et où l'on va, pas avec le pays. Rendu à
-                  la troisième place, la paire se lisait comme deux repères sans rapport, et
-                  pour une empreinte élevée les deux barres presque identiques donnaient
-                  l'impression que la marche ne servait à rien. */}
-              {/* Quand le palier tombe pile sur le repère, la barre porte son vrai nom :
-                  l'appeler « ton prochain palier » sous-vendrait ce que c'est — l'objectif
-                  final, pas une étape de plus. */}
-              {/* **Et elle se tait sur le résiduel des sorties rares**, comme la phrase (recette du
-                  28/09/2026, constat 10.2, décidé le même jour). La phrase ne proposait plus rien
-                  depuis le 25/09, et la barre montrait encore « Ton prochain palier — 47 kg » : 20 %
-                  d'un poste que le calcul suppose et que la personne n'a pas déclaré. */}
-              {/* **Le remplissage des repères, et plus `accentText`** (01/10/2026, audit R-8). La barre
-                  du palier était la plus foncée de la carte, plus que « Toi » (1,42:1 entre les deux
-                  verts, sur des longueurs voisines) : ce qui ressortait était la marche, pas la
-                  personne. Le kit ne connaît que deux remplissages — l'accent pour ce qui est à soi,
-                  `accentMuted` pour le contexte —, et aucun document ne demande au palier de ressortir
-                  par la couleur : sa place juste sous « Toi » et son libellé le distinguent. */}
-              {palier && !posteSuppose && (
-                <CompareRow
-                  label={palier.isTarget2050 ? 'Repère transport 2050' : 'Ton prochain palier'}
-                  value={
-                    // Quand le palier **est** le repère 2050, cette ligne est un repère et non un
-                    // chiffre de la personne : elle reste en tonnes, comme la ligne homonyme plus
-                    // bas, faute de quoi la même valeur s'écrirait de deux façons selon la branche.
-                    !palier.isTarget2050 && palier.targetKg < 1000
-                      ? formatTonnes(palier.targetKg)
-                      : formatTonnesShort(palier.targetKg / 1000)
-                  }
-                  percent={barPercent(palier.targetKg / 1000)}
-                  accentColor={theme.accentMuted}
-                />
-              )}
-              {montreMoyenne && (
-                <CompareRow
-                  label="Moyenne en France"
-                  value={formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}
-                  percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
-                  accentColor={theme.accentMuted}
-                />
-              )}
-              {/* Sauf quand le palier EST le repère : il porte déjà son nom juste au-dessus,
-                  deux barres de même valeur n'apprendraient rien. */}
-              {montreBarreRepere2050 && (
-                <CompareRow
-                  label="Repère transport 2050"
-                  value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}
-                  percent={barPercent(TARGET_2050_TRANSPORT_T)}
-                  accentColor={theme.accentMuted}
-                />
-              )}
-            </View>
-            {/* **Ce que le re-bilan a changé, en écart absolu** (C2.7, point 2). En kilos ou en
-                tonnes et jamais en pourcentage : les barres juste au-dessus sont en tonnes, et
-                « 8 % de moins » ne se rattache à rien de ce qu'on y voit.
-
-                La seconde phrase ne s'ajoute que quand elle est **prouvable** : le palier visé se
-                recalcule depuis le cap qui était en vigueur à l'époque, et ce cap est perdu quand les
-                deux bilans tombent dans la même période (le cycle est réécrit à chaque soumission).
-                On ne dit alors rien plutôt que de l'affirmer avec le cap d'aujourd'hui, qui est plus
-                petit et rendrait la phrase trop facile.
-
-                **En `body`, pas en `small`** (01/10/2026, audit R-10) : c'est ce que la planche E du
-                canvas validé demande (`v1-14` §5, « la phrase de variation sous les barres en
-                `body` »), et c'est le pic d'un re-bilan — elle était la ligne la moins saillante de
-                la carte, au rang de la source. Les autres phrases de la carte restent en `small`. */}
-            {precedent && (
-              <ThemedText type="body" themeColor="textSecondary">
-                {variationDepuisLeBilanPrecedent(precedent, results.total_co2_kg_year)}
-                {palierFranchi ? ' Le palier que tu visais est derrière toi.' : ''}
-              </ThemedText>
-            )}
-            {/* **La phrase qui remplace la comparaison** (C3.1). Rendue à part et non à la place de
-                `comparisonNote` : celle-ci ne parle qu'en **relecture** (en mode `nouveau` c'est
-                `palierNote` qui la remplace), donc la loger dedans seul aurait fait qu'un profil en
-                mobilité contrainte ne la voie jamais à la sortie du questionnaire — c'est-à-dire à
-                l'endroit précis où la barre vient d'être retirée. `comparisonNote` y renonce aussi de
-                son côté, et le garde sur `palier` est ce qui empêche la relecture de la dire **deux
-                fois** — une branche par chemin, jamais les deux en même temps. */}
-            {!montreMoyenne && palier !== null && (
-              <ThemedText type="small" themeColor="textSecondary">
-                {NOTE_MOBILITE_CONTRAINTE}
-              </ThemedText>
-            )}
-            {/* En relecture il n'y a jamais de palier, donc c'est toujours `comparisonNote` qui
-                parle — et elle ne promet aucun plan. */}
-            <ThemedText type="small" themeColor="textSecondary">
-              {palier
-                ? palierNote(palier, montreRepere2050, posteDeLaMarche, posteSuppose)
-                : comparisonNote(results)}
-            </ThemedText>
-            {/* L'ordre de grandeur de la marche, sur sa propre ligne (C3.2). Il disparaît sous un
-                vol entier : « 0,3 vol » n'est pas un ordre de grandeur. Et sur le résiduel des
-                sorties rares, comme la barre et la phrase : il n'y atteint jamais un vol (la marche y
-                reste d'une dizaine de kilos), mais la règle s'écrit plutôt que de tenir par ordre de
-                grandeur (contre-lecture du 28/09/2026). */}
-            {palier && !posteSuppose && equivalenceDeLaMarche && (
-              <ThemedText type="small" themeColor="textTertiary">
-                {equivalenceDeLaMarche}
-              </ThemedText>
-            )}
-            {/* **La chasse fixe reste, et c'est la seule place qui lui revient ici** (24/09/2026,
-                `v1-29`, décision n° 10) : c'est une source, pas une phrase adressée à la personne. */}
-            <ThemedText type="code" themeColor="textTertiary">
-              {CARBON_SOURCE_LABEL}
-            </ThemedText>
-          </ThemedView>
-          {/* Actions secondaires dans le flux, et non collées en bas — retour d'appareil du
-              07/09/2026. Trois éléments empilés dans un pied fixe occupaient ~170 px sur
-              844 : un cinquième de l'écran retiré à la restitution, et une cassure franche
-              au milieu du contenu. Ce qui reste collé, c'est le seul pas suivant.
-
-              **Ce bloc ne porte plus les liens de contestation** (D11, 01/10/2026) : ils sont sous le
-              total, là où le chiffre se lit. Restent le partage et le nouveau bilan — et, en
-              relecture, le retour au suivi. */}
-          <View style={styles.actionsSecondaires}>
-            <TextLink
-              label="Partager mon bilan"
-              apparence="action"
-              onPress={() => void partagerLeBilan()}
-              style={styles.editLink}
-            />
-            {/* Annoncé par un lecteur d'écran (région vivante de `MessageInline`) : le repli
-                presse-papier n'a aucune autre trace à l'écran. Le lien, quand il s'affiche,
-                vient juste après cette annonce. */}
-            <MessageInline
-              message={
-                partage.statut === 'copie'
-                  ? 'Lien copié. Tu peux le coller où tu veux.'
-                  : partage.statut === 'echec'
-                    ? 'La copie n’a pas abouti. Réessaie dans un instant.'
-                    : partage.statut === 'indisponible'
-                      ? 'Ce navigateur ne donne pas accès au presse-papier. Voici ton lien, à copier à la main :'
-                      : null
-              }
-              style={styles.editLink}
-            />
-            {/* En chasse fixe, et c'est voulu (24/09/2026, `v1-29`) : ce n'est pas une phrase mais une
-                adresse à recopier à la main, où la chasse fixe départage « l » de « 1 » et « O » de
-                « 0 ». La phrase qui l'introduit, juste au-dessus, est en Spline Sans. */}
-            {partage.statut === 'indisponible' && (
-              <ThemedText
-                type="code"
-                themeColor="textSecondary"
-                selectable
-                style={styles.lienPartage}
-              >
-                {partage.lien}
-              </ThemedText>
-            )}
-            {/* **Le libellé se corrige une seconde fois, et dans la même direction** (C6.1,
-                `v1-19` D1). « Modifier mes réponses » promettait une édition alors que le
-                questionnaire insère toujours un nouveau bilan ; « Refaire » a le défaut inverse et
-                aussi faux — il laisse croire qu'on efface celui qu'on regarde. Un nouveau bilan
-                s'**ajoute** : la ligne d'aujourd'hui reste, et c'est même ce qui permet à cet écran
-                d'exister pour chacune d'elles. Le préremplissage (v1-07 T7) rend l'action peu
-                coûteuse ; le libellé dit enfin ce qu'elle fait. */}
-            <TextLink
-              label="Faire un nouveau bilan"
-              apparence="discret"
-              onPress={() => router.push('/bilan')}
-              role="link"
-              style={styles.editLink}
-            />
-            {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
-                plan à un onglet de là — donc rien de collé en bas non plus. */}
-            {mode !== 'nouveau' && (
-              <TextLink
-                label="Revenir à mon suivi"
-                apparence="action"
-                // **Une destination, pas un dépilement.** `router.back()` ramenait à l'écran
-                // précédent, qui n'est pas toujours le suivi : « Revoir mon bilan » ouvre
-                // cette page depuis le plan, et le lien renvoyait donc… au plan (retour
-                // d'appareil du 07/09/2026). Un lien qui nomme sa destination doit y aller.
-                onPress={() => router.replace('/suivi')}
-                role="link"
-                style={styles.editLink}
-              />
-            )}
-          </View>
-        </ScrollView>
-
-        {mode === 'nouveau' && (
-          <View style={[styles.footer, { borderTopColor: theme.border }]}>
-            {/* Plus jamais désactivé pour une raison de compte : il mène au plan, et le plan
-                n'attend rien de la session. La garde d'A3-20 protégeait un routage qui n'existe
-                plus. */}
-            <Button
-              title="Voir ce que je peux faire"
-              onPress={goToPlan}
-              // Le pied est hors du `ScrollView`, donc la largeur maximale du contenu ne
-              // l'atteint pas : sans ça, le bouton s'étirerait sur toute la fenêtre pendant que
-              // les barres au-dessus sont bornées à 800 px (A5-21). Le filet, lui, reste pleine
-              // largeur : c'est la séparation du pied, pas une limite de contenu.
-              style={styles.footerBouton}
-            />
-          </View>
+          </Pressable>
         )}
-      </SafeAreaView>
+
+        <View style={styles.enTete}>
+          <ThemedText type="small" themeColor="textTertiary">
+            Ton bilan transport
+          </ThemedText>
+          {/* **La date, en relecture seulement** (A3-15). Rien ne distinguait à l'écran un
+              bilan d'aujourd'hui d'un bilan d'il y a un an : mêmes cartes, mêmes barres, même
+              « Estimation annuelle » — sur le seul écran du produit qui matérialise le passé.
+              Après le questionnaire elle n'apprendrait rien, c'est aujourd'hui. */}
+          {mode === 'relecture' && submittedAt && (
+            <ThemedText type="small" themeColor="textTertiary">
+              Bilan du {formatDate(submittedAt)}
+            </ThemedText>
+          )}
+        </View>
+
+        <ThemedView type="backgroundSelected" style={styles.dominantCard}>
+          {hasEmissions ? (
+            <>
+              {/* **« Le déplacement qui pèse le plus » était faux quand le départage joue**
+                  (24/09/2026, `v1-29`) : à 5 % près le serveur retient le poste le plus régulier,
+                  et le profil de la recette voyait le domicile-travail (1,9 t) coiffé de cette
+                  étiquette au-dessus d'une barre de voyages à 2,0 t. L'étiquette se dérive des
+                  mêmes kilos que les barres ci-dessous — rien n'est recalculé ici. */}
+              <ThemedText type="small" weight={600} themeColor="accentText">
+                {etiquetteDuPosteDominant(results)}
+              </ThemedText>
+              {/* **Le type `display`, et plus un `subtitle` surchargé** (24/09/2026, `v1-29`) :
+                  32/38/−0,64 y était recopié à la main. Il s'annonce en en-tête de **niveau 1**, le
+                  défaut du type, et c'est juste ici : l'écran n'en a pas d'autre — « Ramille », dans
+                  la bande haute, n'est plus un en-tête depuis le 24/09/2026, et les intitulés des
+                  cartes n'en sont pas. C'est le titre de ce qu'on vient lire. */}
+              <ThemedText type="display">{dominantHeadline(results)}</ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.dominantBody}>
+                {`${formatTonnes(results.dominant_poste_co2_kg_year)} par an, soit ${dominantPercent} % de ton empreinte transport.`}
+              </ThemedText>
+            </>
+          ) : (
+            // **Profil sans émission : tout le haut de carte change** (A3-14). Le SQL force
+            // `dominant_poste = 'commute'` par défaut quand le total est nul, si bien que le
+            // seul écran de félicitation du produit s'ouvrait sur « Le déplacement qui pèse le
+            // plus / Ton trajet domicile-travail » — une désignation de coupable qui n'existe
+            // pas, contredite deux lignes plus bas par la mascotte. Intitulé neutre, et plus
+            // de `dominantHeadline` du tout.
+            //
+            // La phrase est à elle (A3-13) : elle vivait ici, à la deuxième personne, donc
+            // hors du test qui garde sa voix. Aucun chiffre n'est affiché dans cette branche de
+            // la carte, donc la mascotte n'est jamais à côté d'un chiffre lourd. **Depuis D9 le
+            // total est juste dessous**, et la règle tient quand même : cette branche n'existe que
+            // pour un total de zéro (`bilanSansEmissions`, `<= 0`), donc son voisin dit « 0 kg
+            // CO₂e » — le contraire d'un chiffre lourd. Si la borne s'élargissait à « presque
+            // rien », la règle serait à relire.
+            <>
+              <ThemedText type="small" weight={600} themeColor="accentText">
+                Ton bilan
+              </ThemedText>
+              <RamilleDit ligne={RAMILLE.bilanQuasiNul} mood="happy" size={36} />
+            </>
+          )}
+        </ThemedView>
+
+        {/* **Le total vient juste après la carte dominante** (décision D9 du 01/10/2026, audit R-1).
+            La répartition par poste s'était glissée entre les deux, sans qu'aucun document ne l'ait
+            décidé : le handoff donne l'ordre « carte dominante, total *après la carte*, Où tu te
+            situes » (`docs/design/README.md`, Restitution), et la planche E du canvas de `v1-14` pose
+            le total sous la carte. Mesuré à 390 × 844 à la sortie du questionnaire (session anonyme,
+            bannière de compte en tête) : le chiffre se rendait à 766–802 px, **sous le pied collant,
+            qui commence à 758** — au premier regard, une phrase de compte, une étiquette, un titre,
+            puis trois barres, et le seul chiffre saillant de l'écran hors champ ; la personne prenait
+            la part d'un poste pour son résultat. Il se rend à 526–562, au-dessus du pied, sans qu'un
+            mot ait changé. **Ce que l'ordre coûte, et c'est décidé** : la lecture « les postes, puis
+            leur somme » — une addition qu'on voit se faire — disparaît, et la répartition passe sous
+            le pli. Le bloc porte aussi la méthode et la contestation (ci-dessous) : il grandit
+            d'environ cent pixels, tous sous le chiffre. */}
+        <View style={styles.totalBlock}>
+          <ThemedText type="small" themeColor="textTertiary">
+            Estimation annuelle, tous déplacements
+          </ThemedText>
+          {/* **Le jeton, pas une recopie** (A3-22). Le chiffre le plus important du produit
+              redéclarait 26 / 32 à la main, c'est-à-dire exactement `TypeScale.screen` — le
+              jeton des *titres d'écran*. `salient` est celui des chiffres saillants (ce total, le
+              cap de la saison sur le plan) : il vaut 30, et la hiérarchie tient puisque la
+              décision dominante reste au-dessus, à 32. L'écart entre deux bilans, que
+              `theme.ts` range encore parmi eux, se dit ici dans une phrase en `body`, sous les
+              barres (`v1-14` §5) — aucun écran ne l'écrit en `salient`. */}
+          <ThemedText type="salient" style={styles.chiffres}>
+            {formatTonnes(results.total_co2_kg_year)}
+          </ThemedText>
+          {/* **La question « d'où vient ce chiffre ? » se pose ici et nulle part ailleurs**
+              (C3.2). Sous le total, replié, parce que c'est le moment où elle naît — et parce
+              que ce total ne se compare à aucun autre simulateur sans savoir qu'il compte la
+              fabrication. La date passée est celle de **soumission** : c'est elle qui fige les
+              facteurs (`emission_factor(mode, date)`), donc elle qui date la méthode. */}
+          <BlocMethode dateDuBilan={submittedAt} />
+          {/* **Le seul endroit où un chiffre se conteste** (C3.9, constat A6-9). La restitution
+              affiche une empreinte calculée à partir de moyennes nationales et de réponses
+              approchées : quelqu'un qui connaît son trajet mieux que nous doit pouvoir le dire
+              là où il lit le résultat, pas dans un écran de retour qu'il faudrait aller
+              chercher. La catégorie est **préremplie et modifiable** — c'est la personne qui
+              sait si c'est un chiffre, un mode manquant ou autre chose. Le contexte part avec :
+              sans l'identifiant du bilan, un retour sur un chiffre n'est pas exploitable.
+
+              **Sous le total, après sa méthode, depuis le 01/10/2026** (décision D11, audit R-3). Ce
+              lien et celui du retrait fermaient la page, à ≈ 650 px du chiffre qu'ils contestent :
+              à cette distance « Un chiffre me semble faux » se rapportait à la pile de liens et non
+              au total, et les deux derniers liens lus avant le pas suivant étaient deux façons de
+              désavouer son bilan. La fin de la page est désormais la phrase du cap, le partage et un
+              nouveau bilan. **Ce que ça coûte, et c'est décidé** : posée sous le chiffre, la
+              contestation peut se lire comme une invitation à douter au moment même où il apparaît.
+              L'ordre en tient compte : la méthode d'abord, qui répond à « d'où vient ce chiffre ? »,
+              puis ces deux liens pour qui n'est pas convaincu. Alignés à gauche comme la méthode, et
+              aucun libellé n'a changé. */}
+          <TextLink
+            label="Un chiffre me semble faux"
+            // Souligné (`v1-33` T-5) : la méthode dépliée finit juste au-dessus, du même gris au même corps.
+            apparence="souligne"
+            onPress={() =>
+              router.push({
+                pathname: '/feedback',
+                // **Le nom de l'écran, pas l'identifiant du bilan** (corrigé le 14/09/2026). Le
+                // commentaire de `/feedback`, la phrase qu'il affiche et la politique de
+                // confidentialité disent tous les trois « le contexte est le nom de l'écran
+                // d'origine, rien de plus » : y glisser un uuid rendait les trois faux d'un coup,
+                // pour une information qui ne manque pas — le bilan d'une personne se retrouve par
+                // son compte et la date de son retour.
+                params: { kind: 'chiffre', context: 'restitution du bilan' },
+              })
+            }
+            role="link"
+            containerStyle={styles.lienDuTotal}
+          />
+          {/* **Le geste de retrait vit ici, sur la restitution du bilan concerné** (C4.7, D4 de
+              `v1-22`) : c'est le seul écran où l'on voit le chiffre qui choque, donc le seul où le
+              geste a un sens — et pas dans l'historique, où il serait à portée de pouce sans rien
+              à côté. Juste après « Un chiffre me semble faux », son voisin : l'un conteste le
+              calcul, l'autre retire la réponse. Les deux ont suivi le total ensemble (D11).
+
+              La confirmation reprend la forme de « Supprimer mon compte » (`MonCompte`) : le lien
+              s'efface, un encart dit ce qui va se passer, « Annuler » et le bouton plein. Ce qu'il
+              dit dépend de la place du bilan (`confirmationDuRetrait`), relue au toucher ; quand
+              elle n'a pas pu être lue au chargement, le lien ne se rend pas du tout.
+
+              **Le lien n'ajoute aucun décalage en arrivant, et c'est ce qui permet de le loger sous le
+              total.** `place` arrive dans l'état `ok`, avec le résultat et dans le même aller-retour :
+              le lien existe dès le premier rendu prêt ou n'existera pas, jamais après. Un lien qui
+              se rendrait une fois une lecture finie, sous un chiffre déjà lu, déplacerait tout ce
+              qui le suit ; celui-ci ne déplace rien, et ce qui s'ouvre au toucher (l'encart, ou le
+              message d'échec) s'ouvre à la place du lien, sous le doigt qui l'a demandé. */}
+          {place !== null &&
+            (confirmation !== null ? (
+              <ThemedView type="backgroundElement" style={styles.confirmation}>
+                {/* Le lien pressé vient de disparaître : le focus va à ce qui le remplace (`FRONT.md`
+                    §2.4), et le lecteur d'écran lit la question avant ses deux réponses. */}
+                <TitreDArrivee>
+                  <ThemedText type="small" weight={600}>
+                    {confirmation.titre}
+                  </ThemedText>
+                </TitreDArrivee>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {confirmation.corps}
+                </ThemedText>
+                {confirmation.engagement !== null && (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {confirmation.engagement}
+                  </ThemedText>
+                )}
+                <View style={styles.confirmationActions}>
+                  <TextLink
+                    label={confirmation.annuler}
+                    apparence="souligne"
+                    onPress={() => {
+                      setConfirmationOuverte(null);
+                      setMessageDuRetrait(null);
+                    }}
+                    disabled={retraitEnCours}
+                  />
+                  <Button
+                    title={retraitEnCours ? confirmation.enCours : confirmation.confirmer}
+                    onPress={() => void retirer()}
+                    disabled={retraitEnCours}
+                    flex
+                  />
+                </View>
+                <MessageInline message={messageDuRetrait} />
+              </ThemedView>
+            ) : (
+              <>
+                <TextLink
+                  label={LIEN_DU_RETRAIT}
+                  apparence="souligne"
+                  hint={INDICE_DU_RETRAIT}
+                  onPress={() => void ouvrirLaConfirmation()}
+                  disabled={lectureDeLaConfirmation}
+                  containerStyle={styles.lienDuTotal}
+                />
+                {/* La relecture au toucher a échoué : la confirmation ne s'ouvre pas, et on le dit
+                    ici, sous le lien, puisque l'encart qui porte d'ordinaire ce message n'existe pas. */}
+                <MessageInline message={messageDuRetrait} />
+              </>
+            ))}
+        </View>
+
+        <ThemedView type="backgroundElement" style={styles.compareCard}>
+          <ThemedText weight={600} type="small">
+            Répartition par poste
+          </ThemedText>
+          <View style={styles.bars}>
+            {POSTE_BREAKDOWN.map((poste) => {
+              // **Pas de poste mis en avant quand il n'y a rien à peser** (A3-14) : le SQL
+              // désigne `commute` par défaut sur un total nul, et la répartition mettait donc
+              // en gras et en accent un poste à « 0 kg CO₂e », juste sous une carte qui vient
+              // de dire qu'il n'y a presque rien à compter.
+              const dominant = hasEmissions && poste.key === results.dominant_poste;
+              return (
+                <CompareRow
+                  key={poste.key}
+                  label={nomDuPoste(poste.key, 'label', loisirsOccasionnels) ?? POSTE_LABEL[poste.key]}
+                  value={formatTonnes(results[poste.co2Key])}
+                  percent={Math.max(shareOfTotal(results[poste.co2Key]), 3)}
+                  bold={dominant}
+                  accentColor={dominant ? theme.accent : theme.accentMuted}
+                />
+              );
+            })}
+          </View>
+        </ThemedView>
+
+        <ThemedView type="backgroundElement" style={styles.compareCard}>
+          <ThemedText weight={600} type="small">
+            Où tu te situes
+          </ThemedText>
+          {/* **Deux registres dans la même carte, et c'est délibéré** (A5-3, A10-3). Les deux
+              lignes de repère — la moyenne française, le repère 2050 — restent au dixième de
+              tonne : c'est l'échelle de comparaison, elle ne descend jamais sous la tonne et
+              une unité unique est ce qui rend les barres lisibles entre elles. Les deux lignes
+              qui sont **les chiffres de la personne** passent, elles, par `formatTonnes` sous
+              la tonne : sans ça, un profil sobre lisait « Toi — 0,0 t » et « Ton prochain
+              palier — 0,0 t », deux libellés chiffrés identiques sur deux barres de longueurs
+              différentes, trente pixels sous un total qui disait « 40 kg CO₂e ». */}
+          <View style={styles.bars}>
+            {/* **Le bilan précédent, en contour, au-dessus du sien** (C2.7, point 2, planche E).
+                La restitution d'un re-bilan était identique à celle du premier : le seul écran
+                atteint en sortant du questionnaire ne répondait pas à « est-ce que ça a bougé ? ».
+
+                En contour et non en barre pleine atténuée : deux pleins se lisent comme deux
+                résultats, et celui d'aujourd'hui doit rester le sien. Le mois nomme la barre — sur
+                deux bilans de la même année, « ton bilan précédent » seul ne situe rien. */}
+            {precedent && (
+              <CompareRow
+                label={`Ton bilan précédent · ${moisLocalDe(precedent.submittedAt) ?? 'précédent'}`}
+                value={
+                  precedentT < 1 ? formatTonnes(precedent.totalKg) : formatTonnesShort(precedentT)
+                }
+                percent={barPercent(precedentT)}
+                contour
+                accentColor={theme.accentMuted}
+              />
+            )}
+            <CompareRow
+              // « Toi, aujourd'hui » dès qu'il y a une barre d'avant : « Toi » seul, au-dessus de
+              // « ton bilan précédent », laisserait les deux barres se disputer le même sujet.
+              label={precedent ? 'Toi, aujourd’hui' : 'Toi'}
+              value={totalT < 1 ? formatTonnes(results.total_co2_kg_year) : formatTonnesShort(totalT)}
+              percent={barPercent(totalT)}
+              bold
+              accentColor={theme.accent}
+            />
+            {/* Le palier vient juste après « Toi », avant la moyenne : la comparaison qui
+                compte est celle entre où l'on est et où l'on va, pas avec le pays. Rendu à
+                la troisième place, la paire se lisait comme deux repères sans rapport, et
+                pour une empreinte élevée les deux barres presque identiques donnaient
+                l'impression que la marche ne servait à rien. */}
+            {/* Quand le palier tombe pile sur le repère, la barre porte son vrai nom :
+                l'appeler « ton prochain palier » sous-vendrait ce que c'est — l'objectif
+                final, pas une étape de plus. */}
+            {/* **Et elle se tait sur le résiduel des sorties rares**, comme la phrase (recette du
+                28/09/2026, constat 10.2, décidé le même jour). La phrase ne proposait plus rien
+                depuis le 25/09, et la barre montrait encore « Ton prochain palier — 47 kg » : 20 %
+                d'un poste que le calcul suppose et que la personne n'a pas déclaré. */}
+            {/* **Le remplissage des repères, et plus `accentText`** (01/10/2026, audit R-8). La barre
+                du palier était la plus foncée de la carte, plus que « Toi » (1,42:1 entre les deux
+                verts, sur des longueurs voisines) : ce qui ressortait était la marche, pas la
+                personne. Le kit ne connaît que deux remplissages — l'accent pour ce qui est à soi,
+                `accentMuted` pour le contexte —, et aucun document ne demande au palier de ressortir
+                par la couleur : sa place juste sous « Toi » et son libellé le distinguent. */}
+            {palier && !posteSuppose && (
+              <CompareRow
+                label={palier.isTarget2050 ? 'Repère transport 2050' : 'Ton prochain palier'}
+                value={
+                  // Quand le palier **est** le repère 2050, cette ligne est un repère et non un
+                  // chiffre de la personne : elle reste en tonnes, comme la ligne homonyme plus
+                  // bas, faute de quoi la même valeur s'écrirait de deux façons selon la branche.
+                  !palier.isTarget2050 && palier.targetKg < 1000
+                    ? formatTonnes(palier.targetKg)
+                    : formatTonnesShort(palier.targetKg / 1000)
+                }
+                percent={barPercent(palier.targetKg / 1000)}
+                accentColor={theme.accentMuted}
+              />
+            )}
+            {montreMoyenne && (
+              <CompareRow
+                label="Moyenne en France"
+                value={formatTonnesShort(FRANCE_AVERAGE_TRANSPORT_T)}
+                percent={barPercent(FRANCE_AVERAGE_TRANSPORT_T)}
+                accentColor={theme.accentMuted}
+              />
+            )}
+            {/* Sauf quand le palier EST le repère : il porte déjà son nom juste au-dessus,
+                deux barres de même valeur n'apprendraient rien. */}
+            {montreBarreRepere2050 && (
+              <CompareRow
+                label="Repère transport 2050"
+                value={formatTonnesShort(TARGET_2050_TRANSPORT_T)}
+                percent={barPercent(TARGET_2050_TRANSPORT_T)}
+                accentColor={theme.accentMuted}
+              />
+            )}
+          </View>
+          {/* **Ce que le re-bilan a changé, en écart absolu** (C2.7, point 2). En kilos ou en
+              tonnes et jamais en pourcentage : les barres juste au-dessus sont en tonnes, et
+              « 8 % de moins » ne se rattache à rien de ce qu'on y voit.
+
+              La seconde phrase ne s'ajoute que quand elle est **prouvable** : le palier visé se
+              recalcule depuis le cap qui était en vigueur à l'époque, et ce cap est perdu quand les
+              deux bilans tombent dans la même période (le cycle est réécrit à chaque soumission).
+              On ne dit alors rien plutôt que de l'affirmer avec le cap d'aujourd'hui, qui est plus
+              petit et rendrait la phrase trop facile.
+
+              **En `body`, pas en `small`** (01/10/2026, audit R-10) : c'est ce que la planche E du
+              canvas validé demande (`v1-14` §5, « la phrase de variation sous les barres en
+              `body` »), et c'est le pic d'un re-bilan — elle était la ligne la moins saillante de
+              la carte, au rang de la source. Les autres phrases de la carte restent en `small`. */}
+          {precedent && (
+            <ThemedText type="body" themeColor="textSecondary">
+              {variationDepuisLeBilanPrecedent(precedent, results.total_co2_kg_year)}
+              {palierFranchi ? ' Le palier que tu visais est derrière toi.' : ''}
+            </ThemedText>
+          )}
+          {/* **La phrase qui remplace la comparaison** (C3.1). Rendue à part et non à la place de
+              `comparisonNote` : celle-ci ne parle qu'en **relecture** (en mode `nouveau` c'est
+              `palierNote` qui la remplace), donc la loger dedans seul aurait fait qu'un profil en
+              mobilité contrainte ne la voie jamais à la sortie du questionnaire — c'est-à-dire à
+              l'endroit précis où la barre vient d'être retirée. `comparisonNote` y renonce aussi de
+              son côté, et le garde sur `palier` est ce qui empêche la relecture de la dire **deux
+              fois** — une branche par chemin, jamais les deux en même temps. */}
+          {!montreMoyenne && palier !== null && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {NOTE_MOBILITE_CONTRAINTE}
+            </ThemedText>
+          )}
+          {/* En relecture il n'y a jamais de palier, donc c'est toujours `comparisonNote` qui
+              parle — et elle ne promet aucun plan. */}
+          <ThemedText type="small" themeColor="textSecondary">
+            {palier
+              ? palierNote(palier, montreRepere2050, posteDeLaMarche, posteSuppose)
+              : comparisonNote(results)}
+          </ThemedText>
+          {/* L'ordre de grandeur de la marche, sur sa propre ligne (C3.2). Il disparaît sous un
+              vol entier : « 0,3 vol » n'est pas un ordre de grandeur. Et sur le résiduel des
+              sorties rares, comme la barre et la phrase : il n'y atteint jamais un vol (la marche y
+              reste d'une dizaine de kilos), mais la règle s'écrit plutôt que de tenir par ordre de
+              grandeur (contre-lecture du 28/09/2026). */}
+          {palier && !posteSuppose && equivalenceDeLaMarche && (
+            <ThemedText type="small" themeColor="textTertiary">
+              {equivalenceDeLaMarche}
+            </ThemedText>
+          )}
+          {/* **La chasse fixe reste, et c'est la seule place qui lui revient ici** (24/09/2026,
+              `v1-29`, décision n° 10) : c'est une source, pas une phrase adressée à la personne. */}
+          <ThemedText type="code" themeColor="textTertiary">
+            {CARBON_SOURCE_LABEL}
+          </ThemedText>
+        </ThemedView>
+        {/* Actions secondaires dans le flux, et non collées en bas — retour d'appareil du
+            07/09/2026. Trois éléments empilés dans un pied fixe occupaient ~170 px sur
+            844 : un cinquième de l'écran retiré à la restitution, et une cassure franche
+            au milieu du contenu. Ce qui reste collé, c'est le seul pas suivant.
+
+            **Ce bloc ne porte plus les liens de contestation** (D11, 01/10/2026) : ils sont sous le
+            total, là où le chiffre se lit. Restent le partage et le nouveau bilan — et, en
+            relecture, le retour au suivi. */}
+        <View style={styles.actionsSecondaires}>
+          <TextLink
+            label="Partager mon bilan"
+            apparence="action"
+            onPress={() => void partagerLeBilan()}
+            style={styles.editLink}
+          />
+          {/* Annoncé par un lecteur d'écran (région vivante de `MessageInline`) : le repli
+              presse-papier n'a aucune autre trace à l'écran. Le lien, quand il s'affiche,
+              vient juste après cette annonce. */}
+          <MessageInline
+            message={
+              partage.statut === 'copie'
+                ? 'Lien copié. Tu peux le coller où tu veux.'
+                : partage.statut === 'echec'
+                  ? 'La copie n’a pas abouti. Réessaie dans un instant.'
+                  : partage.statut === 'indisponible'
+                    ? 'Ce navigateur ne donne pas accès au presse-papier. Voici ton lien, à copier à la main :'
+                    : null
+            }
+            style={styles.editLink}
+          />
+          {/* En chasse fixe, et c'est voulu (24/09/2026, `v1-29`) : ce n'est pas une phrase mais une
+              adresse à recopier à la main, où la chasse fixe départage « l » de « 1 » et « O » de
+              « 0 ». La phrase qui l'introduit, juste au-dessus, est en Spline Sans. */}
+          {partage.statut === 'indisponible' && (
+            <ThemedText
+              type="code"
+              themeColor="textSecondary"
+              selectable
+              style={styles.lienPartage}
+            >
+              {partage.lien}
+            </ThemedText>
+          )}
+          {/* **Le libellé se corrige une seconde fois, et dans la même direction** (C6.1,
+              `v1-19` D1). « Modifier mes réponses » promettait une édition alors que le
+              questionnaire insère toujours un nouveau bilan ; « Refaire » a le défaut inverse et
+              aussi faux — il laisse croire qu'on efface celui qu'on regarde. Un nouveau bilan
+              s'**ajoute** : la ligne d'aujourd'hui reste, et c'est même ce qui permet à cet écran
+              d'exister pour chacune d'elles. Le préremplissage (v1-07 T7) rend l'action peu
+              coûteuse ; le libellé dit enfin ce qu'elle fait. */}
+          <TextLink
+            label="Faire un nouveau bilan"
+            apparence="discret"
+            onPress={() => router.push('/bilan')}
+            role="link"
+            style={styles.editLink}
+          />
+          {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
+              plan à un onglet de là — donc rien de collé en bas non plus. */}
+          {mode !== 'nouveau' && (
+            <TextLink
+              label="Revenir à mon suivi"
+              apparence="action"
+              // **Une destination, pas un dépilement.** `router.back()` ramenait à l'écran
+              // précédent, qui n'est pas toujours le suivi : « Revoir mon bilan » ouvre
+              // cette page depuis le plan, et le lien renvoyait donc… au plan (retour
+              // d'appareil du 07/09/2026). Un lien qui nomme sa destination doit y aller.
+              onPress={() => router.replace('/suivi')}
+              role="link"
+              style={styles.editLink}
+            />
+          )}
+        </View>
+      </ScrollView>
+
+      {mode === 'nouveau' && (
+        <View style={[styles.footer, { borderTopColor: theme.border }]}>
+          {/* Plus jamais désactivé pour une raison de compte : il mène au plan, et le plan
+              n'attend rien de la session. La garde d'A3-20 protégeait un routage qui n'existe
+              plus. */}
+          <Button
+            title="Voir ce que je peux faire"
+            onPress={goToPlan}
+            // Le pied est hors du `ScrollView`, donc la largeur maximale du contenu ne
+            // l'atteint pas : sans ça, le bouton s'étirerait sur toute la fenêtre pendant que
+            // les barres au-dessus sont bornées à 800 px (A5-21). Le filet, lui, reste pleine
+            // largeur : c'est la séparation du pied, pas une limite de contenu.
+            style={styles.footerBouton}
+          />
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -1364,7 +1349,6 @@ function CompareRow({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   // L'écran d'erreur tient dans le conteneur centré : la phrase a besoin de gouttières (sinon
   // elle touche les bords sur un téléphone étroit) et d'air sous elle.

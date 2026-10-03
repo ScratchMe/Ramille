@@ -25,7 +25,9 @@
  *     qui échoue ou lève… », dont la libération du cycle ne trouve alors aucune requête en vol ;
  *   - le précédent absent du premier rendu prêt (`precedent: null`, la barre d'avant) → « toutes les
  *     lectures partent au montage… », seul, sur « Ton bilan précédent · juin » ;
- *   - le chargement sans la bande haute (l'état d'avant R-9) → la même, seule, sur la bande ;
+ *   - le chargement sans la bande haute (l'état d'avant R-9) → la même, seule, sur la bande. **Cette
+ *     ligne ne vaut plus depuis le 03/10/2026** : l'écran ne rend plus la bande, sa pile la pose une
+ *     fois autour de tous ses états (`v1-33` T-13), et c'est `cadre-des-piles.test.tsx` qui la garde ;
  *   - le `.catch` de la lecture des bilans valides retiré → « une lecture tolérante qui échoue ou
  *     lève… », seul : l'écran d'erreur prend la place ;
  *   - le `.catch` de la fréquence des loisirs retiré → la même, seule ;
@@ -55,7 +57,6 @@ import { act, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import BilanResultat from '@/app/(tabs)/suivi/bilan';
-import { APP_NAME } from '@/constants/produit';
 
 // ── Les doublures ─────────────────────────────────────────────────────────────────────────────
 //
@@ -183,9 +184,9 @@ describe('la restitution d’un re-bilan', () => {
     render(<BilanResultat />);
     await act(async () => {});
 
-    // Le chargement garde le cadre de l'écran prêt (R-9) : la bande haute est déjà là.
+    // Le chargement se dit au premier rendu (`immediate`). La bande haute n'est plus à l'écran : sa pile
+    // la pose autour de tous ses états (`cadre-des-piles.test.tsx`).
     expect(screen.getByText('Chargement de ton bilan…')).toBeTruthy();
-    expect(screen.getByText(APP_NAME)).toBeTruthy();
     // Un seul aller-retour : le résultat, les bilans valides, le cycle courant et la fréquence des
     // loisirs sont tous en vol avant que le premier ne réponde.
     expect(tablesEnAttente()).toEqual([
