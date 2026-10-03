@@ -89,6 +89,12 @@ un constat de lecture.
   `StepShell`, on ne les redessine pas.
 - Le bouton principal est pleine largeur (54 de haut, rayon 27). Dans une rangée
   Retour + Suivant, Retour garde sa largeur et Suivant porte `flex`.
+- **Une sortie a deux places, et c'est l'écran qui décide, jamais son état** : un écran qui se
+  consulte (« Toi », les pages légales, « Toutes les pistes », un bilan relu) la porte en haut à
+  gauche, au-dessus du titre — `SortieDuDetour`, grise, avec son chevron ; les pages légales gardent
+  en plus celle de leur fin. Un écran qui pose une question (un flux, la connexion, un formulaire) la
+  garde en bas, sous l'action principale — un `TextLink` gris (`discret` ou `souligne`), ou le
+  « Retour » à gauche de « Suivant ».
 - Le « Suivant » d'une étape incomplète est **en attente** (`enAttente`), comme le « C'est noté »
   d'une intention incomplète : l'apparence du désactivé — fond élément + texte tertiaire, jamais
   une opacité ; posé sur un encart gris, fond de la page et filet (`onPanel`) —, mais un bouton qui
@@ -115,7 +121,8 @@ un constat de lecture.
 
 ## Accessibilité
 
-Un texte cliquable est un `TextLink`, jamais un `Pressable` autour d'un texte : le libellé
+Un texte cliquable est un `TextLink`, jamais un `Pressable` autour d'un texte — sauf la sortie d'un écran
+qui se consulte, `SortieDuDetour`, qui tient les mêmes promesses : le libellé
 annoncé **est** le texte affiché, et la cible fait 48 px sans déplacer le texte. Les choix
 exclusifs s'annoncent en `radio`, ceux qui se cumulent en `checkbox` — les deux seuls rôles qui
 disent « sélectionné ». La mascotte et les

@@ -90,7 +90,9 @@ const SerieDuContexte = ({ champ, question, definitions, options, valeur, onChan
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {definitions.map(([terme, definition]) => (
               <ThemedText key={terme} type="small" weight={400} themeColor="textTertiary">
-                <ThemedText type="small" weight={600} themeColor="textSecondary">{terme}</ThemedText> {definition}
+                {/* `display: inline` : le ThemedText du kit est un bloc, et un Text imbriqué reste dans la ligne
+                    dans le dépôt — sans lui, le terme passait seul à la ligne (9ᵉ synchronisation, 03/10/2026). */}
+                <ThemedText type="small" weight={600} themeColor="textSecondary" style={{ display: 'inline' }}>{terme}</ThemedText> {definition}
               </ThemedText>
             ))}
           </div>
