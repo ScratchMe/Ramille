@@ -3,7 +3,7 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // Source : src/components/bilan/ancre-du-champ.tsx — l'intitulé d'un champ du questionnaire, et ce qui le rattache à
 // « Il manque encore … » : chaque étape enregistre ses champs auprès de `StepShell`, qui y mène au toucher du
 // « Suivant » en attente — l'écran y défile, le focus s'y pose, et l'intitulé passe en `accentText` 600 depuis sa
-// couleur de tous les jours (`textSecondary` pour une précision, `textTertiary` pour « Lequel ? » et le contexte,
+// couleur de tous les jours (`textSecondary` pour une précision, `textTertiary` pour « Lequel ? », `text` pour le contexte depuis le 03/10/2026,
 // `text` pour un sous-titre d'étape). Jamais d'office, jamais pendant qu'on répond, jamais sur le titre de l'étape.
 //
 // Deux écarts avec le dépôt, tous deux dus au kit et non au produit :

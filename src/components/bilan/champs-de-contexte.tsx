@@ -13,6 +13,7 @@ import {
   type TransportProche,
 } from '@/types/bilan';
 import {
+  AUCUN_TRANSPORT,
   basculerTransport,
   CHOIX_DE_TRANSPORTS,
   CHOIX_DE_VEHICULES,
@@ -58,8 +59,14 @@ const AIDE_TRANSPORTS = 'Coche tout ce qui passe assez souvent pour t’en servi
  * de se classer selon le métro alors que le métro ne se décide plus là. La zone garde sa part dans la
  * moyenne montrée à la restitution (`mobility_constrained` en zone rurale).
  */
-const AIDE_ZONE =
-  'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.';
+const DEFINITIONS_DE_ZONE = [
+  { terme: 'Urbain dense :', definition: 'une grande ville et sa proche banlieue.' },
+  { terme: 'Périurbain :', definition: 'sa couronne, ou une ville moyenne ou petite.' },
+  { terme: 'Rural :', definition: 'un bourg, un village, la campagne.' },
+] as const;
+// **Une ligne par zone** (03/10/2026, canvas de l'étape du contexte) : les mêmes mots, mis en liste — la
+// phrase d'un seul tenant se lisait comme un bloc sombre, plus foncé que la question qu'il explique. Le
+// terme se lit d'abord, la définition à côté, plus claire.
 
 /**
  * Les quatre questions B4, rendues **une seule fois pour deux écrans** (C6.4, `v1-19` D5).
@@ -95,7 +102,7 @@ export function ChampsDeContexte({
       <SerieDuContexte
         champ="zone_type"
         question={QUESTION_ZONE}
-        aide={AIDE_ZONE}
+        definitions={DEFINITIONS_DE_ZONE}
         options={CHOIX_DE_ZONE}
         valeur={choix.zone_type}
         onChange={(value) => update({ zone_type: value })}
@@ -153,7 +160,7 @@ export function ChampsDeContexte({
 function SerieDuContexte<T extends string>({
   champ,
   question,
-  aide,
+  definitions,
   options,
   valeur,
   onChange,
@@ -161,12 +168,13 @@ function SerieDuContexte<T extends string>({
   champ: ChampDuBilan;
   question: string;
   /**
-   * Une ligne d'aide sous la question, au-dessus des puces — dans le registre des aides du
-   * questionnaire (« Un aller-retour compte pour deux vols. »), mais un cran plus lisible que
-   * l'intitulé, qui est lui-même en tertiaire : deux lignes du même gris se liraient comme un
-   * intitulé sur deux lignes.
+   * Des définitions sous la question, au-dessus des puces — une par réponse. **Plus claires que la
+   * question qu'elles expliquent** depuis le 03/10/2026 : l'aide était en `textSecondary` sous un
+   * intitulé tertiaire, « un cran au-dessus » (D4 de `v1-33`) ; avec deux aides, l'étape se lisait en
+   * deux blocs sombres et les questions passaient au second plan. La question est désormais en encre
+   * et en 600, l'aide en tertiaire et en 400.
    */
-  aide?: string;
+  definitions?: readonly { terme: string; definition: string }[];
   options: readonly { value: T; label: string; accessibilityLabel?: string }[];
   valeur: T | null;
   onChange: (valeur: T) => void;
@@ -175,14 +183,23 @@ function SerieDuContexte<T extends string>({
   const iCible = optionCible(options.map((option) => valeur === option.value));
   return (
     <View ref={bloc} style={styles.field}>
-      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>
-        {question}
-      </IntituleDuChamp>
-      {aide && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {aide}
-        </ThemedText>
-      )}
+      <View style={styles.enTete}>
+        <IntituleDuChamp type="default" weight={600} themeColor="text" marque={marque}>
+          {question}
+        </IntituleDuChamp>
+        {definitions && (
+          <View style={styles.definitions}>
+            {definitions.map(({ terme, definition }) => (
+              <ThemedText key={terme} type="small" weight={400} themeColor="textTertiary">
+                <ThemedText type="small" weight={600} themeColor="textSecondary">
+                  {terme}
+                </ThemedText>{' '}
+                {definition}
+              </ThemedText>
+            ))}
+          </View>
+        )}
+      </View>
       <GroupeDeChoix question={question} style={styles.row}>
         {options.map((option, i) => (
           <Chip
@@ -228,33 +245,49 @@ function SerieCumulableDuContexte({
   const { bloc, cible, marque } = useAncreDuChamp(champ);
   const cochees = options.map((option) => valeurs?.includes(option.value) ?? false);
   const iCible = optionCible(cochees);
+  const puce = (option: (typeof options)[number], i: number) => (
+    <Chip
+      key={option.value}
+      ref={i === iCible ? cible : undefined}
+      label={option.label}
+      role="checkbox"
+      selected={cochees[i]}
+      onPress={() => onToggle(option.value)}
+      radius={Radius.chip}
+    />
+  );
+  const rangs = options.map((option, i) => ({ option, i }));
   return (
     <View ref={bloc} style={styles.field}>
-      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>
-        {question}
-      </IntituleDuChamp>
-      <ThemedText type="small" themeColor="textSecondary">
-        {aide}
-      </ThemedText>
-      <GroupeDeChoix question={question} cumulable style={styles.rangeeQuiPasseALaLigne}>
-        {options.map((option, i) => (
-          <Chip
-            key={option.value}
-            ref={i === iCible ? cible : undefined}
-            label={option.label}
-            role="checkbox"
-            selected={cochees[i]}
-            onPress={() => onToggle(option.value)}
-            radius={Radius.chip}
-          />
-        ))}
+      <View style={styles.enTete}>
+        <IntituleDuChamp type="default" weight={600} themeColor="text" marque={marque}>
+          {question}
+        </IntituleDuChamp>
+        <ThemedText type="small" weight={400} themeColor="textTertiary">
+          {aide}
+        </ThemedText>
+      </View>
+      {/* **« Rien de tout ça » a sa ligne** (03/10/2026, canvas de l'étape du contexte) : elle exclut les
+          autres, et la placer à part le dit avant qu'on la touche. Les deux rangées restent dans le même
+          groupe nommé, qui n'est pas un `radiogroup`. */}
+      <GroupeDeChoix question={question} cumulable style={styles.rangees}>
+        <View style={styles.rangeeQuiPasseALaLigne}>
+          {rangs.filter(({ option }) => option.value !== AUCUN_TRANSPORT).map(({ option, i }) => puce(option, i))}
+        </View>
+        <View style={styles.rangeeQuiPasseALaLigne}>
+          {rangs.filter(({ option }) => option.value === AUCUN_TRANSPORT).map(({ option, i }) => puce(option, i))}
+        </View>
       </GroupeDeChoix>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  field: { gap: Spacing.two + 2 },
+  // La question et son aide, serrées ; les puces, à 12 dessous.
+  field: { gap: Spacing.two + Spacing.one },
+  enTete: { gap: Spacing.one },
+  definitions: { gap: Spacing.half },
   row: { flexDirection: 'row', gap: Spacing.two },
+  rangees: { gap: Spacing.two },
   rangeeQuiPasseALaLigne: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 });

@@ -32,7 +32,7 @@ import {
   type CeQuiManque,
   type ChampDuBilan,
 } from '@/types/bilan';
-import { decalagePourMontrer, suiteSousLePied } from '@/types/demande';
+import { contenuSousLaTete, decalagePourMontrer, suiteSousLePied } from '@/types/demande';
 import type { Sens } from '@/types/mouvement';
 
 // Coquille commune à tous les écrans du questionnaire : en-tête de progression, contenu
@@ -294,7 +294,10 @@ export function StepShell({
   // ce qui manque ; il dit qu'il y a une suite. Relu à chaque défilement, à chaque changement de taille
   // du contenu, et quand la zone change de hauteur — la ligne qui apparaît la rétrécit. Sans animation.
   const [suite, setSuite] = useState(false);
-  const relireLaSuite = () =>
+  // **Et celui de la tête** (03/10/2026, canvas de l'étape du contexte) : le même trait, en bas de la
+  // tête, dès que le contenu passe dessous (`contenuSousLaTete`). Sans animation non plus.
+  const [sousLaTete, setSousLaTete] = useState(false);
+  const relireLaSuite = () => {
     setSuite(
       suiteSousLePied({
         decalage: zone.current.decalage,
@@ -302,6 +305,8 @@ export function StepShell({
         hauteurContenu: zone.current.hauteurDuContenu,
       })
     );
+    setSousLaTete(contenuSousLaTete({ decalage: zone.current.decalage }));
+  };
   /** Le défilement de la plateforme : `scrollTo` ne prend ni durée ni courbe, et sous « réduire les
    *  animations » il se pose. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5). */
   const defiler = (y: number) => defilement.current?.scrollTo({ y, animated: !animationsReduites });
@@ -397,6 +402,8 @@ export function StepShell({
               {motDeRamille}
             </ThemedText>
           )}
+          {/* En position absolue, comme celui du pied : rien ne bouge quand il apparaît. */}
+          {sousLaTete && <View style={[styles.filetDeTete, { backgroundColor: theme.border }]} />}
         </View>
         <ScrollView
           ref={defilement}
@@ -498,11 +505,19 @@ export function StepShell({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  headerBlock: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
+  // 8 sous la tête : le filet qui s'y pose quand le contenu passe dessous ne colle pas à la phrase de
+  // Ramille.
+  headerBlock: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
+    gap: Spacing.three,
+  },
   notice: { borderRadius: Radius.notice, paddingVertical: 10, paddingHorizontal: Spacing.three },
   motDeRamille: { lineHeight: 20 },
   // Sa marge basse est celle que le filet ne compte pas comme une suite (`MARGE_BASSE_DU_CONTENU`,
-  // `src/types/demande.ts`) : les deux se retouchent ensemble.
+  // `src/types/demande.ts`), sa marge haute celle que le filet de tête ne compte pas
+  // (`MARGE_HAUTE_DU_CONTENU`) : elles se retouchent ensemble.
   scrollContent: { padding: Spacing.four, gap: Spacing.five, flexGrow: 1 },
   // Le padding vit sur le bloc, pas sur la rangée : le message doit être aligné sur les
   // boutons et non collé au bord.
@@ -512,4 +527,5 @@ const styles = StyleSheet.create({
   // Le trait de la bande haute des onglets (`bande-haute.tsx`) : un cheveu, couleur `border`, pleine
   // largeur.
   filet: { position: 'absolute', top: 0, left: 0, right: 0, height: StyleSheet.hairlineWidth },
+  filetDeTete: { position: 'absolute', bottom: 0, left: 0, right: 0, height: StyleSheet.hairlineWidth },
 });

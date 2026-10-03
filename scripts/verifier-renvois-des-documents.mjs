@@ -80,6 +80,10 @@
 //   - `src/types/une-seule-fois.ts` → `une-seule-foiz.ts` → 1 écart, sur cette ligne ;
 //   - le même, le fichier retiré de `DOCUMENTS` → **vert**, 1 247 renvois dans 106 documents au lieu
 //     de 1 280 dans 107.
+// **Et le 03/10/2026, quand `docs/communication/` y est entré** (le film de présentation) — deux
+// mutations, l'état d'avant réécrit après chacune :
+//   - `src/types/checkin.ts` → `checkinn.ts` dans le README du film → 1 écart, sur cette ligne ;
+//   - le même, le dossier retiré de `DOSSIERS_RECURSIFS` → **vert** : le README n'était pas lu.
 // Et un passage qui doit rester **vert** : les renvois tolérés ci-dessous, dont beaucoup
 // désignent des fichiers qui n'ont jamais eu à exister dans le dépôt. Leur nombre ne s'écrit
 // pas — il s'est périmé le 21/09/2026, à la tolérance suivante.
@@ -134,8 +138,10 @@ const DOSSIERS = ['docs/exploitation', 'docs/recette'];
  * 26/09/2026 : il est un miroir tenu (`v1-29` §5), et son `readme.md` citait trois fichiers qui
  * n'existaient nulle part — relevés à la main le 25/09/2026, faute d'un contrôle qui les voie. Ses
  * `.md` sont le `readme.md`, `SKILL.md` et une fiche d'usage (`.prompt.md`) par composant.
+ * `docs/communication/` y entre le 03/10/2026, avec le film de présentation : son README dit d'où
+ * vient chaque texte du film, et ce n'est vrai que tant que ces fichiers existent.
  */
-const DOSSIERS_RECURSIFS = ['docs/design/design-system'];
+const DOSSIERS_RECURSIFS = ['docs/design/design-system', 'docs/communication'];
 
 /**
  * Les consignes de Claude Code que le dépôt a écrites lui-même : les sous-agents de

@@ -151,6 +151,17 @@ voyage est en `FRONT.md` §1.
   marge basse de 24. Il ne dit pas ce qui manque. Relu au défilement, à la taille du contenu et à
   celle de la zone ; sans animation. La marge basse du contenu et `MARGE_BASSE_DU_CONTENU` se
   retouchent ensemble.
+- **Et un filet en bas de la tête dit que le contenu passe dessous** (`contenuSousLaTete`,
+  03/10/2026, canvas de l'étape du contexte) : le même trait, dès que le défilement a mangé la marge
+  haute de 24 (`MARGE_HAUTE_DU_CONTENU`). Sans lui, l'aide de la zone venait se coller sous la phrase
+  fixe de Ramille et se lisait comme sa suite. La tête garde 8 sous cette phrase pour que le filet n'y
+  colle pas — 8 de moins pour la zone qui défile, sur chaque étape.
+- **L'étape du contexte pose ses questions d'abord** (03/10/2026, même canvas) : chaque question en
+  `default` 600 à l'encre, son aide dessous en `small` 400 tertiaire, plus claire qu'elle. L'inverse
+  avait été voulu pour une seule aide (`v1-33` D4, « un cran au-dessus de l'intitulé tertiaire ») ;
+  avec deux, l'étape se lisait en deux blocs sombres. La définition de la zone se lit une ligne par
+  zone, les mêmes mots, et « Rien de tout ça » a sa propre ligne. **Elle défile toujours à 390** :
+  elle dépassait de 172 px pour 100 px d'aides, et la faire tenir aurait coupé dans les mots.
 - **Deux précisions de plus depuis C4.4, et une asymétrie d'effacement qui n'est pas évidente.**
   « Train » ouvre TER / RER ou Transilien / Intercités, « Vélo » ouvre mécanique / à assistance,
   sur les trois écrans qui posent un mode — on ne prend pas le même train pour aller travailler et

@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { TRACE_DE_LA_COCHE } from '@/components/coche';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
@@ -24,7 +25,7 @@ export function PastilleEngagee() {
     <View style={[styles.pastille, { backgroundColor: theme.accent }]}>
       <Svg width={12} height={12} viewBox="0 0 24 24">
         <Path
-          d="M5 13l4 4L19 7"
+          d={TRACE_DE_LA_COCHE}
           stroke={theme.onAccent}
           strokeWidth={3}
           strokeLinecap="round"

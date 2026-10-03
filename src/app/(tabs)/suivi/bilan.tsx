@@ -1010,6 +1010,9 @@ export default function BilanResultat() {
                     onPress={() => void retirer()}
                     disabled={retraitEnCours}
                     flex
+                    // Posé sur l'encart (03/10/2026, `surfaceDuBouton`) : désactivé pendant l'envoi, il
+                    // en prenait le gris et n'avait plus de bord.
+                    onPanel
                   />
                 </View>
                 <MessageInline message={messageDuRetrait} />

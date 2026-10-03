@@ -5,11 +5,12 @@ export interface ChipProps {
   onPress?: () => void;
   /**
    * Obligatoire : `radio` pour une puce d'un groupe à choix unique (la majorité du questionnaire),
-   * `checkbox` pour une puce qui se cumule avec ses voisines (les jours de l'engagement). Jamais
-   * `button` : une action est un `Button` ou un `TextLink`.
+   * `checkbox` pour une puce qui se cumule avec ses voisines (les jours de l'engagement, ce qui passe
+   * près de chez soi) — elle porte alors une case, vide ou cochée (03/10/2026). Jamais `button` : une
+   * action est un `Button` ou un `TextLink`.
    */
   role: 'radio' | 'checkbox';
-  /** Équirépartie dans sa rangée (Oui/Non, taille de covoiturage) ; sinon largeur naturelle, en pilule. */
+  /** Équirépartie dans sa rangée (Oui/Non, taille de covoiturage), ou sa largeur venue d'une cellule (les jours de l'engagement) ; sinon largeur naturelle, en pilule. */
   flex?: boolean;
   /** solid = accent plein + onAccent (nombres, tranches, jours) ; outline = teinte + bordure accent (Oui/Non, échéances). */
   selectedStyle?: 'solid' | 'outline';

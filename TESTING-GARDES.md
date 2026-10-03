@@ -321,6 +321,8 @@ vu en une seconde — mais personne ne le lance.
   y entre depuis le 26/09/2026, sous-dossiers compris** (`docs/design/design-system/`, un miroir
   tenu), et les extensions de documents, de feuilles et d'images avec lui : son index citait deux
   fichiers `.md` qui n'existaient nulle part, qu'un contrôle limité au code ne pouvait pas voir.
+  **`docs/communication/` y entre le 03/10/2026**, sous-dossiers compris : le README du film de
+  présentation nomme les fichiers d'où vient chacun de ses textes.
   Un répertoire cité seul lui échappe encore — sans extension, rien ne distingue un chemin d'un
   mot. **Les consignes Claude écrites pour Ramille y entrent le 27/09/2026** : les sous-agents de
   `.claude/agents/`, et les skills qu'aucun plug-in importé ne revendique. Le partage se lit dans

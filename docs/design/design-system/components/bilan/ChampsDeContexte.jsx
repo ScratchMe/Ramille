@@ -61,25 +61,41 @@ const QUESTION_ZONE = 'Dans quel type de zone vis-tu ?';
 const QUESTION_TRANSPORTS = 'Près de chez toi, qu’est-ce que tu pourrais prendre ?';
 const AIDE_TRANSPORTS = 'Coche tout ce qui passe assez souvent pour t’en servir.';
 const QUESTION_VEHICULES = 'Combien de véhicules motorisés dans ton foyer ?';
-// La ligne d'aide sous la zone, en `small` `textSecondary` : un cran au-dessus de l'intitulé tertiaire. Une
-// définition depuis `v1-34` (D6) : la zone ne décide plus du métro et du tram.
-const AIDE_ZONE =
-  'Urbain dense : une grande ville et sa proche banlieue. Périurbain : sa couronne, ou une ville moyenne ou petite. Rural : un bourg, un village, la campagne.';
+// La définition de la zone, une ligne par zone (03/10/2026, canvas de l'étape du contexte) : les mêmes mots, le
+// terme en 600 `textSecondary`, la définition en 400 tertiaire. Une définition depuis `v1-34` (D6).
+const DEFINITIONS_DE_ZONE = [
+  ['Urbain dense :', 'une grande ville et sa proche banlieue.'],
+  ['Périurbain :', 'sa couronne, ou une ville moyenne ou petite.'],
+  ['Rural :', 'un bourg, un village, la campagne.'],
+];
 
-// `field` (gap `Spacing.two + 2`) et `row` (rangée, gap `Spacing.two`) de la source.
-const CHAMP = { display: 'flex', flexDirection: 'column', gap: 10 };
+// **La question d'abord** (03/10/2026, même canvas) : la question en `default` 600 à l'encre, l'aide dessous en
+// `small` 400 tertiaire, plus claire qu'elle — elle était en `textSecondary` sous un intitulé tertiaire.
+// `field` (gap 12), `enTete` (gap 4), `row` (gap 8) de la source.
+const CHAMP = { display: 'flex', flexDirection: 'column', gap: 12 };
+const EN_TETE = { display: 'flex', flexDirection: 'column', gap: 4 };
 const RANGEE = { flexDirection: 'row', gap: 8 };
 // `rangeeQuiPasseALaLigne` de la source : des pilules à largeur naturelle, qui passent à la ligne.
 const RANGEE_QUI_PASSE_A_LA_LIGNE = { flexDirection: 'row', flexWrap: 'wrap', gap: 8 };
 
 // Une série : son intitulé, ses puces équiréparties au rayon `Radius.chip` (14), et son ancre. Un composant et non une
 // fonction qui rend du JSX : l'ancre est un hook.
-const SerieDuContexte = ({ champ, question, aide, options, valeur, onChange }) => {
+const SerieDuContexte = ({ champ, question, definitions, options, valeur, onChange }) => {
   const { bloc, marque } = useAncreDuChamp(champ);
   return (
     <div ref={bloc} style={CHAMP}>
-      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>{question}</IntituleDuChamp>
-      {aide && <ThemedText type="small" themeColor="textSecondary">{aide}</ThemedText>}
+      <div style={EN_TETE}>
+        <IntituleDuChamp type="default" weight={600} themeColor="text" marque={marque}>{question}</IntituleDuChamp>
+        {definitions && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {definitions.map(([terme, definition]) => (
+              <ThemedText key={terme} type="small" weight={400} themeColor="textTertiary">
+                <ThemedText type="small" weight={600} themeColor="textSecondary">{terme}</ThemedText> {definition}
+              </ThemedText>
+            ))}
+          </div>
+        )}
+      </div>
       <GroupeDeChoix question={question} style={RANGEE}>
         {options.map((option) => (
           <Chip key={option.value} label={option.label} accessibilityLabel={option.accessibilityLabel} role="radio"
@@ -91,17 +107,23 @@ const SerieDuContexte = ({ champ, question, aide, options, valeur, onChange }) =
 };
 
 // La série qui se coche (`v1-34`) : des `checkbox` dans un groupe nommé, des pilules à largeur naturelle.
+// « Rien de tout ça » a sa ligne (03/10/2026) : elle exclut les autres, et la placer à part le dit avant qu'on la
+// touche. Les deux rangées restent dans le même groupe nommé. Chaque puce porte sa case (`Chip`).
 const SerieCumulableDuContexte = ({ champ, question, aide, options, valeurs, onToggle }) => {
   const { bloc, marque } = useAncreDuChamp(champ);
+  const puce = (option) => (
+    <Chip key={option.value} label={option.label} role="checkbox"
+      selected={(valeurs ?? []).includes(option.value)} onPress={() => onToggle(option.value)} radius={14} />
+  );
   return (
     <div ref={bloc} style={CHAMP}>
-      <IntituleDuChamp type="small" themeColor="textTertiary" marque={marque}>{question}</IntituleDuChamp>
-      <ThemedText type="small" themeColor="textSecondary">{aide}</ThemedText>
-      <GroupeDeChoix question={question} cumulable style={RANGEE_QUI_PASSE_A_LA_LIGNE}>
-        {options.map((option) => (
-          <Chip key={option.value} label={option.label} role="checkbox"
-            selected={(valeurs ?? []).includes(option.value)} onPress={() => onToggle(option.value)} radius={14} />
-        ))}
+      <div style={EN_TETE}>
+        <IntituleDuChamp type="default" weight={600} themeColor="text" marque={marque}>{question}</IntituleDuChamp>
+        <ThemedText type="small" weight={400} themeColor="textTertiary">{aide}</ThemedText>
+      </div>
+      <GroupeDeChoix question={question} cumulable style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', ...RANGEE_QUI_PASSE_A_LA_LIGNE }}>{options.filter((o) => o.value !== 'aucun').map(puce)}</div>
+        <div style={{ display: 'flex', ...RANGEE_QUI_PASSE_A_LA_LIGNE }}>{options.filter((o) => o.value === 'aucun').map(puce)}</div>
       </GroupeDeChoix>
     </div>
   );
@@ -109,12 +131,12 @@ const SerieCumulableDuContexte = ({ champ, question, aide, options, valeurs, onT
 
 export function ChampsDeContexte({ choix, trajet, update }) {
   const questionTeletravail = 'Sur tes ' + trajet.commute_days_per_week + ' jours de trajet, combien pourrais-tu travailler depuis chez toi ?';
-  const serie = (question, options, cle, aide) => (
-    <SerieDuContexte champ={cle} question={question} aide={aide} options={options} valeur={choix[cle]} onChange={(valeur) => update({ [cle]: valeur })} />
+  const serie = (question, options, cle, definitions) => (
+    <SerieDuContexte champ={cle} question={question} definitions={definitions} options={options} valeur={choix[cle]} onChange={(valeur) => update({ [cle]: valeur })} />
   );
   return (
     <>
-      {serie(QUESTION_ZONE, CHOIX_DE_ZONE, 'zone_type', AIDE_ZONE)}
+      {serie(QUESTION_ZONE, CHOIX_DE_ZONE, 'zone_type', DEFINITIONS_DE_ZONE)}
       <SerieCumulableDuContexte champ="transports_proches" question={QUESTION_TRANSPORTS} aide={AIDE_TRANSPORTS}
         options={CHOIX_DE_TRANSPORTS} valeurs={choix.transports_proches}
         onToggle={(valeur) => update({ transports_proches: basculerTransport(choix.transports_proches, valeur) })} />

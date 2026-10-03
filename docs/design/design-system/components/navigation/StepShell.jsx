@@ -80,6 +80,10 @@ const decalagePourMontrer = ({ decalage, hauteurZone, haut, bas, ouverture = fal
 };
 const suiteSousLePied = ({ decalage, hauteurZone, hauteurContenu }) =>
   decalage + hauteurZone < hauteurContenu - MARGE_BASSE_DU_CONTENU - 0.5;
+// `contenuSousLaTete` (src/types/demande.ts, 03/10/2026) : le filet de la tête, dès que le défilement a mangé la
+// marge haute de 24 — sans lui, l'aide de la zone venait se coller sous la phrase de Ramille.
+const MARGE_HAUTE_DU_CONTENU = 24;
+const contenuSousLaTete = ({ decalage }) => decalage > MARGE_HAUTE_DU_CONTENU - 0.5;
 
 // `optionCible` (src/types/demande.ts), lue dans le bloc : le dépôt passe la cible par la prop `ref` d'une option, que
 // React 18 ne transmet pas à une fonction. Les options d'un groupe sont celles dont il est le groupe le plus proche.
@@ -199,9 +203,12 @@ export function StepShell({ section, step, total, children, onBack, onNext, next
 
   // Le filet : relu au défilement, et quand le contenu ou la zone changent de taille — la ligne qui apparaît la rétrécit.
   const [suite, setSuite] = React.useState(false);
+  const [sousLaTete, setSousLaTete] = React.useState(false);
   const relireLaSuite = () => {
     const z = zone.current;
-    if (z) setSuite(suiteSousLePied({ decalage: z.scrollTop, hauteurZone: z.clientHeight, hauteurContenu: z.scrollHeight }));
+    if (!z) return;
+    setSuite(suiteSousLePied({ decalage: z.scrollTop, hauteurZone: z.clientHeight, hauteurContenu: z.scrollHeight }));
+    setSousLaTete(contenuSousLaTete({ decalage: z.scrollTop }));
   };
   React.useEffect(() => {
     const z = zone.current;
@@ -217,12 +224,14 @@ export function StepShell({ section, step, total, children, onBack, onNext, next
   const Ancres = contexteDesAncres();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: 'var(--color-background)', ...style }}>
-      <div style={{ padding: '8px 24px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* 8 sous la tête, pour que son filet ne colle pas à la phrase de Ramille. */}
+      <div style={{ position: 'relative', padding: '8px 24px 8px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <ProgressHeader section={section} step={step} total={total} />
         {notice && <div style={{ background: 'var(--color-background-selected)', borderRadius: 12, padding: '10px 16px' }}><ThemedText type="small" themeColor="accentText">{notice}</ThemedText></div>}
         {/* Le mot de Ramille à l'entrée d'une section, SANS `RamilleDit` : son visage est déjà dans l'en-tête, juste
             au-dessus — un second ferait deux Ramille sur le même écran. La phrase vient de `RAMILLE.entreeDeSection`. */}
         {motDeRamille && <ThemedText type="small" themeColor="textTertiary" style={{ lineHeight: '20px' }}>{motDeRamille}</ThemedText>}
+        {sousLaTete && <div aria-hidden="true" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'var(--color-border)' }} />}
       </div>
       <div ref={zone} onScroll={relireLaSuite} style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column' }}>
         {/* Le conteneur reçoit le focus d'une nouvelle étape ; l'étape, dessous, prend sa clé : elle remonte d'une étape
