@@ -392,19 +392,19 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
             <div class="ecr ecr-calcul" id="e-calcul"><div class="slot-calcul" id="slot-calcul"></div><p>Je calcule ton bilan…</p></div>
 
             <div class="ecr ecr-bilan" id="e-bilan"><div class="defile" id="bilan-defile">
-              <div class="bb" id="bb1"><p class="b-titre">Ton bilan transport</p><p class="b-sous">Estimation annuelle, tous déplacements</p><p class="b-total">1,9&nbsp;t&nbsp;CO₂e</p></div>
+              <div class="bb" id="bb1"><p class="b-titre">Ton bilan transport</p><p class="b-sous">Estimation annuelle, tous déplacements</p><p class="b-total">2,1&nbsp;t&nbsp;CO₂e</p></div>
               <div class="bb" id="bb2"><p class="b-label">Répartition par poste</p>
                 <div class="b-lignes">
-                  <div class="b-ligne"><b>Trajet domicile-travail</b><b>1,2&nbsp;t</b><div class="b-barre"><i class="fort" style="width:63%"></i></div></div>
-                  <div class="b-ligne"><span>Loisirs du week-end</span><span>0,3&nbsp;t</span><div class="b-barre"><i style="width:16%"></i></div></div>
-                  <div class="b-ligne"><span>Voyages longue distance</span><span>0,4&nbsp;t</span><div class="b-barre"><i style="width:21%"></i></div></div>
+                  <div class="b-ligne"><b>Trajet domicile-travail</b><b>1,3&nbsp;t&nbsp;CO₂e</b><div class="b-barre"><i class="fort" style="width:61.3%"></i></div></div>
+                  <div class="b-ligne"><span>Loisirs du week-end</span><span>333&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:15.9%"></i></div></div>
+                  <div class="b-ligne"><span>Voyages longue distance</span><span>476&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:22.8%"></i></div></div>
                 </div></div>
               <div class="bb" id="bb3"><p class="b-label">Où tu te situes</p>
                 <div class="b-lignes">
-                  <div class="b-ligne"><b>Toi</b><b>1,9&nbsp;t</b><div class="b-barre"><i class="fort" style="width:58%"></i></div></div>
-                  <div class="b-ligne"><span>Ton prochain palier</span><span>1,7&nbsp;t</span><div class="b-barre"><i style="width:52%"></i></div></div>
+                  <div class="b-ligne"><b>Toi</b><b>2,1&nbsp;t</b><div class="b-barre"><i class="fort" style="width:63.4%"></i></div></div>
+                  <div class="b-ligne"><span>Ton prochain palier</span><span>1,8&nbsp;t</span><div class="b-barre"><i style="width:55.6%"></i></div></div>
                   <div class="b-ligne"><span>Moyenne en France</span><span>2,8&nbsp;t</span><div class="b-barre"><i style="width:85%"></i></div></div>
-                  <div class="b-ligne"><span>Repère transport 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i style="width:18%"></i></div></div>
+                  <div class="b-ligne"><span>Repère transport 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i style="width:18.2%"></i></div></div>
                 </div>
                 <p class="b-source" style="margin-top:calc(var(--dp) * 12)">SDES, données 2017 · cible 2050&nbsp;: ADEME</p></div>
             </div></div>
@@ -426,11 +426,11 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                   </div>
                 </div>
                 <div class="pistes" id="pistes">
-                  <div class="carte" id="c1"><p class="c-titre">Passer deux trajets sur cinq en train</p><p class="c-gain">−&nbsp;430&nbsp;kg&nbsp;CO₂e <span>par an · 23&nbsp;% de ton empreinte</span></p><span class="pastille-bord" id="c1-choix">Je m’y engage</span></div>
+                  <div class="carte" id="c1"><p class="c-titre">Passer deux trajets sur cinq en train</p><p class="c-gain">−&nbsp;412&nbsp;kg&nbsp;CO₂e <span>par an · 20&nbsp;% de ton empreinte</span></p><span class="pastille-bord" id="c1-choix">Je m’y engage</span></div>
                   <div class="carte" id="c2">
                     <p class="c-etiq"><span class="pastille"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.6 6.3 5 8.6l4.4-5"/></svg></span>Ton engagement</p>
                     <p class="c-titre">Faire ce trajet à deux au moins un jour sur deux</p>
-                    <p class="c-gain">−&nbsp;300&nbsp;kg&nbsp;CO₂e <span id="c2-ligne">par an · 16&nbsp;% de ton empreinte</span></p>
+                    <p class="c-gain">−&nbsp;320&nbsp;kg&nbsp;CO₂e <span id="c2-ligne">par an · 15&nbsp;% de ton empreinte</span></p>
                     <span class="pastille-bord" id="c2-engage">Je m’y engage</span>
                     <div class="depliage" id="c2-dep"><div class="depliage-dedans" id="c2-dep-dedans">
                       <p>Quels jours&nbsp;?</p>
@@ -439,7 +439,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                     </div></div>
                   </div>
                 </div>
-                <p class="lien-pistes" id="lien-pistes">Voir toutes les pistes · 6</p>
+                <p class="lien-pistes" id="lien-pistes">Voir toutes les pistes · 10</p>
               </div>
             </div>
 
@@ -1283,7 +1283,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const engagee = t >= T.engagee;
     C($('c2'), 'engagee', engagee);
     C($('c1'), 'estompee', engagee);
-    texte($('c2-ligne'), engagee ? 'par an · le mardi et le jeudi · 16 % de ton empreinte' : 'par an · 16 % de ton empreinte');
+    texte($('c2-ligne'), engagee ? 'par an · le mardi et le jeudi · 15 % de ton empreinte' : 'par an · 15 % de ton empreinte');
     texte($('c1-choix'), engagee ? 'Choisir celle-ci à la place' : 'Je m’y engage');
     // L'action engagée passe en tête (`ordonnerLesPistes`) : les deux cartes échangent leur place.
     const c1 = $('c1'), c2 = $('c2');

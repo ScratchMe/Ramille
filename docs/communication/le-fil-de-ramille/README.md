@@ -80,6 +80,9 @@ page elle-même : c'est aussi sa version texte.
   de format, puis une passe dans le désordre). À relancer après toute retouche du film ; chaque
   contrôle, hors le relais des erreurs de la page, a été éprouvé en cassant ce qu'il garde, et
   l'en-tête dit comment.
+- **`profil-d-exemple.sql`** — le profil d'exemple passé par le vrai calcul, sur la stack locale et
+  dans une transaction annulée : il rend les chiffres que le film recopie. À rejouer quand le calcul
+  ou le référentiel des facteurs change, avant tout export destiné à être diffusé.
 - **`lecture.mjs`** — le film joué pour de vrai, en musique, ce qu'aucune image rendue à un instant
   ne voit : le son ne saute pas et avance, tel quel comme avec une latence simulée ; l'image le
   suit, même quand il va 3 % plus vite qu'elle ; la lecture tient 60 images par seconde sur la
@@ -127,9 +130,15 @@ avant chaque diffusion.
 - **Les chiffres de référence** viennent de `src/constants/carbon-reference.ts`, avec leur source
   à l'écran : la moyenne française et sa répartition en cinq postes (SDES, 2017), et le repère
   transport 2050, qui est une **dérivation** de la cible de 2 t de l'ADEME — d'où le mot
-  « transport » dans son libellé. **Le bilan (1,9 t), le palier (1,7 t) et les gains du plan (430
-  et 300 kg) sont un profil d'exemple**, et l'image le dit (« Écrans de l'app · profil
-  d'exemple ») : ils n'ont pas été recalculés par l'estimateur.
+  « transport » dans son libellé. **Le bilan, le palier et les gains du plan sont ceux d'un profil
+  d'exemple**, et l'image le dit (« Écrans de l'app · profil d'exemple ») — mais **ce sont les
+  chiffres que l'app rend pour ce profil**, recalculés le 03/10/2026 par le vrai calcul :
+  `profil-d-exemple.sql` le passe sur la stack locale (2,1 t, dont 1,3 t de trajet domicile-travail,
+  333 kg de loisirs et 476 kg de voyages ; un palier à 1,8 t ; − 412 et − 320 kg pour les deux
+  pistes mises en avant, les mêmes et dans le même ordre que le plan les propose ; dix pistes en
+  tout). Leur forme est celle des écrans : `formatTonnes`, `formatTonnesShort`, `ligneDuGain`, et
+  les barres à l'échelle de la restitution. **Quand le calcul change, on le rejoue, et le film
+  suit.**
 
 ## Décidé le 03/10/2026
 
@@ -164,13 +173,13 @@ date, on maintient pas de score, pas de série, pas de classement. »
 4. **La musique** convient telle quelle. Elle se retouche dans `musique.py` (tempo, instruments,
    niveaux), sur la grille que le script vérifie ; une piste sous licence ne se verserait pas dans
    un dépôt public sans vérifier qu'elle le permet.
-5. **Le profil d'exemple est gardé** (1,9 t, le palier de 1,7 t, 430 et 300 kg) : il n'a pas été
-   recalculé par l'estimateur, et l'image le dit (« Écrans de l'app · profil d'exemple »).
-   **Ses chiffres seront recalculés par l'estimateur** (décidé le même jour, sur une seconde
-   question) : la fiche Play pose qu'« aucune capture ne doit montrer un chiffre inventé »
-   (`docs/exploitation/fiche-google-play.md` §2.3), et c'est là que va le 16:9. Le profil reste le
-   même — les réponses que le film montre —, ses chiffres deviennent ceux que l'app rendrait. Ce
-   recalcul passe avant tout export destiné à être diffusé.
+5. **Le profil d'exemple est gardé, et ses chiffres sont ceux de l'estimateur** (décidé le même
+   jour, sur une seconde question) : la fiche Play pose qu'« aucune capture ne doit montrer un
+   chiffre inventé » (`docs/exploitation/fiche-google-play.md` §2.3), et c'est là que va le 16:9.
+   Le profil est resté le même — les réponses que le film montre, les autres choisies pour un
+   périurbain qui va au travail en voiture —, et ses chiffres sont devenus ceux que l'app rend :
+   **fait le 03/10/2026** par `profil-d-exemple.sql` (la proposition montrait 1,9 t, 1,7 t, 430 et
+   300 kg, écrits à la main ; le calcul rend 2,1 t, 1,8 t, 412 et 320 kg).
 
 **Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
 minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
