@@ -31,7 +31,8 @@
 > **Et ce bloc 07 a été repris le 03/10/2026, ligne à ligne, dans
 > [`le-build-d-octobre.md`](le-build-d-octobre.md)**, la feuille du premier build Android depuis le
 > 14/09/2026 : c'est là qu'il se joue, avec ce que les PR du 02 et du 03/10 y ont changé. Ses lignes
-> ici ne se cochent plus ; chacune y est citée par son numéro (« 07.12 », « 07.19 »…).
+> ici ne se cochent plus ; chacune y est citée avec sa date (« 07.12 du 29/09 »), cette feuille-là
+> ayant son propre bloc 07.
 >
 > À jouer **dans un navigateur**, sur `https://www.ramille.fr`, **sur trois jours** — c'est le
 > calendrier ci-dessous qui décide de l'ordre, pas la numérotation.

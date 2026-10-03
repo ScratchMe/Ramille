@@ -360,11 +360,23 @@ premier build Android depuis cette date reprend le bloc 07 de celle du 29/09, le
 montré qu'au navigateur. Trois choses de forme, à reprendre pour la prochaine séance sur téléphone :
 **un seul profil**, dont le plan porte les deux pistes qu'il faut engager dans l'ordre (la feuille des
 rappels ne s'ouvre qu'une fois par téléphone, et c'est elle qui décide de l'ordre du bloc d'engagement) ;
-**un calendrier en trois temps** (le jour de l'installation, le lundi du point, puis une date) dont le
+**un calendrier en trois temps** (le jour de l'installation, la semaine du point, puis une date) dont le
 dernier bloc se compte à part, comme le bloc « après le build natif » de la quatrième ; et **un bloc de
 jugements**, la question à la place de l'attendu. Ses précautions, ce qu'elle ne joue pas et ce
 qu'elle ne prouve pas sont des listes, que le script extrait aussi (`TEXTES_PAR_FEUILLE`) : recopiées
 dans la page, elles auraient décroché à la première correction d'une contre-lecture.
+
+**Et sa contre-lecture, faite cette fois avant de la jouer, a rendu dix-sept défauts certains, dont
+la moitié tenaient à l'état que laisse un bloc** — ce qu'aucune relecture ligne à ligne ne voit. Trois
+leçons, qui valent pour toute feuille longue :
+- **compter les bilans comme le plan les compte, pas comme le suivi les montre** : le suivi n'en garde
+  qu'un par jour, le dernier, alors que le retrait et le plan les voient tous — « retirer le seul
+  bilan qui reste » était faux d'un bilan, fait le même jour sous TalkBack ;
+- **suivre le brouillon d'un bloc à l'autre** : hors ligne, il passe devant la marque de bilan, donc un
+  brouillon oublié trois blocs plus tôt masquait ce que la ligne voulait éprouver. La feuille termine
+  désormais le sien dans le bloc suivant ;
+- **citer les lignes d'une autre feuille avec sa date** (« 07.1 du 29/09 ») : la feuille avait son
+  propre bloc 07, et une référence nue désignait deux lignes.
 
 Les deux séances antérieures n'ont pas de document : celle du 14/09/2026 (sur appareil) vit dans la
 §12 de `v1-13`, celle du 16/09/2026 (web) dans sa §13. Elles ne se reconstituent pas — c'est
