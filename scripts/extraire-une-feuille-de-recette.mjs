@@ -61,6 +61,9 @@ const TEXTES_PAR_FEUILLE = {
     pasIci: ['liste', '## Ce qui ne se joue pas ici'],
     pasProuve: ['liste', '## Ce que cette séance ne prouve pas'],
     atterrissent: ['paragraphe', '## Où atterrissent les constats'],
+    // Ajoutés le 04/10/2026 : la section existait depuis le 03 au soir, et la page ne la montrait pas.
+    buildSuivant: ['paragraphe', '## Le build suivant'],
+    buildSuivantListe: ['liste', '**01.3 à 01.8 se rejouent'],
   },
 };
 

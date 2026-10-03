@@ -372,11 +372,28 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 
 ## Le build suivant
 
-> **Ajouté le 03/10/2026 au soir**, après le bloc 01 joué sur le build du jour : quatre écarts (01.3 à
-> 01.8), corrigés le même soir — ce qui s'ouvre sous un choix se pose sur Android, et le pied reste
-> au-dessus du clavier. Le build suivant **s'installe par-dessus**, sans désinstaller, pour garder le
-> compte et la séance ; on y **rejoue 01.3 à 01.8**, puis on reprend où l'on s'était arrêté. Le
-> clavier se regarde aussi en 04.4 et 09.6.
+Le bloc 01, joué le 03/10/2026 au soir sur le build du jour, a rendu cinq écarts (01.3, 01.4 et
+01.6 à 01.8), corrigés le même soir ([#351](https://github.com/ScratchMe/Ramille/pull/351)) : ce qui
+s'ouvre sous un choix se pose sur Android, et le pied reste au-dessus du clavier. Le build suivant,
+lancé le 04/10/2026 à 1 h 30 (heure de Paris), **s'installe par-dessus**, sans désinstaller : le
+compte Google et la séance restent. Ce qu'il change à la séance :
+
+- **01.3 à 01.8 se rejouent entre le bloc 05 et le bloc 06, et pas avant.** Rejouer le questionnaire
+  laisse un brouillon, et **hors ligne, un brouillon passe devant le plan** : avant le bloc 05, il
+  prendrait la place de l'écran que 05.2 attend. Le bloc 06 le termine, donc il n'y a pas de bilan
+  de plus à compter au bloc 10.
+- **Par « Revoir mon bilan » → « Faire un nouveau bilan » → « Commencer »** — la feuille « Ton plan
+  va être recalculé » s'ouvre d'abord, l'action du RER étant engagée. Les réponses sont préremplies :
+  pour voir ce qui s'ouvre sous un choix, toucher une autre option puis revenir à celle du profil ;
+  pour le clavier, toucher le champ de la distance. Le reste se joue comme écrit, et chaque ligne
+  finit sur la réponse du profil.
+- **Sortir par le retour matériel, étape par étape, jusqu'à quitter le questionnaire.** Le brouillon
+  reste alors sur la première étape, avec les réponses du profil : 06.2 le rouvre là, et le bloc 06
+  le soumet.
+- **Ce qui s'ouvre sous un choix se pose d'un coup, sans grandir** : c'est voulu sur Android
+  (`FRONT-MOUVEMENT.md` §2.12), et un saut là n'est pas un écart. L'écart, c'est que rien ne
+  s'affiche.
+- **Le clavier se regarde aussi en 04.4 et 09.6.**
 
 ## Ce que cette séance ne prouve pas
 
