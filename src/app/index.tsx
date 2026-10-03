@@ -8,6 +8,7 @@ import { DUREE_ANIMATION_LANCEMENT, EcranLancement } from '@/components/ecran-la
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
+import { prechargerLePlan } from '@/lib/lecture-du-plan';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 import { ecouterLeRefus, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
@@ -125,6 +126,12 @@ export default function Index() {
         }
 
         if (annule) return;
+        // **La lecture du plan part maintenant, et le plancher la couvre** (`v1-33` T-12, 03/10/2026).
+        // Elle partait après lui, quand le plan se montait : le temps qui restait jusqu'au plancher ne
+        // servait à rien, et les trois allers-retours du plan s'y ajoutaient. Seulement sur une lecture
+        // réussie : hors ligne (la marque locale), elle échouerait tout de suite, et l'écran du plan
+        // garderait cet échec au lieu de retenter sa propre lecture quand il se monte.
+        if (destination.vers === 'plan' && lecture.etat === 'lue') prechargerLePlan();
         // **Plancher d'affichage, pas délai ajouté.** Une session déjà en cache répond en
         // ~200 ms : l'écran d'ouverture était payé — un temps d'arrêt à chaque lancement —
         // sans jamais être vu. On complète jusqu'à la fin de l'animation, et un démarrage

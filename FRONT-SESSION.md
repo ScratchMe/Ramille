@@ -225,6 +225,17 @@ périmerait en silence au prochain passage :
 
 ### 2.9 Le démarrage : marques locales, brouillon, reprise, et ce qu'on promet sans compte
 
+- **La lecture du plan part pendant l'écran de lancement, et le plancher la couvre** (`v1-33` T-12,
+  03/10/2026). La racine (`src/app/index.tsx`) lisait la session et le dernier bilan, attendait le
+  plancher de 1 450 ms (`DUREE_ANIMATION_LANCEMENT`), puis routait vers le plan — qui ne commençait
+  qu'alors ses trois allers-retours. La lecture vit désormais dans `src/lib/lecture-du-plan.ts` : la
+  racine la lance (`prechargerLePlan`) dès qu'une lecture réussie désigne le plan, et le premier
+  chargement de l'écran la reprend (`lectureDuPlan`), **une fois, et fraîche** (dix secondes) — un
+  retour sur l'onglet relit la base comme avant. Hors ligne, la marque locale route vers le plan sans
+  rien précharger : l'écran retente sa propre lecture en se montant. Mesuré sur l'export, une latence
+  posée sur chaque requête : de 2,94 à 1,78 s à 300 ms, de 2,14 à 1,64 s à 100 ms, entre l'ouverture
+  et le plan qui montre son action. **Une lecture que l'écran du plan ajoute se place dans
+  `lireLePlan`**, pas dans l'effet de l'écran : sinon elle repart après le plancher, et le gain fond.
 - Persistance locale (brouillon de bilan, préférences UI comme "a déjà vu la proposition de
   connexion", jeton d'appareil, ouverture de saison vue, marque « cet appareil a vu un bilan ») via
   AsyncStorage — explicitement device-local, pas de sync multi-device tant que le compte n'est pas
