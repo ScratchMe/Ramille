@@ -4,28 +4,34 @@
 //
 // `CHROMIUM=/chemin/vers/chrome` remplace le navigateur de Playwright, comme pour l'export.
 //
-// **Chaque quart de seconde, dans les deux formats, à la taille de l'export et à cinq tailles de
-// lecteur**, sur les éléments entièrement visibles à cet instant :
+// **Chaque quart de seconde, dans les deux formats, à la taille de l'export et à trois tailles de
+// lecteur (cinq cas)**, sur les éléments entièrement visibles à cet instant :
 //   - un texte qui sort de l'écran du téléphone, ou de la scène, à l'horizontale ;
 //   - un texte qui sort de la scène par le haut ou le bas (hors du téléphone, que le 16:9 coupe
 //     exprès par le bas) ;
 //   - un texte plus large que sa boîte, ou coupé dans un bouton, une puce ou une étiquette ;
 //   - deux blocs de la scène qui se chevauchent (hors du vol de la mascotte vers le téléphone),
-//     étiquettes des arrêts et des saisons comprises, et une étiquette posée sur le trait ;
-//   - ce que le téléphone doit montrer en entier et que le cadre coupe : le bas de la restitution
-//     une fois défilée, le choix des jours une fois déplié ;
+//     étiquettes des arrêts et des saisons comprises, et une étiquette posée sur le trait,
+//     épaisseur comprise ;
+//   - ce que le téléphone doit montrer en entier et que le cadre coupe, avec la marge que le film
+//     promet dessous : le bas de la restitution une fois défilée (12 dp), le choix des jours une
+//     fois déplié (16 dp) ;
 //   - un appui que le cadre coupe, ou un doigt qui tombe à côté de sa cible.
 //
-// **Le temps de lire, aux deux formats de l'export, par pas de 0,05 s** : chaque texte de la scène,
-// chaque réplique de Ramille et la notification restent entièrement visibles — opaques, dans le
-// cadre, sous aucun aplat — au moins 2,5 s. Un titre se lit quand son dernier mot est posé : c'est
-// le plus court de ses mots qui compte. L'écran du téléphone, lui, se montre au rythme d'un geste.
-//
-// **La pureté, aux deux formats de l'export** : l'image d'un instant ne dépend que de cet instant.
-// Une passe dans l'ordre, puis un aller-retour par l'autre format, puis une passe dans le désordre :
-// chaque image doit être identique à celle de la première passe. La version du 03/10/2026 mesurait
-// le défilement du plan au premier passage, et l'épaisseur du trait échappait au cache d'écriture :
-// selon l'ordre des sauts, le même instant rendait trois images différentes.
+// **Aux deux formats de l'export, en plus** :
+//   - **le temps de lire, par pas de 0,05 s** : chaque texte de la scène, chaque réplique de
+//     Ramille et la notification restent entièrement visibles — opaques, dans le cadre, sous aucun
+//     aplat — au moins 2,5 s, et un texte qui ne l'est jamais sort à 0,00 s. Un titre se lit quand
+//     son dernier mot est posé : c'est le plus court de ses mots qui compte. Les autres textes de
+//     l'écran du téléphone se montrent au rythme d'un geste, et ne sont pas mesurés ;
+//   - **le doigt immobile**, à 60 images par seconde autour de chaque appui : tant qu'on le voit,
+//     il ne bouge pas de plus de 2 px d'une image à l'autre sur l'écran du téléphone. Il suivait sa
+//     cible quand elle s'envolait ;
+//   - **la pureté** : l'image d'un instant ne dépend que de cet instant. Une passe dans l'ordre,
+//     puis un aller-retour par l'autre format, puis une passe dans le désordre : chaque image doit
+//     être identique à celle de la première passe. La version du 03/10/2026 mesurait le défilement
+//     du plan au premier passage, et l'épaisseur du trait échappait au cache d'écriture : selon
+//     l'ordre des sauts, le même instant rendait trois images différentes.
 //
 // **Pourquoi plusieurs tailles, alors que le film se compose à taille fixe** : c'est justement ce
 // qu'il éprouve. Le 03/10/2026, le 16:9 débordait chez la personne qui pilote : composé en unités
@@ -36,16 +42,27 @@
 // compose à 1600 × 900 px et se met à l'échelle d'un bloc, les sept cas rendent le même résultat.
 //
 // Éprouvé le 03/10/2026, en cassant ce qu'il garde (`FILM=<copie faussée>`) — chaque mutation vue,
-// le témoin à zéro :
+// le témoin à zéro. Tous les contrôles, sauf le relais des erreurs de la page :
 //   - les titres de droite déplacés sur le téléphone en 16:9 → 6 chevauchements ;
+//   - les titres d'ouverture du 16:9 descendus à 45 % → « chevauchement » avec l'étiquette
+//     « Au travail » ;
 //   - « Vendredi » en toutes lettres dans une puce de jour → « texte plus large que sa boîte » ;
 //   - un libellé de bouton final trop long → « déborde à l'horizontale » ;
+//   - la source du 16:9 descendue à 99 % → « sort de la scène » (à 97 %, elle tient encore) ;
+//   - « Non, pas cette semaine ni la précédente » dans le bouton du point → « texte coupé en
+//     hauteur », aux sept cas ;
 //   - le texte du manifeste qui sort à 67,6 s → « moins de 2,5 s pour lire » sur ses deux dernières
 //     lignes, aux deux formats ;
+//   - « Et les tiens, ils pèsent combien ? » réduit à 0,1 s → « moins de 2,5 s pour lire : 0,00 s » ;
 //   - le téléphone du 16:9 gardé à sa taille pendant le questionnaire → « appui hors cadre » sur
 //     « Suivant », aux quatre cas 16:9 ;
-//   - le doigt décalé de 40 dp → « doigt à côté de sa cible », sur chacun des onze appuis ;
+//   - le doigt décalé de 60 dp → « doigt à côté de sa cible », sur les douze cibles (à 40 dp, la
+//     notification, haute de 100 dp, le gardait encore) ;
+//   - l'appui de la notification, puis celui de « C'est noté », remis à 0,1 et 0,15 s de leur
+//     coupe → « doigt qui bouge pendant son appui », à 53,07 s et à 44,87 s ;
 //   - la restitution qui ne défile plus → « coupé par le cadre » sur son bas, en 16:9 ;
+//   - le plan qui ne défile plus au choix des jours → « coupé par le cadre » sur le choix, aux quatre
+//     cas 16:9 (sans la marge promise, il ne dépassait que de 0,67 px et passait) ;
 //   - les saisons du 9:16 toutes nommées dessous → « étiquette sur le trait » sur « Printemps » ;
 //   - `montrer()` qui n'écrit plus la transformation d'un élément caché → « dépend de l'ordre des
 //     sauts » et « aller-retour de format » ;
@@ -147,6 +164,7 @@ function constater(t) {
   const fil = document.getElementById('fil');
   if (fil.getAttribute('d')) {
     const m = fil.getScreenCTM(), L = fil.getTotalLength(), pt = document.getElementById('fil-svg').createSVGPoint();
+    const demi = (parseFloat(fil.getAttribute('stroke-width')) * m.a) / 2;
     const points = [];
     for (let l = 0; l <= L; l += 6) {
       const q = fil.getPointAtLength(l);
@@ -156,15 +174,17 @@ function constater(t) {
     for (const el of etiquettes) {
       if (opacite(el) < 0.99) continue;
       const r = el.firstElementChild.getBoundingClientRect();
-      if (points.some((q) => q.x > r.left + 1 && q.x < r.right - 1 && q.y > r.top + 1 && q.y < r.bottom - 1)) sortie.push(['étiquette sur le trait', libelle(el)]);
+      if (points.some((q) => q.x > r.left - demi && q.x < r.right + demi && q.y > r.top - demi && q.y < r.bottom + demi)) sortie.push(['étiquette sur le trait', libelle(el)]);
     }
   }
 
-  // Ce que le téléphone doit montrer en entier, une fois le geste fini.
-  const vus = [['bb3', T.defile[1], T.bilan[1]], ['c2-dep-dedans', T.depliage[1] + 0.15, T.repli[0]]];
-  for (const [id, a, b] of vus) {
+  // Ce que le téléphone doit montrer en entier, une fois le geste fini, avec la marge que le film
+  // promet sous chacun (en dp) : sans elle, « C'est noté » ne dépassait que de 0,67 px sans défilement.
+  const dp = document.getElementById('tel-ecran').getBoundingClientRect().width / 360;
+  const vus = [['bb3', T.defile[1], T.bilan[1], 12], ['c2-dep-dedans', T.depliage[1] + 0.15, T.repli[0], 16]];
+  for (const [id, a, b, marge] of vus) {
     if (t < a || t >= b) continue;
-    if (!dedans(document.getElementById(id).getBoundingClientRect(), sr)) sortie.push(['coupé par le cadre', id]);
+    if (!dedans(document.getElementById(id).getBoundingClientRect(), sr, 1 - marge * dp)) sortie.push(['coupé par le cadre', id]);
   }
   // Un appui : sa cible dans le cadre, et le doigt dessus.
   const doigt = document.getElementById('doigt');
@@ -185,8 +205,10 @@ function lectures(pas) {
   const duree = window.__duree;
   const scene = document.getElementById('scene'), manif = document.getElementById('manif');
   const opacite = window.__opacite;
-  const textes = window.__textes().filter((el) => !el.closest('#tel') || el.closest('.rep .r, #notif') || el.matches('.rep .r'));
-  const debut = new Map(), plus = new Map();
+  const textes = window.__textes().filter((el) => !el.closest('#affiche') && (!el.closest('#tel') || el.closest('.rep .r, #notif')));
+  const debut = new Map();
+  // Chaque texte suivi part à zéro : un texte qui n'est jamais entièrement visible sort à 0,00 s.
+  const plus = new Map(textes.map((el) => [el, 0]));
   const finir = (el, t) => {
     if (!debut.has(el)) return;
     plus.set(el, Math.max(plus.get(el) ?? 0, t - debut.get(el)));
@@ -216,6 +238,27 @@ function lectures(pas) {
     if (!blocs.has(id) || d < blocs.get(id).d) blocs.set(id, { d, texte: el.textContent.trim().slice(0, 32) });
   }
   return [...blocs].map(([id, x]) => [id, x.d, x.texte]);
+}
+
+// Exécuté dans la page : autour de chaque appui, à 60 images par seconde, le déplacement du doigt sur
+// l'écran du téléphone (en px de l'écran, échelle du téléphone retirée) tant qu'on le voit. Il suivait
+// sa cible quand elle s'envolait : la notification, la carte qui change de mise en page.
+function doigtImmobile() {
+  const doigt = document.getElementById('doigt'), ecr = document.getElementById('tel-ecran');
+  const sortie = [];
+  for (const a of window.__appuis) {
+    let avant = null;
+    for (let t = a - 0.3; t <= a + 0.3; t += 1 / 60) {
+      window.__seek(t);
+      const op = window.__opacite(doigt);
+      if (op <= 0.05) { avant = null; continue; }
+      const re = ecr.getBoundingClientRect(), rd = doigt.getBoundingClientRect(), k = ecr.offsetWidth / re.width;
+      const ici = [(rd.left + rd.width / 2 - re.left) * k, (rd.top + rd.height / 2 - re.top) * k];
+      if (avant && Math.hypot(ici[0] - avant[0], ici[1] - avant[1]) > 2) sortie.push([doigt.getAttribute('data-cible'), t]);
+      avant = ici;
+    }
+  }
+  return sortie;
 }
 
 // Exécuté dans la page : l'empreinte de l'image à chaque instant demandé, dans l'ordre donné.
@@ -263,6 +306,7 @@ for (const c of CAS) {
     for (const [id, d, texte] of await page.evaluate(lectures, 0.05)) {
       if (d < LIRE) noter(`moins de ${LIRE} s pour lire — ${id} «${texte}» : ${d.toFixed(2)} s`, 0);
     }
+    for (const [cible, t] of await page.evaluate(doigtImmobile)) noter(`doigt qui bouge pendant son appui — ${cible}`, t);
     const fmt = c.q.endsWith('portrait') ? 'portrait' : 'paysage';
     const temps = [];
     for (let t = 0; t <= duree; t += 0.5) temps.push(Math.round(t * 100) / 100);

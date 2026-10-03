@@ -34,9 +34,10 @@ page, qui recalait le son dès qu'il prenait du retard, donc à peu près chaque
 désormais le son qui donne l'horloge, et l'image qui le suit —, et la fin du 9:16 était trop serrée.
 La contre-lecture de cette reprise a encore allongé le point de deux mesures : **chaque texte de la
 scène et chaque réplique de Ramille restent posés au moins deux secondes et demie**, mesurés par
-`verifier.mjs`, et le manifeste en entier près de sept. Tout s'enchaîne en fondu, rien ne rebondit,
-et seule Ramille respire, du souffle qu'elle a dans l'app ; les coupes tombent sur la grille de la
-musique, une mesure de 2,4 s, et chaque cloche sur une double croche.
+`verifier.mjs` ; l'aplat du manifeste tient près de sept secondes, ses quatre lignes ensemble près
+de trois. Tout s'enchaîne en fondu, rien ne rebondit, et seule Ramille respire, du souffle qu'elle a
+dans l'app. Chaque point de synchronisation tombe sur une double croche de la musique, et le visage,
+le bouton et la fin sur une barre de mesure (2,4 s).
 
 Le scénario plan par plan, avec ce qu'on voit et ce qui est écrit, est rendu sous le film par la
 page elle-même : c'est aussi sa version texte.
@@ -53,8 +54,9 @@ page elle-même : c'est aussi sa version texte.
   **Il se compose à taille fixe** (1600 × 900 px, ou 900 × 1600) et se met à l'échelle d'un bloc :
   le 16:9 débordait à la taille d'un lecteur, parce qu'il se recomposait à chaque taille et qu'à
   très petite taille sa mise en page ne suivait plus la proportion. Ses **points de
-  synchronisation** sont dans son bloc JSON `temps-du-film`, que la musique lit aussi ; ce qui suit
-  une coupe en dérive, jusqu'au doigt qui donne une réponse.
+  synchronisation** sont dans son bloc JSON `temps-du-film`, que la musique lit aussi. Ce qui
+  s'accroche à l'un d'eux en dérive, jusqu'au doigt qui donne une réponse — le commentaire de la
+  table `T` dit quoi ; le reste se compte en absolu, chapitre par chapitre.
 - **`musique.py`** et **`musique.mp3`** — la musique, originale : le script la compose et la rend
   (`pip install numpy scipy`, et `ffmpeg`), le MP3 est ce que la page joue. Elle est déterministe,
   donc le même script rend le même fichier, et elle n'emprunte rien à personne. **Sa forme se
@@ -70,11 +72,13 @@ page elle-même : c'est aussi sa version texte.
   si l'une des quatre graisses manque ; la chasse fixe, absente du dépôt, prend celle du système sur
   les trois lignes qui l'emploient.
 - **`verifier.mjs`** — chaque quart de seconde, dans les deux formats, à la taille de l'export et
-  à cinq tailles de lecteur : rien ne déborde ni ne se chevauche, aucune étiquette ne touche le
+  à trois tailles de lecteur : rien ne déborde ni ne se chevauche, aucune étiquette ne touche le
   trait, le cadre ne coupe ni un appui ni ce que le téléphone doit montrer, et le doigt tombe sur sa
-  cible. À l'export, en plus : le temps de lire chaque texte, et la pureté de l'image (un
-  aller-retour de format, puis une passe dans le désordre). À relancer après toute retouche du
-  film ; chaque contrôle a été éprouvé en cassant ce qu'il garde, et l'en-tête dit comment.
+  cible. À l'export, en plus : le temps de lire chaque texte de la scène, chaque réplique de Ramille
+  et la notification ; le doigt immobile pendant un appui ; la pureté de l'image (un aller-retour
+  de format, puis une passe dans le désordre). À relancer après toute retouche du film ; chaque
+  contrôle, hors le relais des erreurs de la page, a été éprouvé en cassant ce qu'il garde, et
+  l'en-tête dit comment.
 
 ## Ce que le film reprend de l'app, et d'où
 

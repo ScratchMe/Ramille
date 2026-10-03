@@ -112,9 +112,9 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 }
 .scene.portrait { aspect-ratio: 9 / 16; width: min(100%, calc(78vh * 9 / 16)); }
 /* Le film se compose à taille fixe — 1600 × 900 px, ou 900 × 1600 — puis se met à l'échelle d'un
-   seul bloc. À une taille de lecteur, la mise en page est donc exactement celle de l'export : sans
-   cela, la taille minimale des polices du navigateur grossissait les petits textes du téléphone,
-   qui débordaient de leurs boîtes en 16:9. */
+   seul bloc. À une taille de lecteur, la mise en page est donc exactement celle de l'export : quand
+   il se recomposait à chaque taille, sa mise en page ne suivait plus la proportion à très petite
+   taille, et les textes du téléphone sortaient de leurs boîtes en 16:9. */
 .plateau { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; container-type: size; }
 .portrait .plateau { width: 900px; height: 1600px; }
 .scene *, .scene *::before, .scene *::after { box-sizing: border-box; }
@@ -526,7 +526,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 </div>
 
 <!-- Les points de synchronisation du film : la musique (`musique.py`) les lit ici, le film aussi.
-     Une seule source, donc un seul endroit à retoucher pour décaler une coupe et sa note. -->
+     Une seule source : une coupe déplacée ici emmène sa note, et ce que la table `T` y accroche. -->
 <script type="application/json" id="temps-du-film">
 {
   "duree": 86.4,
@@ -551,36 +551,48 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   const DUREE = SYNC.duree;
 
   // ---------------------------------------------------------------- Le minutage
-  // Tout le film tient dans cette table. Une mesure dure 2,4 s (100 battements par minute) : les
-  // coupes qui comptent tombent sur un temps, et la musique les lit dans le bloc JSON ci-dessus —
-  // `musique.py` refuse de se rendre si l'une d'elles quitte la grille. Ce qui suit une coupe en
-  // dérive : déplacer une réponse déplace aussi le doigt qui la donne.
+  // Tout le film tient dans cette table, à 100 battements par minute (une mesure = 2,4 s). Les
+  // points de synchronisation sont dans le bloc JSON ci-dessus, que la musique lit aussi : chacun
+  // tombe sur une double croche, le visage, le bouton et la fin sur une barre — `musique.py` refuse
+  // de se rendre sinon. **Ce qui s'accroche à l'un d'eux en dérive** : le logo et le visage, les
+  // appuis, l'engagement et l'échange des cartes, la notification et le point, le manifeste et ce
+  // qui l'entoure, les saisons et la fin. Le reste se compte en absolu, chapitre par chapitre ; si
+  // une coupe bouge, `verifier.mjs` dit ce qui ne se lit plus.
   // Chaque texte de la scène, et chaque réplique de Ramille, reste posé au moins deux secondes et
   // demie : `verifier.mjs` le mesure.
   const Q = [30.0, 31.3, 32.6, 33.9];
+  const LOGO = SYNC.logo, [ENGAGEE, OUI, NON] = SYNC.reponses;
+  const MANIF = SYNC.manifeste, BOUTON = SYNC.bouton;
   const T = {
     titre1: [0.9, 5.3], titre2: [5.75, 9.0], arretsSortie: 9.0,
     versBarre: [8.9, 10.4], s2titre: [10.3, 14.85], chiffre: [11.2, 14.85], transport: [11.0, 14.85],
     legende: [11.7, 14.85], source: [12.0, 18.6], autresSortie: 14.85, s2titre2: [15.3, 18.6], transportSortie: 18.4,
-    versVeine: [18.6, 20.1], contour: [19.9, 21.3], remplissage: [SYNC.logo - 0.4, SYNC.logo + 0.2],
-    pointLogo: [21.4, 21.8], nom3: 22.0, retrait: [23.0, 23.8], visage: [SYNC.visage - 0.25, SYNC.visage + 0.15],
-    sourire: [25.1, 25.5], dit3: 24.3, titre3: 24.8, sortie3: 28.3,
+    versVeine: [18.6, 20.1], contour: [LOGO - 1.7, LOGO - 0.3], remplissage: [LOGO - 0.4, LOGO + 0.2],
+    pointLogo: [LOGO - 0.2, LOGO + 0.2], nom3: LOGO + 0.4,
+    retrait: [SYNC.visage - 1.0, SYNC.visage - 0.2], visage: [SYNC.visage - 0.25, SYNC.visage + 0.15],
+    sourire: [SYNC.visage + 1.1, SYNC.visage + 1.5], dit3: SYNC.visage + 0.3, titre3: SYNC.visage + 0.8, sortie3: 28.3,
     tel: [28.5, 29.6], vol: [28.5, 29.8], t4a: [29.1, 35.3], questions: Q,
     // En 16:9, le téléphone se tient à 83 % le temps du questionnaire, « Suivant » compris, puis
     // reprend sa taille pendant le calcul : la restitution et le plan défilent s'il les coupe.
     calcul: [35.1, 36.5], bilan: [36.5, 40.4], defile: [38.6, 39.8], t4b: [36.7, 40.4],
-    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.65, 43.15], engagee: SYNC.reponses[0],
-    repli: [SYNC.reponses[0], SYNC.reponses[0] + 0.4], enTete: [45.4, 46.05], t5b: [46.1, 50.1],
-    notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [53.05, 53.45], point: [53.25, 53.85],
-    question1: [53.45, SYNC.reponses[1]], semaineSuivante: SYNC.reponses[1] + 3.0,
-    question2: [SYNC.reponses[1] + 3.1, SYNC.reponses[2]],
-    t6a: [50.7, 55.0], t6b: [55.45, 62.0], telSortie: [62.4, 62.8],
-    manif: [SYNC.manifeste.entree, SYNC.manifeste.sortie], manifTexteSortie: SYNC.manifeste.sortie - 0.2,
-    retour: SYNC.manifeste.sortie + 0.2, s7titre: [69.9, 76.3], s7dit: 70.8, vague: [69.75, 75.0], saisonsSortie: 76.8,
-    versBouton: [76.8, 78.0], queue: [77.1, 78.4], pointArrivee: [78.0, 78.3], bouton: [SYNC.bouton, SYNC.bouton + 0.6],
-    pose8: [76.7, 77.7], sansSaison: [77.0, 77.4], heureuse: [77.4, 77.7], nom8: 77.2, titre8: 77.6, url: 79.9, note8: 80.3,
+    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.65, 43.15], engagee: ENGAGEE,
+    repli: [ENGAGEE, ENGAGEE + 0.4], enTete: [ENGAGEE + 0.55, ENGAGEE + 1.2], t5b: [46.1, 50.1],
+    notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [OUI - 1.7, OUI - 1.3], point: [OUI - 1.5, OUI - 0.9],
+    question1: [OUI - 1.3, OUI], semaineSuivante: OUI + 3.0, question2: [OUI + 3.1, NON],
+    t6a: [50.7, 55.0], t6b: [55.45, MANIF.entree - 0.2], telSortie: [MANIF.entree + 0.2, MANIF.entree + 0.6],
+    manif: [MANIF.entree, MANIF.sortie], manifTexteSortie: MANIF.sortie - 0.2,
+    // Le trait des saisons part sous l'aplat qui s'en va : parti à la fin de l'aplat, il avait 0,45 s
+    // pour atteindre la première saison et filait 2,5 fois plus vite qu'ensuite.
+    retour: MANIF.sortie + 0.2, s7titre: [MANIF.sortie + 0.5, BOUTON - 2.9], s7dit: MANIF.sortie + 1.4,
+    vague: [MANIF.sortie, SYNC.saisons[3] + 1.8], saisonsSortie: BOUTON - 2.4,
+    versBouton: [BOUTON - 2.4, BOUTON - 1.2], queue: [BOUTON - 2.1, BOUTON - 0.8], pointArrivee: [BOUTON - 1.2, BOUTON - 0.9],
+    bouton: [BOUTON, BOUTON + 0.6], pose8: [BOUTON - 2.5, BOUTON - 1.5], sansSaison: [BOUTON - 2.2, BOUTON - 1.8],
+    heureuse: [BOUTON - 1.8, BOUTON - 1.5], nom8: BOUTON - 2.0, titre8: BOUTON - 1.6, url: BOUTON + 0.7, note8: BOUTON + 1.1,
   };
-  T.tapNotif = T.notifSortie[0] - 0.1;
+  // Le doigt se lève avant que sa cible ne bouge : la notification s'envole, la carte engagée change
+  // de mise en page. Appuyé 0,1 s avant, il partait avec elles (contre-lecture du 03/10/2026).
+  const LEVE = 0.22;
+  T.tapNotif = T.notifSortie[0] - LEVE;
 
   // Le scénario rendu sous le film, qui en est aussi la version texte. Les insécables s'écrivent
   // ici à la main : ce texte n'est pas rendu par `ThemedText`, qui les pose dans l'app.
@@ -867,10 +879,10 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       arrets: [0, 4, 7, 9], etiqPlace: ['dessous', 'dessous', 'gauche', 'dessus'],
       barre: { x0: 70, x1: 830, y: 900, h: 72 },
       f3: { cx: 450, cy: 520, s: 5.0 }, f7: { cx: 450, cy: 680, s: 4.6 }, f8: { cx: 450, cy: 470, s: 4.6 },
-      vague: [[40, 1330], [190, 1262], [345, 1336], [500, 1264], [650, 1334], [790, 1266], [880, 1300]],
+      vague: [[90, 1300], [190, 1262], [345, 1336], [500, 1264], [650, 1334], [790, 1266], [880, 1300]],
       // Une saison sur chaque crête ou creux de la vague, son nom du côté libre : sur une pente,
       // « Printemps » touchait le trait.
-      saisonsF: [0.177, 0.363, 0.548, 0.727], saisonsPlace: ['dessus', 'dessous', 'dessus', 'dessous'],
+      saisonsF: [0.114, 0.321, 0.518, 0.709], saisonsPlace: ['dessus', 'dessous', 'dessus', 'dessous'],
       final: [[60, 1520], [300, 1484], [160, 1384]], avant: [-100, 110],
     },
   };
@@ -1188,13 +1200,13 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   }
 
   // ---------------------------------------------------------------- Le téléphone
-  // Les appuis dérivent des coupes qu'ils provoquent. Le doigt se montre 0,28 s avant chacun et
-  // 0,22 s après : deux appuis à moins d'une demi-seconde l'un de l'autre le feraient sauter.
+  // Les appuis dérivent des coupes qu'ils provoquent. Le doigt se montre 0,28 s avant chacun et se
+  // lève en 0,22 s : deux appuis à moins d'une demi-seconde l'un de l'autre le feraient sauter.
   const TAPES = [
     ...Q.flatMap((q, k) => [{ t: q + 0.55, id: ['q1-oui', 'q2-voiture', 'q3-une', 'q4-un'][k], choix: true }, { t: q + 1.05, id: 'b-suivant' }]),
-    { t: T.depliage[0] - 0.15, id: 'c2-engage' },
+    { t: T.depliage[0] - LEVE, id: 'c2-engage' },
     { t: T.depliage[1] + 0.4, id: 'j-mar', choix: true }, { t: T.depliage[1] + 0.9, id: 'j-jeu', choix: true },
-    { t: T.engagee - 0.15, id: 'c2-note' },
+    { t: T.engagee - LEVE, id: 'c2-note' },
     { t: T.tapNotif, id: 'notif' }, { t: SYNC.reponses[1] - 0.15, id: 'pt-oui' }, { t: SYNC.reponses[2] - 0.15, id: 'pt-non' },
   ];
   function rendreTapes(t) {
@@ -1203,7 +1215,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     for (const tape of TAPES) {
       if (tape.id !== 'b-suivant') C($(tape.id), 'appui', t >= tape.t && t < tape.t + 0.14);
       if (tape.choix) C($(tape.id), 'choisi', t >= tape.t + 0.14 && t < T.telSortie[1]);
-      if (t >= tape.t - 0.28 && t < tape.t + 0.22) actif = tape;
+      if (t >= tape.t - 0.28 && t < tape.t + LEVE) actif = tape;
     }
     C($('b-suivant'), 'appui', TAPES.some((x) => x.id === 'b-suivant' && t >= x.t && t < x.t + 0.14));
     A(doigt, 'data-cible', actif ? actif.id : '');
@@ -1213,7 +1225,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const ecr = $('tel-ecran'), re = ecr.getBoundingClientRect(), rc = $(actif.id).getBoundingClientRect();
     const k = ecr.offsetWidth / re.width / M.dp;
     const x = (rc.left + rc.width / 2 - re.left) * k, y = (rc.top + rc.height / 2 - re.top) * k;
-    const op = p(t, actif.t - 0.28, actif.t - 0.08, E.lin) * (1 - p(t, actif.t + 0.06, actif.t + 0.22, E.lin));
+    const op = p(t, actif.t - 0.28, actif.t - 0.08, E.lin) * (1 - p(t, actif.t + 0.06, actif.t + LEVE, E.lin));
     const appui = Math.sin(Math.PI * clamp((t - actif.t + 0.08) / 0.3));
     S(doigt, 'opacity', fx(op));
     S(doigt, 'transform', `translate(calc(var(--dp) * ${fx(x)}), calc(var(--dp) * ${fx(y)})) scale(${fx(1 - 0.12 * appui)})`);
@@ -1539,6 +1551,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   window.__seek = (t) => rendre(t);
   window.__duree = DUREE;
   window.__T = T;
+  window.__appuis = TAPES.map((x) => x.t);
   window.__pret = (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { demarrer(); return true; });
   demarrer();
 })();
