@@ -3,7 +3,7 @@
  * La politique de sécurité du site (`Content-Security-Policy` de `vercel.json`), et la façon dont
  * `servir-export.mjs` la sert aux gardes qui ouvrent l'export dans un navigateur.
  *
- * **Appliquée depuis le 02/10/2026** (`VERCEL.md` §2.2). Elle était en `Report-Only` sans
+ * **Appliquée en production depuis le 03/10/2026** (`VERCEL.md` §2.2). Elle était en `Report-Only` sans
  * collecteur, donc elle ne rapportait à personne. La mesure qui en tenait lieu : la politique stricte
  * injectée en rapport seul sur les dix-neuf routes de la production, **les requêtes vers Supabase
  * coupées** pour ne rien écrire — donc chaque écran dans son état sans réseau —, sans une infraction,
