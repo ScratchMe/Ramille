@@ -4,8 +4,8 @@
 //
 // `CHROMIUM=/chemin/vers/chrome` remplace le navigateur de Playwright, comme pour l'export.
 //
-// **Chaque quart de seconde, dans les deux formats, à la taille de l'export et à trois tailles de
-// lecteur (cinq cas)**, sur les éléments entièrement visibles à cet instant :
+// **Chaque quart de seconde, dans les trois formats, à la taille de l'export et à trois tailles de
+// lecteur (dix cas)**, sur les éléments entièrement visibles à cet instant :
 //   - un texte qui sort de l'écran du téléphone, ou de la scène, à l'horizontale ;
 //   - un texte qui sort de la scène par le haut ou le bas (hors du téléphone, que le 16:9 coupe
 //     exprès par le bas) ;
@@ -18,7 +18,7 @@
 //     fois déplié (16 dp) ;
 //   - un appui que le cadre coupe, ou un doigt qui tombe à côté de sa cible.
 //
-// **Aux deux formats de l'export, en plus** :
+// **Aux trois formats de l'export, en plus** :
 //   - **le temps de lire, par pas de 0,05 s** : chaque texte de la scène, chaque réplique de
 //     Ramille et la notification restent entièrement visibles — opaques, dans le cadre, sous aucun
 //     aplat — au moins 2,5 s, et un texte qui ne l'est jamais sort à 0,00 s. Un titre se lit quand
@@ -28,10 +28,10 @@
 //     il ne bouge pas de plus de 2 px d'une image à l'autre sur l'écran du téléphone. Il suivait sa
 //     cible quand elle s'envolait ;
 //   - **la pureté** : l'image d'un instant ne dépend que de cet instant. Une passe dans l'ordre,
-//     puis un aller-retour par l'autre format, puis une passe dans le désordre : chaque image doit
-//     être identique à celle de la première passe. La version du 03/10/2026 mesurait le défilement
-//     du plan au premier passage, et l'épaisseur du trait échappait au cache d'écriture : selon
-//     l'ordre des sauts, le même instant rendait trois images différentes.
+//     puis un aller-retour par chacun des autres formats, puis une passe dans le désordre :
+//     chaque image doit être identique à celle de la première passe. La version du 03/10/2026
+//     mesurait le défilement du plan au premier passage, et l'épaisseur du trait échappait au cache
+//     d'écriture : selon l'ordre des sauts, le même instant rendait trois images différentes.
 //
 // **Pourquoi plusieurs tailles, alors que le film se compose à taille fixe** : c'est justement ce
 // qu'il éprouve. Le 03/10/2026, le 16:9 débordait chez la personne qui pilote : composé en unités
@@ -39,7 +39,7 @@
 // ne suivait plus la proportion — les textes du téléphone sortaient de leurs boîtes (14 et 19
 // constats à 760 et 390 px). Ce n'était pas la taille minimale des polices, comme on l'a d'abord
 // écrit : Chromium y calcule les plus petits à 5,3 et 2,6 px, sans plancher. Depuis que le film se
-// compose à 1600 × 900 px et se met à l'échelle d'un bloc, les sept cas rendent le même résultat.
+// compose à taille fixe et se met à l'échelle d'un bloc, chaque taille rend le même résultat que l'export.
 //
 // Éprouvé le 03/10/2026, en cassant ce qu'il garde (`FILM=<copie faussée>`) — chaque mutation vue,
 // le témoin à zéro. Tous les contrôles, sauf le relais des erreurs de la page :
@@ -50,9 +50,9 @@
 //   - un libellé de bouton final trop long → « déborde à l'horizontale » ;
 //   - la source du 16:9 descendue à 99 % → « sort de la scène » (à 97 %, elle tient encore) ;
 //   - « Non, pas cette semaine ni la précédente » dans le bouton du point → « texte coupé en
-//     hauteur », aux sept cas ;
+//     hauteur », aux sept cas d'alors (deux formats) ;
 //   - le texte du manifeste qui sort à 67,6 s → « moins de 2,5 s pour lire » sur ses deux dernières
-//     lignes, aux deux formats ;
+//     lignes, aux deux formats d'alors ;
 //   - « Et les tiens, ils pèsent combien ? » réduit à 0,1 s → « moins de 2,5 s pour lire : 0,00 s » ;
 //   - le téléphone du 16:9 gardé à sa taille pendant le questionnaire → « appui hors cadre » sur
 //     « Suivant », aux quatre cas 16:9 ;
@@ -66,7 +66,15 @@
 //   - les saisons du 9:16 toutes nommées dessous → « étiquette sur le trait » sur « Printemps » ;
 //   - `montrer()` qui n'écrit plus la transformation d'un élément caché → « dépend de l'ordre des
 //     sauts » et « aller-retour de format » ;
-//   - une écriture directe dans `preparer()`, hors du cache → « aller-retour de format ».
+//   - une écriture directe dans `preparer()`, hors du cache → « aller-retour de format » ;
+//   - le téléphone du 4:5 rendu à la taille de celui du 9:16 → « appui hors cadre » sur « Suivant »
+//     et « chevauchement » avec sa légende, aux trois cas 4:5 — ils voient bien leur format.
+//   - le téléphone du 4:5 raccourci et la restitution qui ne défile plus → « coupé par le cadre »
+//     sur le bas de la restitution et sur le choix des jours, et « appui hors cadre » sur trois
+//     appuis, aux trois cas 4:5 : l'écran du téléphone, en portrait, est le cadre qui coupe. Avant
+//     que le contrôle ne le compare, seul le 16:9 pouvait tomber.
+// Et en ajoutant le 4:5, l'aller-retour de format est tombé sur un défaut du contrôle lui-même :
+// `changerDeFormat` ne connaissait que deux formats, et « revenir au 4:5 » passait au 16:9.
 // L'épaisseur du trait écrite en direct, le défaut d'origine, ne se reproduit plus : les rendus de
 // référence de `mesurer()` remettent le cache d'accord. C'est la dernière mutation qui garde la famille.
 // Un libellé long dans un bouton à hauteur fixe qui passe sur deux lignes, lui, tient : ce n'est
@@ -95,11 +103,14 @@ const faces = Object.entries(GRAISSES)
 const CAS = [
   { nom: 'export 16:9', l: 1920, h: 1080, q: '?export=paysage', export: true },
   { nom: 'export 9:16', l: 1080, h: 1920, q: '?export=portrait', export: true },
+  { nom: 'export 4:5', l: 1080, h: 1350, q: '?export=quatre-cinq', export: true },
   { nom: 'lecteur 1280, 16:9', l: 1280, h: 900, fmt: 'paysage' },
   { nom: 'lecteur 1280, 9:16', l: 1280, h: 900, fmt: 'portrait' },
   { nom: 'lecteur 760, 16:9', l: 760, h: 900, fmt: 'paysage' },
   { nom: 'téléphone 390, 16:9', l: 390, h: 844, fmt: 'paysage' },
   { nom: 'téléphone 390, 9:16', l: 390, h: 844, fmt: 'portrait' },
+  { nom: 'lecteur 1280, 4:5', l: 1280, h: 900, fmt: 'quatre-cinq' },
+  { nom: 'téléphone 390, 4:5', l: 390, h: 844, fmt: 'quatre-cinq' },
 ];
 
 // Exécuté dans la page avant toute mesure : les aides que les trois contrôles partagent.
@@ -180,11 +191,14 @@ function constater(t) {
 
   // Ce que le téléphone doit montrer en entier, une fois le geste fini, avec la marge que le film
   // promet sous chacun (en dp) : sans elle, « C'est noté » ne dépassait que de 0,67 px sans défilement.
-  const dp = document.getElementById('tel-ecran').getBoundingClientRect().width / 360;
+  // Le cadre qui coupe est le plus petit des deux : la scène en 16:9, l'écran du téléphone en portrait,
+  // où le téléphone tient entier — comparer à la seule scène n'y voyait rien (contre-lecture du 03/10/2026).
+  const re = document.getElementById('tel-ecran').getBoundingClientRect(), dp = re.width / 360;
+  const visible = { left: Math.max(sr.left, re.left), right: Math.min(sr.right, re.right), top: Math.max(sr.top, re.top), bottom: Math.min(sr.bottom, re.bottom) };
   const vus = [['bb3', T.defile[1], T.bilan[1], 12], ['c2-dep-dedans', T.depliage[1] + 0.15, T.repli[0], 16]];
   for (const [id, a, b, marge] of vus) {
     if (t < a || t >= b) continue;
-    if (!dedans(document.getElementById(id).getBoundingClientRect(), sr, 1 - marge * dp)) sortie.push(['coupé par le cadre', id]);
+    if (!dedans(document.getElementById(id).getBoundingClientRect(), visible, 1 - marge * dp)) sortie.push(['coupé par le cadre', id]);
   }
   // Un appui : sa cible dans le cadre, et le doigt dessus.
   const doigt = document.getElementById('doigt');
@@ -273,7 +287,7 @@ function empreintes(temps) {
   });
 }
 function changerDeFormat(fmt) {
-  const r = document.getElementById(fmt === 'portrait' ? 'f-portrait' : 'f-paysage');
+  const r = document.getElementById(`f-${fmt}`);
   r.checked = true;
   r.dispatchEvent(new Event('change'));
 }
@@ -291,7 +305,7 @@ for (const c of CAS) {
   });
   await page.goto(`file://${enveloppe}${c.q ?? ''}`);
   await page.evaluate(() => window.__pret);
-  if (c.fmt) await page.click(c.fmt === 'portrait' ? 'label:has(#f-portrait)' : 'label:has(#f-paysage)');
+  if (c.fmt) await page.click(`label:has(#f-${c.fmt})`);
   await page.evaluate(installer);
   const duree = await page.evaluate(() => window.__duree);
   const constats = new Map();
@@ -307,18 +321,21 @@ for (const c of CAS) {
       if (d < LIRE) noter(`moins de ${LIRE} s pour lire — ${id} «${texte}» : ${d.toFixed(2)} s`, 0);
     }
     for (const [cible, t] of await page.evaluate(doigtImmobile)) noter(`doigt qui bouge pendant son appui — ${cible}`, t);
-    const fmt = c.q.endsWith('portrait') ? 'portrait' : 'paysage';
+    const fmt = c.q.slice('?export='.length);
     const temps = [];
     for (let t = 0; t <= duree; t += 0.5) temps.push(Math.round(t * 100) / 100);
     const reference = await page.evaluate(empreintes, temps);
-    // L'aller-retour : un instant rendu dans un format, puis dans l'autre, puis de nouveau dans le premier.
+    // L'aller-retour : un instant rendu dans un format, puis dans chacun des autres, et de nouveau dans le
+    // premier après chaque détour.
     for (const t of [21.5, 45.0, 66.0]) {
-      await page.evaluate(empreintes, [t]);
-      await page.evaluate(changerDeFormat, fmt === 'portrait' ? 'paysage' : 'portrait');
-      await page.evaluate(empreintes, [t]);
-      await page.evaluate(changerDeFormat, fmt);
-      const [e] = await page.evaluate(empreintes, [t]);
-      if (e !== reference[temps.indexOf(t)]) noter('image changée par un aller-retour de format', t);
+      for (const autre of ['paysage', 'portrait', 'quatre-cinq'].filter((x) => x !== fmt)) {
+        await page.evaluate(empreintes, [t]);
+        await page.evaluate(changerDeFormat, autre);
+        await page.evaluate(empreintes, [t]);
+        await page.evaluate(changerDeFormat, fmt);
+        const [e] = await page.evaluate(empreintes, [t]);
+        if (e !== reference[temps.indexOf(t)]) noter(`image changée par un aller-retour par le format ${autre}`, t);
+      }
     }
     // Le désordre, tiré d'une graine fixe : le même à chaque passage.
     let graine = 342;

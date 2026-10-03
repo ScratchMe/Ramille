@@ -2,13 +2,17 @@
 
 **Statut** : validé par la personne qui pilote le 03/10/2026, **pas encore diffusé** — il attend la
 publication sur Google Play. Ce qui a été décidé, et ce qu'il reste à faire ce jour-là, est en fin
-de document.
+de document. **Le 4:5 et les chiffres recalculés sont venus après la validation**, le même jour, et
+attendent son regard.
 
 ## Ce que c'est
 
 Un motion design d'une minute vingt-six, en musique, pour faire comprendre Ramille et donner
-envie de faire son bilan, en deux formats tirés de la même source : **16:9** (un écran, une page
-web, une fiche de store) et **9:16** (un téléphone, les réseaux).
+envie de faire son bilan, en trois formats tirés de la même source : **16:9** (la fiche Google
+Play), **9:16** (les Stories, Reels, Shorts et TikTok) et **4:5** (les fils d'Instagram, de Facebook
+et de LinkedIn). Le 4:5 a été ajouté le 03/10/2026, sur une question de la personne qui pilote : posté
+dans un fil, le 9:16 y est recadré au centre et ses titres sortent du cadre, et le 16:9 y reste
+petit.
 
 **L'idée tient en un trait.** Le logo le dit déjà : la nervure de la feuille est un itinéraire
 tracé jusqu'à un point d'arrivée (commentaire de `assets/images/logo-mark.svg`). Le film prend ce
@@ -52,9 +56,9 @@ page elle-même : c'est aussi sa version texte.
   chapitres et l'export ne font que choisir un instant, et `verifier.mjs` vérifie que l'ordre des
   sauts n'y change rien. Ce qu'il mesure de sa propre mise en page, il le mesure dans un état de
   référence, jamais au premier passage.
-  **Il se compose à taille fixe** (1600 × 900 px, ou 900 × 1600) et se met à l'échelle d'un bloc :
-  le 16:9 débordait à la taille d'un lecteur, parce qu'il se recomposait à chaque taille et qu'à
-  très petite taille sa mise en page ne suivait plus la proportion. Ses **points de
+  **Il se compose à taille fixe** (1600 × 900 px, 900 × 1600, ou 900 × 1125 pour le 4:5) et se met
+  à l'échelle d'un bloc : le 16:9 débordait à la taille d'un lecteur, parce qu'il se recomposait à
+  chaque taille et qu'à très petite taille sa mise en page ne suivait plus la proportion. Ses **points de
   synchronisation** sont dans son bloc JSON `temps-du-film`, que la musique lit aussi. Ce qui
   s'accroche à l'un d'eux en dérive, jusqu'au doigt qui donne une réponse — le commentaire de la
   table `T` dit quoi ; le reste se compte en absolu, chapitre par chapitre.
@@ -72,7 +76,7 @@ page elle-même : c'est aussi sa version texte.
   minute par format. Spline Sans y est servie par les fichiers du kit, et l'export refuse de partir
   si l'une des quatre graisses manque ; la chasse fixe, absente du dépôt, prend celle du système sur
   les trois lignes qui l'emploient.
-- **`verifier.mjs`** — chaque quart de seconde, dans les deux formats, à la taille de l'export et
+- **`verifier.mjs`** — chaque quart de seconde, dans les trois formats, à la taille de l'export et
   à trois tailles de lecteur : rien ne déborde ni ne se chevauche, aucune étiquette ne touche le
   trait, le cadre ne coupe ni un appui ni ce que le téléphone doit montrer, et le doigt tombe sur sa
   cible. À l'export, en plus : le temps de lire chaque texte de la scène, chaque réplique de Ramille
@@ -80,6 +84,9 @@ page elle-même : c'est aussi sa version texte.
   de format, puis une passe dans le désordre). À relancer après toute retouche du film ; chaque
   contrôle, hors le relais des erreurs de la page, a été éprouvé en cassant ce qu'il garde, et
   l'en-tête dit comment.
+- **`profil-d-exemple.sql`** — le profil d'exemple passé par le vrai calcul, sur la stack locale et
+  dans une transaction annulée : il rend les chiffres que le film recopie. À rejouer quand le calcul
+  ou le référentiel des facteurs change, avant tout export destiné à être diffusé.
 - **`lecture.mjs`** — le film joué pour de vrai, en musique, ce qu'aucune image rendue à un instant
   ne voit : le son ne saute pas et avance, tel quel comme avec une latence simulée ; l'image le
   suit, même quand il va 3 % plus vite qu'elle ; la lecture tient 60 images par seconde sur la
@@ -127,9 +134,13 @@ avant chaque diffusion.
 - **Les chiffres de référence** viennent de `src/constants/carbon-reference.ts`, avec leur source
   à l'écran : la moyenne française et sa répartition en cinq postes (SDES, 2017), et le repère
   transport 2050, qui est une **dérivation** de la cible de 2 t de l'ADEME — d'où le mot
-  « transport » dans son libellé. **Le bilan (1,9 t), le palier (1,7 t) et les gains du plan (430
-  et 300 kg) sont un profil d'exemple**, et l'image le dit (« Écrans de l'app · profil
-  d'exemple ») : ils n'ont pas été recalculés par l'estimateur.
+  « transport » dans son libellé. **Le bilan, le palier et les gains du plan sont ceux d'un profil
+  d'exemple**, et l'image le dit (« Écrans de l'app · profil d'exemple ») — mais **ce sont les
+  chiffres que l'app rend pour ce profil** : `profil-d-exemple.sql` le passe par le vrai calcul, sur
+  la stack locale, et imprime tout ce que le film recopie — le bilan, le palier, la largeur de
+  chaque barre, les pistes dans l'ordre du plan et leurs gains. Leur forme est celle des écrans :
+  `formatTonnes`, `formatTonnesShort`, `ligneDuGain`. **Quand le calcul change, on le rejoue, et le
+  film suit** ; les chiffres du jour sont dans la décision datée, plus bas.
 
 ## Décidé le 03/10/2026
 
@@ -140,7 +151,7 @@ date, on maintient pas de score, pas de série, pas de classement. »
 
 1. **Où il sert.** Le 16:9 en vidéo de la fiche Google Play, le 9:16 pour les Stories, Reels,
    Shorts et TikTok, et un **4:5** (1080 × 1350) pour les fils d'Instagram, de Facebook et de
-   LinkedIn — décidé le même jour, et composé à part. **Pas dans l'app pour l'instant** :
+   LinkedIn — décidé et composé le même jour. **Pas dans l'app pour l'instant** :
    l'onboarding dit déjà tout cela en quatre écrans, et une étape de plus coûte plus en abandon
    qu'elle ne rapporte en clarté (commentaire de `src/components/onboarding/etape-transition.tsx`).
    **Pas sur ramille.fr non plus, pour l'instant** (décidé le même jour, sur une seconde question) :
@@ -164,13 +175,13 @@ date, on maintient pas de score, pas de série, pas de classement. »
 4. **La musique** convient telle quelle. Elle se retouche dans `musique.py` (tempo, instruments,
    niveaux), sur la grille que le script vérifie ; une piste sous licence ne se verserait pas dans
    un dépôt public sans vérifier qu'elle le permet.
-5. **Le profil d'exemple est gardé** (1,9 t, le palier de 1,7 t, 430 et 300 kg) : il n'a pas été
-   recalculé par l'estimateur, et l'image le dit (« Écrans de l'app · profil d'exemple »).
-   **Ses chiffres seront recalculés par l'estimateur** (décidé le même jour, sur une seconde
-   question) : la fiche Play pose qu'« aucune capture ne doit montrer un chiffre inventé »
-   (`docs/exploitation/fiche-google-play.md` §2.3), et c'est là que va le 16:9. Le profil reste le
-   même — les réponses que le film montre —, ses chiffres deviennent ceux que l'app rendrait. Ce
-   recalcul passe avant tout export destiné à être diffusé.
+5. **Le profil d'exemple est gardé, et ses chiffres sont ceux de l'estimateur** (décidé le même
+   jour, sur une seconde question) : la fiche Play pose qu'« aucune capture ne doit montrer un
+   chiffre inventé » (`docs/exploitation/fiche-google-play.md` §2.3), et c'est là que va le 16:9.
+   Le profil est resté le même — les réponses que le film montre, les autres choisies pour un
+   périurbain qui va au travail en voiture —, et ses chiffres sont devenus ceux que l'app rend :
+   **fait le 03/10/2026** par `profil-d-exemple.sql` (la proposition montrait 1,9 t, 1,7 t, 430 et
+   300 kg, écrits à la main ; le calcul rend 2,1 t, 1,8 t, 412 et 320 kg).
 
 **Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
 minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.

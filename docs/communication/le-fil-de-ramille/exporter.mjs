@@ -1,7 +1,8 @@
 // Exporte « Le fil de Ramille » en vidéo, image par image.
 //
-//   node docs/communication/le-fil-de-ramille/exporter.mjs paysage   # 1920 × 1080
-//   node docs/communication/le-fil-de-ramille/exporter.mjs portrait  # 1080 × 1920
+//   node docs/communication/le-fil-de-ramille/exporter.mjs paysage      # 16:9, 1920 × 1080
+//   node docs/communication/le-fil-de-ramille/exporter.mjs portrait     # 9:16, 1080 × 1920
+//   node docs/communication/le-fil-de-ramille/exporter.mjs quatre-cinq  # 4:5, 1080 × 1350
 //
 // Il faut `ffmpeg` dans le PATH. `CHROMIUM=/chemin/vers/chrome` remplace le navigateur de Playwright.
 //
@@ -32,14 +33,27 @@ import { chromium } from 'playwright';
 const ICI = path.dirname(fileURLToPath(import.meta.url));
 const POLICES = path.join(ICI, '../../design/design-system/assets/fonts');
 const GRAISSES = { 400: 'SplineSans_400Regular.ttf', 500: 'SplineSans_500Medium.ttf', 600: 'SplineSans_600SemiBold.ttf', 700: 'SplineSans_700Bold.ttf' };
-const format = process.argv[2] === 'portrait' ? 'portrait' : 'paysage';
+const FORMATS = {
+  paysage: { taille: [1920, 1080], nom: '16x9' },
+  portrait: { taille: [1080, 1920], nom: '9x16' },
+  'quatre-cinq': { taille: [1080, 1350], nom: '4x5' },
+};
+// Un format inconnu est refusé : parti en 16:9 sans rien dire, il écrasait la vidéo du 16:9.
+const format = process.argv[2] ?? 'paysage';
+if (!Object.hasOwn(FORMATS, format)) {
+  console.error(`Format inconnu : « ${format} ». Formats : ${Object.keys(FORMATS).join(', ')}.`);
+  process.exit(1);
+}
 const fps = Number(process.argv[3] ?? 30);
-const [largeur, hauteur] = format === 'portrait' ? [1080, 1920] : [1920, 1080];
-const sortie = path.join(os.tmpdir(), `le-fil-de-ramille-${format === 'portrait' ? '9x16' : '16x9'}.mp4`);
+const [largeur, hauteur] = FORMATS[format].taille;
+const sortie = path.join(os.tmpdir(), `le-fil-de-ramille-${FORMATS[format].nom}.mp4`);
 
-// La page publiée est un fragment : le service d'artefacts l'enveloppe. On fait de même ici.
+// La page publiée est un fragment : le service d'artefacts l'enveloppe. On fait de même ici, dans un
+// dossier à soi : plusieurs exports en parallèle réécrivaient la même enveloppe.
 const fragment = fs.readFileSync(path.join(ICI, 'film.html'), 'utf8');
-const enveloppe = path.join(os.tmpdir(), 'le-fil-de-ramille.html');
+const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'fil-export-'));
+process.on('exit', () => fs.rmSync(dossier, { recursive: true, force: true }));
+const enveloppe = path.join(dossier, 'film.html');
 fs.writeFileSync(
   enveloppe,
   `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>[hidden]{display:none!important}body{margin:0}</style></head><body>${fragment}</body></html>`
