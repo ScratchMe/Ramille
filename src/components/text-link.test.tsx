@@ -6,15 +6,15 @@
  * `type`, `themeColor` et `weight` à la compilation ; ce qu'il ne voit pas, c'est le rendu : quelle encre
  * et quelle graisse chaque apparence pose, qu'un lien désactivé prend l'encre tertiaire, et qu'un `style`
  * passé par l'appelant — un objet de `StyleSheet` qui partage `textAlign` avec le type permis échappe au
- * contrôle des propriétés en trop — ne repeint pas le lien. Aucune dérivation de `src/types` ne porte ces
- * choix, et le parcours réel ne lit pas la couleur d'un lien.
+ * contrôle des propriétés en trop — ne change ni l'encre ni le corps du lien. Aucune dérivation de
+ * `src/types` ne porte ces choix, et le parcours réel ne lit pas la couleur d'un lien.
  *
  * Éprouvé en cassant ce qu'il garde, le 03/10/2026 — quatre mutations, chacune faisant tomber les
  * siennes et aucune autre :
  *   - l'encre d'`action` passée à `textSecondary` → le premier test ;
  *   - le soulignement de `souligne` retiré → le troisième ;
  *   - l'encre du désactivé retirée (`encre = ENCRE[apparence]`) → le quatrième ;
- *   - le style de l'appelant posé après la couleur de l'apparence → le cinquième.
+ *   - le style de l'appelant transmis tel quel au texte, et non son seul alignement → le cinquième.
  */
 import { render, screen } from '@testing-library/react-native';
 import React from 'react';
@@ -36,7 +36,7 @@ describe('TextLink — trois apparences nommées', () => {
     expect(style.color).toBe(Colors.light.accentText);
     expect(style.fontFamily).toBe(FontFamily.semibold);
     expect(style.fontSize).toBe(14);
-    expect(style.textDecorationLine).toBe('none');
+    expect(style.textDecorationLine).not.toBe('underline');
   });
 
   it('« discret » : l’encre tertiaire, en 500, sans soulignement', () => {
@@ -45,7 +45,7 @@ describe('TextLink — trois apparences nommées', () => {
 
     expect(style.color).toBe(Colors.light.textTertiary);
     expect(style.fontFamily).toBe(FontFamily.medium);
-    expect(style.textDecorationLine).toBe('none');
+    expect(style.textDecorationLine).not.toBe('underline');
   });
 
   it('« souligne » : la même encre, soulignée au repos', () => {
@@ -62,13 +62,15 @@ describe('TextLink — trois apparences nommées', () => {
     expect(styleDuTexte('Réessayer').color).toBe(Colors.light.textTertiary);
   });
 
-  it('le style de l’appelant aligne le texte, et ne le repeint pas', () => {
-    // Le cas que le type ne voit pas : un objet de `StyleSheet` qui porte `textAlign` à côté d'une encre.
-    const styles = StyleSheet.create({ lien: { textAlign: 'center', color: '#FF0000' } });
+  it('le style de l’appelant aligne le texte, et ne change ni son encre ni son corps', () => {
+    // Le cas que le type ne voit pas : un objet de `StyleSheet` qui porte `textAlign` à côté d'une encre
+    // et d'une taille.
+    const styles = StyleSheet.create({ lien: { textAlign: 'center', color: '#FF0000', fontSize: 18 } });
     render(<TextLink label="Retour" apparence="discret" onPress={() => {}} style={styles.lien} />);
     const style = styleDuTexte('Retour');
 
     expect(style.textAlign).toBe('center');
     expect(style.color).toBe(Colors.light.textTertiary);
+    expect(style.fontSize).toBe(14);
   });
 });

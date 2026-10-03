@@ -412,15 +412,16 @@ export default function Compte() {
                   />
                 </>
               )}
+              {/* Soulignés (`v1-33` T-5) : « Une question ? Écris à … », du même gris, les suit de près. */}
               <TextLink
                 label="Confidentialité"
-                apparence="discret"
+                apparence="souligne"
                 onPress={() => router.push('/confidentialite')}
                 role="link"
               />
               <TextLink
                 label="Conditions d’utilisation"
-                apparence="discret"
+                apparence="souligne"
                 onPress={() => router.push('/conditions')}
                 role="link"
               />

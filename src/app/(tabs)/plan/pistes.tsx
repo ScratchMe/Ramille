@@ -257,9 +257,9 @@ export default function PistesScreen() {
   const retour = (
     <TextLink
       label="Retour au plan"
+      apparence="action"
       // **Jamais un `router.back()` nu** : rechargé, ou ouvert par son adresse, cet écran n'a rien
       // derrière lui dans la pile, et le lien ne faisait alors rien (recette du 28/09/2026).
-      apparence="action"
       onPress={() => revenirOu('/plan')}
       // Une navigation, donc un lien (24/09/2026, `v1-29`).
       role="link"

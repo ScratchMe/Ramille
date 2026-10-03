@@ -718,8 +718,8 @@ export default function BilanResultat() {
             <ThemedText themeColor="textSecondary">{BILAN_RETIRE.corps}</ThemedText>
             <TextLink
               label={BILAN_RETIRE.sortie}
-              // Une destination, pas un dépilement — la règle de « Revenir à mon suivi » plus bas.
               apparence="action"
+              // Une destination, pas un dépilement — la règle de « Revenir à mon suivi » plus bas.
               onPress={() => router.replace('/suivi')}
               role="link"
               style={styles.editLink}
@@ -945,7 +945,8 @@ export default function BilanResultat() {
                 aucun libellé n'a changé. */}
             <TextLink
               label="Un chiffre me semble faux"
-              apparence="discret"
+              // Souligné (`v1-33` T-5) : la méthode dépliée finit juste au-dessus, du même gris au même corps.
+              apparence="souligne"
               onPress={() =>
                 router.push({
                   pathname: '/feedback',
@@ -1019,7 +1020,7 @@ export default function BilanResultat() {
                 <>
                   <TextLink
                     label={LIEN_DU_RETRAIT}
-                    apparence="discret"
+                    apparence="souligne"
                     hint={INDICE_DU_RETRAIT}
                     onPress={() => void ouvrirLaConfirmation()}
                     disabled={lectureDeLaConfirmation}
@@ -1266,11 +1267,11 @@ export default function BilanResultat() {
             {mode !== 'nouveau' && (
               <TextLink
                 label="Revenir à mon suivi"
+                apparence="action"
                 // **Une destination, pas un dépilement.** `router.back()` ramenait à l'écran
                 // précédent, qui n'est pas toujours le suivi : « Revoir mon bilan » ouvre
                 // cette page depuis le plan, et le lien renvoyait donc… au plan (retour
                 // d'appareil du 07/09/2026). Un lien qui nomme sa destination doit y aller.
-                apparence="action"
                 onPress={() => router.replace('/suivi')}
                 role="link"
                 style={styles.editLink}

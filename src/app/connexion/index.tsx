@@ -190,11 +190,11 @@ export default function ConnexionProposition() {
             )}
             <TextLink
               label="Utiliser un email à la place"
+              apparence="action"
               // **Aucun paramètre**, et c'est délibéré : `/connexion/email` ne lit ni `id` (plus
               // personne ne le passe depuis que cet écran ne lit plus le résultat du bilan) ni
               // `source` (la provenance qu'il transmet à « retrouver » est la porte d'ici, `email`).
               // En passer un que rien ne lit se lit « réservé » là où il est inutile.
-              apparence="action"
               onPress={() => router.push('/connexion/email')}
               role="link"
               style={styles.emailLink}

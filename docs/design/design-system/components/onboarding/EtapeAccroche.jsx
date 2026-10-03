@@ -23,7 +23,7 @@ export function EtapeAccroche({ onSuivant, onDejaUnCompte, style }) {
         <Button title="Découvrir mon impact" onPress={onSuivant} />
         <OnboardingDots total={4} activeIndex={0} />
         <ThemedText type="small" themeColor="textTertiary" style={{ textAlign: 'center', marginTop: -16 }}>Pas de compte à créer pour commencer.</ThemedText>
-        <TextLink label="J’ai déjà un compte" apparence="action" onPress={onDejaUnCompte} role="link" style={{ textAlign: 'center' }} containerStyle={{ marginTop: -32, alignItems: 'center' }} />
+        <TextLink label="J’ai déjà un compte" apparence="souligne" onPress={onDejaUnCompte} role="link" style={{ textAlign: 'center' }} containerStyle={{ marginTop: -32, alignItems: 'center' }} />
       </div>
     </div>
   );

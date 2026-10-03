@@ -226,17 +226,19 @@ export function SaisieDuCode({
             `link`, il promettait une navigation. « Utiliser une autre adresse » non plus : ce
             commentaire le disait lien parce qu'il « ramène à la saisie de l'adresse », mais ses trois
             appelants ne font que changer de phase dans le même écran (`setPhase('saisie')`), sans
-            quitter la route — une action sur place (contre-lecture du 25/09/2026). */}
+            quitter la route — une action sur place (contre-lecture du 25/09/2026).
+            **Soulignés** (`v1-33` T-5) : en voix `parti`, « Si tu quittes cet écran… », du même gris au
+            même corps, suit « Utiliser une autre adresse » ; les deux liens gardent la même forme. */}
         <TextLink
           label="Renvoyer un code"
-          apparence="discret"
+          apparence="souligne"
           onPress={() => void surRenvoi()}
           role="button"
           style={styles.centre}
         />
         <TextLink
           label="Utiliser une autre adresse"
-          apparence="discret"
+          apparence="souligne"
           onPress={onAutreAdresse}
           role="button"
           style={styles.centre}

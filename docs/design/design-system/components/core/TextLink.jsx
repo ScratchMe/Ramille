@@ -4,7 +4,9 @@ import { ThemedText } from './ThemedText.jsx';
 // texte ; sous le doigt, il se souligne. Trois apparences nommées, et pas une de plus (`v1-33` T-5) : le corps
 // est `small` partout, l'encre et la graisse viennent de `apparence`, et `style` ne règle que l'alignement.
 const ENCRE = { action: 'accentText', discret: 'textTertiary', souligne: 'textTertiary' };
-export function TextLink({ label, apparence = 'action', onPress, disabled, role = 'button', hint, expanded, align, containerStyle, style }) {
+// Pas de valeur par défaut, comme dans le dépôt où la prop est obligatoire : un aperçu qui l'oublie se rend sans
+// encre, au lieu de prendre l'accent sans que personne le voie.
+export function TextLink({ label, apparence, onPress, disabled, role = 'button', hint, expanded, align, containerStyle, style }) {
   // `hint` n'a pas d'équivalent sur web (react-native-web ignore `accessibilityHint`) : il n'est pas rendu.
   // `align` n'existe pas dans le dépôt, qui centre par `style={{ textAlign: 'center' }}` : il reste
   // lisible parce que `ui_kits/ramille/` s'en sert.

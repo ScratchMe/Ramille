@@ -104,8 +104,8 @@ function Restitution({ go }) {
           <ThemedText type="small" themeColor="textTertiary">Estimation annuelle, tous déplacements</ThemedText>
           <ThemedText type="salient" style={{ fontVariantNumeric: 'tabular-nums' }}>3,4 t CO₂e</ThemedText>
           <BlocMethode />
-          <TextLink label="Un chiffre me semble faux" apparence="discret" role="link" containerStyle={{ alignItems: 'flex-start' }} />
-          <TextLink label="Ce bilan ne me ressemble pas" apparence="discret" containerStyle={{ alignItems: 'flex-start' }} />
+          <TextLink label="Un chiffre me semble faux" apparence="souligne" role="link" containerStyle={{ alignItems: 'flex-start' }} />
+          <TextLink label="Ce bilan ne me ressemble pas" apparence="souligne" containerStyle={{ alignItems: 'flex-start' }} />
         </div>
         <div style={{ background: 'var(--color-background-element)', borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <ThemedText type="small" weight={600}>Répartition par poste</ThemedText>

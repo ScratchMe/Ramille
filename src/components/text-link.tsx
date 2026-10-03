@@ -6,7 +6,7 @@ import { ControlHeight, Radius, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Texte cliquable — le motif le plus répandu du produit (retours, liens de pied d'écran,
-// « Je ne sais pas », « Voir les autres modes »…), présent soixante-dix fois.
+// « Je ne sais pas », « Voir les autres modes »…).
 //
 // Il existe pour une raison d'accessibilité, pas de mise en forme : un `Pressable` nu ne dit
 // rien à un lecteur d'écran, et l'audit T11 avait relevé **zéro attribut d'accessibilité dans
@@ -36,16 +36,17 @@ import { useTheme } from '@/hooks/use-theme';
 //
 //   * `action` — l'encre d'accent, en 600 : le lien qui fait avancer, ou l'autre chemin posé sous un
 //     bouton principal (« Voir toutes les pistes », « J'ai déjà un compte », « Il manque encore … ») ;
-//   * `discret` — l'encre tertiaire : ce qui se propose sans pousser (les pages légales, « Renvoyer un
-//     code », « Un chiffre me semble faux ») ;
+//   * `discret` — l'encre tertiaire : ce qui se propose sans pousser (« Faire un nouveau bilan » sur la
+//     restitution, « Comment ce chiffre est calculé », les pages légales sous `/connexion`) ;
 //   * `souligne` — la même encre, soulignée au repos : un lien discret **qu'une phrase de la même encre
 //     touche**, ou posé dans une carte. Gris contre gris, au même corps, il se lisait comme la suite de
 //     la phrase (« Pas de trajet la semaine dernière », P-7 ; le « Retour » collé à « Reviens en
 //     arrière », T-5). Et un « Annuler » posé à côté d'un bouton de confirmation l'est partout.
 //
 // **Désactivé, un lien prend l'encre tertiaire** (le kit, puce « États ») : un lien d'action en attente
-// d'une relecture se lit ainsi indisponible sans opacité. `style` ne règle que l'alignement du texte ; ce
-// qui fait l'apparence passe après lui, donc ne peut pas être repeint par un appelant.
+// d'une relecture se lit ainsi indisponible sans opacité. **De `style`, seul l'alignement est lu** : le
+// type n'en laisse passer qu'un, mais un objet de `StyleSheet` qui le porte à côté d'une taille ou d'une
+// encre passe le typage — le composant n'en retient donc que `textAlign`, et rien ne repeint le lien.
 export type ApparenceDuLien = 'action' | 'discret' | 'souligne';
 
 const ENCRE: Record<ApparenceDuLien, ThemeColor> = {
@@ -95,6 +96,7 @@ export function TextLink({
   const theme = useTheme();
   const dejaSouligne = apparence === 'souligne';
   const encre = disabled ? 'textTertiary' : ENCRE[apparence];
+  const textAlign = StyleSheet.flatten(style)?.textAlign;
 
   return (
     <Pressable
@@ -122,9 +124,8 @@ export function TextLink({
           weight={apparence === 'action' ? 600 : 500}
           themeColor={encre}
           style={[
-            style,
-            { color: theme[encre] },
-            dejaSouligne ? styles.souligne : styles.nu,
+            textAlign !== undefined && { textAlign },
+            dejaSouligne && styles.souligne,
             pressed && !disabled && !dejaSouligne && styles.souligne,
           ]}
         >
@@ -138,7 +139,6 @@ export function TextLink({
 const styles = StyleSheet.create({
   cible: { minHeight: ControlHeight.target, justifyContent: 'center' },
   souligne: { textDecorationLine: 'underline' },
-  nu: { textDecorationLine: 'none' },
   // Le rayon de l'encadré, pour que la teinte ne soit pas un rectangle à angles vifs autour d'un mot.
   cibleAppuyee: { borderRadius: Radius.notice },
 });

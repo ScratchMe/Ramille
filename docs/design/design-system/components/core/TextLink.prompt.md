@@ -9,8 +9,8 @@ Toute action textuelle (Retour, « Je ne sais pas », « Changer d’avis », «
 **Trois apparences, et pas une de plus** (`v1-33` T-5, 03/10/2026). Le corps est `small` partout ; `apparence` donne l’encre et la graisse, et le composant ne prend ni `type`, ni `themeColor`, ni `weight` — le relevé en avait compté sept, et « J’ai déjà un compte » en cinq formes pour un même geste.
 
 - **`action`** — `accentText`, 600. Le lien qui fait avancer, ou l’autre chemin posé sous un bouton principal : « Voir toutes les pistes », « Il manque encore … », « J’ai déjà un compte », « Pas maintenant » d’une feuille, « Réessayer » d’une relecture.
-- **`discret`** — `textTertiary`, 500. Ce qui se propose sans pousser : les pages légales, « Renvoyer un code », « Un chiffre me semble faux », « Comment ce chiffre est calculé ».
-- **`souligne`** — `textTertiary`, 500, souligné au repos. Un lien discret **qu’une phrase de la même encre touche**, ou posé dans une carte : gris contre gris au même corps, il se lirait comme la suite de la phrase. Les liens de pied de carte du plan, « Mes données » (« Supprimer mon compte »), le « Retour » sous « Reviens en arrière », et tout « Annuler » posé à côté d’un bouton de confirmation.
+- **`discret`** — `textTertiary`, 500. Ce qui se propose sans pousser : « Faire un nouveau bilan » sur la restitution, « Comment ce chiffre est calculé », « Ton mode n’est pas dans la liste ? Dis-le-nous. », les pages légales sous `/connexion`.
+- **`souligne`** — `textTertiary`, 500, souligné au repos. Un lien discret **qu’une phrase de la même encre touche**, ou posé dans une carte : gris contre gris au même corps, il se lirait comme la suite de la phrase. Les liens de pied de carte du plan, « Mes données » (« Supprimer mon compte »), le « Retour » sous « Reviens en arrière », « Renvoyer un code » au-dessus de « Si tu quittes cet écran… », « J’ai déjà un compte » sous « Pas de compte à créer pour commencer. », et tout « Annuler » posé à côté d’un bouton de confirmation.
 
 Désactivé, un lien prend l’encre tertiaire, quelle que soit son apparence — jamais une opacité.
 
