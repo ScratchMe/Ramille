@@ -23,7 +23,8 @@ synchronisé ce jour-là, et non sur l'artefact « Ramille » de la galerie, fig
 - trois marques de puce cochée ;
 - le bouton en attente posé sur un encart.
 
-Le choix entre ces options reste à faire avec la personne qui pilote.
+Les recommandations ont été retenues le même jour et livrées : voir
+[`v1-34`](../../architecture/v1-34-ce-qui-passe-pres-de-chez-soi.md) §10.
 
 **Ce brief demande l'UX autant que l'UI.** La personne arrive à la dernière étape d'un questionnaire
 de neuf. On lui pose quatre questions sur l'endroit où elle vit. Elle doit comprendre sans chercher

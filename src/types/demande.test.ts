@@ -1,4 +1,4 @@
-import { decalagePourMontrer, optionCible, suiteSousLePied } from '@/types/demande';
+import { contenuSousLaTete, decalagePourMontrer, optionCible, suiteSousLePied } from '@/types/demande';
 
 // Ce que le « Suivant » en attente fait voir (29/09/2026, `v1-31`). Ce test garde les fonctions, pas
 // leurs appels (`FRONT.md` §1.1) : que `StepShell` y défile vraiment, et que le focus se pose, c'est la
@@ -111,5 +111,23 @@ describe('suiteSousLePied', () => {
   // Un défilement s'arrête à des positions fractionnaires : pas de filet qui clignote au bas.
   it('un demi-pixel du bas n’est pas une suite', () => {
     expect(suiteSousLePied({ ...etape, decalage: 375.6 })).toBe(false);
+  });
+});
+
+// Le filet de la tête (03/10/2026). **Éprouvé en le cassant le jour même** : la marge haute retirée
+// (`decalage > 0`) → « la marge haute seule ne cache rien », et lui seul ; le filet toujours posé
+// (`return true`) → « au repos, pas de filet » et « la marge haute seule… », et eux seuls.
+describe('contenuSousLaTete', () => {
+  it('au repos, pas de filet', () => {
+    expect(contenuSousLaTete({ decalage: 0 })).toBe(false);
+  });
+
+  it('la marge haute seule ne cache rien', () => {
+    expect(contenuSousLaTete({ decalage: 20 })).toBe(false);
+  });
+
+  it('le contenu touche la tête : le filet se pose', () => {
+    expect(contenuSousLaTete({ decalage: 24 })).toBe(true);
+    expect(contenuSousLaTete({ decalage: 300 })).toBe(true);
   });
 });

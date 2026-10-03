@@ -260,6 +260,8 @@ on s'en fiche. sinon OK ».
 - **Le brief est parti à Claude Design le même jour** : un canvas,
   <https://claude.ai/artifact/7yxeHrHFuUKYuoRjJcuNBN> (privé). Ses options, la recommandation comprise,
   attendent la décision de la personne qui pilote avant toute PR.
+- **Les recommandations du canvas sont retenues, le même jour** : « Ok pour tes recos sur le canvas, go
+  pour l'implémentation ». Ce qui est livré est au §10.
 
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 
@@ -304,4 +306,29 @@ sorties, « train » devenant « RER » :
 650 → 870, `.design-sync/NOTES.md`) ; et, à la prochaine séance
 de recette, régénérer l'artefact depuis `docs/recette/premier-parcours-web.md`, dont le profil coche
 désormais le bus et le train.
+
+## 10. La réponse de Claude Design, livrée (03/10/2026)
+
+Les trois recommandations du canvas, retenues telles quelles par la personne qui pilote :
+
+- **La question d'abord** (brief §4.1 et §4.2), dans `ChampsDeContexte` — donc sur l'étape et sur
+  `/contexte` :
+  - chaque question en `default` 600 à l'encre, son aide dessous en `small` 400 tertiaire ;
+  - la définition de la zone, une ligne par zone, avec les mêmes mots ;
+  - « Rien de tout ça » sur sa propre ligne ;
+  - et dans `StepShell`, un filet en bas de la tête dès que le contenu passe dessous
+    (`contenuSousLaTete`), la tête gardant 8 sous la phrase de Ramille.
+- **La puce, option B** (§4.3 et §4.4) : `Chip` garde sa graisse, 500, cochée ou non. Une puce à
+  cocher porte une case de 18, avec la coche de l'action engagée (`TRACE_DE_LA_COCHE`). Elle vaut
+  pour les transports et pour les jours de l'engagement, qui passent en `flex` pour que la case tienne
+  dans leur cellule. La case est une forme nouvelle du système, c'est pourquoi la décision a été
+  prise sur canvas.
+- **Le bouton grisé posé sur un encart** (§4.5) : le fond de l'écran et un filet, avec l'encre
+  tertiaire (`surfaceDuBouton`, testée). « C'est noté » passe `onPanel`.
+
+**Ce que ça coûte, mesuré sur l'export le 03/10/2026** :
+- à 390 × 844, l'étape défile toujours, ce que la page acceptait ;
+- à 360 de large, la case élargit chaque pilule des transports, et « Métro ou tram » et « RER ou
+  Transilien » ne tiennent plus côte à côte : une rangée de plus ;
+- chaque étape du questionnaire perd 8 px de zone qui défile, au profit de la marge sous la tête.
 

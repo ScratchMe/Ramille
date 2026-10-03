@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, type View, type ViewStyle } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, Radius, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { surfaceDuBouton } from '@/types/surface-du-bouton';
 
 export type ButtonProps = {
   title: string;
@@ -20,7 +21,9 @@ export type ButtonProps = {
    * l'écran. Un secondaire y prend le fond de l'écran et un filet, au lieu du gris des panneaux
    * (24/09/2026, `v1-29`) : « Oui » et « Non » passés au même poids se sont retrouvés gris sur une
    * carte grise, leur forme disparaissait et ils se lisaient comme du texte. Sans effet sur le
-   * principal, dont l'accent se voit partout.
+   * principal, dont l'accent se voit partout. **Ni sur un bouton grisé, depuis le 03/10/2026** : en
+   * attente ou désactivé, il y prend lui aussi le fond de l'écran et le filet, sans quoi « C'est noté »
+   * se fondait dans l'encart du choix des jours (`surfaceDuBouton`).
    */
   onPanel?: boolean;
   /**
@@ -79,18 +82,13 @@ export function Button({
 }: ButtonProps) {
   const theme = useTheme();
 
-  const surPanneau = onPanel && variant === 'secondary';
   // L'apparence du désactivé vaut pour les deux : `disabled` (inerte) et `enAttente` (qui agit).
-  const gris = disabled || enAttente;
-  const backgroundColor = gris
-    ? theme.backgroundElement
-    : variant === 'primary'
-      ? theme.accent
-      : surPanneau
-        ? theme.background
-        : theme.backgroundElement;
-  const backgroundAppuye = variant === 'primary' && !enAttente ? theme.accentPressed : theme.backgroundPressed;
-  const textColor = gris ? theme.textTertiary : variant === 'primary' ? theme.onAccent : theme.text;
+  const surface = surfaceDuBouton({
+    variant,
+    grise: Boolean(disabled || enAttente),
+    enAttente: Boolean(enAttente),
+    surPanneau: Boolean(onPanel),
+  });
 
   return (
     <Pressable
@@ -105,13 +103,16 @@ export function Button({
       // `<button>` qu'il rend), React Native le range dans l'état que TalkBack annonce.
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: pressed && !disabled ? backgroundAppuye : backgroundColor, flex: flex ? 1 : undefined },
-        surPanneau && styles.filet,
-        surPanneau && { borderColor: theme.border },
+        {
+          backgroundColor: theme[pressed && !disabled ? surface.fondAppuye : surface.fond],
+          flex: flex ? 1 : undefined,
+        },
+        surface.filet && styles.filet,
+        surface.filet && { borderColor: theme.border },
         style,
       ]}
     >
-      <ThemedText weight={variant === 'secondary' ? 500 : 600} style={{ color: textColor, fontSize: 16 }}>
+      <ThemedText weight={variant === 'secondary' ? 500 : 600} style={{ color: theme[surface.encre], fontSize: 16 }}>
         {title}
       </ThemedText>
     </Pressable>

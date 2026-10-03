@@ -1,8 +1,10 @@
 import type { Ref } from 'react';
-import { Pressable, StyleSheet, type View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
+import { TRACE_DE_LA_COCHE } from '@/components/plan/pastille-engagee';
 import { ThemedText } from '@/components/themed-text';
-import { ControlHeight, Stroke } from '@/constants/theme';
+import { ControlHeight, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { activableALaBarreDEspace } from '@/lib/barre-d-espace';
 import { fondDuChoix } from '@/types/fond-du-choix';
@@ -75,6 +77,11 @@ export function Chip({
   // teinte, pour que le texte garde son contraste (décision n° 6).
   const borderColor = selected && selectedStyle === 'outline' ? theme.accent : 'transparent';
   const textColor = selected && selectedStyle === 'solid' ? theme.onAccent : theme.text;
+  // **Une puce qui se cumule porte une case** (03/10/2026, canvas de l'étape du contexte, option B) :
+  // la forme seule ne disait pas qu'on peut en cocher plusieurs — la série des transports ne se
+  // distinguait des autres que par ses pilules. La case est toujours là, vide ou cochée, donc la puce
+  // garde sa largeur sous le doigt.
+  const aCocher = role === 'checkbox';
 
   return (
     <Pressable
@@ -101,7 +108,8 @@ export function Chip({
       aria-checked={selected}
       style={({ pressed }) => [
         styles.base,
-        flex ? styles.baseFlex : styles.basePilule,
+        flex ? styles.baseFlex : aCocher ? styles.basePiluleACocher : styles.basePilule,
+        aCocher && (flex ? styles.rangeeACocherSerree : styles.rangeeACocher),
         {
           borderRadius: radius,
           backgroundColor:
@@ -118,7 +126,35 @@ export function Chip({
         },
       ]}
     >
-      <ThemedText weight={selected ? 600 : 400} style={[styles.label, { color: textColor }]}>
+      {aCocher && (
+        // Décorative, comme la pastille de l'action engagée : `aria-checked` dit déjà l'état.
+        <View
+          aria-hidden
+          style={[
+            styles.caseACocher,
+            selected
+              ? { backgroundColor: theme.onAccent, borderColor: theme.onAccent }
+              : { backgroundColor: theme.background, borderColor: theme.fieldBorder },
+          ]}
+        >
+          {selected && (
+            <Svg width={12} height={12} viewBox="0 0 24 24">
+              <Path
+                d={TRACE_DE_LA_COCHE}
+                stroke={theme.accent}
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </Svg>
+          )}
+        </View>
+      )}
+      {/* **Une graisse, cochée ou non** (03/10/2026, même canvas) : le 600 de la puce cochée élargissait
+          son libellé de 3 à 4 px, et dans une rangée qui passe à la ligne une voisine sautait à la ligne
+          suivante au toucher. Le fond et l'encre portent seuls la sélection. */}
+      <ThemedText weight={500} style={[styles.label, { color: textColor }]}>
         {label}
       </ThemedText>
     </Pressable>
@@ -142,6 +178,21 @@ const styles = StyleSheet.create({
   // Une puce à largeur naturelle tire sa forme de pilule de son padding : c'est lui qui fait
   // la largeur.
   basePilule: { paddingHorizontal: 18 },
+  // La case prend la place de la marge gauche : 12 avant elle, 16 après le libellé.
+  basePiluleACocher: { paddingLeft: 12, paddingRight: 16 },
+  // La case et le libellé côte à côte. Dans une puce équirépartie — les jours de l'engagement, une
+  // cellule de 48 à 360 dp —, l'écart se resserre : 18 + 6 + une initiale y tiennent.
+  rangeeACocher: { flexDirection: 'row', gap: Spacing.two },
+  rangeeACocherSerree: { flexDirection: 'row', gap: 6 },
+  // 18 de côté, coins de 5, le trait d'une puce choisie ; la coche de l'action engagée, en 12.
+  caseACocher: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: Stroke.selected,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // Une puce équirépartie tire sa largeur du `flex`, et le padding ne fait que **retirer**
   // de la place au texte. À 18 de chaque côté, les sept puces de « jours par semaine » ne
   // laissaient que 3 dp au chiffre sur un écran de 390 dp, pour ~9 nécessaires : Android

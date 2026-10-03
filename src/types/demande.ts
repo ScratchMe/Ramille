@@ -88,6 +88,21 @@ export function decalagePourMontrer({
 /** La marge basse du contenu de l'étape (`scrollContent`) : sous le pied, elle seule n'est pas une suite. */
 export const MARGE_BASSE_DU_CONTENU = 24;
 
+/** La marge haute du contenu de l'étape (`scrollContent`) : passée sous la tête, elle seule ne cache rien. */
+export const MARGE_HAUTE_DU_CONTENU = 24;
+
+/**
+ * **Le contenu passe-t-il sous la tête ?** (03/10/2026, canvas de l'étape du contexte.) Vrai dès que le
+ * défilement a mangé la marge haute de 24 : le filet de la bande haute se pose alors en bas de la tête,
+ * comme celui du pied en haut du pied. Sans lui, au défilement, l'aide de la zone venait se coller sous
+ * la phrase fixe de Ramille et se lisait comme sa suite (capture `390-5` du brief).
+ *
+ * Le même demi-pixel que `suiteSousLePied` : un défilement s'arrête à des positions fractionnaires.
+ */
+export function contenuSousLaTete({ decalage }: { decalage: number }): boolean {
+  return decalage > MARGE_HAUTE_DU_CONTENU - 0.5;
+}
+
 /**
  * **Y a-t-il une suite sous le pied ?** (29/09/2026, `v1-31`, décision 3.) Vrai quand le contenu
  * continue sous le pied au-delà de sa marge basse de 24 : le filet de la bande haute se pose alors en

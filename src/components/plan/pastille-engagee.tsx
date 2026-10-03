@@ -4,6 +4,13 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
+ * Le tracé de la coche, dans une boîte de 24. **Le seul du dépôt**, partagé avec la case d'une puce à
+ * cocher (`Chip`, 03/10/2026) : la recopier, c'est laisser diverger la marque du geste le plus important
+ * du produit et celle d'une réponse cochée.
+ */
+export const TRACE_DE_LA_COCHE = 'M5 13l4 4L19 7';
+
+/**
  * La coche qui marque une action engagée — 20 px, fond `accent`, trait `onAccent` de 3 (le blanc
  * écrit en dur jusqu'au 24/09/2026, `v1-29` §3).
  *
@@ -24,7 +31,7 @@ export function PastilleEngagee() {
     <View style={[styles.pastille, { backgroundColor: theme.accent }]}>
       <Svg width={12} height={12} viewBox="0 0 24 24">
         <Path
-          d="M5 13l4 4L19 7"
+          d={TRACE_DE_LA_COCHE}
           stroke={theme.onAccent}
           strokeWidth={3}
           strokeLinecap="round"

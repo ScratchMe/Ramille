@@ -553,7 +553,9 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   l'app (`src/components/plan/action-commitment.tsx`). **Tranché le 03/10/2026** : pas de correction
   à la main, la question va au brief de Claude Design
   ([`docs/design/v1-34-l-etape-du-contexte/BRIEF.md`](../design/v1-34-l-etape-du-contexte/BRIEF.md)
-  §4.5), parce que la réponse vaut pour tout bouton posé dans un encart.
+  §4.5), parce que la réponse vaut pour tout bouton posé dans un encart. **Corrigé le 03/10/2026**, sur
+  la réponse du canvas : grisé et posé sur un encart, un bouton prend le fond de l'écran et un filet
+  (`surfaceDuBouton`), et « C'est noté » passe `onPanel`.
 - **D18 ne réduit les façons de dire un formulaire incomplet que de trois à deux** : la phrase de
   `/feedback` reste en `small` tertiaire, là où le questionnaire, `/contexte` et D13 la disent en
   `accentText` 600. **Fait le 02/10/2026.**

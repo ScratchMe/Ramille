@@ -90,7 +90,8 @@ un constat de lecture.
   Retour + Suivant, Retour garde sa largeur et Suivant porte `flex`.
 - Le « Suivant » d'une étape incomplète est **en attente** (`enAttente`), comme le « C'est noté »
   d'une intention incomplète : l'apparence du désactivé — fond élément + texte tertiaire, jamais
-  une opacité —, mais un bouton qui agit, et son toucher dit ce qui manque. `disabled` reste à ce
+  une opacité ; posé sur un encart gris, fond de la page et filet (`onPanel`) —, mais un bouton qui
+  agit, et son toucher dit ce qui manque. `disabled` reste à ce
   qui n'agit vraiment pas (le « C'est noté » pendant l'envoi). Dans les deux cas, le libellé ne
   change pas.
 - Les listes de choix exclusifs sont des `ChoiceRow` ou des `ModeListItem`, jamais des boutons,
@@ -101,9 +102,11 @@ un constat de lecture.
   champ qu'elle renseigne : c'est là que « Il manque encore … » mène.
 - Quand les réponses **se cumulent** (« Près de chez toi, qu'est-ce que tu pourrais prendre ? »,
   les jours de l'engagement), ce sont des `Chip` en `role="checkbox"` dans un
-  `GroupeDeChoix cumulable` — un `group`, pas un `radiogroup`. Une réponse qui exclut les autres
-  (« Rien de tout ça ») les décoche quand on la coche, et se décoche dès qu'on en coche une autre.
-  Une série à cocher ne se dessine jamais en liste à choix unique, ni l'inverse.
+  `GroupeDeChoix cumulable` — un `group`, pas un `radiogroup` —, et chaque puce porte sa case,
+  vide ou cochée. Une réponse qui exclut les autres (« Rien de tout ça ») a sa propre ligne, les
+  décoche quand on la coche, et se décoche dès qu'on en coche une autre. Une série à cocher ne se
+  dessine jamais en liste à choix unique, ni l'inverse. **Une puce garde sa graisse, cochée ou
+  non** : le fond et l'encre portent seuls la sélection.
 - Deux registres de carte : **neutre** (fond élément sans bordure, ou bordure 1 px sur blanc)
   et **saillante** (bordure accent 2 px + fond teinté + étiquette majuscule à pastille-coche)
   — la saillante dit quelle action porte l'engagement, et il n'y en a qu'une par saison.
