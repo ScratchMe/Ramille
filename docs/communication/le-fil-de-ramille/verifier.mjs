@@ -28,10 +28,10 @@
 //     il ne bouge pas de plus de 2 px d'une image à l'autre sur l'écran du téléphone. Il suivait sa
 //     cible quand elle s'envolait ;
 //   - **la pureté** : l'image d'un instant ne dépend que de cet instant. Une passe dans l'ordre,
-//     puis un aller-retour par l'autre format, puis une passe dans le désordre : chaque image doit
-//     être identique à celle de la première passe. La version du 03/10/2026 mesurait le défilement
-//     du plan au premier passage, et l'épaisseur du trait échappait au cache d'écriture : selon
-//     l'ordre des sauts, le même instant rendait trois images différentes.
+//     puis un aller-retour par chacun des autres formats, puis une passe dans le désordre :
+//     chaque image doit être identique à celle de la première passe. La version du 03/10/2026
+//     mesurait le défilement du plan au premier passage, et l'épaisseur du trait échappait au cache
+//     d'écriture : selon l'ordre des sauts, le même instant rendait trois images différentes.
 //
 // **Pourquoi plusieurs tailles, alors que le film se compose à taille fixe** : c'est justement ce
 // qu'il éprouve. Le 03/10/2026, le 16:9 débordait chez la personne qui pilote : composé en unités
@@ -50,9 +50,9 @@
 //   - un libellé de bouton final trop long → « déborde à l'horizontale » ;
 //   - la source du 16:9 descendue à 99 % → « sort de la scène » (à 97 %, elle tient encore) ;
 //   - « Non, pas cette semaine ni la précédente » dans le bouton du point → « texte coupé en
-//     hauteur », aux sept cas ;
+//     hauteur », aux sept cas d'alors (deux formats) ;
 //   - le texte du manifeste qui sort à 67,6 s → « moins de 2,5 s pour lire » sur ses deux dernières
-//     lignes, aux deux formats ;
+//     lignes, aux deux formats d'alors ;
 //   - « Et les tiens, ils pèsent combien ? » réduit à 0,1 s → « moins de 2,5 s pour lire : 0,00 s » ;
 //   - le téléphone du 16:9 gardé à sa taille pendant le questionnaire → « appui hors cadre » sur
 //     « Suivant », aux quatre cas 16:9 ;
@@ -69,6 +69,10 @@
 //   - une écriture directe dans `preparer()`, hors du cache → « aller-retour de format » ;
 //   - le téléphone du 4:5 rendu à la taille de celui du 9:16 → « appui hors cadre » sur « Suivant »
 //     et « chevauchement » avec sa légende, aux trois cas 4:5 — ils voient bien leur format.
+//   - le téléphone du 4:5 raccourci et la restitution qui ne défile plus → « coupé par le cadre »
+//     sur le bas de la restitution et sur le choix des jours, et « appui hors cadre » sur trois
+//     appuis, aux trois cas 4:5 : l'écran du téléphone, en portrait, est le cadre qui coupe. Avant
+//     que le contrôle ne le compare, seul le 16:9 pouvait tomber.
 // Et en ajoutant le 4:5, l'aller-retour de format est tombé sur un défaut du contrôle lui-même :
 // `changerDeFormat` ne connaissait que deux formats, et « revenir au 4:5 » passait au 16:9.
 // L'épaisseur du trait écrite en direct, le défaut d'origine, ne se reproduit plus : les rendus de
@@ -187,11 +191,14 @@ function constater(t) {
 
   // Ce que le téléphone doit montrer en entier, une fois le geste fini, avec la marge que le film
   // promet sous chacun (en dp) : sans elle, « C'est noté » ne dépassait que de 0,67 px sans défilement.
-  const dp = document.getElementById('tel-ecran').getBoundingClientRect().width / 360;
+  // Le cadre qui coupe est le plus petit des deux : la scène en 16:9, l'écran du téléphone en portrait,
+  // où le téléphone tient entier — comparer à la seule scène n'y voyait rien (contre-lecture du 03/10/2026).
+  const re = document.getElementById('tel-ecran').getBoundingClientRect(), dp = re.width / 360;
+  const visible = { left: Math.max(sr.left, re.left), right: Math.min(sr.right, re.right), top: Math.max(sr.top, re.top), bottom: Math.min(sr.bottom, re.bottom) };
   const vus = [['bb3', T.defile[1], T.bilan[1], 12], ['c2-dep-dedans', T.depliage[1] + 0.15, T.repli[0], 16]];
   for (const [id, a, b, marge] of vus) {
     if (t < a || t >= b) continue;
-    if (!dedans(document.getElementById(id).getBoundingClientRect(), sr, 1 - marge * dp)) sortie.push(['coupé par le cadre', id]);
+    if (!dedans(document.getElementById(id).getBoundingClientRect(), visible, 1 - marge * dp)) sortie.push(['coupé par le cadre', id]);
   }
   // Un appui : sa cible dans le cadre, et le doigt dessus.
   const doigt = document.getElementById('doigt');
@@ -318,14 +325,17 @@ for (const c of CAS) {
     const temps = [];
     for (let t = 0; t <= duree; t += 0.5) temps.push(Math.round(t * 100) / 100);
     const reference = await page.evaluate(empreintes, temps);
-    // L'aller-retour : un instant rendu dans un format, puis dans l'autre, puis de nouveau dans le premier.
+    // L'aller-retour : un instant rendu dans un format, puis dans chacun des autres, et de nouveau dans le
+    // premier après chaque détour.
     for (const t of [21.5, 45.0, 66.0]) {
-      await page.evaluate(empreintes, [t]);
-      await page.evaluate(changerDeFormat, fmt === 'portrait' ? 'paysage' : 'portrait');
-      await page.evaluate(empreintes, [t]);
-      await page.evaluate(changerDeFormat, fmt);
-      const [e] = await page.evaluate(empreintes, [t]);
-      if (e !== reference[temps.indexOf(t)]) noter('image changée par un aller-retour de format', t);
+      for (const autre of ['paysage', 'portrait', 'quatre-cinq'].filter((x) => x !== fmt)) {
+        await page.evaluate(empreintes, [t]);
+        await page.evaluate(changerDeFormat, autre);
+        await page.evaluate(empreintes, [t]);
+        await page.evaluate(changerDeFormat, fmt);
+        const [e] = await page.evaluate(empreintes, [t]);
+        if (e !== reference[temps.indexOf(t)]) noter(`image changée par un aller-retour par le format ${autre}`, t);
+      }
     }
     // Le désordre, tiré d'une graine fixe : le même à chaque passage.
     let graine = 342;

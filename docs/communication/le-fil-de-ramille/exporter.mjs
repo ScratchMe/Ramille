@@ -38,14 +38,22 @@ const FORMATS = {
   portrait: { taille: [1080, 1920], nom: '9x16' },
   'quatre-cinq': { taille: [1080, 1350], nom: '4x5' },
 };
-const format = FORMATS[process.argv[2]] ? process.argv[2] : 'paysage';
+// Un format inconnu est refusé : parti en 16:9 sans rien dire, il écrasait la vidéo du 16:9.
+const format = process.argv[2] ?? 'paysage';
+if (!Object.hasOwn(FORMATS, format)) {
+  console.error(`Format inconnu : « ${format} ». Formats : ${Object.keys(FORMATS).join(', ')}.`);
+  process.exit(1);
+}
 const fps = Number(process.argv[3] ?? 30);
 const [largeur, hauteur] = FORMATS[format].taille;
 const sortie = path.join(os.tmpdir(), `le-fil-de-ramille-${FORMATS[format].nom}.mp4`);
 
-// La page publiée est un fragment : le service d'artefacts l'enveloppe. On fait de même ici.
+// La page publiée est un fragment : le service d'artefacts l'enveloppe. On fait de même ici, dans un
+// dossier à soi : plusieurs exports en parallèle réécrivaient la même enveloppe.
 const fragment = fs.readFileSync(path.join(ICI, 'film.html'), 'utf8');
-const enveloppe = path.join(os.tmpdir(), 'le-fil-de-ramille.html');
+const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'fil-export-'));
+process.on('exit', () => fs.rmSync(dossier, { recursive: true, force: true }));
+const enveloppe = path.join(dossier, 'film.html');
 fs.writeFileSync(
   enveloppe,
   `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>[hidden]{display:none!important}body{margin:0}</style></head><body>${fragment}</body></html>`

@@ -2,7 +2,8 @@
 
 **Statut** : validé par la personne qui pilote le 03/10/2026, **pas encore diffusé** — il attend la
 publication sur Google Play. Ce qui a été décidé, et ce qu'il reste à faire ce jour-là, est en fin
-de document.
+de document. **Le 4:5 et les chiffres recalculés sont venus après la validation**, le même jour, et
+attendent son regard.
 
 ## Ce que c'est
 
@@ -55,9 +56,9 @@ page elle-même : c'est aussi sa version texte.
   chapitres et l'export ne font que choisir un instant, et `verifier.mjs` vérifie que l'ordre des
   sauts n'y change rien. Ce qu'il mesure de sa propre mise en page, il le mesure dans un état de
   référence, jamais au premier passage.
-  **Il se compose à taille fixe** (1600 × 900 px, ou 900 × 1600) et se met à l'échelle d'un bloc :
-  le 16:9 débordait à la taille d'un lecteur, parce qu'il se recomposait à chaque taille et qu'à
-  très petite taille sa mise en page ne suivait plus la proportion. Ses **points de
+  **Il se compose à taille fixe** (1600 × 900 px, 900 × 1600, ou 900 × 1125 pour le 4:5) et se met
+  à l'échelle d'un bloc : le 16:9 débordait à la taille d'un lecteur, parce qu'il se recomposait à
+  chaque taille et qu'à très petite taille sa mise en page ne suivait plus la proportion. Ses **points de
   synchronisation** sont dans son bloc JSON `temps-du-film`, que la musique lit aussi. Ce qui
   s'accroche à l'un d'eux en dérive, jusqu'au doigt qui donne une réponse — le commentaire de la
   table `T` dit quoi ; le reste se compte en absolu, chapitre par chapitre.
@@ -135,13 +136,11 @@ avant chaque diffusion.
   transport 2050, qui est une **dérivation** de la cible de 2 t de l'ADEME — d'où le mot
   « transport » dans son libellé. **Le bilan, le palier et les gains du plan sont ceux d'un profil
   d'exemple**, et l'image le dit (« Écrans de l'app · profil d'exemple ») — mais **ce sont les
-  chiffres que l'app rend pour ce profil**, recalculés le 03/10/2026 par le vrai calcul :
-  `profil-d-exemple.sql` le passe sur la stack locale (2,1 t, dont 1,3 t de trajet domicile-travail,
-  333 kg de loisirs et 476 kg de voyages ; un palier à 1,8 t ; − 412 et − 320 kg pour les deux
-  pistes mises en avant, les mêmes et dans le même ordre que le plan les propose ; dix pistes en
-  tout). Leur forme est celle des écrans : `formatTonnes`, `formatTonnesShort`, `ligneDuGain`, et
-  les barres à l'échelle de la restitution. **Quand le calcul change, on le rejoue, et le film
-  suit.**
+  chiffres que l'app rend pour ce profil** : `profil-d-exemple.sql` le passe par le vrai calcul, sur
+  la stack locale, et imprime tout ce que le film recopie — le bilan, le palier, la largeur de
+  chaque barre, les pistes dans l'ordre du plan et leurs gains. Leur forme est celle des écrans :
+  `formatTonnes`, `formatTonnesShort`, `ligneDuGain`. **Quand le calcul change, on le rejoue, et le
+  film suit** ; les chiffres du jour sont dans la décision datée, plus bas.
 
 ## Décidé le 03/10/2026
 

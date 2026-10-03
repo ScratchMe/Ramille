@@ -44,7 +44,7 @@
 //     démarre, et coupait le son à chaque ouverture ;
 //   - l'image qui ne passe jamais sur l'horloge du son → « l'image ne suit pas le son », 0,37 s
 //     d'écart avec le son plus rapide ;
-//   - une image qui coûte 30 ms → « lecture saccadée » aux deux formats (31,6 ms par image). Retirer
+//   - une image qui coûte 30 ms → « lecture saccadée » aux deux formats d'alors (31,6 ms par image). Retirer
 //     le cache d'écriture, lui, ne la fait pas tomber sur cette machine : la garde voit une image
 //     lourde, pas une optimisation qu'une machine rapide absorbe ;
 //   - le bouton qui ne met plus le son en pause → « le bouton ne coupe pas le son » ;

@@ -112,7 +112,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 }
 .scene.portrait { aspect-ratio: 9 / 16; width: min(100%, calc(78vh * 9 / 16)); }
 .scene.quatre-cinq { aspect-ratio: 4 / 5; width: min(100%, calc(78vh * 4 / 5)); }
-/* Le film se compose à taille fixe — 1600 × 900 px, ou 900 × 1600 — puis se met à l'échelle d'un
+/* Le film se compose à taille fixe — 1600 × 900 px, 900 × 1600 ou 900 × 1125 — puis se met à l'échelle d'un
    seul bloc. À une taille de lecteur, la mise en page est donc exactement celle de l'export : quand
    il se recomposait à chaque taille, sa mise en page ne suivait plus la proportion à très petite
    taille, et les textes du téléphone sortaient de leurs boîtes en 16:9. */
@@ -175,12 +175,12 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .portrait.quatre-cinq #s2-transport { top: 61.5%; }
 .portrait.quatre-cinq #s2-legende { top: 66%; }
 .portrait.quatre-cinq #s3-texte { top: 49%; }
-.portrait.quatre-cinq .bloc-tel { top: 4%; }
+.portrait.quatre-cinq .bloc-tel { top: 3.5%; }
 .portrait.quatre-cinq .bloc-tel .k { font-size: 6.4cqmin; }
 .portrait.quatre-cinq .bloc-tel .k-sous { font-size: 3.3cqmin; }
-.portrait.quatre-cinq #tel { left: 28.5%; top: 25%; width: 43cqw; height: 86cqw; padding: 1.1cqmin; border-radius: 5.4cqmin; }
+.portrait.quatre-cinq #tel { left: 29.75%; top: 24.5%; width: 40.5cqw; height: 81cqw; padding: 1.1cqmin; border-radius: 5.2cqmin; }
 .portrait.quatre-cinq .tel-ecran { border-radius: 4.4cqmin; }
-.portrait.quatre-cinq #legende-tel { left: 7.8%; top: 95%; width: 84%; }
+.portrait.quatre-cinq #legende-tel { left: 7.8%; top: 92%; width: 84%; }
 .portrait.quatre-cinq #s7-texte { top: 6%; }
 .portrait.quatre-cinq #s8-texte { top: 45%; }
 .portrait.quatre-cinq #manif .lignes { top: 22%; }
@@ -419,16 +419,16 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
               <div class="bb" id="bb1"><p class="b-titre">Ton bilan transport</p><p class="b-sous">Estimation annuelle, tous déplacements</p><p class="b-total">2,1&nbsp;t&nbsp;CO₂e</p></div>
               <div class="bb" id="bb2"><p class="b-label">Répartition par poste</p>
                 <div class="b-lignes">
-                  <div class="b-ligne"><b>Trajet domicile-travail</b><b>1,3&nbsp;t&nbsp;CO₂e</b><div class="b-barre"><i class="fort" style="width:61.3%"></i></div></div>
-                  <div class="b-ligne"><span>Loisirs du week-end</span><span>333&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:15.9%"></i></div></div>
-                  <div class="b-ligne"><span>Voyages longue distance</span><span>476&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:22.8%"></i></div></div>
+                  <div class="b-ligne"><b>Trajet domicile-travail</b><b>1,3&nbsp;t&nbsp;CO₂e</b><div class="b-barre"><i class="fort" style="width:61.28%"></i></div></div>
+                  <div class="b-ligne"><span>Loisirs du week-end</span><span>333&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:15.93%"></i></div></div>
+                  <div class="b-ligne"><span>Voyages longue distance</span><span>476&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:22.79%"></i></div></div>
                 </div></div>
               <div class="bb" id="bb3"><p class="b-label">Où tu te situes</p>
                 <div class="b-lignes">
-                  <div class="b-ligne"><b>Toi</b><b>2,1&nbsp;t</b><div class="b-barre"><i class="fort" style="width:63.4%"></i></div></div>
-                  <div class="b-ligne"><span>Ton prochain palier</span><span>1,8&nbsp;t</span><div class="b-barre"><i style="width:55.6%"></i></div></div>
+                  <div class="b-ligne"><b>Toi</b><b>2,1&nbsp;t</b><div class="b-barre"><i class="fort" style="width:63.43%"></i></div></div>
+                  <div class="b-ligne"><span>Ton prochain palier</span><span>1,8&nbsp;t</span><div class="b-barre"><i style="width:55.65%"></i></div></div>
                   <div class="b-ligne"><span>Moyenne en France</span><span>2,8&nbsp;t</span><div class="b-barre"><i style="width:85%"></i></div></div>
-                  <div class="b-ligne"><span>Repère transport 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i style="width:18.2%"></i></div></div>
+                  <div class="b-ligne"><span>Repère transport 2050</span><span>0,6&nbsp;t</span><div class="b-barre"><i style="width:18.21%"></i></div></div>
                 </div>
                 <p class="b-source" style="margin-top:calc(var(--dp) * 12)">SDES, données 2017 · cible 2050&nbsp;: ADEME</p></div>
             </div></div>
@@ -1564,7 +1564,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   const exportFmt = params.get('export');
   if (exportFmt) {
     document.documentElement.classList.add('export');
-    fmt = FORMATS[exportFmt] ? exportFmt : 'paysage';
+    fmt = Object.hasOwn(FORMATS, exportFmt) ? exportFmt : 'paysage';
   } else if (window.matchMedia('(max-width: 640px)').matches) {
     fmt = 'portrait';
   }
