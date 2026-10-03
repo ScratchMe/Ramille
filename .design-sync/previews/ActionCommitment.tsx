@@ -19,7 +19,16 @@ export const ChoixDeLEcheance = () => (
   <Cadre><ActionCommitment kind="timing" state="picking" timing="le_mois_prochain" /></Cadre>
 );
 
-/** Engagé : l'étiquette, et le lien qui libère sans rien compter. */
+/**
+ * « C'est noté » touché sans aucun jour : il n'est pas inactif mais en attente, et ce qui manque s'écrit sous les
+ * choix, mot pour mot (01/10/2026, `v1-33` D13).
+ */
+export const DemandeSansJour = () => <Cadre><ActionCommitment kind="days" state="picking" days={[]} demande /></Cadre>;
+
+/**
+ * Engagé : deux liens. « Modifier les jours » rouvre le choix prérempli sans libérer l'action (02/10/2026, `v1-33`
+ * D15) ; « Changer d'avis » libère sans rien compter.
+ */
 export const Engage = () => <Cadre><ActionCommitment state="committed" /></Cadre>;
 
 /**

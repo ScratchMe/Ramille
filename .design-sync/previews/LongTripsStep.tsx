@@ -74,3 +74,9 @@ export const TrainEtAutocar = () => <Etape depart={{ train_long_trips_per_year: 
 export const EnVoiture = () => (
   <Etape depart={{ car_long_trips_per_year: 2, car_long_trips_engine: 'electrique', car_long_trips_occupancy: 3 }} />
 );
+
+/**
+ * Plus de dix trajets en train : « 10+ » ouvre son champ sous la série, avant le reste — un nombre de dix ou plus
+ * coche « 10+ » de lui-même et s'affiche dans le champ (`v1-33` §6).
+ */
+export const PlusDeDixEnTrain = () => <Etape depart={{ train_long_trips_per_year: 24, coach_long_trips_per_year: 0, car_long_trips_per_year: 0 }} />;

@@ -351,6 +351,47 @@ les 68 aperçus, la sentinelle de nouveau, puis `_ds_sync.json` seul.
   zéro sous « réduire les animations » (la courbe et le déplacement restent). Même geste une
   seconde fois, même preuve octet par octet, README distant relu.
 
+## Relevé du 03/10/2026 — huitième synchronisation, v1-33 et v1-34
+
+Chemin atomique, skill 2.1.288 (même chromium qu'au 28/09 : `playwright@1.56.1` dans `.ds-sync/`, l'image
+porte toujours le 1194). Elle porte la fin de la vague v1-33 (#316, #324, #325, #328, #331, #333) et v1-34
+(#330, ce qui passe près de chez soi). Le pilote a trouvé **58 composants inchangés côté vérification, 10
+changés et 1 ajouté** (`ChampDuPlafond`, #333), aucun retiré ; **32 à téléverser**, bundle, style et README
+compris. Les 11 notés bons cellule par cellule, `ActionCommitment` aussi (aperçu enrichi en route), et 11 des
+21 téléversés sans regrader relus par `--spot-check-components` : les plus gros changements de source. 69
+rendus, aucun mauvais, aucune carte plancher, les deux `[RENDER_THIN]` connus. 364 fichiers : la sentinelle,
+racine + jetons + guide (10), `_vendor/` seul, `fonts/` seul, les 69 aperçus, deux lots de composants (140,
+136), la sentinelle de nouveau, `_ds_sync.json` seul. Aucune suppression.
+
+- **`ChampDuPlafond` arrivait sans aperçu**, donc sur la carte plancher : le kit l'avait gagné avec #333 sans
+  fiche dans `previews/`. Le pilote le classe « re-ships via the upload partition, no grading needed » — rien
+  ne le signale comme un manque. Écrit ici (quatre états : vide, réclamé, saisi, à relire).
+- **`props-check.py` ne voit ni les champs d'un objet, ni une histoire devenue identique.** L'aperçu de
+  `LeisureFrequencyStep` passait `total` (vu) mais aussi `commute_has_regular_trip` dans `answers` (pas vu),
+  et sa troisième histoire rendait exactement la première depuis que v1-33 D7 a retiré la lecture du trajet
+  (pas vu non plus : `variantsIdentical` ne compare pas une histoire à une seule autre). Seule la lecture des
+  feuilles l'attrape.
+- **Une prop neuve et optionnelle ne fait broncher aucune garde**, alors qu'elle porte souvent un état neuf :
+  `ActionCommitment.demande` (v1-33 D13) et `onModify` (D15), `plafond` de `FlightsStep` et `LongTripsStep`
+  (#333). Les aperçus en ont gagné les états. Le relevé qui les trouve, sur les composants à téléverser :
+  `git diff <commit de la synchro précédente> HEAD -- docs/design/design-system/components/*/<Nom>.d.ts`, sans
+  les lignes de commentaire.
+- **Les cadres se mesurent, et un changement de cadre veut un build complet** : `preview-rebuild.mjs` refuse
+  en `[CONFIG_STALE]`. La méthode tient désormais dans un script versionné, `.design-sync/mesurer-les-cadres.cjs`
+  (cadres élargis à 1600, build, capture, mesure, cadre final = la plus haute mesure + une trentaine de
+  pixels). `LongTripsStep` / `EnVoiture` mesurait exactement 1150, la hauteur de son cadre : le contenu
+  touchait le bord, d'où 1180. `ChampsDeContexte` (470 → 710) et `ContextStep` (650 → 870) n'affichaient que
+  la moitié de l'étape depuis v1-34.
+- **Un constat produit, pas de synchronisation** : dans `ActionCommitment` / `DemandeSansJour`, « C'est noté »
+  en attente se fond dans l'encart du choix — `Button` donne au désactivé comme à l'attente le fond
+  `backgroundElement`, celui de l'encart. L'aperçu est fidèle à l'app ; remonté à la personne qui pilote.
+- **L'en-tête de conventions** : tous ses noms existent dans le build, aucune phrase n'est fausse. Il ignore
+  la série à cocher que v1-34 a introduite (`GroupeDeChoix cumulable`, `Chip role="checkbox"`, une réponse
+  exclusive) : proposition faite, pas écrite — il appartient à ses auteurs.
+- **Le processus a redémarré entre le plan approuvé et le premier envoi** : le `planId` a tenu, puisque la
+  conversation a survécu, et l'envoi a repris après avoir vérifié l'arbre et `ds-bundle/`. Une remise à zéro
+  du contexte, elle, le perdrait : nouveau `finalize_plan`, nouvelle approbation.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
@@ -384,6 +425,9 @@ les 68 aperçus, la sentinelle de nouveau, puis `_ds_sync.json` seul.
   une vague qui change le comportement d'un composant qu'il décrit (`StepShell`, `Button`, les
   précisions), relire `conventions.md` contre les `.d.ts` et les `.prompt.md` du build — v1-31 en
   avait rendu trois phrases fausses, tous noms intacts (relevé du 29/09/2026 ci-dessus).
+- **Une prop optionnelle neuve, ou un champ d'objet retiré, passent toutes les gardes** (relevé du 03/10/2026
+  ci-dessus) : relire le diff des `.d.ts` des composants à téléverser, et les feuilles des histoires qui en
+  dépendent. Et un composant ajouté au kit sans fiche part sur la carte plancher sans que le pilote le dise.
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
   bout, et un nouveau téléversement coûte peu.

@@ -291,8 +291,9 @@ sorties, « train » devenant « RER » :
 | « Passer deux trajets sur cinq en RER » | « {jours}, as-tu fait ce trajet en RER ? » | « Demain, tu as prévu de faire ton trajet en RER. » | « Vérifie l'horaire qui te convient, puis essaie-le une fois. » |
 | « Prendre le RER pour deux sorties sur cinq » | « En {mois}, as-tu pris le RER pour une sortie ? » | — (aucune action de sortie n'en a) | « Repère la ligne qui dessert ta sortie habituelle. » |
 
-**Ce qui reste à faire hors de cette PR** : remesurer les hauteurs des deux aperçus du kit
-(`ChampsDeContexte`, `ContextStep`) à la prochaine synchronisation de design ; et, à la prochaine séance
+**Ce qui reste à faire hors de cette PR** : ~~remesurer les hauteurs des deux aperçus du kit
+(`ChampsDeContexte`, `ContextStep`)~~ — fait à la synchronisation de design du 03/10/2026 (470 → 710 et
+650 → 870, `.design-sync/NOTES.md`) ; et, à la prochaine séance
 de recette, régénérer l'artefact depuis `docs/recette/premier-parcours-web.md`, dont le profil coche
 désormais le bus et le train.
 
