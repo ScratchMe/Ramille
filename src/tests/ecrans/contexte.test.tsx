@@ -26,15 +26,26 @@
  *     quand le serveur a répondu en échec » ;
  *   - le genre de la relecture ignoré, de même → « dit le genre de la relecture après « Réessayer » ».
  *
+ * **Et le 03/10/2026, la place et l'encre de la sortie** (`v1-33` T-10) : cet écran pose une question,
+ * sa sortie est l'autre réponse, sous « Enregistrer » — au contraire des écrans qui se consultent, dont
+ * la sortie est en haut — et grise : verte, sous un bouton en attente, elle se lisait comme l'action
+ * principale — et grise aussi pendant la lecture et après son échec, où elle était verte. Quatre
+ * mutations, chacune faisant tomber la sienne :
+ *   - la sortie posée au-dessus du titre → « reste sous « Enregistrer »… » ;
+ *   - l'apparence `action` remise à l'état prêt → la même, sur l'encre ;
+ *   - remise au chargement → « garde « Retour » pendant le chargement » ;
+ *   - remise à l'échec → « ne parle pas de la connexion… ».
+ *
  * Ce qu'il ne voit pas : le défilement jusqu'à la question, que seule une vraie mise en page mesure.
  * Il ne part d'ailleurs que si la question est hors de la zone : à 390 × 844, « Enregistrer » finit à
  * 720 px sous les quatre questions (relevé de l'audit du 01/10/2026, capture p1-53).
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import Contexte from '@/app/contexte';
+import { Colors } from '@/constants/theme';
 
 const mockLire = jest.fn();
 const mockEnregistrer = jest.fn();
@@ -61,6 +72,7 @@ const CONTEXTE_COMPLET = {
 };
 
 const enregistrer = () => screen.getByRole('button', { name: 'Enregistrer' });
+const encreDuRetour = () => StyleSheet.flatten(screen.getByText('Retour').props.style).color;
 const inactif = () => enregistrer().props.accessibilityState?.disabled === true;
 
 let focus: jest.SpyInstance;
@@ -82,6 +94,7 @@ describe('/contexte — la lecture', () => {
     mockLire.mockReturnValue(new Promise(() => {}));
     render(<Contexte />);
     expect(screen.getByRole('link', { name: 'Retour' })).toBeTruthy();
+    expect(encreDuRetour()).toBe(Colors.light.textTertiary);
   });
 });
 
@@ -111,6 +124,16 @@ describe('/contexte — « Enregistrer »', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeTruthy());
     expect(inactif()).toBe(true);
   });
+
+  it('reste sous « Enregistrer », en gris : l’autre réponse, pas une seconde action', async () => {
+    mockLire.mockResolvedValue(CONTEXTE_COMPLET);
+    render(<Contexte />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeTruthy());
+
+    const texte = JSON.stringify(screen.toJSON());
+    expect(texte.indexOf('"Retour"')).toBeGreaterThan(texte.indexOf('"Enregistrer"'));
+    expect(encreDuRetour()).toBe(Colors.light.textTertiary);
+  });
 });
 
 describe('/contexte — une lecture en échec (D19)', () => {
@@ -121,6 +144,8 @@ describe('/contexte — une lecture en échec (D19)', () => {
       expect(screen.getByText('Tes réponses n’ont pas pu être lues. Réessaie dans un instant.')).toBeTruthy()
     );
     expect(screen.queryByText(/connexion/)).toBeNull();
+    // Sous « Réessayer », la sortie est l'autre réponse : grise, comme celle de l'état prêt.
+    expect(encreDuRetour()).toBe(Colors.light.textTertiary);
   });
 
   it('garde sa phrase hors ligne', async () => {

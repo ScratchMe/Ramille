@@ -83,7 +83,10 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   et D11). Carte dominante, puis le total — « Estimation annuelle, tous déplacements », le chiffre,
   « Comment ce chiffre est calculé » —, puis « Un chiffre me semble faux » et le lien du retrait avec
   son encart, puis la répartition, « Où tu te situes » et la phrase du cap ; la fin de page ne garde
-  que « Partager mon bilan » et « Faire un nouveau bilan » (et « Revenir à mon suivi » en relecture).
+  que « Partager mon bilan » et « Faire un nouveau bilan ». En relecture, « Revenir à mon suivi » n'est
+  plus en fin de page mais en tête, au-dessus de « Ton bilan transport », chargement et échec compris ;
+  après le questionnaire, seuls l'échec et un bilan retiré la portent (03/10/2026, `v1-33` T-10,
+  `FRONT.md` §2.4).
   Mesuré à 390 × 844, session anonyme, à la sortie du questionnaire : le chiffre était à 766–802 px,
   sous le pied collant (758) ; il est à 526–562. **Le coût est décidé** : la lecture « les postes,
   puis leur somme » disparaît, la répartition passe sous le pli, et la contestation, posée sous le

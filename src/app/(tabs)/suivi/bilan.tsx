@@ -6,11 +6,12 @@ import { Button } from '@/components/button';
 import { LigneDAttente } from '@/components/ligne-d-attente';
 import { MessageInline } from '@/components/message-inline';
 import { RamilleDit } from '@/components/ramille-dit';
+import { SortieDuDetour } from '@/components/sortie-du-detour';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { ControlHeight, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrackView } from '@/hooks/use-track-view';
@@ -633,6 +634,15 @@ export default function BilanResultat() {
     setState({ status: 'retire', submittedAt, vientDeRetirer: true });
   };
 
+  // **La sortie de l'écran, à la même place dans chacun de ses états** (`v1-33` T-10, 03/10/2026) : en
+  // haut à gauche, comme celle de tout écran qui se consulte (`SortieDuDetour`). L'échec la rendait
+  // sous « Réessayer », au milieu de l'écran, et le retrait à la fin de sa phrase.
+  //
+  // **Une destination, pas un dépilement.** `router.back()` ramenait à l'écran précédent, qui n'est
+  // pas toujours le suivi : « Revoir mon bilan » ouvre cette page depuis le plan, et le lien renvoyait
+  // donc… au plan (retour d'appareil du 07/09/2026). Un lien qui nomme sa destination doit y aller.
+  const sortie = <SortieDuDetour label="Revenir à mon suivi" onPress={() => router.replace('/suivi')} />;
+
   // **Le chargement et l'erreur gardent le cadre de l'écran prêt** (01/10/2026, audit R-9) : une zone
   // centrée, la forme de `suivi/index.tsx`. Ils n'avaient qu'un texte centré, sans la bande : elle
   // arrivait avec le contenu, d'un saut de 52 px. **Depuis le 03/10/2026, la bande et la zone sûre ne
@@ -642,9 +652,18 @@ export default function BilanResultat() {
   // **La ligne reste immédiate** (`immediate`) : cet écran n'attend pas le délai des autres, et c'est
   // décidé (`v1-30` §5.8) — le HTML statique la porte, et la garde D de `verifier-etats-export.mjs`
   // la lit.
+  //
+  // **La place de la sortie est tenue dès le HTML statique** (`v1-33` T-10, contre-lecture du
+  // 03/10/2026) : hors ligne, ce chargement dure plusieurs secondes, et une relecture y restait sans
+  // sortie à l'écran. Le HTML est rendu sans chaîne de requête, donc sans savoir s'il s'agit d'une
+  // relecture : il porte la place, vide, et la sortie l'occupe après l'hydratation — sans que la
+  // ligne bouge. Après le questionnaire, la place reste vide : l'écran pousse vers le plan.
   if (state.status === 'loading') {
     return (
       <ThemedView style={styles.container}>
+        <View style={styles.sortieDeLEtat}>
+          {apresHydratation && mode !== 'nouveau' ? sortie : <View style={styles.placeDeLaSortie} />}
+        </View>
         <View style={styles.centered}>
           {/* « Calcul de ton bilan… » était faux dans les deux entrées de l'écran : le calcul a
               lieu côté serveur à la soumission, et `assessment_results` fige le résultat — cet
@@ -664,17 +683,12 @@ export default function BilanResultat() {
   if (state.status === 'error') {
     return (
       <ThemedView style={styles.container}>
+        <View style={styles.sortieDeLEtat}>{sortie}</View>
         <View style={styles.centered}>
           <ThemedText themeColor="textSecondary" style={styles.erreurTexte}>
             Ton bilan n’a pas pu être affiché. Il n’est pas perdu, réessaie dans un instant.
           </ThemedText>
           <Button title="Réessayer" onPress={reessayer} style={styles.erreurBouton} />
-          <TextLink
-            label="Revenir à mon suivi"
-            apparence="action"
-            onPress={() => router.replace('/suivi')}
-            role="link"
-          />
         </View>
       </ThemedView>
     );
@@ -692,6 +706,7 @@ export default function BilanResultat() {
     return (
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {sortie}
           <View style={styles.enTete}>
             <ThemedText type="small" themeColor="textTertiary">
               Ton bilan transport
@@ -707,14 +722,6 @@ export default function BilanResultat() {
               favori, l'écran ne le vole à personne (`TitreDArrivee`). */}
           {state.vientDeRetirer ? <TitreDArrivee>{titre}</TitreDArrivee> : titre}
           <ThemedText themeColor="textSecondary">{BILAN_RETIRE.corps}</ThemedText>
-          <TextLink
-            label={BILAN_RETIRE.sortie}
-            apparence="action"
-            // Une destination, pas un dépilement — la règle de « Revenir à mon suivi » plus bas.
-            onPress={() => router.replace('/suivi')}
-            role="link"
-            style={styles.editLink}
-          />
         </ScrollView>
       </ThemedView>
     );
@@ -790,6 +797,11 @@ export default function BilanResultat() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* **La sortie d'une relecture est en haut** (`v1-33` T-10, 03/10/2026) : c'était la dernière
+            ligne d'une page de 1 390 px, hors de l'écran à l'arrivée. Qui lit jusqu'au bout garde
+            l'onglet « Suivi », qui ramène à la liste (T-14). Après le questionnaire, rien : l'écran
+            pousse vers le plan, et la sortie se lirait comme une seconde suite. */}
+        {mode !== 'nouveau' && sortie}
         {banniere === 'anonyme' && (
           <Pressable
             // Sans `id` : `/connexion` ne lit plus le résultat du bilan.
@@ -1197,8 +1209,8 @@ export default function BilanResultat() {
             au milieu du contenu. Ce qui reste collé, c'est le seul pas suivant.
 
             **Ce bloc ne porte plus les liens de contestation** (D11, 01/10/2026) : ils sont sous le
-            total, là où le chiffre se lit. Restent le partage et le nouveau bilan — et, en
-            relecture, le retour au suivi. */}
+            total, là où le chiffre se lit. Restent le partage et le nouveau bilan ; le retour au
+            suivi d'une relecture est monté en tête de l'écran (`v1-33` T-10). */}
         <View style={styles.actionsSecondaires}>
           <TextLink
             label="Partager mon bilan"
@@ -1248,24 +1260,11 @@ export default function BilanResultat() {
             role="link"
             style={styles.editLink}
           />
-          {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son
-              plan à un onglet de là — donc rien de collé en bas non plus. */}
-          {mode !== 'nouveau' && (
-            <TextLink
-              label="Revenir à mon suivi"
-              apparence="action"
-              // **Une destination, pas un dépilement.** `router.back()` ramenait à l'écran
-              // précédent, qui n'est pas toujours le suivi : « Revoir mon bilan » ouvre
-              // cette page depuis le plan, et le lien renvoyait donc… au plan (retour
-              // d'appareil du 07/09/2026). Un lien qui nomme sa destination doit y aller.
-              onPress={() => router.replace('/suivi')}
-              role="link"
-              style={styles.editLink}
-            />
-          )}
         </View>
       </ScrollView>
 
+      {/* En relecture on ne pousse vers rien : la personne consulte, elle a déjà son plan à un
+          onglet de là — donc rien de collé en bas, et sa sortie est en tête de l'écran. */}
       {mode === 'nouveau' && (
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
           {/* Plus jamais désactivé pour une raison de compte : il mène au plan, et le plan
@@ -1350,6 +1349,16 @@ function CompareRow({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // La sortie à la place qu'elle a sur la restitution : la marge et la largeur de `scrollContent`.
+  sortieDeLEtat: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+  },
+  // La hauteur de la cible de `SortieDuDetour`, que le chargement tient avant de savoir s'il la rend.
+  placeDeLaSortie: { height: ControlHeight.target },
   // L'écran d'erreur tient dans le conteneur centré : la phrase a besoin de gouttières (sinon
   // elle touche les bords sur un téléphone étroit) et d'air sous elle.
   erreurTexte: { textAlign: 'center', paddingHorizontal: Spacing.four, marginBottom: Spacing.four },

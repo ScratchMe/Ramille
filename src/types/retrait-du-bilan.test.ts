@@ -218,7 +218,6 @@ describe('les phrases', () => {
     RETRAIT_ECHOUE,
     BILAN_RETIRE.titre,
     BILAN_RETIRE.corps,
-    BILAN_RETIRE.sortie,
     ...PLACES.flatMap((place) =>
       Object.values(confirmationDuRetrait(place, ENGAGEMENT)).filter(
         (valeur): valeur is string => valeur !== null

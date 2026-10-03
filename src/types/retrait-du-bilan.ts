@@ -164,13 +164,12 @@ export function lectureDuStatut(statut: string | null | undefined): LectureDuSta
  *
  * Deux arrivées, un seul état : juste après le geste (la phrase confirme qu'il a eu lieu), et plus
  * tard, par un favori ou un lien. Le titre est au passif parce qu'il est vrai dans les deux ; le
- * corps dit ce qui a changé et pourquoi l'écran est vide. La sortie est celle de la restitution en
- * relecture, au même libellé.
+ * corps dit ce qui a changé et pourquoi l'écran est vide. La sortie est celle de la restitution, au
+ * même libellé et à la même place, en haut (`v1-33` T-10) : elle n'est plus une phrase de cet état.
  */
 export const BILAN_RETIRE = {
   titre: 'Ce bilan a été retiré.',
   corps: 'Il n’apparaît plus dans ton suivi, et son chiffre ne s’affiche plus ici.',
-  sortie: 'Revenir à mon suivi',
 } as const;
 
 /** Le retrait n'a pas abouti — la forme des autres échecs de cet écran (« La copie n'a pas abouti. »). */

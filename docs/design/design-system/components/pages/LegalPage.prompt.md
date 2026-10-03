@@ -13,4 +13,6 @@ Le gabarit des deux pages légales — « Politique de confidentialité » et «
 
 **Les titres de section sont de vrais en-têtes**, en 18/26 : sans eux, ces pages ne se parcourent qu'en lisant tout. **Ce sont les seules surfaces publiques** — leurs adresses sont données à Google Play et à l'écran de consentement Google, et elles se lisent sans session —, d'où le seul pied de page du produit, avec un vrai lien vers l'éditeur.
 
+**Deux sorties, de la même forme** (`SortieDuDetour`, `v1-33` T-10) : en haut, au-dessus de la date — la seule était la dernière ligne de la page, à 10 559 px du haut —, et à la fin, pour qui a tout lu.
+
 Le texte des pages vit dans le dépôt, daté : une maquette ne le réécrit pas.

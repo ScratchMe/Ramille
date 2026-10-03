@@ -6,7 +6,7 @@
     'core/ThemedText', 'core/ThemedView', 'core/Button', 'core/TextLink', 'core/MessageInline', 'core/LigneDAttente', 'core/OnboardingDots', 'core/FeuilleDuBas', 'core/TitreDArrivee',
     'forms/GroupeDeChoix', 'forms/IntituleDuChamp', 'forms/Chip', 'forms/ChoiceRow', 'forms/LigneDeCanal', 'forms/ModeListItem', 'forms/BoiteDePrecision', 'forms/PrecisionMode', 'forms/NumericField', 'forms/ChampDuPlafond', 'forms/TextField', 'forms/GoogleButton',
     'mascotte/Mascot', 'mascotte/RamilleDit', 'mascotte/CalculEnCours', 'mascotte/EcranLancement',
-    'navigation/CompteBouton', 'navigation/BandeHaute', 'navigation/CadreDOnglet', 'navigation/OngletIcone', 'navigation/BarreOnglets', 'navigation/ProgressHeader', 'navigation/StepShell',
+    'navigation/CompteBouton', 'navigation/BandeHaute', 'navigation/CadreDOnglet', 'navigation/SortieDuDetour', 'navigation/OngletIcone', 'navigation/BarreOnglets', 'navigation/ProgressHeader', 'navigation/StepShell',
     'plan/PastilleEngagee', 'plan/TraitDeTemps', 'plan/CheckinCard', 'plan/ActionCard', 'plan/ActionCommitment', 'plan/CarteDePiste', 'plan/CarteDOuverture', 'plan/FeuilleRappels',
     'suivi/BarreContour', 'suivi/BlocMethode', 'suivi/EcartParPoste',
     'bilan/PrecisionChiffres', 'bilan/MissingModeLink', 'bilan/ChampsDeContexte',
