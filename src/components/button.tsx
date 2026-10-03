@@ -21,9 +21,9 @@ export type ButtonProps = {
    * l'écran. Un secondaire y prend le fond de l'écran et un filet, au lieu du gris des panneaux
    * (24/09/2026, `v1-29`) : « Oui » et « Non » passés au même poids se sont retrouvés gris sur une
    * carte grise, leur forme disparaissait et ils se lisaient comme du texte. Sans effet sur le
-   * principal, dont l'accent se voit partout. **Ni sur un bouton grisé, depuis le 03/10/2026** : en
-   * attente ou désactivé, il y prend lui aussi le fond de l'écran et le filet, sans quoi « C'est noté »
-   * se fondait dans l'encart du choix des jours (`surfaceDuBouton`).
+   * principal actif, dont l'accent se voit partout. **Un bouton grisé, lui, y prend aussi le fond de
+   * l'écran et le filet, depuis le 03/10/2026** — en attente ou désactivé, son encre restant tertiaire :
+   * « C'est noté » se fondait dans l'encart du choix des jours (`surfaceDuBouton`).
    */
   onPanel?: boolean;
   /**
@@ -37,8 +37,9 @@ export type ButtonProps = {
   /**
    * **Le bouton agit, mais l'action qu'il porte attend encore quelque chose** (29/09/2026, `v1-31`
    * §4.5) : le « Suivant » d'une étape incomplète du questionnaire, qui mène à ce qui manque au lieu
-   * d'avancer. Il prend l'apparence du désactivé — fond `backgroundElement`, texte `textTertiary` — et
-   * rien d'autre : ni `disabled`, ni `aria-disabled`.
+   * d'avancer. Il prend l'apparence du désactivé — fond `backgroundElement` (le fond de l'écran et un
+   * filet sur un encart, `onPanel`), texte `textTertiary` — et rien d'autre : ni `disabled`, ni
+   * `aria-disabled`.
    *
    * **Il ne peut pas se dire indisponible, et ce n'est pas un défaut à contourner.** Un bouton qui
    * agit n'est pas indisponible au sens de WAI-ARIA ; et react-native-web ne saurait pas le dire
@@ -85,7 +86,7 @@ export function Button({
   // L'apparence du désactivé vaut pour les deux : `disabled` (inerte) et `enAttente` (qui agit).
   const surface = surfaceDuBouton({
     variant,
-    grise: Boolean(disabled || enAttente),
+    disabled: Boolean(disabled),
     enAttente: Boolean(enAttente),
     surPanneau: Boolean(onPanel),
   });

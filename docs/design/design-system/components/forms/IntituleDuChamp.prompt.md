@@ -14,7 +14,7 @@ function PartDeVolsCourts({ question, children }) {
 }
 ```
 
-**La marque ne se pose qu’au toucher du « Suivant » en attente, et jamais d’office.** Rien ne change à l’arrivée sur l’étape, rien ne change sous le doigt pendant qu’on répond. Une fois « Suivant » touché, l’intitulé du champ qui manque passe en `accentText` 600, et il le reste jusqu’à ce que l’étape soit complète ou qu’on la quitte. Depuis sa couleur de tous les jours : `textSecondary` 500 pour une précision, `textTertiary` pour « Lequel ? » et les intitulés du contexte, `text` pour un sous-titre d’étape.
+**La marque ne se pose qu’au toucher du « Suivant » en attente, et jamais d’office.** Rien ne change à l’arrivée sur l’étape, rien ne change sous le doigt pendant qu’on répond. Une fois « Suivant » touché, l’intitulé du champ qui manque passe en `accentText` 600, et il le reste jusqu’à ce que l’étape soit complète ou qu’on la quitte. Depuis sa couleur de tous les jours : `textSecondary` 500 pour une précision, `textTertiary` pour « Lequel ? », `text` pour un sous-titre d’étape — et pour les questions du contexte, en `default` 600, depuis le 03/10/2026.
 
 **Jamais le titre de l’étape** : quand ce qui manque est la question que pose le titre (« ton mode de transport », « une réponse »), rien ne se recolore — la question est déjà en titre. C’est `StepShell` qui le décide (`seMarque`), pas l’étape.
 
@@ -22,4 +22,4 @@ function PartDeVolsCourts({ question, children }) {
 
 **`useMarqueDuChamp(champ)`** ne fait que lire la marque : le titre de l’étape s’en sert dans le dépôt, et elle y vaut toujours faux.
 
-Hors de `StepShell`, tout est inerte — l’écran `/contexte` rend les mêmes intitulés sans jamais les marquer.
+Hors de `StepShell`, dans le kit, tout est inerte. Dans le dépôt, l’écran `/contexte` fournit lui-même les ancres depuis le 01/10/2026 (audit P-13) : son « Enregistrer » en attente marque l’intitulé qui manque, comme le « Suivant » du questionnaire.

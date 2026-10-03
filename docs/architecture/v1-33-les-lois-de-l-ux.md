@@ -585,6 +585,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
 - **`cadreDuChamp` vit dans `auth/text-field.tsx`**, et le champ de distance l'importe de là. **Corrigé
   le 02/10/2026** : `src/components/cadre-du-champ.ts`.
 - **Les questions du contexte restent en `small` tertiaire** (D4), là où les autres étapes posent les
-  leurs en grand : à juger en dessin — toujours ouvert, et pas technique.
+  leurs en grand : à juger en dessin. **Tranché et fait le 03/10/2026**, sur le canvas de l'étape du
+  contexte : en `default` 600 à l'encre, leurs aides dessous plus claires (`v1-34` §10).
 
 **Ce qui ne se vérifie que sur appareil** est consigné en `v1-13` §11.26.

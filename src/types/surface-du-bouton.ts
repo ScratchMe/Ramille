@@ -28,16 +28,18 @@ export type SurfaceDuBouton = {
  */
 export function surfaceDuBouton({
   variant,
-  grise,
+  disabled,
   enAttente,
   surPanneau,
 }: {
   variant: 'primary' | 'secondary';
-  /** `disabled` ou `enAttente`. */
-  grise: boolean;
+  disabled: boolean;
   enAttente: boolean;
   surPanneau: boolean;
 }): SurfaceDuBouton {
+  // Le grisé se déduit ici : le recevoir à côté d'`enAttente` laissait représentable un bouton en
+  // attente qui ne serait pas grisé.
+  const grise = disabled || enAttente;
   const fondAppuye: Jeton = variant === 'primary' && !enAttente ? 'accentPressed' : 'backgroundPressed';
   if (grise) {
     return surPanneau

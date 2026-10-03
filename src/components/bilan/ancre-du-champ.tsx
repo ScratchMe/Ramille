@@ -79,7 +79,8 @@ export function useAncreDuChamp<T = View>(
 /**
  * L'intitulé d'un champ du questionnaire : **en `accentText` 600 quand il est marqué** (`v1-31`,
  * écart 11), depuis sa couleur de tous les jours — `textSecondary` pour une précision, `textTertiary`
- * pour « Lequel ? » et les intitulés du contexte, `text` pour un sous-titre d'étape. La marque se pose
+ * pour « Lequel ? », `text` pour un sous-titre d'étape et, depuis le 03/10/2026, pour les questions du
+ * contexte (en `default` 600, canvas de l'étape du contexte). La marque se pose
  * au toucher du « Suivant » en attente, jamais d'office, et elle s'écrit ici une fois.
  */
 export function IntituleDuChamp({

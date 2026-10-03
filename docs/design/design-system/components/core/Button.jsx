@@ -3,7 +3,7 @@ import React from 'react';
 // `onPanel` sur une surface teintée ; sous le doigt, la teinte appuyée, sans animation.
 //
 // `enAttente` : le bouton agit, mais l'action qu'il porte attend encore quelque chose — le « Suivant » d'une étape
-// incomplète, qui mène à ce qui manque au lieu d'avancer. L'apparence du désactivé (fond élément, texte tertiaire) et
+// incomplète, qui mène à ce qui manque au lieu d'avancer. L'apparence du désactivé (fond élément — fond de l'écran et filet sur un encart —, texte tertiaire) et
 // rien d'autre : ni `disabled`, ni `aria-disabled`. Un bouton qui agit n'est pas indisponible, et react-native-web
 // ferait d'un `aria-disabled` vrai un `<button disabled>` inerte. Sous le doigt, la teinte d'une surface neutre
 // (`backgroundPressed`) : le gris ne vire pas au vert foncé de l'accent appuyé.

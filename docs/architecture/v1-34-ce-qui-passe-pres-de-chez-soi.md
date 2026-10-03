@@ -324,11 +324,21 @@ Les trois recommandations du canvas, retenues telles quelles par la personne qui
   dans leur cellule. La case est une forme nouvelle du système, c'est pourquoi la décision a été
   prise sur canvas.
 - **Le bouton grisé posé sur un encart** (§4.5) : le fond de l'écran et un filet, avec l'encre
-  tertiaire (`surfaceDuBouton`, testée). « C'est noté » passe `onPanel`.
+  tertiaire (`surfaceDuBouton`, testée). « C'est noté » passe `onPanel`. La règle vaut pour tout
+  bouton posé dans un encart : elle change aussi « Oui » et « Non » du point pendant l'envoi
+  (secondaires déjà `onPanel`, qui gardaient le gris des panneaux), et « Retirer » sur la confirmation
+  du retrait d'un bilan, désactivé pendant l'envoi, qui passe `onPanel` (relevé à la contre-lecture).
 
 **Ce que ça coûte, mesuré sur l'export le 03/10/2026** :
 - à 390 × 844, l'étape défile toujours, ce que la page acceptait ;
 - à 360 de large, la case élargit chaque pilule des transports, et « Métro ou tram » et « RER ou
   Transilien » ne tiennent plus côte à côte : une rangée de plus ;
 - chaque étape du questionnaire perd 8 px de zone qui défile, au profit de la marge sous la tête.
+
+**Ce qui reste** :
+- sur appareil, à 200 % de taille de police, la ligne des transports et la grille des jours
+  (`v1-13` §11.33) ;
+- à la prochaine synchronisation de design, remesurer les cadres de `ChampsDeContexte` et de
+  `ContextStep` (`.design-sync/mesurer-les-cadres.cjs`). Les questions passent de 14/20 à 16/24, et
+  l'étape grandit d'une quarantaine de pixels.
 

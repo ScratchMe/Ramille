@@ -6,14 +6,17 @@ import { surfaceDuBouton } from '@/types/surface-du-bouton';
 //
 // **Éprouvé en le cassant, le 03/10/2026**, une mutation à la fois :
 //   - le grisé sur panneau rendu comme avant (`fond: 'backgroundElement'`, sans filet) → « en attente sur
-//     un panneau » et « désactivé sur un panneau », et eux seuls ;
+//     un panneau », « désactivé sur un panneau » et « un secondaire désactivé sur un panneau », et eux
+//     seuls ;
+//   - le grisé sur panneau rendu comme avant pour le seul secondaire (constat de la contre-lecture) →
+//     « un secondaire désactivé sur un panneau », et lui seul ;
 //   - le filet retiré du secondaire sur panneau → « un secondaire sur un panneau », et lui seul ;
 //   - le principal sur panneau traité comme un secondaire → « un principal actif ne change pas sur un
 //     panneau », et lui seul ;
 //   - la teinte appuyée de l'accent rendue au bouton en attente → « en attente, sous le doigt… », et les
 //     deux autres cas en attente, qui comparent la surface entière.
 
-const base = { grise: false, enAttente: false, surPanneau: false } as const;
+const base = { disabled: false, enAttente: false, surPanneau: false } as const;
 
 describe('surfaceDuBouton', () => {
   it('un principal : l’accent, l’encre sur l’accent, sans filet', () => {
@@ -50,7 +53,7 @@ describe('surfaceDuBouton', () => {
   });
 
   it('en attente sur la page : l’apparence du désactivé', () => {
-    expect(surfaceDuBouton({ variant: 'primary', grise: true, enAttente: true, surPanneau: false })).toEqual({
+    expect(surfaceDuBouton({ variant: 'primary', disabled: false, enAttente: true, surPanneau: false })).toEqual({
       fond: 'backgroundElement',
       fondAppuye: 'backgroundPressed',
       encre: 'textTertiary',
@@ -59,7 +62,7 @@ describe('surfaceDuBouton', () => {
   });
 
   it('en attente sur un panneau : le fond de l’écran et un filet, l’encre tertiaire', () => {
-    expect(surfaceDuBouton({ variant: 'primary', grise: true, enAttente: true, surPanneau: true })).toEqual({
+    expect(surfaceDuBouton({ variant: 'primary', disabled: false, enAttente: true, surPanneau: true })).toEqual({
       fond: 'background',
       fondAppuye: 'backgroundPressed',
       encre: 'textTertiary',
@@ -68,12 +71,21 @@ describe('surfaceDuBouton', () => {
   });
 
   it('désactivé sur un panneau : la même forme que l’attente', () => {
-    const surface = surfaceDuBouton({ variant: 'primary', grise: true, enAttente: false, surPanneau: true });
+    const surface = surfaceDuBouton({ variant: 'primary', disabled: true, enAttente: false, surPanneau: true });
     expect(surface).toMatchObject({ fond: 'background', encre: 'textTertiary', filet: true });
   });
 
+  it('un secondaire désactivé sur un panneau — « Oui » et « Non » du point pendant l’envoi', () => {
+    expect(surfaceDuBouton({ variant: 'secondary', disabled: true, enAttente: false, surPanneau: true })).toEqual({
+      fond: 'background',
+      fondAppuye: 'backgroundPressed',
+      encre: 'textTertiary',
+      filet: true,
+    });
+  });
+
   it('en attente, sous le doigt, la teinte d’une surface neutre — jamais l’accent appuyé', () => {
-    expect(surfaceDuBouton({ variant: 'primary', grise: true, enAttente: true, surPanneau: false }).fondAppuye).toBe(
+    expect(surfaceDuBouton({ variant: 'primary', disabled: false, enAttente: true, surPanneau: false }).fondAppuye).toBe(
       'backgroundPressed'
     );
   });

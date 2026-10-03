@@ -528,7 +528,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   4 px, et dans une rangée qui passe à la ligne une voisine sautait à la ligne suivante au toucher :
   `Chip` est en 500 partout, le fond et l'encre portent seuls la sélection. Une puce `checkbox` porte
   une case de 18, toujours là — vide au repos, blanche avec la coche de l'action engagée
-  (`TRACE_DE_LA_COCHE`, le seul tracé du dépôt) quand elle est cochée —, qui dit qu'on peut en cocher
+  (`TRACE_DE_LA_COCHE`, `src/components/coche.ts`, le seul tracé de coche du dépôt) quand elle est cochée —, qui dit qu'on peut en cocher
   plusieurs avant qu'on touche et garde la largeur de la puce. Une puce à cocher dans une grille (les
   jours de l'engagement) prend `flex` : la case, l'écart et l'initiale n'y tiennent qu'avec la marge
   serrée d'une puce équirépartie. Les rangées pleine largeur (`ChoiceRow`, `ModeListItem`) gardent

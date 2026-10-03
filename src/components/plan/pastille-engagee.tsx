@@ -1,14 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { TRACE_DE_LA_COCHE } from '@/components/coche';
 import { useTheme } from '@/hooks/use-theme';
-
-/**
- * Le tracé de la coche, dans une boîte de 24. **Le seul du dépôt**, partagé avec la case d'une puce à
- * cocher (`Chip`, 03/10/2026) : la recopier, c'est laisser diverger la marque du geste le plus important
- * du produit et celle d'une réponse cochée.
- */
-export const TRACE_DE_LA_COCHE = 'M5 13l4 4L19 7';
 
 /**
  * La coche qui marque une action engagée — 20 px, fond `accent`, trait `onAccent` de 3 (le blanc

@@ -6,7 +6,7 @@ import React from 'react';
 // **Une graisse, cochée ou non, et une case pour ce qui se cumule** (03/10/2026, canvas de l'étape du contexte,
 // option B) : le 600 de la puce cochée élargissait son libellé et faisait sauter une voisine à la ligne ; une
 // puce `checkbox` porte une case de 18 (vide, ou blanche à coche accent), toujours là, donc la puce garde sa
-// largeur. La coche est le tracé de `PastilleEngagee`.
+// largeur. La coche est le tracé de `PastilleEngagee` (`TRACE_DE_LA_COCHE`, src/components/coche.ts).
 export function Chip({ label, selected, onPress, role, flex, selectedStyle = 'solid', radius = 22, nestedBackground, accessibilityLabel }) {
   const solid = selected && selectedStyle === 'solid';
   const aCocher = role === 'checkbox';

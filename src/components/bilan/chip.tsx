@@ -2,7 +2,7 @@ import type { Ref } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { TRACE_DE_LA_COCHE } from '@/components/plan/pastille-engagee';
+import { TRACE_DE_LA_COCHE } from '@/components/coche';
 import { ThemedText } from '@/components/themed-text';
 import { ControlHeight, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -14,7 +14,8 @@ export type ChipProps = {
   selected: boolean;
   onPress: () => void;
   /** Largeur naturelle (pilule, ex. tranches/nombres) vs équirépartie dans sa rangée
-   *  (ex. Oui/Non, taille de covoiturage). */
+   *  (ex. Oui/Non, taille de covoiturage) — ou tenue par la cellule d'une grille (les jours de
+   *  l'engagement, depuis le 03/10/2026 : la case n'y tient qu'avec la marge serrée). */
   flex?: boolean;
   /** 'solid' = fond accent plein + texte blanc (nombres, tranches) ; 'outline' = fond
    *  teinté + bordure accent (Oui/Non, mode sélectionné dans une liste). */
@@ -32,7 +33,8 @@ export type ChipProps = {
   accessibilityLabel?: string;
   /** Rôle annoncé (A2-8) : `radio` pour une puce d'un groupe à choix unique — la majorité du
    *  questionnaire —, `checkbox` pour une puce qui se cumule avec ses voisines (les jours de
-   *  l'engagement, où `radio` serait faux). Ce sont les seuls rôles à annoncer « non
+   *  l'engagement, ce qui passe près de chez soi, où `radio` serait faux) — elle porte alors une case,
+   *  vide ou cochée (03/10/2026). Ce sont les seuls rôles à annoncer « non
    *  sélectionné » et la place dans le groupe, et la puce se range toujours dans un
    *  `GroupeDeChoix` nommé par sa question.
    *
@@ -154,7 +156,7 @@ export function Chip({
       {/* **Une graisse, cochée ou non** (03/10/2026, même canvas) : le 600 de la puce cochée élargissait
           son libellé de 3 à 4 px, et dans une rangée qui passe à la ligne une voisine sautait à la ligne
           suivante au toucher. Le fond et l'encre portent seuls la sélection. */}
-      <ThemedText weight={500} style={[styles.label, { color: textColor }]}>
+      <ThemedText weight={500} style={[styles.label, aCocher && styles.labelACote, { color: textColor }]}>
         {label}
       </ThemedText>
     </Pressable>
@@ -210,4 +212,8 @@ const styles = StyleSheet.create({
   // à 360 —, ses lignes partaient à gauche à côté de voisines centrées. Le canvas `v1-30` (planche B1)
   // la dessine centrée.
   label: { fontSize: 15, lineHeight: 20, textAlign: 'center' },
+  // À côté de la case, le libellé cède la place et passe à la ligne plutôt que de déborder : sous Yoga,
+  // `flexShrink` vaut 0 par défaut, et à forte taille de police « Train (TER, Intercités) » serait
+  // mesuré sur toute la largeur de la puce, case comprise (la règle de `compareLabel`, `EcartParPoste`).
+  labelACote: { flexShrink: 1, minWidth: 0 },
 });
