@@ -143,7 +143,7 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .paysage #s2-source { left: 10%; top: 88%; width: 80%; }
 .paysage #s3-texte { left: 51%; top: 30%; width: 44%; }
 .paysage .bloc-tel { left: 48%; top: 30%; width: 45%; }
-.paysage #tel { left: 9%; top: 7%; width: 32cqw; height: 64cqw; }
+.paysage #tel { left: 9%; top: 5%; width: 32cqw; height: 64cqw; transform-origin: 50% 0; }
 .paysage #legende-tel { left: 48%; top: 88%; width: 45%; }
 .paysage #s7-texte { left: 47.5%; top: 18%; width: 46%; }
 .paysage #s8-texte { left: 51%; top: 24%; width: 44%; }
@@ -324,7 +324,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   <header class="tete">
     <p class="surtitre">Proposition de motion design · 3 octobre 2026</p>
     <h1>Le fil de Ramille</h1>
-    <p class="chapeau">Un film d’une minute vingt pour faire comprendre Ramille et donner envie de faire son bilan. Un seul trait le traverse&nbsp;: il trace un trajet, devient la nervure de la feuille, puis mène jusqu’au bouton de la fin. La musique est composée pour lui, calée sur ses coupes.</p>
+    <p class="chapeau">Un film d’une minute vingt-six pour faire comprendre Ramille et donner envie de faire son bilan. Un seul trait le traverse&nbsp;: il trace un trajet, devient la nervure de la feuille, puis mène jusqu’au bouton de la fin. La musique est composée pour lui, calée sur ses coupes.</p>
   </header>
 
   <section class="salle" aria-label="Le film">
@@ -486,15 +486,15 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
           <p class="note-8 x-int" id="s8-note">Pas de compte à créer pour commencer.</p>
         </div>
 
-        <div class="affiche" id="affiche"><span class="affiche-bouton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="affiche-libelle">Lire le film · 1:21</span></span></div>
+        <div class="affiche" id="affiche"><span class="affiche-bouton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="affiche-libelle">Lire le film · 1:26</span></span></div>
         </div>
       </div>
     </div>
 
     <div class="commandes">
       <button class="lecture" id="lecture" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" id="lecture-ico"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="lecture-libelle">Lire</span></button>
-      <span class="temps" id="temps" aria-live="off">0:00 / 1:21</span>
-      <div class="frise"><input type="range" id="frise" min="0" max="816" step="1" value="0" aria-label="Position dans le film"></div>
+      <span class="temps" id="temps" aria-live="off">0:00 / 1:26</span>
+      <div class="frise"><input type="range" id="frise" min="0" max="864" step="1" value="0" aria-label="Position dans le film"></div>
       <fieldset class="format">
         <legend>Format</legend>
         <label><input type="radio" name="format" id="f-paysage" value="paysage" checked><span>16:9</span></label>
@@ -517,7 +517,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       <li><strong>Ramille ne dit que ses propres répliques</strong>, recopiées mot pour mot de l’app&nbsp;: jamais un nombre dans sa bouche, et jamais près d’un chiffre lourd.</li>
       <li><strong>Les chiffres se posent, ils ne défilent jamais</strong>&nbsp;: un compteur montrerait de fausses valeurs en chemin. Les barres arrivent à leur longueur juste.</li>
       <li><strong>Les chiffres de référence sont sourcés à l’écran</strong>&nbsp;: la moyenne française et sa répartition (SDES, 2017), et le repère transport 2050, dérivé de la cible de l’ADEME. Le bilan, le palier et les gains du plan sont un profil d’exemple, et l’image le dit.</li>
-      <li><strong>Le mouvement de l’app, à un rythme de film</strong>&nbsp;: la sortie douce pour ce qui entre et ce qui sort, une sortie plus rapide qu’une entrée, rien qui rebondisse ni ne pulse. Tout s’enchaîne en fondu, et chaque texte reste posé au moins deux secondes et demie.</li>
+      <li><strong>Le mouvement de l’app, à un rythme de film</strong>&nbsp;: la sortie douce pour ce qui entre et ce qui sort, une sortie plus rapide qu’une entrée, rien qui rebondisse. Seule Ramille respire, du souffle qu’elle a dans l’app. Tout s’enchaîne en fondu, et chaque texte de la scène, comme chaque réplique de Ramille, reste posé au moins deux secondes et demie.</li>
       <li><strong>La musique est originale</strong>, composée par un script du dépôt et calée sur l’image&nbsp;: une cloche à chaque station du trajet, le rythme qui entre avec le visage de Ramille, une respiration sous le manifeste, une cloche par saison, un accent quand le bouton apparaît.</li>
       <li><strong>Aucun jugement, aucune célébration</strong>&nbsp;: pas de confetti, pas de score, pas de comparaison entre utilisateurs. «&nbsp;Oui&nbsp;» et «&nbsp;Non&nbsp;» ont le même bouton, et un «&nbsp;Non&nbsp;» reçoit la même place qu’un «&nbsp;Oui&nbsp;».</li>
       <li><strong>Sous «&nbsp;réduire les animations&nbsp;»</strong>, rien ne se lance seul&nbsp;: chaque chapitre s’affiche posé, et le film ne joue que sur demande. Le son ne part jamais sans la lecture, et se coupe d’un bouton.</li>
@@ -529,17 +529,17 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
      Une seule source, donc un seul endroit à retoucher pour décaler une coupe et sa note. -->
 <script type="application/json" id="temps-du-film">
 {
-  "duree": 81.6,
+  "duree": 86.4,
   "tempo": 100,
-  "arrets": [0.4, 2.4, 4.2, 6.0],
-  "barres": 10.1,
+  "arrets": [0.45, 2.4, 4.2, 6.0],
+  "barres": 10.05,
   "logo": 21.6,
   "visage": 24.0,
-  "notification": 50.6,
-  "reponses": [44.8, 53.65, 56.15],
-  "manifeste": { "entree": 57.4, "lignes": [58.2, 59.4, 60.6, 61.8], "sortie": 64.2 },
-  "saisons": [66.0, 67.2, 68.4, 69.6],
-  "bouton": 74.4
+  "notification": 50.25,
+  "reponses": [44.85, 54.75, 59.25],
+  "manifeste": { "entree": 62.2, "lignes": [63.0, 64.2, 65.4, 66.0], "sortie": 69.4 },
+  "saisons": [70.2, 71.4, 72.6, 73.8],
+  "bouton": 79.2
 }
 </script>
 <script>
@@ -552,27 +552,35 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
 
   // ---------------------------------------------------------------- Le minutage
   // Tout le film tient dans cette table. Une mesure dure 2,4 s (100 battements par minute) : les
-  // coupes qui comptent tombent sur un temps, et la musique les lit dans le bloc JSON ci-dessus.
-  // Chaque texte reste au moins deux secondes et demie posé après son entrée.
+  // coupes qui comptent tombent sur un temps, et la musique les lit dans le bloc JSON ci-dessus —
+  // `musique.py` refuse de se rendre si l'une d'elles quitte la grille. Ce qui suit une coupe en
+  // dérive : déplacer une réponse déplace aussi le doigt qui la donne.
+  // Chaque texte de la scène, et chaque réplique de Ramille, reste posé au moins deux secondes et
+  // demie : `verifier.mjs` le mesure.
+  const Q = [30.0, 31.3, 32.6, 33.9];
   const T = {
-    titre1: [0.9, 5.5], titre2: [6.0, 9.0], arretsSortie: 9.0,
-    versBarre: [8.9, 10.4], s2titre: [10.3, 15.3], chiffre: [11.2, 15.3], transport: [11.0, 15.3],
-    legende: [11.7, 15.3], source: [12.0, 18.4], autresSortie: 15.3, s2titre2: [15.8, 18.4], transportSortie: 18.3,
-    versVeine: [18.5, 20.1], contour: [19.9, 21.3], remplissage: [SYNC.logo - 0.4, SYNC.logo + 0.2],
+    titre1: [0.9, 5.3], titre2: [5.75, 9.0], arretsSortie: 9.0,
+    versBarre: [8.9, 10.4], s2titre: [10.3, 14.85], chiffre: [11.2, 14.85], transport: [11.0, 14.85],
+    legende: [11.7, 14.85], source: [12.0, 18.6], autresSortie: 14.85, s2titre2: [15.3, 18.6], transportSortie: 18.4,
+    versVeine: [18.6, 20.1], contour: [19.9, 21.3], remplissage: [SYNC.logo - 0.4, SYNC.logo + 0.2],
     pointLogo: [21.4, 21.8], nom3: 22.0, retrait: [23.0, 23.8], visage: [SYNC.visage - 0.25, SYNC.visage + 0.15],
-    sourire: [25.1, 25.5], dit3: 24.5, titre3: 25.5, sortie3: 28.3,
-    tel: [28.5, 29.6], vol: [28.5, 29.8], t4a: [29.1, 35.3], questions: [30.0, 31.3, 32.6, 33.9],
+    sourire: [25.1, 25.5], dit3: 24.3, titre3: 24.8, sortie3: 28.3,
+    tel: [28.5, 29.6], vol: [28.5, 29.8], t4a: [29.1, 35.3], questions: Q,
+    // En 16:9, le téléphone se tient à 83 % le temps du questionnaire, « Suivant » compris, puis
+    // reprend sa taille pendant le calcul : la restitution et le plan défilent s'il les coupe.
     calcul: [35.1, 36.5], bilan: [36.5, 40.4], defile: [38.6, 39.8], t4b: [36.7, 40.4],
-    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.65, 43.15], engagee: SYNC.reponses[0], repli: [44.8, 45.2],
-    enTete: [45.35, 46.0], t5b: [46.1, 50.1],
-    notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [52.0, 52.4], point: [52.2, 52.8],
-    question1: [52.4, SYNC.reponses[1]], semaineSuivante: 55.0, question2: [55.1, SYNC.reponses[2]],
-    t6a: [50.7, 54.3], t6b: [54.8, 57.5], telSortie: [57.9, 58.3],
-    manif: [SYNC.manifeste.entree, SYNC.manifeste.sortie], manifTexteSortie: 63.8,
-    retour: 64.8, s7titre: [65.1, 71.5], s7dit: 66.0, vague: [65.1, 70.5], saisonsSortie: 71.4,
-    versBouton: [72.0, 73.2], queue: [72.3, 73.6], pointArrivee: [73.2, 73.5], bouton: [SYNC.bouton, SYNC.bouton + 0.6],
-    pose8: [71.9, 72.9], sansSaison: [72.2, 72.6], heureuse: [72.6, 72.9], nom8: 72.4, titre8: 72.8, url: 75.1, note8: 75.5,
+    plan: 40.4, t5a: [40.9, 45.6], depliage: [42.65, 43.15], engagee: SYNC.reponses[0],
+    repli: [SYNC.reponses[0], SYNC.reponses[0] + 0.4], enTete: [45.4, 46.05], t5b: [46.1, 50.1],
+    notif: [SYNC.notification - 0.1, SYNC.notification + 0.4], notifSortie: [53.05, 53.45], point: [53.25, 53.85],
+    question1: [53.45, SYNC.reponses[1]], semaineSuivante: SYNC.reponses[1] + 3.0,
+    question2: [SYNC.reponses[1] + 3.1, SYNC.reponses[2]],
+    t6a: [50.7, 55.0], t6b: [55.45, 62.0], telSortie: [62.4, 62.8],
+    manif: [SYNC.manifeste.entree, SYNC.manifeste.sortie], manifTexteSortie: SYNC.manifeste.sortie - 0.2,
+    retour: SYNC.manifeste.sortie + 0.2, s7titre: [69.9, 76.3], s7dit: 70.8, vague: [69.75, 75.0], saisonsSortie: 76.8,
+    versBouton: [76.8, 78.0], queue: [77.1, 78.4], pointArrivee: [78.0, 78.3], bouton: [SYNC.bouton, SYNC.bouton + 0.6],
+    pose8: [76.7, 77.7], sansSaison: [77.0, 77.4], heureuse: [77.4, 77.7], nom8: 77.2, titre8: 77.6, url: 79.9, note8: 80.3,
   };
+  T.tapNotif = T.notifSortie[0] - 0.1;
 
   // Le scénario rendu sous le film, qui en est aussi la version texte. Les insécables s'écrivent
   // ici à la main : ce texte n'est pas rendu par `ThemedText`, qui les pose dans l'app.
@@ -592,13 +600,13 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     { titre: 'Ton plan', debut: 40.4, pose: 48.0,
       image: 'Deux pistes en tête, les autres derrière un lien. On choisit la deuxième, deux jours, « C’est noté » : elle devient l’engagement et passe en tête.',
       texte: 'Puis une action, à ton rythme. Ton plan ne propose que ce qui tient avec tes réponses. · Tu choisis tes jours. Ramille te fait signe lundi.' },
-    { titre: 'Le point', debut: 50.4, pose: 54.1,
+    { titre: 'Le point', debut: 50.1, pose: 56.5,
       image: 'La notification du lundi, puis le point de la semaine. Un « Oui », puis la semaine suivante un « Non », chacun avec sa réplique. Puis un aplat vert, ligne après ligne, sur une respiration de la musique.',
       texte: 'Un point, de temps en temps. Une seule question, sur ton action. · Oui, non, ou pas de trajet : aucune réponse n’est un échec. · Pas de score. Pas de série. Aucun classement. Tes réponses restent privées.' },
-    { titre: 'Au fil des saisons', debut: 64.6, pose: 70.9,
+    { titre: 'Au fil des saisons', debut: 69.4, pose: 75.5,
       image: 'Le trait revient et traverse l’année, en marquant chaque saison d’une cloche. Ramille porte chacune : les joues chaudes de l’automne, le bonnet, le bourgeon, la goutte de rosée.',
       texte: 'Saison après saison, tu vois ce qui a changé. · Ramille : « Je note tes réponses dans ton suivi, au fil des saisons. »' },
-    { titre: 'À toi', debut: 71.9, pose: 78.0,
+    { titre: 'À toi', debut: 76.7, pose: 83.0,
       image: 'Le trait quitte la frise et finit en un point d’arrivée ; le point s’étire et devient le bouton, sur l’accord qui conclut.',
       texte: 'Comprendre tes trajets, sans te juger. · Découvrir mon impact · ramille.fr · Pas de compte à créer pour commencer.' },
   ];
@@ -850,7 +858,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       barre: { x0: 160, x1: 1440, y: 600, h: 64 },
       f3: { cx: 470, cy: 450, s: 5.0 }, f7: { cx: 450, cy: 380, s: 3.9 }, f8: { cx: 470, cy: 440, s: 4.5 },
       vague: [[60, 772], [260, 708], [480, 776], [710, 706], [940, 774], [1170, 704], [1390, 770], [1560, 726]],
-      saisonsF: [0.14, 0.38, 0.62, 0.86],
+      saisonsF: [0.14, 0.38, 0.62, 0.86], saisonsPlace: ['dessous', 'dessous', 'dessous', 'dessous'],
       final: [[70, 820], [380, 852], [680, 806]], avant: [-90, 150],
     },
     portrait: {
@@ -860,7 +868,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       barre: { x0: 70, x1: 830, y: 900, h: 72 },
       f3: { cx: 450, cy: 520, s: 5.0 }, f7: { cx: 450, cy: 680, s: 4.6 }, f8: { cx: 450, cy: 470, s: 4.6 },
       vague: [[40, 1330], [190, 1262], [345, 1336], [500, 1264], [650, 1334], [790, 1266], [880, 1300]],
-      saisonsF: [0.13, 0.38, 0.63, 0.88],
+      // Une saison sur chaque crête ou creux de la vague, son nom du côté libre : sur une pente,
+      // « Printemps » touchait le trait.
+      saisonsF: [0.177, 0.363, 0.548, 0.727], saisonsPlace: ['dessus', 'dessous', 'dessus', 'dessous'],
       final: [[60, 1520], [300, 1484], [160, 1384]], avant: [-100, 110],
     },
   };
@@ -933,7 +943,6 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     scene.classList.toggle('portrait', fmt === 'portrait');
     scene.classList.toggle('paysage', fmt === 'paysage');
     svgFil.setAttribute('viewBox', `0 0 ${G.W} ${G.H}`);
-    M = {};
     ajuster();
 
     const dense = catmull(G.route);
@@ -964,27 +973,57 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     arrets.forEach((c, i) => { c.setAttribute('cx', F.arretsXY[i][0]); c.setAttribute('cy', F.arretsXY[i][1]); c.setAttribute('stroke-width', G.fil * 0.55); });
     arretsEtiq.forEach((el, i) => placerAuPoint(el, F.arretsXY[i], G.etiqPlace[i], ecartEtiq));
     saisonsPts.forEach((c, i) => { c.setAttribute('cx', F.saisonsXY[i][0]); c.setAttribute('cy', F.saisonsXY[i][1]); c.setAttribute('stroke-width', G.fil * 0.55); });
-    saisonsEtiq.forEach((el, i) => placerAuPoint(el, F.saisonsXY[i], 'dessous', ecartEtiq));
-    fil.setAttribute('stroke-width', G.fil);
+    saisonsEtiq.forEach((el, i) => placerAuPoint(el, F.saisonsXY[i], G.saisonsPlace[i], ecartEtiq));
+    // Par `A()`, comme dans `rendreFil` : écrite en direct, elle échappait au cache, qui la croyait
+    // déjà posée — le trait gardait l'épaisseur de l'autre format.
+    A(fil, 'stroke-width', fx(G.fil));
+    mesurer();
   }
 
-  // ---------------------------------------------------------------- Mesures, prises une fois par taille
+  // ---------------------------------------------------------------- Mesures, prises une fois par format
   // La position d'un élément sans les transformations qui l'animent : la chaîne des `offset*`.
+  // Le plateau mesure G.W × G.H px : une unité du film vaut un pixel du plateau.
   function posStatique(el, jusqua = plateau) {
     let x = 0, y = 0, n = el;
     while (n && n !== jusqua) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
     return { x, y, w: el.offsetWidth, h: el.offsetHeight };
   }
-  // Le plateau mesure G.W × G.H px : une unité du film vaut un pixel du plateau.
-  const unites = () => G.W / plateau.clientWidth;
+  // La position d'un élément tel qu'il est rendu, transformations comprises, en unités du film.
+  function posVivante(el) {
+    const pr = plateau.getBoundingClientRect(), r = el.getBoundingClientRect(), k = G.W / pr.width;
+    return { x: (r.left - pr.left) * k, y: (r.top - pr.top) * k, w: r.width * k, h: r.height * k };
+  }
   function ajuster() {
     S(plateau, 'transform', `scale(${fx(scene.clientWidth / G.W)})`);
   }
-  function mesure(cle, calcul) {
-    if (!(cle in M)) M[cle] = calcul();
-    return M[cle];
+  // Chaque mesure se prend dans l'état de l'instant qu'elle sert, rendu exprès : jamais « au premier
+  // passage ». La version du 03/10/2026 mesurait le défilement du plan à la première image de sa
+  // fenêtre, où l'état change (l'engagement, puis l'échange des cartes) : un saut dans la frise
+  // donnait trois images différentes pour le même instant.
+  function mesurer() {
+    const garde = tCourant;
+    M = { dp: $('tel-ecran').clientWidth / 360, defilePlan: 0 };
+    const cta = $('s8-cta');
+    M.cta = { w: cta.offsetWidth, h: cta.offsetHeight };
+    const r = posStatique(cta);
+    const bout = [r.x + G.fil * 0.9, r.y + r.h / 2];
+    const avant = [bout[0] + G.avant[0], bout[1] + G.avant[1]];
+    M.final = { P: reech(catmull([...G.final, avant, bout])), bout };
+    // La restitution, téléphone à sa taille : ce que le cadre coupe de son bas.
+    const ecr = posStatique($('tel-ecran'));
+    M.defile = Math.max(0, ecr.y + 30 * M.dp + $('bilan-defile').offsetHeight + 12 * M.dp - Math.min(G.H, ecr.y + ecr.h));
+    // Le choix des jours, déplié, avant l'engagement : « C'est noté » doit entrer dans le cadre.
+    rendre(T.depliage[1] + 0.05);
+    M.dep = $('c2-dep-dedans').offsetHeight;
+    const d = posStatique($('c2-dep-dedans'));
+    M.defilePlan = Math.max(0, d.y + d.h + 16 * M.dp - G.H);
+    // L'engagement pris, juste avant que les deux cartes échangent leur place.
+    rendre(T.enTete[0] - 0.01);
+    M.cartes = { h1: $('c1').offsetHeight, h2: $('c2').offsetHeight, ecart: parseFloat(getComputedStyle($('pistes')).rowGap) || 0 };
+    rendre(T.point[1]);
+    M.point = $('point').offsetHeight;
+    tCourant = garde;
   }
-  const dpPx = () => mesure('dp', () => $('tel-ecran').clientWidth / 360);
 
   // ---------------------------------------------------------------- Aides de rendu
   function montrer(el, t, a, b, o = {}) {
@@ -993,7 +1032,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const op = i * (1 - s);
     S(el, 'opacity', fx(op));
     S(el, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
-    if (op > 0.001) S(el, 'transform', `${el._base || ''} translate(0, ${fx((1 - i) * dy - s * dy * 0.4)}${unite})`);
+    S(el, 'transform', `${el._base || ''} translate(0, ${fx((1 - i) * dy - s * dy * 0.4)}${unite})`);
     return op;
   }
   // Un titre entre mot à mot, puis reste posé ; il sort d'un bloc.
@@ -1018,17 +1057,8 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     titre(k, t, a, b);
     if (sous) montrer(sous, t, a + 0.35, b);
   }
-  function cacher(el) { S(el, 'opacity', '0'); S(el, 'visibility', 'hidden'); }
 
   // ---------------------------------------------------------------- Le fil
-  function cheminFinal() {
-    return mesure('final', () => {
-      const r = posStatique($('s8-cta')), k = unites();
-      const bout = [r.x * k + G.fil * 0.9, (r.y + r.h / 2) * k];
-      const avant = [bout[0] + G.avant[0], bout[1] + G.avant[1]];
-      return { P: reech(catmull([...G.final, avant, bout])), bout };
-    });
-  }
   function rendreFil(t) {
     let A0 = null, B0 = null, k = 0, f0 = 0, f1 = 1, w = G.fil, col = '#1F6F4A', op = 1;
     const s3 = G.f3.s, bout = $('fil-bout');
@@ -1042,15 +1072,15 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     else if (t < T.vague[0]) { A0 = null; }
     else if (t < T.versBouton[0]) { A0 = F.vague; f1 = parNoeuds(t, [T.vague[0], ...SYNC.saisons, T.vague[1]], [0, ...G.saisonsF, 1]); }
     else {
-      const fin = cheminFinal();
+      const fin = M.final;
       if (t < T.queue[1]) { A0 = F.vague; B0 = fin.P; k = p(t, ...T.versBouton, E.inOutCubic); f0 = p(t, ...T.queue, E.inOutCubic); }
       // Le point d'arrivée : il apparaît quand le trait l'atteint, puis devient le bouton.
-      rBout = G.fil * 0.9 * p(t, ...T.pointArrivee) * (1 - p(t, T.bouton[1] - 0.1, T.bouton[1] + 0.2, E.lin));
-      A(bout, 'cx', fx(fin.bout[0])); A(bout, 'cy', fx(fin.bout[1]));
+      rBout = G.fil * 0.9 * p(t, ...T.pointArrivee) * (1 - p(t, T.bouton[1] - 0.1, T.bouton[1] + 0.15, E.lin));
     }
+    A(bout, 'cx', fx(M.final.bout[0])); A(bout, 'cy', fx(M.final.bout[1]));
     A(bout, 'r', fx(rBout));
-    if (!A0) { A(fil, 'd', ''); return; }
-    A(fil, 'd', tracer(melange(A0, B0 || A0, k), f0, f1));
+    // Tout s'écrit à chaque image, trait vide compris : l'image ne garde rien de la précédente.
+    A(fil, 'd', A0 ? tracer(melange(A0, B0 || A0, k), f0, f1) : '');
     A(fil, 'stroke-width', fx(w));
     A(fil, 'stroke', col);
     A(fil, 'opacity', fx(op));
@@ -1062,7 +1092,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     titre($('s1-t2').firstElementChild, t, ...T.titre2);
     arrets.forEach((c, i) => {
       const a = SYNC.arrets[i];
-      A(c, 'r', fx(G.fil * 1.15 * p(t, a, a + 0.4) * (1 - p(t, T.arretsSortie, T.arretsSortie + 0.45))));
+      A(c, 'r', fx(G.fil * 1.15 * p(t, a, a + 0.4) * (1 - p(t, T.arretsSortie, T.arretsSortie + 0.3))));
     });
     arretsEtiq.forEach((el, i) => montrer(el, t, SYNC.arrets[i] + 0.05, T.arretsSortie, { dy: G.etiqPlace[i] === 'dessus' ? -0.8 : 0.8 }));
   }
@@ -1088,7 +1118,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     A(trace, 'opacity', visible ? fx(1 - p(t, T.remplissage[1] - 0.3, T.remplissage[1], E.lin)) : '0');
     A(trace, 'stroke-dashoffset', fx(F.longueurFeuille * (1 - p(t, ...T.contour, E.inOutCubic))));
     A(pleine, 'opacity', visible ? fx(p(t, ...T.remplissage, E.lin)) : '0');
-    A(point, 'r', visible ? fx(5 * p(t, ...T.pointLogo) * (1 - p(t, T.retrait[0], T.retrait[0] + 0.4))) : '0');
+    A(point, 'r', visible ? fx(5 * p(t, ...T.pointLogo) * (1 - p(t, T.retrait[0], T.retrait[0] + 0.3))) : '0');
 
     S($('s3-texte'), 'visibility', t >= T.nom3 - 0.1 && t < T.sortie3 + 0.6 ? 'visible' : 'hidden');
     montrer($('s3-nom'), t, T.nom3, T.sortie3, { din: 0.8 });
@@ -1116,16 +1146,18 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     });
     return w;
   }
-  function decalageDuTel(t) {
-    // translateY du téléphone, en px de la scène (voir `rendreTel`).
-    const i = p(t, ...T.tel);
-    return (1 - i) * 0.14 * plateau.clientHeight;
-  }
   function rendreMascotte(t) {
     const el = $('m-scene');
-    if (t < T.retrait[1] || (t >= T.vol[1] + 0.15 && t < T.retour)) { cacher(el); return; }
+    if (t < T.retrait[1] || (t >= T.vol[1] + 0.15 && t < T.retour)) {
+      // Cachée, elle reprend une pose fixe : l'image ne garde rien de la précédente.
+      dessiner(mScene, { humeurs: { calm: 1 } });
+      S(el, 'translate', '0 0');
+      poser(el, G.f3, 1, 0);
+      return;
+    }
     if (t < T.vol[0]) {
-      const b = souffle(t, T.visage[1]);
+      // Le souffle s'éteint avant le vol, qui part à l'échelle 1 : coupé net, il sautait de 3 %.
+      const b = souffle(t, T.visage[1]) * (1 - p(t, T.vol[0] - 0.6, T.vol[0], E.inOutSine));
       const k = p(t, ...T.sourire, E.lin);
       dessiner(mScene, { humeurs: { calm: 1 - k, happy: k }, visage: p(t, ...T.visage, E.lin) });
       S(el, 'translate', `0 ${fx(-0.4 * b)}%`);
@@ -1133,10 +1165,10 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
       return;
     }
     if (t < T.vol[1] + 0.15) {
-      // Elle descend se loger dans l'en-tête du questionnaire.
-      const slot = mesure('slot', () => posStatique($('slot-entete')));
-      const ku = unites();
-      const cible = { cx: (slot.x + slot.w / 2) * ku, cy: (slot.y + slot.h / 2 + decalageDuTel(t)) * ku, s: (slot.w * ku) / 100 };
+      // Elle descend se loger dans l'en-tête du questionnaire, là où il est à cette image : le
+      // téléphone monte et, en 16:9, se tient réduit.
+      const slot = posVivante($('slot-entete'));
+      const cible = { cx: slot.x + slot.w / 2, cy: slot.y + slot.h / 2, s: slot.w / 100 };
       const k = p(t, ...T.vol, E.inOutCubic);
       const kh = p(t, T.vol[0], T.vol[0] + 0.3, E.lin);
       dessiner(mScene, { humeurs: { calm: kh, happy: 1 - kh } });
@@ -1156,36 +1188,38 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   }
 
   // ---------------------------------------------------------------- Le téléphone
+  // Les appuis dérivent des coupes qu'ils provoquent. Le doigt se montre 0,28 s avant chacun et
+  // 0,22 s après : deux appuis à moins d'une demi-seconde l'un de l'autre le feraient sauter.
   const TAPES = [
-    { t: 30.65, id: 'q1-oui', choix: true }, { t: 31.05, id: 'b-suivant' },
-    { t: 31.95, id: 'q2-voiture', choix: true }, { t: 32.35, id: 'b-suivant' },
-    { t: 33.25, id: 'q3-une', choix: true }, { t: 33.65, id: 'b-suivant' },
-    { t: 34.5, id: 'q4-un', choix: true }, { t: 34.9, id: 'b-suivant' },
-    { t: 42.5, id: 'c2-engage' }, { t: 43.55, id: 'j-mar', choix: true }, { t: 44.05, id: 'j-jeu', choix: true }, { t: 44.65, id: 'c2-note' },
-    { t: 51.9, id: 'notif' }, { t: 53.5, id: 'pt-oui' }, { t: 56.0, id: 'pt-non' },
+    ...Q.flatMap((q, k) => [{ t: q + 0.55, id: ['q1-oui', 'q2-voiture', 'q3-une', 'q4-un'][k], choix: true }, { t: q + 1.05, id: 'b-suivant' }]),
+    { t: T.depliage[0] - 0.15, id: 'c2-engage' },
+    { t: T.depliage[1] + 0.4, id: 'j-mar', choix: true }, { t: T.depliage[1] + 0.9, id: 'j-jeu', choix: true },
+    { t: T.engagee - 0.15, id: 'c2-note' },
+    { t: T.tapNotif, id: 'notif' }, { t: SYNC.reponses[1] - 0.15, id: 'pt-oui' }, { t: SYNC.reponses[2] - 0.15, id: 'pt-non' },
   ];
   function rendreTapes(t) {
     const doigt = $('doigt');
     let actif = null;
     for (const tape of TAPES) {
       if (tape.id !== 'b-suivant') C($(tape.id), 'appui', t >= tape.t && t < tape.t + 0.14);
-      if (tape.choix) C($(tape.id), 'choisi', t >= tape.t + 0.14 && t < 58.5);
-      if (t >= tape.t - 0.25 && t < tape.t + 0.25) actif = tape;
+      if (tape.choix) C($(tape.id), 'choisi', t >= tape.t + 0.14 && t < T.telSortie[1]);
+      if (t >= tape.t - 0.28 && t < tape.t + 0.22) actif = tape;
     }
     C($('b-suivant'), 'appui', TAPES.some((x) => x.id === 'b-suivant' && t >= x.t && t < x.t + 0.14));
-    if (!actif) { S(doigt, 'opacity', '0'); return; }
-    // Position prise une fois, au premier passage : l'élément est alors au repos.
-    const pos = mesure('tape-' + actif.id + '-' + actif.t, () => {
-      const r = posStatique($(actif.id), $('tel-ecran')), d = dpPx();
-      return { x: (r.x + r.w / 2) / d, y: (r.y + r.h / 2) / d };
-    });
-    const op = p(t, actif.t - 0.25, actif.t - 0.08, E.lin) * (1 - p(t, actif.t + 0.06, actif.t + 0.25, E.lin));
+    A(doigt, 'data-cible', actif ? actif.id : '');
+    if (!actif) { S(doigt, 'opacity', '0'); S(doigt, 'transform', 'none'); return; }
+    // Le doigt se pose où la cible est rendue à cette image — défilement du plan compris —, en dp de
+    // l'écran : sa mise en page vivante, ramenée à l'échelle du téléphone.
+    const ecr = $('tel-ecran'), re = ecr.getBoundingClientRect(), rc = $(actif.id).getBoundingClientRect();
+    const k = ecr.offsetWidth / re.width / M.dp;
+    const x = (rc.left + rc.width / 2 - re.left) * k, y = (rc.top + rc.height / 2 - re.top) * k;
+    const op = p(t, actif.t - 0.28, actif.t - 0.08, E.lin) * (1 - p(t, actif.t + 0.06, actif.t + 0.22, E.lin));
     const appui = Math.sin(Math.PI * clamp((t - actif.t + 0.08) / 0.3));
     S(doigt, 'opacity', fx(op));
-    S(doigt, 'transform', `translate(calc(var(--dp) * ${fx(pos.x)}), calc(var(--dp) * ${fx(pos.y)})) scale(${fx(1 - 0.12 * appui)})`);
+    S(doigt, 'transform', `translate(calc(var(--dp) * ${fx(x)}), calc(var(--dp) * ${fx(y)})) scale(${fx(1 - 0.12 * appui)})`);
   }
   function ecran(id, t, a, b) {
-    return montrer($(id), t, a, b, { din: 0.4, dout: 0.4, dy: 0 });
+    return montrer($(id), t, a, b, { din: 0.4, dout: 0.3, dy: 0 });
   }
   function entreeDp(el, t, a, b, o = {}) {
     const dx = o.dx ?? 0, dy = o.dy ?? 10, din = o.din ?? 0.45, dout = o.dout ?? 0.25, decal = o.decal ?? 0;
@@ -1200,16 +1234,16 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     const op = i * (1 - s);
     S(tel, 'opacity', fx(op));
     S(tel, 'visibility', op <= 0.001 ? 'hidden' : 'visible');
-    S(tel, 'transform', `translateY(${fx((1 - i) * 14 + s * 6)}cqh)`);
+    const echelle = fmt === 'paysage' ? lerp(0.83, 1, p(t, ...T.calcul, E.inOutCubic)) : 1;
+    S(tel, 'transform', `translateY(${fx((1 - i) * 14 + s * 6)}cqh) scale(${fx(echelle)})`);
     montrer($('legende-tel'), t, T.bilan[0] + 0.1, T.manif[0], { dy: 0.3 });
-    if (op <= 0.001) { S($('doigt'), 'opacity', '0'); return; }
+    // Le contenu se rend même téléphone caché : sinon il garderait l'état de la dernière image.
 
     // Le questionnaire
     ecran('e-q', t, T.tel[0] - 0.1, T.calcul[0]);
-    const Q = T.questions;
     ['q1', 'q2', 'q3', 'q4'].forEach((id, k) => entreeDp($(id), t, Q[k], Q[k + 1] ?? null, { dx: 14, dy: 0, din: 0.4 }));
     // Le film monte quatre des neuf étapes ; le rail et le compte suivent les vraies positions.
-    const rails = [[Q[0], 1], [Q[1], 3], [Q[2], 5], [Q[3], 7], [34.9, 8]];
+    const rails = [[Q[0], 1], [Q[1], 3], [Q[2], 5], [Q[3], 7], [Q[3] + 1.05, 8]];
     let largeur = 0;
     rails.forEach(([a, v], j) => { if (t >= a) largeur = lerp(j ? rails[j - 1][1] : 0, v, p(t, a, a + 0.4)) / 9; });
     S($('rail'), 'width', `${fx(largeur * 100)}%`);
@@ -1225,22 +1259,14 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     entreeDp($('bb1'), t, T.bilan[0] + 0.1, null);
     entreeDp($('bb2'), t, T.bilan[0] + 0.3, null);
     entreeDp($('bb3'), t, T.bilan[0] + 0.5, null);
-    if (t >= T.bilan[0] && t < T.bilan[1] + 0.5) {
-      const defile = mesure('defile', () => {
-        const ecr = posStatique($('tel-ecran')), d = dpPx();
-        const bas = ecr.y + 30 * d + $('bilan-defile').offsetHeight + 12 * d;
-        const visible = Math.min(plateau.clientHeight, ecr.y + ecr.h);
-        return Math.max(0, bas - visible);
-      });
-      S($('bilan-defile'), 'transform', `translateY(${fx(-defile * p(t, ...T.defile, E.inOutCubic))}px)`);
-    }
+    S($('bilan-defile'), 'transform', `translateY(${fx(-M.defile * p(t, ...T.defile, E.inOutCubic))}px)`);
 
     // Le plan
     ecran('e-plan', t, T.plan, null);
     entreeDp($('p-titre'), t, T.plan + 0.2, null);
     entreeDp($('lien-pistes'), t, T.plan + 0.65, null);
     const ouvert = p(t, ...T.depliage) * (1 - p(t, ...T.repli));
-    if (ouvert > 0 && ouvert < 1) S($('c2-dep'), 'height', `${fx(mesure('dep', () => $('c2-dep-dedans').offsetHeight) * ouvert)}px`);
+    if (ouvert > 0 && ouvert < 1) S($('c2-dep'), 'height', `${fx(M.dep * ouvert)}px`);
     else S($('c2-dep'), 'height', ouvert >= 1 ? 'auto' : '0px');
     const engagee = t >= T.engagee;
     C($('c2'), 'engagee', engagee);
@@ -1258,7 +1284,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     if (enTete) {
       const k = p(t, ...T.enTete);
       if (k < 1) {
-        const h = mesure('cartes', () => ({ h1: c1.offsetHeight, h2: c2.offsetHeight, ecart: parseFloat(getComputedStyle($('pistes')).rowGap) || 0 }));
+        const h = M.cartes;
         dy1 = -(h.h2 + h.ecart) * (1 - k);
         dy2 = (h.h1 + h.ecart) * (1 - k);
       }
@@ -1267,14 +1293,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     entreeDp(c2, t, T.plan + 0.5, null, { decal: dy2 });
     // Le dépliage pousse « C'est noté » vers le bas ; si le cadre le coupe, le plan défile le temps
     // du choix, puis revient quand l'engagement remonte en tête.
-    let defilePlan = 0;
-    if (t >= T.depliage[0] && t < T.enTete[1]) {
-      const besoin = mesure('defilePlan', () => {
-        const d = posStatique($('c2-dep-dedans'));
-        return Math.max(0, d.y + d.h + 16 * dpPx() - plateau.clientHeight);
-      });
-      defilePlan = besoin * p(t, T.depliage[0], T.depliage[1] + 0.1) * (1 - p(t, ...T.enTete));
-    }
+    const defilePlan = M.defilePlan * p(t, T.depliage[0], T.depliage[1] + 0.1) * (1 - p(t, ...T.enTete));
     S($('plan-corps'), 'transform', `translateY(${fx(-defilePlan)}px)`);
 
     // La notification, puis le point de la semaine
@@ -1284,7 +1303,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     S(notif, 'visibility', nv ? 'visible' : 'hidden');
     S(notif, 'transform', `translateY(${fx((-1 + ni) * 140 - ns * 140)}%)`);
     const ouv = p(t, ...T.point);
-    if (ouv > 0 && ouv < 1) S($('point-h'), 'height', `${fx(mesure('point', () => $('point').offsetHeight) * ouv)}px`);
+    if (ouv > 0 && ouv < 1) S($('point-h'), 'height', `${fx(M.point * ouv)}px`);
     else S($('point-h'), 'height', ouv >= 1 ? 'auto' : '0px');
     const semaine2 = t >= T.semaineSuivante;
     entreeDp($('pt-q'), t, semaine2 ? T.question2[0] : T.question1[0], semaine2 ? T.question2[1] : T.question1[1], { dy: 6, dout: 0.2 });
@@ -1305,7 +1324,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   }
   function rendreManifeste(t) {
     const m = $('manif');
-    const i = p(t, T.manif[0], T.manif[0] + 0.7), s = p(t, T.manif[1], T.manif[1] + 0.7);
+    const i = p(t, T.manif[0], T.manif[0] + 0.7), s = p(t, T.manif[1], T.manif[1] + 0.55);
     S(m, 'visibility', i > 0 && s < 1 ? 'visible' : 'hidden');
     S(m, 'transform', `translateY(${fx((1 - i) * 100 + s * 100)}%)`);
     ['m1', 'm2', 'm3', 'm4'].forEach((id, k) => montrer($(id), t, SYNC.manifeste.lignes[k], T.manifTexteSortie, { din: 0.7, dy: k < 3 ? 2 : 1 }));
@@ -1317,10 +1336,10 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     titre($('s7-titre'), t, ...T.s7titre);
     montrer($('s7-dit'), t, T.s7dit, T.s7titre[1]);
     saisonsPts.forEach((c, i) => {
-      const r = G.fil * 1.15 * p(t, SYNC.saisons[i], SYNC.saisons[i] + 0.4) * (1 - p(t, T.saisonsSortie, T.saisonsSortie + 0.45));
+      const r = G.fil * 1.15 * p(t, SYNC.saisons[i], SYNC.saisons[i] + 0.4) * (1 - p(t, T.saisonsSortie, T.saisonsSortie + 0.3));
       A(c, 'r', fx(t >= T.retour ? Math.max(0, r) : 0));
     });
-    saisonsEtiq.forEach((el, i) => montrer(el, t, SYNC.saisons[i] + 0.05, T.saisonsSortie, { dy: 0.8 }));
+    saisonsEtiq.forEach((el, i) => montrer(el, t, SYNC.saisons[i] + 0.05, T.saisonsSortie, { dy: G.saisonsPlace[i] === 'dessus' ? -0.8 : 0.8 }));
   }
   function rendreS8(t) {
     S($('s8-texte'), 'visibility', t >= T.nom8 - 0.1 ? 'visible' : 'hidden');
@@ -1328,8 +1347,8 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     titre($('s8-titre'), t, T.titre8, null);
     const cta = $('s8-cta'), k = p(t, ...T.bouton);
     // Le bouton s'étire depuis le point d'arrivée du trait : même centre, même rayon au départ.
-    const r = mesure('cta', () => ({ w: cta.offsetWidth, h: cta.offsetHeight }));
-    const rp = (G.fil * 0.9) / unites();
+    const r = M.cta;
+    const rp = G.fil * 0.9;
     const haut = r.h ? ((r.h / 2 - rp) / r.h) * 100 : 45;
     const droite = r.w ? ((r.w - 2 * rp) / r.w) * 100 : 95;
     S(cta, 'clipPath', `inset(${fx(lerp(haut, 0, k))}% ${fx(lerp(droite, 0, k))}% ${fx(lerp(haut, 0, k))}% 0 round 999px)`);
@@ -1501,7 +1520,12 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     fmt = 'portrait';
   }
   $(fmt === 'portrait' ? 'f-portrait' : 'f-paysage').checked = true;
-  if (reduit) texte($('affiche-libelle'), `Lire le film · ${fmtTemps(DUREE)} · les chapitres s’ouvrent posés`);
+  $('frise').max = String(Math.round(DUREE * 10));
+  texte($('affiche-libelle'), `Lire le film · ${fmtTemps(DUREE)}${reduit ? ' · les chapitres s’ouvrent posés' : ''}`);
+  // Un son qui a échoué avant que l'écouteur `error` soit posé ne le déclenchera plus : on le lit ici.
+  // `audio.error` seul : `networkState` vaut « aucune source » le temps que le chargement démarre, et
+  // le lire coupait le son à chaque ouverture (vu le 03/10/2026, dans la lecture réelle).
+  if (audio.error) sonDispo = false;
   majSon();
 
   function demarrer() {
@@ -1510,11 +1534,11 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     else if (affiche) rendre(CHAPITRES[2].pose);
     else rendre(tCourant);
   }
-  // Une taille qui change invalide les mesures ; l'image se refait à la nouvelle taille.
-  // La mise en page ne dépend plus de la taille du lecteur : seule l'échelle se refait.
+  // La mise en page ne dépend pas de la taille du lecteur : seule l'échelle se refait.
   if (window.ResizeObserver) new ResizeObserver(() => ajuster()).observe(scene);
   window.__seek = (t) => rendre(t);
   window.__duree = DUREE;
+  window.__T = T;
   window.__pret = (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { demarrer(); return true; });
   demarrer();
 })();

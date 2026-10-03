@@ -1,25 +1,57 @@
-// Vérifie que rien ne déborde dans « Le fil de Ramille » : chaque quart de seconde, dans les deux
-// formats, à la taille de l'export et à trois tailles de lecteur.
+// Vérifie « Le fil de Ramille » : rien ne déborde, tout se lit, et l'image ne dépend que du temps.
 //
 //   node docs/communication/le-fil-de-ramille/verifier.mjs
 //
-// Ce qu'il relève, sur les éléments entièrement visibles à cet instant :
+// `CHROMIUM=/chemin/vers/chrome` remplace le navigateur de Playwright, comme pour l'export.
+//
+// **Chaque quart de seconde, dans les deux formats, à la taille de l'export et à cinq tailles de
+// lecteur**, sur les éléments entièrement visibles à cet instant :
 //   - un texte qui sort de l'écran du téléphone, ou de la scène, à l'horizontale ;
 //   - un texte qui sort de la scène par le haut ou le bas (hors du téléphone, que le 16:9 coupe
 //     exprès par le bas) ;
 //   - un texte plus large que sa boîte, ou coupé dans un bouton, une puce ou une étiquette ;
-//   - deux blocs de la scène qui se chevauchent (hors du vol de la mascotte vers le téléphone).
+//   - deux blocs de la scène qui se chevauchent (hors du vol de la mascotte vers le téléphone),
+//     étiquettes des arrêts et des saisons comprises, et une étiquette posée sur le trait ;
+//   - ce que le téléphone doit montrer en entier et que le cadre coupe : le bas de la restitution
+//     une fois défilée, le choix des jours une fois déplié ;
+//   - un appui que le cadre coupe, ou un doigt qui tombe à côté de sa cible.
+//
+// **Le temps de lire, aux deux formats de l'export, par pas de 0,05 s** : chaque texte de la scène,
+// chaque réplique de Ramille et la notification restent entièrement visibles — opaques, dans le
+// cadre, sous aucun aplat — au moins 2,5 s. Un titre se lit quand son dernier mot est posé : c'est
+// le plus court de ses mots qui compte. L'écran du téléphone, lui, se montre au rythme d'un geste.
+//
+// **La pureté, aux deux formats de l'export** : l'image d'un instant ne dépend que de cet instant.
+// Une passe dans l'ordre, puis un aller-retour par l'autre format, puis une passe dans le désordre :
+// chaque image doit être identique à celle de la première passe. La version du 03/10/2026 mesurait
+// le défilement du plan au premier passage, et l'épaisseur du trait échappait au cache d'écriture :
+// selon l'ordre des sauts, le même instant rendait trois images différentes.
 //
 // **Pourquoi plusieurs tailles, alors que le film se compose à taille fixe** : c'est justement ce
-// qu'il éprouve. Le 03/10/2026, le 16:9 « débordait » chez la personne qui pilote : composé en
-// unités relatives, ses petits textes passaient sous la taille minimale des polices du navigateur à
-// la taille d'un lecteur, et grossissaient hors de leurs boîtes. Depuis que le film se compose à
-// 1600 × 900 px et se met à l'échelle d'un bloc, les sept cas rendent le même résultat.
+// qu'il éprouve. Le 03/10/2026, le 16:9 débordait chez la personne qui pilote : composé en unités
+// relatives, il se recomposait à chaque taille de lecteur, et à très petite taille sa mise en page
+// ne suivait plus la proportion — les textes du téléphone sortaient de leurs boîtes (14 et 19
+// constats à 760 et 390 px). Ce n'était pas la taille minimale des polices, comme on l'a d'abord
+// écrit : Chromium y calcule les plus petits à 5,3 et 2,6 px, sans plancher. Depuis que le film se
+// compose à 1600 × 900 px et se met à l'échelle d'un bloc, les sept cas rendent le même résultat.
 //
-// Éprouvé le 03/10/2026, en cassant ce qu'il garde — trois mutations, chacune vue, le témoin à zéro :
+// Éprouvé le 03/10/2026, en cassant ce qu'il garde (`FILM=<copie faussée>`) — chaque mutation vue,
+// le témoin à zéro :
 //   - les titres de droite déplacés sur le téléphone en 16:9 → 6 chevauchements ;
 //   - « Vendredi » en toutes lettres dans une puce de jour → « texte plus large que sa boîte » ;
-//   - un libellé de bouton final trop long → « déborde à l'horizontale ».
+//   - un libellé de bouton final trop long → « déborde à l'horizontale » ;
+//   - le texte du manifeste qui sort à 67,6 s → « moins de 2,5 s pour lire » sur ses deux dernières
+//     lignes, aux deux formats ;
+//   - le téléphone du 16:9 gardé à sa taille pendant le questionnaire → « appui hors cadre » sur
+//     « Suivant », aux quatre cas 16:9 ;
+//   - le doigt décalé de 40 dp → « doigt à côté de sa cible », sur chacun des onze appuis ;
+//   - la restitution qui ne défile plus → « coupé par le cadre » sur son bas, en 16:9 ;
+//   - les saisons du 9:16 toutes nommées dessous → « étiquette sur le trait » sur « Printemps » ;
+//   - `montrer()` qui n'écrit plus la transformation d'un élément caché → « dépend de l'ordre des
+//     sauts » et « aller-retour de format » ;
+//   - une écriture directe dans `preparer()`, hors du cache → « aller-retour de format ».
+// L'épaisseur du trait écrite en direct, le défaut d'origine, ne se reproduit plus : les rendus de
+// référence de `mesurer()` remettent le cache d'accord. C'est la dernière mutation qui garde la famille.
 // Un libellé long dans un bouton à hauteur fixe qui passe sur deux lignes, lui, tient : ce n'est
 // pas un débordement, et le contrôle ne le relève pas.
 import fs from 'node:fs';
@@ -30,20 +62,22 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
+const FILM = process.env.FILM ?? path.join(ICI, 'film.html');
 const POLICES = path.join(ICI, '../../design/design-system/assets/fonts');
 const GRAISSES = { 400: 'SplineSans_400Regular.ttf', 500: 'SplineSans_500Medium.ttf', 600: 'SplineSans_600SemiBold.ttf', 700: 'SplineSans_700Bold.ttf' };
+const LIRE = 2.5;
 const enveloppe = path.join(os.tmpdir(), 'le-fil-de-ramille-verif.html');
 fs.writeFileSync(
   enveloppe,
-  `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>[hidden]{display:none!important}body{margin:0}</style></head><body>${fs.readFileSync(path.join(ICI, 'film.html'), 'utf8')}</body></html>`
+  `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>[hidden]{display:none!important}body{margin:0}</style></head><body>${fs.readFileSync(FILM, 'utf8')}</body></html>`
 );
 const faces = Object.entries(GRAISSES)
   .map(([g, f]) => `@font-face{font-family:"Spline Sans";font-weight:${g};src:url(https://fonts.gstatic.com/ramille/${f}) format("truetype")}`)
   .join('\n');
 
 const CAS = [
-  { nom: 'export 16:9', l: 1920, h: 1080, q: '?export=paysage' },
-  { nom: 'export 9:16', l: 1080, h: 1920, q: '?export=portrait' },
+  { nom: 'export 16:9', l: 1920, h: 1080, q: '?export=paysage', export: true },
+  { nom: 'export 9:16', l: 1080, h: 1920, q: '?export=portrait', export: true },
   { nom: 'lecteur 1280, 16:9', l: 1280, h: 900, fmt: 'paysage' },
   { nom: 'lecteur 1280, 9:16', l: 1280, h: 900, fmt: 'portrait' },
   { nom: 'lecteur 760, 16:9', l: 760, h: 900, fmt: 'paysage' },
@@ -51,13 +85,10 @@ const CAS = [
   { nom: 'téléphone 390, 9:16', l: 390, h: 844, fmt: 'portrait' },
 ];
 
-// Exécuté dans la page, à un instant donné : la liste des constats.
-function constater(t) {
-  window.__seek(t);
-  const plateau = document.getElementById('plateau');
+// Exécuté dans la page avant toute mesure : les aides que les trois contrôles partagent.
+function installer() {
   const scene = document.getElementById('scene');
-  const sr = scene.getBoundingClientRect();
-  const opacite = (el) => {
+  window.__opacite = (el) => {
     let o = 1;
     for (let n = el; n && n !== scene.parentElement; n = n.parentElement) {
       const cs = getComputedStyle(n);
@@ -66,10 +97,21 @@ function constater(t) {
     }
     return o;
   };
-  const nom = (el) => el.id || `${el.closest('[id]')?.id} ${el.className} «${el.textContent.trim().slice(0, 24)}»`;
+  window.__nom = (el) => el.id || `${el.closest('[id]')?.id} ${el.className} «${el.textContent.trim().slice(0, 24)}»`;
+  window.__textes = () => [...document.getElementById('plateau').querySelectorAll('*')].filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
+}
+
+// Exécuté dans la page, à un instant donné : la liste des constats.
+function constater(t) {
+  window.__seek(t);
+  const T = window.__T;
+  const plateau = document.getElementById('plateau');
+  const scene = document.getElementById('scene');
+  const sr = scene.getBoundingClientRect();
+  const opacite = window.__opacite, nom = window.__nom;
+  const dedans = (r, c, marge = 1) => r.left >= c.left - marge && r.right <= c.right + marge && r.top >= c.top - marge && r.bottom <= c.bottom + marge;
   const sortie = [];
-  const textes = [...plateau.querySelectorAll('*')].filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
-  for (const el of textes) {
+  for (const el of window.__textes()) {
     if (opacite(el) < 0.99) continue;
     const r = el.getBoundingClientRect();
     if (!r.width) continue;
@@ -80,29 +122,125 @@ function constater(t) {
     if (getComputedStyle(el).display !== 'inline' && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1) sortie.push(['texte plus large que sa boîte', nom(el)]);
     if (el.matches('.choix, .bouton, .puce, .pastille-bord, .cta, .etiq, .saison-etiq') && el.scrollHeight > el.clientHeight + 1) sortie.push(['texte coupé en hauteur', nom(el)]);
   }
-  const blocs = [...plateau.children].filter((el) => el.matches('.x, #tel, #m-scene') && opacite(el) >= 0.99 && !(el.id === 'm-scene' && t > 28.4 && t < 30));
-  const rects = blocs.map((el) => {
+
+  // Les blocs de la scène, étiquettes comprises : leur boîte est celle de leurs enfants visibles.
+  const etiquettes = [...plateau.querySelectorAll('#arrets-etiq > .x, #saisons-etiq > .x')];
+  const blocs = [...plateau.children, ...etiquettes].filter((el) => el.matches('.x, #tel, #m-scene') && opacite(el) >= 0.99 && !(el.id === 'm-scene' && t > T.vol[0] - 0.1 && t < T.vol[1] + 0.2));
+  const boite = (el) => {
     if (el.id === 'tel' || el.id === 'm-scene') return el.getBoundingClientRect();
     const rs = [...el.querySelectorAll('*')].filter((e) => opacite(e) >= 0.99 && e.getBoundingClientRect().width).map((e) => e.getBoundingClientRect());
     if (!rs.length) return null;
     return { left: Math.min(...rs.map((x) => x.left)), right: Math.max(...rs.map((x) => x.right)), top: Math.min(...rs.map((x) => x.top)), bottom: Math.max(...rs.map((x) => x.bottom)) };
-  });
+  };
+  const rects = blocs.map(boite);
+  const libelle = (el) => el.id || el.parentElement.id + ' «' + el.textContent.trim() + '»';
   for (let i = 0; i < blocs.length; i++) {
     for (let j = i + 1; j < blocs.length; j++) {
       const a = rects[i], b = rects[j];
       if (!a || !b) continue;
       if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) {
-        sortie.push(['chevauchement', `${blocs[i].id || blocs[i].className} × ${blocs[j].id || blocs[j].className}`]);
+        sortie.push(['chevauchement', `${libelle(blocs[i])} × ${libelle(blocs[j])}`]);
       }
     }
   }
+  // Une étiquette se pose du côté où le trait ne passe pas.
+  const fil = document.getElementById('fil');
+  if (fil.getAttribute('d')) {
+    const m = fil.getScreenCTM(), L = fil.getTotalLength(), pt = document.getElementById('fil-svg').createSVGPoint();
+    const points = [];
+    for (let l = 0; l <= L; l += 6) {
+      const q = fil.getPointAtLength(l);
+      pt.x = q.x; pt.y = q.y;
+      points.push(pt.matrixTransform(m));
+    }
+    for (const el of etiquettes) {
+      if (opacite(el) < 0.99) continue;
+      const r = el.firstElementChild.getBoundingClientRect();
+      if (points.some((q) => q.x > r.left + 1 && q.x < r.right - 1 && q.y > r.top + 1 && q.y < r.bottom - 1)) sortie.push(['étiquette sur le trait', libelle(el)]);
+    }
+  }
+
+  // Ce que le téléphone doit montrer en entier, une fois le geste fini.
+  const vus = [['bb3', T.defile[1], T.bilan[1]], ['c2-dep-dedans', T.depliage[1] + 0.15, T.repli[0]]];
+  for (const [id, a, b] of vus) {
+    if (t < a || t >= b) continue;
+    if (!dedans(document.getElementById(id).getBoundingClientRect(), sr)) sortie.push(['coupé par le cadre', id]);
+  }
+  // Un appui : sa cible dans le cadre, et le doigt dessus.
+  const doigt = document.getElementById('doigt');
+  const cible = doigt.getAttribute('data-cible');
+  if (cible && opacite(doigt) > 0.5) {
+    const rc = document.getElementById(cible).getBoundingClientRect(), rd = doigt.getBoundingClientRect();
+    const ecr = document.getElementById('tel-ecran').getBoundingClientRect();
+    if (!dedans(rc, sr) || !dedans(rc, ecr)) sortie.push(['appui hors cadre', cible]);
+    const cx = rd.left + rd.width / 2, cy = rd.top + rd.height / 2;
+    if (cx < rc.left - 2 || cx > rc.right + 2 || cy < rc.top - 2 || cy > rc.bottom + 2) sortie.push(['doigt à côté de sa cible', cible]);
+  }
   return sortie;
+}
+
+// Exécuté dans la page : pour chaque texte qui se lit, le plus long temps où il reste entièrement
+// visible, regroupé par bloc (l'identifiant le plus proche) en gardant le plus court de ses textes.
+function lectures(pas) {
+  const duree = window.__duree;
+  const scene = document.getElementById('scene'), manif = document.getElementById('manif');
+  const opacite = window.__opacite;
+  const textes = window.__textes().filter((el) => !el.closest('#tel') || el.closest('.rep .r, #notif') || el.matches('.rep .r'));
+  const debut = new Map(), plus = new Map();
+  const finir = (el, t) => {
+    if (!debut.has(el)) return;
+    plus.set(el, Math.max(plus.get(el) ?? 0, t - debut.get(el)));
+    debut.delete(el);
+  };
+  for (let i = 0; i * pas <= duree + 1e-9; i++) {
+    const t = Math.min(duree, i * pas);
+    window.__seek(t);
+    const sr = scene.getBoundingClientRect();
+    const mr = opacite(manif) > 0 ? manif.getBoundingClientRect() : null;
+    for (const el of textes) {
+      let vu = opacite(el) >= 0.99;
+      if (vu) {
+        const r = el.getBoundingClientRect();
+        vu = r.width > 0 && r.top >= sr.top - 1 && r.bottom <= sr.bottom + 1;
+        if (vu && mr && !manif.contains(el)) vu = r.bottom <= mr.top || r.top >= mr.bottom;
+      }
+      if (vu && !debut.has(el)) debut.set(el, t);
+      if (!vu) finir(el, t);
+    }
+  }
+  // Ce qui est encore à l'écran à la fin y reste : la dernière image tient.
+  for (const el of [...debut.keys()]) finir(el, Infinity);
+  const blocs = new Map();
+  for (const [el, d] of plus) {
+    const id = el.closest('[id]').id;
+    if (!blocs.has(id) || d < blocs.get(id).d) blocs.set(id, { d, texte: el.textContent.trim().slice(0, 32) });
+  }
+  return [...blocs].map(([id, x]) => [id, x.d, x.texte]);
+}
+
+// Exécuté dans la page : l'empreinte de l'image à chaque instant demandé, dans l'ordre donné.
+function empreintes(temps) {
+  const plateau = document.getElementById('plateau');
+  return temps.map((t) => {
+    window.__seek(t);
+    const s = plateau.innerHTML;
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+    return h >>> 0;
+  });
+}
+function changerDeFormat(fmt) {
+  const r = document.getElementById(fmt === 'portrait' ? 'f-portrait' : 'f-paysage');
+  r.checked = true;
+  r.dispatchEvent(new Event('change'));
 }
 
 const navigateur = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
 let total = 0;
 for (const c of CAS) {
   const page = await navigateur.newPage({ viewport: { width: c.l, height: c.h } });
+  const erreurs = [];
+  page.on('pageerror', (e) => erreurs.push(String(e)));
   await page.route('https://fonts.googleapis.com/**', (r) => r.fulfill({ contentType: 'text/css', body: faces }));
   await page.route('https://fonts.gstatic.com/ramille/**', (r) => {
     const f = path.join(POLICES, path.basename(new URL(r.request().url()).pathname));
@@ -111,15 +249,41 @@ for (const c of CAS) {
   await page.goto(`file://${enveloppe}${c.q ?? ''}`);
   await page.evaluate(() => window.__pret);
   if (c.fmt) await page.click(c.fmt === 'portrait' ? 'label:has(#f-portrait)' : 'label:has(#f-paysage)');
+  await page.evaluate(installer);
   const duree = await page.evaluate(() => window.__duree);
   const constats = new Map();
+  const noter = (cle, t) => {
+    if (!constats.has(cle)) constats.set(cle, []);
+    constats.get(cle).push(t);
+  };
   for (let t = 0; t <= duree; t += 0.25) {
-    for (const [type, qui] of await page.evaluate(constater, t)) {
-      const cle = `${type} — ${qui}`;
-      if (!constats.has(cle)) constats.set(cle, []);
-      constats.get(cle).push(t);
-    }
+    for (const [type, qui] of await page.evaluate(constater, t)) noter(`${type} — ${qui}`, t);
   }
+  if (c.export) {
+    for (const [id, d, texte] of await page.evaluate(lectures, 0.05)) {
+      if (d < LIRE) noter(`moins de ${LIRE} s pour lire — ${id} «${texte}» : ${d.toFixed(2)} s`, 0);
+    }
+    const fmt = c.q.endsWith('portrait') ? 'portrait' : 'paysage';
+    const temps = [];
+    for (let t = 0; t <= duree; t += 0.5) temps.push(Math.round(t * 100) / 100);
+    const reference = await page.evaluate(empreintes, temps);
+    // L'aller-retour : un instant rendu dans un format, puis dans l'autre, puis de nouveau dans le premier.
+    for (const t of [21.5, 45.0, 66.0]) {
+      await page.evaluate(empreintes, [t]);
+      await page.evaluate(changerDeFormat, fmt === 'portrait' ? 'paysage' : 'portrait');
+      await page.evaluate(empreintes, [t]);
+      await page.evaluate(changerDeFormat, fmt);
+      const [e] = await page.evaluate(empreintes, [t]);
+      if (e !== reference[temps.indexOf(t)]) noter('image changée par un aller-retour de format', t);
+    }
+    // Le désordre, tiré d'une graine fixe : le même à chaque passage.
+    let graine = 342;
+    const hasard = () => ((graine = Math.imul(graine ^ (graine >>> 15), 2246822507) + 0x6b43a9b5) >>> 0) / 4294967296;
+    const ordre = temps.map((_, i) => i).sort(() => hasard() - 0.5);
+    const desordre = await page.evaluate(empreintes, ordre.map((i) => temps[i]));
+    ordre.forEach((i, k) => { if (desordre[k] !== reference[i]) noter('image qui dépend de l’ordre des sauts', temps[i]); });
+  }
+  for (const e of erreurs) noter(`erreur de la page — ${e}`, 0);
   console.log(`${c.nom} : ${constats.size} constat(s)`);
   for (const [cle, ts] of constats) console.log(`  ${cle}  [${ts[0].toFixed(2)} → ${ts[ts.length - 1].toFixed(2)} s]`);
   total += constats.size;

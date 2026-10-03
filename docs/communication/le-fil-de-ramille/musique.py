@@ -8,16 +8,25 @@
 déterministe : le même script rend le même fichier, et il n'y a aucun droit de tiers à gérer.
 
 **Les points de synchronisation ne vivent pas ici.** Ils sont lus dans le bloc JSON
-`temps-du-film` de `film.html`, que le film lit aussi : une coupe déplacée là emmène sa note.
+`temps-du-film` de `film.html`, que le film lit aussi : une coupe déplacée là emmène sa note, et
+**la forme du morceau s'en déduit** — ses sections ne sont pas écrites en numéros de mesure. Le
+script refuse de se rendre si une coupe quitte la grille : le visage, le bouton et la fin sur une
+barre de mesure, chaque cloche sur une double croche, chaque section de la longueur que sa suite
+d'accords demande. Changer `tempo` sans recaler le film le fait donc échouer, au lieu de décaler la
+musique sous l'image.
+Éprouvé le 03/10/2026, sur une copie, en faussant le bloc JSON — cinq mutations, cinq refus :
+le visage à 24,1 s, le tempo à 110, une réponse à 54,7 s, la sortie du manifeste avancée d'une
+mesure, la durée allongée d'une mesure.
 
-Le morceau, à 100 battements par minute (une mesure = 2,4 s), en ré majeur :
-  - mesures 0 à 9 : une nappe et un marimba clairsemé ; une cloche à chaque station du trajet,
-    la basse à partir de la mesure 4, et un souffle qui monte vers le visage de Ramille ;
-  - mesures 10 à 23 : le rythme entre au moment où son visage apparaît (24,0 s) — grosse caisse
-    douce, claquements, shaker, basse, arpège et mélodie ;
-  - mesures 24 à 26 : le manifeste respire — plus de batterie, une cloche par ligne ;
-  - mesures 27 à 30 : le rythme revient avec les saisons, une cloche par saison ;
-  - mesures 31 à 33 : un accent quand le bouton apparaît (74,4 s), puis l'accord final.
+Le morceau, à 100 battements par minute (une mesure = 2,4 s), en ré majeur — les mesures
+indiquées sont celles du minutage actuel :
+  - l'intro (mesures 0 à 9) : une nappe et un marimba clairsemé ; une cloche à chaque station du
+    trajet, la basse à partir de la mesure 4, et un souffle qui monte vers le visage de Ramille ;
+  - le rythme (10 à 25) entre au moment où son visage apparaît — grosse caisse douce, claquements,
+    shaker, basse, arpège et mélodie ;
+  - la respiration (26 à 28) : le manifeste, sans batterie, une cloche par ligne ;
+  - la reprise (29 à 32) : le rythme revient avec les saisons, une cloche par saison ;
+  - la fin (33 à 35) : un accent quand le bouton apparaît, puis l'accord final.
 """
 import json
 import pathlib
@@ -191,8 +200,49 @@ def reponse_de_salle(duree=2.4, t60=2.0):
 
 # ------------------------------------------------------------------ L'harmonie et la forme
 
-ACCORDS = ('D Bm G A D Bm G A G A D Bm G A D Bm G A D Bm G A D Bm G Em A D Bm G A D G D').split()
-assert len(ACCORDS) == 34
+# ------------------------------------------------------------------ La forme, déduite du film
+
+
+def sur_la_barre(t, quoi):
+    m = t / MESURE
+    assert abs(m - round(m)) < 1e-6, f'{quoi} ({t} s) ne tombe pas sur une barre de mesure de {MESURE} s'
+    return round(m)
+
+
+def sur_la_grille(t, quoi):
+    d = t / (NOIRE / 4)
+    assert abs(d - round(d)) < 1e-6, f'{quoi} ({t} s) ne tombe pas sur une double croche de {NOIRE / 4} s'
+
+
+DROP = sur_la_barre(TEMPS['visage'], 'le visage')               # le rythme entre
+BOUTON = sur_la_barre(TEMPS['bouton'], 'le bouton')             # la fin commence
+TOTAL = sur_la_barre(TEMPS['duree'], 'la durée')
+manif = TEMPS['manifeste']
+PAUSE = int(np.ceil(manif['entree'] / MESURE))                  # l'aplat couvre la barre qui suit
+assert 0 <= mesure(PAUSE) - manif['entree'] < 0.5, "l'aplat du manifeste doit entrer juste avant une barre"
+REPRISE = round(manif['sortie'] / MESURE)
+assert 0 < mesure(REPRISE) - manif['sortie'] < 0.5, "l'aplat du manifeste doit sortir juste avant une barre"
+for quoi, t in [('une station', x) for x in TEMPS['arrets']] + [('le logo', TEMPS['logo']), ('la notification', TEMPS['notification'])] \
+        + [('une réponse', x) for x in TEMPS['reponses']] + [('une ligne du manifeste', x) for x in manif['lignes']] \
+        + [('une saison', x) for x in TEMPS['saisons']]:
+    sur_la_grille(t, quoi)
+assert all(mesure(REPRISE) <= t < mesure(BOUTON) for t in TEMPS['saisons']), 'les saisons tombent dans la reprise'
+
+INTRO = 'D Bm G A D Bm G A G A'.split()
+RYTHME = 'D Bm G A'.split()
+RESPIRATION = 'G Em A'.split()
+FIN_ = 'D G D'.split()
+assert DROP == len(INTRO), f"l'intro fait {len(INTRO)} mesures, le visage arrive à la mesure {DROP}"
+assert (PAUSE - DROP) % 4 == 0, f'le rythme ({PAUSE - DROP} mesures) se compte par quatre'
+assert REPRISE - PAUSE == len(RESPIRATION), f'la respiration fait {len(RESPIRATION)} mesures, le manifeste en couvre {REPRISE - PAUSE}'
+assert BOUTON - REPRISE == len(RYTHME), f'la reprise fait {len(RYTHME)} mesures, les saisons en laissent {BOUTON - REPRISE}'
+assert TOTAL - BOUTON == len(FIN_), f'la fin fait {len(FIN_)} mesures, le bouton en laisse {TOTAL - BOUTON}'
+ACCORDS = INTRO + RYTHME * ((PAUSE - DROP) // 4) + RESPIRATION + RYTHME + FIN_
+DERNIERE = TOTAL - 1
+GROOVE = set(range(DROP, PAUSE)) | set(range(REPRISE, BOUTON))
+RESPIRE = set(range(PAUSE, REPRISE))
+MONTEE = set(range(DROP - 4, DROP))                              # le shaker qui annonce le rythme
+
 NAPPE = {'D': [57, 61, 64, 66], 'Bm': [57, 61, 62, 66], 'G': [57, 59, 62, 66], 'A': [57, 59, 61, 64], 'Em': [55, 59, 62, 66]}
 BASSE = {'D': 38, 'Bm': 35, 'G': 43, 'A': 45, 'Em': 40}
 ARPEGE = {
@@ -213,10 +263,10 @@ MOTIF_B = [
     [(0, 79, 1), (1, 78, 1), (2, 74, 1), (3, 71, 1)],
     [(0, 73, 1), (1, 76, 1), (2, 81, 2)],
 ]
-GROOVE = set(range(10, 24)) | {27, 28, 29, 30}
 
 # Les gains se règlent à la mesure, pas à l'oreille seule : niveau et part d'aigus de chaque piste
-# relevés sur le refrain (24 à 57 s) le 03/10/2026 — la basse dominait de 17 dB un shaker inaudible.
+# relevés le 03/10/2026 sur la partie rythmée, alors de 24 à 57 s — la basse dominait de 17 dB un shaker
+# inaudible.
 pistes = {
     'nappe': Piste(0.18, 0.35), 'arpege': Piste(0.22, 0.28), 'melodie': Piste(0.27, 0.25),
     'cloches': Piste(0.28, 0.5), 'basse': Piste(0.22), 'grosse_caisse': Piste(0.42),
@@ -227,8 +277,8 @@ caisses = []
 for m, accord in enumerate(ACCORDS):
     debut = mesure(m)
     # La nappe : plus présente quand la batterie se tait.
-    vel_nappe = 0.8 if m in (24, 25, 26) else 1.0 if m == 33 else 0.6 if m in GROOVE else 0.85
-    duree = MESURE * (2.6 if m == 33 else 1)
+    vel_nappe = 0.8 if m in RESPIRE else 1.0 if m == DERNIERE else 0.6 if m in GROOVE else 0.85
+    duree = MESURE * (2.6 if m == DERNIERE else 1)
     g, d = nappe(NAPPE[accord], duree)
     pistes['nappe'].poser_stereo(debut, g, d, vel_nappe)
 
@@ -237,7 +287,7 @@ for m, accord in enumerate(ACCORDS):
         for croche, ecart, longueur in ((0, 0, 1.5), (3, 0, 0.5), (4, 0, 1.5), (6, 7, 0.5), (7, 12, 0.5)):
             pistes['basse'].poser(debut + croche * NOIRE / 2, basse(BASSE[accord] + ecart, longueur * NOIRE / 2 * 0.9), vel=0.8)
     elif m >= 4:
-        pistes['basse'].poser(debut, basse(BASSE[accord], MESURE * (2.4 if m == 33 else 0.95)), vel=0.7)
+        pistes['basse'].poser(debut, basse(BASSE[accord], MESURE * (2.4 if m == DERNIERE else 0.95)), vel=0.7)
 
     # L'arpège : à la noire au début, à la croche ensuite, à la double croche dans le rythme.
     motif = ARPEGE[accord]
@@ -245,7 +295,7 @@ for m, accord in enumerate(ACCORDS):
         pas, vel = 4, 0.5
     elif m in GROOVE:
         pas, vel = 1, 0.32
-    elif m in (24, 25, 26, 33):
+    elif m in RESPIRE or m == DERNIERE:
         pas, vel = 0, 0
     else:
         pas, vel = 2, 0.42
@@ -262,13 +312,14 @@ for m, accord in enumerate(ACCORDS):
             pistes['claquement'].poser(debut + temps * NOIRE, claquement(), pan=-0.15)
         for k in range(16):
             pistes['shaker'].poser(debut + k * NOIRE / 4, shaker(), pan=0.3, vel=[0.9, 0.45, 0.7, 0.45][k % 4] * alea.uniform(0.85, 1.0))
-    elif m in (6, 7, 8, 9):
-        for k in range(0, 16, 2 if m < 9 else 1):
+    elif m in MONTEE:
+        for k in range(0, 16, 2 if m < DROP - 1 else 1):
             pistes['shaker'].poser(debut + k * NOIRE / 4, shaker(), pan=0.3, vel=0.5 * (0.9 if k % 4 == 0 else 0.6))
 
-# La mélodie : A, B, A, B — puis elle laisse la place aux cloches des saisons.
-for depart, motif, longueur in ((10, MOTIF_A, 4), (14, MOTIF_B, 4), (18, MOTIF_A, 4), (22, MOTIF_B, 2)):
-    for i in range(longueur):
+# La mélodie : A, B, A, B sur le rythme — puis elle laisse la place aux cloches des saisons.
+for j, depart in enumerate(range(DROP, PAUSE, 4)):
+    motif = MOTIF_B if j % 2 else MOTIF_A
+    for i in range(4):
         for temps, note, duree in motif[i]:
             pistes['melodie'].poser(mesure(depart + i, temps), marimba(note, max(1.4, duree * NOIRE * 1.6), eclat=0.8), vel=0.9)
 
@@ -282,30 +333,31 @@ for t, note in zip(TEMPS['arrets'], (74, 78, 81, 86)):
 for i, note in enumerate((74, 76, 78, 81, 83)):
     pistes['arpege'].poser(TEMPS['barres'] + i * 0.1, marimba(note, 1.0), vel=0.4)  # les postes qui poussent
 pistes['cloches'].poser(TEMPS['logo'], cloche(81), vel=0.5)                # la feuille se remplit
-pistes['effets'].poser(mesure(8), souffle(TEMPS['visage'] - mesure(8)), vel=0.9)
+pistes['effets'].poser(mesure(DROP - 2), souffle(TEMPS['visage'] - mesure(DROP - 2)), vel=0.9)
 pistes['cloches'].poser(TEMPS['visage'], cloche(74), vel=0.7)              # le visage, et le rythme entre
 pistes['cloches'].poser(TEMPS['visage'], cloche(86), vel=0.35)
 pistes['cloches'].poser(TEMPS['notification'], cloche(81), vel=0.4)        # la notification
 pistes['cloches'].poser(TEMPS['notification'] + 0.15, cloche(86), vel=0.35)
-for t in TEMPS['reponses']:                                                 # chaque réponse, au même poids
-    pistes['cloches'].poser(t, cloche(81), vel=0.4)
-manif = TEMPS['manifeste']
+# Chaque réponse, au même poids, en ré : un la doublait la mélodie, qui en joue un 0,15 s plus tôt
+# sous la deuxième réponse (mesuré le 03/10/2026 : +3 dB seulement sur sa fondamentale).
+for t in TEMPS['reponses']:
+    pistes['cloches'].poser(t, cloche(86), vel=0.4)
 pistes['effets'].poser(manif['entree'] - 0.25, souffle(0.95, 400, 3000, 'cloche'), vel=0.8)
 for t, note in zip(manif['lignes'], (81, 83, 86, 90)):                      # une ligne, une cloche
     pistes['cloches'].poser(t, cloche(note, 4.0), vel=0.85)
 pistes['effets'].poser(manif['sortie'] - 0.2, souffle(0.95, 400, 3000, 'cloche'), vel=0.7)
-pistes['effets'].poser(mesure(26), souffle(MESURE), vel=0.8)
+pistes['effets'].poser(mesure(REPRISE - 1), souffle(MESURE), vel=0.8)
 for t, note in zip(TEMPS['saisons'], (74, 78, 81, 83)):                     # une saison, une cloche
     pistes['cloches'].poser(t, cloche(note), vel=0.6)
-pistes['effets'].poser(mesure(30), souffle(TEMPS['bouton'] - mesure(30)), vel=0.6)
+pistes['effets'].poser(mesure(BOUTON - 1), souffle(TEMPS['bouton'] - mesure(BOUTON - 1)), vel=0.6)
 caisses.append(TEMPS['bouton'])
 pistes['grosse_caisse'].poser(TEMPS['bouton'], grosse_caisse())
 pistes['effets'].poser(TEMPS['bouton'], impact(), vel=2.2)                  # le bouton apparaît
 for note in (62, 69, 74, 81):
     pistes['cloches'].poser(TEMPS['bouton'], cloche(note, 4.5), vel=0.45)
 for i, note in enumerate((62, 66, 69, 74, 78, 81)):                         # l'accord final, égrené
-    pistes['melodie'].poser(mesure(33) + i * 0.09, marimba(note, 3.0, eclat=0.6), vel=0.55)
-pistes['cloches'].poser(mesure(33), cloche(86, 5.0), vel=0.5)
+    pistes['melodie'].poser(mesure(DERNIERE) + i * 0.09, marimba(note, 3.0, eclat=0.6), vel=0.55)
+pistes['cloches'].poser(mesure(DERNIERE), cloche(86, 5.0), vel=0.5)
 
 # ------------------------------------------------------------------ Le mélange
 

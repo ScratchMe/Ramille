@@ -5,7 +5,7 @@ document et revient à la personne qui pilote : c'est ce qu'on montre du produit
 
 ## Ce que c'est
 
-Un motion design d'une minute vingt et une, en musique, pour faire comprendre Ramille et donner
+Un motion design d'une minute vingt-six, en musique, pour faire comprendre Ramille et donner
 envie de faire son bilan, en deux formats tirés de la même source : **16:9** (un écran, une page
 web, une fiche de store) et **9:16** (un téléphone, les réseaux).
 
@@ -21,17 +21,22 @@ impact ».
 | 0:00 | Tes trajets | Chaque jour, tu te déplaces. Lequel pèse le plus ? | Nappe et marimba ; une cloche par station |
 | 0:08 | Ce qu'ils pèsent | Le transport, premier poste de l'empreinte : 2,8 t CO₂e (SDES, 2017) | La basse entre |
 | 0:18 | Ramille | Le logo, puis le visage ; « Comprendre tes trajets, sans te juger. » | Un souffle monte ; le rythme entre avec le visage (0:24) |
-| 0:28 | Ton bilan | Quatre des neuf étapes, le calcul, la restitution | Le refrain |
+| 0:28 | Ton bilan | Quatre des neuf étapes, le calcul, la restitution | Le rythme ; la mélodie alterne deux motifs de quatre mesures |
 | 0:40 | Ton plan | Deux pistes en tête, on en choisit une, deux jours, « C'est noté » : elle passe en tête | Une cloche à l'engagement |
-| 0:50 | Le point | La notification du lundi, un « Oui » puis un « Non » ; pas de score, pas de série, aucun classement | Une cloche par réponse ; sans batterie sous le manifeste, une cloche par ligne |
-| 1:04 | Au fil des saisons | La mascotte porte les quatre saisons, sur un an | Le rythme revient ; une cloche par saison |
-| 1:11 | À toi | ramille.fr · Pas de compte à créer pour commencer | Un accent sur le bouton (1:14), l'accord final |
+| 0:50 | Le point | La notification du lundi, un « Oui » puis un « Non » ; pas de score, pas de série, aucun classement | Une cloche par réponse ; sans batterie sous le manifeste (1:02), une cloche par ligne |
+| 1:09 | Au fil des saisons | La mascotte porte les quatre saisons, sur un an | Le rythme revient ; une cloche par saison |
+| 1:16 | À toi | ramille.fr · Pas de compte à créer pour commencer | Un accent sur le bouton (1:19), l'accord final |
 
-**Le rythme a été repris le 03/10/2026**, sur le premier retour de la personne qui pilote : la
-version de 51 secondes ne laissait pas le temps de lire — le manifeste passait en moins de deux
-secondes —, avait des à-coups, et n'avait pas de son. Chaque texte reste désormais posé au moins
-deux secondes et demie, le manifeste sept ; tout s'enchaîne en fondu, sans pulsation d'échelle ; et
-les coupes tombent sur la grille de la musique, une mesure de 2,4 s.
+**Le rythme a été repris le 03/10/2026**, sur deux retours de la personne qui pilote. Le premier :
+la version de 51 secondes ne laissait pas le temps de lire — le manifeste passait en moins de deux
+secondes —, avait des à-coups, et n'avait pas de son. Le second : la musique sautait — c'était la
+page, qui recalait le son dès qu'il prenait du retard, donc à peu près chaque seconde ; c'est
+désormais le son qui donne l'horloge, et l'image qui le suit —, et la fin du 9:16 était trop serrée.
+La contre-lecture de cette reprise a encore allongé le point de deux mesures : **chaque texte de la
+scène et chaque réplique de Ramille restent posés au moins deux secondes et demie**, mesurés par
+`verifier.mjs`, et le manifeste en entier près de sept. Tout s'enchaîne en fondu, rien ne rebondit,
+et seule Ramille respire, du souffle qu'elle a dans l'app ; les coupes tombent sur la grille de la
+musique, une mesure de 2,4 s, et chaque cloche sur une double croche.
 
 Le scénario plan par plan, avec ce qu'on voit et ce qui est écrit, est rendu sous le film par la
 page elle-même : c'est aussi sa version texte.
@@ -39,16 +44,22 @@ page elle-même : c'est aussi sa version texte.
 ## Les fichiers
 
 - **`film.html`** — la source unique. C'est la page publiée en artefact, donc un fragment sans
-  `<html>` ni `<head>` : le service d'artefacts l'enveloppe. Le film est une **fonction pure du
-  temps** (`rendre(t)`), sans bibliothèque : la lecture, la frise, les chapitres et l'export ne
-  font que choisir un instant.
+  `<html>` ni `<head>` : le service d'artefacts l'enveloppe, et **le MP3 se publie à côté d'elle**
+  (le champ `files` de la publication) — sans lui, la page affiche « Son indisponible ». Le film est
+  une **fonction pure du temps** (`rendre(t)`), sans bibliothèque : la lecture, la frise, les
+  chapitres et l'export ne font que choisir un instant, et `verifier.mjs` vérifie que l'ordre des
+  sauts n'y change rien. Ce qu'il mesure de sa propre mise en page, il le mesure dans un état de
+  référence, jamais au premier passage.
   **Il se compose à taille fixe** (1600 × 900 px, ou 900 × 1600) et se met à l'échelle d'un bloc :
-  le 16:9 « débordait » à la taille d'un lecteur, ses petits textes passant sous la taille minimale
-  des polices du navigateur. Ses **points de synchronisation** sont dans son bloc JSON
-  `temps-du-film`, que la musique lit aussi.
+  le 16:9 débordait à la taille d'un lecteur, parce qu'il se recomposait à chaque taille et qu'à
+  très petite taille sa mise en page ne suivait plus la proportion. Ses **points de
+  synchronisation** sont dans son bloc JSON `temps-du-film`, que la musique lit aussi ; ce qui suit
+  une coupe en dérive, jusqu'au doigt qui donne une réponse.
 - **`musique.py`** et **`musique.mp3`** — la musique, originale : le script la compose et la rend
   (`pip install numpy scipy`, et `ffmpeg`), le MP3 est ce que la page joue. Elle est déterministe,
-  donc le même script rend le même fichier, et elle n'emprunte rien à personne. Ses niveaux ont été
+  donc le même script rend le même fichier, et elle n'emprunte rien à personne. **Sa forme se
+  déduit du bloc JSON** — l'entrée du rythme, la respiration du manifeste, la reprise et la fin —,
+  et le script refuse de se rendre si une coupe quitte la grille. Ses niveaux ont été
   réglés à la mesure — part d'aigus et niveau de chaque piste, attaque à chaque rendez-vous — faute
   de pouvoir l'écouter dans l'environnement où elle a été écrite : **c'est à l'oreille qu'elle se
   juge**, et elle se remplace sans toucher au film si elle ne convient pas.
@@ -58,13 +69,18 @@ page elle-même : c'est aussi sa version texte.
   minute par format. Spline Sans y est servie par les fichiers du kit, et l'export refuse de partir
   si l'une des quatre graisses manque ; la chasse fixe, absente du dépôt, prend celle du système sur
   les trois lignes qui l'emploient.
-- **`verifier.mjs`** — rien ne déborde : chaque quart de seconde, dans les deux formats, à la
-  taille de l'export et à trois tailles de lecteur. À relancer après toute retouche du film.
+- **`verifier.mjs`** — chaque quart de seconde, dans les deux formats, à la taille de l'export et
+  à cinq tailles de lecteur : rien ne déborde ni ne se chevauche, aucune étiquette ne touche le
+  trait, le cadre ne coupe ni un appui ni ce que le téléphone doit montrer, et le doigt tombe sur sa
+  cible. À l'export, en plus : le temps de lire chaque texte, et la pureté de l'image (un
+  aller-retour de format, puis une passe dans le désordre). À relancer après toute retouche du
+  film ; chaque contrôle a été éprouvé en cassant ce qu'il garde, et l'en-tête dit comment.
 
 ## Ce que le film reprend de l'app, et d'où
 
 Rien n'y est inventé : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
-textes** (`verifier.mjs` ne voit que les débordements) — c'est à relire avant chaque diffusion.
+textes** (`verifier.mjs` voit la mise en page et le temps, pas ce qui est écrit) — c'est à relire
+avant chaque diffusion.
 
 - **Les répliques de Ramille** sont recopiées mot pour mot de `RAMILLE`
   (`src/constants/mascotte.ts`) : `presentation`, `calcul`, `checkinOui`, `checkinNon`,
