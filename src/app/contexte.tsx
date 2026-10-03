@@ -153,7 +153,7 @@ export default function Contexte() {
                 bilan, donc le repli sans pile est la racine, comme là-bas. */}
             <TextLink
               label="Retour"
-              apparence="action"
+              apparence="discret"
               onPress={() => revenirOu('/')}
               role="link"
             />
@@ -199,13 +199,12 @@ export default function Contexte() {
                 router.push('/bilan');
               }}
             />
-            {/* `link` : il quitte l'écran, comme les « Retour » de « Toi », des pages légales et
-                des pistes (contre-lecture du 25/09/2026). Sans pile, le repli est la racine et
-                non le plan : sans bilan, elle mène à l'onboarding, là où le plan n'aurait qu'un
-                état vide à montrer (contre-lecture du 28/09/2026). */}
+            {/* `link` : il quitte l'écran (contre-lecture du 25/09/2026). Sans pile, le repli est la
+                racine et non le plan : sans bilan, elle mène à l'onboarding, là où le plan n'aurait
+                qu'un état vide à montrer (contre-lecture du 28/09/2026). */}
             <TextLink
               label="Retour"
-              apparence="action"
+              apparence="discret"
               onPress={() => revenirOu('/')}
               role="link"
             />
@@ -347,9 +346,14 @@ export default function Contexte() {
             disabled={(complet && !aChange) || enregistrement}
           />
 
+          {/* **En bas, sous « Enregistrer », et en gris** (`v1-33` T-10, 03/10/2026). Cet écran pose une
+              question : sa sortie est l'autre réponse, lue au moment de choisir, et elle reste là où
+              l'on décide — au contraire des écrans qui se consultent, dont la sortie est en haut
+              (`SortieDuDetour`). Elle était verte : sous un bouton en attente, elle se lisait comme
+              l'action principale de l'écran, et une sortie n'avance pas. */}
           <TextLink
             label="Retour"
-            apparence="action"
+            apparence="discret"
             onPress={() => revenirOu('/plan')}
             role="link"
             style={styles.retour}

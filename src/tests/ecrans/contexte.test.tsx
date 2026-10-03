@@ -26,15 +26,23 @@
  *     quand le serveur a répondu en échec » ;
  *   - le genre de la relecture ignoré, de même → « dit le genre de la relecture après « Réessayer » ».
  *
+ * **Et le 03/10/2026, la place et l'encre de la sortie** (`v1-33` T-10) : cet écran pose une question,
+ * sa sortie est l'autre réponse, sous « Enregistrer » — au contraire des écrans qui se consultent, dont
+ * la sortie est en haut — et grise : verte, sous un bouton en attente, elle se lisait comme l'action
+ * principale. Deux mutations, chacune faisant tomber la sienne :
+ *   - la sortie posée au-dessus du titre → « reste sous « Enregistrer »… » ;
+ *   - l'apparence `action` remise → la même, sur l'encre.
+ *
  * Ce qu'il ne voit pas : le défilement jusqu'à la question, que seule une vraie mise en page mesure.
  * Il ne part d'ailleurs que si la question est hors de la zone : à 390 × 844, « Enregistrer » finit à
  * 720 px sous les quatre questions (relevé de l'audit du 01/10/2026, capture p1-53).
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import Contexte from '@/app/contexte';
+import { Colors } from '@/constants/theme';
 
 const mockLire = jest.fn();
 const mockEnregistrer = jest.fn();
@@ -110,6 +118,16 @@ describe('/contexte — « Enregistrer »', () => {
     render(<Contexte />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeTruthy());
     expect(inactif()).toBe(true);
+  });
+
+  it('reste sous « Enregistrer », en gris : l’autre réponse, pas une seconde action', async () => {
+    mockLire.mockResolvedValue(CONTEXTE_COMPLET);
+    render(<Contexte />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeTruthy());
+
+    const texte = JSON.stringify(screen.toJSON());
+    expect(texte.indexOf('"Retour"')).toBeGreaterThan(texte.indexOf('"Enregistrer"'));
+    expect(StyleSheet.flatten(screen.getByText('Retour').props.style).color).toBe(Colors.light.textTertiary);
   });
 });
 

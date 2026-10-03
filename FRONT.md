@@ -394,9 +394,27 @@ exactement ce qui avait laissé passer le mauvais caractère.
   relevé de l'audit comptait **sept** apparences là où le kit en documentait quatre, « J'ai déjà un
   compte » en cinq formes, et des « Retour » gris qui se lisaient comme la fin de la phrase grise posée
   au-dessus d'eux. Une huitième ne s'écrit plus sans toucher au composant. Désactivé, un lien prend
-  l'encre tertiaire. **« Retour » garde une forme et une place par détour** (bouton, lien d'accent, lien
-  gris, souligné quand une phrase le touche) : le ramener à une seule est T-10, une décision de dessin
-  encore ouverte.
+  l'encre tertiaire. Une sortie n'est jamais `action` : le vert est à ce qui fait avancer, et une sortie
+  n'avance pas.
+- **Une sortie a deux places, et c'est l'écran qui décide, jamais son état** (décidé le 03/10/2026 par la
+  personne qui pilote, `v1-33` T-10). Elle avait quatre formes et trois places — un lien gris en haut de
+  « Toi », un lien vert en haut des pistes, un lien vert **à la fin** des pages légales (10 559 px du haut
+  à 390 de large) et d'un bilan relu (hors de l'écran à l'arrivée). **Un écran qui se consulte** — « Toi »,
+  les pages légales, « Toutes les pistes », un bilan relu — n'a pas d'action principale à côté de laquelle
+  se ranger : sa sortie est en haut à gauche, au-dessus du titre, un chevron et son libellé en gris
+  (`SortieDuDetour`, `src/components/sortie-du-detour.tsx` — un composant et non un `Pressable` d'écran :
+  il porte le chevron, que `TextLink` n'a pas, avec le rôle de lien et le libellé que la règle du premier
+  point exige), **dans chacun de ses états** — l'échec et le
+  bilan retiré la gardent au même endroit, la leçon de la bande haute (§2.11, T-13). Les pages légales
+  gardent en plus celle de leur fin, pour qui les a lues. **Un écran qui pose une question** — un flux, la
+  connexion, un formulaire (`/contexte`, `/feedback`) — garde sa sortie en bas, sous l'action principale :
+  c'est l'autre réponse, lue au moment de choisir. Un `TextLink` gris, souligné quand une phrase le touche ;
+  « Plus tard » reste collé à la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2), le « Retour » de
+  `/connexion/retrouver` finit sa phrase (« Reviens en arrière »), et les flux gardent leur bouton
+  secondaire « Retour » à gauche de « Suivant » (27/09/2026). **Les libellés ne bougent pas** : « Retour au
+  plan » et « Revenir à mon suivi » disent où l'on va. Après le questionnaire, la restitution n'a pas de
+  sortie : elle pousse vers le plan. La case gauche de la bande haute reste à iOS : elle fait 48 px, la
+  place d'une icône sans son libellé, et les détours plein écran n'ont pas de bande.
 - **Sous le doigt, une surface prend sa teinte appuyée, tout de suite et sans animation** (décision
   du 24/09/2026, `v1-29`) : `accentPressed` sur l'accent (bouton principal, puce pleine),
   `backgroundPressed` sur une surface neutre, `backgroundSelectedPressed` sur une surface choisie,

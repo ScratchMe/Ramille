@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TextLink } from '@/components/text-link';
+import { SortieDuDetour } from '@/components/sortie-du-detour';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EDITOR_CV_URL, EDITOR_NAME } from '@/constants/editeur';
@@ -43,6 +43,11 @@ export function LegalPage({
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
+            {/* **Une sortie en haut, et une à la fin** (`v1-33` T-10, 03/10/2026). La seule était la
+                dernière ligne de la page, à 10 559 px du haut sur la politique de confidentialité : on
+                n'en sortait qu'en la lisant toute. Celle de la fin reste, dans la même forme, pour qui
+                l'a lue. */}
+            <SortieDuDetour label="Retour" onPress={() => revenirOu('/')} />
             <View style={styles.header}>
               <ThemedText type="small" themeColor="textTertiary">
                 Dernière mise à jour : {updatedAt}
@@ -71,13 +76,7 @@ export function LegalPage({
               </View>
             ))}
 
-            <TextLink
-              label="Retour"
-              apparence="action"
-              onPress={() => revenirOu('/')}
-              role="link"
-              containerStyle={styles.backLink}
-            />
+            <SortieDuDetour label="Retour" onPress={() => revenirOu('/')} />
 
             {/* Ces deux pages sont les seules surfaces publiques du produit : leurs URL sont
                 données à Google Play et à l'écran de consentement Google, et elles se lisent
@@ -178,5 +177,4 @@ const styles = StyleSheet.create({
   bullet: { fontSize: 15, lineHeight: 23 },
   listText: { flex: 1 },
   definition: { gap: 2 },
-  backLink: { paddingVertical: Spacing.two },
 });

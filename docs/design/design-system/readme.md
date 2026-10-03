@@ -47,7 +47,7 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 core/ ThemedText · ThemedView · Button · TextLink · MessageInline · LigneDAttente · OnboardingDots · FeuilleDuBas · TitreDArrivee
 forms/ GroupeDeChoix · Chip · ChoiceRow · LigneDeCanal · ModeListItem · BoiteDePrecision · PrecisionMode · IntituleDuChamp · NumericField · ChampDuPlafond · TextField · GoogleButton
 mascotte/ Mascot · RamilleDit · CalculEnCours · EcranLancement
-navigation/ CompteBouton · BandeHaute · CadreDOnglet · OngletIcone · BarreOnglets · ProgressHeader · StepShell
+navigation/ CompteBouton · BandeHaute · CadreDOnglet · SortieDuDetour · OngletIcone · BarreOnglets · ProgressHeader · StepShell
 plan/ CheckinCard · ActionCard · ActionCommitment · CarteDePiste · CarteDOuverture · PastilleEngagee · TraitDeTemps · FeuilleRappels
 suivi/ EcartParPoste · BarreContour · BlocMethode
 bilan/ CommuteHasTripStep · CommuteDaysDistanceStep · CommuteModeStep · CommuteExtraStep · LeisureFrequencyStep · LeisureDetailStep · FlightsStep · LongTripsStep · ContextStep · ChampsDeContexte · PrecisionChiffres · MissingModeLink · FeuilleNouveauBilan

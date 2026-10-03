@@ -407,3 +407,77 @@ describe('la restitution d’un re-bilan', () => {
     expect(screen.queryByText(LIGNE_DE_COMPTE) !== null).toBe(seRend);
   });
 });
+
+// **La place de la sortie** (`v1-33` T-10, décidé le 03/10/2026). Cet écran se consulte : sa sortie est en
+// haut, au-dessus de « Ton bilan transport », dans **chacun** de ses états — la relecture, où elle était
+// la dernière ligne d'une page de 1 390 px ; l'échec, où elle était sous « Réessayer » ; le bilan retiré,
+// où elle finissait sa phrase. Et aucune après le questionnaire, où l'écran pousse vers le plan. Le
+// parcours réel touche « Revenir à mon suivi » par son nom, où qu'il soit : rien d'autre ne lit sa place.
+//
+// Éprouvé en cassant ce qu'il garde, le 03/10/2026 — quatre mutations, chacune faisant tomber le sien et
+// aucun autre :
+//   - la sortie de la relecture remise en fin de page → « en relecture… » ;
+//   - `mode !== 'nouveau'` retiré de sa garde → « après le questionnaire… » ;
+//   - la sortie de l'échec remise sous « Réessayer » → « un échec de lecture… » ;
+//   - la sortie du retrait remise après sa phrase → « un bilan retiré… ».
+describe('la sortie de l’écran', () => {
+  const SORTIE = 'Revenir à mon suivi';
+
+  /** Relit le bilan `b1` jusqu'à son état, la lecture du résultat rendant `resultat`. */
+  async function relire(resultat: { reponse: unknown }) {
+    mockParams = { id: 'b1' };
+    render(<BilanResultat />);
+    await act(async () => {});
+    await act(async () => {
+      liberer('assessment_results', resultat);
+      liberer('assessments', ok(BILANS_VALIDES));
+      liberer('assessment_answers', ok({ leisure_frequency: 'souvent' }));
+    });
+  }
+
+  it('en relecture, elle est le premier texte de la page, au-dessus de « Ton bilan transport »', async () => {
+    await relire(resultatLu('2026-06-02T08:00:00Z', { assessment_id: 'b1', total_co2_kg_year: 4700 }));
+
+    expect(screen.getByRole('link', { name: SORTIE })).toBeTruthy();
+    const textes = textesDansLOrdre(screen.toJSON());
+    expect(textes[0]).toBe(SORTIE);
+    expect(textes.indexOf(SORTIE)).toBe(textes.lastIndexOf(SORTIE));
+    expect(textes.indexOf(SORTIE)).toBeLessThan(textes.indexOf('Ton bilan transport'));
+  });
+
+  it('après le questionnaire, il n’y en a pas : l’écran pousse vers le plan', async () => {
+    mockParams = { id: 'b2', nouveau: '1' };
+    render(<BilanResultat />);
+    await act(async () => {});
+    await act(async () => {
+      liberer('assessment_results', resultatLu('2026-10-01T09:00:00Z'));
+      liberer('assessments', ok(BILANS_VALIDES));
+      liberer('plan_cycles', ok({ id: 'cycle-oct', baseline_co2_kg_year: 1920, target_reduction_pct: 20 }));
+      liberer('assessment_answers', ok({ leisure_frequency: 'souvent' }));
+    });
+
+    expect(screen.getByText('Estimation annuelle, tous déplacements')).toBeTruthy();
+    expect(screen.queryByText(SORTIE)).toBeNull();
+  });
+
+  it('un échec de lecture la garde en haut, au-dessus du message et de « Réessayer »', async () => {
+    const console_ = jest.spyOn(console, 'error').mockImplementation(() => {});
+    await relire({ reponse: { data: null, error: { message: 'TypeError: Network request failed' } } });
+
+    const textes = textesDansLOrdre(screen.toJSON());
+    expect(textes[0]).toBe(SORTIE);
+    expect(textes.indexOf(SORTIE)).toBeLessThan(textes.indexOf('Réessayer'));
+    console_.mockRestore();
+  });
+
+  it('un bilan retiré la garde en haut, au-dessus de son titre', async () => {
+    await relire(
+      ok({ ...RESULTAT, assessment_id: 'b1', assessments: { status: 'withdrawn', submitted_at: '2026-06-02T08:00:00Z' } })
+    );
+
+    expect(screen.getByText('Ce bilan a été retiré.')).toBeTruthy();
+    const textes = textesDansLOrdre(screen.toJSON());
+    expect(textes[0]).toBe(SORTIE);
+    expect(textes.indexOf(SORTIE)).toBe(textes.lastIndexOf(SORTIE));
+  });
+});

@@ -73,6 +73,13 @@
  * ne la rend plus. Le parcours réel cherche l'icône du compte parmi toutes et garde la première visible,
  * donc il tolère une bande en double. Une mutation : `<BandeHaute />` remis au-dessus du défilement →
  * « dit l'état vide… », seul.
+ *
+ * **Et le même jour, la place de la sortie** (`v1-33` T-10, décidé le 03/10/2026) : cet écran se consulte,
+ * sa sortie est en haut, au-dessus du titre — et y reste quand la lecture échoue, où elle descendait au
+ * milieu de l'écran, sous « Réessayer ». Le parcours réel touche « Retour au plan » par son nom, où qu'il
+ * soit. Deux mutations, chacune faisant tomber le sien et aucun autre :
+ *   - la sortie rendue après le titre de la liste → « la sortie est au-dessus du titre… » ;
+ *   - la sortie de l'échec remise sous « Réessayer » → « …et y reste quand la lecture échoue ».
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
@@ -344,4 +351,28 @@ describe('PistesScreen', () => {
     fireEvent.press(screen.getByText('Réessayer'));
     expect(screen.getByText('Chargement de tes pistes…')).toBeTruthy();
   });
+
+  it('la sortie est au-dessus du titre, en haut à gauche', async () => {
+    mockLignes.mockResolvedValue({ data: [{ id: 'c1', plan_actions: [piste()] }], error: null });
+    render(<PistesScreen />);
+    await waitFor(() => expect(screen.getByText('Toutes les pistes')).toBeTruthy());
+
+    expect(screen.getByRole('link', { name: 'Retour au plan' })).toBeTruthy();
+    expect(avant('Retour au plan', 'Toutes les pistes')).toBe(true);
+  });
+
+  it('…et y reste quand la lecture échoue : au-dessus du message, pas sous « Réessayer »', async () => {
+    mockLignes.mockResolvedValue({ data: null, error: { message: 'réseau' } });
+    render(<PistesScreen />);
+    await waitFor(() => expect(screen.getByText('Réessayer')).toBeTruthy());
+
+    expect(avant('Retour au plan', 'Tes pistes n’ont pas pu être chargées.')).toBe(true);
+    expect(avant('Retour au plan', 'Réessayer')).toBe(true);
+  });
 });
+
+/** Le texte rendu, dans l'ordre du document : `premier` doit venir avant `second`. */
+function avant(premier: string, second: string): boolean {
+  const texte = JSON.stringify(screen.toJSON());
+  return texte.indexOf(premier) !== -1 && texte.indexOf(premier) < texte.indexOf(second);
+}

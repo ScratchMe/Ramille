@@ -157,7 +157,7 @@ phases). L'état de chaque ligne est celui de la PR qui porte ce document.
 |---|---|---|
 | T-5 | Sept apparences de `TextLink` (le kit en documente quatre) ; « J'ai déjà un compte » en cinq ; des « Retour » gris collés à une phrase grise du même corps | Trente et un fichiers : il entrerait en conflit avec chaque chantier de la vague. À faire seul, juste après. **Fait le 03/10/2026**, plus bas |
 | T-9 | Huit formes d'attente, dont quatre qui n'attendent pas les 300 ms | Un composant `LigneDAttente` partagé, même raison que T-5 ; les deux cas les plus visibles (`/contexte`, `/connexion/retrouver`) sont traités dans la vague. **Fait le 03/10/2026**, plus bas |
-| T-10 | « Retour » : trois styles, trois places selon le détour | Une décision de dessin : déplacer « Plus tard » détacherait la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2) |
+| T-10 | « Retour » : trois styles, trois places selon le détour | Une décision de dessin : déplacer « Plus tard » détacherait la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2). **Tranché et fait le 03/10/2026**, plus bas |
 | T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil. **Fait le 03/10/2026**, plus bas |
 | T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux. **Fait le 03/10/2026**, plus bas |
 | T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView` |
@@ -222,6 +222,31 @@ reste à relever (`v1-13` §11.26). Les gardes : `src/lib/lecture-du-plan.test.t
 passage, une fois, même session, fraîche ; une lecture annulée s'arrête entre deux lots),
 `prechargeLePlan` dans `demarrage.test.ts`, l'attente du jeton dans `notification-prefs.test.ts`, et le
 parcours réel passe tel quel.
+
+**T-10, tranché par la personne qui pilote et fait le 03/10/2026.** Le relevé, fait sur l'export web
+contre la stack locale à 390 × 844, comptait **douze sorties, quatre formes et trois places** — le bouton
+secondaire des flux, un lien vert, un lien gris, un lien gris souligné ; en haut à gauche, en bas centré,
+en bas à gauche —, et trois sorties hors de l'écran à l'arrivée : un bilan relu (à 1 370 px sur 1 390),
+`/contexte` (976 sur 1 088) et les pages légales (**10 559 sur 10 747**, la seule sortie de la page). La
+proposition, avec ses captures avant et après, a été posée sous forme de page ; les trois questions
+ont reçu un oui : **deux places plutôt qu'une**, le chevron, le gris. La règle (`FRONT.md` §2.4) : la
+place se décide par ce que fait l'écran, jamais par son état. **Un écran qui se consulte** — « Toi », les
+pages légales, « Toutes les pistes », un bilan relu — a sa sortie en haut à gauche, au-dessus du titre,
+un chevron et son libellé en gris (`SortieDuDetour`), dans chacun de ses états : l'échec des pistes et de
+la restitution, et le bilan retiré, la gardent au même endroit, là où elle descendait sous « Réessayer »
+ou finissait une phrase. Les pages légales gardent en plus celle de leur fin. **Un écran qui pose une
+question** — les flux, la connexion, `/contexte`, `/feedback` — garde la sienne en bas, sous l'action
+principale : le seul changement y est le vert du « Retour » de `/contexte`, passé au gris. Aucun libellé
+ne change. L'autre voie, la correction proposée par l'audit — tout en haut à gauche —, a été écartée :
+sur la connexion, elle détachait « Plus tard » de sa phrase ou faisait deux sorties vers le plan ; sur
+`/connexion/retrouver`, « Reviens en arrière » perdait son lien ; et sur un formulaire, la sortie quittait
+l'endroit où l'on décide. `BILAN_RETIRE.sortie` est parti : la sortie du bilan retiré est celle de la
+restitution. **Le seul pari** est le bilan relu : qui le lit jusqu'au bout n'y trouve plus de lien en bas,
+et garde l'onglet « Suivi », qui ramène à la liste (T-14) — à juger sur appareil (`v1-13` §11.26). Les
+gardes : `sortie-du-detour.test.tsx` pour la forme, et la place écran par écran dans
+`plan-pistes.test.tsx`, `restitution-du-bilan.test.tsx`, `toi-confirmation.test.tsx`,
+`legal-page.test.tsx` et `contexte.test.tsx` — quatorze mutations, chacune attrapée par le test qui la
+vise.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
 « Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10
