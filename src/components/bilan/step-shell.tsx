@@ -9,6 +9,7 @@ import {
   type AncreDuChamp,
   type AncresDeLEtape,
 } from '@/components/bilan/ancre-du-champ';
+import { AuDessusDuClavier } from '@/components/au-dessus-du-clavier';
 import { ProgressHeader } from '@/components/bilan/progress-header';
 import { Button } from '@/components/button';
 import { MessageInline } from '@/components/message-inline';
@@ -388,115 +389,117 @@ export function StepShell({
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.headerBlock}>
-          <ProgressHeader section={section} step={step} total={total} />
-          {notice && (
-            <ThemedView type="backgroundSelected" style={styles.notice}>
-              <ThemedText type="small" themeColor="accentText">
-                {notice}
+        <AuDessusDuClavier>
+          <View style={styles.headerBlock}>
+            <ProgressHeader section={section} step={step} total={total} />
+            {notice && (
+              <ThemedView type="backgroundSelected" style={styles.notice}>
+                <ThemedText type="small" themeColor="accentText">
+                  {notice}
+                </ThemedText>
+              </ThemedView>
+            )}
+            {motDeRamille && (
+              <ThemedText type="small" themeColor="textTertiary" style={styles.motDeRamille}>
+                {motDeRamille}
               </ThemedText>
-            </ThemedView>
-          )}
-          {motDeRamille && (
-            <ThemedText type="small" themeColor="textTertiary" style={styles.motDeRamille}>
-              {motDeRamille}
-            </ThemedText>
-          )}
-          {/* En position absolue, comme celui du pied : rien ne bouge quand il apparaît. */}
-          {sousLaTete && <View style={[styles.filetDeTete, { backgroundColor: theme.border }]} />}
-        </View>
-        <ScrollView
-          ref={defilement}
-          contentContainerStyle={[styles.scrollContent, reserve !== null && { minHeight: reserve.hauteur }]}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={(evenement) => {
-            zone.current.decalage = evenement.nativeEvent.contentOffset.y;
-            relireLaSuite();
-          }}
-          onContentSizeChange={(_largeur, hauteur) => {
-            zone.current.hauteurDuContenu = hauteur;
-            relireLaSuite();
-            const y = defilementDOuverture.current;
-            if (y !== null && y <= hauteur - zone.current.hauteur + 0.5) {
-              defilementDOuverture.current = null;
-              defiler(y);
-            }
-          }}
-          onLayout={miseEnPageDeLaZone}
-        >
-          <View
-            ref={contenu}
-            collapsable={false}
-            onLayout={(evenement) => {
-              zone.current.hautDuContenu = evenement.nativeEvent.layout.y;
-              // La hauteur que le contenu prendrait sans réserve : la sienne, plus les deux marges.
-              const naturelle = evenement.nativeEvent.layout.height + 2 * Spacing.four;
-              const retreci = naturelle < hauteurNaturelle.current - 0.5;
-              hauteurNaturelle.current = naturelle;
-              if (reserve !== null && (naturelle >= reserve.hauteur - 0.5 || retreci)) {
+            )}
+            {/* En position absolue, comme celui du pied : rien ne bouge quand il apparaît. */}
+            {sousLaTete && <View style={[styles.filetDeTete, { backgroundColor: theme.border }]} />}
+          </View>
+          <ScrollView
+            ref={defilement}
+            contentContainerStyle={[styles.scrollContent, reserve !== null && { minHeight: reserve.hauteur }]}
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(evenement) => {
+              zone.current.decalage = evenement.nativeEvent.contentOffset.y;
+              relireLaSuite();
+            }}
+            onContentSizeChange={(_largeur, hauteur) => {
+              zone.current.hauteurDuContenu = hauteur;
+              relireLaSuite();
+              const y = defilementDOuverture.current;
+              if (y !== null && y <= hauteur - zone.current.hauteur + 0.5) {
                 defilementDOuverture.current = null;
-                setReserve(null);
+                defiler(y);
               }
             }}
-            {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}
+            onLayout={miseEnPageDeLaZone}
           >
-            <Animated.View key={entree.cle} style={styleDeLEtape}>
-              {/* Ce que l'étape montre en arrivant n'a pas d'apparition à soi — une précision déjà
-                  ouverte entre avec l'étape ; ce qui s'ouvre ensuite apparaît (`src/lib/mouvement.tsx`). */}
-              <SansApparitionAuMontage>
-                <ContexteDesAncres.Provider value={contexteDesAncres}>
-                  <SuiviDesOuvertures value={suivreLOuverture}>
-                    <TitreDeLEtape.Provider value={titre}>{children}</TitreDeLEtape.Provider>
-                  </SuiviDesOuvertures>
-                </ContexteDesAncres.Provider>
-              </SansApparitionAuMontage>
-            </Animated.View>
-          </View>
-        </ScrollView>
-        {/* Le pied a son propre `SansApparitionAuMontage` : il est hors de celui du contenu, et une
-            `Apparition` sans fournisseur se pose sans jouer (« dans le doute, on pose »). La ligne ne
-            s'y rend jamais au montage — la demande part d'un geste —, donc elle entre en fondu. */}
-        <SansApparitionAuMontage>
-          <View style={styles.footerBlock}>
-            {/* En position absolue : rien ne bouge quand il apparaît. */}
-            {suite && <View style={[styles.filet, { backgroundColor: theme.border }]} />}
-            <MessageInline message={message ?? null} />
-            {/* Volontairement brut : ce texte est destiné à être recopié, pas lu comme du
-                produit. Ni la voix de Ramille ni un ton rassurant n'ont leur place ici — ce
-                qu'il faut, c'est la cause exacte. */}
-            {detail && (
-              <ThemedText type="code" themeColor="textTertiary" style={styles.detail}>
-                {detail}
-              </ThemedText>
-            )}
-            {/* **Un bouton grisé ne dit pas pourquoi.** Sur l'étape loisirs, la précision du mode se
-                déplie au-dessus de la tranche de distance et la pousse hors champ : on voit une étape
-                qu'on croit finie et un « Suivant » gris, sans rien qui indique qu'il reste un champ plus
-                bas (retour d'appareil du 07/09/2026). Le manque se dit donc là où se prend la décision
-                d'avancer, dans la zone collante — **au toucher, et c'est un lien** (`v1-31`) : il mène
-                à la même question que le « Suivant » qu'on vient de toucher. Il s'écrivait d'office, en
-                gris, collé au bouton, et ne menait nulle part. Pas de `role="alert"` : ce n'est pas un
-                échec, et le focus qui part vers la question fait déjà l'annonce. */}
-            {demandeActive && manque && (
-              <Apparition>
-                <TextLink
-                  label={`Il manque encore ${manque.phrase}.`}
-                  apparence="action"
-                  onPress={mener}
-                />
-              </Apparition>
-            )}
-            <View style={styles.footer}>
-              {onBack && <Button title="Retour" variant="secondary" onPress={onBack} />}
-              {/* **Un bouton ordinaire, jamais `disabled`** (29/09/2026, `v1-31` §2.4) : sur une étape
-                  incomplète, il garde l'apparence du désactivé (`enAttente`) et n'avance pas — c'est
-                  ici, et non plus son `disabled`, qui tient la porte ; `handleNext` la tient une
-                  seconde fois. */}
-              <Button title={nextLabel} onPress={suivant} enAttente={manque != null} flex />
+            <View
+              ref={contenu}
+              collapsable={false}
+              onLayout={(evenement) => {
+                zone.current.hautDuContenu = evenement.nativeEvent.layout.y;
+                // La hauteur que le contenu prendrait sans réserve : la sienne, plus les deux marges.
+                const naturelle = evenement.nativeEvent.layout.height + 2 * Spacing.four;
+                const retreci = naturelle < hauteurNaturelle.current - 0.5;
+                hauteurNaturelle.current = naturelle;
+                if (reserve !== null && (naturelle >= reserve.hauteur - 0.5 || retreci)) {
+                  defilementDOuverture.current = null;
+                  setReserve(null);
+                }
+              }}
+              {...(Platform.OS === 'web' ? { tabIndex: -1 } : null)}
+            >
+              <Animated.View key={entree.cle} style={styleDeLEtape}>
+                {/* Ce que l'étape montre en arrivant n'a pas d'apparition à soi — une précision déjà
+                    ouverte entre avec l'étape ; ce qui s'ouvre ensuite apparaît (`src/lib/mouvement.tsx`). */}
+                <SansApparitionAuMontage>
+                  <ContexteDesAncres.Provider value={contexteDesAncres}>
+                    <SuiviDesOuvertures value={suivreLOuverture}>
+                      <TitreDeLEtape.Provider value={titre}>{children}</TitreDeLEtape.Provider>
+                    </SuiviDesOuvertures>
+                  </ContexteDesAncres.Provider>
+                </SansApparitionAuMontage>
+              </Animated.View>
             </View>
-          </View>
-        </SansApparitionAuMontage>
+          </ScrollView>
+          {/* Le pied a son propre `SansApparitionAuMontage` : il est hors de celui du contenu, et une
+              `Apparition` sans fournisseur se pose sans jouer (« dans le doute, on pose »). La ligne ne
+              s'y rend jamais au montage — la demande part d'un geste —, donc elle entre en fondu. */}
+          <SansApparitionAuMontage>
+            <View style={styles.footerBlock}>
+              {/* En position absolue : rien ne bouge quand il apparaît. */}
+              {suite && <View style={[styles.filet, { backgroundColor: theme.border }]} />}
+              <MessageInline message={message ?? null} />
+              {/* Volontairement brut : ce texte est destiné à être recopié, pas lu comme du
+                  produit. Ni la voix de Ramille ni un ton rassurant n'ont leur place ici — ce
+                  qu'il faut, c'est la cause exacte. */}
+              {detail && (
+                <ThemedText type="code" themeColor="textTertiary" style={styles.detail}>
+                  {detail}
+                </ThemedText>
+              )}
+              {/* **Un bouton grisé ne dit pas pourquoi.** Sur l'étape loisirs, la précision du mode se
+                  déplie au-dessus de la tranche de distance et la pousse hors champ : on voit une étape
+                  qu'on croit finie et un « Suivant » gris, sans rien qui indique qu'il reste un champ plus
+                  bas (retour d'appareil du 07/09/2026). Le manque se dit donc là où se prend la décision
+                  d'avancer, dans la zone collante — **au toucher, et c'est un lien** (`v1-31`) : il mène
+                  à la même question que le « Suivant » qu'on vient de toucher. Il s'écrivait d'office, en
+                  gris, collé au bouton, et ne menait nulle part. Pas de `role="alert"` : ce n'est pas un
+                  échec, et le focus qui part vers la question fait déjà l'annonce. */}
+              {demandeActive && manque && (
+                <Apparition>
+                  <TextLink
+                    label={`Il manque encore ${manque.phrase}.`}
+                    apparence="action"
+                    onPress={mener}
+                  />
+                </Apparition>
+              )}
+              <View style={styles.footer}>
+                {onBack && <Button title="Retour" variant="secondary" onPress={onBack} />}
+                {/* **Un bouton ordinaire, jamais `disabled`** (29/09/2026, `v1-31` §2.4) : sur une étape
+                    incomplète, il garde l'apparence du désactivé (`enAttente`) et n'avance pas — c'est
+                    ici, et non plus son `disabled`, qui tient la porte ; `handleNext` la tient une
+                    seconde fois. */}
+                <Button title={nextLabel} onPress={suivant} enAttente={manque != null} flex />
+              </View>
+            </View>
+          </SansApparitionAuMontage>
+        </AuDessusDuClavier>
       </SafeAreaView>
     </ThemedView>
   );

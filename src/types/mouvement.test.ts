@@ -5,6 +5,7 @@ import {
   decalageDEntree,
   defilementPourMontrer,
   dureeSelonLaPreference,
+  hauteurSAnime,
   sensDuPassage,
 } from '@/types/mouvement';
 
@@ -113,6 +114,18 @@ describe('ce que la bibliothèque ne coupe pas d’elle-même', () => {
  *   | la marge oubliée en haut | « arrête le haut sous le bord » et « ne remonte jamais » |
  *   | plus de plancher à zéro | « ne défile pas quand le bas est déjà dans la fenêtre » et « ne remonte jamais » |
  */
+describe('hauteurSAnime', () => {
+  // Le 03/10/2026, sur le premier build qui portait `Depliage`, rien de ce qui s'ouvre sous un choix ne
+  // s'ouvrait sur Android ; posé, il s'affichait (recette du build d'octobre, lignes 01.4 à 01.8).
+  it('pose sur Android', () => {
+    expect(hauteurSAnime('android')).toBe(false);
+  });
+
+  it('anime sur le web, où ses gardes la relèvent image par image', () => {
+    expect(hauteurSAnime('web')).toBe(true);
+  });
+});
+
 describe('defilementPourMontrer', () => {
   const fenetre = { hauteurFenetre: 700, marge: 16 };
 

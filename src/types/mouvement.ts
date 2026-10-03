@@ -57,6 +57,20 @@ export function animationDesOnglets(reduit: boolean): 'fade' | 'none' {
 }
 
 /**
+ * **Une hauteur s'anime-t-elle ?** Pas sur Android (03/10/2026, recette du build d'octobre, lignes
+ * 01.4 à 01.8) : sur le premier build qui portait `Depliage`, rien de ce qui s'ouvre sous un choix ne
+ * s'ouvrait — la motorisation, le type de vélo, « Voir les autres modes », le champ sous « 10+ »,
+ * les longs trajets —, alors que la même précision, posée au montage de l'étape (reculer puis
+ * revenir), s'affichait. Le web anime, ses gardes le relèvent image par image. Android **pose** :
+ * le chemin qu'il prend déjà sous « réduire les animations », le seul qu'un téléphone ait montré
+ * marcher. La cause n'est pas établie (`FRONT-MOUVEMENT.md`) ; l'animation reviendra sur Android
+ * quand un appareil l'aura vue s'ouvrir.
+ */
+export function hauteurSAnime(plateforme: string): boolean {
+  return plateforme !== 'android';
+}
+
+/**
  * La durée d'une CSS transition de reanimated sous « réduire les animations », qu'elle ignore : zéro
  * pose tout de suite l'état final (le rail du questionnaire). Ce qui ne passe pas par une durée ne se
  * lance simplement pas sous la préférence (`src/lib/mouvement.tsx`, la barre d'onglets).

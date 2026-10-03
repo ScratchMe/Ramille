@@ -60,6 +60,10 @@ La courbe est quatre nombres : `Easing.bezier(...Mouvement.courbe)` pour reanima
 | `HauteurSuivie` | un bloc dont le contenu change : passe d'une hauteur à l'autre ; `styleDuContenu` reprend le `gap` du parent ; sa découpe laisse de la place à l'anneau de focus ; une hauteur nulle (l'écran masqué par la pile web) ne se tient pas |
 | `SansApparitionAuMontage` | ce qui est déjà là quand l'écran arrive est posé ; seul ce qui monte ensuite s'anime |
 
+**Sur Android, aucune hauteur ne s'anime** (03/10/2026) : `Depliage` et `HauteurSuivie` y posent
+(`hauteurSAnime`), parce que le premier build qui les portait n'ouvrait rien sous un choix. La cause
+n'est pas établie ; `FRONT-MOUVEMENT.md` §2.12 dit les pistes et quand l'animation reviendra.
+
 Ce qui **décide** d'une animation (un sens, une arrivée, une durée sous la préférence) est une
 dérivation de `src/types/mouvement.ts`, testée.
 

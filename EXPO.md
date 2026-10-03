@@ -186,6 +186,14 @@ relais au rendu suivant.
 
 ### 1.6 Mise en page : `height` ou `minHeight`
 
+**Et sous le clavier, Android bord à bord ne rétrécit plus la fenêtre** (relevé chez Ramille le
+03/10/2026, SDK 57) : le pied d'un écran et son bouton restaient masqués, pendant que le navigateur
+réduisait sa zone visible de lui-même — rien ne l'avait montré avant un build. Un écran qui porte un
+champ se pose dans un `KeyboardAvoidingView` en `padding`, **à l'intérieur** de la zone sûre (la barre
+de navigation ne se compte pas deux fois) ; sur web, rien, pour ne pas changer le DOM. Chez Ramille :
+`AuDessusDuClavier` (`src/components/au-dessus-du-clavier.tsx`), et tout nouvel écran à champ s'y pose.
+
+
 Sous un `minHeight`, une hauteur n'est plus *définie* : un enfant en `flex: 1` ne se résout plus
 sur l'espace restant mais sur sa taille max-content. Une page qui gère son propre débordement
 (un corps qui défile sous un pied épinglé) veut `height` ; une page qui n'en a pas veut

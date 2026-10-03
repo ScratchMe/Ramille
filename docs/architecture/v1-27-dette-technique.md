@@ -1906,3 +1906,16 @@ mois interrogé ou après) ; les deux autres échéances gardent la fenêtre de 
 touche aussi `engagement_de_la_veille` et la boucle hebdomadaire, qui appellent la même fonction et
 n'ont pas le même calendrier. D15, livré le même soir, n'y a pas touché : il garde `committed_at`
 comme le jour du dernier choix d'intention (`BOUCLE.md` §2), ce qui laisse cette fenêtre telle quelle.
+
+### 12.32 Les hauteurs ne s'animent plus sur Android (03/10/2026)
+
+La recette du build d'octobre (`docs/recette/le-build-d-octobre.md`, lignes 01.4 à 01.8) a trouvé que
+rien de ce qui s'ouvre sous un choix ne s'ouvrait sur Android : `Depliage`, qui démarre à hauteur nulle
+et grandit par reanimated, restait fermé, alors que la même précision, posée au montage, s'affichait.
+**Correction prise** : sur Android, `Depliage` et `HauteurSuivie` posent (`hauteurSAnime`,
+`FRONT-MOUVEMENT.md` §2.12). **Ce qui reste dû** : la cause, et le retour de l'animation sur Android.
+Deux pistes, lues dans la source de reanimated 4.5 et pas éprouvées — la recopie dans les props React
+des styles d'une animation terminée (`FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS`, que le
+`package.json` peut couper), et la branche propre à Android des props de mise en page. Elles se
+départagent sur un appareil, un build à la fois, quand le rythme le permet ; d'ici là, rien ne
+s'ouvre sous les yeux sur Android, et ce qui est dessous saute au lieu de glisser.

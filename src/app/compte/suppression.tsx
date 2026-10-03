@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuDessusDuClavier } from '@/components/au-dessus-du-clavier';
 import { TextField } from '@/components/auth/text-field';
 import { Button } from '@/components/button';
 import { RamilleDit } from '@/components/ramille-dit';
@@ -146,172 +147,174 @@ export default function SuppressionCompte() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Recevoir un
-            code » ne servait qu'à le fermer, le défaut de React Native. */}
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.page}>
-            <ThemedText type="small" themeColor="textTertiary">
-              {APP_NAME}
-            </ThemedText>
-            <ThemedText type="display">Supprimer mon compte</ThemedText>
-
-            {phase.kind === 'chargement' && (
-              <ThemedText themeColor="textSecondary" style={styles.corps}>
-                Un instant, on regarde à quel compte ce navigateur est rattaché.
+        <AuDessusDuClavier>
+          {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Recevoir un
+              code » ne servait qu'à le fermer, le défaut de React Native. */}
+          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.page}>
+              <ThemedText type="small" themeColor="textTertiary">
+                {APP_NAME}
               </ThemedText>
-            )}
+              <ThemedText type="display">Supprimer mon compte</ThemedText>
 
-            {phase.kind === 'pret' && phase.etat.kind === 'inconnu' && (
-              <>
-                <ThemedText
-                  themeColor="textSecondary"
-                  style={styles.corps}
-                  {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
-                >
-                  Ce navigateur n’est rattaché à aucun compte. Indique l’adresse de ton compte,
-                  puis le code reçu par email : la session s’ouvre ici, et la suppression se fait
-                  en un geste.
+              {phase.kind === 'chargement' && (
+                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                  Un instant, on regarde à quel compte ce navigateur est rattaché.
                 </ThemedText>
-                <View style={styles.bloc}>
-                  <TextField
-                    label="Adresse email du compte"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    placeholder="toi@exemple.fr"
-                    onSubmitEditing={() => void demanderLeCode()}
-                  />
-                  <Button
-                    title={busy ? 'Envoi…' : 'Recevoir un code'}
-                    onPress={demanderLeCode}
-                    disabled={busy}
-                  />
-                </View>
-                {/* Ce renvoi nomme un écran, donc il vieillit : « Mes données » a quitté
-                    /suivi pour « Toi » en v1-11 §2.5, et personne ne l'avait vu ici. Le geste
-                    est décrit avant le nom de l'écran — quelqu'un qui cherche une section dans
-                    un produit qu'il vient de réinstaller a besoin de savoir où toucher.
-                    L'icône est nommée **comme le produit l'annonce** (« Ton compte », cf.
-                    l'`accessibilityLabel` de `src/components/compte-bouton.tsx`) : cette page
-                    se lit quasi exclusivement dans un navigateur — la revendication App Links
-                    d'`app.json` ne couvre que `/plan` —, donc on cherche un mot qui existe
-                    bien dans l'app, y compris pour TalkBack. « Icône de compte » n'y est nulle
-                    part. */}
-                <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
-                  Si tu as encore l’application, c’est plus direct : ouvre « Ton compte »,
-                  l’icône en haut à droite de l’écran, puis la section « Mes données » de l’écran
-                  « Toi ».
-                </ThemedText>
-              </>
-            )}
+              )}
 
-            {phase.kind === 'pret' && phase.etat.kind === 'anonyme-avec-donnees' && (
-              <>
-                <ThemedText
-                  themeColor="textSecondary"
-                  style={styles.corps}
-                  {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
-                >
-                  Ce navigateur porte un bilan qui n’a jamais été rattaché à un compte. Il
-                  n’existe donc nulle part ailleurs — et tu peux l’effacer ici.
-                </ThemedText>
-                {renduSuppression(phase.confirme)}
-              </>
-            )}
+              {phase.kind === 'pret' && phase.etat.kind === 'inconnu' && (
+                <>
+                  <ThemedText
+                    themeColor="textSecondary"
+                    style={styles.corps}
+                    {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                  >
+                    Ce navigateur n’est rattaché à aucun compte. Indique l’adresse de ton compte,
+                    puis le code reçu par email : la session s’ouvre ici, et la suppression se fait
+                    en un geste.
+                  </ThemedText>
+                  <View style={styles.bloc}>
+                    <TextField
+                      label="Adresse email du compte"
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      placeholder="toi@exemple.fr"
+                      onSubmitEditing={() => void demanderLeCode()}
+                    />
+                    <Button
+                      title={busy ? 'Envoi…' : 'Recevoir un code'}
+                      onPress={demanderLeCode}
+                      disabled={busy}
+                    />
+                  </View>
+                  {/* Ce renvoi nomme un écran, donc il vieillit : « Mes données » a quitté
+                      /suivi pour « Toi » en v1-11 §2.5, et personne ne l'avait vu ici. Le geste
+                      est décrit avant le nom de l'écran — quelqu'un qui cherche une section dans
+                      un produit qu'il vient de réinstaller a besoin de savoir où toucher.
+                      L'icône est nommée **comme le produit l'annonce** (« Ton compte », cf.
+                      l'`accessibilityLabel` de `src/components/compte-bouton.tsx`) : cette page
+                      se lit quasi exclusivement dans un navigateur — la revendication App Links
+                      d'`app.json` ne couvre que `/plan` —, donc on cherche un mot qui existe
+                      bien dans l'app, y compris pour TalkBack. « Icône de compte » n'y est nulle
+                      part. */}
+                  <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
+                    Si tu as encore l’application, c’est plus direct : ouvre « Ton compte »,
+                    l’icône en haut à droite de l’écran, puis la section « Mes données » de l’écran
+                    « Toi ».
+                  </ThemedText>
+                </>
+              )}
 
-            {phase.kind === 'pret' && phase.etat.kind === 'rattache' && (
-              <>
-                {/* « Tu es connecté » accordait au masculin la personne à qui la phrase
-                    parle (A12-4), sur la page publique que Google Play exige. C'est le
-                    navigateur qui porte la session : le dire ainsi est à la fois sans accord
-                    de genre et plus exact — cette page n'affirme rien d'autre. */}
-                <ThemedText
-                  themeColor="textSecondary"
-                  style={styles.corps}
-                  {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
-                >
-                  {phase.etat.email
-                    ? `Ce navigateur est connecté au compte ${phase.etat.email}.`
-                    : 'Ce navigateur est connecté à ton compte.'}
-                </ThemedText>
-                {renduSuppression(phase.confirme)}
-              </>
-            )}
+              {phase.kind === 'pret' && phase.etat.kind === 'anonyme-avec-donnees' && (
+                <>
+                  <ThemedText
+                    themeColor="textSecondary"
+                    style={styles.corps}
+                    {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                  >
+                    Ce navigateur porte un bilan qui n’a jamais été rattaché à un compte. Il
+                    n’existe donc nulle part ailleurs — et tu peux l’effacer ici.
+                  </ThemedText>
+                  {renduSuppression(phase.confirme)}
+                </>
+              )}
 
-            {phase.kind === 'code' && (
-              <SaisieDuCode
-                contexte="connexion"
-            // Cet écran ne peut PAS affirmer qu'un code est parti — `shouldCreateUser: false`
-            // fait qu'une adresse inconnue ne reçoit rien, et le dire divulguerait qui a un
-            // compte. La voix porte ce « si », là où `/connexion/email` peut l'affirmer dans ses
-            // deux branches (`src/types/connexion.ts`, `VoixDeLaSaisie`).
-            voix="peut_etre"
-                // Toujours après « Recevoir un code » : cette page ne s'ouvre jamais sur le code.
-                apresUnGeste
-                adresse={email.trim()}
-                libelleBouton="Ouvrir ma session"
-                onOuverte={async () => {
-                  // La session est celle du compte : on relit l'état et la page passe d'elle-même
-                  // au bloc de suppression, comme elle le faisait quand le lien revenait ici.
-                  //
-                  // **Le repli ne renvoie plus au formulaire d'adresse**, et c'est un correctif : il
-                  // rendait `inconnu`, donc « Ce navigateur n'est rattaché à aucun compte » — sur une
-                  // page où le code vient d'être accepté et **consommé**. La seule sortie était d'en
-                  // demander un autre, que `smtp_max_frequency` refuse pendant une minute, sur la
-                  // page que Google Play exige de garder utilisable sans l'app. Ce que la
-                  // vérification vient de prouver ne se perd pas parce qu'une seconde lecture a
-                  // échoué : le code était celui de cette adresse, donc la session est ce compte.
-                  const etat = await lireEtatDuCompte().catch(
-                    () => ({ kind: 'rattache', email: email.trim() }) as const
-                  );
-                  geste.current = 'compte';
-                  setPhase({ kind: 'pret', etat, confirme: false });
-                }}
-                onAutreAdresse={() => {
-                  setMessage(null);
-                  geste.current = 'compte';
-                  setPhase({ kind: 'pret', etat: { kind: 'inconnu' }, confirme: false });
-                }}
-                renvoyer={demanderLaConnexion}
-              />
-            )}
+              {phase.kind === 'pret' && phase.etat.kind === 'rattache' && (
+                <>
+                  {/* « Tu es connecté » accordait au masculin la personne à qui la phrase
+                      parle (A12-4), sur la page publique que Google Play exige. C'est le
+                      navigateur qui porte la session : le dire ainsi est à la fois sans accord
+                      de genre et plus exact — cette page n'affirme rien d'autre. */}
+                  <ThemedText
+                    themeColor="textSecondary"
+                    style={styles.corps}
+                    {...({ ref: phraseDuCompte, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                  >
+                    {phase.etat.email
+                      ? `Ce navigateur est connecté au compte ${phase.etat.email}.`
+                      : 'Ce navigateur est connecté à ton compte.'}
+                  </ThemedText>
+                  {renduSuppression(phase.confirme)}
+                </>
+              )}
 
-            {phase.kind === 'supprime' && (
-              <>
-                <ThemedText
-                  themeColor="textSecondary"
-                  style={styles.corps}
-                  {...({ ref: fait, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
-                >
-                  C’est fait. Ton compte et tout ce qui s’y rattachait — bilans, plan, points de
-                  suivi, retours — ont été supprimés définitivement.
-                </ThemedText>
-                <RamilleDit ligne={RAMILLE.auRevoir} mood="calm" size={44} tilt={-7} />
-              </>
-            )}
+              {phase.kind === 'code' && (
+                <SaisieDuCode
+                  contexte="connexion"
+              // Cet écran ne peut PAS affirmer qu'un code est parti — `shouldCreateUser: false`
+              // fait qu'une adresse inconnue ne reçoit rien, et le dire divulguerait qui a un
+              // compte. La voix porte ce « si », là où `/connexion/email` peut l'affirmer dans ses
+              // deux branches (`src/types/connexion.ts`, `VoixDeLaSaisie`).
+              voix="peut_etre"
+                  // Toujours après « Recevoir un code » : cette page ne s'ouvre jamais sur le code.
+                  apresUnGeste
+                  adresse={email.trim()}
+                  libelleBouton="Ouvrir ma session"
+                  onOuverte={async () => {
+                    // La session est celle du compte : on relit l'état et la page passe d'elle-même
+                    // au bloc de suppression, comme elle le faisait quand le lien revenait ici.
+                    //
+                    // **Le repli ne renvoie plus au formulaire d'adresse**, et c'est un correctif : il
+                    // rendait `inconnu`, donc « Ce navigateur n'est rattaché à aucun compte » — sur une
+                    // page où le code vient d'être accepté et **consommé**. La seule sortie était d'en
+                    // demander un autre, que `smtp_max_frequency` refuse pendant une minute, sur la
+                    // page que Google Play exige de garder utilisable sans l'app. Ce que la
+                    // vérification vient de prouver ne se perd pas parce qu'une seconde lecture a
+                    // échoué : le code était celui de cette adresse, donc la session est ce compte.
+                    const etat = await lireEtatDuCompte().catch(
+                      () => ({ kind: 'rattache', email: email.trim() }) as const
+                    );
+                    geste.current = 'compte';
+                    setPhase({ kind: 'pret', etat, confirme: false });
+                  }}
+                  onAutreAdresse={() => {
+                    setMessage(null);
+                    geste.current = 'compte';
+                    setPhase({ kind: 'pret', etat: { kind: 'inconnu' }, confirme: false });
+                  }}
+                  renvoyer={demanderLaConnexion}
+                />
+              )}
 
-            <MessageInline message={message} style={styles.corps} />
+              {phase.kind === 'supprime' && (
+                <>
+                  <ThemedText
+                    themeColor="textSecondary"
+                    style={styles.corps}
+                    {...({ ref: fait, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable)}
+                  >
+                    C’est fait. Ton compte et tout ce qui s’y rattachait — bilans, plan, points de
+                    suivi, retours — ont été supprimés définitivement.
+                  </ThemedText>
+                  <RamilleDit ligne={RAMILLE.auRevoir} mood="calm" size={44} tilt={-7} />
+                </>
+              )}
 
-            {/* **Ce qui reste après la suppression se dit ici, dans tous les états de la page** —
-                Google Play demande que l'adresse de suppression donnée dans la fiche dise ce qui
-                est supprimé, ce qui est gardé et combien de temps (`docs/exploitation/
-                fiche-google-play.md` §1.4, décidé le 02/10/2026). Hors des blocs d'état, pour que
-                le rendu statique le porte : c'est lui que lit quelqu'un qui ouvre l'adresse sans
-                compte, examinateur compris. La durée des sauvegardes et le compteur du mois sont ceux
-                de `/confidentialite`, à toucher ensemble : rien ne garde l'accord des deux pages. */}
-            <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
-              La suppression efface ton compte et tout ce qui s’y rattache : bilans, résultats,
-              plan, points de suivi, retours, repères de parcours, sessions et identifiant de
-              notification. Nos sauvegardes chiffrées en gardent une copie, sessions exceptées,
-              jusqu’à 90 jours, puis s’effacent d’elles-mêmes. Il ne reste ensuite qu’un compteur
-              des suppressions du mois, sans aucun identifiant.
-            </ThemedText>
+              <MessageInline message={message} style={styles.corps} />
 
-            <ThemedText type="small" themeColor="textTertiary" style={styles.pied}>
-              Une question, ou un blocage ? Écris à {CONTACT_EMAIL}.
-            </ThemedText>
-          </View>
-        </ScrollView>
+              {/* **Ce qui reste après la suppression se dit ici, dans tous les états de la page** —
+                  Google Play demande que l'adresse de suppression donnée dans la fiche dise ce qui
+                  est supprimé, ce qui est gardé et combien de temps (`docs/exploitation/
+                  fiche-google-play.md` §1.4, décidé le 02/10/2026). Hors des blocs d'état, pour que
+                  le rendu statique le porte : c'est lui que lit quelqu'un qui ouvre l'adresse sans
+                  compte, examinateur compris. La durée des sauvegardes et le compteur du mois sont ceux
+                  de `/confidentialite`, à toucher ensemble : rien ne garde l'accord des deux pages. */}
+              <ThemedText type="small" themeColor="textTertiary" style={styles.corps}>
+                La suppression efface ton compte et tout ce qui s’y rattache : bilans, résultats,
+                plan, points de suivi, retours, repères de parcours, sessions et identifiant de
+                notification. Nos sauvegardes chiffrées en gardent une copie, sessions exceptées,
+                jusqu’à 90 jours, puis s’effacent d’elles-mêmes. Il ne reste ensuite qu’un compteur
+                des suppressions du mois, sans aucun identifiant.
+              </ThemedText>
+
+              <ThemedText type="small" themeColor="textTertiary" style={styles.pied}>
+                Une question, ou un blocage ? Écris à {CONTACT_EMAIL}.
+              </ThemedText>
+            </View>
+          </ScrollView>
+        </AuDessusDuClavier>
       </SafeAreaView>
     </ThemedView>
   );

@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuDessusDuClavier } from '@/components/au-dessus-du-clavier';
 import { Button } from '@/components/button';
 import { TextField } from '@/components/auth/text-field';
 import { TextLink } from '@/components/text-link';
@@ -91,12 +92,14 @@ function Cadre({ children }: { children: ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur un bouton ne
-            servait qu'à le fermer — le défaut de React Native (`never`) —, et « Recevoir un code »
-            avait l'air de ne pas avoir pris le geste. */}
-        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-          {children}
-        </ScrollView>
+        <AuDessusDuClavier>
+          {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur un bouton ne
+              servait qu'à le fermer — le défaut de React Native (`never`) —, et « Recevoir un code »
+              avait l'air de ne pas avoir pris le geste. */}
+          <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+            {children}
+          </ScrollView>
+        </AuDessusDuClavier>
       </SafeAreaView>
     </ThemedView>
   );
