@@ -64,8 +64,8 @@ page elle-même : c'est aussi sa version texte.
   déduit du bloc JSON** — l'entrée du rythme, la respiration du manifeste, la reprise et la fin —,
   et le script refuse de se rendre si une coupe quitte la grille. Ses niveaux ont été
   réglés à la mesure — part d'aigus et niveau de chaque piste, attaque à chaque rendez-vous — faute
-  de pouvoir l'écouter dans l'environnement où elle a été écrite : **c'est à l'oreille qu'elle se
-  juge**, et elle se remplace sans toucher au film si elle ne convient pas.
+  de pouvoir l'écouter dans l'environnement où elle a été écrite. **Jugée à l'oreille le 03/10/2026
+  par la personne qui pilote : elle convient.** Elle se remplacerait sans toucher au film.
 - **`exporter.mjs`** — l'export vidéo, image par image et en musique (Playwright, déjà dans les
   dépendances de développement, et `ffmpeg`). Les MP4 s'écrivent dans le dossier temporaire du
   système, jamais dans le dépôt : ils se régénèrent après toute retouche, en un peu plus d'une
@@ -81,10 +81,12 @@ page elle-même : c'est aussi sa version texte.
   contrôle, hors le relais des erreurs de la page, a été éprouvé en cassant ce qu'il garde, et
   l'en-tête dit comment.
 - **`lecture.mjs`** — le film joué pour de vrai, en musique, ce qu'aucune image rendue à un instant
-  ne voit : le son ne saute pas, joue et reste avec l'image, y compris avec la latence d'un vrai
-  navigateur ; la lecture tient 60 images par seconde ; le bouton du son coupe et relance ;
-  « réduire les animations » ouvre les chapitres posés. C'est la garde du « son qui saute »
-  entendu le 03/10/2026 : remettre l'ancienne boucle de lecture la fait tomber, 47 sauts en 15 s.
+  ne voit : le son ne saute pas et avance, tel quel comme avec une latence simulée ; l'image le
+  suit, même quand il va 3 % plus vite qu'elle ; la lecture tient 60 images par seconde sur la
+  machine qui la joue ; le bouton du son coupe et relance ; « réduire les animations » ouvre les
+  chapitres posés. C'est la garde du « son qui saute » entendu le 03/10/2026 : remettre l'ancienne
+  boucle de lecture la fait tomber, 47 sauts en 15 s avec la latence simulée. Chacun de ses
+  contrôles a été éprouvé en cassant ce qu'il garde, et l'en-tête dit comment.
 
 ## Ce que le film reprend de l'app, et d'où
 
@@ -131,16 +133,22 @@ avant chaque diffusion.
 
 ## Décidé le 03/10/2026
 
-La personne qui pilote a validé le film et retenu les cinq recommandations de la proposition :
+La personne qui pilote a validé le film, retenu les trois recommandations de la proposition, jugé
+la musique et gardé le profil d'exemple :
 « Toutes tes recos sont OK, la musique me va, on peut garder le profil d'exemple utilisé. Et à
 date, on maintient pas de score, pas de série, pas de classement. »
 
-1. **Où il sert.** Le 16:9 en vidéo de la fiche Google Play et sur ramille.fr, le 9:16 pour les
-   réseaux — **pas dans l'app pour l'instant** : l'onboarding dit déjà tout cela en quatre écrans,
-   et une étape de plus coûte plus en abandon qu'elle ne rapporte en clarté (commentaire de
-   `src/components/onboarding/etape-transition.tsx`). **Reste à préciser le jour venu** : ramille.fr
-   *est* l'app sur le web, et son premier écran est l'onboarding — « sur ramille.fr » demande donc
-   un emplacement qui ne soit pas une étape de plus.
+1. **Où il sert.** Le 16:9 en vidéo de la fiche Google Play, le 9:16 pour les Stories, Reels,
+   Shorts et TikTok, et un **4:5** (1080 × 1350) pour les fils d'Instagram, de Facebook et de
+   LinkedIn — décidé le même jour, et composé à part. **Pas dans l'app pour l'instant** :
+   l'onboarding dit déjà tout cela en quatre écrans, et une étape de plus coûte plus en abandon
+   qu'elle ne rapporte en clarté (commentaire de `src/components/onboarding/etape-transition.tsx`).
+   **« Et sur ramille.fr » reste à décider par la personne qui pilote** : la recommandation le
+   portait sans voir que ramille.fr *est* l'app, dont le premier écran est l'onboarding. Y mettre le
+   film, c'est soit une étape de plus — ce qu'on vient d'écarter —, soit un emplacement à créer ;
+   et l'intégrer depuis YouTube demande d'ouvrir la politique de sécurité du site (`frame-src`,
+   `vercel.json`) et une ligne dans la page de confidentialité, quand un MP4 servi par le site est
+   un poids de plus à mesurer (`VERCEL.md`).
 2. **Quand.** À la publication sur Google Play, **avec le badge du store en fin de film** : le film
    montre l'app Android (la notification du lundi), alors que sa fin renvoie aujourd'hui à
    ramille.fr seul. Diffusé avant, il ferait une promesse que la personne qui suit l'appel ne
@@ -155,8 +163,13 @@ date, on maintient pas de score, pas de série, pas de classement. »
 4. **La musique** convient telle quelle. Elle se retouche dans `musique.py` (tempo, instruments,
    niveaux), sur la grille que le script vérifie ; une piste sous licence ne se verserait pas dans
    un dépôt public sans vérifier qu'elle le permet.
-5. **Le profil d'exemple est gardé** (1,9 t ; 430 et 300 kg) : il n'a pas été recalculé par
-   l'estimateur, et l'image le dit (« Écrans de l'app · profil d'exemple »).
+5. **Le profil d'exemple est gardé** (1,9 t, le palier de 1,7 t, 430 et 300 kg) : il n'a pas été
+   recalculé par l'estimateur, et l'image le dit (« Écrans de l'app · profil d'exemple »).
+   **Une tension reste à trancher par la personne qui pilote**, que la proposition n'avait pas
+   montrée : la fiche Play pose qu'« aucune capture ne doit montrer un chiffre inventé »
+   (`docs/exploitation/fiche-google-play.md` §2.3), et c'est là que va le 16:9. Deux voies : une
+   exception pour la vidéo, étiquetée comme elle l'est ; ou recalculer ce même profil par
+   l'estimateur, pour que ses chiffres soient ceux que l'app rendrait.
 
 **Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
 minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
