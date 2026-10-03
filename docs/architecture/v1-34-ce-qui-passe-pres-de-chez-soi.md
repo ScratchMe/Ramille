@@ -252,6 +252,11 @@ on s'en fiche. sinon OK ».
   jusqu'au canvas, au risque de conflits avec ce qui arrive sur `main`. Réponse : « ok je suis ta
   reco ». Ce qu'on accepte : le web de production montre l'étape des captures en attendant, et il n'y
   a que des comptes de test.
+- **Deux recommandations de la synchronisation de design, acceptées le même jour** (« OK pour toutes tes
+  recommandations ») : le « C'est noté » en attente qui se fond dans l'encart gris du choix des jours
+  rejoint le brief (§4.5) plutôt qu'une correction faite à la main ; et les conventions que Claude Design
+  lit disent désormais comment une série à cocher se compose — sans quoi le canvas risquait de
+  redessiner la question des transports en choix unique.
 
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 

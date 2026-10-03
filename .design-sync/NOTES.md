@@ -385,9 +385,10 @@ racine + jetons + guide (10), `_vendor/` seul, `fonts/` seul, les 69 aperçus, d
 - **Un constat produit, pas de synchronisation** : dans `ActionCommitment` / `DemandeSansJour`, « C'est noté »
   en attente se fond dans l'encart du choix — `Button` donne au désactivé comme à l'attente le fond
   `backgroundElement`, celui de l'encart. L'aperçu est fidèle à l'app ; remonté à la personne qui pilote.
-- **L'en-tête de conventions** : tous ses noms existent dans le build, aucune phrase n'est fausse. Il ignore
-  la série à cocher que v1-34 a introduite (`GroupeDeChoix cumulable`, `Chip role="checkbox"`, une réponse
-  exclusive) : proposition faite, pas écrite — il appartient à ses auteurs.
+- **L'en-tête de conventions** : tous ses noms existent dans le build. Il ignorait la série à cocher que
+  v1-34 a introduite (`GroupeDeChoix cumulable`, `Chip role="checkbox"`, une réponse exclusive) : proposée,
+  puis écrite le jour même avec l'accord de la personne qui pilote (seconde passe, plus bas). « Aucune phrase
+  n'est fausse », écrit ici au premier relevé, était faux — voir la seconde passe.
 - **Le processus a redémarré entre le plan approuvé et le premier envoi** : le `planId` a tenu, puisque la
   conversation a survécu, et l'envoi a repris après avoir vérifié l'arbre et `ds-bundle/`. Une remise à zéro
   du contexte, elle, le perdrait : nouveau `finalize_plan`, nouvelle approbation.
@@ -414,7 +415,19 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
 - **`LigneDAttente` / `PendantLeDelai` est vide, et c'est voulu** : la ligne se tait les 300 premières
   millisecondes. Une cellule blanche n'y est pas un défaut de rendu ; elle est notée bonne avec cette raison.
 - **L'en-tête de conventions** : #336 y a ajouté que `BandeHaute` est posée par sa pile (`CadreDOnglet`).
-  Tous les noms existent dans le build.
+  La série à cocher y est entrée ensuite, décidée avec la personne qui pilote, avec le rôle `checkbox` dans
+  la phrase d'accessibilité. **Et en relisant le README téléversé, une phrase fausse depuis le 01/10** : elle
+  donnait le « C'est noté » d'une intention incomplète comme l'exemple de `disabled`, alors que v1-33 D13 l'a
+  mis en attente (`src/components/plan/action-commitment.tsx`, `enAttente={manque !== null}`). Le premier
+  relevé l'avait déclaré juste en ne vérifiant que les noms — la règle des risques ci-dessous le disait déjà ;
+  elle ne suffit pas sans relire chaque phrase contre le code de l'app, pas seulement contre le kit.
+- **`--remote` ne pointe jamais dans `ds-bundle/`.** Pour l'envoi des conventions, le pilote a d'abord été
+  lancé avec `--remote ds-bundle/_ds_sync.json` : le build réécrit ce fichier avant le diff, le bundle se
+  compare à lui-même et rend `upload.any: false`. L'ancre se copie dans `.design-sync/.cache/remote-sync.json`
+  **avant** le build — ou, perdue, se reconstruit en refaisant le build sur l'état téléversé (il est
+  déterministe) puis en comparant `bundleSha12`, `auxSha` et `styleSha` à `get_file _ds_sync.json`.
+- **Trois envois ce jour-là après le premier** : le contenu de main (374 fichiers), puis deux fois le seul
+  README et `guidelines/` (`upload.aux`, rien d'autre), chacun derrière son propre `finalize_plan`.
 
 ## Risques de resynchronisation
 

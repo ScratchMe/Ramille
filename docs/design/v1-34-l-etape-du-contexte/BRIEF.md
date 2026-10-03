@@ -12,6 +12,8 @@ convaincu :
 prennent sur une étape qui défile déjà. Deux autres sujets viennent avec, parce qu'ils se voient sur les
 mêmes captures et touchent les mêmes composants : la façon dont une rangée **à cocher** se distingue
 des rangées à choix unique, et la marque d'une puce cochée, qui fait bouger ses voisines.
+Un quatrième, plus petit, vient d'un autre écran et a été joint ensuite : un bouton en attente qui
+disparaît sur l'encart gris où il est posé (§4.5).
 
 **Ce brief demande l'UX autant que l'UI.** La personne arrive à la dernière étape d'un questionnaire
 de neuf. On lui pose quatre questions sur l'endroit où elle vit. Elle doit comprendre sans chercher
@@ -127,6 +129,17 @@ Ce que les captures montrent, et que la mesure ne dit pas :
    La réponse vaut pour **toutes** les puces du produit.
 4. **Le choix multiple qui se reconnaît.** La rangée dit-elle assez, par sa forme et son aide, qu'on
    peut cocher plusieurs réponses, et que « Rien de tout ça » est à part ?
+5. **Un bouton en attente posé sur un encart gris** — un constat d'un autre écran, joint à ce brief le
+   03/10/2026 par la personne qui pilote. Au plan, quand on s'engage sur une action à jours sans en
+   cocher aucun, « C'est noté » est **en attente** (`Button enAttente`) : il agit, et son toucher fait
+   apparaître « Choisis au moins un jour. ». Son apparence est celle du désactivé, le fond
+   `backgroundElement` — **le même gris que l'encart du choix des jours** dans lequel il est posé. Le
+   bouton n'a plus de bord : il reste un libellé gris flottant à côté d'« Annuler »
+   (`plan-c-est-note-en-attente.png`). Le questionnaire n'a pas ce défaut, son « Suivant » en attente
+   est posé sur la page blanche. La question : **comment un bouton en attente se dessine sur une
+   surface grise** — et la réponse vaut pour `Button`, donc partout où un bouton se pose dans un encart.
+   Ce qui tient : l'apparence d'un bouton qui ne peut pas encore aboutir, jamais une opacité, le
+   libellé qui ne change pas, et un bouton qui reste touchable.
 
 ## 5. Ce qu'on ne veut pas voir
 
@@ -150,7 +163,9 @@ donc les quatre questions sont posées :
   encore ce qui passe près de chez toi » ;
 - **l'écran `/contexte`** avec les mêmes réponses, pour montrer que la réponse tient sans `StepShell` ;
 - si la marque d'une puce cochée change : **un autre écran à puces** (les jours et la distance du
-  trajet, ou les longs trajets), pour montrer qu'elle tient ailleurs.
+  trajet, ou les longs trajets), pour montrer qu'elle tient ailleurs ;
+- **le choix des jours de l'engagement, rien de coché, « C'est noté » touché** (§4.5), et le même
+  choix avec deux jours cochés, pour voir le bouton passer de l'attente au principal.
 
 ## 7. Questions ouvertes pour la session
 
@@ -181,12 +196,14 @@ navigation privée, « Découvrir mon impact », puis le questionnaire jusqu'à 
 | `360-1-premier-ecran.png` | 360 × 800, rien de répondu |
 | `360-2-etape-entiere-vide.png` | l'étape entière à 360, rien de répondu |
 | `360-3-etape-entiere-remplie.png` | la même, remplie : Urbain dense, RER ou Transilien et Train |
+| `plan-c-est-note-en-attente.png` | au plan, le choix des jours, rien de coché, « C'est noté » touché (§4.5) — rendu du kit |
 
 Les fenêtres étirées montrent l'étape entière d'un seul tenant : le blanc au-dessus des boutons vient
 de là.
 
-Le composant est dans le kit, [`ChampsDeContexte.jsx`](../design-system/components/bilan/ChampsDeContexte.jsx),
-à jour sur la branche. **Le projet Claude Design « Ramille » n'a pas encore cette version** : sa
-dernière synchronisation date du 29/09/2026, et il montre encore l'ancienne question de l'accès. Une
-synchronisation (`/design-sync`, que lance la personne qui pilote) l'y mettrait. En attendant, les
-captures font foi. En cas d'écart entre le kit et le code, **le code gagne**.
+Le composant est dans le kit, [`ChampsDeContexte.jsx`](../design-system/components/bilan/ChampsDeContexte.jsx).
+**Le projet Claude Design « Ramille » a cette version depuis la huitième synchronisation**, le
+03/10/2026 : `ChampsDeContexte` et `ContextStep` y montrent la question des transports, et
+`ActionCommitment` / `DemandeSansJour` le bouton en attente du §4.5. Ses conventions disent aussi,
+depuis ce jour-là, comment une série à cocher se compose. En cas d'écart entre le kit et le code,
+**le code gagne**.
