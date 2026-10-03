@@ -477,7 +477,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   à la feuille du re-bilan ? **Non, tranché le 02/10/2026** : le voile ferme toutes les feuilles.
 - **« Réessayer » en secondaire pendant la confirmation de suppression** : la décision visait
   « Rattacher un compte » ; le chantier l'a étendue au « Réessayer » d'un échec, pour qu'il n'y ait
-  qu'un principal.
+  qu'un principal. **Validé le 03/10/2026.**
 - **« Faire un nouveau bilan » le jour même** reste la tension de §6, non posée.
 - **Toucher le voile de la feuille du re-bilan sort du questionnaire**, comme « Pas maintenant » :
   même question que pour la feuille des rappels, sur une feuille qui s'ouvre sans geste — même
@@ -500,7 +500,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   défaut que C2.11 devait fermer (`v1-27` §12.27).
 - **`commitPlanAction` dit « Vérifie ta connexion et réessaie. » à toute erreur d'écriture** : D19 ne
   couvre que les lectures. **Corrigé le 02/10/2026** (`v1-27` §12.29), pour toutes les écritures du
-  produit ; les phrases du serveur sont à valider.
+  produit ; les phrases du serveur sont **validées le 03/10/2026**.
 - **Deux lectures de l'entrée d'un re-bilan n'ont ni relecture ni « Réessayer »** : le préremplissage
   et l'engagement en cours. Depuis que les lectures ne sont plus rejouées (R-5), un raté réseau d'une
   seconde y donne un questionnaire vide, sans bandeau ni feuille — rien de faux n'est dit, mais neuf
