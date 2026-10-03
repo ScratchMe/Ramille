@@ -560,6 +560,12 @@ les GitHub Issues ouvertes de ce repo, qui font foi. Les quatre premières idée
 de retour, la mesure d'usage) sont toutes **livrées** depuis — `v1-07` §4 et `v1-08`. Le jeu "pas = monnaie" évoqué le 04/09/2026 est explicitement hors
 roadmap de ce repo (projet à part, voir `v1-06-partage-social.md` §1).
 
+**Le film de présentation promet publiquement « Pas de score. Pas de série. Aucun classement. »**
+(décidé le 03/10/2026, `docs/communication/le-fil-de-ramille/README.md`). « Aucun classement » est
+un non-goal ferme ; les mécaniques de jeu, elles, ont été **révisées, pas supprimées**
+(`v1-06-partage-social.md` §1). **Ouvrir une progression non comparative impose donc de retoucher le
+film dans le même mouvement** — sinon il contredit le produit le jour même.
+
 **Un increment identifié et non planifié : les déplacements professionnels** (sorti du lot 4 le
 27/09/2026, [`v1-24`](v1-24-deplacements-professionnels.md)). Un quatrième poste traverse le calcul,
 les colonnes figées, la restitution, les deux boucles et le référentiel d'actions, et ses kilomètres

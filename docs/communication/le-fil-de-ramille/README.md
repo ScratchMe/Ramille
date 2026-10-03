@@ -1,7 +1,8 @@
 # Le fil de Ramille — le film de présentation
 
-**Statut** : proposition du 03/10/2026, pas encore diffusée. Ce qui reste à décider est en fin de
-document et revient à la personne qui pilote : c'est ce qu'on montre du produit.
+**Statut** : validé par la personne qui pilote le 03/10/2026, **pas encore diffusé** — il attend la
+publication sur Google Play. Ce qui a été décidé, et ce qu'il reste à faire ce jour-là, est en fin
+de document.
 
 ## Ce que c'est
 
@@ -79,6 +80,11 @@ page elle-même : c'est aussi sa version texte.
   de format, puis une passe dans le désordre). À relancer après toute retouche du film ; chaque
   contrôle, hors le relais des erreurs de la page, a été éprouvé en cassant ce qu'il garde, et
   l'en-tête dit comment.
+- **`lecture.mjs`** — le film joué pour de vrai, en musique, ce qu'aucune image rendue à un instant
+  ne voit : le son ne saute pas, joue et reste avec l'image, y compris avec la latence d'un vrai
+  navigateur ; la lecture tient 60 images par seconde ; le bouton du son coupe et relance ;
+  « réduire les animations » ouvre les chapitres posés. C'est la garde du « son qui saute »
+  entendu le 03/10/2026 : remettre l'ancienne boucle de lecture la fait tomber, 47 sauts en 15 s.
 
 ## Ce que le film reprend de l'app, et d'où
 
@@ -123,30 +129,34 @@ avant chaque diffusion.
   et 300 kg) sont un profil d'exemple**, et l'image le dit (« Écrans de l'app · profil
   d'exemple ») : ils n'ont pas été recalculés par l'estimateur.
 
-## À trancher avant de diffuser
+## Décidé le 03/10/2026
 
-1. **Où il sert d'abord.** Recommandation : le 16:9 en vidéo de la fiche Google Play et sur
-   ramille.fr, le 9:16 pour les réseaux — **pas dans l'app pour l'instant**. L'onboarding dit déjà
-   tout cela en quatre écrans, et on a refusé d'y ajouter un cinquième parce qu'une étape de plus
-   coûte plus en abandon qu'elle ne rapporte en clarté (commentaire de
-   `src/components/onboarding/etape-transition.tsx`). Ce qu'on casse si on se trompe : des
-   abandons avant le bilan.
-2. **Quand le diffuser, et ce que dit la fin.** Le film montre l'app Android : la notification du
-   lundi, « Ramille te fait signe lundi ». Sur le web, il n'y a pas de notification, et le rappel
-   par e-mail demande un compte ; sans canal, l'app dit « On se retrouve ici lundi. ». Or la fin
-   renvoie à ramille.fr seul, l'app n'étant pas encore sur Google Play. Recommandation : diffuser
-   à la publication sur Play, avec le badge du store en fin de film. Ce qu'on casse si on diffuse
-   avant : une promesse que la personne qui suit l'appel ne verra pas tenue. « Gratuit » n'est
-   écrit nulle part, faute de l'avoir décidé.
-3. **« Pas de score. Pas de série. » devient une promesse publique.** « Aucun classement » est un
-   non-goal ferme ; celui des mécaniques de jeu a été **révisé, pas supprimé**, et une progression
-   non comparative y redevient envisageable (`docs/architecture/v1-06-partage-social.md` §1).
-   Recommandation : garder les trois phrases si ce chantier n'est pas prévu, sinon ne garder
-   qu'« Aucun classement ». Ce qu'on casse si on se trompe : un film qui contredit le produit le
-   jour où cette porte s'ouvre.
-4. **La musique.** Elle est originale et calée sur le film, mais elle a été composée sans être
-   écoutée : à juger à l'oreille. Si elle ne convient pas, deux voies — retoucher `musique.py`
-   (tempo, instruments, niveaux), ou une piste sous licence, à couper sur la grille de 2,4 s ; une
-   piste sous licence ne se verse pas dans un dépôt public sans vérifier qu'elle le permet.
-5. **Le profil d'exemple.** Le garder tel quel, ou le remplacer par un profil de recette calculé
-   par la base, pour que les kilos affichés soient ceux que l'estimateur rendrait vraiment.
+La personne qui pilote a validé le film et retenu les cinq recommandations de la proposition :
+« Toutes tes recos sont OK, la musique me va, on peut garder le profil d'exemple utilisé. Et à
+date, on maintient pas de score, pas de série, pas de classement. »
+
+1. **Où il sert.** Le 16:9 en vidéo de la fiche Google Play et sur ramille.fr, le 9:16 pour les
+   réseaux — **pas dans l'app pour l'instant** : l'onboarding dit déjà tout cela en quatre écrans,
+   et une étape de plus coûte plus en abandon qu'elle ne rapporte en clarté (commentaire de
+   `src/components/onboarding/etape-transition.tsx`). **Reste à préciser le jour venu** : ramille.fr
+   *est* l'app sur le web, et son premier écran est l'onboarding — « sur ramille.fr » demande donc
+   un emplacement qui ne soit pas une étape de plus.
+2. **Quand.** À la publication sur Google Play, **avec le badge du store en fin de film** : le film
+   montre l'app Android (la notification du lundi), alors que sa fin renvoie aujourd'hui à
+   ramille.fr seul. Diffusé avant, il ferait une promesse que la personne qui suit l'appel ne
+   verrait pas tenue. Ce geste est une ligne de la checklist de publication
+   (`docs/exploitation/README.md` §4), pour qu'il ne s'oublie pas. « Gratuit » n'est écrit nulle
+   part, faute de l'avoir décidé.
+3. **« Pas de score. Pas de série. Aucun classement. » est maintenu** — et devient une promesse
+   publique. « Aucun classement » est un non-goal ferme ; celui des mécaniques de jeu a été
+   **révisé, pas supprimé**, et une progression non comparative y redevient envisageable
+   (`docs/architecture/v1-06-partage-social.md` §1). **Le jour où ce chantier s'ouvre, le film se
+   retouche avec lui** ; `docs/architecture/produit.md` §5 le rappelle à qui l'ouvrira.
+4. **La musique** convient telle quelle. Elle se retouche dans `musique.py` (tempo, instruments,
+   niveaux), sur la grille que le script vérifie ; une piste sous licence ne se verserait pas dans
+   un dépôt public sans vérifier qu'elle le permet.
+5. **Le profil d'exemple est gardé** (1,9 t ; 430 et 300 kg) : il n'a pas été recalculé par
+   l'estimateur, et l'image le dit (« Écrans de l'app · profil d'exemple »).
+
+**Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
+minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
