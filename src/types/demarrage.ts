@@ -124,3 +124,14 @@ export function destinationDuDemarrage(
   if (local.brouillon) return { vers: 'reprise' };
   return local.marqueDeBilan ? { vers: 'plan' } : { vers: 'onboarding' };
 }
+
+/**
+ * **La lecture du plan part-elle pendant l'écran de lancement ?** (`v1-33` T-12, 03/10/2026) — oui
+ * quand le plan est la destination **d'une lecture réussie**. Pas sur la marque locale d'une coupure :
+ * la lecture échouerait tout de suite, et l'écran du plan reprendrait cet échec au lieu de retenter la
+ * sienne en se montant. Ni vers la reprise, ni vers l'onboarding, ni vers l'écran d'échec : personne
+ * n'y lira le plan.
+ */
+export function prechargeLePlan(lecture: LectureDuBilan, destination: Destination): boolean {
+  return destination.vers === 'plan' && lecture.etat === 'lue';
+}

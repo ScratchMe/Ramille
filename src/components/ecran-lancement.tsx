@@ -54,6 +54,10 @@ const SOMMET_REVEIL = REVEIL + 110;
  *
  * 1450 et non la durée exacte de l'animation (~1080 ms) : une image finale qui disparaît
  * dans la milliseconde où elle se pose ne se lit pas. Il reste ~400 ms de visage souriant.
+ *
+ * **Et il couvre la lecture du plan** depuis le 03/10/2026 (`v1-33` T-12) : la racine la lance avant
+ * de l'attendre (`prechargerLePlan`, `src/lib/lecture-du-plan.ts`), au lieu que le plan la commence
+ * une fois le plancher passé.
  */
 export const DUREE_ANIMATION_LANCEMENT = 1450;
 

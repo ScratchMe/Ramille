@@ -158,7 +158,7 @@ phases). L'état de chaque ligne est celui de la PR qui porte ce document.
 | T-5 | Sept apparences de `TextLink` (le kit en documente quatre) ; « J'ai déjà un compte » en cinq ; des « Retour » gris collés à une phrase grise du même corps | Trente et un fichiers : il entrerait en conflit avec chaque chantier de la vague. À faire seul, juste après. **Fait le 03/10/2026**, plus bas |
 | T-9 | Huit formes d'attente, dont quatre qui n'attendent pas les 300 ms | Un composant `LigneDAttente` partagé, même raison que T-5 ; les deux cas les plus visibles (`/contexte`, `/connexion/retrouver`) sont traités dans la vague. **Fait le 03/10/2026**, plus bas |
 | T-10 | « Retour » : trois styles, trois places selon le détour | Une décision de dessin : déplacer « Plus tard » détacherait la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2) |
-| T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil |
+| T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil. **Fait le 03/10/2026**, plus bas |
 | T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux. **Fait le 03/10/2026**, plus bas |
 | T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView` |
 | T-7 (glissé) | La poignée de la feuille promet un glissé qui n'existe pas | Un seuil de glissé se juge au doigt |
@@ -206,6 +206,22 @@ P-2 du parcours réel passent telles quelles (rejeu complet du 03/10/2026). Les 
 `src/tests/ecrans/cadre-des-piles.test.tsx` pour la bande et son ordre, et l'absence de bande dans
 l'écran par `restitution-du-bilan.test.tsx` et `plan-pistes.test.tsx` — une bande en double, le
 parcours réel la tolère.
+
+**T-12, fait le 03/10/2026.** La lecture du plan — trois lots de requêtes, dont le dernier en enchaîne
+deux, soit quatre allers-retours, préférences de rappel et permission comprises — sort de l'écran pour
+`src/lib/lecture-du-plan.ts` (`lireLePlan`). La racine la lance dès qu'une lecture réussie désigne le
+plan (`prechargeLePlan`), **avant** d'attendre le plancher, et le premier chargement de l'écran la
+reprend, une fois, pour la même session et fraîche. La contre-lecture a trouvé ce que ce départ plus
+tôt réveillait : la lecture du jeton d'appareil pouvait croiser son enregistrement au démarrage, et la
+carte d'attente annoncer le mauvais canal — elle l'attend désormais (`suivreLEnregistrementDuJeton`). La décision du plancher
+(`v1-13`, D13) ne bouge pas : il couvre désormais la lecture au lieu de la précéder. **Mesuré sur
+l'export web**, contre la stack locale, une latence posée sur chaque requête et six ouvertures par
+mesure, de « / » au plan qui montre son action : **2,94 → 1,78 s** à 300 ms, **2,14 → 1,64 s** à
+100 ms — le plan arrive désormais à peine après la fin de l'écran de lancement. Le gain sur appareil
+reste à relever (`v1-13` §11.26). Les gardes : `src/lib/lecture-du-plan.test.ts` (reprise au premier
+passage, une fois, même session, fraîche ; une lecture annulée s'arrête entre deux lots),
+`prechargeLePlan` dans `demarrage.test.ts`, l'attente du jeton dans `notification-prefs.test.ts`, et le
+parcours réel passe tel quel.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
 « Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10
