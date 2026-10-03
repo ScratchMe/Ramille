@@ -354,10 +354,14 @@ les 68 aperçus, la sentinelle de nouveau, puis `_ds_sync.json` seul.
 ## Relevé du 03/10/2026 — huitième synchronisation, v1-33 et v1-34
 
 Chemin atomique, skill 2.1.288 (même chromium qu'au 28/09 : `playwright@1.56.1` dans `.ds-sync/`, l'image
-porte toujours le 1194). Elle porte la fin de la vague v1-33 (#316, #324, #325, #328, #331, #333) et v1-34
-(#330, ce qui passe près de chez soi). Le pilote a trouvé **58 composants inchangés côté vérification, 10
-changés et 1 ajouté** (`ChampDuPlafond`, #333), aucun retiré ; **32 à téléverser**, bundle, style et README
-compris. Les 11 notés bons cellule par cellule, `ActionCommitment` aussi (aperçu enrichi en route), et 11 des
+porte toujours le 1194). Elle porte ce que le kit a reçu depuis la septième synchronisation (#298, le
+29/09/2026) : les boucles qui suivent le dernier bilan valide et les puces centrées (#306), les deux lieux qui
+ne disent que ce qui tourne (#308), la feuille de recette unique (#299), surtout les vagues technique et
+produit de v1-33 (#314, 74 fichiers du kit), puis les textes validés le 02/10 (#316), la quatrième fréquence
+des loisirs (#325), la question du mois qui attend le mois choisi (#328), l'intention modifiable sans libérer
+l'engagement (#331), le champ sous « 10+ » (#333), et v1-34, ce qui passe près de chez soi (#330). Le pilote a
+trouvé **58 composants inchangés côté vérification, 10 changés et 1 ajouté** (`ChampDuPlafond`, #333), aucun
+retiré ; **32 composants à téléverser**, plus le bundle, le style et le README. Les 11 notés bons cellule par cellule, `ActionCommitment` aussi (aperçu enrichi en route), et 11 des
 21 téléversés sans regrader relus par `--spot-check-components` : les plus gros changements de source. 69
 rendus, aucun mauvais, aucune carte plancher, les deux `[RENDER_THIN]` connus. 364 fichiers : la sentinelle,
 racine + jetons + guide (10), `_vendor/` seul, `fonts/` seul, les 69 aperçus, deux lots de composants (140,
@@ -372,19 +376,28 @@ racine + jetons + guide (10), `_vendor/` seul, `fonts/` seul, les 69 aperçus, d
   (pas vu non plus : `variantsIdentical` ne compare pas une histoire à une seule autre). Seule la lecture des
   feuilles l'attrape.
 - **Une prop neuve et optionnelle ne fait broncher aucune garde**, alors qu'elle porte souvent un état neuf :
-  `ActionCommitment.demande` (v1-33 D13) et `onModify` (D15), `plafond` de `FlightsStep` et `LongTripsStep`
-  (#333). Les aperçus en ont gagné les états. Le relevé qui les trouve, sur les composants à téléverser :
-  `git diff <commit de la synchro précédente> HEAD -- docs/design/design-system/components/*/<Nom>.d.ts`, sans
-  les lignes de commentaire.
+  `ActionCommitment.demande` (v1-33 D13, venue avec #314) et `onModify` (D15), `plafond` de `FlightsStep` et
+  `LongTripsStep` (#333). Les aperçus en ont gagné les états — `LongTripsStep` seulement à la contre-lecture :
+  son aperçu ne passait ni `plafond` ni `choisirLePlafond`, donc « 10+ » y décochait la série au lieu d'ouvrir
+  le champ. Le relevé qui les trouve, sur les composants à téléverser :
+  `git diff <arbre synchronisé la fois d'avant> HEAD -- docs/design/design-system/components/*/<Nom>.d.ts`,
+  sans les lignes de commentaire. **L'arbre synchronisé se nomme dans chaque relevé**, puisque les commits
+  d'une branche disparaissent au squash : pour celui-ci, `docs/design/design-system` tel que `main` le porte
+  après la fusion de #338 — aucune autre PR ne l'a touché entre-temps. Rejoué depuis #298, il trouve aussi
+  `relecture` (`ActionCommitment`, `CarteDePiste`, #314) : « C'est noté » inerte pendant que l'écran relit le
+  plan. Histoire `Relecture` ajoutée à `ActionCommitment`, parce qu'elle montre le seul `disabled` à côté de
+  l'attente qui lui ressemble (brief de l'étape du contexte §4.5) ; pas à `CarteDePiste`, qui pose le même
+  `ActionCommitment`.
 - **Les cadres se mesurent, et un changement de cadre veut un build complet** : `preview-rebuild.mjs` refuse
   en `[CONFIG_STALE]`. La méthode tient désormais dans un script versionné, `.design-sync/mesurer-les-cadres.cjs`
   (cadres élargis à 1600, build, capture, mesure, cadre final = la plus haute mesure + une trentaine de
-  pixels). `LongTripsStep` / `EnVoiture` mesurait exactement 1150, la hauteur de son cadre : le contenu
-  touchait le bord, d'où 1180. `ChampsDeContexte` (470 → 710) et `ContextStep` (650 → 870) n'affichaient que
+  pixels). `LongTripsStep` / `EnVoiture` s'arrête à 1150, d'où 1180 — la contre-lecture y a soupçonné une
+  mesure tronquée par un cadre de 1150 ; remesurée dans un cadre de 1600, elle donne bien 1150. `ChampsDeContexte` (470 → 710) et `ContextStep` (650 → 870) n'affichaient que
   la moitié de l'étape depuis v1-34.
 - **Un constat produit, pas de synchronisation** : dans `ActionCommitment` / `DemandeSansJour`, « C'est noté »
   en attente se fond dans l'encart du choix — `Button` donne au désactivé comme à l'attente le fond
-  `backgroundElement`, celui de l'encart. L'aperçu est fidèle à l'app ; remonté à la personne qui pilote.
+  `backgroundElement`, celui de l'encart. L'aperçu est fidèle à l'app. Remonté à la personne qui pilote, qui
+  l'a joint au brief de Claude Design (§4.5) ; consigné en `v1-33` §9, sous D13.
 - **L'en-tête de conventions** : tous ses noms existent dans le build. Il ignorait la série à cocher que
   v1-34 a introduite (`GroupeDeChoix cumulable`, `Chip role="checkbox"`, une réponse exclusive) : proposée,
   puis écrite le jour même avec l'accord de la personne qui pilote (seconde passe, plus bas). « Aucune phrase
@@ -395,22 +408,25 @@ racine + jetons + guide (10), `_vendor/` seul, `fonts/` seul, les 69 aperçus, d
 
 ### Seconde passe, le même jour — main avait bougé le kit pendant le premier envoi
 
-Trois fusions sont arrivées sur `main` entre le relevé et la PR de cette synchronisation : les liens à trois
-apparences (#335), l'attente et la bande haute écrites une fois (#336), le plancher du lancement (#337). Le
-projet portait donc un kit déjà en retard. Seconde passe sur la branche fusionnée, l'ancre fraîchement
+Quatre fusions sont arrivées sur `main` entre le relevé et la PR de cette synchronisation, dont trois
+touchaient le kit : la réponse au point qui se corrige (#334, `CheckinCard`), les liens à trois apparences
+(#335), l'attente et la bande haute écrites une fois (#336) ; le plancher du lancement (#337) n'y touchait
+pas. Le projet portait donc un kit déjà en retard. Seconde passe sur la branche fusionnée, l'ancre fraîchement
 téléversée en `--remote` : **5 changés** (`ActionCard`, `CheckinCard`, `FeuilleDuBas`, `GoogleButton`,
 `TextLink`), **2 ajoutés** (`CadreDOnglet`, `LigneDAttente`, fiches venues avec #336), 10 à téléverser, 71
 rendus, aucun mauvais. 374 fichiers par le même enchaînement, en trois lots de contenu (128, 128, 116),
 aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était bien celle du premier envoi.
 
-- **#336 avait écrit, de son côté, des fiches que cette synchronisation écrivait aussi** :
-  `ChampDuPlafond.tsx` (trois états figés) et `LeisureFrequencyStep.tsx` (qui gardait encore
-  `commute_has_regular_trip` et l'histoire devenue identique). Les conflits ont été tranchés pour les versions
+- **Deux PR de main avaient écrit, de leur côté, des fiches que cette synchronisation écrivait aussi** :
+  #336 `ChampDuPlafond.tsx` (trois états figés), #335 `LeisureFrequencyStep.tsx` (`total` retiré, mais
+  `commute_has_regular_trip` et l'histoire devenue identique encore là). Les conflits ont été tranchés pour les versions
   de cette branche, qui les contiennent : quatre états avec `useState` pour l'une, la quatrième fréquence pour
   l'autre. Deux sessions qui touchent `previews/` le même jour se croisent sans que rien ne le dise avant la
-  fusion — c'est le relevé de fichiers de `CLAUDE.md`, appliqué à `.design-sync/`.
+  fusion — c'est le relevé de fichiers de `CLAUDE.md`, appliqué à `.design-sync/`. **Et la version gardée de
+  `ChampDuPlafond` échappait à `props-check.py`**, qui saute une balise aux props étalées (`{...props}`) :
+  ses props s'écrivent désormais en clair, et une prop inventée y a été attrapée (mutation du 03/10/2026).
 - **`CheckinCard` a gagné un état sans gagner d'histoire** — exactement le risque relevé le matin même :
-  `correction`, `reponseEnPlace`, `onModify`, `onCancel` (v1-33 §6, « Modifier ma réponse »). Les cartes
+  `correction`, `reponseEnPlace`, `onModify`, `onCancel` (#334, v1-33 §6, « Modifier ma réponse »). Les cartes
   répondues montraient déjà le lien, mais rien ne montrait la carte rouverte. Histoire `EnCorrection` ajoutée.
 - **`LigneDAttente` / `PendantLeDelai` est vide, et c'est voulu** : la ligne se tait les 300 premières
   millisecondes. Une cellule blanche n'y est pas un défaut de rendu ; elle est notée bonne avec cette raison.
@@ -426,8 +442,13 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
   compare à lui-même et rend `upload.any: false`. L'ancre se copie dans `.design-sync/.cache/remote-sync.json`
   **avant** le build — ou, perdue, se reconstruit en refaisant le build sur l'état téléversé (il est
   déterministe) puis en comparant `bundleSha12`, `auxSha` et `styleSha` à `get_file _ds_sync.json`.
-- **Trois envois ce jour-là après le premier** : le contenu de main (374 fichiers), puis deux fois le seul
-  README et `guidelines/` (`upload.aux`, rien d'autre), chacun derrière son propre `finalize_plan`.
+- **Quatre envois ce jour-là après le premier**, chacun derrière son propre `finalize_plan` : le contenu de
+  main (374 fichiers), deux fois le seul README et `guidelines/` (`upload.aux`), puis les quatre aperçus
+  corrigés à la contre-lecture (`ActionCommitment`, `ChampDuPlafond`, `CheckinCard`, `LongTripsStep`).
+- **La contre-lecture a rendu douze constats** : deux histoires fausses ou incomplètes, deux angles morts
+  des gardes, quatre erreurs d'attribution ou de compte dans ce relevé, une phrase de `BILAN.md` restée au
+  futur, l'usage faux de `mesurer-les-cadres.cjs`, un constat produit qui ne vivait qu'ici, et un soupçon de
+  mesure tronquée — infirmé en remesurant.
 
 ## Risques de resynchronisation
 
@@ -465,6 +486,8 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
 - **Une prop optionnelle neuve, ou un champ d'objet retiré, passent toutes les gardes** (relevé du 03/10/2026
   ci-dessus) : relire le diff des `.d.ts` des composants à téléverser, et les feuilles des histoires qui en
   dépendent. Et un composant ajouté au kit sans fiche part sur la carte plancher sans que le pilote le dise.
+  Et une balise d'aperçu qui étale ses props (`<Nom {...props} />`) échappe à `props-check.py` : les props d'un
+  composant du kit s'écrivent en clair dans les aperçus, même derrière un enrobage à état.
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
   bout, et un nouveau téléversement coûte peu.

@@ -8,7 +8,8 @@ const Champ = ({ depart, ...props }: Omit<Props, 'valeur' | 'onChange'> & { depa
   const [valeur, setValeur] = React.useState<number | null>(depart);
   return (
     <div style={{ maxWidth: 342 }}>
-      <ChampDuPlafond {...props} valeur={valeur} onChange={setValeur} />
+      {/* Les props en clair, et non `{...props}` : `props-check.py` saute une balise qui étale ses props. */}
+      <ChampDuPlafond unite={props.unite} label={props.label} marque={props.marque} valeur={valeur} onChange={setValeur} />
     </div>
   );
 };

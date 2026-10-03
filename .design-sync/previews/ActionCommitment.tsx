@@ -26,6 +26,13 @@ export const ChoixDeLEcheance = () => (
 export const DemandeSansJour = () => <Cadre><ActionCommitment kind="days" state="picking" days={[]} demande /></Cadre>;
 
 /**
+ * « C'est noté » a abouti et l'écran relit le plan (01/10/2026, audit P-1) : le choix reste, son bouton inactif
+ * (`disabled`), jusqu'à la carte engagée. Le seul « C'est noté » vraiment inerte — à comparer avec l'attente,
+ * juste au-dessus, qui a la même apparence mais agit.
+ */
+export const Relecture = () => <Cadre><ActionCommitment kind="days" state="picking" days={[2, 4]} relecture /></Cadre>;
+
+/**
  * Engagé : deux liens. « Modifier les jours » rouvre le choix prérempli sans libérer l'action (02/10/2026, `v1-33`
  * D15) ; « Changer d'avis » libère sans rien compter.
  */

@@ -34,10 +34,14 @@ const compteursApresLaReponse = (r: Reponses, oui: boolean): Partial<Reponses> =
   return { train_long_trips_per_year: null, coach_long_trips_per_year: null, car_long_trips_per_year: null };
 };
 
-// Le contenu défilant de `StepShell`, à la largeur d'un téléphone : 390 moins ses deux marges de 24.
-const Etape = ({ depart, oui: ouiAuDepart = false }: { depart: Partial<Reponses>; oui?: boolean }) => {
+type Compte = 'train_long_trips_per_year' | 'coach_long_trips_per_year' | 'car_long_trips_per_year';
+
+// Le contenu défilant de `StepShell`, à la largeur d'un téléphone : 390 moins ses deux marges de 24. « 10+ » touché :
+// le dépôt tient ce drapeau par série, hors des colonnes (`plafond`), puisque le champ peut rester vide.
+const Etape = ({ depart, oui: ouiAuDepart = false, plafonds: plafondsAuDepart = [] }: { depart: Partial<Reponses>; oui?: boolean; plafonds?: Compte[] }) => {
   const [answers, setAnswers] = React.useState<Reponses>({ ...VIERGE, ...depart });
   const [oui, setOui] = React.useState(ouiAuDepart);
+  const [plafonds, setPlafonds] = React.useState<Compte[]>(plafondsAuDepart);
   return (
     <div style={{ maxWidth: 342 }}>
       <LongTripsStep
@@ -48,6 +52,10 @@ const Etape = ({ depart, oui: ouiAuDepart = false }: { depart: Partial<Reponses>
           setOui(o);
           setAnswers((a) => normaliser({ ...a, ...compteursApresLaReponse(a, o) }));
         }}
+        plafond={(compte) => plafonds.includes(compte)}
+        choisirLePlafond={(compte, choisi) =>
+          setPlafonds((p) => (choisi ? (p.includes(compte) ? p : [...p, compte]) : p.filter((c) => c !== compte)))
+        }
       />
     </div>
   );
@@ -80,3 +88,11 @@ export const EnVoiture = () => (
  * coche « 10+ » de lui-même et s'affiche dans le champ (`v1-33` §6).
  */
 export const PlusDeDixEnTrain = () => <Etape depart={{ train_long_trips_per_year: 24, coach_long_trips_per_year: 0, car_long_trips_per_year: 0 }} />;
+
+/**
+ * « 10+ » vient d'être touché en train : le champ s'ouvre vide sous la série, et l'étape le réclame — la réponse
+ * n'est pas encore un nombre.
+ */
+export const DixOuPlusEnTrainAReclamer = () => (
+  <Etape depart={{ coach_long_trips_per_year: 0, car_long_trips_per_year: 0 }} oui plafonds={['train_long_trips_per_year']} />
+);

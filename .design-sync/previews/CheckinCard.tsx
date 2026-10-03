@@ -42,9 +42,9 @@ export const SecondRenforcement = () => (
 );
 
 /**
- * « Modifier ma réponse » touché (02/10/2026, `v1-33` §6) : la question et les trois réponses
- * reviennent sous la réponse en place, dite dans les mots des boutons — qui n'ont pas d'état
- * « choisi », et c'est voulu —, avec « Annuler » dessous.
+ * « Modifier ma réponse » touché (02/10/2026, `v1-33` §6) : la question revient, puis la réponse
+ * en place, dite dans les mots des boutons — qui n'ont pas d'état « choisi », et c'est voulu —,
+ * puis les trois réponses, et « Annuler » dessous.
  */
 export const EnCorrection = () => (
   <CheckinCard

@@ -159,9 +159,10 @@ questionnaire. Quatre choses à savoir avant d'y toucher :
   (`scripts/verifier-miroirs-de-check.mjs`, `TESTING-GARDES.md` §2.7) ;
 - **les recopies du kit suivent à la main** : `docs/design/design-system/components/bilan/ChampsDeContexte.*`,
   `ContextStep.d.ts`, `bilan.card.js` et `forms/IntituleDuChamp.d.ts`, ainsi que les deux aperçus de
-  `.design-sync/previews/`. **Leurs hauteurs (`.design-sync/config.json`) sont à remesurer** à la
-  prochaine synchronisation : la série qui se coche passe sur deux rangées et porte une ligne d'aide, et
-  une hauteur ne se devine pas (`.design-sync/NOTES.md`).
+  `.design-sync/previews/`. **Leurs hauteurs (`.design-sync/config.json`) ont été remesurées** à la
+  synchronisation du 03/10/2026 (470 → 710 et 650 → 870) : la série qui se coche passe sur deux rangées et
+  porte une ligne d'aide, et une hauteur ne se devine pas — à remesurer à chaque retouche de l'étape
+  (`.design-sync/mesurer-les-cadres.cjs`, `.design-sync/NOTES.md`).
 
 **Deux réponses de ce questionnaire sont gouvernées ailleurs** : ajouter une réponse de voyage
 impose sa ligne dans `public.a_des_voyages_declares`, sans quoi le voyage ne déclenche jamais la
