@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -27,7 +28,7 @@ import { revenirOu } from '@/lib/navigation';
 import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { ensureSession, supabase } from '@/lib/supabase';
 import { mesurerDansLaFenetre } from '@/lib/defilement';
-import { defilementPourMontrer } from '@/types/mouvement';
+import { defilementPourMontrer, hauteurSAnime } from '@/types/mouvement';
 import {
   annonceDeLaPiste,
   etatDeLaPiste,
@@ -133,7 +134,7 @@ export default function PistesScreen() {
    * pas sur web, où react-native-web le traduit en `behavior: 'smooth'`.
    *
    * **On défile une fois la carte grandie, pas pendant** (`Mouvement.entree` après l'ouverture ;
-   * tout de suite sous la préférence, où rien ne grandit). Tant que `HauteurSuivie` n'a que la
+   * tout de suite sous la préférence et sur Android, où rien ne grandit — `hauteurSAnime`). Tant que `HauteurSuivie` n'a que la
    * hauteur de la rangée, le contenu de l'écran est trop court pour qu'on défile jusqu'au bas de la
    * carte : le navigateur borne `scrollTo` au maximum de l'instant, et l'écran s'arrêtait là, « C'est
    * noté » sous la barre d'onglets. Mesuré au navigateur le 29/09/2026 sur la planche B2 : la
@@ -142,8 +143,8 @@ export default function PistesScreen() {
    * reste sous le doigt, puis l'écran monte juste assez.
    *
    * Trois pièges de plus, chacun payé ailleurs avant d'être écrit ici :
-   *  - **on mesure la carte, pas son `HauteurSuivie`** : celui-ci anime sa hauteur, donc sa mesure à
-   *    l'ouverture vaut encore celle de la rangée. La carte, elle, a sa hauteur pleine dès la
+   *  - **on mesure la carte, pas son `HauteurSuivie`** : celui-ci anime sa hauteur (sur web), donc sa
+   *    mesure à l'ouverture vaut encore celle de la rangée. La carte, elle, a sa hauteur pleine dès la
    *    première mise en page ;
    *  - **une carte déjà ouverte au-dessus se replie pendant que la nouvelle s'ouvre** : mesurée à
    *    l'ouverture, la nouvelle serait trop basse de ce que le repli va rendre, et l'écran défilerait
@@ -192,8 +193,9 @@ export default function PistesScreen() {
           }
         });
       };
-      // Sous la préférence, rien ne grandit ni ne se replie : les hauteurs sont posées d'emblée.
-      if (animationsReduites) montrer();
+      // Sous la préférence et sur Android, rien ne grandit ni ne se replie : les hauteurs sont posées
+      // d'emblée, et attendre ne ferait que retarder l'écran.
+      if (animationsReduites || !hauteurSAnime(Platform.OS)) montrer();
       else minuterie.current = setTimeout(montrer, Mouvement.entree);
     },
     [animationsReduites]

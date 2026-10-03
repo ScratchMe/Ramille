@@ -274,7 +274,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 
 | # | Ce qu'on fait | Ce qu'on doit voir | Constat |
 |---|---|---|---|
-| 07.1 | Les transitions du produit, telles que listées en `v1-30` §8.3 : ouvrir et refermer une carte de piste, une feuille, passer d'une étape à l'autre, pousser les pistes et une restitution (07.4 du 29/09, §11.21) | C'est fluide sur ce téléphone ; aucune entrée ne laisse une cible transparente ou découpée | |
+| 07.1 | Les transitions du produit, telles que listées en `v1-30` §8.3 : ouvrir et refermer une carte de piste, une feuille, passer d'une étape à l'autre, pousser les pistes et une restitution (07.4 du 29/09, §11.21) | C'est fluide sur ce téléphone ; aucune entrée ne laisse une cible transparente ou découpée. **Sur le build qui suit le 03/10**, ce qui s'ouvre sous un choix et la carte d'une piste se **posent** sur Android, sans grandir (`FRONT-MOUVEMENT.md` §2.12) : un saut là n'est pas un écart. Le rail de progression, lui, avance-t-il ? (`v1-27` §12.32) | |
 | 07.2 | Activer « Supprimer les animations » dans les réglages d'Android, **relancer** l'app, refaire 07.1 ; puis « Revoir mon bilan » → « Faire un nouveau bilan » → « Commencer » jusqu'à l'**écran du mode**, y toucher une autre option puis revenir à **Voiture (seul)** → **Thermique**, et le **retour matériel** jusqu'à sortir du questionnaire | Tout se pose d'un coup, rien ne manque ; le défilement vers « C’est noté » d'une carte de piste qui sort de l'écran se fait aussi, d'un coup (07.2 du 29/09, §11.24) ; l'écran du mode tient sans animation, la précision posée d'un coup (07.1 du 29/09, §11.19). Le brouillon laissé là sert au bloc 09 | |
 | 07.3 | Désactiver « Supprimer les animations » | — | |
 
@@ -354,7 +354,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 | 13.2 | **Un bilan relu** dont la sortie est montée en haut (06.1) | Lu jusqu'au bout, la cherche-t-on en bas — et l'onglet « Suivi », qui ramène à la liste, suffit-il ? C'est le seul pari de T-10 (§11.26) | |
 | 13.3 | **Les liens** ([#335](https://github.com/ScratchMe/Ramille/pull/335)) : verts, gris, soulignés | Se lisent-ils au soleil et à petite taille, et chacun dit-il ce qu'il est — une action, une sortie discrète ? | |
 | 13.4 | **Le focus après « Retirer ce bilan »** (10.3) | La sortie au-dessus du titre, introuvable en balayant vers l'avant : acceptable, ou le focus doit-il partir ailleurs ? (§11.26) | |
-| 13.5 | **Le mouvement** (bloc 07) | Rien ne se sent comme un saut ; la carte de saison refermée, le 1er décembre (12.1), laisse-t-elle le plan remonter d'un coup — on garde l'écart, ou c'est un chantier ? (07.4 du 29/09, §11.21) | |
+| 13.5 | **Le mouvement** (bloc 07) | Rien ne se sent comme un saut — hors ce qui se pose sur Android depuis le 03/10, qu'on juge à part : manque-t-il ? ; la carte de saison refermée, le 1er décembre (12.1), laisse-t-elle le plan remonter d'un coup — on garde l'écart, ou c'est un chantier ? (07.4 du 29/09, §11.21) | |
 
 ## Ce qui ne se joue pas ici
 
@@ -369,6 +369,14 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 - **Un e-mail d'alerte d'exploitation** reçu pendant la séance ([#326](https://github.com/ScratchMe/Ramille/pull/326)) : la séance
   peut en déclencher un ; ce n'est pas un écart.
 - **Le 403 sur `/logout`** après la suppression du compte : attendu (`SUPABASE.md` §1.1).
+
+## Le build suivant
+
+> **Ajouté le 03/10/2026 au soir**, après le bloc 01 joué sur le build du jour : quatre écarts (01.3 à
+> 01.8), corrigés le même soir — ce qui s'ouvre sous un choix se pose sur Android, et le pied reste
+> au-dessus du clavier. Le build suivant **s'installe par-dessus**, sans désinstaller, pour garder le
+> compte et la séance ; on y **rejoue 01.3 à 01.8**, puis on reprend où l'on s'était arrêté. Le
+> clavier se regarde aussi en 04.4 et 09.6.
 
 ## Ce que cette séance ne prouve pas
 

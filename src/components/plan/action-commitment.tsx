@@ -253,7 +253,8 @@ export function ActionCommitment({
    * **Au geste, même sur la liste, où la carte entre en grandissant** (`FRONT.md` §2.12 : le focus
    * part au geste, jamais à la fin d'une animation). Au montage, « Quand ? » est encore sous la
    * découpe d'un `HauteurSuivie` et dans une `Apparition` partie de l'opacité nulle (`pistes.tsx`) ;
-   * le navigateur l'accepte, et qu'Android l'accepte aussi se juge au doigt (`v1-13` §11.24). Une
+   * le navigateur l'accepte. Sur Android, la carte ne grandit plus depuis le 03/10/2026
+   * (`hauteurSAnime`) : reste l'`Apparition`, et qu'Android l'accepte se juge au doigt (`v1-13` §11.24). Une
    * version du 29/09/2026 faisait attendre le focus `Mouvement.entree` sur la liste, pour ce seul
    * risque : elle retardait l'annonce que la règle protège, et elle est retirée le jour même.
    */

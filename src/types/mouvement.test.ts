@@ -5,6 +5,7 @@ import {
   decalageDEntree,
   defilementPourMontrer,
   dureeSelonLaPreference,
+  hauteurSAnime,
   sensDuPassage,
 } from '@/types/mouvement';
 
@@ -92,6 +93,25 @@ describe('ce que la bibliothèque ne coupe pas d’elle-même', () => {
 
   test('sous la préférence, la durée est nulle', () => {
     expect(dureeSelonLaPreference(250, true)).toBe(0);
+  });
+});
+
+/**
+ * **Une hauteur ne s'anime pas sur Android** (03/10/2026, recette du build d'octobre, lignes 01.4 à
+ * 01.8). Ce test garde le calcul, pas l'appel : que `Depliage` et `HauteurSuivie` le lisent, et que
+ * l'écran des pistes défile tout de suite là où rien ne grandit, seul un téléphone le montre — les
+ * gardes de l'export ne jouent que le web.
+ *
+ * **Éprouvé en le cassant le 03/10/2026**, une mutation sur un fichier égal au commit, restauré depuis
+ * sa copie : la fonction qui rend toujours `true` fait tomber « pose sur Android » — seulement.
+ */
+describe('hauteurSAnime', () => {
+  it('pose sur Android', () => {
+    expect(hauteurSAnime('android')).toBe(false);
+  });
+
+  it('anime sur le web, où ses gardes la relèvent image par image', () => {
+    expect(hauteurSAnime('web')).toBe(true);
   });
 });
 

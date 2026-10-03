@@ -1906,3 +1906,35 @@ mois interrogé ou après) ; les deux autres échéances gardent la fenêtre de 
 touche aussi `engagement_de_la_veille` et la boucle hebdomadaire, qui appellent la même fonction et
 n'ont pas le même calendrier. D15, livré le même soir, n'y a pas touché : il garde `committed_at`
 comme le jour du dernier choix d'intention (`BOUCLE.md` §2), ce qui laisse cette fenêtre telle quelle.
+
+### 12.32 Les hauteurs ne s'animent plus sur Android (03/10/2026)
+
+La recette du build d'octobre (`docs/recette/le-build-d-octobre.md`, lignes 01.4 à 01.8) a trouvé que
+rien de ce qui s'ouvre sous un choix ne s'ouvrait sur Android : `Depliage`, qui démarre à hauteur nulle
+et grandit par reanimated, restait fermé, alors que la même précision, posée au montage, s'affichait.
+**Correction prise** : sur Android, `Depliage` et `HauteurSuivie` posent (`hauteurSAnime`,
+`FRONT-MOUVEMENT.md` §2.12). **Ce qui reste dû** : la cause, et le retour de l'animation sur Android.
+Deux pistes, lues dans la source de reanimated 4.5 et pas éprouvées — la recopie dans les props React
+des styles d'une animation terminée (`FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS`, que le
+`package.json` peut couper), et la branche propre à Android des props de mise en page. Elles se
+départagent sur un appareil, un build à la fois, quand le rythme le permet ; d'ici là, rien ne
+s'ouvre sous les yeux sur Android, et ce qui est dessous saute au lieu de glisser.
+
+Deux indices pour la suite. **Les animations de transparence et de déplacement tournent sur
+Android** : le logo de l'écran de lancement s'anime — après un saut, un écart à part (ligne 05.1) —,
+et les étapes du questionnaire entrent en fondu ; seules les hauteurs restaient bloquées, ce qui
+désigne plutôt la seconde piste. **Et une animation de mise en page reste sur Android** : le rail de
+progression du questionnaire (`progress-header.tsx`), une transition CSS de reanimated sur `width`.
+S'il avance sur le téléphone, la seconde piste perd du poids ; s'il reste figé, il porte le même
+défaut. À relever au prochain passage. Le symptôme rappelle J12 (`v1-30` §4.2) : laissé jouer sous
+« réduire les animations », `Depliage` restait déjà à hauteur nulle sur web.
+
+### 12.33 Le clavier d'un navigateur de téléphone n'est pas mesuré (03/10/2026)
+
+`AuDessusDuClavier` ne fait rien sur web, en supposant que le navigateur réduit sa zone visible de
+lui-même. Personne ne l'a vu : les recettes web se jouent sur un navigateur de bureau. Chrome sur
+Android ne réduit par défaut que la zone **visible** (`interactive-widget=resizes-visual`), pas la mise
+en page, donc le pied collant du questionnaire tombe probablement sous le clavier sur un téléphone
+qui ouvre `www.ramille.fr`. **La piste** : `interactive-widget=resizes-content` dans la balise
+`viewport` (`src/app/+html.tsx`), à vérifier sur un téléphone, dans une PR à part. **Pas fait** : le
+produit se publie d'abord sur Play, et le web reste une porte d'entrée.

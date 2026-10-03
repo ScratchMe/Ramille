@@ -60,6 +60,17 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   troisième étire un bloc qui change de taille au lieu de le déplacer (`EXPO.md` §1.5, mesures en
   `v1-30` §3.2). Ce qui entre passe par une CSS animation de reanimated ; ce qui change de taille,
   par `Depliage` ou `HauteurSuivie`, qui suivent la vraie mise en page.
+- **Sur Android, aucune hauteur ne s'anime : `Depliage` et `HauteurSuivie` posent** (03/10/2026,
+  `hauteurSAnime`). Sur le premier build qui portait `Depliage`, rien de ce qui s'ouvre sous un choix
+  ne s'ouvrait — la motorisation, le type de vélo, « Voir les autres modes », le champ sous « 10+ »,
+  les longs trajets (recette du build d'octobre, lignes 01.4 à 01.8) —, et la même précision posée au
+  montage de l'étape s'affichait. **La cause n'est pas établie** : reanimated 4 y recopie dans les
+  props React les styles d'une animation terminée (`FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS`, actif
+  par défaut depuis 4.3, mis en cause dans des états figés sur Android), et une hauteur animée y passe
+  par une branche propre à Android ; aucune des deux pistes n'a été éprouvée sur un appareil. Android
+  prend donc le chemin qu'il prend sous la préférence, le seul qu'un téléphone ait montré marcher.
+  **L'animation y revient quand un appareil l'aura vue s'ouvrir**, pas avant (`v1-27` §12.32). Le web
+  anime toujours, et ses gardes le relèvent image par image.
 - **« Réduire les animations » pose tout, dès la première image — en ne lançant rien.**
   `Animated`, les CSS animations et transitions de reanimated et le `Modal` de react-native-web
   l'ignorent ; `withTiming` la lit, mais ce n'est pas une défense : laissé jouer sous la préférence,

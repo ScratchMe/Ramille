@@ -307,6 +307,23 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   keystore EAS et s'**ajoute** au tableau (qui en accepte plusieurs) à la publication, sans
   retirer la première.
 
+### 1.11 Le clavier sur Android bord à bord
+
+- **L'app ne rétrécit plus sous le clavier** depuis que le SDK 54 affiche Android bord à bord : un
+  pied collant et son bouton restent dessous, masqués. Rien ne le montre avant un build, une recette
+  au navigateur de bureau n'ayant pas de clavier à l'écran.
+- **Un écran qui porte un champ se pose dans un `KeyboardAvoidingView` en `padding`, à l'intérieur
+  de la zone sûre** : le rembourrage vaut la part du cadre que le clavier recouvre, donc la barre de
+  navigation n'y est pas comptée deux fois, et si la fenêtre rétrécissait quand même, le cadre
+  rétrécirait avec elle et le rembourrage tomberait à zéro.
+- **Le cadre se lit relativement à son parent** : sous un en-tête de navigation, il faut un
+  `keyboardVerticalOffset` de la hauteur de l'en-tête, sans quoi le rembourrage est trop court
+  d'autant.
+- **Sur web, rien** — `react-native-web` rend le composant comme une vue, et une vue de plus change le
+  DOM que les gardes relisent. Ce que fait un navigateur de **téléphone** est une autre question :
+  Chrome sur Android ne réduit par défaut que la zone visible (`interactive-widget=resizes-visual`),
+  pas la mise en page.
+
 ---
 
 ## 2. Propre à Ramille
@@ -424,6 +441,12 @@ system est en `flexDirection: 'column'` sans condition. **Et on n'englobe pas l'
 libellé ensemble** : ce serait casser le motif sur la cible réelle, qui est un téléphone Android.
 
 ### 2.3 Android : App Links et build natif
+
+**Le clavier (§1.11) passe chez Ramille par `AuDessusDuClavier`** (`src/components/au-dessus-du-clavier.tsx`,
+03/10/2026), posé dans la zone sûre des cinq écrans à champ — le questionnaire, `/feedback`,
+`/connexion/email`, `/connexion/retrouver`, `/compte/suppression`. **Tout nouvel écran à champ s'y
+pose** : aucun écran n'a d'en-tête de navigation (`headerShown: false` partout), donc aucun
+décalage. Le navigateur de téléphone n'est pas mesuré (`v1-27` §12.33).
 
 **Le lien du rappel ouvre l'app quand deux moitiés s'accordent : un fichier servi par le site, et
 l'`intentFilter` de l'app.** `public/.well-known/assetlinks.json` (recopié tel quel dans l'export) délègue à `fr.ramille.app`

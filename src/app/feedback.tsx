@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuDessusDuClavier } from '@/components/au-dessus-du-clavier';
 import { cadreDuChamp } from '@/components/cadre-du-champ';
 import { Button } from '@/components/button';
 import { Chip } from '@/components/bilan/chip';
@@ -134,135 +135,137 @@ export default function Feedback() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Envoyer » ne
-            servait qu'à le fermer — le défaut de React Native —, et l'envoi avait l'air ignoré. La
-            touche d'action du clavier, elle, reste un retour à la ligne : le champ est multiligne,
-            et lui faire envoyer le message interdirait d'écrire un second paragraphe. */}
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.intro}>
-            <ThemedText type="screenTitle">
-              Un retour à nous faire ?
-            </ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              Un mode de transport qui manque, un chiffre qui te semble faux, une idée. Tout est
-              utile — c’est le seul moyen qu’on a de le savoir.
-            </ThemedText>
-          </View>
-
-          {/* Une catégorie et une seule : `radiogroup` + `radio`, comme `ChoixDeRappel`. En
-              `button`, le rôle n'annonçait pas « non sélectionné » — sur cinq puces, c'est
-              l'information qui manque le plus.
-
-              **Aucune question n'est affichée au-dessus des puces, et c'est l'une des deux
-              exceptions de `GroupeDeChoix`** : le groupe prend le nom de ce qu'il choisit. Il
-              passe par ce composant depuis le 25/09/2026 — il posait son rôle lui-même —, pour
-              que ce qu'on ajoutera aux groupes l'atteigne aussi. Afficher « Catégorie » serait
-              une phrase de plus à l'écran, donc une décision de produit, pas une correction. */}
-          <GroupeDeChoix question="Catégorie" style={styles.kinds}>
-            {FEEDBACK_KINDS.map((option) => (
-              <Chip
-                key={option.value}
-                label={option.label}
-                role="radio"
-                selected={kind === option.value}
-                onPress={() => setKind(option.value)}
-                // Le rayon des champs, lu dans son jeton et plus écrit en dur (01/10/2026, audit
-                // T-20) : la valeur ne change pas, elle ne peut plus dériver de lui.
-                radius={Radius.field}
-                selectedStyle="outline"
-              />
-            ))}
-          </GroupeDeChoix>
-
-          <View style={styles.fieldBlock}>
-            <ThemedText type="small" themeColor="textTertiary">
-              {LIBELLE_MESSAGE}
-            </ThemedText>
-            <TextInput
-              ref={champ}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              maxLength={FEEDBACK_MAX_LENGTH}
-              placeholder="Dis-nous en quelques mots…"
-              placeholderTextColor={theme.textTertiary}
-              // L'intitulé est un frère dans l'arbre, pas un `label for` : sans ces deux lignes,
-              // le seul champ de texte libre du produit s'annonce sans nom, et le compteur de
-              // caractères affiché dessous n'est rattaché à rien.
-              accessibilityLabel={LIBELLE_MESSAGE}
-              accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
-              // Le contour au repos est `fieldBorder` (24/09/2026, `v1-29`) : `border` n'y tenait que
-              // 1,33:1, on ne voyait pas le seul champ de texte libre du produit. L'accent une fois
-              // qu'il y a un texte ou au focus, comme `TextField` (`cadreDuChamp`) — l'élément est ici
-              // le cadre lui-même, et l'anneau du navigateur le suivait déjà.
-              onFocus={() => setFocusDuChamp(true)}
-              onBlur={() => setFocusDuChamp(false)}
-              style={[
-                styles.input,
-                { backgroundColor: theme.backgroundElement, color: theme.text },
-                cadreDuChamp(theme, { rempli: message.length > 0, focus: focusDuChamp }),
-              ]}
-            />
-            {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10, qui la réserve aux
-                sources et aux codes techniques) ; les chiffres, qui changent à chaque frappe, gardent
-                une chasse fixe par `tabular-nums` — le compteur ne tremble pas. */}
-            <ThemedText type="small" themeColor="textTertiary" style={styles.compteur}>
-              {trimmed.length} / {FEEDBACK_MAX_LENGTH}
-            </ThemedText>
-            {/* **À l'encre de ce qui manque au toucher d'« Envoyer », comme le questionnaire, `/contexte`
-                et « C'est noté »** (02/10/2026, fin de `v1-33` D18) : la phrase restait en tertiaire, et
-                un bouton qui demande se disait encore de deux façons (audit T-19). **Pendant la frappe,
-                elle reste calme** (le 3.3.2 du 24/09/2026, plus haut) : rien n'a encore été demandé, et
-                un accent en gras dès le premier caractère se lirait comme un reproche. Un texte et non
-                un lien : il n'y a qu'un champ, et le toucher d'« Envoyer » y porte déjà le focus. */}
-            {(tropCourt || demandeActive) && (
-              <ThemedText
-                type="small"
-                weight={demandeActive ? 600 : undefined}
-                themeColor={demandeActive ? 'accentText' : 'textTertiary'}
-              >
-                Trois caractères au moins pour pouvoir l’envoyer.
+        <AuDessusDuClavier>
+          {/* `handled` (01/10/2026, audit T-3) : clavier ouvert, le premier toucher sur « Envoyer » ne
+              servait qu'à le fermer — le défaut de React Native —, et l'envoi avait l'air ignoré. La
+              touche d'action du clavier, elle, reste un retour à la ligne : le champ est multiligne,
+              et lui faire envoyer le message interdirait d'écrire un second paragraphe. */}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.intro}>
+              <ThemedText type="screenTitle">
+                Un retour à nous faire ?
               </ThemedText>
-            )}
-          </View>
+              <ThemedText type="body" themeColor="textSecondary">
+                Un mode de transport qui manque, un chiffre qui te semble faux, une idée. Tout est
+                utile — c’est le seul moyen qu’on a de le savoir.
+              </ThemedText>
+            </View>
 
-          {/* L'échec passe par `MessageInline` comme partout ailleurs : une carte maison dit la
-              même chose à l'œil, mais sans région vivante elle n'est annoncée à personne. */}
-          <MessageInline message={error} />
+            {/* Une catégorie et une seule : `radiogroup` + `radio`, comme `ChoixDeRappel`. En
+                `button`, le rôle n'annonçait pas « non sélectionné » — sur cinq puces, c'est
+                l'information qui manque le plus.
 
-          {/* **Jamais `disabled` sous trois caractères** (`v1-33` D18) : le bouton garde l'apparence du
-              désactivé (`enAttente`) et mène au champ. `disabled` ne reste que pendant l'envoi, où il n'agit
-              vraiment pas — et sans `aria-disabled` : un bouton qui agit n'est pas indisponible
-              (`FRONT.md` §2.4). */}
-          <Button
-            title={sending ? 'Envoi…' : 'Envoyer'}
-            onPress={onSend}
-            enAttente={manque}
-            disabled={sending}
-          />
+                **Aucune question n'est affichée au-dessus des puces, et c'est l'une des deux
+                exceptions de `GroupeDeChoix`** : le groupe prend le nom de ce qu'il choisit. Il
+                passe par ce composant depuis le 25/09/2026 — il posait son rôle lui-même —, pour
+                que ce qu'on ajoutera aux groupes l'atteigne aussi. Afficher « Catégorie » serait
+                une phrase de plus à l'écran, donc une décision de produit, pas une correction. */}
+            <GroupeDeChoix question="Catégorie" style={styles.kinds}>
+              {FEEDBACK_KINDS.map((option) => (
+                <Chip
+                  key={option.value}
+                  label={option.label}
+                  role="radio"
+                  selected={kind === option.value}
+                  onPress={() => setKind(option.value)}
+                  // Le rayon des champs, lu dans son jeton et plus écrit en dur (01/10/2026, audit
+                  // T-20) : la valeur ne change pas, elle ne peut plus dériver de lui.
+                  radius={Radius.field}
+                  selectedStyle="outline"
+                />
+              ))}
+            </GroupeDeChoix>
 
-          {/* Ce qui part avec le message, dit avant l'envoi et non dans une politique que
-              personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. Une
-              phrase adressée à la personne, donc en Spline Sans depuis le 24/09/2026 (décision
-              n° 10) : la chasse fixe est réservée aux sources et aux codes techniques. */}
-          <ThemedText type="small" themeColor="textTertiary">
-            On enregistre ton message, la catégorie choisie{context ? ' et l’écran d’où tu viens' : ''}, avec
-            l’identifiant de ton compte pour rapprocher ton retour de ce que tu vois. Rien d’autre,
-            et aucune réponse : il n’existe pas de canal pour t’en adresser une.
-          </ThemedText>
+            <View style={styles.fieldBlock}>
+              <ThemedText type="small" themeColor="textTertiary">
+                {LIBELLE_MESSAGE}
+              </ThemedText>
+              <TextInput
+                ref={champ}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                maxLength={FEEDBACK_MAX_LENGTH}
+                placeholder="Dis-nous en quelques mots…"
+                placeholderTextColor={theme.textTertiary}
+                // L'intitulé est un frère dans l'arbre, pas un `label for` : sans ces deux lignes,
+                // le seul champ de texte libre du produit s'annonce sans nom, et le compteur de
+                // caractères affiché dessous n'est rattaché à rien.
+                accessibilityLabel={LIBELLE_MESSAGE}
+                accessibilityHint={`${FEEDBACK_MAX_LENGTH} caractères au maximum.`}
+                // Le contour au repos est `fieldBorder` (24/09/2026, `v1-29`) : `border` n'y tenait que
+                // 1,33:1, on ne voyait pas le seul champ de texte libre du produit. L'accent une fois
+                // qu'il y a un texte ou au focus, comme `TextField` (`cadreDuChamp`) — l'élément est ici
+                // le cadre lui-même, et l'anneau du navigateur le suivait déjà.
+                onFocus={() => setFocusDuChamp(true)}
+                onBlur={() => setFocusDuChamp(false)}
+                style={[
+                  styles.input,
+                  { backgroundColor: theme.backgroundElement, color: theme.text },
+                  cadreDuChamp(theme, { rempli: message.length > 0, focus: focusDuChamp }),
+                ]}
+              />
+              {/* En Spline Sans et non plus en chasse fixe (24/09/2026, décision n° 10, qui la réserve aux
+                  sources et aux codes techniques) ; les chiffres, qui changent à chaque frappe, gardent
+                  une chasse fixe par `tabular-nums` — le compteur ne tremble pas. */}
+              <ThemedText type="small" themeColor="textTertiary" style={styles.compteur}>
+                {trimmed.length} / {FEEDBACK_MAX_LENGTH}
+              </ThemedText>
+              {/* **À l'encre de ce qui manque au toucher d'« Envoyer », comme le questionnaire, `/contexte`
+                  et « C'est noté »** (02/10/2026, fin de `v1-33` D18) : la phrase restait en tertiaire, et
+                  un bouton qui demande se disait encore de deux façons (audit T-19). **Pendant la frappe,
+                  elle reste calme** (le 3.3.2 du 24/09/2026, plus haut) : rien n'a encore été demandé, et
+                  un accent en gras dès le premier caractère se lirait comme un reproche. Un texte et non
+                  un lien : il n'y a qu'un champ, et le toucher d'« Envoyer » y porte déjà le focus. */}
+              {(tropCourt || demandeActive) && (
+                <ThemedText
+                  type="small"
+                  weight={demandeActive ? 600 : undefined}
+                  themeColor={demandeActive ? 'accentText' : 'textTertiary'}
+                >
+                  Trois caractères au moins pour pouvoir l’envoyer.
+                </ThemedText>
+              )}
+            </View>
 
-          {/* Souligné (`v1-33` T-5) : la phrase grise juste au-dessus le touche, au même corps. */}
-          <TextLink
-            label="Annuler"
-            apparence="souligne"
-            onPress={() => revenirOu('/')}
-            style={styles.cancel}
-          />
-        </ScrollView>
+            {/* L'échec passe par `MessageInline` comme partout ailleurs : une carte maison dit la
+                même chose à l'œil, mais sans région vivante elle n'est annoncée à personne. */}
+            <MessageInline message={error} />
+
+            {/* **Jamais `disabled` sous trois caractères** (`v1-33` D18) : le bouton garde l'apparence du
+                désactivé (`enAttente`) et mène au champ. `disabled` ne reste que pendant l'envoi, où il n'agit
+                vraiment pas — et sans `aria-disabled` : un bouton qui agit n'est pas indisponible
+                (`FRONT.md` §2.4). */}
+            <Button
+              title={sending ? 'Envoi…' : 'Envoyer'}
+              onPress={onSend}
+              enAttente={manque}
+              disabled={sending}
+            />
+
+            {/* Ce qui part avec le message, dit avant l'envoi et non dans une politique que
+                personne n'ouvre. Le contexte est le nom de l'écran d'origine, rien de plus. Une
+                phrase adressée à la personne, donc en Spline Sans depuis le 24/09/2026 (décision
+                n° 10) : la chasse fixe est réservée aux sources et aux codes techniques. */}
+            <ThemedText type="small" themeColor="textTertiary">
+              On enregistre ton message, la catégorie choisie{context ? ' et l’écran d’où tu viens' : ''}, avec
+              l’identifiant de ton compte pour rapprocher ton retour de ce que tu vois. Rien d’autre,
+              et aucune réponse : il n’existe pas de canal pour t’en adresser une.
+            </ThemedText>
+
+            {/* Souligné (`v1-33` T-5) : la phrase grise juste au-dessus le touche, au même corps. */}
+            <TextLink
+              label="Annuler"
+              apparence="souligne"
+              onPress={() => revenirOu('/')}
+              style={styles.cancel}
+            />
+          </ScrollView>
+        </AuDessusDuClavier>
       </SafeAreaView>
     </ThemedView>
   );

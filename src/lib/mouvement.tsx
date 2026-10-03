@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   css,
   cubicBezier,
@@ -21,7 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Mouvement } from '@/constants/theme';
-import { decalageDEntree, type Sens } from '@/types/mouvement';
+import { decalageDEntree, hauteurSAnime, type Sens } from '@/types/mouvement';
 
 /**
  * Ce qui entre, ce qui s'ouvre et ce qui change de hauteur, écrit une fois (27/09/2026, `v1-30`
@@ -45,6 +45,9 @@ import { decalageDEntree, type Sens } from '@/types/mouvement';
  * (`ReduceMotion.System`, gardé en second filet), mais laissé jouer, `Depliage` ne s'ouvre pas du
  * tout (J12 de `scripts/verifier-etats-export.mjs`). Ne pas jouer est la seule défense qui compte.
  */
+
+/** Sur Android, aucune hauteur ne s'anime : `Depliage` et `HauteurSuivie` posent (`hauteurSAnime`). */
+const HAUTEUR_ANIMEE = hauteurSAnime(Platform.OS);
 
 const courbe = Easing.bezier(...Mouvement.courbe);
 const courbeCSS = cubicBezier(...Mouvement.courbe);
@@ -146,7 +149,8 @@ export function Apparition({ style, ...props }: ComponentProps<typeof Animated.V
  * Ce qui s'ouvre sous un choix — une précision, un bloc révélé : sa hauteur part de zéro et le
  * rejoint (`Mouvement.entree`) pendant qu'il apparaît (`Mouvement.fondu`), donc ce qui est dessous
  * descend avec lui au lieu de sauter. Une fois ouvert, il redevient une vue ordinaire, libre de
- * changer de taille. Au montage de son écran et sous la préférence, il est posé.
+ * changer de taille. Au montage de son écran, sous la préférence et **sur Android**, il est posé
+ * (`hauteurSAnime`).
  *
  * `style` s'applique au contenu, à l'intérieur de ce qui se mesure : une marge y compte dans la
  * hauteur dépliée, au lieu d'apparaître d'un coup au-dessus.
@@ -167,7 +171,7 @@ export function Depliage({
   suivieALOuverture?: boolean;
 }) {
   const apres = useApresLeMontage();
-  const joue = useJoue();
+  const joue = useJoue() && HAUTEUR_ANIMEE;
   const annoncer = useContext(SuiviDesOuvertures);
   // −1 : hauteur libre. Au départ d'une ouverture, 0.
   const hauteur = useSharedValue(joue ? 0 : -1);
@@ -222,7 +226,8 @@ const MARGE_DE_DECOUPE = 4;
  * piste qui passe de ligne à carte : il va de l'ancienne hauteur à la nouvelle au lieu de sauter —
  * `Mouvement.entree` s'il grandit, `Mouvement.sortie` s'il rétrécit —, et ce qui est dessous suit.
  * Sa hauteur reste tenue entre deux changements — c'est ce qui évite une image à la nouvelle hauteur
- * avant le départ de l'animation. Sous la préférence, elle est libre et tout se pose.
+ * avant le départ de l'animation. Sous la préférence et sur Android (`hauteurSAnime`), elle est libre
+ * et tout se pose.
  *
  * **Son contenu ne vaut jamais zéro pour de vrai** : une hauteur nulle est ignorée, parce que c'est
  * celle d'un écran que la pile web masque (`display: none`). Un contenu qui peut devenir vide ne va
@@ -244,7 +249,7 @@ export function HauteurSuivie({
   const connue = useRef<number | null>(null);
 
   const mesurer = (evenement: LayoutChangeEvent) => {
-    if (reduit) return;
+    if (reduit || !HAUTEUR_ANIMEE) return;
     const nouvelle = evenement.nativeEvent.layout.height;
     // **Une hauteur nulle n'est pas un contenu vide, c'est un écran masqué.** Sur web, la pile
     // d'expo-router pose `display: none` sur l'écran recouvert, et `onLayout` y rend zéro : la
