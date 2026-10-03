@@ -450,6 +450,65 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
   futur, l'usage faux de `mesurer-les-cadres.cjs`, un constat produit qui ne vivait qu'ici, et un soupçon de
   mesure tronquée — infirmé en remesurant.
 
+## Le système de design de la galerie — un second miroir, remis à jour le 03/10/2026
+
+À côté du projet Claude Design, la galerie d'artefacts de la personne qui pilote porte un système de design
+« Ramille » (type Design System, <https://claude.ai/artifact/YMmJJKSpypTyA18LdPXPna>, privé). Il est né le
+16/09/2026 d'une migration du projet Claude Design (28 composants et les jetons de ce jour-là) et n'avait plus
+bougé — d'où le canvas de l'étape du contexte, bâti sur les valeurs du kit et non sur lui. Remis à jour le
+03/10/2026 depuis `main@f6407cd`, à la demande de la personne qui pilote. **Aucun pilote ne le tient** : chaque
+synchronisation vers Claude Design le laisse en retard, et sa mise à jour se fait à la main, fichier par
+fichier, en fusionnant avec ce qui est en ligne (la méthode `from-code.md` du type : on ne reconstruit pas, on
+garde ce qui y a été porté).
+
+1. Un `package-build.mjs` complet, comme pour une synchronisation — l'ancre copiée d'abord dans
+   `.design-sync/.cache/remote-sync.json`, puisque le build réécrit `ds-bundle/_ds_sync.json`.
+2. `node .design-sync/vers-la-galerie.mjs ds-bundle docs/design/design-system <dossier>`, hors du dépôt et vide :
+   les trois fichiers de chaque composant, les types pris dans le kit (ceux de `ds-bundle/` sont tronqués).
+3. `components/bundle.js` est `ds-bundle/_ds_bundle.js` tel quel. `components/bundle.css` reprend la fermeture de
+   `styles.css` moins ce que `tokens.json` porte : les tailles de texte en variables (`--type-*`, que les styles de
+   texte ne produisent pas et que des composants lisent, plus l'ancien `--type-label-caps-*` de la version du
+   16/09), la règle « réduire les animations », `base.css` entier, et un repli des jetons neufs que le bundle lit
+   (plus bas) ; les `@font-face` viennent de `tokens.json`.
+4. Avant l'envoi, la version en ligne doit être celle qu'on a lue — son identifiant ne bouge pas tant que
+   personne n'enregistre — ; sinon, relire chaque fichier qu'on réécrit et refaire la fusion dessus. Les jetons
+   gardent tous leurs anciens noms, même ceux que le kit ne définit plus (`color-pagination-inactive`,
+   `radius-mode-item`, et les styles en `-line` nés d'un appariement raté à la migration ; `type-label-caps` reste
+   le nom de l'étiquette en capitales, que le kit appelle `--type-label-*`), gagnent les jetons neufs et deux
+   styles (`type-display`, `type-question`), un usage chacun — tiré des commentaires de `theme.ts` et du kit, ou
+   disant qu'aucun composant ne le lit —, et une provenance (`meta`). Le README est celui de `ds-bundle/`, plus une
+   note datée et la section de migration gardée ; `guidelines/readme.md` est le `readme.md` du kit ; la licence
+   de Spline Sans part dans `assets/notes/OFL-Spline-Sans.txt`.
+5. `verifier-la-galerie.cjs`, avec le React que l'index du système désigne et le `tokens.css` que la page sert,
+   relus en ligne (l'usage est en tête du script) : autant d'aperçus que le build en imprime, aucun en défaut,
+   aucun jeton lu sans déclaration. Puis un seul envoi, l'index en dernier et seul son `lastChange` changé ; les
+   `.d.ts`, les aperçus et le bundle partent en `text/plain` (l'outil refuse `.ts`, et c'est ainsi qu'ils étaient
+   rangés).
+
+- **La page ne régénère pas ce qu'elle génère quand on publie** : `tokens.css`, `manifest.json` (le catalogue,
+  son ordre et ses résumés), les cartes `api/` et la fin du README attendent la prochaine modification faite
+  dans la page. Relu après le premier envoi du 03/10/2026, `tokens.css` était encore celui du 16/09 — cible 44,
+  puce 8, et ni les quatre couleurs d'état, ni `--stroke-field` — et le catalogue listait 28 composants. Les
+  aperçus recevaient donc des `var()` vides : le contour des champs et la teinte d'un appui disparaissaient sans
+  une erreur, et le premier banc, qui compilait ses jetons depuis `tokens.json`, rendait « 72 aperçus, aucun en
+  défaut ». D'où deux choses : le relevé statique des jetons du banc, et un repli dans `bundle.css` en
+  `:where()`, sans poids, que la feuille servie emporte dès qu'elle déclare le jeton (vérifié dans les deux
+  thèmes). Le catalogue, lui, ne se répare pas d'ici : il faut une modification faite dans la page.
+- **Les types de `ds-bundle/` coupent chaque commentaire à 120 caractères** (`.ds-sync/lib/dts.mjs`), en plein
+  mot : 52 commentaires dans 26 fiches au premier envoi. Le convertisseur prend désormais ceux du kit. Le projet
+  Claude Design reçoit, lui, les types tronqués à chaque synchronisation.
+- **La galerie charge React 18.3.1** (`components/lib/`, porté à la migration), quand `ds-bundle/_vendor/` est un
+  React 19 : un `ref` passé à un composant du kit n'y est pas transmis, ce que les `.d.ts` du kit disent déjà.
+  Les 72 aperçus se rendent sous l'un comme sous l'autre.
+- **Le kit portait un alias mort** : `--stroke-selected: var(--color-accent)` dans `tokens/colors.css`, que
+  `tokens/spacing.css` redéclare à `1.5px` plus loin dans `styles.css`. Aucun fichier ne le lisait, ni comme
+  couleur ni comme épaisseur ; retiré du kit le jour même. La prochaine synchronisation vers Claude Design verra
+  donc un changement de style sans aucun effet visible.
+- **Ce n'est pas le « nettoyage » que la page propose** (`migrated-upgrading.md` du type) : il réécrit le README
+  en livre de marque et marque le système comme mis à niveau. Il n'a pas été demandé ; les fichiers portés à la
+  migration (`docs/`, `components/src/`, le rapport) restent, périmés, jusqu'à la décision de la personne qui
+  pilote.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
@@ -488,6 +547,8 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
   dépendent. Et un composant ajouté au kit sans fiche part sur la carte plancher sans que le pilote le dise.
   Et une balise d'aperçu qui étale ses props (`<Nom {...props} />`) échappe à `props-check.py` : les props d'un
   composant du kit s'écrivent en clair dans les aperçus, même derrière un enrobage à état.
+- **Le système de design de la galerie ne suit pas** : une synchronisation vers Claude Design ne le touche pas.
+  Le remettre à jour suit la section qui lui est consacrée, plus haut.
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
   bout, et un nouveau téléversement coûte peu.

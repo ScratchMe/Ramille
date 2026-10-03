@@ -35,7 +35,6 @@
   --surface-card-engaged: var(--color-background-tinted);
   --surface-selected: var(--color-background-selected);
   --stroke-default: var(--color-border);
-  --stroke-selected: var(--color-accent);
   --bar-active: var(--color-accent);
   --bar-context: var(--color-accent-muted);
   --bar-rail: var(--color-border);
