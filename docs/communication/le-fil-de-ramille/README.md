@@ -142,8 +142,8 @@ avant chaque diffusion.
   chaque barre, les pistes dans l'ordre du plan et leurs gains. Leur forme est celle des écrans :
   `formatTonnes`, `formatTonnesShort`, `ligneDuGain`. **Quand le calcul change, on le rejoue, et le
   film suit** ; les chiffres du jour sont dans la décision datée, plus bas.
-- **Ce qui ne suit plus l'app : l'écran du plan** (relevé par la contre-lecture du 03/10/2026, **pas
-  encore repris**). Ses textes et ses chiffres sont justes ; sa forme, non. Le film a simplifié cet
+- **Ce qui ne suit plus l'app : l'écran du plan** (relevé par la contre-lecture du 03/10/2026, **repris
+  le jour de la diffusion**, décision n° 9 plus bas). Ses textes et ses chiffres sont justes ; sa forme, non. Le film a simplifié cet
   écran dès sa composition, et l'app l'a encore changé les 02 et 03/10/2026 (#331, #343). Or l'image
   porte « Écrans de l'app » : chaque écart est à reprendre **avant la diffusion**, et la liste de
   contrôle de Play le rappelle (`docs/exploitation/README.md` §4). Comparé à
@@ -220,6 +220,11 @@ date, on maintient pas de score, pas de série, pas de classement. »
 
 8. **En 16:9, « Pas de compte à créer pour commencer » descend** (même jour) : la note collait au
    bouton ; elle prend l'écart qui sépare l'accroche du bouton.
+9. **L'écran du plan s'aligne sur l'app le jour de la diffusion, pas avant** (même jour, sur la
+   contre-lecture qui a relevé ses écarts) : l'app changeait encore ce composant ces jours-là, et le
+   film se réexporte de toute façon ce jour-là pour le badge. Les vidéos du 03/10/2026 gardent donc
+   l'écran simplifié ; elles ne se diffusent pas. Écarté : aligner tout de suite, au risque de le
+   refaire au prochain changement de l'app.
 
 **Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
 minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
