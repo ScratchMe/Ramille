@@ -450,6 +450,43 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
   futur, l'usage faux de `mesurer-les-cadres.cjs`, un constat produit qui ne vivait qu'ici, et un soupçon de
   mesure tronquée — infirmé en remesurant.
 
+## Le système de design de la galerie — un second miroir, remis à jour le 03/10/2026
+
+À côté du projet Claude Design, la galerie d'artefacts de la personne qui pilote porte un système de design
+« Ramille » (type Design System, <https://claude.ai/artifact/YMmJJKSpypTyA18LdPXPna>, privé). Il est né le
+16/09/2026 d'une migration du projet Claude Design (28 composants et les jetons de ce jour-là) et n'avait plus
+bougé — d'où le canvas de l'étape du contexte, bâti sur les valeurs du kit et non sur lui. Remis à jour le
+03/10/2026 depuis `main@f6407cd`, à la demande de la personne qui pilote. **Aucun pilote ne le tient** : chaque
+synchronisation vers Claude Design le laisse en retard, et sa mise à jour se fait à la main, fichier par
+fichier, en fusionnant avec ce qui est en ligne (la méthode `from-code.md` du type : on ne reconstruit pas, on
+garde ce qui y a été porté).
+
+1. Un `package-build.mjs` complet, comme pour une synchronisation — l'ancre copiée d'abord dans
+   `.design-sync/.cache/remote-sync.json`, puisque le build réécrit `ds-bundle/_ds_sync.json`.
+2. `node .design-sync/vers-la-galerie.mjs ds-bundle <dossier>` : les trois fichiers de chaque composant.
+3. `components/bundle.js` est `ds-bundle/_ds_bundle.js` tel quel. `components/bundle.css` reprend la fermeture de
+   `styles.css` moins ce que `tokens.json` porte : il ne garde que les tailles de texte en variables (`--type-*`,
+   que les styles de texte ne produisent pas et que des composants lisent), la règle « réduire les animations »
+   et `base.css` entier ; les `@font-face` viennent de `tokens.json`.
+4. `tokens.json`, `README.md` et l'index se relisent en ligne juste avant l'envoi. Les jetons gardent tous leurs
+   anciens noms, même ceux que le kit ne définit plus (`color-pagination-inactive`, `radius-mode-item`, et les
+   styles en `-line` nés d'un appariement raté à la migration), gagnent les nouveaux, un usage chacun tiré des
+   commentaires de `theme.ts`, et une provenance (`meta`). Le README est celui de `ds-bundle/`, plus une note
+   datée et la section de migration gardée ; `guidelines/readme.md` est le `readme.md` du kit.
+5. `CHROMIUM_PATH=… node .design-sync/verifier-la-galerie.cjs <dossier>/project ds-bundle/_vendor` : 72 aperçus
+   rendus, aucun en défaut. Puis un seul envoi, l'index en dernier et seul son `lastChange` changé ; les `.d.ts`,
+   les aperçus et le bundle partent en `text/plain` (l'outil refuse `.ts`, et c'est ainsi qu'ils étaient rangés).
+
+- **Le kit portait un alias mort** : `--stroke-selected: var(--color-accent)` dans `tokens/colors.css`, que
+  `tokens/spacing.css` redéclare à `1.5px` plus loin dans `styles.css`. Aucun fichier ne le lisait comme une
+  couleur, la migration l'avait déjà écarté ; retiré du kit le jour même.
+- **Ce n'est pas le « nettoyage » que la page propose** (`migrated-upgrading.md` du type) : il réécrit le README
+  en livre de marque et marque le système comme mis à niveau. Il n'a pas été demandé ; les fichiers portés à la
+  migration (`docs/`, `components/src/`, le rapport) restent, périmés, jusqu'à la décision de la personne qui
+  pilote.
+- **Les cartes `api/`, `manifest.json` et `tokens.css` sont générées par la page** à la prochaine modification
+  faite dans la page : jusque-là, elles décrivent la version du 16/09.
+
 ## Risques de resynchronisation
 
 - **Les deux liens symboliques ci-dessus** sont la première chose à refaire sur une machine
@@ -488,6 +525,8 @@ aucune suppression ; l'ancre distante relue juste avant `finalize_plan` était b
   dépendent. Et un composant ajouté au kit sans fiche part sur la carte plancher sans que le pilote le dise.
   Et une balise d'aperçu qui étale ses props (`<Nom {...props} />`) échappe à `props-check.py` : les props d'un
   composant du kit s'écrivent en clair dans les aperçus, même derrière un enrobage à état.
+- **Le système de design de la galerie ne suit pas** : une synchronisation vers Claude Design ne le touche pas.
+  Le remettre à jour suit la section qui lui est consacrée, plus haut.
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
   bout, et un nouveau téléversement coûte peu.
