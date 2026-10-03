@@ -42,6 +42,21 @@ export const SecondRenforcement = () => (
 );
 
 /**
+ * « Modifier ma réponse » touché (02/10/2026, `v1-33` §6) : la question revient, puis la réponse
+ * en place, dite dans les mots des boutons — qui n'ont pas d'état « choisi », et c'est voulu —,
+ * puis les trois réponses, et « Annuler » dessous.
+ */
+export const EnCorrection = () => (
+  <CheckinCard
+    periodLabel="Semaine du 07/09"
+    question="Mardi ou jeudi, as-tu fait ce trajet à vélo ?"
+    answered="oui"
+    correction
+    reponseEnPlace="Ta réponse : oui."
+  />
+);
+
+/**
  * Répondu non, et c'est un fait, pas une faute : pas de mécanique d'échec, pas de série
  * cassée. La réplique dit seulement que la question reviendra.
  */

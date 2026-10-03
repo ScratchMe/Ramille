@@ -252,6 +252,14 @@ on s'en fiche. sinon OK ».
   jusqu'au canvas, au risque de conflits avec ce qui arrive sur `main`. Réponse : « ok je suis ta
   reco ». Ce qu'on accepte : le web de production montre l'étape des captures en attendant, et il n'y
   a que des comptes de test.
+- **Deux recommandations de la synchronisation de design, acceptées le même jour** (« OK pour toutes tes
+  recommandations ») : le « C'est noté » en attente qui se fond dans l'encart gris du choix des jours
+  rejoint le brief (§4.5) plutôt qu'une correction faite à la main ; et les conventions que Claude Design
+  lit disent désormais comment une série à cocher se compose — sans quoi le canvas risquait de
+  redessiner la question des transports en choix unique.
+- **Le brief est parti à Claude Design le même jour** : un canvas,
+  <https://claude.ai/artifact/7yxeHrHFuUKYuoRjJcuNBN> (privé). Ses options, la recommandation comprise,
+  attendent la décision de la personne qui pilote avant toute PR.
 
 ## 9. Ce que le chantier a livré, et ce qu'il a tranché en chemin
 
@@ -291,8 +299,9 @@ sorties, « train » devenant « RER » :
 | « Passer deux trajets sur cinq en RER » | « {jours}, as-tu fait ce trajet en RER ? » | « Demain, tu as prévu de faire ton trajet en RER. » | « Vérifie l'horaire qui te convient, puis essaie-le une fois. » |
 | « Prendre le RER pour deux sorties sur cinq » | « En {mois}, as-tu pris le RER pour une sortie ? » | — (aucune action de sortie n'en a) | « Repère la ligne qui dessert ta sortie habituelle. » |
 
-**Ce qui reste à faire hors de cette PR** : remesurer les hauteurs des deux aperçus du kit
-(`ChampsDeContexte`, `ContextStep`) à la prochaine synchronisation de design ; et, à la prochaine séance
+**Ce qui reste à faire hors de cette PR** : ~~remesurer les hauteurs des deux aperçus du kit
+(`ChampsDeContexte`, `ContextStep`)~~ — fait à la synchronisation de design du 03/10/2026 (470 → 710 et
+650 → 870, `.design-sync/NOTES.md`) ; et, à la prochaine séance
 de recette, régénérer l'artefact depuis `docs/recette/premier-parcours-web.md`, dont le profil coche
 désormais le bus et le train.
 

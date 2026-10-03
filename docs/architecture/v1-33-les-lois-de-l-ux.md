@@ -546,6 +546,14 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   le plan ouvert en décembre) : « Choisir une action » referme la saison, la carte des deux lieux se
   rend en tête et se note vue pendant que l'écran défile vers la première piste — elle peut partir
   sans être entrée dans la fenêtre. Conforme à la règle écrite (« rendue, l'écran au premier plan »).
+- **D13 n'a pas rendu sa forme à « C'est noté »** : en attente, il garde l'apparence du désactivé —
+  le fond `backgroundElement` —, et c'est le gris de l'encart du choix des jours où il est posé. Il
+  reste un libellé gris sans bord à côté d'« Annuler » ; le « Suivant » du questionnaire, lui, est
+  sur la page blanche. Relevé à la synchronisation de design du 03/10/2026, sur l'aperçu du kit et dans
+  l'app (`src/components/plan/action-commitment.tsx`). **Tranché le 03/10/2026** : pas de correction
+  à la main, la question va au brief de Claude Design
+  ([`docs/design/v1-34-l-etape-du-contexte/BRIEF.md`](../design/v1-34-l-etape-du-contexte/BRIEF.md)
+  §4.5), parce que la réponse vaut pour tout bouton posé dans un encart.
 - **D18 ne réduit les façons de dire un formulaire incomplet que de trois à deux** : la phrase de
   `/feedback` reste en `small` tertiaire, là où le questionnaire, `/contexte` et D13 la disent en
   `accentText` 600. **Fait le 02/10/2026.**

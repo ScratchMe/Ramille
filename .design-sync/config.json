@@ -52,7 +52,7 @@
       "viewport": "390x1130"
     },
     "LongTripsStep": {
-      "viewport": "390x1150"
+      "viewport": "390x1180"
     },
     "CommuteHasTripStep": {
       "viewport": "390x700"
@@ -70,13 +70,13 @@
       "viewport": "390x560"
     },
     "FlightsStep": {
-      "viewport": "390x660"
+      "viewport": "390x740"
     },
     "ContextStep": {
-      "viewport": "390x650"
+      "viewport": "390x870"
     },
     "ChampsDeContexte": {
-      "viewport": "390x470"
+      "viewport": "390x710"
     },
     "PrecisionChiffres": {
       "viewport": "390x540"
@@ -89,6 +89,9 @@
     },
     "EmptyStateIllustration": {
       "viewport": "390x210"
+    },
+    "ChampDuPlafond": {
+      "viewport": "390x190"
     }
   },
   "libOverrides": {

@@ -88,16 +88,22 @@ un constat de lecture.
   `StepShell`, on ne les redessine pas.
 - Le bouton principal est pleine largeur (54 de haut, rayon 27). Dans une rangée
   Retour + Suivant, Retour garde sa largeur et Suivant porte `flex`.
-- Le « Suivant » d'une étape incomplète est **en attente** (`enAttente`) : l'apparence du
-  désactivé — fond élément + texte tertiaire, jamais une opacité —, mais un bouton qui agit.
-  `disabled` reste à ce qui n'agit vraiment pas (le « C'est noté » d'une intention incomplète).
-  Dans les deux cas, le libellé ne change pas.
+- Le « Suivant » d'une étape incomplète est **en attente** (`enAttente`), comme le « C'est noté »
+  d'une intention incomplète : l'apparence du désactivé — fond élément + texte tertiaire, jamais
+  une opacité —, mais un bouton qui agit, et son toucher dit ce qui manque. `disabled` reste à ce
+  qui n'agit vraiment pas (le « C'est noté » pendant l'envoi). Dans les deux cas, le libellé ne
+  change pas.
 - Les listes de choix exclusifs sont des `ChoiceRow` ou des `ModeListItem`, jamais des boutons,
   et **chaque série de choix passe par `GroupeDeChoix`**, qui la nomme par sa question. Une
   précision qui dépend d'un choix (`PrecisionMode`, ou `PrecisionChiffres` pour un nombre)
   s'ouvre **juste sous l'item choisi, dans une `BoiteDePrecision`**, à un seul niveau — la
   profondeur coûte plus cher en abandon qu'une puce de plus. Chaque précision porte `champ`, le
   champ qu'elle renseigne : c'est là que « Il manque encore … » mène.
+- Quand les réponses **se cumulent** (« Près de chez toi, qu'est-ce que tu pourrais prendre ? »,
+  les jours de l'engagement), ce sont des `Chip` en `role="checkbox"` dans un
+  `GroupeDeChoix cumulable` — un `group`, pas un `radiogroup`. Une réponse qui exclut les autres
+  (« Rien de tout ça ») les décoche quand on la coche, et se décoche dès qu'on en coche une autre.
+  Une série à cocher ne se dessine jamais en liste à choix unique, ni l'inverse.
 - Deux registres de carte : **neutre** (fond élément sans bordure, ou bordure 1 px sur blanc)
   et **saillante** (bordure accent 2 px + fond teinté + étiquette majuscule à pastille-coche)
   — la saillante dit quelle action porte l'engagement, et il n'y en a qu'une par saison.
@@ -106,8 +112,9 @@ un constat de lecture.
 ## Accessibilité
 
 Un texte cliquable est un `TextLink`, jamais un `Pressable` autour d'un texte : le libellé
-annoncé **est** le texte affiché, et la cible fait 48 px sans déplacer le texte. Les listes de
-choix exclusifs s'annoncent en `radio`, seul rôle qui dit « sélectionné ». La mascotte et les
+annoncé **est** le texte affiché, et la cible fait 48 px sans déplacer le texte. Les choix
+exclusifs s'annoncent en `radio`, ceux qui se cumulent en `checkbox` — les deux seuls rôles qui
+disent « sélectionné ». La mascotte et les
 illustrations sont masquées aux lecteurs d'écran — elles accompagnent un texte qui dit déjà
 tout.
 
