@@ -143,12 +143,13 @@ date, on maintient pas de score, pas de série, pas de classement. »
    LinkedIn — décidé le même jour, et composé à part. **Pas dans l'app pour l'instant** :
    l'onboarding dit déjà tout cela en quatre écrans, et une étape de plus coûte plus en abandon
    qu'elle ne rapporte en clarté (commentaire de `src/components/onboarding/etape-transition.tsx`).
-   **« Et sur ramille.fr » reste à décider par la personne qui pilote** : la recommandation le
-   portait sans voir que ramille.fr *est* l'app, dont le premier écran est l'onboarding. Y mettre le
-   film, c'est soit une étape de plus — ce qu'on vient d'écarter —, soit un emplacement à créer ;
-   et l'intégrer depuis YouTube demande d'ouvrir la politique de sécurité du site (`frame-src`,
-   `vercel.json`) et une ligne dans la page de confidentialité, quand un MP4 servi par le site est
-   un poids de plus à mesurer (`VERCEL.md`).
+   **Pas sur ramille.fr non plus, pour l'instant** (décidé le même jour, sur une seconde question) :
+   la recommandation le portait sans voir que ramille.fr *est* l'app, dont le premier écran est
+   l'onboarding. Y mettre le film, ce serait soit une étape de plus — ce qu'on vient d'écarter —,
+   soit un emplacement à créer ; et l'intégrer depuis YouTube demanderait d'ouvrir la politique de
+   sécurité du site (`frame-src`, `vercel.json`) et une ligne dans la page de confidentialité, quand
+   un MP4 servi par le site serait un poids de plus à mesurer (`VERCEL.md`). C'est ce qu'il faudra
+   rouvrir si la question revient.
 2. **Quand.** À la publication sur Google Play, **avec le badge du store en fin de film** : le film
    montre l'app Android (la notification du lundi), alors que sa fin renvoie aujourd'hui à
    ramille.fr seul. Diffusé avant, il ferait une promesse que la personne qui suit l'appel ne
@@ -165,11 +166,11 @@ date, on maintient pas de score, pas de série, pas de classement. »
    un dépôt public sans vérifier qu'elle le permet.
 5. **Le profil d'exemple est gardé** (1,9 t, le palier de 1,7 t, 430 et 300 kg) : il n'a pas été
    recalculé par l'estimateur, et l'image le dit (« Écrans de l'app · profil d'exemple »).
-   **Une tension reste à trancher par la personne qui pilote**, que la proposition n'avait pas
-   montrée : la fiche Play pose qu'« aucune capture ne doit montrer un chiffre inventé »
-   (`docs/exploitation/fiche-google-play.md` §2.3), et c'est là que va le 16:9. Deux voies : une
-   exception pour la vidéo, étiquetée comme elle l'est ; ou recalculer ce même profil par
-   l'estimateur, pour que ses chiffres soient ceux que l'app rendrait.
+   **Ses chiffres seront recalculés par l'estimateur** (décidé le même jour, sur une seconde
+   question) : la fiche Play pose qu'« aucune capture ne doit montrer un chiffre inventé »
+   (`docs/exploitation/fiche-google-play.md` §2.3), et c'est là que va le 16:9. Le profil reste le
+   même — les réponses que le film montre —, ses chiffres deviennent ceux que l'app rendrait. Ce
+   recalcul passe avant tout export destiné à être diffusé.
 
 **Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
 minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
