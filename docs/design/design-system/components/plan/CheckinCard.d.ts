@@ -29,5 +29,14 @@ export interface CheckinCardProps {
   renforcement?: string | null;
   /** Le pied de la carte répondue, du produit et non de Ramille : « Répondu lundi. Prochain point : lundi 21 septembre. » — « Répondu lundi. » seul quand la boucle du point ne tourne plus (30/09/2026). */
   pied?: string | null;
+  /**
+   * « Modifier ma réponse » touché (02/10/2026, `v1-33` §6) : la carte répondue rouvre les trois réponses, la question au-dessus,
+   * et « Annuler » dessous. Dans le dépôt, le focus va à la question, puis revient au lien après « Annuler ».
+   */
+  correction?: boolean;
+  /** La réponse en place, dite au-dessus des réponses rouvertes : « Ta réponse : oui. », « Ta réponse : pas de trajet la semaine dernière. » */
+  reponseEnPlace?: string | null;
+  onModify?: () => void;
+  onCancel?: () => void;
 }
 export declare function CheckinCard(props: CheckinCardProps): JSX.Element;

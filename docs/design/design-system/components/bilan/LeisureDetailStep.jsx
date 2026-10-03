@@ -199,7 +199,7 @@ export function LeisureDetailStep({ answers, update }) {
               {showMore && <div style={{ ...COLONNE, gap: 16 }}>{blocsDeFamilles(LEISURE_MODE_CHOICES_MORE)}</div>}
             </GroupeDeChoix>
             {!showMore && (
-              <TextLink label="Voir les autres modes" type="linkPrimary"
+              <TextLink label="Voir les autres modes" apparence="action"
                 onPress={() => {
                   vientDeDeplier.current = true;
                   setShowMore(true);

@@ -190,13 +190,13 @@ export default function ConnexionProposition() {
             )}
             <TextLink
               label="Utiliser un email à la place"
+              apparence="action"
               // **Aucun paramètre**, et c'est délibéré : `/connexion/email` ne lit ni `id` (plus
               // personne ne le passe depuis que cet écran ne lit plus le résultat du bilan) ni
               // `source` (la provenance qu'il transmet à « retrouver » est la porte d'ici, `email`).
               // En passer un que rien ne lit se lit « réservé » là où il est inutile.
               onPress={() => router.push('/connexion/email')}
               role="link"
-              type="linkPrimary"
               style={styles.emailLink}
             />
           </View>
@@ -208,14 +208,14 @@ export default function ConnexionProposition() {
           <View style={styles.skip}>
             <TextLink
               label={vientDeCompte ? 'Retour' : 'Plus tard'}
+              // Souligné (`v1-33` T-5) : la phrase grise qui suit le touche, au même corps.
+              apparence="souligne"
               // `canGoBack()` d'abord : `/connexion` est une vraie URL web, atteignable sans pile
               // derrière elle (favori, lien collé, démarrage à froid), et un `router.back()` nu ne
               // fait alors **rien** — la personne reste enfermée sur l'écran. Le repli est une
               // destination, pas un dépilement, et il diffère selon d'où l'on prétend revenir.
               onPress={() => revenirOu(vientDeCompte ? '/compte' : '/plan')}
               role="link"
-              type="small"
-              themeColor="textTertiary"
             />
             {/* **Ce qu'on perd sans compte n'était dit que dans les pages légales** (C3.9,
                 constat A1-11) : changer de téléphone perd tout, et la purge des sessions anonymes
@@ -244,20 +244,18 @@ export default function ConnexionProposition() {
           <View style={styles.legal}>
             <TextLink
               label="Confidentialité"
+              apparence="discret"
               onPress={() => router.push('/confidentialite')}
               role="link"
-              type="small"
-              themeColor="textTertiary"
             />
             <ThemedText type="small" themeColor="textTertiary">
               ·
             </ThemedText>
             <TextLink
               label="Conditions d’utilisation"
+              apparence="discret"
               onPress={() => router.push('/conditions')}
               role="link"
-              type="small"
-              themeColor="textTertiary"
             />
           </View>
         </ScrollView>

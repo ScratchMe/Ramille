@@ -51,7 +51,7 @@ export function FeuilleRappels({ boucle = 'hebdo', moisNomme = null, permission 
     { canal: 'email', titre: 'Par email', detail: 'Rattache un compte pour l’activer.', choisissable: false, porteVersLeCompte: true },
     { canal: 'none', titre: 'Sans rappel', detail: 'On se retrouve dans l’app, à chaque point.' },
   ];
-  const lien = (label) => <TextLink label={label} role="link" type="small" weight={600} themeColor="accentText" containerStyle={{ alignSelf: 'flex-start', padding: '0 24px' }} />;
+  const lien = (label) => <TextLink label={label} apparence="action" role="link" containerStyle={{ alignSelf: 'flex-start', padding: '0 24px' }} />;
   // Le cadre est `FeuilleDuBas` : « Les rappels » nomme le dialogue sans s'afficher (`enTete={false}`) — ni le
   // canvas ni aucune décision ne portaient d'en-tête visible.
   return (

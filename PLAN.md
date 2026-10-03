@@ -362,6 +362,11 @@ branche, et en ferait un troisième endroit où se lit la logique de segment.
 
 ## 4. L'écran du plan : la saison, le premier plan, la barre d'onglets
 
+**Une lecture que l'écran du plan ajoute se place dans `lireLePlan`** (`src/lib/lecture-du-plan.ts`,
+`v1-33` T-12, 03/10/2026), jamais dans l'effet de l'écran : la racine lance cette lecture pendant
+l'écran de lancement, et le premier chargement la reprend. Ajoutée à l'effet, une requête repartirait
+après le plancher, et le plan arriverait d'autant plus tard. Le détail : `FRONT-SESSION.md` §2.9.
+
 **La saison a une fin et un début, et les deux se disent sur l'écran du plan** (C2.8,
 `src/types/saison.ts`). `plan_cycles.period_end` et `.cadence_type` existaient depuis l'increment 3 et
 n'étaient lus par **aucun** écran : le cap était annoncé sans échéance, et l'effet « nouveau départ »

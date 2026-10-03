@@ -142,11 +142,9 @@ export function ChoixDeRappel({
             {ligne.lienVersLesReglages && (
               <TextLink
                 label="Ouvrir les réglages du téléphone"
+                apparence="action"
                 onPress={() => void Linking.openSettings()}
                 role="link"
-                type="small"
-                weight={600}
-                themeColor="accentText"
                 containerStyle={styles.reglages}
               />
             )}

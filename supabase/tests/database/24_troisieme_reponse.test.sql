@@ -156,7 +156,7 @@ select results_eq(
 select throws_ok(
   $stmt$ select public.repondre_au_checkin('c2400000-0000-0000-0000-0000000000d1'::uuid, 'non') $stmt$,
   '22023', null,
-  'un point déjà répondu n''accepte pas une seconde réponse, « sans objet » compris'
+  'un point déjà répondu, sa période passée, n''accepte pas de seconde réponse, « sans objet » compris'
 );
 
 -- **Le message nomme les trois valeurs**, il ne renvoie pas un nom de contrainte : un appel qui

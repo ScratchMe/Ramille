@@ -13,7 +13,7 @@ Chaque écran du bilan vit dedans. Le pied est hors défilement : Retour (second
 - le focus va à ce qui manque — l’option cochée du groupe, ou sa première ; un champ de saisie reçoit le focus lui-même ;
 - l’écran y défile le minimum pour qu’il soit entier, 16 au-dessus du pied (un groupe plus haut que la zone s’aligne 24 sous l’en-tête) ;
 - l’intitulé de la question qui manque passe en `accentText` 600 (`IntituleDuChamp`) — **jamais le titre de l’étape** ;
-- « Il manque encore {phrase}. » apparaît au-dessus des boutons, 8 au-dessus d’eux : un lien (`TextLink` small 600 `accentText`, cible 48, aligné sur les boutons, en fondu 200 ms) qui mène au même endroit. Jamais une alerte : ce n’est pas un échec.
+- « Il manque encore {phrase}. » apparaît au-dessus des boutons, 8 au-dessus d’eux : un lien (`TextLink` `apparence="action"` — small 600 `accentText` —, cible 48, aligné sur les boutons, en fondu 200 ms) qui mène au même endroit. Jamais une alerte : ce n’est pas un échec.
 
 La demande tient **jusqu’à ce que l’étape soit complète**, et elle retombe en quittant l’étape. Tant qu’elle court, la ligne et la marque suivent ce qui manque *maintenant* — un autre mode choisi pendant la demande fait suivre la ligne ; une fois retombée, un nouveau manque ne se dit qu’au toucher suivant. Le pied grandit de la ligne — de 102 à 158 à la taille de police normale : sa hauteur se mesure, elle ne se suppose pas, et le défilement attend la mise en page qui suit. Chaque champ qui peut manquer s’enregistre auprès de la coquille (`useAncreDuChamp`) : c’est ce qui dit où mener.
 

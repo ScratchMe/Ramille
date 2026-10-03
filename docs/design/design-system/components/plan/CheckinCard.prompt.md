@@ -22,3 +22,9 @@ L'accent (fond `backgroundSelected`, étiquette `accentText`) désigne le point 
 **Deux échecs, deux places** : un `refus` (le point est clos) remplace les boutons, qui ne pourraient plus aboutir ; une `erreur` (la réponse n'est pas partie) s'ajoute sous eux, qui restent. La réplique de Ramille prend le focus quand elle remplace les boutons — jamais au chargement.
 
 Dans le texte, c'est **« le point »**, jamais « check-in » : `CheckinCard` est un nom de code. Pas de streak, pas de score. Un point sans réponse expire et n’est jamais relu.
+
+**La réponse se corrige jusqu’au point suivant** (02/10/2026, `v1-33` §6, décidé avec la personne qui pilote) : « Non » et « Oui » sont à 8 px l’un de l’autre, et un toucher erroné était définitif. La carte répondue porte, sous le pied, le lien « Modifier ma réponse » — souligné, tertiaire, comme « Changer d’avis ». Il rouvre la question et les trois réponses sous « Ta réponse : oui. » (`small` tertiaire, dans les mots des boutons — ils n’ont pas d’état « choisi », et c’est voulu), avec « Annuler » dessous. La nouvelle réponse reçoit sa réplique, le pied dit le jour de la correction, et « deux fois de suite » la suit. La correction tient le temps que la carte est affichée, jusqu’au point suivant.
+
+```jsx
+<CheckinCard periodLabel="Semaine du 28/09" question="Mardi ou jeudi, as-tu fait ce trajet en train ?" answered="oui" correction reponseEnPlace="Ta réponse : oui." />
+```

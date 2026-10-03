@@ -32,7 +32,7 @@ export function EtapeTransition({ onCommencer, onPrecedent, onConfidentialite, s
           <Button title="Commencer" onPress={onCommencer} flex />
         </div>
         <OnboardingDots total={4} activeIndex={3} />
-        <TextLink label="Ce qu’on enregistre, et pourquoi" onPress={onConfidentialite} role="link" type="small" weight={600} themeColor="textTertiary" style={{ textAlign: 'center' }} containerStyle={{ marginTop: -24, alignItems: 'center' }} />
+        <TextLink label="Ce qu’on enregistre, et pourquoi" apparence="discret" onPress={onConfidentialite} role="link" style={{ textAlign: 'center' }} containerStyle={{ marginTop: -24, alignItems: 'center' }} />
       </div>
     </div>
   );

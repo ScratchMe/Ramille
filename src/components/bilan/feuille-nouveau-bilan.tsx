@@ -95,10 +95,8 @@ export function FeuilleNouveauBilan({
           et l'écran qui porte la feuille s'en va avec elle. */}
       <TextLink
         label="Pas maintenant"
+        apparence="action"
         onPress={onQuitter}
-        type="small"
-        weight={600}
-        themeColor="accentText"
         style={styles.sortie}
       />
     </FeuilleDuBas>

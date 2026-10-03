@@ -18,7 +18,7 @@ export function TextField({ label, value = '', onChangeText, keyboardType = 'def
         <input type={adresse ? 'email' : 'text'} autoComplete={remplissage} autoCapitalize="none" autoCorrect={adresse ? 'off' : undefined} spellCheck={adresse ? false : undefined} enterKeyHint={onSubmitEditing ? 'send' : undefined} value={value} placeholder={placeholder} aria-label={label} onChange={(e) => onChangeText && onChangeText(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
           onKeyDown={(e) => { if (onSubmitEditing && e.key === 'Enter') { e.preventDefault(); onSubmitEditing(); } }}
           style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 400, fontFamily: 'var(--font-sans)', color: 'var(--color-text)', background: 'transparent', border: 0, outline: 0, padding: 0 }} />
-        {rightActionLabel && <TextLink label={rightActionLabel} onPress={onRightAction} type="small" weight={600} themeColor="accentText" />}
+        {rightActionLabel && <TextLink label={rightActionLabel} apparence="action" onPress={onRightAction} />}
       </div>
       {helperText && <ThemedText type="small" themeColor="textSecondary">{helperText}</ThemedText>}
     </div>

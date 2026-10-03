@@ -2,10 +2,13 @@
  * L'écran du plan : l'ordre de ses états quand ses deux premières lectures partent ensemble, et une
  * relance qui répond sous le doigt (audits P-9 et P-8, 01/10/2026).
  *
- * **Pourquoi un test d'écran** (`TESTING.md` §2.10) : les deux décisions vivent dans l'écran — l'ordre
- * dans lequel il lit ses résultats, et l'état d'un contrôle pendant une lecture qu'il a demandée —,
+ * **Pourquoi un test d'écran** (`TESTING.md` §2.10) : les deux décisions sont celles de l'écran — l'ordre
+ * dans lequel ses résultats sont lus, et l'état d'un contrôle pendant une lecture qu'il a demandée —,
  * aucune dérivation de `src/types` ne les porte, et le parcours réel ne joue ni une lecture en échec
- * ni une relance. Ce sont des **branches d'état**, la famille que le critère vise.
+ * ni une relance. Ce sont des **branches d'état**, la famille que le critère vise. **Depuis le
+ * 03/10/2026, la lecture et l'ordre de ses décisions vivent dans `lireLePlan`** (`src/lib/lecture-du-plan.ts`,
+ * `v1-33` T-12) : l'écran l'appelle telle quelle, donc ce fichier la garde toujours, et c'est là-bas que
+ * se jouent les mutations 1, 2 et 4.
  *
  *   1. **« Pas de bilan » gagne sur un cycle illisible, et un bilan illisible gagne sur tout** (P-9).
  *      Les deux lectures partaient l'une après l'autre ; elles partent ensemble, et l'écran doit lire
@@ -29,7 +32,7 @@
  *      chantier B) : la carte d'attente reste, et la ligne de relecture s'allume.
  * Quatre mutations, chacune faisant tomber la sienne et aucune autre :
  *   - le bilan illisible toujours dit hors ligne (`echecDeLecture('horsLigne')`) → 4, « sur l'écran
- *     d'erreur » ;
+ *     d'erreur » — depuis le 03/10/2026, `echec: 'horsLigne'` en dur sur le bilan dans `lireLePlan` ;
  *   - les boucles illisibles toujours dites hors ligne → 4, « la relecture en échec du serveur » ;
  *   - `setRappels(prefs)` sans condition (l'état d'avant) → 5 ;
  *   - `prefs === null` retiré de la ligne de relecture → 5.
@@ -41,7 +44,7 @@
  *   - la marque de reconnexion ignorée (l'état d'avant) → 6, « ne compte pas une reconnexion » ;
  *   - l'émission jamais faite → 6, « compte un rattachement par email ».
  *
- * **Ce qu'il coûte** : douze modules doublés pour monter l'écran — le transport, le stockage local
+ * **Ce qu'il coûte** : onze modules doublés pour monter l'écran — le transport, le stockage local
  * de quatre marques, la navigation et ses deux contextes de pile, la mesure, et les composants qui
  * tirent `react-native-svg`. C'est le prix d'un écran qui lit dix sources ; le relevé de
  * `plan-pistes.test.tsx` en dit le reste.
@@ -140,9 +143,8 @@ jest.mock('@/lib/notification-prefs', () => ({
   lireLaFenetreDuMotDeLaVeille: async () => null,
 }));
 jest.mock('@/lib/rappels', () => ({ lirePermission: async () => 'fermee' }));
-// Ce qui dessine — la bande et son icône de compte, la mascotte, l'illustration, la feuille : rien de
-// ce que ce fichier garde, et `react-native-svg` ne se charge pas ici.
-jest.mock('@/components/bande-haute', () => ({ BandeHaute: () => null }));
+// Ce qui dessine — la mascotte, l'illustration, la feuille : rien de ce que ce fichier garde, et
+// `react-native-svg` ne se charge pas ici. La bande n'est plus à l'écran : sa pile la pose (`v1-33` T-13).
 jest.mock('@/components/mascot', () => ({ Mascot: () => null }));
 jest.mock('@/components/illustrations/empty-state-illustration', () => ({ EmptyStateIllustration: () => null }));
 /** Ce que la feuille des rappels reçoit, quand elle s'ouvre. */

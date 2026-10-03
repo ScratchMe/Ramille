@@ -475,10 +475,8 @@ export function StepShell({
               <Apparition>
                 <TextLink
                   label={`Il manque encore ${manque.phrase}.`}
+                  apparence="action"
                   onPress={mener}
-                  type="small"
-                  weight={600}
-                  themeColor="accentText"
                 />
               </Apparition>
             )}

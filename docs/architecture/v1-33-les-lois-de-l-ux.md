@@ -155,13 +155,73 @@ phases). L'état de chaque ligne est celui de la PR qui porte ce document.
 
 | ID | Le constat | Pourquoi pas maintenant |
 |---|---|---|
-| T-5 | Sept apparences de `TextLink` (le kit en documente quatre) ; « J'ai déjà un compte » en cinq ; des « Retour » gris collés à une phrase grise du même corps | Trente et un fichiers : il entrerait en conflit avec chaque chantier de la vague. À faire seul, juste après |
-| T-9 | Huit formes d'attente, dont quatre qui n'attendent pas les 300 ms | Un composant `LigneDAttente` partagé, même raison que T-5 ; les deux cas les plus visibles (`/contexte`, `/connexion/retrouver`) sont traités dans la vague |
+| T-5 | Sept apparences de `TextLink` (le kit en documente quatre) ; « J'ai déjà un compte » en cinq ; des « Retour » gris collés à une phrase grise du même corps | Trente et un fichiers : il entrerait en conflit avec chaque chantier de la vague. À faire seul, juste après. **Fait le 03/10/2026**, plus bas |
+| T-9 | Huit formes d'attente, dont quatre qui n'attendent pas les 300 ms | Un composant `LigneDAttente` partagé, même raison que T-5 ; les deux cas les plus visibles (`/contexte`, `/connexion/retrouver`) sont traités dans la vague. **Fait le 03/10/2026**, plus bas |
 | T-10 | « Retour » : trois styles, trois places selon le détour | Une décision de dessin : déplacer « Plus tard » détacherait la phrase qui dit ce qu'on perd sans compte (`v1-28` §7.2) |
-| T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil |
-| T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux |
+| T-12 | Le plancher de 1 450 ms du lancement passe **avant** la lecture du plan au lieu de la couvrir | Sortir la lecture du plan de son écran d'abord ; effort L, gain à mesurer sur appareil. **Fait le 03/10/2026**, plus bas |
+| T-13 | La bande haute rendue quatorze fois, état par état — R-9 en est la conséquence | Elle change l'origine des défilements que P-1 et P-2 mesurent : après eux. **Fait le 03/10/2026**, plus bas |
 | T-3 (c) | Le pied collant face au clavier ; « Recevoir un code » à 468 px du champ | Ce que fait l'edge-to-edge du SDK 57 se mesure sur appareil avant d'ajouter un `KeyboardAvoidingView` |
 | T-7 (glissé) | La poignée de la feuille promet un glissé qui n'existe pas | Un seuil de glissé se juge au doigt |
+
+**T-5, fait le 03/10/2026.** `TextLink` prend une `apparence` obligatoire et ne prend plus ni `type`,
+ni `themeColor`, ni `weight` ; de son `style`, il ne lit que l'alignement. Trois apparences, au corps
+`small` : `action` (`accentText` 600), `discret` (`textTertiary`) et `souligne` (le même gris, souligné
+au repos). La correspondance : l'accent 600 et `linkPrimary` deviennent `action`, comme les six liens
+au corps par défaut (16 px, l'encre du texte) posés sous un bouton principal, qui se lisaient comme
+du texte ; le gris devient `discret`, le gris souligné `souligne`, et les deux liens de transparence en
+`textSecondary` ou tertiaire 600 (« Ce qu'on enregistre, et pourquoi », « Comment ce chiffre est
+calculé ») deviennent `discret`. **Un lien discret qu'une phrase du même gris touche passe en
+`souligne`** — c'était le troisième constat de T-5 : « Retour » sous « Reviens en arrière », « Plus
+tard » sur `/connexion`, l'« Annuler » de `/feedback`, « Renvoyer un code » et « Utiliser une autre
+adresse », les pages légales de « Toi », les deux liens de contestation sous la méthode dépliée de la
+restitution — et tout « Annuler » posé à côté d'un bouton de confirmation (`/compte/suppression`
+rejoint `MonCompte` et le retrait d'un bilan). « J'ai déjà un compte » garde **deux** formes de lien :
+`action` sous le bouton principal d'un écran vide et sur `/connexion/email`, et `souligne` sur
+l'accroche de l'onboarding, où v1-10 l'a voulu discret. Les types `link` et `linkPrimary` de
+`ThemedText` sont partis, dans le dépôt comme dans le kit. La règle : `FRONT.md` §2.4. « Retour »
+garde une forme par détour, et c'est T-10.
+
+**T-9, fait le 03/10/2026.** `LigneDAttente` (`src/components/ligne-d-attente.tsx`) porte la forme — `body`,
+`textSecondary` — et le délai de `v1-30` §5.8 ; les six lignes « Chargement de ton … » passent par elle :
+le plan, le suivi, les pistes et `/contexte` (qui étaient en corps par défaut ou en `body`), « Toi » (en
+`small` tertiaire), et la restitution, seule à rester immédiate (`immediate`), parce que son HTML
+statique la porte et que la section D de `verifier-etats-export.mjs` la lit. Les quatre lignes qui
+n'attendaient pas étaient la restitution, `/compte/suppression`, `/rappels/stop` et `/status`.
+`/compte/suppression` et `/rappels/stop` sont des pages qu'on ouvre à froid par leur adresse, dont la
+phrase est la première de la page — « Un instant, on … » —, remplacée au même corps par le résultat :
+elles restent telles quelles, et `FRONT.md` §2.11 le dit. `/status` est une page de diagnostic
+(« Vérification… », sous « Connexion Supabase ») qu'aucun parcours n'atteint : laissée telle quelle. `/connexion/retrouver` reste muette pendant sa lecture, comme la
+vague l'a laissée.
+
+**T-13, fait le 03/10/2026.** La bande haute et la zone sûre du haut sont posées par chaque pile
+d'onglet, autour de sa `Stack` (`CadreDOnglet`, `src/components/cadre-d-onglet.tsx`), et plus par
+chaque écran : le relevé en comptait seize rendus pour quatre écrans (le plan six, le suivi et la
+restitution quatre chacun, les pistes deux — quatorze au relevé de l'audit, seize depuis que R-9 a
+rendu la bande aux deux états de la restitution qui l'avaient perdue). Un état ne peut plus oublier
+la bande — c'était R-9 —, et elle ne se recrée plus à chaque écran poussé dans la pile. Ce qui bouge à
+l'œil : la bande ne glisse plus avec un écran poussé (les pistes, une restitution), elle reste
+au-dessus ; sur web la pile n'anime rien, donc ce point se voit sur appareil (`v1-13` §11.26).
+L'origine des défilements ne change pas — la bande occupe la même place —, et les gardes de P-1 et
+P-2 du parcours réel passent telles quelles (rejeu complet du 03/10/2026). Les gardes :
+`src/tests/ecrans/cadre-des-piles.test.tsx` pour la bande et son ordre, et l'absence de bande dans
+l'écran par `restitution-du-bilan.test.tsx` et `plan-pistes.test.tsx` — une bande en double, le
+parcours réel la tolère.
+
+**T-12, fait le 03/10/2026.** La lecture du plan — trois lots de requêtes, dont le dernier en enchaîne
+deux, soit quatre allers-retours, préférences de rappel et permission comprises — sort de l'écran pour
+`src/lib/lecture-du-plan.ts` (`lireLePlan`). La racine la lance dès qu'une lecture réussie désigne le
+plan (`prechargeLePlan`), **avant** d'attendre le plancher, et le premier chargement de l'écran la
+reprend, une fois, pour la même session et fraîche. La contre-lecture a trouvé ce que ce départ plus
+tôt réveillait : la lecture du jeton d'appareil pouvait croiser son enregistrement au démarrage, et la
+carte d'attente annoncer le mauvais canal — elle l'attend désormais (`suivreLEnregistrementDuJeton`). La décision du plancher
+(`v1-13`, D13) ne bouge pas : il couvre désormais la lecture au lieu de la précéder. **Mesuré sur
+l'export web**, contre la stack locale, une latence posée sur chaque requête et six ouvertures par
+mesure, de « / » au plan qui montre son action : **2,94 → 1,78 s** à 300 ms, **2,14 → 1,64 s** à
+100 ms — le plan arrive désormais à peine après la fin de l'écran de lancement. Le gain sur appareil
+reste à relever (`v1-13` §11.26). Les gardes : `src/lib/lecture-du-plan.test.ts` (reprise au premier
+passage, une fois, même session, fraîche ; une lecture annulée s'arrête entre deux lots),
+`prechargeLePlan` dans `demarrage.test.ts`, l'attente du jeton dans `notification-prefs.test.ts`, et le
+parcours réel passe tel quel.
 
 R-12 (l'écran « Restitution » du kit, qui montrait encore la barre 2050 au-dessus de la moyenne et
 « Modifier mes réponses ») figurait ici : il a été fait avec la vague produit, une fois D9 et D10
@@ -377,7 +437,7 @@ et ce que la vague a relevé en chemin est en §9.
 | « Faire un nouveau bilan » sur la restitution (`v1-19` D1) | Mental Model | Depuis l'arbitrage du 28/09/2026 (« la correction gagne »), un bilan refait le même jour **remplace** le précédent dans le suivi : le lien dit « nouveau » pour une correction | **Pas encore posée** : elle touche au rythme des bilans (`v1-19`) et se pose avec la prochaine décision sur ce sujet |
 | L'accent de la carte du point suit le poste dominant (27/08/2026) | Selective Attention | Depuis le 30/09/2026, la question du mois suit l'action engagée : celle qui referme l'engagement peut être la grise | **L'accent sur la question de l'engagement** quand deux points sont ouverts — vague produit |
 | La carte « Plan et Suivi » se ferme par son « Compris » (HANDOFF `v1-17`) | Paradox of the Active User | Tant qu'on ne touche pas « Compris », elle occupe ≈ 36 % de la fenêtre à chaque visite et repousse le point à 514 px — sur toutes les captures qui suivent | **Vue une fois, puis partie**, « Compris » touché ou non — vague produit |
-| `repondre_au_checkin` refuse un point déjà répondu (C1.12, C2.4) | Postel, Fitts | « Non » et « Oui » sont à 8 px l'un de l'autre, et un toucher erroné est définitif ; corriger une réponse n'a jamais été posé comme question de produit | **Corrigeable tant que la période court** — chantier à part (RPC, suivi) |
+| `repondre_au_checkin` refuse un point déjà répondu (C1.12, C2.4) | Postel, Fitts | « Non » et « Oui » sont à 8 px l'un de l'autre, et un toucher erroné est définitif ; corriger une réponse n'a jamais été posé comme question de produit | **Corrigeable tant que la période court** — chantier à part (RPC, suivi). **Livré le 02/10/2026**, précisé ce jour-là avec la personne qui pilote : un lien « Modifier ma réponse » sur la carte répondue rouvre les trois réponses sous « Ta réponse : oui. » ; la réplique est celle de la nouvelle réponse ; la correction tient jusqu'au point suivant — « la période » est celle de l'affichage de la carte, la période interrogée étant déjà passée quand on répond (`BOUCLE.md` §2) |
 | La suppression du compte emploie le principal (kit) | Von Restorff | Sur « Toi » en confirmation, deux principaux verts : « Rattacher un compte » et « Supprimer définitivement » | **Le rattachement en secondaire** pendant la confirmation — vague produit |
 | Au premier plan seulement, les pistes passent avant le cap (`v1-29` n° 3) | Serial Position | Hors premier plan, l'action engagée vient en troisième ou quatrième bloc, sous le pli avec un point ou une carte d'ouverture | Juger après P-1, à la recette |
 | Le plancher de lancement de 1 450 ms (`v1-13`, décision D13) | Doherty | Il sérialise la lecture du plan derrière lui | Technique, sans rouvrir cette décision : T-12 |
@@ -412,10 +472,10 @@ Trois temps, parce que les fichiers se recouvrent et que le schéma ne se touche
 3. **Les chantiers à part**, un par un, chacun avec sa migration, ses tests pgTAP recalculés par
    requête et sa contre-lecture : la quatrième fréquence des loisirs (D5, livrée le 02/10/2026), la question générique le
    mois du choix (D14, livrée le 02/10/2026), « Modifier les jours » (D15, livré le 02/10/2026), le champ sous « 10+ » (livré le 02/10/2026), et la réponse au point
-   corrigeable dans sa période.
+   corrigeable dans sa période (livrée le 02/10/2026).
 
 Puis les reports techniques de §4.2, en commençant par T-5 (les liens), qui touche trente et un
-fichiers et doit passer seul.
+fichiers et doit passer seul — fait le 03/10/2026.
 
 ## 9. Ce qui reste ouvert après la PR #314
 
@@ -477,7 +537,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   à la feuille du re-bilan ? **Non, tranché le 02/10/2026** : le voile ferme toutes les feuilles.
 - **« Réessayer » en secondaire pendant la confirmation de suppression** : la décision visait
   « Rattacher un compte » ; le chantier l'a étendue au « Réessayer » d'un échec, pour qu'il n'y ait
-  qu'un principal.
+  qu'un principal. **Validé le 03/10/2026.**
 - **« Faire un nouveau bilan » le jour même** reste la tension de §6, non posée.
 - **Toucher le voile de la feuille du re-bilan sort du questionnaire**, comme « Pas maintenant » :
   même question que pour la feuille des rappels, sur une feuille qui s'ouvre sans geste — même
@@ -500,7 +560,7 @@ décision fixait l'intention, la phrase a été écrite pendant la vague. **Vali
   défaut que C2.11 devait fermer (`v1-27` §12.27).
 - **`commitPlanAction` dit « Vérifie ta connexion et réessaie. » à toute erreur d'écriture** : D19 ne
   couvre que les lectures. **Corrigé le 02/10/2026** (`v1-27` §12.29), pour toutes les écritures du
-  produit ; les phrases du serveur sont à valider.
+  produit ; les phrases du serveur sont **validées le 03/10/2026**.
 - **Deux lectures de l'entrée d'un re-bilan n'ont ni relecture ni « Réessayer »** : le préremplissage
   et l'engagement en cours. Depuis que les lectures ne sont plus rejouées (R-5), un raté réseau d'une
   seconde y donne un questionnaire vide, sans bandeau ni feuille — rien de faux n'est dit, mais neuf

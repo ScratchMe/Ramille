@@ -204,15 +204,13 @@ export function MonCompte({
         {!confirmation ? (
           <TextLink
             label="Supprimer mon compte"
+            apparence="souligne"
             hint="Demande une confirmation avant de supprimer quoi que ce soit"
             onPress={() => {
               ouvertureDemandee.current = true;
               onConfirmation(true);
             }}
             disabled={busy !== null}
-            type="small"
-            themeColor="textTertiary"
-            style={styles.link}
           />
         ) : (
           <View style={styles.confirmation}>
@@ -227,11 +225,9 @@ export function MonCompte({
             <View style={styles.confirmationActions}>
               <TextLink
                 label="Annuler"
+                apparence="souligne"
                 onPress={() => onConfirmation(false)}
                 disabled={busy !== null}
-                type="small"
-                themeColor="textTertiary"
-                style={styles.link}
               />
               <Button
                 title={busy === 'suppression' ? 'Suppression…' : 'Supprimer définitivement'}
@@ -264,5 +260,4 @@ const styles = StyleSheet.create({
   actions: { gap: Spacing.three, marginTop: Spacing.two },
   confirmation: { gap: Spacing.three },
   confirmationActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
-  link: { textDecorationLine: 'underline' },
 });

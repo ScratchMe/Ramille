@@ -58,11 +58,9 @@ export function EtapeReassurance({
                 (`v1-29`) — et le rôle annoncé. */}
             <TextLink
               label="Ce qu’on enregistre, et pourquoi"
+              apparence="discret"
               onPress={() => router.push('/confidentialite')}
               role="link"
-              type="small"
-              weight={600}
-              themeColor="textSecondary"
             />
           </View>
         </View>

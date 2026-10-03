@@ -346,15 +346,16 @@ export default function SuppressionCompte() {
           Dernière étape : confirme, et tout part.
         </ThemedText>
         <View style={styles.actions}>
+          {/* Souligné, comme tout « Annuler » posé à côté d'un bouton de confirmation (`MonCompte`, le
+              retrait d'un bilan) : un même geste, une seule forme (`v1-33` T-5). */}
           <TextLink
             label="Annuler"
+            apparence="souligne"
             onPress={() => {
               geste.current = 'bouton';
               setPhase((p) => (p.kind === 'pret' ? { ...p, confirme: false } : p));
             }}
             disabled={busy}
-            type="small"
-            themeColor="textTertiary"
           />
           <Button
             title={busy ? 'Suppression…' : 'Supprimer définitivement'}

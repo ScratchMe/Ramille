@@ -30,11 +30,9 @@ export function BlocMethode({ dateDuBilan }: { dateDuBilan: string | null }) {
           annoncé par `expanded`, qui est fait pour ça — un lecteur d'écran dit « développé ». */}
       <TextLink
         label={METHODE_TITRE}
+        apparence="discret"
         onPress={() => setOuvert((etait) => !etait)}
         expanded={ouvert}
-        type="small"
-        weight={600}
-        themeColor="textSecondary"
         containerStyle={styles.cible}
       />
       {ouvert && (

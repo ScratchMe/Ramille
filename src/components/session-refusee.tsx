@@ -58,7 +58,7 @@ export function SessionRefusee({
           {/* Le second chemin reste ouvert : quelqu'un peut préférer repartir d'un bilan neuf sur cet
               appareil plutôt que de retrouver un compte dont il n'a plus l'adresse. Un écran qui ne
               laisserait que la reconnexion serait une impasse. */}
-          <TextLink label="Commencer un bilan sur cet appareil" onPress={onCommencer} />
+          <TextLink label="Commencer un bilan sur cet appareil" apparence="action" onPress={onCommencer} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

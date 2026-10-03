@@ -49,8 +49,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/hooks/use-track-focus', () => ({ useTrackFocus: () => {} }));
 jest.mock('@/lib/analytics', () => ({ track: () => {} }));
-// Ce qui dessine, et que ce fichier ne garde pas.
-jest.mock('@/components/bande-haute', () => ({ BandeHaute: () => null }));
+// Ce qui dessine, et que ce fichier ne garde pas. La bande n'est plus à l'écran : sa pile la pose.
 jest.mock('@/components/mascot', () => ({ Mascot: () => null }));
 jest.mock('@/components/illustrations/empty-state-illustration', () => ({ EmptyStateIllustration: () => null }));
 

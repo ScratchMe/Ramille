@@ -1831,9 +1831,9 @@ chaque fichier de test cité ; les deux déplacements et la montée du lock n'en
   instant » hors ligne compris. La règle de D19 vaut désormais pour les écritures
   (`src/types/ecriture-en-echec.ts`, et `phraseDeLaPanne` pour `/rappels/stop`) : le constat de chaque
   écran, puis « Vérifie ta connexion et réessaie. » hors ligne, « Réessaie dans un instant. » sinon. Les
-  deux suites existaient déjà dans le produit, mot pour mot. **Les phrases du serveur sont à valider** par
-  la personne qui pilote, comme celles de D19 l'ont été : elles sont nouvelles à l'écran, même faites de
-  morceaux connus. **Ce que les tests gardent** : les fonctions du plan, des rappels et de
+  deux suites existaient déjà dans le produit, mot pour mot. **Les phrases du serveur sont validées** par
+  la personne qui pilote le 03/10/2026, comme celles de D19 l'avaient été : elles étaient nouvelles à
+  l'écran, même faites de morceaux connus. **Ce que les tests gardent** : les fonctions du plan, des rappels et de
   `/rappels/stop` (le statut qu'elles passent) ; les appels de la carte du point, du contexte et du canal
   de retour, et les écrans qui lisent le genre des rappels (« Toi », la feuille), ne le sont que par
   relecture.

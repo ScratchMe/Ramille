@@ -286,6 +286,11 @@ là où vit la règle de C1.4 : *un échec de lecture ne dit jamais « tu n'as r
 page, l'apparence et « est-ce que ça rend » restent à la recette et à
 `verifier-etats-export.mjs` : les y mettre coûterait du temps de CI pour une garde qui casse à
 chaque retouche de maquette.
+**Une exception, et elle a sa raison** (03/10/2026) : le contrat d'un **composant partagé dont
+l'apparence est nommée** — les trois apparences de `TextLink` (`v1-33` T-5) — se teste au rendu
+(`src/components/text-link.test.tsx`). Ce n'est pas la mise en page d'un écran mais le vocabulaire
+du kit : la garde ne casse qu'au changement de ce vocabulaire, pas à la retouche d'une maquette, et
+elle tient sans aucun double, pour quelques millisecondes.
 
 **Ce que ça coûte, mesuré** : un fichier de 173 lignes pour 4 assertions, 18 lignes de doublage
 contre 13 d'assertion, 4 modules doublés, et **+21 % sur la suite / +64 % de temps CPU** pour ce

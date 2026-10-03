@@ -27,6 +27,7 @@ import {
   memoriserLeJetonDeCetAppareil,
   setMotDeLaVeille,
   setReminderChannel,
+  suivreLEnregistrementDuJeton,
 } from '@/lib/notification-prefs';
 
 /** Ce que rend chaque lecture du double : la session, puis une ligne par table. */
@@ -215,6 +216,21 @@ describe('loadReminderPrefs', () => {
     await memoriserLeJetonDeCetAppareil('ExponentPushToken[abc]');
     mockLectures.push_tokens = { data: null, error: { code: '08006', message: 'connexion perdue' } };
     expect(await loadReminderPrefs()).toBeNull();
+  });
+
+  // **La lecture attend l'enregistrement du jeton en cours** (`v1-33` T-12, 03/10/2026) : la lecture du
+  // plan part désormais pendant l'écran de lancement, au moment où le démarrage enregistre le jeton.
+  // Éprouvé en le cassant le même jour : l'attente retirée de `leJetonDeCetAppareilEstActif` fait tomber
+  // ce test, et lui seul — la lecture trouve l'appareil sans marque, et répond « non ».
+  it('attend l’enregistrement du jeton en cours avant de lire sa marque', async () => {
+    let terminer: () => void = () => {};
+    suivreLEnregistrementDuJeton(new Promise<void>((resoudre) => (terminer = resoudre)));
+    const lecture = loadReminderPrefs();
+    // L'enregistrement pose la marque un peu plus tard, puis se termine : la lecture la trouve.
+    await new Promise((resoudre) => setTimeout(resoudre, 0));
+    await memoriserLeJetonDeCetAppareil('ExponentPushToken[abc]');
+    terminer();
+    expect(await lecture).toMatchObject({ jetonActif: true });
   });
 
   it('sans jeton mémorisé sur cet appareil, la réponse est « non », et elle est lue', async () => {

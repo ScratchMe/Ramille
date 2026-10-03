@@ -13,12 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ContexteDesAncres, type AncreDuChamp, type AncresDeLEtape } from '@/components/bilan/ancre-du-champ';
 import { Button } from '@/components/button';
 import { ChampsDeContexte } from '@/components/bilan/champs-de-contexte';
+import { LigneDAttente } from '@/components/ligne-d-attente';
 import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useChargementVisible } from '@/hooks/use-apres-un-delai';
 import { donnerLeFocus } from '@/lib/focus';
 import { revenirOu } from '@/lib/navigation';
 import {
@@ -112,19 +112,6 @@ export default function Contexte() {
   }, []);
 
   /**
-   * **« Chargement… » comme sur les onglets, et un « Retour » atteignable pendant** (audit P-13,
-   * 01/10/2026). L'écran rendait une roue seule, tout de suite, sans un mot ni une sortie : hors
-   * ligne, quelques secondes muettes et rien à toucher. La phrase attend `DELAI_AVANT_CHARGEMENT`
-   * pour ne pas clignoter avant un contenu rapide — sauf après « Réessayer », où elle est la seule
-   * preuve que le geste a été pris (`useChargementVisible`, `FRONT.md` §1.2) ; le « Retour », lui,
-   * est là d'emblée.
-   */
-  const chargementVisible = useChargementVisible(
-    etat.statut === 'chargement',
-    etat.statut === 'chargement' && etat.relance === true
-  );
-
-  /**
    * **Les ancres des quatre questions, que l'écran fournit lui-même** (audit P-13) — celles que
    * `ChampsDeContexte` enregistrait déjà, et que rien ne lisait hors du questionnaire. « Enregistrer »
    * sur un contexte incomplet y mène, comme le « Suivant » en attente d'une étape (`StepShell`).
@@ -156,20 +143,19 @@ export default function Contexte() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.vide}>
-            {chargementVisible && (
-              <ThemedText type="body" themeColor="textSecondary">
-                Chargement de ton contexte…
-              </ThemedText>
-            )}
+            {/* **« Chargement… » comme sur les onglets, et un « Retour » atteignable pendant** (audit
+                P-13, 01/10/2026). L'écran rendait une roue seule, tout de suite, sans un mot ni une
+                sortie : hors ligne, quelques secondes muettes et rien à toucher. La ligne attend 300 ms
+                pour ne pas clignoter avant un contenu rapide, sauf après « Réessayer » ; le « Retour »,
+                lui, est là d'emblée. */}
+            <LigneDAttente demandee={etat.relance === true}>Chargement de ton contexte…</LigneDAttente>
             {/* Le « Retour » de l'écran d'échec, à la même place : la lecture ne dit encore rien du
                 bilan, donc le repli sans pile est la racine, comme là-bas. */}
             <TextLink
               label="Retour"
+              apparence="action"
               onPress={() => revenirOu('/')}
               role="link"
-              type="small"
-              weight={600}
-              themeColor="accentText"
             />
           </View>
         </SafeAreaView>
@@ -219,11 +205,9 @@ export default function Contexte() {
                 état vide à montrer (contre-lecture du 28/09/2026). */}
             <TextLink
               label="Retour"
+              apparence="action"
               onPress={() => revenirOu('/')}
               role="link"
-              type="small"
-              weight={600}
-              themeColor="accentText"
             />
           </View>
         </SafeAreaView>
@@ -346,10 +330,8 @@ export default function Contexte() {
           {demande && manque !== null && (
             <TextLink
               label={`Il manque encore ${manque.phrase}.`}
+              apparence="action"
               onPress={mener}
-              type="small"
-              weight={600}
-              themeColor="accentText"
             />
           )}
 
@@ -367,11 +349,9 @@ export default function Contexte() {
 
           <TextLink
             label="Retour"
+            apparence="action"
             onPress={() => revenirOu('/plan')}
             role="link"
-            type="small"
-            weight={600}
-            themeColor="accentText"
             style={styles.retour}
           />
         </ScrollView>

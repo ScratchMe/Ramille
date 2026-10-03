@@ -45,7 +45,9 @@
  *   - `relance: true` retiré du « Réessayer » (l'état d'avant la contre-lecture) → « dit
  *     « Chargement… » tout de suite après « Réessayer » » ;
  *   - `true` passé en second argument de `useChargementVisible` (la ligne toujours montrée) →
- *     « ne dit pas « Chargement… » avant le délai quand personne ne l'a demandé ».
+ *     « ne dit pas « Chargement… » avant le délai quand personne ne l'a demandé ». Reformulée le
+ *     03/10/2026, l'écran passant par `LigneDAttente` (`v1-33` T-9) : `demandee` posé en dur sur sa
+ *     ligne → la même, seule.
  *
  * **Et quatre câblages le 29/09/2026, ceux de la liste où l'on choisit** (`v1-32`) — la famille
  * « une dérivation appelée avec le mauvais argument » : `etatDeLaPiste` et `annonceDeLaPiste` ont
@@ -66,12 +68,18 @@
  * ici, entorse assumée pour ce seul fichier, dont les doublures sont déjà payées : Jest tourne à
  * chaque `npm test`, sans Docker ni stack, et nomme le câblage fautif là où le parcours nomme une
  * étape.
+ *
+ * **Et le 03/10/2026, une absence** (`v1-33` T-13) : la bande haute est posée par la pile, et l'écran
+ * ne la rend plus. Le parcours réel cherche l'icône du compte parmi toutes et garde la première visible,
+ * donc il tolère une bande en double. Une mutation : `<BandeHaute />` remis au-dessus du défilement →
+ * « dit l'état vide… », seul.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 import PistesScreen from '@/app/(tabs)/plan/pistes';
+import { APP_NAME } from '@/constants/produit';
 
 // ── Les doublures, et c'est ici que se lit le coût réel d'un test d'écran ─────────────────────
 //
@@ -187,6 +195,8 @@ describe('PistesScreen', () => {
 
     await waitFor(() => expect(screen.getByText(/ne porte aucune piste/)).toBeTruthy());
     expect(screen.queryByText(/n’ont pas pu être chargées/)).toBeNull();
+    // L'écran ne rend pas la bande : sa pile la pose (`v1-33` T-13), et une seconde se lirait en double.
+    expect(screen.queryByText(APP_NAME)).toBeNull();
   });
 
   /**

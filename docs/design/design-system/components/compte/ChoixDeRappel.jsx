@@ -73,7 +73,7 @@ export function ChoixDeRappel({ lignes, canal, permission = 'demandable', onChoi
         {items.map((l) => (
           <React.Fragment key={l.canal}>
             <LigneDeCanal ligne={{ ...l, choisi: canal === l.canal }} onChoisir={onChoisir} />
-            {l.lienVersLesReglages && <TextLink label="Ouvrir les réglages du téléphone" role="link" type="small" weight={600} themeColor="accentText" containerStyle={{ alignSelf: 'flex-start', padding: '0 24px' }} />}
+            {l.lienVersLesReglages && <TextLink label="Ouvrir les réglages du téléphone" apparence="action" role="link" containerStyle={{ alignSelf: 'flex-start', padding: '0 24px' }} />}
             {/* Le mot de la veille précise « Par notification » : il se rend sous elle, en retrait, dans son propre
                 groupe — il n'existe qu'en notification (D3 de `v1-25`). */}
             {l.canal === 'push' && veille && (

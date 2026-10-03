@@ -8,4 +8,4 @@ Le premier écran de l'onboarding (1 sur 4).
 
 **Le titre promet l'absence de jugement**, pas un résultat : « Comprendre tes trajets, sans te juger. »
 
-**« Pas de compte à créer pour commencer. » vient avant « J’ai déjà un compte »** : le lien seul laisserait entendre qu'il faut un compte. Il reste pourtant là, discret : c'est lui qui rattrape la personne qui change d'appareil **avant** qu'elle refasse un bilan.
+**« Pas de compte à créer pour commencer. » vient avant « J’ai déjà un compte »** : le lien seul laisserait entendre qu'il faut un compte. Il reste pourtant là, discret — gris, et souligné parce que la phrase du même gris le touche (`TextLink` `souligne`) : c'est lui qui rattrape la personne qui change d'appareil **avant** qu'elle refasse un bilan.

@@ -264,11 +264,11 @@ export function LeisureDetailStep({
             {!showMore && (
               <TextLink
                 label="Voir les autres modes"
+                apparence="action"
                 onPress={() => {
                   vientDeDeplier.current = true;
                   setDeplieeParUnGeste(true);
                 }}
-                type="linkPrimary"
               />
             )}
           </View>

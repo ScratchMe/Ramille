@@ -18,6 +18,7 @@ import { Platform } from 'react-native';
 import {
   lireLeJetonDeCetAppareil,
   memoriserLeJetonDeCetAppareil,
+  suivreLEnregistrementDuJeton,
 } from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
 import { CANAUX_ANDROID, type Permission } from '@/types/rappels';
@@ -109,7 +110,15 @@ export async function demanderLaPermission(): Promise<Permission> {
  * couvre aujourd'hui que celles-là. Un `'inscrit' | 'sans_permission' | 'echec'` fermerait
  * l'écart ; le booléen suffit à ce que la feuille a besoin de savoir.
  */
-export async function enregistrerLeJeton(): Promise<boolean> {
+export function enregistrerLeJeton(): Promise<boolean> {
+  // Suivi, pour qu'une lecture du jeton partie au même moment le lise après lui
+  // (`suivreLEnregistrementDuJeton`, `src/lib/notification-prefs.ts`).
+  const enregistrement = enregistrerLeJetonMaintenant();
+  suivreLEnregistrementDuJeton(enregistrement);
+  return enregistrement;
+}
+
+async function enregistrerLeJetonMaintenant(): Promise<boolean> {
   if (!estNatif || !Device.isDevice) return false;
 
   const permission = await lirePermission().catch(() => 'fermee' as Permission);

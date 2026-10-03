@@ -26,9 +26,8 @@ export function MissingModeLink({ context }: { context: string }) {
   return (
     <TextLink
       label="Ton mode n’est pas dans la liste ? Dis-le-nous."
+      apparence="discret"
       role="link"
-      type="small"
-      themeColor="textTertiary"
       onPress={() => router.push({ pathname: '/feedback', params: { kind: 'mode_manquant', context } })}
       containerStyle={styles.cible}
       style={styles.link}
