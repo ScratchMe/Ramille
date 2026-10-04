@@ -2022,7 +2022,16 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   secondes), une session de compte écrasée par une anonyme pendant l'attente (`ensureSession` relit
   la session), et le refus du captcha pris pour un code parti (`estRefusDuCaptcha`). Pas encore dans
   l'app Android, qui attend une vue web et donc un build ; pas activé dans Supabase — **ce qui doit
-  être vrai avant est au registre §3.11** (l'écran du refus au démarrage y est fait le soir même). **La carte de
+  être vrai avant est au registre §3.11**, dont une question de produit (le visiteur qui ne coche pas
+  la case à temps) ; l'écran du refus au démarrage et le contrôle de la clé au build y sont faits le
+  soir même. **Ce que l'écran du refus laisse** : après un refus puis un « Réessayer » qui réussit, le
+  layout ne fait rien de ce qu'il fait après la session pour ce chargement — `app_open` ne part pas, ni
+  l'envoi des pannes en attente, ni les canaux Android : son `ensureSession()` de montage a échoué, et
+  il ne réessaie pas (`src/app/_layout.tsx`). Le défaut existait derrière l'écran technique ; une fois
+  le captcha activé, il touche un chemin normal de nouveau venu, et biaise `app_open`, le dénominateur
+  des entonnoirs. **La piste** : faire partir ces appels à la première session obtenue, quel que soit
+  l'appelant (`ouvertureDejaComptee` empêche déjà le doublon). **Pas fait** : à faire avant
+  l'activation. **La carte de
   partage a sa première protection le même soir** : une limite de débit au pare-feu de Vercel, 60
   requêtes par 10 minutes et par IP sur `/api/`, puis 429 (registre §3.2, posée par la personne qui
   pilote, l'API ne créant pas la première configuration du pare-feu). Reste à décider si `poste`,

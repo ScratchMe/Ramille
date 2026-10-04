@@ -17,6 +17,7 @@ import {
   destinationDuDemarrage,
   issueDeLaSession,
   lireLeBilan,
+  phraseDeLaVerification,
   prechargeLePlan,
   type LectureDuBilan,
 } from '@/types/demarrage';
@@ -64,12 +65,20 @@ export default function Index() {
           await ensureSession();
         } catch (erreurDeSession) {
           const issue = issueDeLaSession(erreurDeSession as ErreurAuth);
-          if (issue === 'verification') {
-            if (!annule) setVerificationRefusee(true);
-            return;
+          switch (issue) {
+            case 'verification':
+              if (!annule) setVerificationRefusee(true);
+              return;
+            case 'echec':
+              throw erreurDeSession;
+            case 'coupure':
+              coupureALaSession = true;
+              break;
+            default: {
+              const inconnue: never = issue;
+              throw new Error(`Issue de session inconnue : ${String(inconnue)}`);
+            }
           }
-          if (issue === 'echec') throw erreurDeSession;
-          coupureALaSession = true;
         }
         // **Un refus ne lit rien et ne route nulle part** (02/10/2026, `v1-27` §12.27) : sans session,
         // la lecture partirait en `anon`, qui n'a aucun privilège, et l'écran technique d'une « erreur
@@ -203,7 +212,7 @@ export default function Index() {
             <View style={styles.bloc}>
               <ThemedText type="screenTitle">La vérification n’a pas abouti</ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
-                {PHRASE_DE_LA_VERIFICATION}
+                {phraseDeLaVerification(Platform.OS === 'web' ? 'web' : 'natif')}
               </ThemedText>
               <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
             </View>
@@ -246,15 +255,6 @@ export default function Index() {
 
   return <EcranLancement />;
 }
-
-// Sur le web, la cause réaliste d'un refus est un bloqueur qui coupe Cloudflare ; dans l'app, il n'y
-// en a pas, et c'est le réseau. Phrase validée par la personne qui pilote le 04/10/2026.
-const PHRASE_DE_LA_VERIFICATION =
-  'Avant d’ouvrir ta session, une vérification automatique s’assure que c’est bien une personne qui ' +
-  'arrive. Elle n’a pas pu se faire. ' +
-  (Platform.OS === 'web'
-    ? 'Si un bloqueur de publicités est actif, désactive-le pour ramille.fr, puis réessaie.'
-    : 'Vérifie ta connexion, puis réessaie.');
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

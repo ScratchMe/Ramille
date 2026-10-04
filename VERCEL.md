@@ -346,9 +346,10 @@ retarde d'une nuit — est en §1.1.
   `scripts/vercel-ignorer-le-build.sh`). Liste blanche, relevée contre ce que lisent
   `expo export --platform web` et les deux fonctions : `docs/`, `.github/`, `supabase/`,
   `.claude/`, `.design-sync/`, `.vscode/`, `scripts/`, `LICENSE` et les `.md` de la racine. Tout le
-  reste construit, `vercel.json` et `package.json` compris — **et, depuis le 04/10/2026, les deux
-  scripts que `vercel-build` lance**, `poser-la-page-introuvable.mjs` et
-  `verifier-origine-supabase-de-la-csp.mjs`, qui passent avant `scripts/*` : la liste blanche avait
+  reste construit, `vercel.json` et `package.json` compris — **et, depuis le 04/10/2026, les trois
+  scripts que `vercel-build` lance**, `poser-la-page-introuvable.mjs`,
+  `verifier-origine-supabase-de-la-csp.mjs` et `verifier-cle-turnstile-du-bundle.mjs`, qui passent
+  avant `scripts/*` : la liste blanche avait
   été relevée quand le build n'en lisait aucun, et une fusion qui n'aurait touché qu'eux aurait été
   sautée (contre-lecture de la revue finale avant la production). Base de comparaison :
   `VERCEL_GIT_PREVIOUS_SHA`, repli `HEAD^`, `exit 1` sur tout chemin d'erreur, et une
@@ -383,7 +384,9 @@ retarde d'une nuit — est en §1.1.
   en dur**, la seule valeur qu'aucune garde ne peut voir : `vercel-build` lance après l'export
   `scripts/verifier-origine-supabase-de-la-csp.mjs`, qui fait échouer un build de production dont
   `EXPO_PUBLIC_SUPABASE_URL` n'est pas l'origine de `connect-src` — le déploiement précédent reste
-  alors en ligne. Un changement de projet impose donc de changer les deux ensemble. **Il est bien
+  alors en ligne. Un changement de projet impose donc de changer les deux ensemble. Depuis le
+  04/10/2026, `scripts/verifier-cle-turnstile-du-bundle.mjs` le suit dans `vercel-build`, sur le même
+  modèle : un build de production sans la clé de site du captcha, ou sans elle dans le bundle, échoue. **Il est bien
   bloquant chez Vercel** : le journal d'un build de production qui le porte dit « build de
   production, contrôle bloquant » (relevé le 03/10/2026 par la personne qui pilote — l'outil MCP
   d'une session ne lit pas les journaux de build, §1.8), donc `VERCEL_ENV` est exposée au build.

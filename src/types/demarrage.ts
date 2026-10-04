@@ -18,6 +18,7 @@
 // décide ce qu'on en fait.
 
 import { estPanneDeTransport, estRefusDuCaptcha, type ErreurAuth } from './connexion';
+import type { Plateforme } from './rappels';
 
 /**
  * Ce que la racine fait d'une session qui n'a pas pu s'ouvrir — trois issues, et pas deux.
@@ -38,6 +39,24 @@ export function issueDeLaSession(erreur: ErreurAuth): IssueDeLaSession {
   if (estPanneDeTransport(erreur)) return 'coupure';
   if (estRefusDuCaptcha(erreur)) return 'verification';
   return 'echec';
+}
+
+/**
+ * Ce que l'écran du refus du captcha dit, selon la plateforme — phrase validée par la personne qui
+ * pilote le 04/10/2026. Sur le web, la cause réaliste est un bloqueur qui coupe Cloudflare. Dans
+ * l'app, arriver sur cet écran prouve que Supabase a répondu (une coupure franche donne le repli hors
+ * ligne) : « Vérifie ta connexion » vaut pour un réseau instable, et ne couvre pas un bloqueur système
+ * (DNS filtrant, VPN) — l'app n'envoie de toute façon pas encore de jeton. Le visiteur à qui
+ * Cloudflare a demandé de cocher, et qui ne l'a pas fait à temps, arrive aussi ici : ce qu'on lui dit
+ * reste une question ouverte (registre d'exploitation §3.11, point 4).
+ */
+export function phraseDeLaVerification(plateforme: Plateforme): string {
+  const debut =
+    'Avant d’ouvrir ta session, une vérification automatique s’assure que c’est bien une personne qui ' +
+    'arrive. Elle n’a pas pu se faire. ';
+  return plateforme === 'web'
+    ? `${debut}Si un bloqueur de publicités est actif, désactive-le pour ramille.fr, puis réessaie.`
+    : `${debut}Vérifie ta connexion, puis réessaie.`;
 }
 
 /**
