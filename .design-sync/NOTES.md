@@ -538,17 +538,23 @@ synchronisation (plus bas).
   et la comparaison des deux ancres le confirme (seule l'empreinte de la fiche diffère, `bundleSha12` passe de
   `e94d944e24a5` à `9a6c535bb19d`). La règle des Risques — relire les feuilles des composants qu'une vague a touchés —
   vaut aussi pour leurs fiches.
-- **Le système de design de la galerie** (section suivante) a donc deux fichiers de retard : la ligne Android de
-  `guidelines/readme.md` et la fiche de `BoiteDePrecision`. Son README, son bundle et ses aperçus n'en ont pas.
+- **Le système de design de la galerie** (section suivante) a été remis au niveau le même jour, à la demande de la
+  personne qui pilote (sa version 14) : `guidelines/readme.md`, la fiche de `BoiteDePrecision`, `components/bundle.js`
+  (l'en-tête seul) et une note datée dans le README, en un envoi, l'index en dernier et seul son `lastChange` changé.
+  La version en ligne relue juste avant était celle lue au départ, et son bundle celui de la neuvième (sha256
+  `e94d944e24a5…`) : personne n'y avait touché. Banc (`verifier-la-galerie.cjs`, feuille servie et React du système
+  relus en ligne) : 72 aperçus rendus, aucun en défaut, aucun jeton lu sans déclaration. Les cinq fichiers relus
+  après l'envoi : identiques à ce qui est parti.
 
-## Le système de design de la galerie — un second miroir, remis à jour le 03/10/2026
+## Le système de design de la galerie — un second miroir, remis à jour le 04/10/2026
 
 À côté du projet Claude Design, la galerie d'artefacts de la personne qui pilote porte un système de design
 « Ramille » (type Design System, <https://claude.ai/artifact/YMmJJKSpypTyA18LdPXPna>, privé). Il est né le
 16/09/2026 d'une migration du projet Claude Design (28 composants et les jetons de ce jour-là) et n'avait plus
 bougé — d'où le canvas de l'étape du contexte, bâti sur les valeurs du kit et non sur lui. Remis à jour le
 03/10/2026 depuis `main@f6407cd`, à la demande de la personne qui pilote, puis le soir même par le bundle, deux
-aperçus, le README et la fiche de `ThemedText` de la neuvième synchronisation. **Aucun pilote ne le tient** : chaque
+aperçus, le README et la fiche de `ThemedText` de la neuvième synchronisation, et le 04/10/2026 par ce que la
+dixième a changé (son relevé, plus haut). **Aucun pilote ne le tient** : chaque
 synchronisation vers Claude Design le laisse en retard, et sa mise à jour se fait à la main, fichier par
 fichier, en fusionnant avec ce qui est en ligne (la méthode `from-code.md` du type : on ne reconstruit pas, on
 garde ce qui y a été porté).
