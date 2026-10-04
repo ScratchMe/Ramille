@@ -27,6 +27,9 @@
  * manque, au lieu de refuser, 1 ; dans le contrôle du build, bloquer aussi hors production, 1 ; ne
  * jamais bloquer, 2 ; accepter tout projet Supabase, 2 ; le retirer de `vercel-build`, 1. Aucune
  * mutation ne passe.
+ *
+ * Le 04/10/2026, Turnstile entre dans `script-src` et `frame-src`, éprouvé de même : un second hôte
+ * ajouté à `script-src` fait tomber son test, seul ; `frame-src` retiré, le sien, seul.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -38,6 +41,8 @@ const config = JSON.parse(fs.readFileSync(path.join(racine, 'vercel.json'), 'utf
 type EnTete = { key: string; value: string };
 const enTetes: EnTete[] = (config.headers ?? []).flatMap((regle: { headers: EnTete[] }) => regle.headers);
 const politique = enTetes.find((e) => e.key.toLowerCase() === 'content-security-policy')?.value ?? '';
+
+const HOTE_TURNSTILE = 'https://challenges.cloudflare.com';
 
 function directive(nom: string): string[] {
   const trouvee = politique
@@ -75,11 +80,21 @@ describe('vercel.json — la CSP est appliquée, et stricte', () => {
     expect(directive('form-action')).toEqual(["'self'"]);
   });
 
-  test('script-src : le site et des empreintes, rien d’autre — ni inline, ni eval, ni hôte', () => {
+  // Un seul hôte, nommé : le captcha Turnstile, depuis le 04/10/2026 (`src/lib/captcha.ts`). Son
+  // script ne se charge que si la clé de site est posée, donc en production seulement.
+  test('script-src : le site, des empreintes et le seul script de Turnstile — ni inline, ni eval, ni autre hôte', () => {
     const sources = directive('script-src');
     expect(sources[0]).toBe("'self'");
-    for (const source of sources.slice(1)) expect(source).toMatch(/^'sha256-[A-Za-z0-9+/]+=*'$/);
-    expect(sources.length).toBeGreaterThan(1);
+    const hotes = sources.slice(1).filter((s) => !s.startsWith("'sha256-"));
+    expect(hotes).toEqual([HOTE_TURNSTILE]);
+    for (const source of sources.slice(1).filter((s) => s !== HOTE_TURNSTILE)) {
+      expect(source).toMatch(/^'sha256-[A-Za-z0-9+/]+=*'$/);
+    }
+    expect(sources.length).toBeGreaterThan(2);
+  });
+
+  test('frame-src : le cadre du widget Turnstile, et rien d’autre', () => {
+    expect(directive('frame-src')).toEqual([HOTE_TURNSTILE]);
   });
 
   test('connect-src : le site et un seul projet Supabase, nommé — pas de joker', () => {

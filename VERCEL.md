@@ -365,7 +365,8 @@ retarde d'une nuit — est en §1.1.
 - **La `Content-Security-Policy` est appliquée** — fusionnée le 02/10/2026, en production depuis le
   03/10/2026 à 2 h 51 (heure de Paris), le déploiement de sa fusion ayant été refusé (§1.9) —, et stricte : les scripts du
   site et une seule empreinte, celle du script d'hydratation qu'Expo Router écrit dans chaque page
-  (ni `'unsafe-inline'` ni `'unsafe-eval'`) ; les styles écrits en dur, dont react-native-web a
+  (ni `'unsafe-inline'` ni `'unsafe-eval'`), plus, depuis le 04/10/2026, le seul hôte du captcha
+  Turnstile, `https://challenges.cloudflare.com`, en script et en cadre (`frame-src`) ; les styles écrits en dur, dont react-native-web a
   besoin ; les polices et images du site ; un seul projet Supabase, nommé. Elle était en
   `Report-Only` sans collecteur depuis le 20/09, donc elle ne rapportait à personne (`v1-27` §12.3).
   Elle a été mesurée avant d'être appliquée : injectée en rapport seul sur les dix-neuf routes de la
@@ -374,7 +375,9 @@ retarde d'une nuit — est en §1.1.
   dizaines. **Trois choses à savoir avant d'y toucher.** Les gardes navigateur de la CI la servent
   appliquée, l'origine Supabase remplacée par celle de leur export, et échouent à la première
   infraction (`TESTING-GARDES.md` §2.16) : une origine ou un script qui manque se voit en CI, écrans
-  avec données compris, et non en production. Une **montée d'Expo** peut changer le script
+  avec données compris, et non en production — **sauf Turnstile**, que la CI ne charge jamais faute
+  de clé de site : sa place dans la politique ne se voit qu'en production, ou à la main avec la clé de
+  test publique de Cloudflare (registre d'exploitation §3.11). Une **montée d'Expo** peut changer le script
   d'hydratation : `verifier-rendu-export.mjs` donne alors l'empreinte à recopier dans `script-src`
   — sans elle, l'app rend sans s'hydrater, mesuré le 02/10/2026. Et le **projet Supabase est écrit
   en dur**, la seule valeur qu'aucune garde ne peut voir : `vercel-build` lance après l'export

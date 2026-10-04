@@ -75,7 +75,9 @@ export function ActionCommitment({
    */
   onEngage?: (engagement: EngagementPris) => void;
   /**
-   * Appelé quand le serveur **refuse** le remplacement (`RM001`), avec la phrase à afficher.
+   * Appelé quand le serveur rend un refus qui demande une relecture, avec la phrase à afficher :
+   * le remplacement refusé (`RM001`), ou le plan qui a changé entre-temps (`P0002`, depuis le
+   * 04/10/2026 — à l'engagement comme au retrait).
    *
    * Le message ne peut pas vivre dans cet état local : le même chemin appelle `onChanged()`, donc le
    * plan est relu et ce composant remonté — la phrase disparaissait au rendu suivant, et personne ne
@@ -321,8 +323,9 @@ export function ActionCommitment({
     );
     if (!result.ok) {
       setBusy(false);
-      // L'écran ne savait pas qu'une autre action était engagée : on relit plutôt que de laisser un
-      // plan qui ne dit pas la vérité, et le message explique ce que la relecture va montrer — mais
+      // L'écran ne savait pas qu'une autre action était engagée (`RM001`), ou que le plan avait changé
+      // (`P0002`) : on relit plutôt que de laisser un plan qui ne dit pas la vérité, et le message
+      // explique ce que la relecture va montrer — mais
       // il se dit **à l'écran**, parce que la relecture remonte cette carte et emporterait un état
       // local avec elle.
       if (result.rechargerLePlan) {
@@ -357,6 +360,13 @@ export function ActionCommitment({
     const result = await clearPlanActionCommitment(actionId);
     setBusy(false);
     if (!result.ok) {
+      // Le plan a changé depuis l'affichage (une nouvelle saison, un plan refait ailleurs) : même
+      // issue que le refus de `submit`, la phrase dite à l'écran et le plan relu.
+      if (result.rechargerLePlan) {
+        onRefus?.(result.message);
+        onChanged();
+        return;
+      }
       setError(result.message);
       return;
     }

@@ -2012,7 +2012,17 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   garde de volume qui ne compte plus que les comptes qui portent un bilan ou un retour — les vides
   partent à chaque passage. Les plafonds ne refusent que les comptes nés depuis moins de
   vingt-quatre heures, pour qu'un flot ne coûte pas leurs signes de vie aux vrais comptes. Le captcha,
-  les plafonds d'e-mail et la carte de partage restent à faire. **Ce que ces plafonds laissent** : un
+  les plafonds d'e-mail et la carte de partage restent à faire. **Le widget Turnstile est créé le même
+  soir** (registre d'exploitation §3.11, la clé de site y est), et **le captcha est branché sur le
+  web par ScratchMe/Ramille#359** (`src/lib/captcha.ts` : la session anonyme et la demande de code,
+  la CSP qui laisse entrer Cloudflare, la clé posée dans l'environnement Production de Vercel, la
+  page de confidentialité qui le dit, texte validé par la personne qui pilote). Sa contre-lecture a
+  trouvé trois défauts, corrigés avant la fusion à la demande de la personne qui pilote : le
+  démarrage bloqué sans fin quand Cloudflare demande de cocher (un plafond absolu de trente
+  secondes), une session de compte écrasée par une anonyme pendant l'attente (`ensureSession` relit
+  la session), et le refus du captcha pris pour un code parti (`estRefusDuCaptcha`). Pas encore dans
+  l'app Android, qui attend une vue web et donc un build ; pas activé dans Supabase — **ce qui doit
+  être vrai avant, cinq points dont des questions de produit, est au registre §3.11**. **Ce que ces plafonds laissent** : un
   refus par plafond global est un `check_violation`, que la file des pannes différées vide au lieu de
   la garder comme un 429 — un SQLSTATE propre, que le client garderait, demande un build ; et le
   commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,
@@ -2070,12 +2080,15 @@ Ce qui reste, et pourquoi :
   en crée un second. Déjà vrai avant #355, qui n’aggrave rien : le premier reste sans résultat, le
   second se calcule. **La piste** : chercher aussi un bilan `completed`
   sans résultat du même compte. **Pas fait** : un cas de coupure précise, à éprouver avec un double.
-- **Un écran du plan resté ouvert pendant le passage nocturne d'un changement de saison** : il
-  appelle `commit_plan_action` ou `clear_plan_action_commitment` sur le cycle d'avant, et reçoit
-  désormais `P0002` (« Action introuvable »), que `plan-engagement.ts` ne recharge pas — il ne
-  recharge que sur `RM001`. Le message reste générique jusqu'au prochain retour sur l'écran. Avant,
-  l'engagement atterrissait en silence sur la saison close, ce qui était pire. **La piste** : traiter
-  `P0002` comme `RM001`. **Pas fait** : c'est une phrase affichée qui change, donc une décision de
-  la personne qui pilote ; le cas tient à quelques heures, quatre nuits par an.
+- **Fait le 04/10/2026. Un écran du plan resté ouvert pendant le passage nocturne d'un changement
+  de saison** : il appelait `commit_plan_action` ou `clear_plan_action_commitment` sur le cycle
+  d'avant, et recevait `P0002` (« Action introuvable »), que `plan-engagement.ts` ne rechargeait
+  pas — il ne rechargeait que sur `RM001` —, donc un message générique jusqu'au prochain retour sur
+  l'écran. Avant la seconde passe, l'engagement atterrissait en silence sur la saison close, ce qui
+  était pire. `P0002` suit désormais le chemin de `RM001`, à l'engagement comme au retrait
+  (« Changer d'avis ») : l'écran relit le plan et dit la phrase choisie par la personne qui pilote
+  (« Ton choix n'a pas été enregistré : ton plan a changé entre-temps. Il vient d'être relu. », et
+  son pendant « Le changement… » pour le retrait). Sur le web dès le déploiement qui suit, sur
+  Android au build suivant.
 - **Un commentaire de `20261004173905` promet trop** (« le client ne déclenche pas de recalcul » :
   `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.

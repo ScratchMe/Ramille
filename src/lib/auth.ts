@@ -6,6 +6,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
+import { jetonDuCaptcha } from '@/lib/captcha';
 import { ensureSession, supabase } from '@/lib/supabase';
 import {
   codeDErreurDuRetourDeLien,
@@ -275,7 +276,7 @@ function sessionIntrouvable(cause?: unknown): Error {
 export async function demanderLaConnexion(email: string): Promise<AuthResult> {
   const { error } = await supabase.auth.signInWithOtp({
     email: email.trim(),
-    options: { shouldCreateUser: false },
+    options: { shouldCreateUser: false, captchaToken: await jetonDuCaptcha('code_de_connexion') },
   });
   return { error };
 }

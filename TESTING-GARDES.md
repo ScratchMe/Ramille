@@ -725,8 +725,10 @@ auparavant en rapport seul, sans collecteur — donc sans mesure. La mesure, c'e
   se contente d'avertir ailleurs. Il dit son mode dans le journal, et un build de production qui le
   porte disait « contrôle bloquant » (03/10/2026).
 - **`scripts/vercel-csp.test.ts` garde la forme** de la politique (appliquée, sans `'unsafe-inline'`
-  ni `'unsafe-eval'` pour les scripts, un seul projet Supabase nommé, aucun joker), la substitution
-  du serveur et le contrôle du build ; dix mutations datées en tête. Il ne sait pas si l'app a besoin
+  ni `'unsafe-eval'` pour les scripts, un seul hôte de script nommé — Turnstile, depuis le
+  04/10/2026 —, `frame-src` réduit à ce même hôte, un seul projet Supabase nommé, aucun joker), la
+  substitution du serveur et le contrôle du build ; douze mutations datées en tête. Aucune garde
+  navigateur ne charge Turnstile : la CI n'a pas de clé de site. Il ne sait pas si l'app a besoin
   d'une origine : ce sont les gardes navigateur qui le savent.
 
 Ce que rien de tout cela ne voit : une page servie par une Function (`/api/partage`), que les gardes

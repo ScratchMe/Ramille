@@ -357,7 +357,9 @@ export default function Plan() {
   const [relectureEnEchec, setRelectureEnEchec] = useState<GenreDEchec | null>(null);
 
   /**
-   * Le refus de remplacement (`RM001`), remonté à l'écran plutôt que gardé dans la carte.
+   * Le refus qui demande une relecture, remonté à l'écran plutôt que gardé dans la carte : le
+   * remplacement refusé (`RM001`) et, depuis le 04/10/2026, le plan qui a changé entre-temps
+   * (`P0002`) — à l'engagement comme au retrait. L'état garde son nom d'origine.
    *
    * **Logé ici pour la même raison que la ligne de relecture**, et parce que le message était
    * invisible : `commitPisteDuPlan` rend `rechargerLePlan`, la carte appelait `onChanged()` dans la

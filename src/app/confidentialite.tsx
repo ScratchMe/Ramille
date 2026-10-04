@@ -38,7 +38,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     `api.resend.com` et `exp.host` dans `send_pending_reminders()`, Supabase (Paris) pour la
 //     base, Vercel pour servir la version web et fabriquer la carte de partage, Google pour
 //     OAuth et pour FCM, GitHub Actions et Cloudflare R2 pour la sauvegarde
-//     (`.github/workflows/sauvegarde.yml`, `docs/exploitation/sauvegarde.md`) ;
+//     (`.github/workflows/sauvegarde.yml`, `docs/exploitation/sauvegarde.md`), et depuis le
+//     04/10/2026 Cloudflare Turnstile pour le captcha de la session anonyme et des codes
+//     (`src/lib/captcha.ts` — sur le web d'abord, l'app Android au build qui suit) ;
 //   - identifiant de notification enregistré dès que le téléphone accepte les notifications,
 //     quel que soit le canal -> `enregistrerLeJetonPour`, appelé à chaque démarrage par
 //     `src/app/_layout.tsx`, ne regarde que la permission (`src/lib/rappels.ts`) ;
@@ -153,7 +155,17 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // plus. Relevé par la contre-lecture de la file ; la phrase a été validée par la personne qui pilote
 // le même jour (« OK pour corriger la phrase »), comme chaque phrase de cette page. La date suit la
 // mise en ligne, heure de Paris.
-const UPDATED_AT = '2 octobre 2026';
+//
+// **04/10/2026 : Cloudflare Turnstile** (`src/lib/captcha.ts`, plan anti-abus). Celle-ci **change ce
+// que le produit fait** : l'adresse IP et des informations techniques sur le navigateur partent chez
+// un nouveau destinataire, dès la mise en ligne. C'est donc l'élargissement que « Évolutions de ce
+// document » promet d'annoncer dans l'application avant qu'il prenne effet — relevé par la
+// contre-lecture du captcha —, et la personne qui pilote a décidé le même soir que la mise à jour
+// datée de cette page en tient lieu, sans annonce dans l'application, **parce qu'aucun lancement
+// officiel n'a eu lieu et qu'elle en est alors la seule utilisatrice**. La raison ne vaut que pour
+// cette fois : après le lancement, un élargissement s'annonce. Le texte de l'entrée
+// Cloudflare et du paragraphe des transferts a été validé par elle, comme chaque phrase de cette page.
+const UPDATED_AT = '4 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -402,8 +414,10 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'Cloudflare',
             text:
-              'Stockage des sauvegardes, déjà chiffrées, dans un espace situé dans l’Union européenne. Elles ' +
-              's’effacent d’elles-mêmes au bout de 90 jours. Société américaine.',
+              'Vérification que c’est bien une personne, et non un robot, qui ouvre une session ou demande un code de ' +
+              'connexion : Cloudflare reçoit alors ton adresse IP et des informations techniques sur ton navigateur ou ' +
+              'ton téléphone, rien de ce que tu déclares. Stockage des sauvegardes, déjà chiffrées, dans un espace situé ' +
+              'dans l’Union européenne. Elles s’effacent d’elles-mêmes au bout de 90 jours. Société américaine.',
           },
         ],
       },
@@ -413,8 +427,8 @@ const SECTIONS: LegalSection[] = [
           'Tes réponses, tes résultats et ton compte sont hébergés dans l’Union européenne, chez Supabase. Plusieurs des ' +
           'fonctions ci-dessus passent par des sociétés américaines, et ce qui leur parvient sort donc de l’Union ' +
           'européenne : l’acheminement des notifications (Expo, puis Google pour Android), la connexion avec un compte ' +
-          'Google, l’hébergement de la version web (Vercel) et la fabrication des sauvegardes (GitHub). Cloudflare, ' +
-          'société américaine elle aussi, garde les sauvegardes chiffrées dans l’Union européenne. Pour Resend, nous ' +
+          'Google, l’hébergement de la version web (Vercel), la vérification anti-robot (Cloudflare) et la fabrication ' +
+          'des sauvegardes (GitHub). Cloudflare garde par ailleurs les sauvegardes chiffrées dans l’Union européenne. Pour Resend, nous ' +
           'n’avons pas relevé l’entité ni la région d’envoi : nous préférons ne rien affirmer plutôt qu’écrire plus ' +
           'précis que ce que nous avons lu.',
       },

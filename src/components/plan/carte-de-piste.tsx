@@ -44,7 +44,10 @@ type Props = {
   onEngage: (engagement: EngagementPris) => void;
   /** Appelée après toute écriture réussie : l'écran relit. */
   onChanged: () => void;
-  /** Le refus `RM001` de `commit_plan_action` — l'état a changé depuis l'affichage (C4.6). */
+  /**
+   * Un refus de `commit_plan_action` qui demande une relecture — l'état a changé depuis l'affichage :
+   * une autre action engagée (`RM001`, C4.6), ou un plan refait entre-temps (`P0002`, 04/10/2026).
+   */
   onRefus: (message: string | null) => void;
   /**
    * Ouverte **sur le choix** : le sélecteur d'intention d'emblée, sans « Je m'y engage » — l'écran
