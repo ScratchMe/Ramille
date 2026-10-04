@@ -509,7 +509,7 @@ composants dans leur dernière version »), **tout** a été réécrit, pas seul
 contenu de la neuvième plus la sentinelle et l'ancre — la sentinelle, racine + jetons + guide (10), `_vendor/`,
 `fonts/`, les 72 aperçus, deux lots de composants (144, 144), la sentinelle de nouveau, `_ds_sync.json` seul. Aucune
 suppression. L'arbre synchronisé : le kit de `main@c979c5d`, plus la fiche de `BoiteDePrecision` retouchée par cette
-synchronisation (plus bas).
+synchronisation (plus bas), puis, le même jour, `tokens/mouvement.css` tel que le porte la PR qui ferme `v1-27` §12.34.
 
 - **L'index du panneau Design System comptait 28 composants, et depuis la mi-septembre.** Ce n'est pas un fichier de
   la synchronisation : `_ds_manifest.json` (les composants et les cartes que le panneau affiche, les jetons qu'il
@@ -525,11 +525,21 @@ synchronisation (plus bas).
   **72 composants et 72 cartes**, groupes et cadres justes, jetons du jour. Pourquoi il n'avait pas suivi reste
   inconnu : projet pas ouvert depuis le 26/09 (la troisième synchronisation), ou contrôle de l'app en échec sur un état
   d'alors. La vérification à rejouer est dans les Risques, plus bas.
-- **L'index lit les jetons sans leur `@media`** : les cinq durées de `tokens/mouvement.css` y valent `0ms`, la valeur
+- **L'index lit les jetons sans leur `@media`** : les cinq durées de `tokens/mouvement.css` y valaient `0ms`, la valeur
   du bloc « réduire les animations », déclaré en dernier. Le rendu n'en est pas touché — la feuille garde sa requête
-  média —, seule la liste des jetons de l'app se trompe. Pas corrigé : ce serait plier une feuille juste autour d'un
-  défaut de lecture d'un outil tiers, pour un gain qu'on n'a pas mesuré ; inscrit au relevé de dette (`v1-27` §12.34),
-  avec la piste.
+  média —, seule la liste des jetons de l'app se trompe. Laissé d'abord au relevé de dette (`v1-27` §12.34), puis
+  **corrigé le même jour** à la demande de la personne qui pilote : `tokens/mouvement.css` pose les durées à zéro dans
+  `:root` et leur donne leur valeur sous `prefers-reduced-motion: no-preference`, déclarées en dernier. Même résultat
+  dans tout navigateur qui connaît la préférence, éprouvé dans chromium sous les deux ; un navigateur qui ne la connaît
+  pas pose tout, là où l'app et `StepShell` animent — sans conséquence, aucun composant ne lit ces jetons. Seul le
+  style du kit est reparti (sentinelle, les sept feuilles, sentinelle, ancre), sous un nouveau plan — l'approbation de
+  l'après-midi avait expiré —, puis une seconde fois pour le seul commentaire de la feuille, corrigé à la
+  contre-lecture. Projet rouvert entre les deux : l'index donne 250, 280, 320, 200 et 200 ms ; le second envoi n'a
+  changé aucune déclaration. **L'index distingue les
+  sélecteurs mais ignore `@media`** : `--color-text` y vaut `#131612` à la racine et `#FFFFFF` sous la portée
+  `[data-theme="dark"]`, alors qu'une déclaration sous `@media` écrase, pour lui, celle du même sélecteur déclarée
+  avant. Une feuille de jetons du kit garde donc ses vraies valeurs dans la dernière déclaration de chaque nom, pour
+  chaque sélecteur.
 - **La fiche de `BoiteDePrecision` était restée en retard sur #351** (contre-lecture) : elle donnait le dépli en 250 ms
   sans dire qu'il se pose sur Android, quand le `.jsx` et `readme.md` le disaient. Alignée sur `readme.md`, puis
   téléversée par un second envoi sous le même plan : la sentinelle, les quatre fichiers du composant et
@@ -567,7 +577,12 @@ garde ce qui y a été porté).
    `styles.css` moins ce que `tokens.json` porte : les tailles de texte en variables (`--type-*`, que les styles de
    texte ne produisent pas et que des composants lisent, plus l'ancien `--type-label-caps-*` de la version du
    16/09), la règle « réduire les animations », `base.css` entier, et un repli des jetons neufs que le bundle lit
-   (plus bas) ; les `@font-face` viennent de `tokens.json`.
+   (plus bas) ; les `@font-face` viennent de `tokens.json`. **La règle « réduire les animations » des cinq durées
+   s'écrit pour la galerie et ne se prend pas dans le kit** : `@media (prefers-reduced-motion: reduce)`, les durées
+   à `0ms`, après la feuille des jetons qui porte les vraies. Le kit a la forme inverse depuis le 04/10/2026 (des zéros
+   dans `:root`, les vraies durées sous `no-preference`, `v1-27` §12.34) : appliquée à la lettre, la soustraction
+   ferait tomber les deux et la galerie perdrait la préférence. L'en-tête de `tokens/mouvement.css` ne se recopie pas
+   non plus.
 4. Avant l'envoi, la version en ligne doit être celle qu'on a lue — son identifiant ne bouge pas tant que
    personne n'enregistre — ; sinon, relire chaque fichier qu'on réécrit et refaire la fusion dessus. Les jetons
    gardent leurs noms ; un nom que le kit ne définit plus reste, noté comme tel dans son usage, jusqu'à la décision
@@ -665,4 +680,5 @@ garde ce qui y a été porté).
   échoué — à remonter, pas à re-téléverser. Le nombre de composants de `_ds_manifest.json` ne prouve rien seul : il
   valait 28 pour 28 à la troisième synchronisation, l'index déjà périmé. Ce qui se relit, c'est le **contenu** : les
   noms des composants et des cartes contre l'arbre `components/` du build, et quelques jetons contre
-  `ds-bundle/tokens/` — sauf les durées de mouvement, que l'index lit à `0ms` (`v1-27` §12.34).
+  `ds-bundle/tokens/` (l'index garde, par sélecteur, la dernière déclaration de chaque jeton, `@media` ignoré :
+  `v1-27` §12.34).
