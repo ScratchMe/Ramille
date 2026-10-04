@@ -17,6 +17,29 @@
 // preuve, pas l'honnêteté. C'est la **marque locale** (`src/lib/marque-de-bilan.ts`), et ce module
 // décide ce qu'on en fait.
 
+import { estPanneDeTransport, estRefusDuCaptcha, type ErreurAuth } from './connexion';
+
+/**
+ * Ce que la racine fait d'une session qui n'a pas pu s'ouvrir — trois issues, et pas deux.
+ *
+ * - **`coupure`** : la panne de transport (C4.5). La racine ne lève pas, ne lit rien, et route sur
+ *   ce qu'elle sait de l'appareil — le repli hors ligne.
+ * - **`verification`** : le captcha a refusé la création de la session (`400 captcha_failed`,
+ *   `src/lib/captcha.ts`), parce que le jeton manquait — un bloqueur qui coupe Cloudflare, une case
+ *   pas cochée à temps — ou ne valait pas. Ce n'est ni le réseau ni une panne du serveur : elle a
+ *   son écran, qui dit ce qui s'est passé et laisse réessayer (04/10/2026). Avant lui, la racine le
+ *   prenait pour une erreur serveur et posait l'écran technique, message anglais de GoTrue compris.
+ *   Possible seulement une fois le captcha activé dans Supabase.
+ * - **`echec`** : tout le reste, l'écran technique, dont le message brut est fait pour être recopié.
+ */
+export type IssueDeLaSession = 'coupure' | 'verification' | 'echec';
+
+export function issueDeLaSession(erreur: ErreurAuth): IssueDeLaSession {
+  if (estPanneDeTransport(erreur)) return 'coupure';
+  if (estRefusDuCaptcha(erreur)) return 'verification';
+  return 'echec';
+}
+
 /**
  * Ce que la racine a pu apprendre du serveur.
  *

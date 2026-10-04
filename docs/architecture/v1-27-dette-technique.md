@@ -2022,7 +2022,7 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   secondes), une session de compte écrasée par une anonyme pendant l'attente (`ensureSession` relit
   la session), et le refus du captcha pris pour un code parti (`estRefusDuCaptcha`). Pas encore dans
   l'app Android, qui attend une vue web et donc un build ; pas activé dans Supabase — **ce qui doit
-  être vrai avant, cinq points dont des questions de produit, est au registre §3.11**. **La carte de
+  être vrai avant est au registre §3.11** (l'écran du refus au démarrage y est fait le soir même). **La carte de
   partage a sa première protection le même soir** : une limite de débit au pare-feu de Vercel, 60
   requêtes par 10 minutes et par IP sur `/api/`, puis 429 (registre §3.2, posée par la personne qui
   pilote, l'API ne créant pas la première configuration du pare-feu). Reste à décider si `poste`,

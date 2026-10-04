@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -12,8 +12,14 @@ import { prechargerLePlan } from '@/lib/lecture-du-plan';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
 import { ecouterLeRefus, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
-import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
-import { destinationDuDemarrage, lireLeBilan, prechargeLePlan, type LectureDuBilan } from '@/types/demarrage';
+import { type ErreurAuth } from '@/types/connexion';
+import {
+  destinationDuDemarrage,
+  issueDeLaSession,
+  lireLeBilan,
+  prechargeLePlan,
+  type LectureDuBilan,
+} from '@/types/demarrage';
 import { decrireErreur } from '@/types/erreur';
 
 // Racine de l'app — jamais un écran visible en pratique (redirection immédiate dès que la
@@ -32,6 +38,9 @@ import { decrireErreur } from '@/types/erreur';
 // pas doit se voir : c'est le seul écran par lequel tout le monde passe.
 export default function Index() {
   const [echec, setEchec] = useState<string | null>(null);
+  // Le captcha a refusé la création de la session : un écran à lui, ni réseau ni panne du serveur
+  // (`issueDeLaSession`, 04/10/2026).
+  const [verificationRefusee, setVerificationRefusee] = useState(false);
 
   // Le `setState` d'échec vit **après** un `await`, dans une fonction asynchrone : une
   // écriture synchrone depuis le corps d'un effet déclencherait une cascade de rendus, que
@@ -54,7 +63,12 @@ export default function Index() {
         try {
           await ensureSession();
         } catch (erreurDeSession) {
-          if (!estPanneDeTransport(erreurDeSession as ErreurAuth)) throw erreurDeSession;
+          const issue = issueDeLaSession(erreurDeSession as ErreurAuth);
+          if (issue === 'verification') {
+            if (!annule) setVerificationRefusee(true);
+            return;
+          }
+          if (issue === 'echec') throw erreurDeSession;
           coupureALaSession = true;
         }
         // **Un refus ne lit rien et ne route nulle part** (02/10/2026, `v1-27` §12.27) : sans session,
@@ -177,8 +191,27 @@ export default function Index() {
   // `tentative` relance l'effet.
   const reessayer = () => {
     setEchec(null);
+    setVerificationRefusee(false);
     setTentative((n) => n + 1);
   };
+
+  if (verificationRefusee) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView contentContainerStyle={styles.contenu}>
+            <View style={styles.bloc}>
+              <ThemedText type="screenTitle">La vérification n’a pas abouti</ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                {PHRASE_DE_LA_VERIFICATION}
+              </ThemedText>
+              <Button title="Réessayer" onPress={reessayer} style={styles.bouton} />
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   if (echec !== null) {
     return (
@@ -213,6 +246,15 @@ export default function Index() {
 
   return <EcranLancement />;
 }
+
+// Sur le web, la cause réaliste d'un refus est un bloqueur qui coupe Cloudflare ; dans l'app, il n'y
+// en a pas, et c'est le réseau. Phrase proposée le 04/10/2026, à la relecture de la personne qui pilote.
+const PHRASE_DE_LA_VERIFICATION =
+  'Avant d’ouvrir ta session, une vérification automatique s’assure que c’est bien une personne qui ' +
+  'arrive. Elle n’a pas pu se faire. ' +
+  (Platform.OS === 'web'
+    ? 'Si un bloqueur de publicités est actif, désactive-le pour ramille.fr, puis réessaie.'
+    : 'Vérifie ta connexion, puis réessaie.');
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
