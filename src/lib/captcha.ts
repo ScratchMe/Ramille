@@ -15,11 +15,14 @@
 // déployé **et** ce build installé, sans quoi chaque nouvelle installation Android buterait sur
 // sa première session.
 //
-// **Un jeton qui ne vient pas n'arrête rien ici** : au plus trente secondes après, case à cocher
-// comprise, l'appel part sans, et c'est Supabase qui tranche — avant l'activation il passe, après
-// il est refusé (`400 captcha_failed`, reconnu par `estRefusDuCaptcha`). Un bloqueur de publicité
-// qui coupe `challenges.cloudflare.com` coûte donc la session une fois la protection active, et
-// seulement à ce moment-là — ce que ça doit montrer est une question posée avant l'activation.
+// **Un jeton qui ne vient pas n'arrête rien ici** : au plus trente secondes après — deux minutes à
+// partir du moment où Cloudflare demande de cocher —, l'appel part sans, et c'est Supabase qui
+// tranche : avant l'activation il passe, après il est refusé (`400 captcha_failed`, reconnu par
+// `estRefusDuCaptcha`), et la racine pose l'écran du refus. Un bloqueur de publicité qui coupe
+// `challenges.cloudflare.com` coûte donc la session une fois la protection active, et seulement à
+// ce moment-là.
+
+import { Colors, FontFamily, Radius, Spacing } from '@/constants/theme';
 
 /** Lue dans un `const`, jamais dans un objet : sans quoi Expo ne la remplace pas dans le bundle. */
 const CLE_DE_SITE = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY;
@@ -27,14 +30,24 @@ const CLE_DE_SITE = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY;
 const SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
 /**
- * Le temps laissé au widget pour rendre un jeton, **case à cocher comprise**. Au-delà, l'appel part
- * sans. C'est un plafond absolu, et il l'est devenu à la contre-lecture de la PR #359 : il
- * s'arrêtait quand le widget demandait une interaction, et la racine, qui attend la session,
- * laissait alors sur l'écran de lancement, sans fin, le visiteur qui ne cochait pas. Ce qu'on
- * montre à ce visiteur, et combien de temps on l'attend, reste à trancher par la personne qui pilote
- * avant l'activation (`v1-27` §12.35).
+ * Le temps laissé au widget pour rendre un jeton sans rien demander à la personne. Au-delà, l'appel
+ * part sans. Quand Cloudflare demande de cocher, `DELAI_POUR_COCHER_MS` prend le relais à partir de
+ * la demande — un relais et non une suppression : à la contre-lecture de la PR #359, la demande
+ * arrêtait tout compte, et la racine, qui attend la session, laissait sur l'écran de lancement, sans
+ * fin, le visiteur qui ne cochait pas.
  */
 export const DELAI_MAXIMAL_MS = 30_000;
+
+/**
+ * Le temps laissé pour cocher, une fois que Cloudflare l'a demandé : un humain est alors devant
+ * l'écran, prêt à agir, et trente secondes le pressaient (décision de la personne qui pilote,
+ * 04/10/2026). Il remplace le plafond du dessus à partir de la demande, sans le supprimer : le
+ * visiteur qui laisse la case de côté n'attend pas sans fin.
+ */
+export const DELAI_POUR_COCHER_MS = 120_000;
+
+/** La phrase de la carte qui entoure la case — validée par la personne qui pilote le 04/10/2026. */
+export const PHRASE_DE_LA_CASE = 'Une dernière vérification : coche la case ci-dessous.';
 
 /** Ce que le jeton sert à ouvrir — l'`action` du widget, lisible dans l'analyse de Cloudflare. */
 export type UsageDuCaptcha = 'session_anonyme' | 'code_de_connexion';
@@ -44,9 +57,11 @@ type OptionsDuWidget = {
   action: UsageDuCaptcha;
   language: string;
   appearance: 'interaction-only';
+  theme: 'light';
   retry: 'never';
   callback: (jeton: string) => void;
   'error-callback': () => boolean;
+  'before-interactive-callback': () => void;
 };
 
 type Turnstile = {
@@ -98,22 +113,35 @@ function chargerTurnstile(): Promise<Turnstile> {
  * Un jeton neuf, par un widget créé pour l'occasion et retiré aussitôt : un jeton ne sert qu'une
  * fois et vit cinq minutes, donc on n'en garde aucun d'avance.
  *
- * Le conteneur est fixé en bas de l'écran et reste vide tant que le widget ne demande rien
- * (`interaction-only`) : la plupart des visiteurs ne le voient jamais, et ceux à qui Cloudflare
- * demande de cocher la case la trouvent là, quel que soit l'écran.
+ * Le widget ne se montre que si Cloudflare demande de cocher (`interaction-only`) : la plupart des
+ * visiteurs ne voient rien. Les autres voient la case au milieu d'une carte du produit, avec une
+ * phrase, quel que soit l'écran (`demanderLaCase`).
  */
 function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
   return new Promise<string>((resolve, reject) => {
-    const conteneur = document.createElement('div');
-    conteneur.setAttribute('data-captcha', usage);
-    Object.assign(conteneur.style, {
+    // Un voile plein écran, transparent et traversable tant que Cloudflare ne demande rien : le
+    // widget y rend invisible (`interaction-only`), et la page reste utilisable.
+    const voile = document.createElement('div');
+    voile.setAttribute('data-captcha', usage);
+    Object.assign(voile.style, {
       position: 'fixed',
-      left: '50%',
-      bottom: '16px',
-      transform: 'translateX(-50%)',
+      inset: '0',
       zIndex: '1000',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: `${Spacing.three}px`,
+      pointerEvents: 'none',
     });
-    document.body.appendChild(conteneur);
+    const carte = document.createElement('div');
+    const phrase = document.createElement('p');
+    phrase.textContent = PHRASE_DE_LA_CASE;
+    Object.assign(phrase.style, { display: 'none', margin: '0', textAlign: 'center' });
+    const hote = document.createElement('div');
+    carte.appendChild(phrase);
+    carte.appendChild(hote);
+    voile.appendChild(carte);
+    document.body.appendChild(voile);
 
     let turnstile: Turnstile | undefined;
     let id: string | null | undefined;
@@ -128,29 +156,71 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
           // Le widget est déjà parti : il n'y a plus rien à retirer.
         }
       }
-      conteneur.remove();
+      voile.remove();
     };
     const echouer = (raison: string) => {
       if (fini) return;
       finir();
       reject(new Error(raison));
     };
+    const plafond = (delai: number) =>
+      setTimeout(() => {
+        if (!turnstile) oublierLeChargement();
+        echouer('Le captcha n’a rendu aucun jeton à temps.');
+      }, delai);
     // Le compte part avant le chargement du script, pas après : un script qui ne répond jamais —
     // un réseau qui le retient, un bloqueur qui le laisse pendre — ne doit pas suspendre la session.
-    const minuterie = setTimeout(() => {
-      if (!turnstile) oublierLeChargement();
-      echouer('Le captcha n’a rendu aucun jeton à temps.');
-    }, DELAI_MAXIMAL_MS);
+    let minuterie = plafond(DELAI_MAXIMAL_MS);
+
+    /**
+     * Cloudflare demande de cocher : la case cesse d'être seule au bord de l'écran. Une carte aux
+     * couleurs du produit (la palette claire, que le web force — `useTheme`) l'entoure avec une
+     * phrase, sur un voile qui retient l'attention, et le délai passe à `DELAI_POUR_COCHER_MS`. Le
+     * focus va à la carte, pour que la phrase soit lue avant la case.
+     */
+    const demanderLaCase = () => {
+      if (fini) return;
+      clearTimeout(minuterie);
+      minuterie = plafond(DELAI_POUR_COCHER_MS);
+      const couleurs = Colors.light;
+      Object.assign(voile.style, { pointerEvents: 'auto', background: 'rgba(19, 22, 18, 0.4)' });
+      Object.assign(carte.style, {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: `${Spacing.three}px`,
+        maxWidth: '360px',
+        padding: `${Spacing.four}px`,
+        borderRadius: `${Radius.card}px`,
+        border: `1px solid ${couleurs.border}`,
+        background: couleurs.background,
+        // Le focus ne va à la carte que pour faire lire la phrase avant la case : elle n'est pas un
+        // contrôle, et l'anneau du navigateur l'entourait d'un trait noir épais.
+        outline: 'none',
+      });
+      Object.assign(phrase.style, {
+        display: 'block',
+        color: couleurs.text,
+        fontFamily: FontFamily.medium,
+        fontSize: '17px',
+        lineHeight: '24px',
+      });
+      carte.setAttribute('role', 'dialog');
+      carte.setAttribute('aria-label', PHRASE_DE_LA_CASE);
+      carte.setAttribute('tabindex', '-1');
+      carte.focus?.();
+    };
 
     chargerTurnstile()
       .then((charge) => {
         if (fini) return;
         turnstile = charge;
-        id = charge.render(conteneur, {
+        id = charge.render(hote, {
           sitekey: cle,
           action: usage,
           language: 'fr',
           appearance: 'interaction-only',
+          theme: 'light',
           retry: 'never',
           callback: (jeton) => {
             if (fini) return;
@@ -163,6 +233,7 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
             // dans la console.
             return true;
           },
+          'before-interactive-callback': demanderLaCase,
         });
       })
       .catch(() => echouer('Le script du captcha n’a pas pu se charger.'));

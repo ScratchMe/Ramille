@@ -1,4 +1,11 @@
-import { destinationDuDemarrage, lireLeBilan, prechargeLePlan, type LectureDuBilan } from '@/types/demarrage';
+import {
+  destinationDuDemarrage,
+  issueDeLaSession,
+  phraseDeLaVerification,
+  lireLeBilan,
+  prechargeLePlan,
+  type LectureDuBilan,
+} from '@/types/demarrage';
 
 describe('lireLeBilan', () => {
   it('une réponse du serveur est une lecture, qu’elle trouve un bilan ou non', () => {
@@ -155,5 +162,47 @@ describe('prechargeLePlan', () => {
     expect(prechargeLePlan({ etat: 'lue', bilanComplete: false }, { vers: 'reprise' })).toBe(false);
     expect(prechargeLePlan({ etat: 'lue', bilanComplete: false }, { vers: 'onboarding' })).toBe(false);
     expect(prechargeLePlan({ etat: 'erreur' }, { vers: 'echec' })).toBe(false);
+  });
+});
+
+// Ce que la racine fait d'une session qui ne s'ouvre pas (04/10/2026). Le refus du captcha avait
+// l'écran technique et le message anglais de GoTrue ; il a désormais le sien. Éprouvé en le cassant le
+// même soir : la branche du refus retirée fait tomber « le refus du captcha a son écran… », seul. Ce
+// que ce fichier ne voit pas — que la racine lise cette issue — a été vu dans un export servi sous la
+// CSP de production, le refus fabriqué : l'écran s'affiche, et « Réessayer » relance une création.
+// Pour revoir l'écran sur le vrai serveur, il faut que le captcha soit activé dans Supabase. Et la
+// phrase selon la plateforme (`phraseDeLaVerification`), éprouvée de même : la condition inversée fait
+// tomber ses deux tests.
+describe('issueDeLaSession', () => {
+  it('une panne de transport est une coupure : le repli hors ligne, comme avant', () => {
+    expect(issueDeLaSession({ name: 'AuthRetryableFetchError', status: 0 })).toBe('coupure');
+    expect(issueDeLaSession({ status: 503, code: 'unexpected_failure' })).toBe('coupure');
+  });
+
+  it('le refus du captcha a son écran, ni coupure ni échec', () => {
+    expect(issueDeLaSession({ status: 400, code: 'captcha_failed', message: 'captcha protection: request disallowed' })).toBe(
+      'verification'
+    );
+  });
+
+  it('tout le reste garde l’écran technique', () => {
+    expect(issueDeLaSession({ status: 400, code: 'anonymous_provider_disabled' })).toBe('echec');
+    expect(issueDeLaSession({ status: 429, code: 'over_request_rate_limit' })).toBe('echec');
+  });
+});
+
+describe('phraseDeLaVerification', () => {
+  it('sur le web, elle nomme le bloqueur et le domaine à débloquer', () => {
+    expect(phraseDeLaVerification('web')).toBe(
+      'Avant d’ouvrir ta session, une vérification automatique s’assure que c’est bien une personne qui arrive. ' +
+        'Elle n’a pas pu se faire. Si un bloqueur de publicités est actif, désactive-le pour ramille.fr, puis réessaie.'
+    );
+  });
+
+  it('dans l’app, elle renvoie au réseau, sans parler de bloqueur ni de domaine', () => {
+    const phrase = phraseDeLaVerification('natif');
+    expect(phrase.endsWith('Vérifie ta connexion, puis réessaie.')).toBe(true);
+    expect(phrase).not.toContain('bloqueur');
+    expect(phrase).not.toContain('ramille.fr');
   });
 });

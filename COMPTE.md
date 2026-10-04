@@ -234,8 +234,10 @@ absolu : sans lui, un visiteur qui ne cochait pas restait sur l'écran de lancem
 attendant la session), l'appel part **sans** jeton, et c'est Supabase qui tranche. Avant
 l'activation, il passe. Après, il rend `400 captcha_failed` : les écrans de code le disent
 (`estRefusDuCaptcha`, la phrase de la panne de transport) au lieu d'annoncer un code jamais parti,
-mais **au démarrage**, `ensureSession` lève et la racine, qui ne le prend pas pour une panne de
-réseau, affiche l'écran technique avec le message anglais de GoTrue — à traiter avant l'activation.
+et **au démarrage**, la racine lui donne son propre écran (`issueDeLaSession`, `src/types/demarrage.ts`) :
+ni le repli hors ligne, ni l'écran technique et le message anglais de GoTrue qu'il recevait d'abord,
+mais « La vérification n'a pas abouti », la cause réaliste selon la plateforme (un bloqueur sur le
+web, le réseau dans l'app) et « Réessayer », qui relance la racine et donc un nouveau widget.
 Un widget à la fois (une file), et `ensureSession` relit la session après l'attente : une session
 ouverte entre-temps n'est plus écrasée par une anonyme. **D'où l'ordre d'activation du registre
 d'exploitation (§3.11)**, qui ne se discute pas : l'app Android n'envoie pas encore de jeton, et
