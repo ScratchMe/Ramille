@@ -43,14 +43,20 @@ export type IssueGoogle =
 
 // ── Le retour de Google sur Android arrive à trois écouteurs ────────────────────────────
 //
-// **Trouvé à la seconde passe de la revue finale (04/10/2026), dans `node_modules` et jamais sur
-// appareil** — la production ne portait encore aucune identité Google. Sur Android,
-// `openAuthSessionAsync` n'est qu'un polyfill : il attend le retour sur l'événement `url` de
-// `Linking`, comme `Linking.useURL()` du layout racine et comme Expo Router lui-même. Le même
-// `?code=` partait donc deux fois à l'échange, et le second échouait forcément : selon l'ordre,
-// « La connexion avec Google n'a pas abouti » sur un compte bien rattaché, ou le plan remplacé par
-// « Ce lien ne marche plus » — et la collision aiguillée vers `/connexion/retrouver` (R.1) écrasée
-// par le message d'un lien que personne n'a reçu.
+// **Trouvé à la seconde passe de la revue finale (04/10/2026), en lisant `node_modules`.** Sur
+// Android, `openAuthSessionAsync` n'est qu'un polyfill : il attend le retour sur l'événement `url`
+// de `Linking`, comme `Linking.useURL()` du layout racine et comme Expo Router lui-même. Le même
+// `?code=` partait donc deux fois à l'échange, et le second échouait forcément (`auth-js` n'a pas
+// de verrou ici) : selon l'ordre, « La connexion avec Google n'a pas abouti » sur un compte bien
+// rattaché, ou le plan remplacé par `/connexion/retrouver` — « Ce lien n'a pas réussi à ouvrir ta
+// session » ou « Ce lien doit s'ouvrir là où tu l'as demandé ». Et sur la collision, qui revient
+// en erreur, l'aiguillage vers `/connexion/retrouver?source=google` (R.1) écrasé par « Ce lien ne
+// marche plus », le message d'un lien que personne n'a reçu.
+//
+// **La course a eu lieu sur appareil sans se voir** : la ligne 02.4 de la recette d'octobre, jouée
+// le 04/10/2026 à 1 h 14, a fini sur le plan — mais l'identité Google rattachée ce soir-là n'a émis
+// aucun `connexion_success` (relevé en base le même jour). L'échange du layout avait gagné, et son
+// `router.replace('/')` menait au plan : le constat « conforme » est tombé juste par accident.
 //
 // Le layout se tait donc sur ce que la fenêtre d'authentification a pris : tout le temps qu'elle
 // est ouverte, puis l'URL qu'elle a rendue (le layout attend un tour avant de lire, le retour en
@@ -149,9 +155,10 @@ export async function linkGoogleIdentity(): Promise<IssueGoogle> {
 }
 
 // Ouvre la session portée par une URL de retour (`?code=…`). Deux appelants sur natif : le
-// retour Google ci-dessus, et le lien de connexion par email, qui arrive hors de l'app (ouvert
-// depuis la messagerie) et remonte par `Linking.useURL()` dans `_layout.tsx`. Sur web,
-// `detectSessionInUrl` fait ce travail tout seul.
+// retour Google ci-dessus, et le layout racine (`Linking.useURL()` dans `_layout.tsx`), qui ne
+// traite plus que ce que la fenêtre n'a pas pris — le retour d'une fenêtre dont l'app a été tuée
+// entre-temps. Le lien de connexion par e-mail qu'il recevait n'existe plus depuis le 20/09/2026.
+// Sur web, `detectSessionInUrl` fait ce travail tout seul.
 //
 // **Depuis le passage en PKCE (20/09/2026), cette fonction échange un code au lieu de poser des
 // jetons**, et la différence n'est pas une histoire de format : `setSession` acceptait

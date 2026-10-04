@@ -172,6 +172,9 @@ export async function apresUneReconnexion(): Promise<void> {
   await noterUneReconnexion();
 }
 
+// Ce que « Me déconnecter » attend la désinscription du jeton de notification, au plus (plus bas).
+const DELAI_DU_JETON_A_LA_DECONNEXION_MS = 5_000;
+
 /**
  * Se déconnecter de cet appareil — C2.11, point 4 (arbitrage D17).
  *
@@ -196,8 +199,6 @@ export async function apresUneReconnexion(): Promise<void> {
  * puis un code à redemander, sur le téléphone qu'on n'avait pas touché. « De cet appareil » veut
  * dire celui-ci seulement.
  */
-const DELAI_DU_JETON_A_LA_DECONNEXION_MS = 5_000;
-
 export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
   // **Le jeton de notification d'abord, pendant que la session qui le possède existe encore**
   // (04/10/2026) : après le `signOut`, plus rien ne peut le désactiver (`desinscrireLeJetonDeCetAppareil`).
@@ -208,12 +209,21 @@ export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
   //
   // **Et pas plus de cinq secondes** (seconde passe de la revue) : le `fetch` de React Native n'a
   // aucun délai par défaut, et cet appel ajouté devant le `signOut` pouvait tenir le bouton en
-  // attente aussi longtemps que le réseau se tait. Passé le délai, la déconnexion part ; l'appel
-  // laissé en vol n'écrit plus rien qui compte.
+  // attente aussi longtemps que le réseau se tait. Passé le délai, la déconnexion part, et l'appel
+  // est abandonné : sa réponse tardive n'efface plus la marque que la session suivante aura posée
+  // (`desinscrireLeJetonDeCetAppareil`). Le minuteur se défait quand l'appel répond à temps.
+  const abandon = new AbortController();
+  let minuteur: ReturnType<typeof setTimeout> | undefined;
   await Promise.race([
-    desinscrireLeJetonDeCetAppareil().catch(() => undefined),
-    new Promise<void>((resoudre) => setTimeout(resoudre, DELAI_DU_JETON_A_LA_DECONNEXION_MS)),
+    desinscrireLeJetonDeCetAppareil(abandon.signal).catch(() => undefined),
+    new Promise<void>((resoudre) => {
+      minuteur = setTimeout(() => {
+        abandon.abort();
+        resoudre();
+      }, DELAI_DU_JETON_A_LA_DECONNEXION_MS);
+    }),
   ]);
+  clearTimeout(minuteur);
 
   // **Un départ voulu, déclaré comme tel** (02/10/2026, `v1-27` §12.27) : la session qu'`auth-js` retire
   // ici n'est pas un refus, et la session anonyme suivante doit s'ouvrir (`src/lib/supabase.ts`).

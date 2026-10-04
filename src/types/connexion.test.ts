@@ -313,17 +313,12 @@ describe('codeDuRetourDeLien', () => {
   });
 });
 
-// La collision Google arrive par l'URL de retour, pas par l'appel (04/10/2026) : c'est ce code-là que
-// `linkGoogleIdentity` lit pour aiguiller vers « Retrouver mon compte » au lieu d'annoncer une annulation.
-// L'appel lui-même est gardé par `src/lib/auth-google.test.ts`.
-//
-// Éprouvé en cassant ce qu'il garde, le 04/10/2026 : `error` lu à la place d'`error_code` fait tomber
-// les quatre tests de ce bloc, et eux seuls.
 describe('cheminPourLeRouteur — Expo Router ne navigue pas sur un retour d’authentification', () => {
   // Il empilait `/`, dont le démarrage remplace l'écran du dessus : l'aiguillage de la collision
   // Google (R.1) disparaissait au bout d'une seconde et demie (`src/app/+native-intent.tsx`).
   // Éprouvé le 04/10/2026 : l'URL de lancement arrêtée elle aussi fait tomber le deuxième test,
-  // seul ; plus rien d'arrêté, le premier, seul.
+  // seul ; plus rien d'arrêté, le premier, seul ; la règle étendue à tout scheme, le quatrième,
+  // seul.
   it('arrête un retour arrivé app ouverte, sous ses trois formes', () => {
     expect(cheminPourLeRouteur({ path: 'ramille://?code=abc123', initial: false })).toBeNull();
     expect(
@@ -336,16 +331,28 @@ describe('cheminPourLeRouteur — Expo Router ne navigue pas sur un retour d’a
     expect(cheminPourLeRouteur({ path: 'ramille://?code=abc123', initial: true })).toBe('ramille://?code=abc123');
   });
 
-  it('laisse passer les liens du plan, au lancement comme app ouverte', () => {
-    expect(cheminPourLeRouteur({ path: 'https://www.ramille.fr/plan', initial: false })).toBe(
-      'https://www.ramille.fr/plan'
+  it('laisse passer le lien du rappel, au lancement comme app ouverte', () => {
+    expect(cheminPourLeRouteur({ path: 'https://www.ramille.fr/plan?rappel=1', initial: false })).toBe(
+      'https://www.ramille.fr/plan?rappel=1'
     );
-    expect(cheminPourLeRouteur({ path: 'https://www.ramille.fr/plan', initial: true })).toBe(
-      'https://www.ramille.fr/plan'
+    expect(cheminPourLeRouteur({ path: 'https://www.ramille.fr/plan?rappel=1', initial: true })).toBe(
+      'https://www.ramille.fr/plan?rappel=1'
+    );
+  });
+
+  it('ne lit pas les paramètres d’un lien https, même s’il portait un jour `code=`', () => {
+    expect(cheminPourLeRouteur({ path: 'https://www.ramille.fr/plan?code=abc', initial: false })).toBe(
+      'https://www.ramille.fr/plan?code=abc'
     );
   });
 });
 
+// La collision Google arrive par l'URL de retour, pas par l'appel (04/10/2026) : c'est ce code-là que
+// `linkGoogleIdentity` lit pour aiguiller vers « Retrouver mon compte » au lieu d'annoncer une annulation.
+// L'appel lui-même est gardé par `src/lib/auth-google.test.ts`.
+//
+// Éprouvé en cassant ce qu'il garde, le 04/10/2026 : `error` lu à la place d'`error_code` fait tomber
+// les quatre tests de ce bloc, et eux seuls.
 describe('codeDErreurDuRetourDeLien', () => {
   it('lit la collision Google telle que le serveur d’auth la renvoie, en requête (PKCE) comme en fragment', () => {
     const description = 'error_description=Identity+is+already+linked+to+another+user';

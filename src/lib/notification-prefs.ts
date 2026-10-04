@@ -285,10 +285,17 @@ export async function memoriserLeJetonDeCetAppareil(jeton: string | null): Promi
  *
  * Au mieux de ce qui est possible : hors ligne, l'appel échoue et la déconnexion se fait quand même —
  * c'est la situation d'avant, pas une régression.
+ *
+ * **`abandon`, pour la déconnexion qui n'attend pas** (contre-lecture du 04/10/2026) : passé son délai,
+ * elle part sans la réponse, efface les marques, et la session anonyme suivante peut mémoriser le
+ * jeton de nouveau. Une réponse tardive qui effacerait alors la marque ferait croire à « Toi » que
+ * l'appareil n'a plus de jeton actif. L'appel est donc annulé, et sa réponse ne touche plus à rien
+ * une fois l'abandon signalé — l'annulation d'un `fetch` n'étant pas garantie partout.
  */
-export async function desinscrireLeJetonDeCetAppareil(): Promise<void> {
+export async function desinscrireLeJetonDeCetAppareil(abandon?: AbortSignal): Promise<void> {
   const connu = await lireLeJetonDeCetAppareil();
   if (!connu) return;
-  const { error } = await supabase.rpc('unregister_push_token', { p_token: connu });
-  if (!error) await memoriserLeJetonDeCetAppareil(null);
+  const appel = supabase.rpc('unregister_push_token', { p_token: connu });
+  const { error } = await (abandon ? appel.abortSignal(abandon) : appel);
+  if (!error && !abandon?.aborted) await memoriserLeJetonDeCetAppareil(null);
 }

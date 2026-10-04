@@ -20,7 +20,8 @@
  *
  * **Et le silence du layout racine sur ce retour** (même jour, seconde passe), éprouvé de même : le
  * drapeau jamais levé fait tomber le premier test du dernier bloc, l'URL rendue jamais retenue le
- * second, et chacun seul. Ce que ce fichier ne voit pas : que `_layout.tsx` **lise** ce silence —
+ * second, et chacun seul ; le drapeau abaissé juste après avoir lancé la fenêtre, avant de l'attendre
+ * (contre-lecture du même soir), le premier, seul. Ce que ce fichier ne voit pas : que `_layout.tsx` **lise** ce silence —
  * aucun test ne monte le layout racine ; la ligne se vérifie sur appareil (recette d'octobre, 02.4
  * et R.1).
  */
@@ -91,6 +92,9 @@ describe('estUnRetourDuNavigateurDAuth — le layout racine se tait sur le retou
   it('couvre toute URL tant que la fenêtre est ouverte', async () => {
     let pendantLOuverture: boolean | null = null;
     mockOpenAuthSession.mockImplementation(async () => {
+      // Un tour d'attente d'abord : lu au moment de l'appel, le drapeau laisserait passer un code
+      // qui l'abaisserait juste après avoir lancé la fenêtre, avant de l'attendre.
+      await Promise.resolve();
       pendantLOuverture = estUnRetourDuNavigateurDAuth('ramille://?code=pendant');
       return { type: 'cancel' };
     });

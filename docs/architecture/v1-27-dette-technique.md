@@ -2019,14 +2019,21 @@ La seconde passe (quatre relectures, sur `main` après #355) a trouvé **un bloq
 PR qui suit : **sur Android, le retour de Google arrivait à trois écouteurs.** `openAuthSessionAsync`
 n'y est qu'un polyfill, qui attend l'événement `url` de `Linking` comme `Linking.useURL()` du layout
 racine et comme Expo Router. Le même `?code=` partait donc deux fois à l'échange, et le second échec
-remplaçait l'écran — « Ce lien ne marche plus » sur un rattachement réussi, ou sur l'aiguillage de la
-collision ; et Expo Router empilait la racine, dont le démarrage remplace l'écran du dessus. Vérifié
-dans `node_modules`, jamais sur appareil : la production ne portait encore aucune identité Google. Le
-layout se tait sur ce que la fenêtre a pris (`estUnRetourDuNavigateurDAuth`), Expo Router aussi
-(`src/app/+native-intent.tsx`) ; 02.4 et R.1 de la recette d'octobre le jouent. Corrigés avec lui :
+se lisait à l'écran — « La connexion avec Google n'a pas abouti » sur un compte bien rattaché, ou le
+plan remplacé par `/connexion/retrouver` ; sur la collision, l'aiguillage écrasé par « Ce lien ne
+marche plus » ; et Expo Router empilait la racine, dont le démarrage remplace l'écran du dessus.
+Trouvé dans `node_modules`, **et la course avait déjà eu lieu sur appareil sans se voir** : 02.4,
+jouée le 04/10/2026 à 1 h 14, a fini sur le plan, mais l'identité Google rattachée ce soir-là n'a
+émis aucun `connexion_success` (relevé en base le même jour) — l'échange du layout avait gagné, et
+son `router.replace('/')` menait au plan. Le layout se tait sur ce que la fenêtre a pris
+(`estUnRetourDuNavigateurDAuth`), Expo Router aussi (`src/app/+native-intent.tsx`) ; R.1 et R.5 de
+la recette d'octobre le jouent, et 02.4 compte désormais `connexion_success`. Corrigés avec lui :
 le focus et le bouton inerte avant l'hydratation de « Couper mes rappels », un délai à la
-désinscription du jeton pendant la déconnexion, la page 404 servie et ouverte par les gardes, la
-liste des scripts de `vercel-build` lue par le test du saut, R.1 déplacée après 11.2.
+désinscription du jeton pendant la déconnexion — et l'appel abandonné passé ce délai, pour que sa
+réponse tardive n'efface pas la marque de la session suivante —, la page 404 servie et ouverte par
+les gardes, le contrôle de rendu qui exige un statut 200 (sans lui, servir la page 404 l'aurait
+rendu aveugle à une route disparue de l'export), la liste des scripts de `vercel-build` lue par le
+test du saut, R.1 déplacée après 11.2, et R.5 qui rejoue le rattachement réussi.
 
 Ce qui reste, et pourquoi :
 

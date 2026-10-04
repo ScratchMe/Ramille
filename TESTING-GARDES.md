@@ -495,7 +495,10 @@ props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
   sur ce qui arrive et le bouton inerte dans le HTML statique, avant tout gestionnaire. La même passe
   y a ajouté **la page introuvable**, que le serveur des gardes sert désormais comme Vercel
   (`404.html`, en statut 404, à l'adresse demandée) : elle s'hydrate sur une adresse qui n'est pas la
-  sienne, et « Revenir à l'accueil » la quitte. La section E ne lisait
+  sienne, et « Revenir à l'accueil » la quitte. Ce serveur-là affaiblissait en silence le contrôle de
+  rendu (`verifier-rendu-export.mjs`) : une route disparue de l'export y montait la page introuvable,
+  qui n'est ni vide ni un écran de panne — il exige donc désormais un statut 200 de chaque route
+  (contre-lecture du même soir). La section E ne lisait
   le focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un
   journal posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert`
   **pendant** la transition. Et **G** tient le focus d'étape du questionnaire sur web, qu'aucune

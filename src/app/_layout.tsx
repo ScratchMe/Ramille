@@ -254,11 +254,15 @@ export default function RootLayout() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  // Lien de connexion par email ouvert depuis la messagerie du téléphone : il revient par le
-  // scheme `ramille://` avec les jetons dans le fragment, et personne n'attend cette URL —
-  // contrairement au retour Google, qui passe par `openAuthSessionAsync`. Sur web,
-  // `detectSessionInUrl` ouvre la session tout seul. Une fois la session ouverte, la racine route
-  // vers le plan ou l'onboarding selon ce que porte le compte retrouvé.
+  // Ce qui arrive par le scheme `ramille://` et que personne d'autre n'attend. C'était le lien de
+  // connexion par e-mail ouvert depuis la messagerie, jusqu'au 20/09/2026 où les e-mails ont pris
+  // un code ; il reste trois cas : refuser une URL à jetons injectée, échanger le `?code=` d'une
+  // fenêtre Google dont l'app a été tuée entre-temps, et **se taire sur ce que la fenêtre a pris**
+  // — sur Android, son retour arrive aussi ici (`estUnRetourDuNavigateurDAuth`, plus bas). Sur
+  // web, `detectSessionInUrl` ouvre la session tout seul. Une fois la session ouverte, la racine
+  // route vers le plan ou l'onboarding selon ce que porte le compte retrouvé. Les paragraphes
+  // qui suivent racontent les liens d'e-mail : c'est l'histoire de ce code, et le filet qu'il
+  // garde pour un lien parti avant le changement.
   //
   // **Un lien qui ne marche plus ne produisait rien du tout** (A1-6, A6-6) : la garde ne
   // reconnaissait que `access_token=`, alors que Supabase renvoie l'expiration dans le même

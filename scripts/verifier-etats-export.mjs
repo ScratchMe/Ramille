@@ -726,10 +726,14 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
     );
   } else if (!html.includes('Couper mes rappels')) {
     echecs.push('/rappels/stop : le HTML statique ne demande plus le geste (« Couper mes rappels »).');
-  } else if (!html.includes('aria-disabled="true"')) {
+  } else if (
+    !(html.match(/<button\b[^>]*aria-label="Couper mes rappels"[^>]*>/)?.[0] ?? '').includes('aria-disabled="true"')
+  ) {
     // Le bouton n'a pas de gestionnaire avant l'hydratation : actif d'apparence, il perdait les
-    // touchers sans un mot sur un réseau lent (04/10/2026, seconde passe). Le bloc du geste, lui,
-    // le touche une fois la page montée — un bouton resté inerte le ferait tomber.
+    // touchers sans un mot sur un réseau lent (04/10/2026, seconde passe). La balise du bouton
+    // lui-même, par son libellé : un autre élément désactivé de la page ne doit pas répondre à sa
+    // place (contre-lecture du même soir). Le bloc du geste, lui, le touche une fois la page
+    // montée — un bouton resté inerte le ferait tomber.
     echecs.push('/rappels/stop : le HTML statique rend « Couper mes rappels » actif, avant tout gestionnaire.');
   }
 }

@@ -30,7 +30,8 @@
  * **Et le 04/10/2026, le jeton de notification avant la session** : l'appel retiré de
  * `seDeconnecterDeCetAppareil` fait tomber « désactive le jeton… », seul ; placé après le `signOut`, le
  * même, seul ; son `.catch` retiré, « se déconnecte quand même… », seul. Le même soir, le délai de
- * cinq secondes retiré fait tomber « n'attend pas le jeton… », seul.
+ * cinq secondes retiré fait tomber « n'attend pas le jeton… », seul ; et le test de l'abandon retiré
+ * de `desinscrireLeJetonDeCetAppareil`, « ne laisse pas une réponse tardive… », seul.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -55,7 +56,10 @@ jest.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: unknown[]) => {
       mockDeclare.push({ appel: 'rpc', declare: mockDepartDeclare });
-      return mockRpc(...args);
+      // L'appel de PostgREST se laisse annuler (`abortSignal`) : le double l'accepte et l'ignore —
+      // ce que le code doit tenir, c'est une réponse qui arrive quand même.
+      const reponse = mockRpc(...args);
+      return Object.assign(Promise.resolve(reponse), { abortSignal: () => Promise.resolve(reponse) });
     },
     auth: {
       signOut: (...args: unknown[]) => {
@@ -157,6 +161,30 @@ describe('seDeconnecterDeCetAppareil', () => {
 
       expect(await enCours).toEqual({ ok: true });
       expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  // La réponse arrive quand même, après la déconnexion, quand la session suivante a mémorisé le jeton
+  // de nouveau : elle ne doit pas effacer cette marque (contre-lecture du 04/10/2026).
+  it('ne laisse pas une réponse tardive effacer la marque posée par la session suivante', async () => {
+    jest.useFakeTimers();
+    try {
+      mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
+      mockRpc.mockReturnValue(
+        new Promise((resoudre) => setTimeout(() => resoudre({ error: null }), 6_000))
+      );
+      mockSignOut.mockResolvedValue({ error: null });
+
+      const enCours = seDeconnecterDeCetAppareil();
+      await jest.advanceTimersByTimeAsync(5_000);
+      expect(await enCours).toEqual({ ok: true });
+
+      mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
+      await jest.advanceTimersByTimeAsync(1_000);
+
+      expect(mockStock.get('traceverte.jeton_appareil.v1')).toBe('ExponentPushToken[abc]');
     } finally {
       jest.useRealTimers();
     }

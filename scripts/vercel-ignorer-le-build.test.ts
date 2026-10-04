@@ -184,7 +184,7 @@ describe("l'Ignored Build Step", () => {
 
   test.each(scriptsDuBuild)("%s n'importe aucun module voisin, que le saut ne verrait pas", (fichier) => {
     const source = fs.readFileSync(path.join(racine, fichier), 'utf8');
-    expect(source).not.toMatch(/(?:from\s+|import\s*\(\s*|require\(\s*)['"]\.{1,2}\//);
+    expect(source).not.toMatch(/(?:from\s+|import\s*\(\s*|import\s+|require\(\s*)['"]\.{1,2}\//);
   });
 
   test('sans VERCEL_ENV, la comparaison de fichiers décide — jamais le repli de prévisualisation', () => {

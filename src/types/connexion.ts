@@ -241,10 +241,16 @@ export function codeDuRetourDeLien(url: string): string | null {
  *
  * **L'URL de lancement passe telle quelle**, comme avant : c'est le retour d'une fenêtre dont l'app
  * a été tuée entre-temps, et elle doit démarrer sur la racine pour que le layout échange le code.
- * Les liens du plan (`https://www.ramille.fr/plan`) ne portent ni `code` ni `error` : ils passent.
+ *
+ * **Le scheme `ramille:` seulement** (contre-lecture du 04/10/2026) : c'est par lui que revient la
+ * fenêtre (`makeRedirectUri`). Les liens d'application `https` — le rappel, `/plan?rappel=1` —
+ * passent toujours au routeur, même si l'un d'eux portait un jour un `code=` ou un `error=` : la
+ * règle ne lit pas les noms de paramètres d'une adresse qui n'est pas un retour d'authentification.
  */
 export function cheminPourLeRouteur(evenement: { path: string; initial: boolean }): string | null {
-  if (!evenement.initial && lireRetourDeLien(evenement.path) !== 'aucun') return null;
+  if (!evenement.initial && /^ramille:/i.test(evenement.path) && lireRetourDeLien(evenement.path) !== 'aucun') {
+    return null;
+  }
   return evenement.path;
 }
 
