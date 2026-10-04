@@ -290,7 +290,8 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   `BIND_GET_INSTALL_REFERRER_SERVICE` (la bibliothèque Maven `installreferrer`, via
   `expo-application`). **Seul `android.blockedPermissions` retire** — il pose `tools:node="remove"`,
   qui l'emporte sur les trois chemins —, et le manifeste du build suivant est le seul endroit où le
-  constater : rien dans le dépôt ni la CI ne le montre. La fiche de la boutique, elle, déclare ce
+  constater : rien dans le dépôt ni la CI ne le montre. Chez Ramille, constaté sur le build suivant
+  (03/10/2026, 23 h 30 UTC) : les quatre ont disparu du manifeste fusionné. La fiche de la boutique, elle, déclare ce
   que le manifeste demande.
 - **`app.config.js` étend `app.json`** et n'a qu'un rôle : brancher un fichier fourni par une
   variable d'environnement de type *fichier* (`google-services.json` chez EAS) sans le mettre dans

@@ -70,7 +70,9 @@ avant le premier engagement.
 **Un brouillon vit de 07.2 à 10.1, et c'est voulu** : en ligne, avec un bilan complété, l'app ouvre le
 plan et non la reprise, et le refus du bloc 09 passe avant lui ; aucune ligne des blocs 08 et 09 ne
 démarre hors ligne, seul cas où il passerait devant le plan. 10.1 le termine, et la soumission réussie
-l'efface — d'où l'onboarding de 11.1.
+l'efface — d'où l'onboarding de 11.1. **Sur le build suivant, un premier brouillon vit du rejeu de
+01.3 à 01.8 jusqu'au bloc 06**, qui le soumet : il naît après le bloc 05, le seul qui relance l'app
+hors ligne (« Le build suivant »).
 
 **Les heures du lundi suivent l'heure d'été.** Le point se génère à 6 h UTC et les notifications
 partent à 7 h UTC : **8 h et vers 9 h** à Paris jusqu'au 25 octobre, **7 h et vers 8 h** ensuite. Le
@@ -249,7 +251,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 |---|---|---|---|
 | 05.1 | En **4G**, wifi coupé : tuer l'app, la rouvrir, **chronométrer** de l'icône jusqu'au plan qui montre son action | Le plan arrive **sans** « Chargement de ton plan… » (T-12). Relever la durée | |
 | 05.2 | **Mode avion**, tuer l'app, la rouvrir (§11.5, « bilan soumis » ; 07.7 du 29/09) ; chronométrer jusqu'à l'écran hors ligne | Le plan hors ligne et son « Réessayer », en **bien moins de 7 s** (§11.26, R-5) ; aucun écran n'affirme un fait sur les données de la personne. Toucher « Réessayer » : « Chargement de ton plan… » apparaît **tout de suite** (T-9) | |
-| 05.3 | Couper le mode avion et **laisser le plan se lire** ; puis remettre le mode avion **sans tuer l'app**, et, sur la carte engagée, « **Changer d’avis** » | « Le changement n’a pas été enregistré. Vérifie ta connexion et réessaie. » (#323). **Si le changement passe quand même** (le réseau revenu entre-temps), l'engagement du RER est perdu : le reprendre, mardi et jeudi, avant le bloc 08 | |
+| 05.3 | Couper le mode avion et **laisser le plan se lire** ; puis remettre le mode avion **sans tuer l'app**, et, sur la carte engagée, « **Changer d’avis** » | « Le changement n’a pas été enregistré. Vérifie ta connexion et réessaie. » (#323). **Si le changement passe quand même** (le réseau revenu entre-temps), l'engagement du RER est perdu : le reprendre, mardi et jeudi, avant le rejeu de 01.3 à 01.8 (« Le build suivant ») — 06.2 en dépend aussi — et avant le bloc 08 | |
 | 05.4 | Toujours hors ligne : « Voir toutes les pistes », puis l'onglet « Suivi » | Chaque écran d'échec garde sa sortie **en haut** (T-10). Le suivi : « Ton suivi n’a pas pu être relu à l’instant : ce que tu vois peut avoir changé depuis. Vérifie ta connexion. » et « Réessayer » ([#316](https://github.com/ScratchMe/Ramille/pull/316)) — ou son écran d'échec, s'il ne s'était jamais lu | |
 | 05.5 | Couper le mode avion ; laisser l'app **en arrière-plan plus d'une heure**, puis la ramener devant | Le plan se relit **sans ligne d'erreur** : le renouvellement de la session s'arrête en arrière-plan et repart au premier plan (#323, §11.27) | |
 
@@ -372,11 +374,39 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 
 ## Le build suivant
 
-> **Ajouté le 03/10/2026 au soir**, après le bloc 01 joué sur le build du jour : quatre écarts (01.3 à
-> 01.8), corrigés le même soir — ce qui s'ouvre sous un choix se pose sur Android, et le pied reste
-> au-dessus du clavier. Le build suivant **s'installe par-dessus**, sans désinstaller, pour garder le
-> compte et la séance ; on y **rejoue 01.3 à 01.8**, puis on reprend où l'on s'était arrêté. Le
-> clavier se regarde aussi en 04.4 et 09.6.
+Le bloc 01, joué le 03/10/2026 au soir sur le build du jour, a rendu cinq écarts (01.3, 01.4 et
+01.6 à 01.8), corrigés le même soir ([#351](https://github.com/ScratchMe/Ramille/pull/351)) : ce qui
+s'ouvre sous un choix se pose sur Android, et le pied reste au-dessus du clavier. Le build suivant,
+lancé le 04/10/2026 à 1 h 30 (heure de Paris), **s'installe par-dessus**, sans désinstaller : le
+compte Google et la séance restent. Ce qu'il change à la séance :
+
+- **01.3, 01.4 et 01.6 à 01.8 se rejouent entre le bloc 05 et le bloc 06, et pas avant.** Rejouer
+  le questionnaire laisse un brouillon, et **hors ligne, un brouillon passe devant le plan** : avant
+  le bloc 05, il prendrait la place de l'écran que 05.2 attend. Le bloc 06 le termine, donc il n'y a
+  pas de bilan de plus à compter au bloc 10.
+- **Par « Revoir mon bilan » → « Faire un nouveau bilan » → « Commencer »** — la feuille « Ton plan
+  va être recalculé » s'ouvre d'abord, l'action du RER étant engagée (si 05.3 l'a perdue, la
+  reprendre avant). Les réponses sont préremplies, donc chaque ligne se joue autrement qu'écrite :
+  01.3, toucher le champ de la distance ; 01.4, **Voiture (covoiturage)** sans sa taille, toucher
+  « Suivant » gris, puis **Voiture (seul)** → **Thermique** ; 01.6, « Voir les autres modes », un
+  autre mode, puis revenir à **Voiture (seul)** → **Thermique** ; 01.7 et 01.8 comme écrits, depuis
+  0 vol et « Non ». **01.5 ne se rejoue pas** : « Non » y est déjà coché, et son message ne peut pas
+  s'afficher.
+- **Sortir par le retour matériel, étape par étape, jusqu'à quitter le questionnaire.** Le brouillon
+  reste alors sur la première étape, avec les réponses du profil : 06.2 le rouvre là, et le bloc 06
+  le soumet.
+- **J0, pour le suivi et le bloc 10, est le 04/10** : le bilan du bloc 01 a été soumis ce jour-là à
+  1 h 12. Joué le même jour, le bloc 06 garde vrai ce que disent l'introduction du bloc 10, 10.2 et
+  10.3 (le suivi ne montre qu'un bilan par jour) ; joué un autre jour, le suivi en montre deux, et
+  l'agent réécrit ces lignes avant le bloc 10. Le bloc 08 peut commencer le soir même, si le bloc 03
+  est joué avant le lundi 8 h ; sinon, la semaine suivante.
+- **Ce qui s'ouvre sous un choix se pose d'un coup, sans grandir** : c'est voulu sur Android
+  (`FRONT-MOUVEMENT.md` §2.12), et un saut là n'est pas un écart. L'écart, c'est que rien ne
+  s'affiche.
+- **Le clavier se regarde aussi en 04.4 et 09.6.**
+- **L'agent a rejoué 00.3 à 00.5 sur le nouvel APK** : `AD_ID` toujours absente (A1),
+  l'initialisation automatique de Firebase toujours active (A2), et les quatre permissions bloquées
+  par [#350](https://github.com/ScratchMe/Ramille/pull/350) absentes de son manifeste (A3).
 
 ## Ce que cette séance ne prouve pas
 
@@ -384,7 +414,8 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 - **Un autre téléphone** : la séance regarde un modèle ; un écran plus petit, une autre version
   d'Android ou une surcouche de constructeur peuvent montrer autre chose.
 - **La correction d'un champ « 10+ » sur un re-bilan prérempli** : 01.7 joue la même correction sur une
-  première saisie, pas sur un bilan qui portait déjà 10 (§11.31).
+  première saisie, puis, au rejeu, sur un re-bilan parti de 0 vol — pas sur un bilan qui portait
+  déjà 10 (§11.31).
 - **Ce que la base ne voit pas d'AsyncStorage** : les marques locales se jugent au comportement (11.1,
   11.2, 11.5), pas en les lisant — dont la marque `traceverte.compte_rattache.v1` qu'attendait 07.17 du
   29/09 après la reconnexion : sans `adb`, elle ne se lit pas.
