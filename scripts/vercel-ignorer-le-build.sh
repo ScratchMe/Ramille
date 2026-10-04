@@ -53,8 +53,13 @@ fi
 #    lisent. Un fichier hors de cette liste construit, y compris ceux qu'on *croit* inertes
 #    (`vercel.json`, `package.json`, `.gitignore`, `eas.json`) — en cas de doute, on construit.
 #    `*.md` ne vaut qu'à la RACINE : un `.md` sous `src/` pourrait être importé par l'app.
+#    **Deux scripts entrent dans le build, et passent donc avant `scripts/*`** (04/10/2026) :
+#    `vercel-build` lance `poser-la-page-introuvable.mjs`, qui produit la page 404, et
+#    `verifier-origine-supabase-de-la-csp.mjs`, qui peut refuser le déploiement. Une fusion qui ne
+#    toucherait qu'eux serait sautée, et sa correction ne partirait jamais.
 hors_du_build() {
   case "$1" in
+    scripts/poser-la-page-introuvable.mjs|scripts/verifier-origine-supabase-de-la-csp.mjs) return 1 ;;
     docs/*|.github/*|supabase/*|.claude/*|.design-sync/*|.vscode/*|scripts/*|LICENSE) return 0 ;;
     */*) return 1 ;;
     *.md) return 0 ;;

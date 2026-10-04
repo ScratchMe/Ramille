@@ -208,7 +208,7 @@ nomme un mois (§11.29), puis le RER du trajet, pour le mot de la veille et le p
 | 02.1 | La restitution | **Sans barre d'onglets**, et **sans bande vide** en bas à sa place (07.9 du 29/09, §11.17). « Ton trajet domicile-travail en voiture thermique », « 960 kg CO₂e par an, soit 83 % … », « Estimation annuelle, tous déplacements », **1,2 t CO₂e**. Le cap : « 192 kg CO₂e de moins » | |
 | 02.2 | Envoyer l'app en arrière-plan (bouton d'accueil), puis la rouvrir | La barre **ne revient pas** avant l'heure (07.9 du 29/09) | |
 | 02.3 | L'icône du compte → « **Toi** », compte **anonyme**, notifications pas encore demandées | « ‹ Retour » gris en haut à gauche ([#341](https://github.com/ScratchMe/Ramille/pull/341)) ; « Chargement de ton compte… », au corps courant, **si la lecture dure plus de 300 ms** — en deçà, rien, et ce n'est pas un écart ([#336](https://github.com/ScratchMe/Ramille/pull/336)) ; et **« Supprimer mon compte » ne saute pas** au point qu'un toucher s'y perde (07.19 du 29/09, §11.25). Revenir | |
-| 02.4 | Sur la restitution, « **Le retrouver ailleurs** » → « **Se connecter avec Google** » → le compte Google de test (B1) | Un onglet Chrome s'ouvre, le compte se choisit, et **l'app reprend la main sans écran intermédiaire** : compte rattaché, et elle arrive **sur le plan**, où le bilan est toujours là. Sinon : noter mot pour mot ce que l'écran montre — c'est le seul cas où l'agent ajoute le greffon `expo-web-browser` —, puis, **pour que la séance continue**, rattacher la même adresse par « Utiliser un email à la place » et son code : 02.5 sera un écart, le reste se joue | |
+| 02.4 | Sur la restitution, « **Le retrouver ailleurs** » → « **Se connecter avec Google** » → le compte Google de test (B1) | Un onglet Chrome s'ouvre, le compte se choisit, et **l'app reprend la main sans écran intermédiaire** : compte rattaché, et elle arrive **sur le plan**, où le bilan est toujours là. Sinon : noter mot pour mot ce que l'écran montre — le greffon `expo-web-browser`, sans option, n'y changerait rien (registre d'exploitation §4, tranché le 04/10/2026) : l'écart se diagnostique avant tout build —, puis, **pour que la séance continue**, rattacher la même adresse par « Utiliser un email à la place » et son code : 02.5 sera un écart, le reste se joue | |
 | 02.5 | **[agent]** En base (B1′) : `select provider, identity_data ? 'full_name' or identity_data ? 'name' as nom, identity_data ? 'avatar_url' or identity_data ? 'picture' as photo from auth.identities where user_id = '<id>';` ; et `select email is not null as adresse, is_anonymous from auth.users where id = '<id>';` | **Une ligne `google`**, `nom` et `photo` à `true` ; `adresse` à `true` et `is_anonymous` à `false` — sans adresse, le code de 09.6 ne peut pas arriver. L'agent date l'entrée `ramille://**` de `docs/exploitation/redirect-urls.md` : le retour natif est éprouvé | |
 | 02.6 | Le plan où 02.4 a mené : « **Compris** » sur « TON PREMIER PLAN » ; puis l'onglet « Suivi », et revenir sur « Plan » | « TON PREMIER PLAN », « Une action pour l’automne. », sans barre, et la carte **entre** — elle démarre transparente (07.9 du 29/09, §11.17) ; « Compris » : la barre arrive avec « Deux endroits, pas plus. » ; au retour de « Suivi », **la carte est partie** (§11.26, la fin de visite au changement d'onglet) | |
 | 02.7 | « **Voir toutes les pistes · 6** », puis le retour matériel | **La bande haute ne glisse pas** avec l'écran : « Ramille » et l'icône du compte restent immobiles, **une seule** bande, sous l'encoche, sans espace en double (T-13). « ‹ Retour au plan » gris en haut à gauche (T-10). Le retour matériel ramène au plan | |
@@ -408,6 +408,19 @@ compte Google et la séance restent. Ce qu'il change à la séance :
   l'initialisation automatique de Firebase toujours active (A2), et les quatre permissions bloquées
   par [#350](https://github.com/ScratchMe/Ramille/pull/350) absentes de son manifeste (A3).
 
+## Le build d'après la revue finale (04/10/2026)
+
+La revue du 04/10/2026, faite avant la production, a été corrigée avant le build suivant (`v1-27`
+§12.35 dit ce qu'elle laisse). Ce build-là **s'installe par-dessus**, comme le précédent. Quatre
+lignes s'ajoutent à la séance ; les autres restent telles qu'écrites.
+
+| # | Ce qu'on fait | Ce qu'on doit voir | Constat |
+|---|---|---|---|
+| R.1 | **La collision Google, entre le bloc 10 et le bloc 11** — avant la suppression du compte de test, qui la rendrait impossible. « Toi » → « **Me déconnecter de cet appareil** » : l'app repart sur l'onboarding, sans « Toi » à portée. « Commencer », un bilan avec n'importe quelles réponses, puis sur la restitution « **Le retrouver ailleurs** » → « **Se connecter avec Google** » → **le même compte Google de test**. Ensuite, sur l'écran qui s'ouvre, « **Retrouver mon compte** », l'adresse du compte de test et son code : la séance reprend sur le compte pour le bloc 11 | « **Cet appareil porte déjà un bilan** », avec « Retrouver mon compte » et « Garder ce bilan sur cet appareil ». **Jamais** « Tu peux réessayer quand tu veux. », qui était l'écart : la collision revenait comme une annulation. **[agent]** Le bloc 11 ne trouve toujours que les bilans du compte de test : celui de R.1 vit sur la session anonyme abandonnée | |
+| R.2 | **La désinscription, à la fin du bloc 08.** Le point du lundi part par notification, donc aucun e-mail n'en porte le lien : **[agent]** relève le `unsubscribe_token` de la ligne d'envoi du point de 08.2 (`notification_outbox`), et envoie le lien `https://www.ramille.fr/rappels/stop?jeton=<jeton>` à qui tient le téléphone, qui l'ouvre dans Chrome | La page « Ne plus recevoir de rappels », « Tu ne recevras plus de rappels, ni par email ni par notification. Ton compte, tes bilans et ton plan ne changent pas. » et le bouton « **Couper mes rappels** » | |
+| R.3 | **[agent]** La page de R.2 ouverte, **avant** le toucher : `select reminder_channel from profiles where id = '<id>';` ; puis toucher « **Couper mes rappels** », et relire | `push` avant le toucher : la page n'a rien coupé à l'ouverture. Après : « C’est fait : tu ne recevras plus de rappels, ni par email ni par notification. », et `none`. Puis rouvrir les rappels depuis « Toi », **par notification**, avant de continuer | |
+| R.4 | **[agent]** Dans un navigateur, `https://www.ramille.fr/n-existe-pas` | « **Cette page n’existe pas** » et « Revenir à l’accueil » — la page de l'app, en français, et non plus « The page could not be found » | |
+
 ## Ce que cette séance ne prouve pas
 
 - **Le build signé par Play** : B5 regarde le lien sur la clé EAS ; l'empreinte de Play est 12.3.
@@ -427,8 +440,9 @@ compte Google et la séance restent. Ce qu'il change à la séance :
 Dans `docs/architecture/v1-13-audit-et-chantiers.md`, **une section par séance**, sur le modèle du
 §12 (la séance sur appareil du 14/09) : ce que la séance a trouvé, **une issue par constat**, et
 l'accrochage à une vague. Les lignes de §11 jouées le disent **en tête de leur case**. Ce que déclenche
-un écart sur une ligne de `a-verifier-sur-le-build-de-recette.md` (son §3) : sur **B1**, le greffon
-`expo-web-browser` puis un nouveau build — au plus un tous les deux jours ; sur **B1′, B2, B3, B4, B6
+un écart sur une ligne de `a-verifier-sur-le-build-de-recette.md` (son §3) : sur **B1**, un
+diagnostic avant tout nouveau build — le greffon `expo-web-browser` sans option ne change rien
+(registre d'exploitation §4, 04/10/2026) ; sur **B1′, B2, B3, B4, B6
 ou A2**, une correction de la page de confidentialité ou de l'export, avant le formulaire « Sécurité
 des données » ; sur **A1**, une correction avant le build de production ; sur **B5**, une vérification
 de `assetlinks.json` et de l'empreinte de la clé EAS.

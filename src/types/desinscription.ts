@@ -9,8 +9,13 @@
 
 import type { GenreDEchec } from '@/types/lecture-en-echec';
 
-/** Les quatre états de la page. Aucun n'est un reproche : personne n'a rien fait de mal. */
-export type EtatDesinscription = 'en-cours' | 'coupes' | 'lien-invalide' | 'panne';
+/**
+ * Les cinq états de la page. Aucun n'est un reproche : personne n'a rien fait de mal.
+ *
+ * `a-confirmer` est l'état d'arrivée depuis le 04/10/2026 : la page demande le geste au lieu de le
+ * faire (`etatDeLaPage`).
+ */
+export type EtatDesinscription = 'a-confirmer' | 'en-cours' | 'coupes' | 'lien-invalide' | 'panne';
 
 /**
  * Ce que rend l'appel au RPC, en séparant le refus du serveur d'une panne. La panne porte son genre
@@ -68,4 +73,31 @@ export function phraseDeLaPanne(genre: GenreDEchec): string {
   return genre === 'horsLigne'
     ? 'Ta demande n’a pas abouti. Vérifie ta connexion et réessaie : tes rappels ne sont pas encore coupés.'
     : 'Ta demande n’a pas abouti. Réessaie dans un instant : tes rappels ne sont pas encore coupés.';
+}
+
+/**
+ * L'état affiché, de l'arrivée sur la page à la réponse du serveur.
+ *
+ * **La page coupait les rappels dès son ouverture, et ce n'était pas un geste** (04/10/2026, revue
+ * finale avant la production ; décision de la personne qui pilote, un bouton « Couper mes
+ * rappels »). L'analyseur de liens d'une messagerie professionnelle, qui ouvre les liens d'un
+ * e-mail pour les inspecter, exécute parfois la page : il coupait les rappels sans que personne
+ * ait cliqué, consommait le jeton, et le vrai clic, plus tard, lisait « Ce lien n'est plus
+ * valable ». Supabase décrit le même piège pour ses propres liens de connexion. Le RPC ne part
+ * donc plus qu'au toucher du bouton.
+ *
+ * Avant l'hydratation, la page demande le geste : c'est ce que dit le HTML statique à tout le
+ * monde, et c'est vrai pour qui arrive par le lien — presque tout le monde. Sans jeton, elle dit
+ * une fois montée que le lien n'est plus valable (`EXPO.md` §2.2, `useApresHydratation`).
+ */
+export function etatDeLaPage(entree: {
+  apresHydratation: boolean;
+  jeton: string | null;
+  demandee: boolean;
+  reponse: EtatDesinscription | null;
+}): EtatDesinscription {
+  if (!entree.apresHydratation) return 'a-confirmer';
+  if (entree.jeton === null) return 'lien-invalide';
+  if (!entree.demandee) return 'a-confirmer';
+  return entree.reponse ?? 'en-cours';
 }

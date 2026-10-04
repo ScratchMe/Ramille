@@ -521,6 +521,14 @@ et le jeton *est* l'autorisation. Trois pièges :
   avec des uuid au hasard ne rend qu'une recherche d'index et `false` (122 bits à deviner). Brider une
   désinscription coûterait plus que l'abus qu'on éviterait : quelqu'un qui veut arrêter de recevoir
   doit réussir du premier coup. Ne pas « corriger » cette asymétrie avec `feedback`.
+- **la page demande le geste, elle ne le fait pas** (04/10/2026, décision de la personne qui pilote,
+  `v1-27` §12.35). Elle appelait le RPC dès son ouverture : l'analyseur de liens d'une messagerie
+  professionnelle, qui exécute parfois les pages qu'il inspecte, coupait les rappels sans que
+  personne ait cliqué, consommait le jeton, et le vrai clic lisait ensuite « Ce lien n'est plus
+  valable ». Le RPC ne part plus qu'au toucher de « Couper mes rappels » (`etatDeLaPage`,
+  `src/types/desinscription.ts`), et `scripts/verifier-etats-export.mjs` garde les deux moitiés :
+  aucun appel avant le geste, l'appel portant le jeton après. Supabase décrit le même piège pour ses
+  propres liens de connexion. Ne pas « simplifier » en revenant à l'appel au montage.
 - **`List-Unsubscribe-Post` n'est pas envoyé, et son absence est épinglée par un contrôle de la
   migration.** L'annoncer engage l'URL à accepter un POST sans confirmation ; `/rappels/stop` est
   une page de l'export statique, qui ne peut pas y répondre — l'ajouter par symétrie ferait échouer

@@ -207,6 +207,15 @@ en silence. Piège de relevé, subi en écrivant cette ligne : chercher `cleanUr
 (`verifier-titres-export.mjs`) ne trouve qu'un commentaire, et la conclusion « aucun garde ne la
 lit » était fausse — un relevé qui ne trouve rien doit d'abord prouver qu'il a regardé partout.
 
+**Et la page d'une adresse inconnue s'appelle `404.html`, que l'export ne produit pas.** Expo Router
+exporte sa page introuvable sous `+not-found.html` ; sur une sortie statique, Vercel ne sert que
+`404.html`, et répond sinon par sa propre page, brute et en anglais (« The page could not be found —
+NOT_FOUND »). Chez Ramille, constaté en production à la revue finale du 04/10/2026 : un ancien lien de
+partage ou une adresse mal recopiée sortait du produit, dans une autre langue.
+`scripts/poser-la-page-introuvable.mjs` copie la page dans `vercel-build`, la CI fait de même juste
+après son export, et `verifier-titres-export.mjs` exige `404.html`, identique à `+not-found.html` ;
+`scripts/vercel-csp.test.ts` épingle la commande de `vercel-build`, que la CI ne lance pas.
+
 ### 1.6 Une Function en runtime Node.js a une checklist, et l'échec est muet
 
 Une Vercel Function échoue avec un `FUNCTION_INVOCATION_FAILED` ou `_TIMEOUT` générique, sans
@@ -337,7 +346,11 @@ retarde d'une nuit — est en §1.1.
   `scripts/vercel-ignorer-le-build.sh`). Liste blanche, relevée contre ce que lisent
   `expo export --platform web` et les deux fonctions : `docs/`, `.github/`, `supabase/`,
   `.claude/`, `.design-sync/`, `.vscode/`, `scripts/`, `LICENSE` et les `.md` de la racine. Tout le
-  reste construit, `vercel.json` et `package.json` compris. Base de comparaison :
+  reste construit, `vercel.json` et `package.json` compris — **et, depuis le 04/10/2026, les deux
+  scripts que `vercel-build` lance**, `poser-la-page-introuvable.mjs` et
+  `verifier-origine-supabase-de-la-csp.mjs`, qui passent avant `scripts/*` : la liste blanche avait
+  été relevée quand le build n'en lisait aucun, et une fusion qui n'aurait touché qu'eux aurait été
+  sautée (contre-lecture de la revue finale avant la production). Base de comparaison :
   `VERCEL_GIT_PREVIOUS_SHA`, repli `HEAD^`, `exit 1` sur tout chemin d'erreur, et une
   prévisualisation (`VERCEL_ENV=preview`) ne construit jamais. **Non-vacuité mesurée** en cassant
   le script six fois : chaque mutation fait tomber entre un et quatre tests, jamais zéro (le

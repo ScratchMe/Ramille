@@ -133,8 +133,11 @@ select is(
   'scénario 2 : le libellé commute utilise aussi le mode primaire, pas le second mode'
 );
 
--- Idempotence : rappeler la fonction met à jour la ligne existante (on conflict do update),
--- ne la duplique jamais — cf. unique(assessment_id) sur assessment_results.
+-- Idempotence : rappeler la fonction ne duplique jamais la ligne — cf. unique(assessment_id) sur
+-- assessment_results. **Depuis le 04/10/2026 (`20261004173905`), le second appel sort avant de
+-- recalculer** : un bilan déjà calculé ne se recalcule plus depuis le client. Cette assertion garde
+-- donc le retour anticipé, plus l'`upsert` de `recompute_assessment_results`, que le test `29`
+-- exerce côté serveur.
 select public.compute_assessment_results('22222222-2222-2222-2222-222222222222');
 
 select is(

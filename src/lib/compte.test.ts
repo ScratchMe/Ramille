@@ -26,6 +26,10 @@
  * l'a trouvé levé. Éprouvé : l'enveloppe retirée de `seDeconnecterDeCetAppareil` → « ne ferme que la
  * session… », seul ; de `deleteMyAccount` → « ferme la session de cet appareil… », seul (la contre-lecture
  * de la PR #315 relevait que rien ne gardait ces deux appels).
+ *
+ * **Et le 04/10/2026, le jeton de notification avant la session** : l'appel retiré de
+ * `seDeconnecterDeCetAppareil` fait tomber « désactive le jeton… », seul ; placé après le `signOut`, le
+ * même, seul ; son `.catch` retiré, « se déconnecte quand même… », seul.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -65,6 +69,10 @@ jest.mock('@/lib/supabase', () => ({
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: {
+    getItem: async (cle: string) => mockStock.get(cle) ?? null,
+    removeItem: async (cle: string) => {
+      mockStock.delete(cle);
+    },
     getAllKeys: async () => [...mockStock.keys()],
     multiRemove: async (cles: string[]) => {
       cles.forEach((cle) => mockStock.delete(cle));
@@ -102,6 +110,34 @@ describe('seDeconnecterDeCetAppareil', () => {
     expect(await marques()).toEqual(['autre.cle']);
     // Un départ déclaré : la session retirée n'est pas un refus.
     expect(mockDeclare).toEqual([{ appel: 'signOut', declare: true }]);
+  });
+
+  // Le jeton de notification part **avant** la session (04/10/2026) : après, plus rien ne peut le
+  // désactiver, et un compte dont la permission est coupée ne retombait jamais sur l'e-mail.
+  it('désactive le jeton de cet appareil avant de fermer la session', async () => {
+    mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
+    mockRpc.mockResolvedValue({ error: null });
+    mockSignOut.mockResolvedValue({ error: null });
+
+    const resultat = await seDeconnecterDeCetAppareil();
+
+    expect(resultat).toEqual({ ok: true });
+    expect(mockRpc).toHaveBeenCalledWith('unregister_push_token', { p_token: 'ExponentPushToken[abc]' });
+    expect(mockDeclare.map((d) => d.appel)).toEqual(['rpc', 'signOut']);
+    expect(await marques()).toEqual(['autre.cle']);
+  });
+
+  // Un appel qui **lève**, et non un `{ error }` rendu : c'est ce cas que le `.catch` de la déconnexion
+  // existe pour couvrir (contre-lecture du 04/10/2026, le test ne le gardait pas).
+  it('se déconnecte quand même si le jeton n’a pas pu être désactivé', async () => {
+    mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
+    mockRpc.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockSignOut.mockResolvedValue({ error: null });
+
+    const resultat = await seDeconnecterDeCetAppareil();
+
+    expect(resultat).toEqual({ ok: true });
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('garde les marques locales quand la déconnexion échoue et que la session est encore là', async () => {

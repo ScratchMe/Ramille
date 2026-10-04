@@ -265,3 +265,30 @@ export async function memoriserLeJetonDeCetAppareil(jeton: string | null): Promi
     // best-effort : au pire l'appareil se croira sans jeton jusqu'au prochain enregistrement.
   }
 }
+
+/**
+ * Désactive le jeton de cet appareil côté serveur, tant que la session qui le possède est encore là, et
+ * efface sa marque si le serveur l'a fait. Sans jeton connu (web, ou aucune inscription), rien.
+ *
+ * Deux appelants. `enregistrerLeJeton()` (`src/lib/rappels.ts`), quand la permission n'est plus
+ * accordée — on ne désactive que le jeton qu'on a soi-même enregistré (A4-6). Et **« Me déconnecter »**
+ * (04/10/2026, revue finale avant la production) : la déconnexion efface la marque locale du jeton
+ * avec les autres ; sans ce geste avant elle, la ligne restait active au nom du compte quitté. Avec
+ * la permission accordée, la session anonyme suivante reprend le jeton et rien ne se voit ; mais si
+ * elle est coupée, plus rien sur l'appareil ne sait quel jeton désactiver, et le compte ne retombe
+ * jamais sur le rappel par e-mail — le serveur continue d'envoyer dans le vide.
+ *
+ * **La raison enregistrée ne distingue pas les deux** : `unregister_push_token` écrit
+ * `disabled_reason = 'permission retirée'`, y compris pour une déconnexion. C'est assumé — ce que la
+ * raison sert à dire, c'est que cet appareil ne reçoit plus pour ce compte, et c'est vrai dans les deux
+ * cas ; la distinguer demanderait un argument de plus au RPC pour un journal que rien ne trie.
+ *
+ * Au mieux de ce qui est possible : hors ligne, l'appel échoue et la déconnexion se fait quand même —
+ * c'est la situation d'avant, pas une régression.
+ */
+export async function desinscrireLeJetonDeCetAppareil(): Promise<void> {
+  const connu = await lireLeJetonDeCetAppareil();
+  if (!connu) return;
+  const { error } = await supabase.rpc('unregister_push_token', { p_token: connu });
+  if (!error) await memoriserLeJetonDeCetAppareil(null);
+}

@@ -42,6 +42,11 @@ yarn-error.*
 .env
 .env*.local
 
+# Configuration Firebase du build Android : elle passe par la variable EAS de type fichier
+# `GOOGLE_SERVICES_JSON` (`app.config.js`) et ne vit jamais dans ce dépôt public. Un
+# `expo run:android` local la pose à la racine, d'où un `git add -A` l'aurait publiée.
+google-services.json
+
 # typescript
 *.tsbuildinfo
 

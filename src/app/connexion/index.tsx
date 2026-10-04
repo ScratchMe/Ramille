@@ -18,7 +18,7 @@ import { lireEtatDuRattachement } from '@/lib/compte';
 import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import { sourceConnexion } from '@/types/analytics';
 import { PHRASE_SANS_COMPTE_SOUS_LA_SORTIE } from '@/types/compte';
-import { identiteDejaRattachee, introDeLaConnexion } from '@/types/connexion';
+import { compteGoogleDejaConnu, introDeLaConnexion } from '@/types/connexion';
 
 // « Rattacher un compte » — **un détour, plus un interstitiel** (arbitrage du 20/09/2026).
 //
@@ -110,7 +110,9 @@ export default function ConnexionProposition() {
       // Supabase, en anglais, sans rien à faire ensuite. `/connexion/retrouver` sait déjà
       // tout dire : la collision, le choix entre retrouver et garder ce bilan, et l'envoi du
       // lien. L'adresse Google en est une, le geste est le même.
-      if (identiteDejaRattachee(resultat.error)) {
+      // Ses deux formes depuis le 04/10/2026 : l'identité déjà prise, et l'adresse d'un compte
+      // rattaché par code e-mail (`compteGoogleDejaConnu`).
+      if (compteGoogleDejaConnu(resultat.error)) {
         router.push({ pathname: '/connexion/retrouver', params: { source: 'google' } });
         return;
       }

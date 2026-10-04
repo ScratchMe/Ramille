@@ -36,7 +36,9 @@ import {
   adresseSemblePlausible,
   estLimiteDEnvoi,
   estPanneDeTransport,
+  codeDErreurDuRetourDeLien,
   codeDuRetourDeLien,
+  compteGoogleDejaConnu,
   estVerifieurManquant,
   etatDeLaBanniere,
   identiteDejaRattachee,
@@ -307,6 +309,55 @@ describe('codeDuRetourDeLien', () => {
     expect(codeDuRetourDeLien('ramille://?code=')).toBeNull();
     expect(codeDuRetourDeLien('https://www.ramille.fr/plan')).toBeNull();
     expect(codeDuRetourDeLien('ramille://#access_token=ey.JJ')).toBeNull();
+  });
+});
+
+// La collision Google arrive par l'URL de retour, pas par l'appel (04/10/2026) : c'est ce code-là que
+// `linkGoogleIdentity` lit pour aiguiller vers « Retrouver mon compte » au lieu d'annoncer une annulation.
+// L'appel lui-même est gardé par `src/lib/auth-google.test.ts`.
+//
+// Éprouvé en cassant ce qu'il garde, le 04/10/2026 : `error` lu à la place d'`error_code` fait tomber
+// les quatre tests de ce bloc, et eux seuls.
+describe('codeDErreurDuRetourDeLien', () => {
+  it('lit la collision Google telle que le serveur d’auth la renvoie, en requête (PKCE) comme en fragment', () => {
+    const description = 'error_description=Identity+is+already+linked+to+another+user';
+    expect(
+      codeDErreurDuRetourDeLien(`ramille://?error=server_error&error_code=identity_already_exists&${description}`)
+    ).toBe('identity_already_exists');
+    expect(
+      codeDErreurDuRetourDeLien(`ramille://#error=server_error&error_code=identity_already_exists&${description}`)
+    ).toBe('identity_already_exists');
+  });
+
+  it('et la passe à `identiteDejaRattachee`, qui décide l’aiguillage', () => {
+    const code = codeDErreurDuRetourDeLien('ramille://?error=server_error&error_code=identity_already_exists');
+    expect(identiteDejaRattachee({ code: code ?? undefined })).toBe(true);
+  });
+
+  it('distingue un refus de consentement, qui reste une annulation', () => {
+    const code = codeDErreurDuRetourDeLien('ramille://?error=access_denied&error_description=denied');
+    expect(code).toBeNull();
+    expect(identiteDejaRattachee({ code: code ?? undefined })).toBe(false);
+  });
+
+  it('rend `null` sans erreur, ou quand le code est vide', () => {
+    expect(codeDErreurDuRetourDeLien('ramille://?code=abc123')).toBeNull();
+    expect(codeDErreurDuRetourDeLien('ramille://?error=access_denied&error_code=')).toBeNull();
+  });
+});
+
+// Les deux formes d'un compte Google déjà connu (04/10/2026) : l'identité déjà prise, et l'adresse d'un
+// compte rattaché par code e-mail. Toutes deux mènent à « Retrouver mon compte » (#60).
+describe('compteGoogleDejaConnu', () => {
+  it('reconnaît l’identité déjà prise et l’adresse déjà prise', () => {
+    expect(compteGoogleDejaConnu({ code: 'identity_already_exists' })).toBe(true);
+    expect(compteGoogleDejaConnu({ code: 'email_exists' })).toBe(true);
+  });
+
+  it('ne réagit à rien d’autre, ni au message', () => {
+    expect(compteGoogleDejaConnu(null)).toBe(false);
+    expect(compteGoogleDejaConnu({ code: 'access_denied' })).toBe(false);
+    expect(compteGoogleDejaConnu({ message: 'A user with this email address has already been registered' })).toBe(false);
   });
 });
 

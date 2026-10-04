@@ -104,6 +104,23 @@ export function identiteDejaRattachee(error: ErreurAuth): boolean {
 }
 
 /**
+ * Le compte Google appartient déjà à un compte Ramille, **sous l'une ou l'autre de ses deux formes**
+ * (04/10/2026, contre-lecture de la revue finale avant la production). La première est
+ * l'identité déjà prise (`identity_already_exists`) : le compte existant a été rattaché par Google.
+ * La seconde vient d'un compte rattaché par code e-mail à la même adresse : le serveur d'auth lie
+ * l'identité Google à la session anonyme, puis veut lui poser l'adresse, déjà prise — et renvoie
+ * `email_exists`. C'est la même personne dans la même situation, celle que #60 a tranchée : elle
+ * a un compte, elle change d'appareil, `/connexion/retrouver` sait tout dire. Et rien n'est
+ * divulgué : la personne vient de prouver, par Google, qu'elle possède cette adresse.
+ *
+ * Réservé au retour de Google : sur le chemin de l'e-mail, `email_exists` reçoit un code sans que
+ * l'écran dise quelle branche est partie (`v1-28` §7.1), et c'est `adresseDejaRattachee` qui le lit.
+ */
+export function compteGoogleDejaConnu(error: ErreurAuth): boolean {
+  return identiteDejaRattachee(error) || error?.code === 'email_exists';
+}
+
+/**
  * Validation d'adresse volontairement large — le seul but est d'éviter d'appeler l'API pour
  * une saisie manifestement incomplète. Toute règle plus stricte finit par refuser une
  * adresse valide, et c'est l'utilisateur qui paie l'erreur.
@@ -184,6 +201,22 @@ export function lireRetourDeLien(url: string): RetourDeLien {
   if (params.code) return 'code';
   if (params.access_token) return 'jetons';
   return 'aucun';
+}
+
+/**
+ * Le code d'erreur d'une URL de retour (`error_code`), ou `null`.
+ *
+ * **C'est par lui que la collision Google arrive sur natif, et rien d'autre ne la porte**
+ * (04/10/2026, revue finale avant la production). `linkIdentity` ne fait que rendre l'adresse de
+ * Google ; c'est le serveur d'auth, au retour, qui découvre que l'identité appartient déjà à un
+ * autre compte, et il le dit dans l'URL de redirection — `error_code=identity_already_exists` —,
+ * pas dans une erreur d'appel. Tout retour en erreur était lu comme une annulation, donc
+ * l'aiguillage vers `/connexion/retrouver` (#60) ne partait jamais : la personne qui change de
+ * téléphone et touche « Continuer avec Google » lisait « Tu peux réessayer quand tu veux. », à
+ * chaque essai.
+ */
+export function codeDErreurDuRetourDeLien(url: string): string | null {
+  return parametresDeLUrl(url).error_code || null;
 }
 
 /**

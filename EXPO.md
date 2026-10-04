@@ -293,9 +293,14 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   constater : rien dans le dépôt ni la CI ne le montre. Chez Ramille, constaté sur le build suivant
   (03/10/2026, 23 h 30 UTC) : les quatre ont disparu du manifeste fusionné. La fiche de la boutique, elle, déclare ce
   que le manifeste demande.
-- **`app.config.js` étend `app.json`** et n'a qu'un rôle : brancher un fichier fourni par une
-  variable d'environnement de type *fichier* (`google-services.json` chez EAS) sans le mettre dans
-  le dépôt. Lu par le CLI au build, jamais replié dans le bundle.
+- **`app.config.js` étend `app.json`** pour brancher un fichier fourni par une variable
+  d'environnement de type *fichier* (`google-services.json` chez EAS) sans le mettre dans le dépôt.
+  Lu par le CLI au build, jamais replié dans le bundle. **Un branchement optionnel est un défaut
+  muet** : sans la variable, le fichier était simplement omis, et l'app se construisait sans
+  notifications. Chez Ramille, depuis le 04/10/2026, la configuration **refuse** un build distribué
+  (`preview`, `production`) auquel manque `GOOGLE_SERVICES_JSON` ou l'une des `EXPO_PUBLIC_SUPABASE_*`
+  — sur le builder seulement (`EAS_BUILD`), pour qu'un `expo start` local n'en soit pas gêné ;
+  `scripts/app-config.test.ts` l'éprouve.
 
 ### 1.10 Android : App Links et signature
 

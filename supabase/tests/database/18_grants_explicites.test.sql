@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(21);
 
 -- ── 1. La matrice entière ───────────────────────────────────────────────────────────────
 -- Les sept privilèges de table qui touchent aux données ou au schéma, pour les deux rôles
@@ -56,10 +56,11 @@ select bag_eq(
        ('authenticated', 'action_templates', 'SELECT'),
        ('authenticated', 'emission_factor_sources', 'SELECT'),
        -- Tables applicatives : `authenticated` seulement, au plus près des policies.
+       -- `profiles` et `assessments` écrivent par colonnes depuis le 04/10/2026 : leur `UPDATE` et
+       -- leur `INSERT` ne sont plus des privilèges de table, et vivent dans les assertions de colonne
+       -- en fin de fichier.
        ('authenticated', 'profiles', 'SELECT'),
-       ('authenticated', 'profiles', 'UPDATE'),
        ('authenticated', 'assessments', 'SELECT'),
-       ('authenticated', 'assessments', 'INSERT'),
        ('authenticated', 'assessment_answers', 'SELECT'),
        ('authenticated', 'assessment_answers', 'INSERT'),
        ('authenticated', 'assessment_answers', 'UPDATE'),
@@ -219,9 +220,12 @@ select is(
 -- resserrement se lirait « le client ne peut plus rien mettre à jour », et un futur `grant update`
 -- de table rentrerait sans bruit dans la matrice comme dans le produit.
 --
--- C'est le seul endroit du schéma qui utilise cette forme, et c'est voulu : la RLS filtre des
--- lignes, jamais des colonnes, donc c'est l'outil qui manquait pour borner une table dont une
--- seule colonne est écrite par le client.
+-- La RLS filtre des lignes, jamais des colonnes : c'est l'outil qui manquait pour borner une table
+-- dont une seule colonne est écrite par le client. **Et depuis le 04/10/2026, deux autres surfaces
+-- l'emploient** (`20261004173905`, revue finale avant la production) : l'`INSERT` d'`assessments`, que
+-- la soumission ne fait que sur `user_id` et `status` — les dates, fixées par le client, rendaient un
+-- compte anonyme impossible à purger —, et l'`UPDATE` de `profiles`, que l'app ne fait que sur ses deux
+-- préférences de rappel. Le comportement (le refus, la moitié positive) est éprouvé dans `47`.
 
 select is(
   (select array_agg(column_name::text order by column_name)
@@ -239,6 +243,42 @@ select ok(
        and grantee = 'authenticated' and privilege_type = 'UPDATE'
   ),
   'et le privilège UPDATE de table a bien disparu : sinon le grant de colonne ne bornerait rien'
+);
+
+select is(
+  (select array_agg(column_name::text order by column_name)
+     from information_schema.column_privileges
+    where table_schema = 'public' and table_name = 'assessments'
+      and grantee = 'authenticated' and privilege_type = 'INSERT'),
+  array['status', 'user_id'],
+  'assessments : le client n’insère que `user_id` et `status` — ni les dates, ni l’identifiant'
+);
+
+select ok(
+  not exists (
+    select 1 from information_schema.role_table_grants
+     where table_schema = 'public' and table_name = 'assessments'
+       and grantee = 'authenticated' and privilege_type = 'INSERT'
+  ),
+  'et le privilège INSERT de table a disparu'
+);
+
+select is(
+  (select array_agg(column_name::text order by column_name)
+     from information_schema.column_privileges
+    where table_schema = 'public' and table_name = 'profiles'
+      and grantee = 'authenticated' and privilege_type = 'UPDATE'),
+  array['mot_de_la_veille', 'reminder_channel'],
+  'profiles : le client ne met à jour que ses deux préférences de rappel'
+);
+
+select ok(
+  not exists (
+    select 1 from information_schema.role_table_grants
+     where table_schema = 'public' and table_name = 'profiles'
+       and grantee = 'authenticated' and privilege_type = 'UPDATE'
+  ),
+  'et le privilège UPDATE de table de `profiles` a disparu'
 );
 
 select * from finish();
