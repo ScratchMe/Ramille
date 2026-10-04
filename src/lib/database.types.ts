@@ -858,6 +858,30 @@ export type Database = {
           },
         ]
       }
+      plan_cycle_runs: {
+        Row: {
+          comptes: number
+          detail: string | null
+          echecs: number
+          id: string
+          ran_at: string
+        }
+        Insert: {
+          comptes?: number
+          detail?: string | null
+          echecs?: number
+          id?: string
+          ran_at?: string
+        }
+        Update: {
+          comptes?: number
+          detail?: string | null
+          echecs?: number
+          id?: string
+          ran_at?: string
+        }
+        Relationships: []
+      }
       plan_cycles: {
         Row: {
           baseline_co2_kg_year: number | null

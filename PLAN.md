@@ -198,6 +198,14 @@ vérifiée à l'intérieur), et deux tests pgTAP qui épinglent le refus. Une se
 (index unique partiel), intention obligatoire, en jours de la semaine pour le poste
 domicile-travail et en échéance fermée pour les autres — jamais de saisie libre.
 
+**Les deux RPC n'agissent que sur le dernier cycle du compte** (04/10/2026, `20261004194921`,
+seconde passe de la revue finale) : celui que l'écran montre (`lecture-du-plan.ts`, trié par
+`period_start`), et non celui qui couvre aujourd'hui — entre minuit et le passage nocturne d'un
+changement de saison, l'écran montre encore le cycle d'avant, et il doit rester engageable. Un appel
+direct à l'API pouvait engager une action d'une saison close, ou en relâcher l'engagement et
+l'archiver en `changement`. Un écran resté ouvert pendant le passage nocturne reçoit `P0002`, que
+l'écran ne recharge pas encore (`v1-27` §12.36).
+
 **Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
 `20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour
 qu'on en oublie un : le re-bilan dans la même période (le plus fréquent — on corrige une réponse
@@ -276,6 +284,11 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
   nommait à tort : relevé dans `pg_get_functiondef` le 19/09/2026, la ligne est dans la fonction
   interne, donc toute reprise de calcul en masse régénère aussi les plans. L'appel y est enveloppé
   dans un `begin … exception` : le bilan aboutit même si le plan échoue, et le cron rattrape.
+  **Et le cron rattrape compte par compte depuis le 04/10/2026** (`20261004194921`, seconde passe de
+  la revue finale) : sa boucle tenait dans une seule transaction, donc un seul compte dont la
+  génération levait annulait le passage de tout le monde, chaque nuit. Chaque compte passe dans sa
+  sous-transaction, et le passage s'inscrit dans `plan_cycle_runs`, que l'alerte d'exploitation lit
+  (`plans_en_echec`, registre d'exploitation §8.5 bis′).
 - Cadence du plan de réduction : saisons **météorologiques** (blocs calendaires de 3 mois,
   pas astronomiques) par défaut, ou trimestre glissant ancré sur la date du bilan si
   `profiles.cadence_type = 'rolling_quarter'`.

@@ -189,19 +189,23 @@ select results_eq(
 -- ── Garde d'accès ────────────────────────────────────────────────────────────────────────
 -- Un utilisateur authentifié ne doit jamais pouvoir déclencher le calcul du bilan d'un tiers
 -- (cf. `if v_owner_id is null or v_owner_id <> auth.uid() then raise exception`).
+-- `P0002` (`no_data_found`) depuis `20261004194921` : le `raise` sans code partait en `P0001`, et la
+-- mesure de la soumission, qui attend `P0002` pour « introuvable » (`src/types/soumission.ts`), le
+-- rangeait dans « autre ». Ce que ces deux assertions gardent ne change pas : le même code et le
+-- même message pour le bilan d'un autre et pour un bilan qui n'existe pas.
 
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111115', 'role', 'authenticated')::text, true);
 
 select throws_ok(
   $$ select public.compute_assessment_results('21111111-1111-1111-1111-111111111111') $$,
-  'P0001',
+  'P0002',
   'compute_assessment_results: bilan introuvable ou accès refusé',
   'un utilisateur ne peut pas calculer le bilan d''un autre utilisateur'
 );
 
 select throws_ok(
   $$ select public.compute_assessment_results(gen_random_uuid()) $$,
-  'P0001',
+  'P0002',
   'compute_assessment_results: bilan introuvable ou accès refusé',
   'un id de bilan inexistant lève la même erreur générique (pas d''énumération)'
 );

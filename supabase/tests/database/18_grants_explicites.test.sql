@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(21);
+select plan(23);
 
 -- ── 1. La matrice entière ───────────────────────────────────────────────────────────────
 -- Les sept privilèges de table qui touchent aux données ou au schéma, pour les deux rôles
@@ -33,7 +33,8 @@ select plan(21);
 -- de la migration le retire de toute façon.
 -- Les tables absentes du tableau attendu sont celles qui n'accordent
 -- rien à personne : `notification_outbox`, `emission_factor_sync_runs`, `usage_event_types`, et
--- les journaux de cron qui posent leur propre `revoke` (`purge_runs`, `reminder_send_runs`) —
+-- les journaux de cron qui posent leur propre `revoke` (`purge_runs`, `reminder_send_runs`,
+-- `plan_cycle_runs`) —
 -- une table serveur-only ne figure pas dans ce tableau, elle y figure par son absence.
 select bag_eq(
   $$ select r.role::text, c.relname::text, p.privilege::text
@@ -74,7 +75,8 @@ select bag_eq(
        ('authenticated', 'plan_action_commitments_archive', 'SELECT'),
        ('authenticated', 'feedback', 'SELECT'),
        ('authenticated', 'feedback', 'INSERT'),
-       ('authenticated', 'push_tokens', 'SELECT'),
+       -- `push_tokens` se lit par colonnes depuis le 04/10/2026 (seconde passe de la revue) : son
+       -- `SELECT` vit dans les assertions de colonne en fin de fichier.
        ('authenticated', 'push_tokens', 'DELETE'),
        ('authenticated', 'usage_events', 'INSERT'),
        -- Les trois privilèges inertes de la §5 de la migration, sur trois tables : aucune policy
@@ -279,6 +281,27 @@ select ok(
        and grantee = 'authenticated' and privilege_type = 'UPDATE'
   ),
   'et le privilège UPDATE de table de `profiles` a disparu'
+);
+
+-- `push_tokens` (seconde passe de la revue, `20261004194921`) : le propriétaire d'un jeton lisait aussi
+-- `proprietaire_precedent`, l'identifiant du compte qui avait l'appareil avant lui. Les trois colonnes
+-- de la reprise restent au serveur ; le refus lui-même est éprouvé dans `48`.
+select is(
+  (select array_agg(column_name::text order by column_name)
+     from information_schema.column_privileges
+    where table_schema = 'public' and table_name = 'push_tokens'
+      and grantee = 'authenticated' and privilege_type = 'SELECT'),
+  array['disabled_at', 'token', 'user_id'],
+  'push_tokens : le client ne lit que ce que l''app demande, jamais les colonnes de la reprise'
+);
+
+select ok(
+  not exists (
+    select 1 from information_schema.role_table_grants
+     where table_schema = 'public' and table_name = 'push_tokens'
+       and grantee = 'authenticated' and privilege_type = 'SELECT'
+  ),
+  'et le privilège SELECT de table de `push_tokens` a disparu'
 );
 
 select * from finish();

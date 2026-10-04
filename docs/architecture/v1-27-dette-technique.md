@@ -2035,6 +2035,17 @@ les gardes, le contrôle de rendu qui exige un statut 200 (sans lui, servir la p
 rendu aveugle à une route disparue de l'export), la liste des scripts de `vercel-build` lue par le
 test du saut, R.1 déplacée après 11.2, et R.5 qui rejoue le rattachement réussi.
 
+**Et les constats de la couche base, dans une PR à part le même soir** (`20261004194921`, test `48`,
+côté serveur, sans build). Aucun ne permettait d'écrire chez un autre compte ; le quatrième laissait
+lire l'identifiant d'un autre. Le cron des plans n'isolait pas un compte qui échoue — une exception
+annulait le passage de tout le monde (`generate_plan_cycles`) : il passe désormais compte par compte,
+et `plan_cycle_runs` dit à l'alerte combien sont restés sans plan. Un client pouvait créer un bilan
+directement `completed`, le finaliser sans réponses, et écrire des réponses après la finalisation.
+`commit_plan_action` et `clear_plan_action_commitment` acceptaient une action d'un cycle clos.
+`push_tokens` laissait lire `proprietaire_precedent`, et le client n'en lit plus que ce que l'app
+demande. `compute_assessment_results` levait « introuvable » sans le code `no_data_found` que
+`src/types/soumission.ts` attend.
+
 Ce qui reste, et pourquoi :
 
 - **Le retour de Google dans une app tuée entre-temps.** Si Android tue l'app pendant que l'onglet
@@ -2049,12 +2060,12 @@ Ce qui reste, et pourquoi :
   en crée un second. Déjà vrai avant #355, qui n’aggrave rien : le premier reste sans résultat, le
   second se calcule. **La piste** : chercher aussi un bilan `completed`
   sans résultat du même compte. **Pas fait** : un cas de coupure précise, à éprouver avec un double.
-- **Cinq constats de la couche base, laissés au chantier des plafonds globaux, qui touche les mêmes
-  fichiers et n'attend pas de build** : le cron des plans n'isole pas un compte qui échoue — une
-  exception annule le passage de tout le monde (`generate_plan_cycles`) ; un client peut créer un
-  bilan directement `completed`, et écrire des réponses après la finalisation ; `commit_plan_action`
-  accepte une action d'un cycle clos ; `push_tokens` laisse lire `proprietaire_precedent` ; et
-  `compute_assessment_results` lève « introuvable » sans le code `no_data_found` que
-  `src/types/soumission.ts` attend. Aucun ne touche les données d'un autre compte. Un commentaire de
-  `20261004173905` promet aussi trop (« le client ne déclenche pas de recalcul » :
+- **Un écran du plan resté ouvert pendant le passage nocturne d'un changement de saison** : il
+  appelle `commit_plan_action` ou `clear_plan_action_commitment` sur le cycle d'avant, et reçoit
+  désormais `P0002` (« Action introuvable »), que `plan-engagement.ts` ne recharge pas — il ne
+  recharge que sur `RM001`. Le message reste générique jusqu'au prochain retour sur l'écran. Avant,
+  l'engagement atterrissait en silence sur la saison close, ce qui était pire. **La piste** : traiter
+  `P0002` comme `RM001`. **Pas fait** : c'est une phrase affichée qui change, donc une décision de
+  la personne qui pilote ; le cas tient à quelques heures, quatre nuits par an.
+- **Un commentaire de `20261004173905` promet trop** (« le client ne déclenche pas de recalcul » :
   `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.

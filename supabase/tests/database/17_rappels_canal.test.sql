@@ -286,6 +286,10 @@ select is(
   'Au-delà de cinq appareils actifs, le sixième enregistrement en laisse toujours cinq'
 );
 
+-- Le motif se relit en propriétaire : depuis `20261004194921`, le client ne lit de `push_tokens` que
+-- ce que l'app demande (`token`, `disabled_at`, `user_id`), et `disabled_reason` reste au serveur.
+select set_config('role', 'postgres', true);
+
 select is(
   (select disabled_reason from public.push_tokens where token = 'ExponentPushToken[pgtap-cap-a]'),
   'Remplacé : plus de cinq appareils actifs pour ce compte.',
@@ -299,6 +303,8 @@ select ok(
   (select disabled_at is null from public.push_tokens where token = 'ExponentPushToken[pgtap-cap-f]'),
   'L''appareil qui vient de s''enregistrer reste actif'
 );
+
+select set_config('role', 'authenticated', true);
 
 -- ── Le défaut de la colonne, dont dépend la porte de la feuille des rappels ────────────
 
