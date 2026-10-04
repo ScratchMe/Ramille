@@ -494,14 +494,77 @@ synchronisé : le kit de `main@d9fae26` plus les retouches de cette synchronisat
   build, les deux aperçus aux cadres remesurés, l'en-tête de conventions du README et la fiche de `ThemedText` —
   le premier envoi avait oublié le README, que la méthode reprend pourtant de `ds-bundle/` (contre-lecture).
 
-## Le système de design de la galerie — un second miroir, remis à jour le 03/10/2026
+## Relevé du 04/10/2026 — dixième synchronisation, et l'index du panneau resté à 28 composants
+
+Chemin atomique, skill 2.1.289, conteneur neuf : `npm ci` d'abord (le dépôt n'avait aucun `node_modules`), les deux
+liens, puis `playwright@1.56.1` dans `.ds-sync/` (l'image porte toujours le chromium 1194). Depuis la neuvième (#349), le
+kit n'avait bougé que par #351 (ce qui s'ouvre sous un choix se pose sur Android) : un commentaire de
+`BoiteDePrecision.jsx` et une ligne de `readme.md`. Le pilote : **72 composants inchangés**, aucun à regrader, et un
+envoi réduit à `aux` — le commentaire ne survit pas au bundle, `bundleSha12` n'a pas bougé, et le README est celui de
+la neuvième octet pour octet (`auxSha` recalculé à la contre-lecture) : seul `guidelines/readme.md` changeait. Rendu
+complet quand même (`--render-sample 0`) : 72 rendus, aucun mauvais, les deux `[RENDER_THIN]` connus ; `props-check.py`
+sans écart ; l'en-tête de conventions revalidé contre le build (20 composants, 10 props, 5 jetons), et #351 ne touche
+aucune de ses phrases. À la demande de la personne qui pilote (« que la page d'aperçu soit bien à jour avec tous les
+composants dans leur dernière version »), **tout** a été réécrit, pas seulement `aux` : 379 fichiers, soit les 377 de
+contenu de la neuvième plus la sentinelle et l'ancre — la sentinelle, racine + jetons + guide (10), `_vendor/`,
+`fonts/`, les 72 aperçus, deux lots de composants (144, 144), la sentinelle de nouveau, `_ds_sync.json` seul. Aucune
+suppression. L'arbre synchronisé : le kit de `main@c979c5d`, plus la fiche de `BoiteDePrecision` retouchée par cette
+synchronisation (plus bas), puis, le même jour, `tokens/mouvement.css` tel que le porte la PR qui ferme `v1-27` §12.34.
+
+- **L'index du panneau Design System comptait 28 composants, et depuis la mi-septembre.** Ce n'est pas un fichier de
+  la synchronisation : `_ds_manifest.json` (les composants et les cartes que le panneau affiche, les jetons qu'il
+  liste) et `_adherence.oxlintrc.json` sont régénérés **par l'app**, quand le projet s'ouvre dans le navigateur et
+  qu'elle y trouve la sentinelle `_ds_needs_recompile` — qu'elle efface alors. Relus avant l'envoi : 28 composants, 28
+  cartes, `--height-target: 44px`, pas de `tokens/mouvement.css`, et des props retirées avant la troisième
+  synchronisation (`TextField type`, `ChoiceRow detail`, `Chip ariaLabel`) — un index en retard de sept
+  synchronisations, de la troisième à la neuvième. La sentinelle était toujours là. Les fichiers téléversés, eux,
+  étaient à jour ; que l'agent de design se serve de cet index ou des fichiers, on ne le sait pas — le README
+  téléversé nommait les 72 composants, et le brief de l'étape du contexte (`docs/design/v1-34-l-etape-du-contexte/`)
+  dit que la réponse de Claude Design du 03/10 s'est construite sur le kit tel que synchronisé ce jour-là. Cet envoi
+  fait, la personne qui pilote a ouvert le projet : la sentinelle a disparu (`get_file` rend 404) et l'index compte
+  **72 composants et 72 cartes**, groupes et cadres justes, jetons du jour. Pourquoi il n'avait pas suivi reste
+  inconnu : projet pas ouvert depuis le 26/09 (la troisième synchronisation), ou contrôle de l'app en échec sur un état
+  d'alors. La vérification à rejouer est dans les Risques, plus bas.
+- **L'index lit les jetons sans leur `@media`** : les cinq durées de `tokens/mouvement.css` y valaient `0ms`, la valeur
+  du bloc « réduire les animations », déclaré en dernier. Le rendu n'en est pas touché — la feuille garde sa requête
+  média —, seule la liste des jetons de l'app se trompe. Laissé d'abord au relevé de dette (`v1-27` §12.34), puis
+  **corrigé le même jour** à la demande de la personne qui pilote : `tokens/mouvement.css` pose les durées à zéro dans
+  `:root` et leur donne leur valeur sous `prefers-reduced-motion: no-preference`, déclarées en dernier. Même résultat
+  dans tout navigateur qui connaît la préférence, éprouvé dans chromium sous les deux ; un navigateur qui ne la connaît
+  pas pose tout, là où l'app et `StepShell` animent — sans conséquence, aucun composant ne lit ces jetons. Seul le
+  style du kit est reparti (sentinelle, les sept feuilles, sentinelle, ancre), sous un nouveau plan — l'approbation de
+  l'après-midi avait expiré —, puis une seconde fois pour le seul commentaire de la feuille, corrigé à la
+  contre-lecture. Projet rouvert entre les deux : l'index donne 250, 280, 320, 200 et 200 ms ; le second envoi n'a
+  changé aucune déclaration. **L'index distingue les
+  sélecteurs mais ignore `@media`** : `--color-text` y vaut `#131612` à la racine et `#FFFFFF` sous la portée
+  `[data-theme="dark"]`, alors qu'une déclaration sous `@media` écrase, pour lui, celle du même sélecteur déclarée
+  avant. Une feuille de jetons du kit garde donc ses vraies valeurs dans la dernière déclaration de chaque nom, pour
+  chaque sélecteur.
+- **La fiche de `BoiteDePrecision` était restée en retard sur #351** (contre-lecture) : elle donnait le dépli en 250 ms
+  sans dire qu'il se pose sur Android, quand le `.jsx` et `readme.md` le disaient. Alignée sur `readme.md`, puis
+  téléversée par un second envoi sous le même plan : la sentinelle, les quatre fichiers du composant et
+  `_ds_bundle.js`, la sentinelle, l'ancre seule. **Une fiche seule fait repartir le bundle** : son en-tête
+  `@ds-bundle` porte l'empreinte de chaque fichier source, `.prompt.md` compris — le pilote le dit (`upload.bundle`),
+  et la comparaison des deux ancres le confirme (seule l'empreinte de la fiche diffère, `bundleSha12` passe de
+  `e94d944e24a5` à `9a6c535bb19d`). La règle des Risques — relire les feuilles des composants qu'une vague a touchés —
+  vaut aussi pour leurs fiches.
+- **Le système de design de la galerie** (section suivante) a été remis au niveau le même jour, à la demande de la
+  personne qui pilote (sa version 14) : `guidelines/readme.md`, la fiche de `BoiteDePrecision`, `components/bundle.js`
+  (l'en-tête seul) et une note datée dans le README, en un envoi, l'index en dernier et seul son `lastChange` changé.
+  La version en ligne relue juste avant était celle lue au départ, et son bundle celui de la neuvième (sha256
+  `e94d944e24a5…`) : personne n'y avait touché. Banc (`verifier-la-galerie.cjs`, feuille servie et React du système
+  relus en ligne) : 72 aperçus rendus, aucun en défaut, aucun jeton lu sans déclaration. Les cinq fichiers relus
+  après l'envoi : identiques à ce qui est parti.
+
+## Le système de design de la galerie — un second miroir, remis à jour le 04/10/2026
 
 À côté du projet Claude Design, la galerie d'artefacts de la personne qui pilote porte un système de design
 « Ramille » (type Design System, <https://claude.ai/artifact/YMmJJKSpypTyA18LdPXPna>, privé). Il est né le
 16/09/2026 d'une migration du projet Claude Design (28 composants et les jetons de ce jour-là) et n'avait plus
 bougé — d'où le canvas de l'étape du contexte, bâti sur les valeurs du kit et non sur lui. Remis à jour le
 03/10/2026 depuis `main@f6407cd`, à la demande de la personne qui pilote, puis le soir même par le bundle, deux
-aperçus, le README et la fiche de `ThemedText` de la neuvième synchronisation. **Aucun pilote ne le tient** : chaque
+aperçus, le README et la fiche de `ThemedText` de la neuvième synchronisation, et le 04/10/2026 par ce que la
+dixième a changé (son relevé, plus haut). **Aucun pilote ne le tient** : chaque
 synchronisation vers Claude Design le laisse en retard, et sa mise à jour se fait à la main, fichier par
 fichier, en fusionnant avec ce qui est en ligne (la méthode `from-code.md` du type : on ne reconstruit pas, on
 garde ce qui y a été porté).
@@ -514,7 +577,12 @@ garde ce qui y a été porté).
    `styles.css` moins ce que `tokens.json` porte : les tailles de texte en variables (`--type-*`, que les styles de
    texte ne produisent pas et que des composants lisent, plus l'ancien `--type-label-caps-*` de la version du
    16/09), la règle « réduire les animations », `base.css` entier, et un repli des jetons neufs que le bundle lit
-   (plus bas) ; les `@font-face` viennent de `tokens.json`.
+   (plus bas) ; les `@font-face` viennent de `tokens.json`. **La règle « réduire les animations » des cinq durées
+   s'écrit pour la galerie et ne se prend pas dans le kit** : `@media (prefers-reduced-motion: reduce)`, les durées
+   à `0ms`, après la feuille des jetons qui porte les vraies. Le kit a la forme inverse depuis le 04/10/2026 (des zéros
+   dans `:root`, les vraies durées sous `no-preference`, `v1-27` §12.34) : appliquée à la lettre, la soustraction
+   ferait tomber les deux et la galerie perdrait la préférence. L'en-tête de `tokens/mouvement.css` ne se recopie pas
+   non plus.
 4. Avant l'envoi, la version en ligne doit être celle qu'on a lue — son identifiant ne bouge pas tant que
    personne n'enregistre — ; sinon, relire chaque fichier qu'on réécrit et refaire la fusion dessus. Les jetons
    gardent leurs noms ; un nom que le kit ne définit plus reste, noté comme tel dans son usage, jusqu'à la décision
@@ -601,4 +669,16 @@ garde ce qui y a été porté).
   Le remettre à jour suit la section qui lui est consacrée, plus haut.
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
   Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
-  bout, et un nouveau téléversement coûte peu.
+  bout, et un nouveau téléversement coûte peu. **Et l'index du panneau ne suit un envoi qu'après une ouverture du
+  projet** : c'est elle qui le régénère (relevé du 04/10/2026, plus haut — sept synchronisations sans qu'il suive).
+  D'où deux gestes. **En tête de chaque synchronisation**, avant l'envoi : `get_file _ds_needs_recompile`. Un 404 veut
+  dire que l'app a relu l'envoi précédent ; encore là, l'index a au moins un envoi de retard — le dire à la personne
+  qui pilote dans le compte rendu. **Après l'envoi**, le compte rendu dit que le panneau ne suivra qu'à la prochaine
+  ouverture ; si la personne qui pilote veut la preuve le jour même, elle ouvre le projet (ce qu'elle a fait le
+  04/10/2026, à la demande de l'agent, après avoir demandé un aperçu à jour), puis on relit l'index. **La preuve est la
+  sentinelle, pas un compte** : un 404 après l'ouverture veut dire que l'app a recompilé ; encore là, son contrôle a
+  échoué — à remonter, pas à re-téléverser. Le nombre de composants de `_ds_manifest.json` ne prouve rien seul : il
+  valait 28 pour 28 à la troisième synchronisation, l'index déjà périmé. Ce qui se relit, c'est le **contenu** : les
+  noms des composants et des cartes contre l'arbre `components/` du build, et quelques jetons contre
+  `ds-bundle/tokens/` (l'index garde, par sélecteur, la dernière déclaration de chaque jeton, `@media` ignoré :
+  `v1-27` §12.34).

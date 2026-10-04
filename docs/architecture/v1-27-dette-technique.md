@@ -1939,6 +1939,31 @@ qui ouvre `www.ramille.fr`. **La piste** : `interactive-widget=resizes-content` 
 `viewport` (`src/app/+html.tsx`), à vérifier sur un téléphone, dans une PR à part. **Pas fait** : le
 produit se publie d'abord sur Play, et le web reste une porte d'entrée.
 
+### 12.34 L'index de Claude Design lit les durées de mouvement à zéro (04/10/2026)
+
+> **Fermé le 04/10/2026**, à la demande de la personne qui pilote, par la piste ci-dessous : les durées
+> sont à zéro dans `:root` et prennent leur valeur sous `prefers-reduced-motion: no-preference`. Éprouvé
+> dans chromium sur les deux formes de la feuille : mêmes valeurs calculées sous chaque préférence
+> (250/280/320/200/200 ms, 0 sous « réduire les animations »), dans tout navigateur qui connaît la
+> préférence — un navigateur qui ne la connaît pas pose désormais tout, là où l'app anime, sans conséquence
+> puisqu'aucun composant ne lit ces jetons. Un lecteur qui ignore `@media` et garde la dernière déclaration
+> rend l'ancien défaut sur l'ancienne forme et les vraies durées sur la nouvelle. Téléversé, le projet
+> ouvert : l'index donne 250, 280, 320, 200 et 200 ms. La galerie n'avait rien à suivre — elle ne porte pas
+> le même fichier, comme le disait la ligne d'origine, mais une section dérivée : ses jetons portent les
+> vraies durées, et sa feuille, la seule règle `reduce` des durées (`.design-sync/NOTES.md`, la procédure
+> de la galerie, dit de ne pas la reprendre du kit).
+
+L'app Claude Design régénère l'index du projet « Ramille » (son manifeste, qui ne vit que sur le projet ;
+`.design-sync/NOTES.md`, relevé de la dixième synchronisation) en lisant les jetons sans leur `@media` : les cinq durées de
+`docs/design/design-system/tokens/mouvement.css` y valent `0ms`, la valeur du bloc
+`prefers-reduced-motion: reduce`, déclaré en dernier. Le rendu n'est pas touché — la feuille garde sa
+requête —, seule la liste des jetons que l'app montre, et peut-être donne à son agent, se trompe.
+**La piste** : poser les durées à zéro dans `:root` et les vraies sous `prefers-reduced-motion:
+no-preference`, ce qui ne change rien dans un navigateur et laisse les vraies valeurs en dernier. **Pas
+fait** : c'est plier une feuille juste autour d'un défaut de lecture d'un outil tiers, pour un gain
+qu'on n'a pas mesuré (on ne sait pas si l'agent de design lit cette liste), et la galerie de la
+personne qui pilote porte le même fichier, à suivre à la main.
+
 ### 12.35 Ce que la revue finale avant la production laisse, et pourquoi (04/10/2026)
 
 La revue du 04/10/2026 (quatre relectures parallèles, la production relue en lecture seule) a
