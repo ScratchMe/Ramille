@@ -248,7 +248,7 @@ export default function Index() {
 }
 
 // Sur le web, la cause réaliste d'un refus est un bloqueur qui coupe Cloudflare ; dans l'app, il n'y
-// en a pas, et c'est le réseau. Phrase proposée le 04/10/2026, à la relecture de la personne qui pilote.
+// en a pas, et c'est le réseau. Phrase validée par la personne qui pilote le 04/10/2026.
 const PHRASE_DE_LA_VERIFICATION =
   'Avant d’ouvrir ta session, une vérification automatique s’assure que c’est bien une personne qui ' +
   'arrive. Elle n’a pas pu se faire. ' +
