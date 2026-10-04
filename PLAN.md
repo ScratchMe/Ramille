@@ -203,8 +203,10 @@ seconde passe de la revue finale) : celui que l'écran montre (`lecture-du-plan.
 `period_start`), et non celui qui couvre aujourd'hui — entre minuit et le passage nocturne d'un
 changement de saison, l'écran montre encore le cycle d'avant, et il doit rester engageable. Un appel
 direct à l'API pouvait engager une action d'une saison close, ou en relâcher l'engagement et
-l'archiver en `changement`. Un écran resté ouvert pendant le passage nocturne reçoit `P0002`, que
-l'écran ne recharge pas encore (`v1-27` §12.36).
+l'archiver en `changement`. Un écran resté ouvert pendant le passage nocturne reçoit `P0002` : l'écran
+relit alors le plan et le dit (« Ton choix n'a pas été enregistré : ton plan a changé entre-temps. Il
+vient d'être relu. », phrase choisie par la personne qui pilote le 04/10/2026), comme pour `RM001`
+(`src/lib/plan-engagement.ts`). Dans l'app à partir du build qui suit le 04/10/2026.
 
 **Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
 `20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour

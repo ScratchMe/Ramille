@@ -357,6 +357,13 @@ export function ActionCommitment({
     const result = await clearPlanActionCommitment(actionId);
     setBusy(false);
     if (!result.ok) {
+      // Le plan a changé depuis l'affichage (une nouvelle saison, un plan refait ailleurs) : même
+      // issue que le refus de `submit`, la phrase dite à l'écran et le plan relu.
+      if (result.rechargerLePlan) {
+        onRefus?.(result.message);
+        onChanged();
+        return;
+      }
       setError(result.message);
       return;
     }

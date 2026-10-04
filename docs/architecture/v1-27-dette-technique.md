@@ -2012,7 +2012,9 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   garde de volume qui ne compte plus que les comptes qui portent un bilan ou un retour — les vides
   partent à chaque passage. Les plafonds ne refusent que les comptes nés depuis moins de
   vingt-quatre heures, pour qu'un flot ne coûte pas leurs signes de vie aux vrais comptes. Le captcha,
-  les plafonds d'e-mail et la carte de partage restent à faire. **Ce que ces plafonds laissent** : un
+  les plafonds d'e-mail et la carte de partage restent à faire. **Le widget Turnstile est créé le même
+  soir** (registre d'exploitation §3.11, la clé de site y est) ; le captcha n'est encore ni branché
+  dans l'app, ni activé dans Supabase, et l'ordre est fixé : l'app d'abord, l'activation ensuite. **Ce que ces plafonds laissent** : un
   refus par plafond global est un `check_violation`, que la file des pannes différées vide au lieu de
   la garder comme un 429 — un SQLSTATE propre, que le client garderait, demande un build ; et le
   commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,
@@ -2075,7 +2077,9 @@ Ce qui reste, et pourquoi :
   désormais `P0002` (« Action introuvable »), que `plan-engagement.ts` ne recharge pas — il ne
   recharge que sur `RM001`. Le message reste générique jusqu'au prochain retour sur l'écran. Avant,
   l'engagement atterrissait en silence sur la saison close, ce qui était pire. **La piste** : traiter
-  `P0002` comme `RM001`. **Pas fait** : c'est une phrase affichée qui change, donc une décision de
-  la personne qui pilote ; le cas tient à quelques heures, quatre nuits par an.
+  `P0002` comme `RM001`. **Tranché et fait le soir même** : la personne qui pilote a choisi la phrase
+  (« Ton choix n'a pas été enregistré : ton plan a changé entre-temps. Il vient d'être relu. », et
+  son pendant « Le changement… » pour « Ne plus suivre »), et l'écran relit le plan. Dans l'app à
+  partir du build suivant.
 - **Un commentaire de `20261004173905` promet trop** (« le client ne déclenche pas de recalcul » :
   `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.
