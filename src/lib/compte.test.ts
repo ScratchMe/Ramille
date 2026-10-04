@@ -29,7 +29,8 @@
  *
  * **Et le 04/10/2026, le jeton de notification avant la session** : l'appel retiré de
  * `seDeconnecterDeCetAppareil` fait tomber « désactive le jeton… », seul ; placé après le `signOut`, le
- * même, seul ; son `.catch` retiré, « se déconnecte quand même… », seul.
+ * même, seul ; son `.catch` retiré, « se déconnecte quand même… », seul. Le même soir, le délai de
+ * cinq secondes retiré fait tomber « n'attend pas le jeton… », seul.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -138,6 +139,27 @@ describe('seDeconnecterDeCetAppareil', () => {
 
     expect(resultat).toEqual({ ok: true });
     expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  // Un appel qui ne répond **jamais** : le `fetch` de React Native n'a pas de délai par défaut, et le
+  // bouton restait en attente aussi longtemps (seconde passe de la revue, 04/10/2026).
+  it('n’attend pas le jeton plus de cinq secondes avant de fermer la session', async () => {
+    jest.useFakeTimers();
+    try {
+      mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
+      mockRpc.mockReturnValue(new Promise(() => {}));
+      mockSignOut.mockResolvedValue({ error: null });
+
+      const enCours = seDeconnecterDeCetAppareil();
+      await jest.advanceTimersByTimeAsync(4_999);
+      expect(mockSignOut).not.toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(1);
+
+      expect(await enCours).toEqual({ ok: true });
+      expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('garde les marques locales quand la déconnexion échoue et que la session est encore là', async () => {

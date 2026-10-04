@@ -231,6 +231,24 @@ export function codeDuRetourDeLien(url: string): string | null {
 }
 
 /**
+ * Ce qu'Expo Router fait d'une URL que le système ouvre, sur natif (`src/app/+native-intent.tsx`).
+ *
+ * **Un retour d'authentification qui arrive app ouverte ne navigue pas** (04/10/2026, seconde passe
+ * de la revue finale). Expo Router écoute l'événement `url` comme tout le monde, et lisait
+ * `ramille://?code=…` comme la racine : il empilait `/`, dont le démarrage remplace l'écran du
+ * dessus au bout d'une seconde et demie — l'aiguillage de la collision Google compris. La fenêtre
+ * d'authentification (`linkGoogleIdentity`) et le layout racine savent déjà quoi en faire.
+ *
+ * **L'URL de lancement passe telle quelle**, comme avant : c'est le retour d'une fenêtre dont l'app
+ * a été tuée entre-temps, et elle doit démarrer sur la racine pour que le layout échange le code.
+ * Les liens du plan (`https://www.ramille.fr/plan`) ne portent ni `code` ni `error` : ils passent.
+ */
+export function cheminPourLeRouteur(evenement: { path: string; initial: boolean }): string | null {
+  if (!evenement.initial && lireRetourDeLien(evenement.path) !== 'aucun') return null;
+  return evenement.path;
+}
+
+/**
  * Le vérifieur PKCE manque-t-il — c'est-à-dire : ce lien a-t-il été ouvert ailleurs ?
  *
  * **Reconnu au code et jamais au message**, comme `over_email_send_rate_limit` et `RM001` : le

@@ -196,6 +196,8 @@ export async function apresUneReconnexion(): Promise<void> {
  * puis un code à redemander, sur le téléphone qu'on n'avait pas touché. « De cet appareil » veut
  * dire celui-ci seulement.
  */
+const DELAI_DU_JETON_A_LA_DECONNEXION_MS = 5_000;
+
 export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
   // **Le jeton de notification d'abord, pendant que la session qui le possède existe encore**
   // (04/10/2026) : après le `signOut`, plus rien ne peut le désactiver (`desinscrireLeJetonDeCetAppareil`).
@@ -203,7 +205,15 @@ export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
   // l'autre sens : si le jeton part et que le `signOut` échoue avec la session encore là (plus bas),
   // le compte reste connecté sans jeton actif, et ses rappels passent par l'e-mail jusqu'au prochain
   // lancement, qui réinscrit le jeton. Plus rare que l'inverse, et sans rien envoyer dans le vide.
-  await desinscrireLeJetonDeCetAppareil().catch(() => undefined);
+  //
+  // **Et pas plus de cinq secondes** (seconde passe de la revue) : le `fetch` de React Native n'a
+  // aucun délai par défaut, et cet appel ajouté devant le `signOut` pouvait tenir le bouton en
+  // attente aussi longtemps que le réseau se tait. Passé le délai, la déconnexion part ; l'appel
+  // laissé en vol n'écrit plus rien qui compte.
+  await Promise.race([
+    desinscrireLeJetonDeCetAppareil().catch(() => undefined),
+    new Promise<void>((resoudre) => setTimeout(resoudre, DELAI_DU_JETON_A_LA_DECONNEXION_MS)),
+  ]);
 
   // **Un départ voulu, déclaré comme tel** (02/10/2026, `v1-27` §12.27) : la session qu'`auth-js` retire
   // ici n'est pas un refus, et la session anonyme suivante doit s'ouvrir (`src/lib/supabase.ts`).

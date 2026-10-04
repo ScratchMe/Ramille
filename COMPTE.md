@@ -68,9 +68,17 @@ lisible dans la console et par un appel direct, et rien dans GoTrue ne la masque
 natif, un lien de connexion arrivait hors de l'app (messagerie) et remontait par `Linking.useURL()`
 dans `_layout.tsx`. Depuis le 20/09/2026 il n'y a plus de lien : cette branche n'est plus qu'un
 filet, qui refuse nommément une URL à jetons injectée (plus bas, PKCE). Le scheme `ramille://` reste
-dans les Redirect URLs Supabase pour le retour de Google sur natif, qui ne passe pas par elle :
-`linkGoogleIdentity` reçoit l'URL de `openAuthSessionAsync` et appelle lui-même
-`createSessionFromUrl`.
+dans les Redirect URLs Supabase pour le retour de Google sur natif : `linkGoogleIdentity` reçoit
+l'URL de `openAuthSessionAsync` et appelle lui-même `createSessionFromUrl`.
+
+**Ce paragraphe disait que ce retour « ne passe pas par » le filet, et c'était faux sur Android**
+(seconde passe de la revue finale, 04/10/2026). `openAuthSessionAsync` y est un polyfill qui attend
+l'événement `url` de `Linking` — le même que `Linking.useURL()` et qu'Expo Router. Les trois le
+recevaient : le code partait deux fois à l'échange, le second échec remplaçait l'écran, et Expo
+Router empilait la racine. **Une URL d'authentification arrivée app ouverte n'appartient qu'à la
+fenêtre** : le layout se tait sur ce qu'elle a pris (`estUnRetourDuNavigateurDAuth`, `src/lib/auth.ts`)
+et Expo Router ne navigue pas dessus (`src/app/+native-intent.tsx`, `cheminPourLeRouteur`). Ajouter un
+écouteur de `Linking` ailleurs dans l'app impose la même question.
 
 **Le flux est en PKCE depuis le 20/09/2026, et le lien ne s'ouvre plus que là où il a été
 demandé.** Le défaut d'`auth-js` est `implicit` : tout lien livrait alors `access_token` **et**

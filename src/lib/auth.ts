@@ -41,6 +41,30 @@ export type IssueGoogle =
   | { issue: 'annulation' }
   | { issue: 'echec'; error: Error };
 
+// ── Le retour de Google sur Android arrive à trois écouteurs ────────────────────────────
+//
+// **Trouvé à la seconde passe de la revue finale (04/10/2026), dans `node_modules` et jamais sur
+// appareil** — la production ne portait encore aucune identité Google. Sur Android,
+// `openAuthSessionAsync` n'est qu'un polyfill : il attend le retour sur l'événement `url` de
+// `Linking`, comme `Linking.useURL()` du layout racine et comme Expo Router lui-même. Le même
+// `?code=` partait donc deux fois à l'échange, et le second échouait forcément : selon l'ordre,
+// « La connexion avec Google n'a pas abouti » sur un compte bien rattaché, ou le plan remplacé par
+// « Ce lien ne marche plus » — et la collision aiguillée vers `/connexion/retrouver` (R.1) écrasée
+// par le message d'un lien que personne n'a reçu.
+//
+// Le layout se tait donc sur ce que la fenêtre d'authentification a pris : tout le temps qu'elle
+// est ouverte, puis l'URL qu'elle a rendue (le layout attend un tour avant de lire, le retour en
+// erreur rend la main sans réseau — la fenêtre peut être refermée quand il regarde). Une seule URL
+// suffit : `useURL` ne porte que la dernière. Expo Router, lui, est arrêté par
+// `src/app/+native-intent.tsx`. Ce qui reste au layout : le retour d'une fenêtre dont l'app a été
+// tuée entre-temps — il échange alors le code avec le vérifieur resté en stockage, seul.
+let navigateurDAuthOuvert = false;
+let dernierRetourDuNavigateurDAuth: string | null = null;
+
+export function estUnRetourDuNavigateurDAuth(url: string): boolean {
+  return navigateurDAuthOuvert || url === dernierRetourDuNavigateurDAuth;
+}
+
 // Lie l'identité Google à la session anonyme courante. Web : redirect plein écran
 // classique (detectSessionInUrl déjà activé côté client sur web, cf. supabase.ts — la
 // session se met à jour automatiquement au retour) ; redirectTo explicite vers /plan
@@ -72,7 +96,15 @@ export async function linkGoogleIdentity(): Promise<IssueGoogle> {
     return { issue: 'echec', error: new Error('Supabase n’a pas renvoyé d’URL de connexion Google.') };
   }
 
-  const resultat = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  let resultat: WebBrowser.WebBrowserAuthSessionResult | undefined;
+  navigateurDAuthOuvert = true;
+  try {
+    resultat = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  } finally {
+    // Dans le même pas que la levée : aucun instant où le retour n'est couvert par l'un ou l'autre.
+    if (resultat && 'url' in resultat && resultat.url) dernierRetourDuNavigateurDAuth = resultat.url;
+    navigateurDAuthOuvert = false;
+  }
   const issue = issueDuNavigateurDAuth(resultat);
   if (issue === 'annulation') return { issue: 'annulation' };
   // Le `in` est là pour le typage — `issue === 'jetons'` garantit déjà l'URL, mais seul lui
