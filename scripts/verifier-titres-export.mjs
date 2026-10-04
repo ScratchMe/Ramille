@@ -9,7 +9,7 @@
 // casse rien de visible (l'onglet affiche l'URL, le crawler se rabat sur le contenu), donc
 // rien ne le signale : même piège silencieux que `cleanUrls` dans vercel.json.
 //
-// Cinq contrôles, et les quatre derniers sont nouveaux :
+// Six contrôles, et les quatre du milieu sont venus après le premier :
 //
 //   1. **Aucun titre vide.** Le contrôle d'origine.
 //   2. **Aucun titre réduit au seul nom du produit**, hors racine. `pageTitle` retombe sur
@@ -33,6 +33,11 @@
 //      publiques écrivent le domaine ; les deux premiers sont statiques et ne peuvent pas
 //      l'importer. Ce contrôle les confronte à `ORIGINE_CANONIQUE` (`src/constants/produit.ts`),
 //      sans quoi un changement de domaine laisse un sitemap qui désigne l'ancien — en silence.
+//   6. **`404.html` est là, et c'est la page introuvable de l'app** (04/10/2026). Vercel ne sert
+//      qu'elle pour une adresse inconnue, et l'export ne la produit pas ;
+//      `poser-la-page-introuvable.mjs` la copie depuis `+not-found.html`. Éprouvé le même jour : la
+//      page retirée fait tomber « absente », une page d'un autre contenu fait tomber « n'est pas la
+//      page introuvable », plus le titre et le `noindex` qu'elle n'a pas.
 //
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';

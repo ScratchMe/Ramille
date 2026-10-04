@@ -29,7 +29,7 @@
  *
  * **Et le 04/10/2026, le jeton de notification avant la session** : l'appel retiré de
  * `seDeconnecterDeCetAppareil` fait tomber « désactive le jeton… », seul ; placé après le `signOut`, le
- * même, seul.
+ * même, seul ; son `.catch` retiré, « se déconnecte quand même… », seul.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -127,9 +127,11 @@ describe('seDeconnecterDeCetAppareil', () => {
     expect(await marques()).toEqual(['autre.cle']);
   });
 
+  // Un appel qui **lève**, et non un `{ error }` rendu : c'est ce cas que le `.catch` de la déconnexion
+  // existe pour couvrir (contre-lecture du 04/10/2026, le test ne le gardait pas).
   it('se déconnecte quand même si le jeton n’a pas pu être désactivé', async () => {
     mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
-    mockRpc.mockResolvedValue({ error: { message: 'réseau' } });
+    mockRpc.mockRejectedValue(new TypeError('Failed to fetch'));
     mockSignOut.mockResolvedValue({ error: null });
 
     const resultat = await seDeconnecterDeCetAppareil();

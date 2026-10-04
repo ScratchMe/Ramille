@@ -118,7 +118,7 @@ select throws_ok(
 update public.assessments set status = 'in_progress' where id = '61111111-1111-1111-1111-111111111111';
 update public.assessment_answers set commute_days_per_week = 1 where assessment_id = '61111111-1111-1111-1111-111111111111';
 -- `reminder_channel`, une des deux colonnes que le client a le droit d'écrire : depuis le 04/10/2026
--- (`20261004170000`), écrire `cadence_type` lève `42501` sur le privilège de colonne, avant même la
+-- (`20261004173905`), écrire `cadence_type` lève `42501` sur le privilège de colonne, avant même la
 -- RLS — l'assertion ne dirait plus rien de la policy.
 update public.profiles set reminder_channel = 'none' where id = '51111111-1111-1111-1111-111111111111';
 

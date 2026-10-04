@@ -1,5 +1,5 @@
 -- Tests pgTAP des colonnes que le client écrit, et du calcul qu'on ne refait pas
--- (migration 20261004170000_les_colonnes_que_le_client_ecrit.sql, revue finale avant la production).
+-- (migration 20261004173905_les_colonnes_que_le_client_ecrit.sql, revue finale avant la production).
 --
 -- Le test `18` épingle les privilèges eux-mêmes ; celui-ci éprouve ce qu'ils font, sous la session
 -- du propriétaire, et surtout leur **moitié positive** : la soumission insère toujours un bilan, et

@@ -16,7 +16,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 import {
-  lireLeJetonDeCetAppareil,
+  desinscrireLeJetonDeCetAppareil,
   memoriserLeJetonDeCetAppareil,
   suivreLEnregistrementDuJeton,
 } from '@/lib/notification-prefs';
@@ -138,11 +138,7 @@ async function enregistrerLeJetonMaintenant(): Promise<boolean> {
     // permission retirée, donc `collect_push_receipts` ne le verrait pas non plus, et le repli
     // email ne partirait jamais. La marque se pose au premier enregistrement réussi, donc la
     // fenêtre se referme au premier lancement de cette version avec la permission accordée.
-    const connu = await lireLeJetonDeCetAppareil();
-    if (connu) {
-      const { error } = await supabase.rpc('unregister_push_token', { p_token: connu });
-      if (!error) await memoriserLeJetonDeCetAppareil(null);
-    }
+    await desinscrireLeJetonDeCetAppareil();
     return false;
   }
 

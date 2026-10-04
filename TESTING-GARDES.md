@@ -487,7 +487,11 @@ props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
   (« Chargement de ton bilan… ») : elle passait avant comme après la correction. Elle attend
   désormais que l'écran **quitte** « Chargement » — sans nommer l'issue, qui est une copie d'erreur
   sans serveur — et qu'il ait **demandé** le bilan que l'adresse désigne. `/rappels/stop?jeton=`
-  avait le même trou, son titre étant lui aussi dans le HTML : même réponse. La section E ne lisait
+  avait le même trou, son titre étant lui aussi dans le HTML : même réponse — jusqu'au 04/10/2026,
+  où la page s'est mise à **demander** le geste (« Couper mes rappels ») au lieu de couper à
+  l'ouverture. Sa page montée dit alors ce que dit le HTML, et c'est juste ; ce qui la distingue se
+  vérifie dans un bloc à part de la section D : aucun appel avant le geste, l'appel portant le jeton
+  après lui, et la page qui quitte le bouton. La section E ne lisait
   le focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un
   journal posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert`
   **pendant** la transition. Et **G** tient le focus d'étape du questionnaire sur web, qu'aucune

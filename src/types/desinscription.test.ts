@@ -69,6 +69,10 @@ describe('phraseDeLaPanne', () => {
 
 // La page demande le geste au lieu de le faire (04/10/2026) : un analyseur de liens qui l'exécutait
 // coupait les rappels sans que personne ait cliqué, et consommait le jeton.
+//
+// Éprouvé en cassant ce qu'il garde, le 04/10/2026 : « en cours » avant l'hydratation fait tomber le
+// premier test, seul ; une page qui ne demande plus le geste une fois montée, le deuxième, seul. La
+// garde de l'export (`scripts/verifier-etats-export.mjs`) éprouve la page rendue.
 describe('etatDeLaPage', () => {
   const JETON = '6f1f3a9e-2b7c-4d1e-9a3b-1c2d3e4f5a6b';
 

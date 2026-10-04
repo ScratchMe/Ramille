@@ -10,7 +10,7 @@ import { ensureSession, supabase } from '@/lib/supabase';
 import {
   codeDErreurDuRetourDeLien,
   codeDuRetourDeLien,
-  identiteDejaRattachee,
+  compteGoogleDejaConnu,
   issueDuNavigateurDAuth,
   lireRetourDeLien,
   type ContexteDuCode,
@@ -86,16 +86,17 @@ export async function linkGoogleIdentity(): Promise<IssueGoogle> {
     // quelqu'un qui vient de refuser un écran Google. Un refus **est** une annulation : même
     // issue que la fenêtre refermée, donc le même mot neutre à l'écran.
     //
-    // **Sauf l'identité déjà prise, qui revient par la même porte** (04/10/2026) : le serveur
-    // d'auth ne la découvre qu'au retour de Google, et la dit dans l'URL. Elle repart en échec,
-    // avec son code, pour que l'écran aiguille vers `/connexion/retrouver` comme il le fait déjà
-    // (`identiteDejaRattachee`) — sans quoi la personne qui a déjà un compte tournait en rond.
+    // **Sauf le compte Google déjà connu, qui revient par la même porte** (04/10/2026) : le
+    // serveur d'auth ne le découvre qu'au retour de Google, et le dit dans l'URL. Il repart en
+    // échec, avec son code, pour que l'écran aiguille vers `/connexion/retrouver`
+    // (`compteGoogleDejaConnu`, ses deux formes) — sans quoi la personne qui a déjà un compte
+    // tournait en rond sur « Tu peux réessayer quand tu veux. ».
     if (lireRetourDeLien(resultat.url) === 'erreur') {
       const code = codeDErreurDuRetourDeLien(resultat.url);
-      if (identiteDejaRattachee({ code: code ?? undefined })) {
+      if (compteGoogleDejaConnu({ code: code ?? undefined })) {
         return {
           issue: 'echec',
-          error: Object.assign(new Error('Ce compte Google est déjà rattaché à un autre compte.'), { code }),
+          error: Object.assign(new Error('Ce compte Google appartient déjà à un compte Ramille.'), { code }),
         };
       }
       return { issue: 'annulation' };

@@ -676,8 +676,10 @@ exactement ce qui avait laissé passer le mauvais caractère.
   Le composant porte la forme (`body`, `textSecondary`) et le délai ; `demandee` pour le chargement
   d'un « Réessayer », `immediate` pour une page ouverte à froid dont le HTML statique doit la porter
   — la restitution seule (`v1-30` §5.8). Les pages de service qui disent « Un instant, on … »
-  (`/rappels/stop`, `/compte/suppression`) n'en sont pas : leur phrase est la première de la page,
-  et le résultat la remplace au même corps.
+  n'en sont pas : sur `/compte/suppression`, la phrase est la première de la page, et le résultat la
+  remplace au même corps ; sur `/rappels/stop`, depuis le 04/10/2026, elle ne vient qu'après le
+  toucher de « Couper mes rappels » — la page s'ouvre sur la confirmation (`BOUCLE.md`), et le
+  résultat la remplace de même.
 - **Un écran d'onglet mesure ses affichages avec `useTrackFocus`, jamais `useTrackView`.**
   react-navigation garde l'écran monté quand on change d'onglet : au montage, l'événement ne
   part qu'une fois par session. Le compteur ne tombe pas à zéro, ce qui se verrait — il rend un

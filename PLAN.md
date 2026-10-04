@@ -349,7 +349,10 @@ donc l'ouvrir dans « Toi » serait une décision produit et non une invention. 
 consignée en base sur le commentaire de la colonne (`20260912110000_detail_kind_et_cadence.sql`).
 **L'ouvrir impose de relire le retrait d'un bilan (C4.7)** : les bornes du cycle reconstruit s'y
 calculent sur la date du bilan **précédent**, donc le cycle du bilan retiré garderait la date de
-début la plus récente, et c'est lui que le plan lirait. Raisonné, pas rejoué (`v1-22` §7).
+début la plus récente, et c'est lui que le plan lirait. Raisonné, pas rejoué (`v1-22` §7). **Et l'ouvrir impose un
+`grant update (cadence_type) on public.profiles to authenticated`** : depuis le 04/10/2026
+(`20261004173905`), le client ne met à jour que ses deux préférences de rappel, et écrire la cadence
+lève `42501` — ce qui est voulu tant qu'aucun écran ne l'écrit (`47_les_colonnes_que_le_client_ecrit`).
 
 Même famille, côté plan : `action_templates.detail_kind` ne vaut plus que pour les postes
 domicile-travail et loisirs. La branche `travel` d'`estimate_action_savings` construit son détail

@@ -82,6 +82,9 @@ describe('ETAPES_SOUMISSION', () => {
 
 // Le nouvel essai d'une soumission interrompue (04/10/2026) : il rejouait tout, et réécrire les réponses
 // d'un bilan déjà finalisé lève sur la policy d'`assessment_answers` — à chaque essai.
+//
+// Éprouvé en cassant ce qu'il garde, le 04/10/2026 : un bilan finalisé rendu à `tout` fait tomber le
+// deuxième test, seul.
 describe('repriseDeLaSoumission', () => {
   it('rejoue tout d’un bilan encore en cours', () => {
     expect(repriseDeLaSoumission('in_progress')).toBe('tout');

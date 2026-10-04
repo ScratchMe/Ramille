@@ -1942,10 +1942,11 @@ produit se publie d'abord sur Play, et le web reste une porte d'entrée.
 ### 12.35 Ce que la revue finale avant la production laisse, et pourquoi (04/10/2026)
 
 La revue du 04/10/2026 (quatre relectures parallèles, la production relue en lecture seule) a
-trouvé six défauts corrigés dans la même PR — la collision Google sur Android, le nouvel essai
-d'une soumission interrompue, la garde des variables d'un build distribué, la piste d'envoi vers
-Play, la page 404, deux privilèges trop larges —, plus le bouton « Couper mes rappels » décidé le
-même jour. Ce qui suit n'y est pas, et chaque ligne dit pourquoi.
+trouvé des défauts corrigés dans la même PR — la collision Google sur Android, sous ses deux
+formes, le nouvel essai d'une soumission interrompue, le calcul qu'un client pouvait refaire, la
+garde des variables d'un build distribué, la piste d'envoi vers Play, la page 404, deux privilèges
+trop larges, le jeton de notification qu'une déconnexion laissait actif —, plus le bouton « Couper
+mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne dit pourquoi.
 
 - **La collision Google sur web.** Le retour arrive sur `/plan?error=…&error_code=identity_already_exists`,
   que le layout racine ignore : il ne lit une erreur de lien que sur `/`. La personne revient sur le
@@ -1973,7 +1974,7 @@ même jour. Ce qui suit n'y est pas, et chaque ligne dit pourquoi.
 - **`search_path = public` sans `pg_temp`** dans les fonctions `security definer` : la table
   temporaire est lue en premier, ce que PostgREST ne permet pas de créer — inexploitable depuis le
   client. À corriger à la prochaine réécriture de chacune ; `compute_assessment_results` l'a déjà
-  (`20261004170000`).
+  (`20261004173905`).
 - **Les plafonds par compte, et les comptes anonymes qui se créent sans limite** (30 par heure et par
   adresse IP, sans captcha) : chaque session neuve repart à zéro sur les retours et les événements
   d'usage, et des comptes en masse finiraient par bloquer la purge (sa garde des 20 %). La question

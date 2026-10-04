@@ -314,7 +314,7 @@ donc sans cette sous-transaction un plan qui échoue emportait le résultat que 
 d'écrire.
 
 **Le nouvel essai d'une soumission interrompue ne rejoue que ce qui reste, et le calcul ne se refait
-pas** (04/10/2026, revue finale avant la production, `20261004170000`). Une coupure entre la
+pas** (04/10/2026, revue finale avant la production, `20261004173905`). Une coupure entre la
 finalisation et le calcul — ou la réponse d'une écriture perdue en chemin — laissait un bilan
 `completed` que l'écran tenait encore pour en cours : le nouvel essai réécrivait ses réponses, et la
 policy qui les fige faisait lever l'`upsert`, à chaque essai. L'écran relit donc le statut d'un bilan

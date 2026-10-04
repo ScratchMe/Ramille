@@ -236,8 +236,18 @@ l'aiguillage de `/connexion` (#60) ne partait jamais : quelqu'un qui change de t
 « Continuer avec Google » lisait « Tu peux réessayer quand tu veux. », à chaque essai.
 `linkGoogleIdentity` lit désormais ce code (`codeDErreurDuRetourDeLien`) et rend un échec qui
 porte le code, que `identiteDejaRattachee` reconnaît ; un refus de consentement reste une
-annulation. **Sur web, le retour arrive sur `/plan?error=…`, que le layout ignore** — pas encore
+annulation. **Et la collision a deux formes** : l'identité déjà prise, et l'adresse d'un compte
+rattaché par code e-mail, que le serveur rend en `email_exists` après avoir lié l'identité à la
+session anonyme. Les deux mènent à `/connexion/retrouver` (`compteGoogleDejaConnu`) — même personne,
+même situation que #60, et rien n'est divulgué : elle vient de prouver par Google qu'elle possède
+l'adresse. **Sur web, le retour arrive sur `/plan?error=…`, que le layout ignore** — pas encore
 corrigé (`v1-27` §12.35).
+
+**« Me déconnecter » désinscrit le jeton de notification avant de fermer la session** (04/10/2026) :
+après, plus rien ne peut le désactiver, et un compte dont la permission est coupée ne retombait
+jamais sur le rappel par e-mail. Au mieux de ce qui est possible — hors ligne, la déconnexion se fait
+quand même —, et la raison enregistrée reste « permission retirée » (`desinscrireLeJetonDeCetAppareil`,
+`src/lib/notification-prefs.ts`, qui dit pourquoi).
 
 ## 3. Le démarrage hors ligne
 

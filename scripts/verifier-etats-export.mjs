@@ -91,19 +91,6 @@
 //   | `/rappels/stop` reste sur « Un instant » après la réponse | « Un instant » encore affiché (D) |
 //   | `/rappels/stop` lit son jeton sous un autre nom | aucun appel portant le jeton (D) |
 //
-// **Et le 04/10/2026, la désinscription par le geste** (« Couper mes rappels », décision de la
-// personne qui pilote) : trois mutations, un export chacune, sur un arbre dont le témoin sort vert.
-//
-//   | Ce qu'on casse | Ce qui tombe |
-//   |---|---|
-//   | `/rappels/stop` appelle le serveur dès l'ouverture, comme avant | « a appelé le serveur sans geste » (D, le bloc du geste) |
-//   | « Couper mes rappels » ne fait rien | « aucun appel ne porte le jeton » **et** « n'a pas quitté le geste » (D, le bloc du geste) |
-//   | le HTML statique dit « Un instant » avant l'hydratation | « le HTML statique ne demande plus le geste » (D) |
-//
-// Les deux lignes du 25/09 sur `/rappels/stop` (« Un instant » après la réponse, le jeton lu sous un
-// autre nom) décrivent l'ancienne page ; ce qu'elles gardaient l'est désormais par le bloc du geste,
-// qui exige l'appel portant le jeton et la sortie de « Un instant ».
-//
 // La première a été jouée contre l'**ancienne** section E aussi, par construction : son assertion
 // au repos est restée verte, le focus finissant bien sur la page 1 après son aller-retour. La
 // quatrième est celle du 24/09 rejouée : les deux gardes nouvelles de `/suivi/bilan` y restent
@@ -124,6 +111,21 @@
 // d'une page, un module absent — et donc un tableau faux de bout en bout. Metro range son cache
 // dans le répertoire temporaire du système, partagé par tous ceux qui exportent. Qui rejoue ces
 // mutations vérifie d'abord qu'un marqueur du code courant est bien dans le bundle.
+//
+// **Et le 04/10/2026, la désinscription par le geste** (« Couper mes rappels », décision de la
+// personne qui pilote) : trois mutations, un export chacune (`--clear`, aucun autre export en même
+// temps), sur un arbre dont le témoin sort vert — et chacune a fait tomber ce qu'elle visait, preuve
+// que le bundle la portait.
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | `/rappels/stop` appelle le serveur dès l'ouverture, comme avant | « a appelé le serveur sans geste » (D, le bloc du geste) |
+//   | « Couper mes rappels » ne fait rien | « aucun appel ne porte le jeton » **et** « n'a pas quitté le geste » (D, le bloc du geste) |
+//   | le HTML statique dit « Un instant » avant l'hydratation | « le HTML statique ne demande plus le geste » (D) |
+//
+// Les deux lignes du 25/09 sur `/rappels/stop` (« Un instant » après la réponse, le jeton lu sous un
+// autre nom) décrivent l'ancienne page ; ce qu'elles gardaient l'est désormais par le bloc du geste,
+// qui exige l'appel portant le jeton et la sortie de « Un instant ».
 //
 // ── Section F, éprouvée en cassant le 25/09/2026 ───────────────────────────────────────────────
 //

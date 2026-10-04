@@ -199,7 +199,10 @@ export async function apresUneReconnexion(): Promise<void> {
 export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
   // **Le jeton de notification d'abord, pendant que la session qui le possède existe encore**
   // (04/10/2026) : après le `signOut`, plus rien ne peut le désactiver (`desinscrireLeJetonDeCetAppareil`).
-  // Un échec n'arrête pas la déconnexion — c'est ce qui se passait avant, partout.
+  // Un échec n'arrête pas la déconnexion — c'est ce qui se passait avant, partout. Le compromis, dans
+  // l'autre sens : si le jeton part et que le `signOut` échoue avec la session encore là (plus bas),
+  // le compte reste connecté sans jeton actif, et ses rappels passent par l'e-mail jusqu'au prochain
+  // lancement, qui réinscrit le jeton. Plus rare que l'inverse, et sans rien envoyer dans le vide.
   await desinscrireLeJetonDeCetAppareil().catch(() => undefined);
 
   // **Un départ voulu, déclaré comme tel** (02/10/2026, `v1-27` §12.27) : la session qu'`auth-js` retire

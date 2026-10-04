@@ -18,6 +18,9 @@
  * reconnaître `*.md` partout au lieu de la racine, 1 (le `.md` sous `src/`) ; ignorer
  * `VERCEL_GIT_PREVIOUS_SHA`, 3 ; sauter sur un diff vide, 1 ; sauter sur tout `VERCEL_ENV` autre
  * que `production`, 1 ; élargir la liste blanche à `src/`, 4. Aucune mutation ne passe.
+ *
+ * Et le 04/10/2026, les deux scripts que `vercel-build` lance remis dans la liste blanche avec le reste
+ * de `scripts/*` : 2 tests tombent, ceux qui les nomment.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -145,6 +148,9 @@ describe("l'Ignored Build Step", () => {
     ['une ressource', 'assets/images/icon.png'],
     ['la configuration Expo', 'app.json'],
     ['un .md hors de la racine — il pourrait être importé', 'src/content/aide.md'],
+    // `vercel-build` les lance (04/10/2026) : sous `scripts/`, mais dans le build.
+    ['le script qui pose la page 404', 'scripts/poser-la-page-introuvable.mjs'],
+    ['le contrôle de la CSP que lance le build', 'scripts/verifier-origine-supabase-de-la-csp.mjs'],
   ])('construit (1) dès que %s change', (_quoi, fichier) => {
     const d = depotAvecSocle();
     d.commettre('code', ['docs/note.md', fichier]);

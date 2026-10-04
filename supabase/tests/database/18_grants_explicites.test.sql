@@ -222,7 +222,7 @@ select is(
 --
 -- La RLS filtre des lignes, jamais des colonnes : c'est l'outil qui manquait pour borner une table
 -- dont une seule colonne est écrite par le client. **Et depuis le 04/10/2026, deux autres surfaces
--- l'emploient** (`20261004170000`, revue finale avant la production) : l'`INSERT` d'`assessments`, que
+-- l'emploient** (`20261004173905`, revue finale avant la production) : l'`INSERT` d'`assessments`, que
 -- la soumission ne fait que sur `user_id` et `status` — les dates, fixées par le client, rendaient un
 -- compte anonyme impossible à purger —, et l'`UPDATE` de `profiles`, que l'app ne fait que sur ses deux
 -- préférences de rappel. Le comportement (le refus, la moitié positive) est éprouvé dans `47`.

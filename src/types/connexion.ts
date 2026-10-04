@@ -104,6 +104,23 @@ export function identiteDejaRattachee(error: ErreurAuth): boolean {
 }
 
 /**
+ * Le compte Google appartient déjà à un compte Ramille, **sous l'une ou l'autre de ses deux formes**
+ * (04/10/2026, contre-lecture de la revue finale avant la production). La première est
+ * l'identité déjà prise (`identity_already_exists`) : le compte existant a été rattaché par Google.
+ * La seconde vient d'un compte rattaché par code e-mail à la même adresse : le serveur d'auth lie
+ * l'identité Google à la session anonyme, puis veut lui poser l'adresse, déjà prise — et renvoie
+ * `email_exists`. C'est la même personne dans la même situation, celle que #60 a tranchée : elle
+ * a un compte, elle change d'appareil, `/connexion/retrouver` sait tout dire. Et rien n'est
+ * divulgué : la personne vient de prouver, par Google, qu'elle possède cette adresse.
+ *
+ * Réservé au retour de Google : sur le chemin de l'e-mail, `email_exists` reçoit un code sans que
+ * l'écran dise quelle branche est partie (`v1-28` §7.1), et c'est `adresseDejaRattachee` qui le lit.
+ */
+export function compteGoogleDejaConnu(error: ErreurAuth): boolean {
+  return identiteDejaRattachee(error) || error?.code === 'email_exists';
+}
+
+/**
  * Validation d'adresse volontairement large — le seul but est d'éviter d'appeler l'API pour
  * une saisie manifestement incomplète. Toute règle plus stricte finit par refuser une
  * adresse valide, et c'est l'utilisateur qui paie l'erreur.

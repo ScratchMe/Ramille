@@ -346,7 +346,11 @@ retarde d'une nuit — est en §1.1.
   `scripts/vercel-ignorer-le-build.sh`). Liste blanche, relevée contre ce que lisent
   `expo export --platform web` et les deux fonctions : `docs/`, `.github/`, `supabase/`,
   `.claude/`, `.design-sync/`, `.vscode/`, `scripts/`, `LICENSE` et les `.md` de la racine. Tout le
-  reste construit, `vercel.json` et `package.json` compris. Base de comparaison :
+  reste construit, `vercel.json` et `package.json` compris — **et, depuis le 04/10/2026, les deux
+  scripts que `vercel-build` lance**, `poser-la-page-introuvable.mjs` et
+  `verifier-origine-supabase-de-la-csp.mjs`, qui passent avant `scripts/*` : la liste blanche avait
+  été relevée quand le build n'en lisait aucun, et une fusion qui n'aurait touché qu'eux aurait été
+  sautée (contre-lecture de la revue finale avant la production). Base de comparaison :
   `VERCEL_GIT_PREVIOUS_SHA`, repli `HEAD^`, `exit 1` sur tout chemin d'erreur, et une
   prévisualisation (`VERCEL_ENV=preview`) ne construit jamais. **Non-vacuité mesurée** en cassant
   le script six fois : chaque mutation fait tomber entre un et quatre tests, jamais zéro (le
