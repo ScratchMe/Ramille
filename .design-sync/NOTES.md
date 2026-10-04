@@ -527,9 +527,13 @@ synchronisation (plus bas).
   d'alors. La vérification à rejouer est dans les Risques, plus bas.
 - **L'index lit les jetons sans leur `@media`** : les cinq durées de `tokens/mouvement.css` y valent `0ms`, la valeur
   du bloc « réduire les animations », déclaré en dernier. Le rendu n'en est pas touché — la feuille garde sa requête
-  média —, seule la liste des jetons de l'app se trompe. Pas corrigé : ce serait plier une feuille juste autour d'un
-  défaut de lecture d'un outil tiers, pour un gain qu'on n'a pas mesuré ; inscrit au relevé de dette (`v1-27` §12.34),
-  avec la piste.
+  média —, seule la liste des jetons de l'app se trompe. Laissé d'abord au relevé de dette (`v1-27` §12.34), puis
+  **corrigé le même jour** à la demande de la personne qui pilote : `tokens/mouvement.css` pose les durées à zéro dans
+  `:root` et leur donne leur valeur sous `prefers-reduced-motion: no-preference`, déclarées en dernier. Même résultat
+  dans un navigateur, éprouvé dans chromium sous les deux préférences ; seul le style du kit est reparti (sentinelle,
+  les sept feuilles, sentinelle, ancre), sous un nouveau plan — l'approbation de l'après-midi avait expiré. Projet
+  rouvert : l'index donne 250, 280, 320, 200 et 200 ms. **Une feuille de jetons du kit garde ses vraies valeurs dans
+  la dernière déclaration de chaque nom** : c'est la seule que l'index retient.
 - **La fiche de `BoiteDePrecision` était restée en retard sur #351** (contre-lecture) : elle donnait le dépli en 250 ms
   sans dire qu'il se pose sur Android, quand le `.jsx` et `readme.md` le disaient. Alignée sur `readme.md`, puis
   téléversée par un second envoi sous le même plan : la sentinelle, les quatre fichiers du composant et
@@ -665,4 +669,4 @@ garde ce qui y a été porté).
   échoué — à remonter, pas à re-téléverser. Le nombre de composants de `_ds_manifest.json` ne prouve rien seul : il
   valait 28 pour 28 à la troisième synchronisation, l'index déjà périmé. Ce qui se relit, c'est le **contenu** : les
   noms des composants et des cartes contre l'arbre `components/` du build, et quelques jetons contre
-  `ds-bundle/tokens/` — sauf les durées de mouvement, que l'index lit à `0ms` (`v1-27` §12.34).
+  `ds-bundle/tokens/` (l'index garde la dernière déclaration de chaque jeton, `@media` ignoré : `v1-27` §12.34).
