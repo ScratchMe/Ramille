@@ -46,7 +46,7 @@ export const DELAI_MAXIMAL_MS = 30_000;
  */
 export const DELAI_POUR_COCHER_MS = 120_000;
 
-/** La phrase de la carte qui entoure la case — proposée le 04/10/2026, à la relecture de la personne qui pilote. */
+/** La phrase de la carte qui entoure la case — validée par la personne qui pilote le 04/10/2026. */
 export const PHRASE_DE_LA_CASE = 'Une dernière vérification : coche la case ci-dessous.';
 
 /** Ce que le jeton sert à ouvrir — l'`action` du widget, lisible dans l'analyse de Cloudflare. */
