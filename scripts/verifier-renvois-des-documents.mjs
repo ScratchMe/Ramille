@@ -203,6 +203,7 @@ const TOLERES = new Map([
   ['_ds_bundle.js', 'produit par la synchronisation du kit (`.ds-sync/package-build.mjs`) dans `ds-bundle/`, ignoré par git — le `readme.md` du kit le cite comme ce que le chargeur remplace'],
   ['ds-bundle/guidelines/readme.md', 'artefact de la même synchronisation, cité par `depot-public.md` justement parce qu’il n’est pas suivi'],
   ['plan/index.html', 'idem — la forme d’une route avec enfants, dans `dist/`'],
+  ['404.html', 'page que `scripts/poser-la-page-introuvable.mjs` pose dans `dist/` après l’export, ignoré par git — citée pour dire ce que Vercel sert'],
   [
     'api/package-lock.json',
     'écrit par `vercel build` et que le dépôt ne veut pas — son absence EST la règle, `VERCEL.md` §1.2 dit de le supprimer après chaque mesure',

@@ -9,6 +9,7 @@ import { Platform, Share } from 'react-native';
 
 import { noterUneReconnexion } from '@/lib/connexion-prefs';
 import { concilierLesMarques, effacerLesMarquesDuCompte, effacerLesMarquesLocales } from '@/lib/marques-locales';
+import { desinscrireLeJetonDeCetAppareil } from '@/lib/notification-prefs';
 import { pendantUnDepartVolontaire, supabase } from '@/lib/supabase';
 import { APP_NAME } from '@/constants/produit';
 import { etatDuCompte, type EtatSuppression } from '@/types/compte-suppression';
@@ -196,6 +197,11 @@ export async function apresUneReconnexion(): Promise<void> {
  * dire celui-ci seulement.
  */
 export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
+  // **Le jeton de notification d'abord, pendant que la session qui le possède existe encore**
+  // (04/10/2026) : après le `signOut`, plus rien ne peut le désactiver (`desinscrireLeJetonDeCetAppareil`).
+  // Un échec n'arrête pas la déconnexion — c'est ce qui se passait avant, partout.
+  await desinscrireLeJetonDeCetAppareil().catch(() => undefined);
+
   // **Un départ voulu, déclaré comme tel** (02/10/2026, `v1-27` §12.27) : la session qu'`auth-js` retire
   // ici n'est pas un refus, et la session anonyme suivante doit s'ouvrir (`src/lib/supabase.ts`).
   const { error } = await pendantUnDepartVolontaire(() => supabase.auth.signOut({ scope: 'local' }));

@@ -127,10 +127,12 @@ describe('verifier-origine-supabase-de-la-csp.mjs — le build de production ref
     return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
   }
 
-  test('vercel-build le lance après l’export, et seulement si l’export a réussi', () => {
+  // La page 404 se pose entre les deux (04/10/2026, `scripts/poser-la-page-introuvable.mjs`) : la CI
+  // l'exige dans l'export qu'elle construit, mais seul ce test voit la commande que Vercel lance.
+  test('vercel-build le lance après l’export et la page 404, et seulement si l’export a réussi', () => {
     const paquet = JSON.parse(fs.readFileSync(path.join(racine, 'package.json'), 'utf8'));
     expect(paquet.scripts['vercel-build']).toMatch(
-      /^expo export --platform web && node scripts\/verifier-origine-supabase-de-la-csp\.mjs$/,
+      /^expo export --platform web && node scripts\/poser-la-page-introuvable\.mjs && node scripts\/verifier-origine-supabase-de-la-csp\.mjs$/,
     );
   });
 

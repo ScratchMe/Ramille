@@ -117,7 +117,10 @@ select throws_ok(
 -- 0 ligne affectée plutôt qu'une erreur — vérifié ci-dessous en repassant en contexte A.
 update public.assessments set status = 'in_progress' where id = '61111111-1111-1111-1111-111111111111';
 update public.assessment_answers set commute_days_per_week = 1 where assessment_id = '61111111-1111-1111-1111-111111111111';
-update public.profiles set cadence_type = 'rolling_quarter' where id = '51111111-1111-1111-1111-111111111111';
+-- `reminder_channel`, une des deux colonnes que le client a le droit d'écrire : depuis le 04/10/2026
+-- (`20261004170000`), écrire `cadence_type` lève `42501` sur le privilège de colonne, avant même la
+-- RLS — l'assertion ne dirait plus rien de la policy.
+update public.profiles set reminder_channel = 'none' where id = '51111111-1111-1111-1111-111111111111';
 
 -- Répondre à la place de quelqu'un d'autre : ce n'est plus la RLS qui filtre la ligne, c'est le
 -- privilège qui manque — le refus est donc bruyant, et il tombe avant la policy de lecture. Deux
@@ -134,12 +137,12 @@ select set_config('request.jwt.claims', json_build_object('sub', '51111111-1111-
 select is((select status from public.assessments where id = '61111111-1111-1111-1111-111111111111'), 'completed', 'assessments: l''UPDATE d''un tiers sur le bilan du propriétaire est sans effet');
 select is((select commute_days_per_week from public.assessment_answers where assessment_id = '61111111-1111-1111-1111-111111111111'), 5::smallint, 'assessment_answers: l''UPDATE d''un tiers sur les réponses du propriétaire est sans effet');
 select is((select status from public.engagement_checkins where user_id = '51111111-1111-1111-1111-111111111111'), 'pending', 'engagement_checkins: le point du propriétaire est toujours en attente après la tentative du tiers');
--- `cadence_type` plutôt qu'une colonne nullable : sa valeur par défaut est 'season', donc
--- l'assertion distingue « l'UPDATE n'a rien fait » de « la colonne n'a jamais rien contenu ».
--- La version précédente vérifiait que `profiles.zone_type` restait NULL — une colonne qui
--- était nulle pour tout le monde, et qui a depuis été supprimée comme colonne morte
--- (cf. 20260905180000).
-select is((select cadence_type from public.profiles where id = '51111111-1111-1111-1111-111111111111'), 'season', 'profiles: l''UPDATE d''un tiers sur le profil du propriétaire est sans effet');
+-- Une colonne non nullable plutôt qu'une nullable : `reminder_channel` vaut 'email' par défaut, donc
+-- l'assertion distingue « l'UPDATE n'a rien fait » de « la colonne n'a jamais rien contenu ». La
+-- première version vérifiait que `profiles.zone_type` restait NULL — une colonne qui était nulle pour
+-- tout le monde, et qui a depuis été supprimée comme colonne morte (cf. 20260905180000) ; la deuxième
+-- portait sur `cadence_type`, que le client n'écrit plus depuis le 04/10/2026.
+select is((select reminder_channel from public.profiles where id = '51111111-1111-1111-1111-111111111111'), 'email', 'profiles: l''UPDATE d''un tiers sur le profil du propriétaire est sans effet');
 
 -- ── Section C : verrouillage écriture serveur-only (aucune policy insert) ──────────────
 -- Toujours en tant que A (le propriétaire lui-même) : ces tables ne sont jamais écrites

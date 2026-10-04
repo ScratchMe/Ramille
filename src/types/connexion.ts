@@ -187,6 +187,22 @@ export function lireRetourDeLien(url: string): RetourDeLien {
 }
 
 /**
+ * Le code d'erreur d'une URL de retour (`error_code`), ou `null`.
+ *
+ * **C'est par lui que la collision Google arrive sur natif, et rien d'autre ne la porte**
+ * (04/10/2026, revue finale avant la production). `linkIdentity` ne fait que rendre l'adresse de
+ * Google ; c'est le serveur d'auth, au retour, qui découvre que l'identité appartient déjà à un
+ * autre compte, et il le dit dans l'URL de redirection — `error_code=identity_already_exists` —,
+ * pas dans une erreur d'appel. Tout retour en erreur était lu comme une annulation, donc
+ * l'aiguillage vers `/connexion/retrouver` (#60) ne partait jamais : la personne qui change de
+ * téléphone et touche « Continuer avec Google » lisait « Tu peux réessayer quand tu veux. », à
+ * chaque essai.
+ */
+export function codeDErreurDuRetourDeLien(url: string): string | null {
+  return parametresDeLUrl(url).error_code || null;
+}
+
+/**
  * Le `code` d'une URL de retour PKCE, ou `null`.
  *
  * Séparé de `lireRetourDeLien` parce que ce sont deux questions : « de quelle forme est ce

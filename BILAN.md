@@ -313,6 +313,17 @@ enveloppée dans un `begin … exception … end` : les deux fonctions partagent
 donc sans cette sous-transaction un plan qui échoue emportait le résultat que le calcul venait
 d'écrire.
 
+**Le nouvel essai d'une soumission interrompue ne rejoue que ce qui reste, et le calcul ne se refait
+pas** (04/10/2026, revue finale avant la production, `20261004170000`). Une coupure entre la
+finalisation et le calcul — ou la réponse d'une écriture perdue en chemin — laissait un bilan
+`completed` que l'écran tenait encore pour en cours : le nouvel essai réécrivait ses réponses, et la
+policy qui les fige faisait lever l'`upsert`, à chaque essai. L'écran relit donc le statut d'un bilan
+qu'un essai précédent a créé (`repriseDeLaSoumission`, `src/types/soumission.ts`) et ne rejoue que
+le calcul d'un bilan finalisé. Côté serveur, `compute_assessment_results` refuse un bilan qui n'est
+pas `completed` (`RM008`) et rend la main sans rien faire sur un bilan déjà calculé : le résultat
+figé ne se recalcule plus depuis le client, et un recalcul voulu passe par
+`recompute_assessment_results` côté serveur.
+
 **Un bilan se retire, et ne se supprime pas** (C4.7, `v1-22`,
 `20260927230411_retirer_un_bilan.sql`). Une distance saisie en mètres ou un questionnaire rempli
 « pour voir » restaient pour toujours dans le suivi et devenaient la base de comparaison du suivant.

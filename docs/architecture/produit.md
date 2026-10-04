@@ -66,9 +66,11 @@ réécrire à chaque livraison plutôt qu'à compléter :
 construit, avec le reste de C4.8 ; la seconde vague des transitions (`v1-30` §6), après la recette sur appareil ;
 le thème sombre, après le lancement (`v1-29` §6.1) ; les déplacements professionnels, au backlog
 (§5). **Et avant de publier sur Play, ce qui reste n'est pas du code** : les vérifications sur
-appareil de `v1-13` §11 — aucun build EAS n'est parti depuis le 14/09/2026, et le prochain se demande à
-la personne qui pilote, pas avant le 1er octobre (`v1-30` §9) —, la feuille web de [`docs/recette/`](../recette/), et la checklist de
-publication de `docs/exploitation/README.md` §4.
+appareil de `v1-13` §11, que porte la seule feuille ouverte, [celle du build
+d'octobre](../recette/le-build-d-octobre.md) (les builds `preview` des 03 et 04/10/2026 ; aucune
+feuille web ne reste), et la checklist de publication de `docs/exploitation/README.md` §4 — dont le
+compte Play et le test fermé, qui fixent la date d'ouverture. La revue finale du 04/10/2026 a été
+corrigée avant le build suivant ; ce qu'elle laisse est au relevé de dette (`v1-27` §12.35).
 
 **L'increment `v1-11-navigation-et-design-system.md`** (07/09/2026, cinq
 lots) a livré la **barre à deux onglets Plan / Suivi**, le questionnaire et le compte hors de la barre,

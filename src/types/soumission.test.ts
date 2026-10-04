@@ -2,6 +2,7 @@ import {
   ETAPES_SOUMISSION,
   GENRES_ERREUR_SOUMISSION,
   genreErreurSoumission,
+  repriseDeLaSoumission,
 } from '@/types/soumission';
 
 describe('genreErreurSoumission', () => {
@@ -76,5 +77,22 @@ describe('ETAPES_SOUMISSION', () => {
       'finalisation',
       'calcul',
     ]);
+  });
+});
+
+// Le nouvel essai d'une soumission interrompue (04/10/2026) : il rejouait tout, et réécrire les réponses
+// d'un bilan déjà finalisé lève sur la policy d'`assessment_answers` — à chaque essai.
+describe('repriseDeLaSoumission', () => {
+  it('rejoue tout d’un bilan encore en cours', () => {
+    expect(repriseDeLaSoumission('in_progress')).toBe('tout');
+  });
+
+  it('ne rejoue que le calcul d’un bilan déjà finalisé', () => {
+    expect(repriseDeLaSoumission('completed')).toBe('calcul');
+  });
+
+  it('repart d’un bilan neuf quand l’ancien a disparu ou a été retiré', () => {
+    expect(repriseDeLaSoumission(null)).toBe('nouveau');
+    expect(repriseDeLaSoumission('withdrawn')).toBe('nouveau');
   });
 });

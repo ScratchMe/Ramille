@@ -19,6 +19,8 @@
  * (CLAUDE.md).
  */
 
+import { STATUT_DE_BILAN } from '@/types/bilan';
+
 /**
  * Les cinq pas de la séquence de soumission, dans l'ordre. La valeur est **passée** par
  * l'appelant, qui sait où il en est : la deviner depuis l'erreur serait deviner ce qu'on sait
@@ -101,4 +103,32 @@ export function genreErreurSoumission(erreur: unknown): GenreErreurSoumission {
   if (code === '42501') return 'permission';
   if (code === 'P0002') return 'introuvable';
   return 'autre';
+}
+
+/**
+ * Ce qu'un nouvel essai rejoue d'un bilan qu'un essai précédent a déjà créé, selon le statut que
+ * la base lui lit (04/10/2026, revue finale avant la production).
+ *
+ * **Le nouvel essai rejouait tout, et butait sur ce qu'il venait de réussir.** Une coupure entre la
+ * finalisation et le calcul — ou une réponse perdue en chemin, celle du calcul étant la plus
+ * longue — laissait un bilan `completed` côté serveur, que l'écran tenait encore pour en cours.
+ * Le nouvel essai réécrivait ses réponses ; or la policy d'écriture d'`assessment_answers` ne vaut
+ * que pour un bilan `in_progress`, et un `upsert` sur une ligne qu'elle refuse **lève** au lieu de
+ * passer : « Ton bilan n'a pas pu être enregistré », à chaque essai, pour un bilan déjà enregistré.
+ *
+ *  - **`tout`** — le bilan est encore en cours : réponses, finalisation, calcul ;
+ *  - **`calcul`** — il est finalisé : seul le calcul reste, et `compute_assessment_results` ne
+ *    refait rien d'un bilan déjà calculé ;
+ *  - **`nouveau`** — il n'existe plus, ou il a été retiré entre-temps : on repart d'un bilan neuf,
+ *    comme un premier essai.
+ *
+ * Une réponse corrigée entre deux essais ne s'écrit donc plus une fois le bilan finalisé : la
+ * policy le fige, et ce qui est calculé est ce qui a été soumis — mieux qu'un échec sans fin.
+ */
+export type RepriseDeLaSoumission = 'tout' | 'calcul' | 'nouveau';
+
+export function repriseDeLaSoumission(statut: string | null): RepriseDeLaSoumission {
+  if (statut === STATUT_DE_BILAN.enCours) return 'tout';
+  if (statut === STATUT_DE_BILAN.complete) return 'calcul';
+  return 'nouveau';
 }

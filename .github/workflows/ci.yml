@@ -203,6 +203,9 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://exemple.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: cle-factice-pour-le-build
+      # La page que Vercel sert pour une adresse inconnue : `vercel-build` la pose après l'export, et
+      # la CI fait de même pour vérifier ce que la production sert (04/10/2026, l'en-tête du script).
+      - run: node scripts/poser-la-page-introuvable.mjs
       - run: node scripts/verifier-titres-export.mjs
       # Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche, et
       # l'app démarre alors sur une configuration vide — cf. l'en-tête du script.

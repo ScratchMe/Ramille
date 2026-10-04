@@ -137,9 +137,11 @@ select lives_ok(
 -- **La moitié qui compte le plus** : le refus ne doit rien coûter au re-bilan, qui est le chemin
 -- par lequel quelqu'un corrige ses réponses. Il crée une **nouvelle** ligne, il ne rouvre pas
 -- l'ancienne — c'est exactement ce que le message d'erreur dit.
+-- Sans `id` : depuis le 04/10/2026 (`20261004170000`), le client n'insère que `user_id` et `status`,
+-- comme la soumission le fait, et la base tire l'identifiant.
 select lives_ok(
-  $$ insert into public.assessments (id, user_id, status)
-     values ('31000000-0000-0000-0000-0000000000a2', '31000000-0000-0000-0000-000000000001', 'in_progress') $$,
+  $$ insert into public.assessments (user_id, status)
+     values ('31000000-0000-0000-0000-000000000001', 'in_progress') $$,
   'et un re-bilan reste possible : une nouvelle ligne, jamais l’ancienne rouverte'
 );
 

@@ -250,6 +250,7 @@ function plan(ctx) {
           env: { ...FACTICE, ...cacheDeMetro('metro-factice') },
         },
         ...[
+          ['poser-la-page-introuvable', {}],
           ['verifier-titres-export', {}],
           ['verifier-configuration-export', FACTICE],
           ['verifier-rendu-export', FACTICE],

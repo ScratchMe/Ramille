@@ -1938,3 +1938,44 @@ en page, donc le pied collant du questionnaire tombe probablement sous le clavie
 qui ouvre `www.ramille.fr`. **La piste** : `interactive-widget=resizes-content` dans la balise
 `viewport` (`src/app/+html.tsx`), à vérifier sur un téléphone, dans une PR à part. **Pas fait** : le
 produit se publie d'abord sur Play, et le web reste une porte d'entrée.
+
+### 12.35 Ce que la revue finale avant la production laisse, et pourquoi (04/10/2026)
+
+La revue du 04/10/2026 (quatre relectures parallèles, la production relue en lecture seule) a
+trouvé six défauts corrigés dans la même PR — la collision Google sur Android, le nouvel essai
+d'une soumission interrompue, la garde des variables d'un build distribué, la piste d'envoi vers
+Play, la page 404, deux privilèges trop larges —, plus le bouton « Couper mes rappels » décidé le
+même jour. Ce qui suit n'y est pas, et chaque ligne dit pourquoi.
+
+- **La collision Google sur web.** Le retour arrive sur `/plan?error=…&error_code=identity_already_exists`,
+  que le layout racine ignore : il ne lit une erreur de lien que sur `/`. La personne revient sur le
+  plan, sans compte et sans un mot. **La piste** : lire `error_code` dans le layout sur `/plan` et
+  aiguiller vers `/connexion/retrouver?source=google`, comme le fait désormais Android
+  (`codeDErreurDuRetourDeLien`). **Pas fait** : la V1 se publie sur Play, et le layout est le code le
+  plus délicat du démarrage.
+- **L'état `indisponible` au démarrage.** Un rafraîchissement de jeton en panne de transport ou en
+  5xx fait rendre `null` à `ensureSession()` sans lever ; la racine interroge alors la base sans
+  session, reçoit `42501`, et affiche « Le démarrage a échoué » là où le repli hors ligne était dû —
+  ce que `COMPTE.md` §3 promet de ne pas faire. Hors ligne pur, les deux appels échouent en
+  `status 0` et le repli marche. **La piste** : traiter `etatDeLaSession() === 'indisponible'` comme
+  une coupure dans `src/app/index.tsx`. **Pas fait** : à éprouver avec un double de l'auth, dans une PR
+  à part.
+- **Le démarrage à froid depuis une notification.** `router.navigate('/plan')` part tout de suite,
+  et la racine, restée montée dessous et non annulée, fait ensuite son `router.replace('/plan')` à la
+  fin de l'animation de lancement : le plan pourrait être remplacé, donc relu, pendant qu'on commence
+  à répondre au point. **Hypothèse**, à vérifier sur appareil avec le bloc 08 de la recette d'octobre.
+- **La carte de partage se rend à volonté.** Chaque chaîne de requête distincte déclenche un rendu
+  complet (satori puis resvg, 50 ms à chaud), sans limite de débit, et `total` accepte un préfixe
+  numérique (`parseFloat`) qu'`api/partage.ts` recopie tel quel dans l'`og:image`. Le cache du CDN, lui,
+  fonctionne (relevé le 04/10/2026 : `MISS` puis `HIT`). **La piste** : n'accepter que
+  `^\d+(\.\d+)?$` dans les deux fonctions, rediriger vers l'URL canonique, et une règle de limitation
+  du pare-feu Vercel. **Pas fait** : le coût est borné par le plan, et rien n'y est exposé.
+- **`search_path = public` sans `pg_temp`** dans les fonctions `security definer` : la table
+  temporaire est lue en premier, ce que PostgREST ne permet pas de créer — inexploitable depuis le
+  client. À corriger à la prochaine réécriture de chacune ; `compute_assessment_results` l'a déjà
+  (`20261004170000`).
+- **Les plafonds par compte, et les comptes anonymes qui se créent sans limite** (30 par heure et par
+  adresse IP, sans captcha) : chaque session neuve repart à zéro sur les retours et les événements
+  d'usage, et des comptes en masse finiraient par bloquer la purge (sa garde des 20 %). La question
+  du captcha est posée à la personne qui pilote le 04/10/2026, avec l'alternative de plafonds globaux
+  côté base ; rien ne se fait avant sa réponse.

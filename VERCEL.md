@@ -207,6 +207,15 @@ en silence. Piège de relevé, subi en écrivant cette ligne : chercher `cleanUr
 (`verifier-titres-export.mjs`) ne trouve qu'un commentaire, et la conclusion « aucun garde ne la
 lit » était fausse — un relevé qui ne trouve rien doit d'abord prouver qu'il a regardé partout.
 
+**Et la page d'une adresse inconnue s'appelle `404.html`, que l'export ne produit pas.** Expo Router
+exporte sa page introuvable sous `+not-found.html` ; sur une sortie statique, Vercel ne sert que
+`404.html`, et répond sinon par sa propre page, brute et en anglais (« The page could not be found —
+NOT_FOUND »). Chez Ramille, constaté en production à la revue finale du 04/10/2026 : un ancien lien de
+partage ou une adresse mal recopiée sortait du produit, dans une autre langue.
+`scripts/poser-la-page-introuvable.mjs` copie la page dans `vercel-build`, la CI fait de même juste
+après son export, et `verifier-titres-export.mjs` exige `404.html`, identique à `+not-found.html` ;
+`scripts/vercel-csp.test.ts` épingle la commande de `vercel-build`, que la CI ne lance pas.
+
 ### 1.6 Une Function en runtime Node.js a une checklist, et l'échec est muet
 
 Une Vercel Function échoue avec un `FUNCTION_INVOCATION_FAILED` ou `_TIMEOUT` générique, sans

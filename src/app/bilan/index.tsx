@@ -32,7 +32,12 @@ import { lireLePremierParcours, noterLePremierParcours } from '@/lib/premier-par
 import { ensureSession, supabase } from '@/lib/supabase';
 import { type EngagementEnCours } from '@/types/rebilan';
 import { relireEnArrierePlan } from '@/types/relecture-en-arriere-plan';
-import { genreErreurSoumission, type EtapeSoumission } from '@/types/soumission';
+import {
+  genreErreurSoumission,
+  repriseDeLaSoumission,
+  type EtapeSoumission,
+  type RepriseDeLaSoumission,
+} from '@/types/soumission';
 import {
   BILAN_SECTION_LABEL,
   BILAN_STEP_ORDER,
@@ -551,6 +556,24 @@ export default function BilanQuestionnaire() {
       // écritures — aucun code de nettoyage ne tournerait alors jamais. La reprise, elle, couvre
       // les deux. Un `in_progress` oublié ne coûte rien : rien ne le lit.
       let assessmentId = bilanEnCours.current;
+      // **Un bilan qu'un essai précédent a créé se relit avant d'être repris** (04/10/2026, revue
+      // finale avant la production) : l'essai a pu échouer après la finalisation, ou perdre la
+      // réponse d'une écriture qui avait abouti. Réécrire ses réponses buterait alors, à chaque
+      // essai, sur la policy qui les fige — `repriseDeLaSoumission` dit ce qui reste à rejouer.
+      let reprise: RepriseDeLaSoumission = 'tout';
+      if (assessmentId !== null) {
+        const { data: deja, error: dejaError } = await supabase
+          .from('assessments')
+          .select('status')
+          .eq('id', assessmentId)
+          .maybeSingle();
+        if (dejaError) throw dejaError;
+        reprise = repriseDeLaSoumission(deja?.status ?? null);
+        if (reprise === 'nouveau') {
+          assessmentId = null;
+          reprise = 'tout';
+        }
+      }
       if (assessmentId === null) {
         const { data: repris, error: repriseError } = await supabase
           .from('assessments')
@@ -576,78 +599,80 @@ export default function BilanQuestionnaire() {
       }
       bilanEnCours.current = assessmentId;
 
-      etape = 'reponses';
-      // `upsert` et non `insert` : `assessment_answers` a `assessment_id` pour clé primaire, donc
-      // une reprise dont les réponses étaient déjà écrites buterait sur un doublon (23505). Les
-      // réponses de cette tentative-ci sont les bonnes — la personne a pu corriger un champ entre
-      // les deux essais.
-      //
-      // **Une diffusion de `answers`, et non une énumération de colonnes** — corrigé le 21/09/2026
-      // en contre-lisant C4.4. Cet objet listait les colonnes une par une, et les cinq réponses
-      // neuves du chantier n'y avaient pas été ajoutées : elles étaient posées à l'écran,
-      // normalisées, affichées dans un re-bilan… et jetées à la soumission. **Rien ne le disait** —
-      // une colonne ajoutée par une migration arrive `optional` dans `Insert`, donc le typecheck
-      // reste vert, et le calcul retombe sur le repli, qui est exactement le défaut que le
-      // chantier venait de corriger.
-      //
-      // La diffusion ne garde pas contre l'oubli : elle le rend **impossible**. `BilanAnswers` est
-      // un miroir exact des colonnes (relevé le 21/09/2026 : aucune clé qui ne soit une colonne,
-      // et seules `assessment_id` et `updated_at` existent en base sans y figurer), donc ajouter
-      // une réponse au questionnaire suffit à l'écrire. Ce que ça demande en échange : **ne jamais
-      // mettre dans `BilanAnswers` un champ qui n'est pas une colonne** — PostgREST refuserait
-      // l'insert entier, et le parcours réel, qui soumet un bilan à chaque PR, le dirait tout de
-      // suite (une réponse d'écran sans colonne vit à côté : `HorsColonnes`). Les clés qui suivent
-      // ne sont pas des exceptions à la règle : ce sont des valeurs que la colonne exige et que le
-      // questionnaire n'a pas sous cette forme.
-      const { error: answersError } = await supabase.from('assessment_answers').upsert(
-        {
-          ...answers,
-          assessment_id: assessmentId,
-          // **Ce repli est inatteignable, et il est écrit quand même** (`v1-16` §4). Le champ porte
-          // un troisième état « pas encore répondu » côté questionnaire, que la colonne n'a pas :
-          // elle est `not null`, et c'est voulu — un bilan soumis a toujours une réponse. Aucune
-          // des deux branches ne peut produire `null` ici (étape visible ⇒ complète ; étape
-          // invisible ⇒ `normaliserReponses` a écrit `false`), mais le typecheck l'exige — et
-          // c'est le seul garde qui voit cette dérive, `database.types.ts` étant tenu à la main.
-          commute_second_mode_used: answers.commute_second_mode_used ?? false,
-          commute_has_regular_trip: answers.commute_has_regular_trip ?? false,
-          leisure_frequency: answers.leisure_frequency ?? 'rarely',
-          // **Le même repli inatteignable pour le nombre de vols** (01/10/2026, `v1-33` D1) : l'étape
-          // est toujours visible et le réclame, donc un bilan soumis en porte un ; la colonne reste
-          // `not null default 0`, et le typecheck exige le repli.
-          flights_total_per_year: answers.flights_total_per_year ?? 0,
-          // **Celui des longs trajets, lui, s'atteint, et il dit vrai** : « Oui » puis deux trajets en
-          // train laisse l'autocar et la voiture sans réponse, ce qui veut dire « aucun » — l'étape
-          // réclame un trajet, pas une réponse par série (`manqueDeLEtape`).
-          train_long_trips_per_year: answers.train_long_trips_per_year ?? 0,
-          car_long_trips_per_year: answers.car_long_trips_per_year ?? 0,
-          coach_long_trips_per_year: answers.coach_long_trips_per_year ?? 0,
-          // Même lecture que la complétude des étapes : un « 0 » n'est pas une distance, et les
-          // deux colonnes portent `check (… > 0)`.
-          commute_distance_km: distanceDomicileTravailKm(answers),
-          leisure_distance_km: distanceSortieKm(answers),
-        },
-        { onConflict: 'assessment_id' }
-      );
-      if (answersError) throw answersError;
+      if (reprise === 'tout') {
+        etape = 'reponses';
+        // `upsert` et non `insert` : `assessment_answers` a `assessment_id` pour clé primaire, donc
+        // une reprise dont les réponses étaient déjà écrites buterait sur un doublon (23505). Les
+        // réponses de cette tentative-ci sont les bonnes — la personne a pu corriger un champ entre
+        // les deux essais.
+        //
+        // **Une diffusion de `answers`, et non une énumération de colonnes** — corrigé le 21/09/2026
+        // en contre-lisant C4.4. Cet objet listait les colonnes une par une, et les cinq réponses
+        // neuves du chantier n'y avaient pas été ajoutées : elles étaient posées à l'écran,
+        // normalisées, affichées dans un re-bilan… et jetées à la soumission. **Rien ne le disait** —
+        // une colonne ajoutée par une migration arrive `optional` dans `Insert`, donc le typecheck
+        // reste vert, et le calcul retombe sur le repli, qui est exactement le défaut que le
+        // chantier venait de corriger.
+        //
+        // La diffusion ne garde pas contre l'oubli : elle le rend **impossible**. `BilanAnswers` est
+        // un miroir exact des colonnes (relevé le 21/09/2026 : aucune clé qui ne soit une colonne,
+        // et seules `assessment_id` et `updated_at` existent en base sans y figurer), donc ajouter
+        // une réponse au questionnaire suffit à l'écrire. Ce que ça demande en échange : **ne jamais
+        // mettre dans `BilanAnswers` un champ qui n'est pas une colonne** — PostgREST refuserait
+        // l'insert entier, et le parcours réel, qui soumet un bilan à chaque PR, le dirait tout de
+        // suite (une réponse d'écran sans colonne vit à côté : `HorsColonnes`). Les clés qui suivent
+        // ne sont pas des exceptions à la règle : ce sont des valeurs que la colonne exige et que le
+        // questionnaire n'a pas sous cette forme.
+        const { error: answersError } = await supabase.from('assessment_answers').upsert(
+          {
+            ...answers,
+            assessment_id: assessmentId,
+            // **Ce repli est inatteignable, et il est écrit quand même** (`v1-16` §4). Le champ porte
+            // un troisième état « pas encore répondu » côté questionnaire, que la colonne n'a pas :
+            // elle est `not null`, et c'est voulu — un bilan soumis a toujours une réponse. Aucune
+            // des deux branches ne peut produire `null` ici (étape visible ⇒ complète ; étape
+            // invisible ⇒ `normaliserReponses` a écrit `false`), mais le typecheck l'exige — et
+            // c'est le seul garde qui voit cette dérive, `database.types.ts` étant tenu à la main.
+            commute_second_mode_used: answers.commute_second_mode_used ?? false,
+            commute_has_regular_trip: answers.commute_has_regular_trip ?? false,
+            leisure_frequency: answers.leisure_frequency ?? 'rarely',
+            // **Le même repli inatteignable pour le nombre de vols** (01/10/2026, `v1-33` D1) : l'étape
+            // est toujours visible et le réclame, donc un bilan soumis en porte un ; la colonne reste
+            // `not null default 0`, et le typecheck exige le repli.
+            flights_total_per_year: answers.flights_total_per_year ?? 0,
+            // **Celui des longs trajets, lui, s'atteint, et il dit vrai** : « Oui » puis deux trajets en
+            // train laisse l'autocar et la voiture sans réponse, ce qui veut dire « aucun » — l'étape
+            // réclame un trajet, pas une réponse par série (`manqueDeLEtape`).
+            train_long_trips_per_year: answers.train_long_trips_per_year ?? 0,
+            car_long_trips_per_year: answers.car_long_trips_per_year ?? 0,
+            coach_long_trips_per_year: answers.coach_long_trips_per_year ?? 0,
+            // Même lecture que la complétude des étapes : un « 0 » n'est pas une distance, et les
+            // deux colonnes portent `check (… > 0)`.
+            commute_distance_km: distanceDomicileTravailKm(answers),
+            leisure_distance_km: distanceSortieKm(answers),
+          },
+          { onConflict: 'assessment_id' }
+        );
+        if (answersError) throw answersError;
 
-      etape = 'finalisation';
-      // **Le passage en `completed` doit précéder le calcul**, et ce n'est pas un détail d'ordre :
-      // `compute_assessment_results` termine en appelant `generate_plan_cycle_for_user`, qui
-      // sélectionne les bilans `completed`. L'inverse rendrait un bilan sans plan jusqu'au
-      // prochain passage du cron.
-      //
-      // **`submitted_at` n'est plus envoyé** (C2.2) : un trigger le pose avec l'horloge du
-      // serveur au passage en `completed`. Il venait d'ici, c'est-à-dire du téléphone, et la
-      // garde d'idempotence du plan le comparait à un horodatage serveur (A4-20) — un téléphone
-      // en avance faisait reconstruire le plan à chaque passage du cron, donc effacer
-      // l'engagement chaque nuit ; un téléphone en retard le figeait. L'envoyer quand même
-      // serait sans effet, mais laisserait croire que c'est le client qui décide.
-      const { error: finalisationError } = await supabase
-        .from('assessments')
-        .update({ status: STATUT_DE_BILAN.complete })
-        .eq('id', assessmentId);
-      if (finalisationError) throw finalisationError;
+        etape = 'finalisation';
+        // **Le passage en `completed` doit précéder le calcul**, et ce n'est pas un détail d'ordre :
+        // `compute_assessment_results` termine en appelant `generate_plan_cycle_for_user`, qui
+        // sélectionne les bilans `completed`. L'inverse rendrait un bilan sans plan jusqu'au
+        // prochain passage du cron.
+        //
+        // **`submitted_at` n'est plus envoyé** (C2.2) : un trigger le pose avec l'horloge du
+        // serveur au passage en `completed`. Il venait d'ici, c'est-à-dire du téléphone, et la
+        // garde d'idempotence du plan le comparait à un horodatage serveur (A4-20) — un téléphone
+        // en avance faisait reconstruire le plan à chaque passage du cron, donc effacer
+        // l'engagement chaque nuit ; un téléphone en retard le figeait. L'envoyer quand même
+        // serait sans effet, mais laisserait croire que c'est le client qui décide.
+        const { error: finalisationError } = await supabase
+          .from('assessments')
+          .update({ status: STATUT_DE_BILAN.complete })
+          .eq('id', assessmentId);
+        if (finalisationError) throw finalisationError;
+      }
 
       etape = 'calcul';
       const { error: computeError } = await supabase.rpc('compute_assessment_results', {

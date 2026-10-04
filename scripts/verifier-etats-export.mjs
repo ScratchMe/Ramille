@@ -529,20 +529,14 @@ const PARAMETRES = [
     interdit: 'Plus tard',
   },
   {
-    // Un jeton de forme valide mais inconnu : la page appelle le serveur, et ce qu'elle affiche
-    // ensuite dépend de la base (refus en local, panne avec la configuration factice de la CI).
-    // Aucune des deux issues n'est donc épinglée ; ce que le HTML dit **avant** l'app est vérifié
-    // ci-dessous, dans le fichier.
-    //
-    // **Le titre seul ne prouvait rien, pour la raison de `/suivi/bilan`** (25/09/2026) : il est
-    // dans le HTML statique, que l'export sert à tout le monde. Ce qui distingue la page montée, c'est
-    // qu'elle quitte « Un instant » — vers l'une ou l'autre issue — et qu'elle a appelé le serveur
-    // avec **ce** jeton.
+    // Un jeton de forme valide mais inconnu : depuis le 04/10/2026, la page **demande** le geste
+    // (« Couper mes rappels ») au lieu de couper dès l'ouverture — un analyseur de liens qui exécutait
+    // la page coupait les rappels sans que personne ait cliqué. Montée, elle rend donc ce que dit le
+    // HTML statique, et c'est juste ; ce qui la distingue, le geste qui fait partir l'appel et l'absence
+    // d'appel avant lui, se vérifie dans le bloc qui suit cette boucle.
     chemin: `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`,
-    attendu: 'Ne plus recevoir de rappels',
+    attendu: 'Couper mes rappels',
     interdit: 'Un instant',
-    lecture: ({ url, corps }) =>
-      url.includes('/rest/v1/rpc/desinscrire_des_rappels') && corps.includes(JETON_DE_FORME_VALIDE),
   },
   {
     // Ouvert depuis le suivi, le bilan porte `?id=` ; le HTML statique, sans identifiant, rendait
@@ -570,12 +564,12 @@ const PARAMETRES = [
     attente: 30_000,
   },
   {
-    // Sans jeton, rien n'est appelé : l'état ne dépend que de l'URL. Le HTML statique dit « un
-    // instant » à tout le monde, donc c'est ici que se vérifie que la page en sort une fois montée
-    // — sans quoi un lien tronqué resterait sur « Un instant, on coupe tes rappels. » pour toujours.
+    // Sans jeton, rien n'est appelé : l'état ne dépend que de l'URL. Le HTML statique demande le geste
+    // à tout le monde, donc c'est ici que se vérifie que la page en sort une fois montée — sans quoi
+    // un lien tronqué offrirait un bouton qui ne peut rien couper.
     chemin: '/rappels/stop',
     attendu: 'plus valable',
-    interdit: 'Un instant',
+    interdit: 'Couper mes rappels',
   },
 ];
 
@@ -627,8 +621,59 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
   }
 }
 
+// **Le geste coupe les rappels, et rien d'autre ne les coupe** (04/10/2026, décision de la personne
+// qui pilote). La page partait au serveur dès son ouverture : l'analyseur de liens d'une messagerie
+// professionnelle, qui exécute parfois les pages qu'il inspecte, coupait les rappels à la place de la
+// personne et consommait le jeton. Deux moitiés, et chacune garde ce que l'autre ne voit pas : aucun
+// appel une fois la page montée et laissée au repos — la moitié qu'aucun texte ne montre, puisque la
+// page montée dit ce que dit le HTML —, puis l'appel portant **ce** jeton au toucher de « Couper mes
+// rappels », et la page qui quitte le bouton pour l'une ou l'autre issue (refus en local, panne avec
+// la configuration factice de la CI : aucune n'est épinglée).
+{
+  const chemin = `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`;
+  const requetes = [];
+  const page = await ouvrir(chemin, {}, { requetes });
+  const appelDuJeton = ({ url, corps }) =>
+    url.includes('/rest/v1/rpc/desinscrire_des_rappels') && corps.includes(JETON_DE_FORME_VALIDE);
+  try {
+    // `ouvrir` a attendu que React prenne la main, puis le repos : un appel parti à l'hydratation
+    // serait déjà là. Une seconde de plus pour un effet qui attendrait un rendu.
+    await page.waitForTimeout(1_000);
+    if (requetes.some(appelDuJeton)) {
+      echecs.push(
+        `${chemin} : la page a appelé le serveur sans geste. Un analyseur de liens qui l’ouvre` +
+          ' couperait les rappels à la place de la personne (`etatDeLaPage`).'
+      );
+    } else {
+      await page.getByRole('button', { name: 'Couper mes rappels' }).click({ timeout: ATTENTE });
+      await page
+        .waitForFunction(
+          () => {
+            const t = document.body.innerText;
+            return !t.includes('Couper mes rappels') && !t.includes('Un instant');
+          },
+          null,
+          { timeout: ATTENTE }
+        )
+        .catch(() => {});
+      if (!requetes.some(appelDuJeton)) {
+        echecs.push(`${chemin} : « Couper mes rappels » touché, et aucun appel ne porte le jeton.`);
+      }
+      const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
+      if (texte.includes('Couper mes rappels') || texte.includes('Un instant')) {
+        echecs.push(`${chemin} : la page n’a pas quitté le geste après le toucher. Rendu : « ${texte.slice(0, 160)}… »`);
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`${chemin} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 // Ce que lit la personne qui ouvre le lien d'un rappel **avant** que l'app ne démarre : le HTML
-// statique. Il disait « Ce lien n'est plus valable » à tout le monde, faute de connaître le jeton.
+// statique. Il disait « Ce lien n'est plus valable » à tout le monde, faute de connaître le jeton ;
+// depuis le 04/10/2026, il demande le geste — ce que la page montée demande aussi.
 {
   const html = readFileSync(join(DIST, 'rappels', 'stop.html'), 'utf8');
   if (html.includes('plus valable')) {
@@ -637,8 +682,8 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
         ' quiconque ouvre le lien d’un rappel, le temps que l’app démarre. L’état de départ doit' +
         ' être celui qui n’affirme rien (FRONT.md §1.3).'
     );
-  } else if (!html.includes('Un instant')) {
-    echecs.push('/rappels/stop : le HTML statique ne porte plus « Un instant, on coupe tes rappels. ».');
+  } else if (!html.includes('Couper mes rappels')) {
+    echecs.push('/rappels/stop : le HTML statique ne demande plus le geste (« Couper mes rappels »).');
   }
 }
 

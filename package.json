@@ -57,7 +57,7 @@
     "typecheck:api": "tsc -p api/tsconfig.json",
     "lint": "expo lint",
     "test": "TZ=Europe/Paris jest",
-    "vercel-build": "expo export --platform web && node scripts/verifier-origine-supabase-de-la-csp.mjs"
+    "vercel-build": "expo export --platform web && node scripts/poser-la-page-introuvable.mjs && node scripts/verifier-origine-supabase-de-la-csp.mjs"
   },
   "private": true,
   "license": "AGPL-3.0-or-later",

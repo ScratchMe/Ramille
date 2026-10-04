@@ -179,6 +179,23 @@ for (const page of pages) {
   }
 }
 
+// **La page que Vercel sert pour une adresse inconnue est `404.html`, et l'export ne la produit pas**
+// (04/10/2026) : sans elle, la production répondait par la page brute de Vercel, en anglais.
+// `scripts/poser-la-page-introuvable.mjs` la copie depuis `+not-found.html`, dans `vercel-build`
+// comme en CI juste avant ce contrôle — qui exige donc qu'elle soit là, et qu'elle soit **la même**.
+{
+  const page404 = join(DIST, '404.html');
+  const introuvable = join(DIST, '+not-found.html');
+  if (!existsSync(page404)) {
+    echecs.push(
+      '404.html est absente de l’export : Vercel servirait sa page brute, en anglais, pour toute' +
+        ' adresse inconnue. `node scripts/poser-la-page-introuvable.mjs` la pose après l’export.',
+    );
+  } else if (!existsSync(introuvable) || readFileSync(page404, 'utf8') !== readFileSync(introuvable, 'utf8')) {
+    echecs.push('404.html n’est pas la page introuvable de l’app (+not-found.html) telle que l’export la produit.');
+  }
+}
+
 // `robots.txt` et `sitemap.xml` viennent de `public/`, recopié tel quel par l'export.
 const robotsTxt = join(DIST, 'robots.txt');
 if (!existsSync(robotsTxt)) {
