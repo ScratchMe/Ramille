@@ -135,12 +135,14 @@ le second demanderait un effectif passé que le régime ne sait pas reconstruire
 libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvrir l'INSERT à
 `authenticated` revient à l'ouvrir à quiconque sait appeler l'API — d'où le trigger
 `enforce_feedback_rate_limit` (dix par 24 h et par utilisateur) et les bornes de longueur.
-**Et soixante par heure pour tout le projet, depuis le 04/10/2026** (`20261004210000`, plan
+**Et soixante par heure pour tout le projet, depuis le 04/10/2026** (`20261004201217`, plan
 anti-abus) : une session neuve repartait à zéro, et des comptes en masse écrivaient sans fin. Le
 trigger est `security definer` pour compter les retours des autres, et répond `RM002` avec une
-phrase pour la personne. Les événements d'usage ont le même étage : 6 000 par heure pour tout le
-projet, dont 300 pannes (`app_error`), en plus des 500 par jour et par compte — au-delà, un flot
-fait perdre de la mesure aux vrais comptes pendant l'heure, et c'est le prix, borné.
+phrase pour la personne (« Réessaie un peu plus tard. », choisie par la personne qui pilote). Les
+événements d'usage ont le même étage : 6 000 par heure pour tout le projet, dont 300 pannes
+(`app_error`), en plus des 500 par jour et par compte. **Ces plafonds ne refusent que les comptes nés
+depuis moins de vingt-quatre heures** : un `app_open` refusé serait un signe de vie perdu, que
+lisent le régime des rappels et la purge, et le flot vient de sessions neuves.
 **Et la table est insert-only côté client, ce que le schéma ne disait pas encore le 20/09/2026** :
 une policy `DELETE` owner-scoped traînait, sans justification dans sa migration et sans qu'aucun
 écran l'emprunte, alors que le trigger compte les lignes **vivantes** — dix retours, on efface, on

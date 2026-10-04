@@ -20,8 +20,15 @@
 --   - 60 retours par heure : c'est le seul canal où quelqu'un écrit un texte libre.
 -- Au-delà, l'écriture est refusée comme celle d'un compte au-delà de son plafond : `check_violation`
 -- pour un événement (le client l'abandonne, et ne garde pas la panne pour la renvoyer), `RM002`
--- pour un retour, dont le message s'affiche tel quel. Un flot qui touche ces plafonds fait perdre
--- de la mesure aux vrais comptes pendant l'heure : c'est le prix, et il est borné.
+-- pour un retour, dont le message s'affiche tel quel (phrase choisie par la personne qui pilote,
+-- le 04/10/2026 : sans « on les lit tous », une promesse qu'un flot de robots noierait).
+--
+-- **Le refus ne vise que les comptes nés depuis moins de vingt-quatre heures** (contre-lecture du
+-- même soir). Ce que le plafond compte, c'est tout le projet ; mais un `app_open` refusé est un signe
+-- de vie perdu (`dernier_signe_de_vie`), que lisent le régime des rappels et la purge — un flot tenu
+-- des jours, sans captcha, aurait fait glisser les vrais comptes vers « espace » puis « silence ». Le
+-- vecteur, ce sont des sessions neuves en masse : elles seules se heurtent au plafond, et les comptes
+-- plus anciens écrivent comme avant, bornés par leur propre plafond.
 create index if not exists usage_events_occurred_at_idx on public.usage_events (occurred_at desc);
 
 create or replace function public.enforce_usage_events_rate_limit()
@@ -45,6 +52,14 @@ begin
   if found then
     raise exception 'Trop d''événements d''usage pour cet utilisateur sur 24 h.'
       using errcode = 'check_violation';
+  end if;
+
+  -- Le plafond de tout le projet ne s'applique qu'aux comptes nés depuis moins de vingt-quatre heures
+  -- (en-tête) : un compte plus ancien n'est pas le vecteur, et son ouverture est un signe de vie.
+  if not exists (
+    select 1 from auth.users u where u.id = new.user_id and u.created_at > now() - interval '24 hours'
+  ) then
+    return new;
   end if;
 
   perform 1
@@ -99,14 +114,20 @@ begin
       using errcode = 'RM002';
   end if;
 
-  perform 1
-  from public.feedback
-  where created_at > now() - interval '1 hour'
-  offset max_par_heure_pour_tous - 1 limit 1;
+  -- Comme les événements : le plafond de tout le projet ne refuse que les comptes nés depuis moins
+  -- de vingt-quatre heures.
+  if exists (
+    select 1 from auth.users u where u.id = new.user_id and u.created_at > now() - interval '24 hours'
+  ) then
+    perform 1
+    from public.feedback
+    where created_at > now() - interval '1 hour'
+    offset max_par_heure_pour_tous - 1 limit 1;
 
-  if found then
-    raise exception 'Beaucoup de retours arrivent en ce moment. Réessaie un peu plus tard : on les lit tous.'
-      using errcode = 'RM002';
+    if found then
+      raise exception 'Beaucoup de retours arrivent en ce moment. Réessaie un peu plus tard.'
+        using errcode = 'RM002';
+    end if;
   end if;
 
   return new;
@@ -248,3 +269,86 @@ $function$;
 
 comment on table public.purge_runs is
   'Journal des passages de purge_stale_anonymous_accounts(). status = blocked : la garde de volume a retenu les comptes qui portent un bilan ou un retour ; deleted dit les comptes vides partis quand même (depuis le 04/10/2026). Écrit par le serveur, jamais lu par un client.';
+
+comment on function public.purge_stale_anonymous_accounts() is
+  'Supprime les sessions anonymes muettes depuis 90 jours. La garde de volume (20 %, plancher 50) ne compte que les comptes qui portent un bilan ou un retour : au-delà, elle les retient, et les comptes vides partent quand même (depuis le 04/10/2026). Compte les cohortes avant de supprimer, et journalise chaque passage dans purge_runs.';
+
+-- ── 3. La vue des départs compte les comptes vides partis sous un passage retenu ───────────────
+--
+-- `analytics.departs_par_mois` additionnait `deleted` des seuls passages `applied` : un passage retenu
+-- supprime désormais les comptes vides, et `purges_par_cohorte` les compte — la vue les aurait
+-- perdus, et le rapprochement du registre d'exploitation (§8.5 bis) aurait montré un écart qui n'en
+-- est pas un. Réécrite depuis le corps du distant, seul le filtre de `sum(r.deleted)` part.
+create or replace view analytics.departs_par_mois as
+ WITH partis AS (
+         SELECT date_trunc('month'::text, (COALESCE(dernier_signe_de_vie(u.id, b.boucle), u.created_at) AT TIME ZONE 'UTC'::text))::date AS mois,
+            count(*)::integer AS n
+           FROM auth.users u
+             CROSS JOIN LATERAL ( SELECT boucle_de_la_personne(u.id) AS boucle) b
+          WHERE b.boucle IS NOT NULL AND regime_de_rappel(u.id, b.boucle) = 'silence'::text
+          GROUP BY (date_trunc('month'::text, (COALESCE(dernier_signe_de_vie(u.id, b.boucle), u.created_at) AT TIME ZONE 'UTC'::text))::date)
+        ), purges AS (
+         SELECT date_trunc('month'::text, (r.ran_at AT TIME ZONE 'UTC'::text))::date AS mois,
+            COALESCE(sum(r.deleted), 0::bigint)::integer AS n,
+            count(*) FILTER (WHERE r.status = 'applied'::text)::integer AS appliques,
+            count(*) FILTER (WHERE r.status = 'blocked'::text)::integer AS bloques
+           FROM purge_runs r
+          GROUP BY (date_trunc('month'::text, (r.ran_at AT TIME ZONE 'UTC'::text))::date)
+        ), suppressions AS (
+         SELECT s.mois,
+            s.suppressions AS n
+           FROM suppressions_de_compte_par_mois s
+        ), mois AS (
+         SELECT partis.mois
+           FROM partis
+        UNION
+         SELECT purges.mois
+           FROM purges
+        UNION
+         SELECT suppressions.mois
+           FROM suppressions
+        )
+ SELECT m.mois,
+    COALESCE(pa.n, 0) AS partis_en_silence,
+    COALESCE(pu.n, 0) AS sessions_purgees,
+    COALESCE(pu.appliques, 0) AS passages_de_purge,
+    COALESCE(pu.bloques, 0) AS passages_bloques,
+    COALESCE(su.n, 0) AS comptes_supprimes
+   FROM mois m
+     LEFT JOIN partis pa ON pa.mois = m.mois
+     LEFT JOIN purges pu ON pu.mois = m.mois
+     LEFT JOIN suppressions su ON su.mois = m.mois;
+
+comment on view analytics.departs_par_mois is
+  'Par mois (UTC) : les comptes partis en silence (régime de rappel, au mois de leur dernier signe de vie), les sessions purgées (au mois de la purge, passages appliqués et retenus confondus — un passage retenu supprime les comptes vides depuis le 04/10/2026 —, avec le nombre de chacun) et les comptes supprimés. Un compte n''est jamais dans deux colonnes ; des départs qui durent encore, pas un taux.';
+
+-- ── 4. Le contrôle de fin : ce que les migrations suivantes ne doivent pas défaire ───────────────
+--
+-- Sur les corps installés, sans commentaires : le rejeu d'une migration ancienne qui réinstallerait
+-- une purge sans cette garde, ou des plafonds sans leur borne d'âge, ferait tomber ce bloc au
+-- prochain rejeu de celle-ci.
+do $controle$
+declare
+  v_purge text := pg_get_functiondef('public.purge_stale_anonymous_accounts()'::regprocedure);
+  v_evenements text := pg_get_functiondef('public.enforce_usage_events_rate_limit()'::regprocedure);
+  v_retours text := pg_get_functiondef('public.enforce_feedback_rate_limit()'::regprocedure);
+begin
+  if position('v_nb_porteurs > v_seuil' in v_purge) = 0 then
+    raise exception 'La garde de volume compte de nouveau les comptes vides';
+  end if;
+  if position('cohorte_de' in v_purge) = 0
+     or position('cohorte_de' in v_purge) > position('delete from auth.users' in v_purge) then
+    raise exception 'La purge ne compte plus ses cohortes avant de supprimer';
+  end if;
+  if position('exception when others' in v_purge) = 0 then
+    raise exception 'Un compteur peut de nouveau empêcher la purge : sa sous-transaction a disparu';
+  end if;
+  if position('interval ''24 hours''' in v_evenements) = 0 or position('max_par_heure_pour_tous' in v_evenements) = 0 then
+    raise exception 'Le plafond des événements a perdu sa borne de tout le projet ou son âge de compte';
+  end if;
+  if not (select prosecdef from pg_proc where oid = 'public.enforce_feedback_rate_limit()'::regprocedure)
+     or position('max_par_heure_pour_tous' in v_retours) = 0 then
+    raise exception 'Le plafond des retours ne compte plus ceux des autres';
+  end if;
+end;
+$controle$;

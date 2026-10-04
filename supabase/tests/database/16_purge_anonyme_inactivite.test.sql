@@ -137,7 +137,7 @@ select public.purge_stale_anonymous_accounts();
 select is(
   (select count(*)::int from auth.users where id::text like 'c6222222%'),
   60,
-  'Au-delà du seuil, la purge ne supprime aucun compte'
+  'Au-delà du seuil, la purge ne supprime aucun des comptes qui portent un bilan'
 );
 
 select isnt_empty(

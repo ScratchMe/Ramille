@@ -1,5 +1,5 @@
 -- Tests pgTAP des plafonds pour tout le projet et de la purge qui tient (migration
--- `20261004210000_les_plafonds_globaux.sql`, plan anti-abus, `v1-27` §12.35). Les plafonds de chaque compte sont gardés par `11`
+-- `20261004201217_les_plafonds_globaux.sql`, plan anti-abus, `v1-27` §12.35). Les plafonds de chaque compte sont gardés par `11`
 -- et `12` ; la garde de volume des comptes qui portent quelque chose, par `16` et `36`.
 --
 -- **Éprouvé en le cassant, le 04/10/2026** (TESTING.md §1.1) : chaque mutation appliquée à la base
@@ -13,12 +13,14 @@
 --   | `enforce_feedback_rate_limit` sans `security definer` | 4 — le compte ne voit plus que ses propres retours |
 --   | la garde qui compte tous les candidats, vides compris | 6, 9 et 10 (la 5 passe : les vides partent quand même) |
 --   | un passage retenu qui ne supprime rien | 7, 8 et 9 |
+--   | le dénominateur de la garde compte de nouveau tous les comptes anonymes | 11 |
+--   | les plafonds de tout le projet sans la borne d'âge des comptes | 1 bis et 4 bis |
 --
--- Témoin sans mutation : aucun écart.
+-- (Les numéros sont ceux des libellés.) Témoin sans mutation : aucun écart.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(13);
 
 -- ── 1. Les événements d'usage : 6 000 par heure pour tout le projet, dont 300 pannes ───────────
 --
@@ -44,6 +46,24 @@ select throws_ok(
   '23514', 'Trop d''événements d''usage pour tout le projet sur une heure.',
   '1. au-delà de 6 000 événements dans l''heure, un compte neuf, sous son propre plafond, est refusé'
 );
+
+-- Un compte né il y a deux jours, lui, écrit encore : son ouverture est un signe de vie, que lisent
+-- les rappels et la purge, et le flot vient de sessions neuves (en-tête de la migration).
+reset role;
+insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at) values
+  ('49000000-0000-0000-0000-0000000000aa', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '2 days', now());
+select set_config('request.jwt.claims',
+  json_build_object('sub', '49000000-0000-0000-0000-0000000000aa', 'role', 'authenticated')::text, true);
+select set_config('role', 'authenticated', true);
+
+select lives_ok(
+  $$ insert into public.usage_events (user_id, name, props, platform)
+     values ('49000000-0000-0000-0000-0000000000aa', 'app_open', '{}'::jsonb, 'web') $$,
+  '1 bis. et un compte né il y a deux jours passe le même plafond : il n''est pas le vecteur'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', '49000000-0000-0000-0000-000000000080', 'role', 'authenticated')::text, true);
 
 reset role;
 delete from public.usage_events where user_id::text like '49000000-%';
@@ -81,8 +101,17 @@ select set_config('role', 'authenticated', true);
 select throws_ok(
   $$ insert into public.feedback (user_id, kind, message)
      values ('49000000-0000-0000-0000-000000000080', 'idee', 'un de trop') $$,
-  'RM002', 'Beaucoup de retours arrivent en ce moment. Réessaie un peu plus tard : on les lit tous.',
-  '4. au-delà de 60 retours dans l''heure, un compte qui n''en a écrit aucun est refusé, avec une phrase pour lui'
+  'RM002', 'Beaucoup de retours arrivent en ce moment. Réessaie un peu plus tard.',
+  '4. au-delà de 60 retours dans l''heure, un compte neuf qui n''en a écrit aucun est refusé, avec une phrase pour lui'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', '49000000-0000-0000-0000-0000000000aa', 'role', 'authenticated')::text, true);
+
+select lives_ok(
+  $$ insert into public.feedback (user_id, kind, message)
+     values ('49000000-0000-0000-0000-0000000000aa', 'idee', 'un compte ancien') $$,
+  '4 bis. et un compte né il y a deux jours envoie encore le sien'
 );
 
 reset role;
@@ -151,6 +180,32 @@ select results_eq(
 select ok(
   (select detail from public.purge_runs where status = 'blocked') like '%60 comptes anonymes porteurs%',
   '10. et il dit combien de comptes porteurs la garde a retenus'
+);
+
+-- **Le dénominateur ne compte que les porteurs, lui aussi** (contre-lecture du 04/10/2026) : trois
+-- cents sessions vides et actives — des robots du jour — gonflaient le total des comptes anonymes, donc
+-- le seuil, et soixante vrais comptes muets passaient sous lui. Les comptes retenus plus haut partent
+-- d'abord, pour que ces soixante-là soient les seuls porteurs candidats.
+delete from auth.users where id::text like '49222222-%';
+insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
+select ('49333333-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
+       '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now(), now()
+from generate_series(1, 300) as g(i);
+insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
+select ('49444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
+       '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
+       now() - interval '100 days', now()
+from generate_series(1, 60) as g(i);
+insert into public.assessments (user_id, status, created_at)
+select ('49444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'in_progress', now() - interval '100 days'
+from generate_series(1, 60) as g(i);
+
+select public.purge_stale_anonymous_accounts();
+
+select is(
+  (select count(*)::int from auth.users where id::text like '49444444-%'),
+  60,
+  '11. trois cents sessions vides du jour ne desserrent pas la garde : soixante vrais comptes muets restent'
 );
 
 select * from finish();

@@ -448,7 +448,7 @@ select public.purge_stale_anonymous_accounts();
 select ok(
   (select sum(comptes) from public.purges_par_cohorte where semaine_d_arrivee = current_setting('c36.w')::date) = 8
   and (select count(*) from auth.users where id::text like 'c3600000-0000-0000-0001-%') = 60,
-  'un passage retenu par la garde de volume ne supprime rien et ne compte rien'
+  'un passage retenu par la garde de volume ne supprime ni ne compte les comptes qui portent un bilan'
 );
 
 -- ── 7. La suppression de compte compte son mois ─────────────────────────────────────────────────
