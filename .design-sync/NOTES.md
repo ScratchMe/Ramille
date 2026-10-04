@@ -494,6 +494,39 @@ synchronisé : le kit de `main@d9fae26` plus les retouches de cette synchronisat
   build, les deux aperçus aux cadres remesurés, l'en-tête de conventions du README et la fiche de `ThemedText` —
   le premier envoi avait oublié le README, que la méthode reprend pourtant de `ds-bundle/` (contre-lecture).
 
+## Relevé du 04/10/2026 — dixième synchronisation, et l'index du panneau resté à 28 composants
+
+Chemin atomique, skill 2.1.289, conteneur neuf : `npm ci` d'abord (le dépôt n'avait aucun `node_modules`), les deux
+liens, puis `playwright@1.56.1` dans `.ds-sync/` (l'image porte toujours le chromium 1194). Depuis la neuvième (#349), le
+kit n'avait bougé que par #351 : un commentaire de `BoiteDePrecision.jsx` et une ligne de `readme.md` (le dépliage et
+la hauteur suivie se posent sur Android). Le pilote : **72 composants inchangés**, aucun à regrader, et un envoi réduit
+à `aux` (README et `guidelines/`) — le commentaire ne survit pas au bundle, `bundleSha12` n'a pas bougé. Rendu complet
+quand même (`--render-sample 0`) : 72 rendus, aucun mauvais, les deux `[RENDER_THIN]` connus ; `props-check.py` sans
+écart ; l'en-tête de conventions revalidé contre le build (20 composants, 10 props, 5 jetons), et #351 ne touche
+aucune de ses phrases. À la demande de la personne qui pilote (« que la page d'aperçu soit bien à jour avec tous les
+composants dans leur dernière version »), **tout** a été réécrit, pas seulement `aux` : 379 fichiers — la sentinelle,
+racine + jetons + guide (10), `_vendor/`, `fonts/`, les 72 aperçus, deux lots de composants (144, 144), la sentinelle de
+nouveau, `_ds_sync.json` seul. Aucune suppression.
+
+- **L'index du panneau Design System comptait 28 composants, et depuis la mi-septembre.** Ce n'est pas un fichier de
+  la synchronisation : `_ds_manifest.json` (les composants et les cartes que le panneau affiche, les jetons qu'il
+  liste) et `_adherence.oxlintrc.json` sont régénérés **par l'app**, quand le projet s'ouvre dans le navigateur et
+  qu'elle y trouve la sentinelle `_ds_needs_recompile` — qu'elle efface alors. Relus avant l'envoi : 28 composants, 28
+  cartes, `--height-target: 44px`, pas de `tokens/mouvement.css`, et des props retirées depuis (`TextField type`,
+  `ChoiceRow detail`, `Chip ariaLabel`) : l'état de la première ou de la deuxième synchronisation (11 ou 14/09), sept
+  synchronisations plus tôt. La sentinelle était toujours là. Les fichiers téléversés étaient à jour, c'est l'index qui
+  ne les voyait pas — et l'agent de design avec lui. Cet envoi fait, la personne qui pilote a ouvert le projet : la
+  sentinelle a disparu (`get_file` rend 404) et l'index compte **72 composants et 72 cartes**, groupes et cadres
+  justes, jetons du jour. Pourquoi aucune ouverture ne l'avait régénéré depuis la mi-septembre reste inconnu (projet
+  jamais rouvert juste après un envoi, ou contrôle qui échouait sur un état d'alors) ; la preuve, elle, est connue :
+  **relire l'index après l'ouverture** (Risques, plus bas).
+- **L'index lit les jetons sans leur `@media`** : les cinq durées de `tokens/mouvement.css` y valent `0ms`, la valeur
+  du bloc « réduire les animations », déclaré en dernier. Le rendu n'en est pas touché — la feuille garde sa requête
+  média —, seule la liste des jetons du panneau le dit. Pas corrigé ici : retourner le fichier (les durées sous
+  `no-preference`) toucherait le kit et son miroir de `theme.ts`, ce qu'une synchronisation ne fait pas seule.
+- **Le système de design de la galerie** (section suivante) a un build de retard : ce que `aux` a porté ici, la ligne
+  Android de `guidelines/readme.md` et le README de ce build. Le bundle et les aperçus n'ont pas bougé.
+
 ## Le système de design de la galerie — un second miroir, remis à jour le 03/10/2026
 
 À côté du projet Claude Design, la galerie d'artefacts de la personne qui pilote porte un système de design
@@ -600,5 +633,8 @@ garde ce qui y a été porté).
 - **Le système de design de la galerie ne suit pas** : une synchronisation vers Claude Design ne le touche pas.
   Le remettre à jour suit la section qui lui est consacrée, plus haut.
 - Ce qui a été vérifié ici, ce sont les **rendus locaux**. Le vrai environnement est la page
-  Claude Design ; un coup d'œil au panneau après téléversement reste la seule preuve de bout en
-  bout, et un nouveau téléversement coûte peu.
+  Claude Design, et **un envoi n'y est visible qu'après une ouverture du projet** : c'est elle qui régénère l'index du
+  panneau (relevé du 04/10/2026, plus haut — sept synchronisations sans que l'index suive). Après chaque envoi, faire
+  ouvrir le projet à la personne qui pilote, puis relire `_ds_manifest.json` par `get_file` : son tableau `components`
+  doit compter autant d'entrées que le build en imprime, et `_ds_needs_recompile` doit rendre 404. Une sentinelle
+  encore là après une ouverture veut dire que le contrôle de l'app a échoué — à remonter, pas à re-téléverser.
