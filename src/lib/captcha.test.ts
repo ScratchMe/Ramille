@@ -15,10 +15,11 @@
  * retiré, les troisième, quatrième, cinquième et sixième ; le widget jamais retiré, les troisième
  * et quatrième ; le chargement qui pend jamais oublié au plafond, le sixième, seul — sa balise
  * jamais retirée, le sixième aussi ; deux widgets posés ensemble (la file retirée), le septième,
- * seul ; le chargement gardé après un échec, le dernier, seul. **Le contrôle de `document` retiré
- * ne fait rien tomber, et c'est une mutation équivalente** : sans lui, l'accès à `document` lève
- * dans la promesse, et le `catch` rend le même `undefined`. Il reste pour qu'on lise la règle au
- * lieu de la déduire.
+ * seul ; le chargement gardé après un échec, le dernier, seul. **Le retour anticipé « ni web ni vue
+ * web branchée » retiré ne fait rien tomber, et c'est une mutation équivalente** : sans lui, la
+ * demande part vers le widget du web, l'accès à `document` y lève dans la promesse, et le `catch` rend
+ * le même `undefined`. Il reste pour qu'on lise la règle au lieu de la déduire. (Le choix entre le web
+ * et le pont, lui, est gardé : voir le bloc natif plus bas.)
  *
  * **La carte de la case à cocher** (04/10/2026), éprouvée de même, chaque mutation ne faisant tomber
  * que « quand Cloudflare demande de cocher… » : le délai non prolongé à la demande ; le plafond

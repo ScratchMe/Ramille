@@ -160,6 +160,7 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
         }
       }
       voile.remove();
+      signalerLaCaseDuCaptcha(false);
     };
     const echouer = (raison: string) => {
       if (fini) return;
@@ -186,7 +187,8 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
       clearTimeout(minuterie);
       minuterie = plafond(DELAI_POUR_COCHER_MS);
       const couleurs = Colors.light;
-      Object.assign(voile.style, { pointerEvents: 'auto', background: 'rgba(19, 22, 18, 0.4)' });
+      Object.assign(voile.style, { pointerEvents: 'auto', background: couleurs.scrim });
+      signalerLaCaseDuCaptcha(true);
       Object.assign(carte.style, {
         display: 'flex',
         flexDirection: 'column',
@@ -305,6 +307,33 @@ function jetonNatif(poseur: PoseurNatif, cle: string, usage: UsageDuCaptcha): Pr
     // `retirer` qu'il vient de rendre n'a pas pu servir, il sert maintenant.
     if (fini) retirer();
   });
+}
+
+/**
+ * La case de Cloudflare est-elle montrée ? Sur web comme dans l'app, la carte se pose par-dessus la
+ * pile des écrans, qui reste montée : le layout la cache au lecteur d'écran et au clavier tant que la
+ * case est là (`src/app/_layout.tsx`), comme il le fait sous l'écran de reconnexion. Sans cela,
+ * TalkBack passait de la carte à l'écran d'en dessous (contre-lecture du 04/10/2026 :
+ * `accessibilityViewIsModal` ne vaut que sur iOS).
+ */
+let caseMontree = false;
+const ecouteursDeLaCase = new Set<() => void>();
+
+export function signalerLaCaseDuCaptcha(montree: boolean): void {
+  if (caseMontree === montree) return;
+  caseMontree = montree;
+  for (const ecouteur of ecouteursDeLaCase) ecouteur();
+}
+
+export function laCaseDuCaptchaEstMontree(): boolean {
+  return caseMontree;
+}
+
+export function ecouterLaCaseDuCaptcha(ecouteur: () => void): () => void {
+  ecouteursDeLaCase.add(ecouteur);
+  return () => {
+    ecouteursDeLaCase.delete(ecouteur);
+  };
 }
 
 /** Le dernier appel en cours : le suivant ne pose son widget qu'une fois celui-ci terminé. */

@@ -7,7 +7,7 @@ import { ThemedText } from './ThemedText.jsx';
 export function CaptchaNatif({ visible = true }) {
   if (!visible) return null;
   return (
-    <div style={{ background: 'rgba(19, 22, 18, 0.4)', padding: 16, display: 'flex', justifyContent: 'center' }}>
+    <div style={{ background: 'var(--color-scrim, rgba(19, 22, 18, 0.42))', padding: 16, display: 'flex', justifyContent: 'center' }}>
       <div
         style={{
           display: 'flex',

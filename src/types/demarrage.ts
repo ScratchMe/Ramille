@@ -46,7 +46,7 @@ export function issueDeLaSession(erreur: ErreurAuth): IssueDeLaSession {
  * pilote le 04/10/2026. Sur le web, la cause réaliste est un bloqueur qui coupe Cloudflare. Dans
  * l'app, arriver sur cet écran prouve que Supabase a répondu (une coupure franche donne le repli hors
  * ligne) : « Vérifie ta connexion » vaut pour un réseau instable, et ne couvre pas un bloqueur système
- * (DNS filtrant, VPN) — l'app n'envoie de toute façon pas encore de jeton. Le visiteur à qui
+ * (DNS filtrant, VPN), qui couperait aussi Cloudflare dans la vue web du captcha. Le visiteur à qui
  * Cloudflare a demandé de cocher, et qui ne l'a pas fait dans les deux minutes que lui laisse la carte
  * de la case (`src/lib/captcha.ts`), arrive aussi ici, et lit la même phrase (registre d'exploitation
  * §3.11, point 4).

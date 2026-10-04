@@ -228,10 +228,11 @@ captcha est activé (sa documentation : inscription, session anonyme comprise, c
 réinitialisation) ; `updateUser`, `verifyOtp` et `linkIdentity` n'en demandent pas, donc **le code
 de rattachement**, envoyé par `updateUser({ email })`, **ne passe pas par lui** : ce flux d'e-mails
 relève des plafonds d'e-mail. Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
-lève jamais : sans clé de site (développement, CI, parcours réel), sans `document` (natif, rendu
-de l'export) ou sans jeton au bout de trente secondes, **case à cocher comprise** (un plafond
-absolu : sans lui, un visiteur qui ne cochait pas restait sur l'écran de lancement, la racine
-attendant la session), l'appel part **sans** jeton, et c'est Supabase qui tranche. Avant
+lève jamais : sans clé de site (développement, CI, parcours réel), hors du web sans vue web branchée
+(`brancherLeCaptchaNatif` — le rendu de l'export, ou l'app avant le montage du layout), ou sans jeton
+au bout de trente secondes — **deux minutes à partir du moment où Cloudflare demande de cocher**
+(`DELAI_POUR_COCHER_MS`) ; un plafond absolu, sans lequel un visiteur qui ne cochait pas restait sur
+l'écran de lancement, la racine attendant la session —, l'appel part **sans** jeton, et c'est Supabase qui tranche. Avant
 l'activation, il passe. Après, il rend `400 captcha_failed` : les écrans de code le disent
 (`estRefusDuCaptcha`, la phrase de la panne de transport) au lieu d'annoncer un code jamais parti,
 et **au démarrage**, la racine lui donne son propre écran (`issueDeLaSession`, `src/types/demarrage.ts`) :
