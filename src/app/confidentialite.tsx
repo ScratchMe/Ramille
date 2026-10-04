@@ -161,7 +161,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // un nouveau destinataire, dès la mise en ligne. C'est donc l'élargissement que « Évolutions de ce
 // document » promet d'annoncer dans l'application avant qu'il prenne effet — relevé par la
 // contre-lecture du captcha —, et la personne qui pilote a décidé le même soir que la mise à jour
-// datée de cette page en tient lieu, sans annonce dans l'application. Le texte de l'entrée
+// datée de cette page en tient lieu, sans annonce dans l'application, **parce qu'aucun lancement
+// officiel n'a eu lieu et qu'elle en est alors la seule utilisatrice**. La raison ne vaut que pour
+// cette fois : après le lancement, un élargissement s'annonce. Le texte de l'entrée
 // Cloudflare et du paragraphe des transferts a été validé par elle, comme chaque phrase de cette page.
 const UPDATED_AT = '4 octobre 2026';
 
