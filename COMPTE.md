@@ -228,10 +228,11 @@ captcha est activé (sa documentation : inscription, session anonyme comprise, c
 réinitialisation) ; `updateUser`, `verifyOtp` et `linkIdentity` n'en demandent pas, donc **le code
 de rattachement**, envoyé par `updateUser({ email })`, **ne passe pas par lui** : ce flux d'e-mails
 relève des plafonds d'e-mail. Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
-lève jamais : sans clé de site (développement, CI, parcours réel), sans `document` (natif, rendu
-de l'export) ou sans jeton au bout de trente secondes, **case à cocher comprise** (un plafond
-absolu : sans lui, un visiteur qui ne cochait pas restait sur l'écran de lancement, la racine
-attendant la session), l'appel part **sans** jeton, et c'est Supabase qui tranche. Avant
+lève jamais : sans clé de site (développement, CI, parcours réel), hors du web sans vue web branchée
+(`brancherLeCaptchaNatif` — le rendu de l'export, ou l'app avant le montage du layout), ou sans jeton
+au bout de trente secondes — **deux minutes à partir du moment où Cloudflare demande de cocher**
+(`DELAI_POUR_COCHER_MS`) ; un plafond absolu, sans lequel un visiteur qui ne cochait pas restait sur
+l'écran de lancement, la racine attendant la session —, l'appel part **sans** jeton, et c'est Supabase qui tranche. Avant
 l'activation, il passe. Après, il rend `400 captcha_failed` : les écrans de code le disent
 (`estRefusDuCaptcha`, la phrase de la panne de transport) au lieu d'annoncer un code jamais parti,
 et **au démarrage**, la racine lui donne son propre écran (`issueDeLaSession`, `src/types/demarrage.ts`) :
@@ -240,8 +241,10 @@ mais « La vérification n'a pas abouti », la cause réaliste selon la platefor
 web, le réseau dans l'app) et « Réessayer », qui relance la racine et donc un nouveau widget.
 Un widget à la fois (une file), et `ensureSession` relit la session après l'attente : une session
 ouverte entre-temps n'est plus écrasée par une anonyme. **D'où l'ordre d'activation du registre
-d'exploitation (§3.11)**, qui ne se discute pas : l'app Android n'envoie pas encore de jeton, et
-l'activer avant le build qui le porte laisserait chaque nouvelle installation à la porte.
+d'exploitation (§3.11)**, qui ne se discute pas : l'app Android n'envoie un jeton qu'à partir du
+build qui embarque sa vue web (`CaptchaNatif`, `src/components/captcha-natif.tsx`, écrit le
+04/10/2026), et l'activer avant que ce build soit installé laisserait chaque nouvelle installation à
+la porte.
 
 ## 2. Retrouver un compte existant
 

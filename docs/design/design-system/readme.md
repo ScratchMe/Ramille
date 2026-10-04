@@ -44,7 +44,7 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 - Marques copiées : `assets/images/logo-mark.svg`, `mascot-mark.svg`, `favicon-mark.svg`, `icon.png`, `splash-icon.png`, `google-oauth-logo.png` (le logo de **Ramille** téléversé sur l'écran de consentement de Google — pas une référence du « G », que `GoogleButton` dessine en SVG et qui ne se redessine jamais).
 
 ## Composants (une partie du dépôt)
-core/ ThemedText · ThemedView · Button · TextLink · MessageInline · LigneDAttente · OnboardingDots · FeuilleDuBas · TitreDArrivee
+core/ ThemedText · ThemedView · Button · TextLink · MessageInline · LigneDAttente · OnboardingDots · FeuilleDuBas · TitreDArrivee · CaptchaNatif
 forms/ GroupeDeChoix · Chip · ChoiceRow · LigneDeCanal · ModeListItem · BoiteDePrecision · PrecisionMode · IntituleDuChamp · NumericField · ChampDuPlafond · TextField · GoogleButton
 mascotte/ Mascot · RamilleDit · CalculEnCours · EcranLancement
 navigation/ CompteBouton · BandeHaute · CadreDOnglet · SortieDuDetour · OngletIcone · BarreOnglets · ProgressHeader · StepShell

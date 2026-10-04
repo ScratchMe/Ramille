@@ -473,7 +473,9 @@ plusieurs) au moment de la publication, sans retirer la première. `scripts/veri
 garde le reste.
 
 **Une dépendance native nouvelle impose un build**, et il n'y a aucun moyen de s'en rendre
-compte depuis le code : `expo-notifications` (v1-12) est arrivée ainsi. Le jeton d'appareil
+compte depuis le code : `expo-notifications` (v1-12) est arrivée ainsi, et `react-native-webview`
+le 04/10/2026, pour le captcha de l'app (`src/components/captcha-natif.tsx` ; sur web, son pendant
+`src/components/captcha-natif.web.tsx`, ne rend rien, et la dépendance n'entre pas dans le bundle). Le jeton d'appareil
 ne s'enregistre jamais par un `insert` — `register_push_token` le **reprend** à son
 propriétaire précédent, ce qu'une policy RLS owner-scoped ne peut pas faire au moment où une
 session anonyme devient un compte, et l'oubli serait silencieux : les rappels partiraient

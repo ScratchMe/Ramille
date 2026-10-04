@@ -7,13 +7,16 @@
 //
 // **Sans clé de site, aucun jeton, et c'est voulu** : en local, en CI et dans le parcours réel, la
 // stack Supabase n'a pas de captcha, et le widget refuserait de toute façon un nom d'hôte qu'il ne
-// connaît pas (`110200`). La clé n'est posée que dans l'environnement de production de Vercel.
+// connaît pas (`110200`). La clé n'est posée que là où elle sert : l'environnement de production de
+// Vercel pour le web, `eas.json` pour les builds `preview` et `production` de l'app (elle est
+// publique, et versionnée avec eux).
 //
-// **Sur natif, aucun jeton non plus, pour l'instant** : le widget ne vit que dans une page web, et
-// l'app Android n'a pas encore la vue web qui l'accueillera — elle arrive avec un build. D'où
-// l'ordre d'activation du registre : la protection ne s'active dans Supabase qu'une fois le web
-// déployé **et** ce build installé, sans quoi chaque nouvelle installation Android buterait sur
-// sa première session.
+// **Dans l'app Android, le widget vit dans une vue web** (`CaptchaNatif`,
+// `src/components/captcha-natif.tsx`, monté à la racine), qui charge une page écrite par l'app avec
+// `www.ramille.fr` pour origine (`src/types/captcha-natif.ts`) : le même contrat, les mêmes plafonds.
+// Elle demande `react-native-webview`, donc un build. D'où l'ordre d'activation du registre : la
+// protection ne s'active dans Supabase qu'une fois le web déployé **et** ce build installé, sans quoi
+// chaque nouvelle installation Android buterait sur sa première session.
 //
 // **Un jeton qui ne vient pas n'arrête rien ici** : au plus trente secondes après — deux minutes à
 // partir du moment où Cloudflare demande de cocher —, l'appel part sans, et c'est Supabase qui
@@ -157,6 +160,7 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
         }
       }
       voile.remove();
+      signalerLaCaseDuCaptcha(false);
     };
     const echouer = (raison: string) => {
       if (fini) return;
@@ -183,7 +187,8 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
       clearTimeout(minuterie);
       minuterie = plafond(DELAI_POUR_COCHER_MS);
       const couleurs = Colors.light;
-      Object.assign(voile.style, { pointerEvents: 'auto', background: 'rgba(19, 22, 18, 0.4)' });
+      Object.assign(voile.style, { pointerEvents: 'auto', background: couleurs.scrim });
+      signalerLaCaseDuCaptcha(true);
       Object.assign(carte.style, {
         display: 'flex',
         flexDirection: 'column',
@@ -240,12 +245,104 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
   });
 }
 
+/**
+ * Dans l'app Android, le widget vit dans une vue web que le composant `CaptchaNatif`
+ * (`src/components/captcha-natif.tsx`), monté à la racine, pose à la demande. Ce module ne connaît que
+ * ce contrat : poser un widget pour cet usage, recevoir ses trois issues, le retirer.
+ */
+export type DemandeNative = {
+  cle: string;
+  usage: UsageDuCaptcha;
+  jeton: (jeton: string) => void;
+  erreur: () => void;
+  interaction: () => void;
+};
+type PoseurNatif = (demande: DemandeNative) => () => void;
+
+let poseurNatif: PoseurNatif | null = null;
+
+/** Branché par `CaptchaNatif` à son montage ; rend de quoi le débrancher. */
+export function brancherLeCaptchaNatif(poseur: PoseurNatif): () => void {
+  poseurNatif = poseur;
+  return () => {
+    if (poseurNatif === poseur) poseurNatif = null;
+  };
+}
+
+/**
+ * Le même contrat que `jetonSurLeWeb`, par la vue web : trente secondes sans rien demander, deux
+ * minutes à partir de la demande de cocher, et le widget retiré quoi qu'il arrive.
+ */
+function jetonNatif(poseur: PoseurNatif, cle: string, usage: UsageDuCaptcha): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    let fini = false;
+    let retirer: () => void = () => {};
+    const finir = () => {
+      fini = true;
+      clearTimeout(minuterie);
+      retirer();
+    };
+    const echouer = (raison: string) => {
+      if (fini) return;
+      finir();
+      reject(new Error(raison));
+    };
+    let minuterie = setTimeout(() => echouer('Le captcha n’a rendu aucun jeton à temps.'), DELAI_MAXIMAL_MS);
+    retirer = poseur({
+      cle,
+      usage,
+      jeton: (jeton) => {
+        if (fini) return;
+        finir();
+        resolve(jeton);
+      },
+      erreur: () => echouer('Le captcha a échoué.'),
+      interaction: () => {
+        if (fini) return;
+        clearTimeout(minuterie);
+        minuterie = setTimeout(() => echouer('Le captcha n’a rendu aucun jeton à temps.'), DELAI_POUR_COCHER_MS);
+      },
+    });
+    // Une issue arrivée pendant la pose — un poseur qui répondrait tout de suite — a déjà fini : le
+    // `retirer` qu'il vient de rendre n'a pas pu servir, il sert maintenant.
+    if (fini) retirer();
+  });
+}
+
+/**
+ * La case de Cloudflare est-elle montrée ? Sur web comme dans l'app, la carte se pose par-dessus la
+ * pile des écrans, qui reste montée : le layout la cache au lecteur d'écran et au clavier tant que la
+ * case est là (`src/app/_layout.tsx`), comme il le fait sous l'écran de reconnexion. Sans cela,
+ * TalkBack passait de la carte à l'écran d'en dessous (contre-lecture du 04/10/2026 :
+ * `accessibilityViewIsModal` ne vaut que sur iOS).
+ */
+let caseMontree = false;
+const ecouteursDeLaCase = new Set<() => void>();
+
+export function signalerLaCaseDuCaptcha(montree: boolean): void {
+  if (caseMontree === montree) return;
+  caseMontree = montree;
+  for (const ecouteur of ecouteursDeLaCase) ecouteur();
+}
+
+export function laCaseDuCaptchaEstMontree(): boolean {
+  return caseMontree;
+}
+
+export function ecouterLaCaseDuCaptcha(ecouteur: () => void): () => void {
+  ecouteursDeLaCase.add(ecouteur);
+  return () => {
+    ecouteursDeLaCase.delete(ecouteur);
+  };
+}
+
 /** Le dernier appel en cours : le suivant ne pose son widget qu'une fois celui-ci terminé. */
 let file: Promise<unknown> = Promise.resolve();
 
 /**
  * Le jeton à joindre à `signInAnonymously` ou à `signInWithOtp` (`options.captchaToken`), ou
- * `undefined` quand il n'y en a pas — pas de clé, pas de web, ou un widget qui n'a rien rendu.
+ * `undefined` quand il n'y en a pas — pas de clé, ni web ni vue web branchée (le rendu statique de
+ * l'export, un test), ou un widget qui n'a rien rendu.
  * Ne lève jamais : un captcha en panne ne doit pas casser un appel que Supabase accepterait.
  *
  * `cleDeSite` n'est là que pour les tests : le produit lit toujours celle de l'environnement.
@@ -255,12 +352,16 @@ export async function jetonDuCaptcha(
   cleDeSite: string | undefined = CLE_DE_SITE,
 ): Promise<string | undefined> {
   const cle = cleDeSite?.trim();
-  // Pas de `document` : natif, ou rendu statique de l'export. `Platform` n'apprendrait rien de plus.
-  if (!cle || typeof document === 'undefined') return undefined;
+  if (!cle) return undefined;
+  // Le web a un `document` ; l'app, une vue web branchée par `CaptchaNatif`. Ni l'un ni l'autre : le
+  // rendu statique de l'export, ou un test — aucun jeton.
+  const poseur = poseurNatif;
+  const surLeWeb = typeof document !== 'undefined';
+  if (!surLeWeb && !poseur) return undefined;
   // **Un widget à la fois** : deux appels simultanés — la session du démarrage et une demande de
   // code — posaient deux cases au même endroit, celle du dessus masquant l'autre. Le second attend
   // le premier, et le plafond borne l'attente.
-  const tour = file.then(() => jetonSurLeWeb(cle, usage));
+  const tour = file.then(() => (surLeWeb || !poseur ? jetonSurLeWeb(cle, usage) : jetonNatif(poseur, cle, usage)));
   file = tour.catch(() => undefined);
   try {
     return await tour;

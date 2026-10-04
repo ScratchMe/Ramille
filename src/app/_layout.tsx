@@ -15,9 +15,11 @@ import {
   type ErrorBoundaryProps,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, Platform, StyleSheet, View } from 'react-native';
 
+import { CaptchaNatif } from '@/components/captcha-natif';
+import { ecouterLaCaseDuCaptcha, laCaseDuCaptchaEstMontree } from '@/lib/captcha';
 import { ConfigurationManquante } from '@/components/configuration-manquante';
 import { ErreurInattendue } from '@/components/erreur-inattendue';
 import { RetourDeNotification } from '@/components/retour-de-notification';
@@ -131,6 +133,10 @@ export default function RootLayout() {
   const [refus, setRefus] = useState(false);
   const chemin = usePathname();
   const ecranDeReconnexion = refus && lEcranDeReconnexionSePose(chemin);
+  // La case du captcha, posée par-dessus la pile comme l'écran de reconnexion : la pile se cache de
+  // même tant qu'elle est montrée (`signalerLaCaseDuCaptcha`, `src/lib/captcha.ts`).
+  const caseDuCaptcha = useSyncExternalStore(ecouterLaCaseDuCaptcha, laCaseDuCaptchaEstMontree, () => false);
+  const pileCachee = ecranDeReconnexion || caseDuCaptcha;
   // **Sur web, `inert` et pas seulement `aria-hidden`** (contre-lecture de la PR #315) :
   // react-native-web ne traduit pas `importantForAccessibility`, et `aria-hidden` ne retire rien de
   // l'ordre de tabulation — Tab atteignait d'abord les boutons de l'écran caché, qui précède la
@@ -139,8 +145,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const noeud = pile.current as unknown as { inert?: boolean } | null;
-    if (noeud) noeud.inert = ecranDeReconnexion;
-  }, [ecranDeReconnexion]);
+    if (noeud) noeud.inert = pileCachee;
+  }, [pileCachee]);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -460,8 +466,8 @@ export default function RootLayout() {
           <View
             ref={pile}
             style={styles.pile}
-            importantForAccessibility={ecranDeReconnexion ? 'no-hide-descendants' : 'auto'}
-            aria-hidden={ecranDeReconnexion || undefined}
+            importantForAccessibility={pileCachee ? 'no-hide-descendants' : 'auto'}
+            aria-hidden={pileCachee || undefined}
           >
             <Stack screenOptions={{ headerShown: false }} />
           </View>
@@ -490,6 +496,9 @@ export default function RootLayout() {
               }}
             />
           )}
+          {/* Le captcha de l'app : une vue web posée à la demande, par-dessus tout, invisible tant
+              que Cloudflare ne demande pas de cocher (`src/components/captcha-natif.tsx`). */}
+          {estNatif && <CaptchaNatif />}
         </>
       ) : (
         <ConfigurationManquante problemes={configurationSupabase.problemes} />

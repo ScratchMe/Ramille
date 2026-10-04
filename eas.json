@@ -18,7 +18,10 @@
         "buildType": "apk",
         "image": "latest"
       },
-      "environment": "preview"
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAFNv5EbSVnEyqbgF"
+      }
     },
     "production": {
       "autoIncrement": true,
@@ -26,7 +29,10 @@
         "buildType": "app-bundle",
         "image": "latest"
       },
-      "environment": "production"
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAFNv5EbSVnEyqbgF"
+      }
     }
   },
   "submit": {
