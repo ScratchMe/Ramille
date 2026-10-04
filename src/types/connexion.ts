@@ -78,6 +78,16 @@ export function estPanneDeTransport(error: ErreurAuth): boolean {
 }
 
 /**
+ * Le captcha a refusé la demande (`400 captcha_failed`) : le jeton manquait — un bloqueur qui coupe
+ * Cloudflare, un widget qui n'a rien rendu à temps — ou n'était pas valable. Reconnu au **code**,
+ * comme la limite d'envoi. Le refus arrive avant toute recherche de compte : le dire ne révèle rien
+ * de l'adresse. Possible seulement une fois le captcha activé dans Supabase (`src/lib/captcha.ts`).
+ */
+export function estRefusDuCaptcha(error: ErreurAuth): boolean {
+  return error?.code === 'captcha_failed';
+}
+
+/**
  * L'adresse appartient déjà à un compte permanent — le cas de quelqu'un qui a un compte et
  * tape son adresse dans « créer » au lieu de « retrouver » sur un nouvel appareil.
  * `updateUser({ email })` ne peut pas rattacher une adresse prise (`422 email_exists`) : la
@@ -475,8 +485,8 @@ export function codeSemblePlausible(saisie: string): boolean {
  * **Tout le reste mène à l'écran de code, `otp_disabled` compris.** C'est la règle de
  * non-divulgation, et elle est la raison d'être de cette dérivation : une adresse sans compte
  * rend un `422 otp_disabled` qui doit mener au **même** écran qu'un envoi accepté, sinon l'écran
- * dit qui utilise Ramille. Seuls deux échecs se disent, parce qu'aucun des deux ne parle de
- * l'adresse : la limite d'envoi et la panne de transport.
+ * dit qui utilise Ramille. Seuls trois échecs se disent, parce qu'aucun ne parle de l'adresse :
+ * la limite d'envoi, la panne de transport et, depuis le 04/10/2026, le refus du captcha.
  */
 export type SuiteDeLaDemande = 'code' | 'bascule' | 'message';
 
@@ -486,7 +496,7 @@ export function suiteDeLaDemandeDeCode(
 ): SuiteDeLaDemande {
   if (!error) return 'code';
   if (contexte === 'rattachement' && adresseDejaRattachee(error)) return 'bascule';
-  if (estLimiteDEnvoi(error) || estPanneDeTransport(error)) return 'message';
+  if (estLimiteDEnvoi(error) || estPanneDeTransport(error) || estRefusDuCaptcha(error)) return 'message';
   return 'code';
 }
 
@@ -506,7 +516,9 @@ export function messageDeLaDemande(error: ErreurAuth): string {
   if (estLimiteDEnvoi(error)) {
     return 'Trop de demandes coup sur coup. Réessaie dans quelques minutes.';
   }
-  if (estPanneDeTransport(error)) {
+  // Le refus du captcha prend la phrase de la panne de transport : son cas réaliste est un
+  // Cloudflare injoignable, et aucune phrase neuve ne part sans la personne qui pilote.
+  if (estPanneDeTransport(error) || estRefusDuCaptcha(error)) {
     return 'Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.';
   }
   return 'L’envoi n’a pas abouti. Vérifie l’adresse et réessaie.';
@@ -692,7 +704,7 @@ export type SuiteDuRenvoi = 'renvoye' | 'message';
 
 export function suiteDuRenvoi(contexte: ContexteDuCode, error: ErreurAuth): SuiteDuRenvoi {
   if (!error) return 'renvoye';
-  if (estLimiteDEnvoi(error) || estPanneDeTransport(error)) return 'message';
+  if (estLimiteDEnvoi(error) || estPanneDeTransport(error) || estRefusDuCaptcha(error)) return 'message';
   if (contexte === 'rattachement' && adresseDejaRattachee(error)) return 'message';
   return 'renvoye';
 }

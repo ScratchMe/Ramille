@@ -36,6 +36,7 @@ import {
   adresseSemblePlausible,
   estLimiteDEnvoi,
   estPanneDeTransport,
+  estRefusDuCaptcha,
   cheminPourLeRouteur,
   codeDErreurDuRetourDeLien,
   codeDuRetourDeLien,
@@ -595,6 +596,25 @@ describe('chiffresDuCode', () => {
     expect(chiffresDuCode('')).toBe('');
     // Un neuvième chiffre tapé au bout d'un code complet est ignoré, comme avant.
     expect(chiffresDuCode('847924691')).toBe('84792469');
+  });
+});
+
+// Le refus du captcha (04/10/2026) : sans ce tri, il menait à « Un code vient de partir » pour un
+// code jamais parti — le défaut A6-12, par une porte neuve (contre-lecture de la PR #359).
+describe('le refus du captcha', () => {
+  const refus = { code: 'captcha_failed', status: 400, message: 'captcha protection: request disallowed' };
+
+  it('se reconnaît à son code, et à rien d’autre', () => {
+    expect(estRefusDuCaptcha(refus)).toBe(true);
+    expect(estRefusDuCaptcha({ code: 'otp_disabled', status: 422 })).toBe(false);
+    expect(estRefusDuCaptcha(null)).toBe(false);
+  });
+
+  it('se dit, à la demande comme au renvoi, et jamais comme un code parti', () => {
+    expect(suiteDeLaDemandeDeCode('connexion', refus)).toBe('message');
+    expect(suiteDeLaDemandeDeCode('rattachement', refus)).toBe('message');
+    expect(suiteDuRenvoi('connexion', refus)).toBe('message');
+    expect(messageDeLaDemande(refus)).toBe('Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.');
   });
 });
 

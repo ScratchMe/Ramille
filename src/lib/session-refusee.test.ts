@@ -34,6 +34,11 @@
  */
 import type AsyncStorageType from '@react-native-async-storage/async-storage';
 
+// Le jeton du captcha (`captcha.ts`) : sans clé de site il n'y en a pas, et c'est la valeur par
+// défaut ; un test le remplace pour faire durer l'attente.
+const mockJetonDuCaptcha = jest.fn(async (): Promise<string | undefined> => undefined);
+jest.mock('@/lib/captcha', () => ({ jetonDuCaptcha: () => mockJetonDuCaptcha() }));
+
 jest.mock('@react-native-async-storage/async-storage', () =>
   jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
@@ -449,6 +454,22 @@ describe('une session refusée', () => {
 
     expect(await AsyncStorage.getItem(FILE_DES_ERREURS[0])).toBeNull();
   });
+
+  // **L'attente du captcha peut durer** — jusqu'à son plafond. Une session ouverte pendant ce temps (le
+  // code de `/compte/suppression`, dans un navigateur neuf) était écrasée par une session anonyme vide,
+  // que « Supprimer mon compte » aurait ensuite supprimée (contre-lecture de la PR #359).
+  it('une session ouverte pendant l’attente du captcha n’est pas écrasée par une session anonyme', async () => {
+    const { ensureSession } = await nouveauLancement();
+    mockJetonDuCaptcha.mockImplementationOnce(async () => {
+      await AsyncStorage.setItem(CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600))));
+      return 'jeton';
+    });
+
+    const session = await ensureSession();
+
+    expect(creations).toHaveLength(0);
+    expect(session?.user.id).toBe('compte-reel');
+  });
 });
 
 /*
@@ -494,4 +515,5 @@ describe('une session refusée', () => {
  *   | la conciliation qui balaie tout (`effacerLesMarquesLocales`) | « la file des erreurs survit à la session anonyme refusée… », seul |
  *   | la reconnexion sans session relue qui balaie tout | « la file des erreurs survit à une reconnexion… », seul |
  *   | la déconnexion qui garde la file (`effacerLesMarquesDuCompte`) | « une déconnexion voulue emporte la file… », seul |
+ *   | la session non relue après l'attente du captcha (04/10/2026) | « une session ouverte pendant l'attente du captcha… », seul |
  */

@@ -336,6 +336,18 @@ export const ensureSession = uneSeuleFois(async () => {
 
   // Le jeton du captcha, que Supabase exige une fois la protection activée (`captcha.ts`).
   const captchaToken = await jetonDuCaptcha('session_anonyme');
+  // **Relue après l'attente, parce que l'attente peut durer** — jusqu'au plafond du captcha. Une
+  // session ouverte entre-temps, typiquement par le code de `/compte/suppression` ouvert dans un
+  // navigateur neuf, serait sinon écrasée par une session anonyme vide : `signInAnonymously`
+  // enregistre la sienne sans regarder (contre-lecture de la PR #359).
+  const {
+    data: { session: ouverteEntreTemps },
+  } = await supabase.auth.getSession();
+  if (ouverteEntreTemps) {
+    await accueillirLaSession(ouverteEntreTemps);
+    changerDEtat('presente');
+    return ouverteEntreTemps;
+  }
   const { data, error: erreurCreation } = await supabase.auth.signInAnonymously({ options: { captchaToken } });
   if (erreurCreation) throw erreurCreation;
   if (data.session) await accueillirLaSession(data.session);

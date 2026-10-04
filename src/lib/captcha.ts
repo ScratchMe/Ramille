@@ -15,10 +15,11 @@
 // déployé **et** ce build installé, sans quoi chaque nouvelle installation Android buterait sur
 // sa première session.
 //
-// **Un jeton qui ne vient pas n'arrête rien ici** : l'appel part sans, et c'est Supabase qui
-// tranche — avant l'activation il passe, après il est refusé comme toute session qui ne s'ouvre
-// pas. Un bloqueur de publicité qui coupe `challenges.cloudflare.com` coûte donc la session une
-// fois la protection active, et seulement à ce moment-là.
+// **Un jeton qui ne vient pas n'arrête rien ici** : au plus trente secondes après, case à cocher
+// comprise, l'appel part sans, et c'est Supabase qui tranche — avant l'activation il passe, après
+// il est refusé (`400 captcha_failed`, reconnu par `estRefusDuCaptcha`). Un bloqueur de publicité
+// qui coupe `challenges.cloudflare.com` coûte donc la session une fois la protection active, et
+// seulement à ce moment-là — ce que ça doit montrer est une question posée avant l'activation.
 
 /** Lue dans un `const`, jamais dans un objet : sans quoi Expo ne la remplace pas dans le bundle. */
 const CLE_DE_SITE = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY;
@@ -26,11 +27,14 @@ const CLE_DE_SITE = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY;
 const SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
 /**
- * Le temps laissé au widget pour rendre un jeton sans rien demander à la personne. Au-delà, l'appel
- * part sans. Le compte s'arrête dès que le widget demande une interaction : on ne presse pas
- * quelqu'un qui coche la case.
+ * Le temps laissé au widget pour rendre un jeton, **case à cocher comprise**. Au-delà, l'appel part
+ * sans. C'est un plafond absolu, et il l'est devenu à la contre-lecture de la PR #359 : il
+ * s'arrêtait quand le widget demandait une interaction, et la racine, qui attend la session,
+ * laissait alors sur l'écran de lancement, sans fin, le visiteur qui ne cochait pas. Ce qu'on
+ * montre à ce visiteur, et combien de temps on l'attend, reste à trancher par la personne qui pilote
+ * avant l'activation (`v1-27` §12.35).
  */
-export const DELAI_SANS_INTERACTION_MS = 20_000;
+export const DELAI_MAXIMAL_MS = 30_000;
 
 /** Ce que le jeton sert à ouvrir — l'`action` du widget, lisible dans l'analyse de Cloudflare. */
 export type UsageDuCaptcha = 'session_anonyme' | 'code_de_connexion';
@@ -43,7 +47,6 @@ type OptionsDuWidget = {
   retry: 'never';
   callback: (jeton: string) => void;
   'error-callback': () => boolean;
-  'before-interactive-callback': () => void;
 };
 
 type Turnstile = {
@@ -56,13 +59,25 @@ function turnstileCharge(): Turnstile | undefined {
 }
 
 let chargement: Promise<Turnstile> | null = null;
+let balise: { remove(): void } | null = null;
 
-/** Le script se charge une fois par page, et se recharge si le premier essai a échoué. */
+/**
+ * Le script se charge une fois par page, et se recharge si le premier essai a échoué — ou s'il n'a
+ * pas abouti au plafond : un chargement qui pend, gardé, ferait attendre chaque appel suivant pour
+ * rien jusqu'au rechargement de la page.
+ */
+function oublierLeChargement() {
+  chargement = null;
+  balise?.remove();
+  balise = null;
+}
+
 function chargerTurnstile(): Promise<Turnstile> {
   const deja = turnstileCharge();
   if (deja) return Promise.resolve(deja);
   chargement ??= new Promise<Turnstile>((resolve, reject) => {
     const script = document.createElement('script');
+    balise = script;
     script.src = SCRIPT;
     script.async = true;
     script.onload = () => {
@@ -73,7 +88,7 @@ function chargerTurnstile(): Promise<Turnstile> {
     script.onerror = () => reject(new Error('Le script du captcha n’a pas pu se charger.'));
     document.head.appendChild(script);
   }).catch((erreur: unknown) => {
-    chargement = null;
+    oublierLeChargement();
     throw erreur;
   });
   return chargement;
@@ -122,7 +137,10 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
     };
     // Le compte part avant le chargement du script, pas après : un script qui ne répond jamais —
     // un réseau qui le retient, un bloqueur qui le laisse pendre — ne doit pas suspendre la session.
-    const minuterie = setTimeout(() => echouer('Le captcha n’a rendu aucun jeton à temps.'), DELAI_SANS_INTERACTION_MS);
+    const minuterie = setTimeout(() => {
+      if (!turnstile) oublierLeChargement();
+      echouer('Le captcha n’a rendu aucun jeton à temps.');
+    }, DELAI_MAXIMAL_MS);
 
     chargerTurnstile()
       .then((charge) => {
@@ -145,12 +163,14 @@ function jetonSurLeWeb(cle: string, usage: UsageDuCaptcha): Promise<string> {
             // dans la console.
             return true;
           },
-          'before-interactive-callback': () => clearTimeout(minuterie),
         });
       })
       .catch(() => echouer('Le script du captcha n’a pas pu se charger.'));
   });
 }
+
+/** Le dernier appel en cours : le suivant ne pose son widget qu'une fois celui-ci terminé. */
+let file: Promise<unknown> = Promise.resolve();
 
 /**
  * Le jeton à joindre à `signInAnonymously` ou à `signInWithOtp` (`options.captchaToken`), ou
@@ -166,8 +186,13 @@ export async function jetonDuCaptcha(
   const cle = cleDeSite?.trim();
   // Pas de `document` : natif, ou rendu statique de l'export. `Platform` n'apprendrait rien de plus.
   if (!cle || typeof document === 'undefined') return undefined;
+  // **Un widget à la fois** : deux appels simultanés — la session du démarrage et une demande de
+  // code — posaient deux cases au même endroit, celle du dessus masquant l'autre. Le second attend
+  // le premier, et le plafond borne l'attente.
+  const tour = file.then(() => jetonSurLeWeb(cle, usage));
+  file = tour.catch(() => undefined);
   try {
-    return await jetonSurLeWeb(cle, usage);
+    return await tour;
   } catch {
     return undefined;
   }

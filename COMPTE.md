@@ -229,12 +229,17 @@ réinitialisation) ; `updateUser`, `verifyOtp` et `linkIdentity` n'en demandent 
 de rattachement**, envoyé par `updateUser({ email })`, **ne passe pas par lui** : ce flux d'e-mails
 relève des plafonds d'e-mail. Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
 lève jamais : sans clé de site (développement, CI, parcours réel), sans `document` (natif, rendu
-de l'export) ou sur un widget qui n'a rien rendu en vingt secondes, l'appel part **sans** jeton, et
-c'est Supabase qui tranche. Avant l'activation, il passe ; après, une session qui ne s'ouvre pas
-est une session qui ne s'ouvre pas — `ensureSession` lève, comme pour une panne de réseau. **D'où
-l'ordre d'activation du registre d'exploitation (§3.11)**, qui ne se discute pas : l'app Android
-n'envoie pas encore de jeton, et l'activer avant le build qui le porte laisserait chaque nouvelle
-installation à la porte.
+de l'export) ou sans jeton au bout de trente secondes, **case à cocher comprise** (un plafond
+absolu : sans lui, un visiteur qui ne cochait pas restait sur l'écran de lancement, la racine
+attendant la session), l'appel part **sans** jeton, et c'est Supabase qui tranche. Avant
+l'activation, il passe. Après, il rend `400 captcha_failed` : les écrans de code le disent
+(`estRefusDuCaptcha`, la phrase de la panne de transport) au lieu d'annoncer un code jamais parti,
+mais **au démarrage**, `ensureSession` lève et la racine, qui ne le prend pas pour une panne de
+réseau, affiche l'écran technique avec le message anglais de GoTrue — à traiter avant l'activation.
+Un widget à la fois (une file), et `ensureSession` relit la session après l'attente : une session
+ouverte entre-temps n'est plus écrasée par une anonyme. **D'où l'ordre d'activation du registre
+d'exploitation (§3.11)**, qui ne se discute pas : l'app Android n'envoie pas encore de jeton, et
+l'activer avant le build qui le porte laisserait chaque nouvelle installation à la porte.
 
 ## 2. Retrouver un compte existant
 
