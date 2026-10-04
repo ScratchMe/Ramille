@@ -1938,3 +1938,16 @@ en page, donc le pied collant du questionnaire tombe probablement sous le clavie
 qui ouvre `www.ramille.fr`. **La piste** : `interactive-widget=resizes-content` dans la balise
 `viewport` (`src/app/+html.tsx`), à vérifier sur un téléphone, dans une PR à part. **Pas fait** : le
 produit se publie d'abord sur Play, et le web reste une porte d'entrée.
+
+### 12.34 L'index de Claude Design lit les durées de mouvement à zéro (04/10/2026)
+
+L'app Claude Design régénère l'index du projet « Ramille » (son manifeste, qui ne vit que sur le projet ;
+`.design-sync/NOTES.md`, relevé de la dixième synchronisation) en lisant les jetons sans leur `@media` : les cinq durées de
+`docs/design/design-system/tokens/mouvement.css` y valent `0ms`, la valeur du bloc
+`prefers-reduced-motion: reduce`, déclaré en dernier. Le rendu n'est pas touché — la feuille garde sa
+requête —, seule la liste des jetons que l'app montre, et peut-être donne à son agent, se trompe.
+**La piste** : poser les durées à zéro dans `:root` et les vraies sous `prefers-reduced-motion:
+no-preference`, ce qui ne change rien dans un navigateur et laisse les vraies valeurs en dernier. **Pas
+fait** : c'est plier une feuille juste autour d'un défaut de lecture d'un outil tiers, pour un gain
+qu'on n'a pas mesuré (on ne sait pas si l'agent de design lit cette liste), et la galerie de la
+personne qui pilote porte le même fichier, à suivre à la main.
