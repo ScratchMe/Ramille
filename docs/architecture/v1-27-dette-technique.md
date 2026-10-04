@@ -2049,12 +2049,14 @@ Ce qui reste, et pourquoi :
   en crée un second. Déjà vrai avant #355, qui n’aggrave rien : le premier reste sans résultat, le
   second se calcule. **La piste** : chercher aussi un bilan `completed`
   sans résultat du même compte. **Pas fait** : un cas de coupure précise, à éprouver avec un double.
-- **Cinq constats de la couche base, laissés au chantier des plafonds globaux, qui touche les mêmes
-  fichiers et n'attend pas de build** : le cron des plans n'isole pas un compte qui échoue — une
-  exception annule le passage de tout le monde (`generate_plan_cycles`) ; un client peut créer un
-  bilan directement `completed`, et écrire des réponses après la finalisation ; `commit_plan_action`
-  accepte une action d'un cycle clos ; `push_tokens` laisse lire `proprietaire_precedent` ; et
-  `compute_assessment_results` lève « introuvable » sans le code `no_data_found` que
-  `src/types/soumission.ts` attend. Aucun ne touche les données d'un autre compte. Un commentaire de
+- **Cinq constats de la couche base, corrigés dans une PR à part le même soir** (`20261004200000`,
+  test `48`, côté serveur, sans build) : le cron des plans n'isolait pas un compte qui échoue — une
+  exception annulait le passage de tout le monde (`generate_plan_cycles`) — il passe désormais
+  compte par compte, et `plan_cycle_runs` dit à l'alerte combien sont restés sans plan ; un client
+  pouvait créer un bilan directement `completed`, et écrire des réponses après la finalisation ;
+  `commit_plan_action` acceptait une action d'un cycle clos ; `push_tokens` laissait lire
+  `proprietaire_precedent` ; et `compute_assessment_results` levait « introuvable » sans le code
+  `no_data_found` que `src/types/soumission.ts` attend. Aucun ne touchait les données d'un autre
+  compte. Un commentaire de
   `20261004173905` promet aussi trop (« le client ne déclenche pas de recalcul » :
   `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.

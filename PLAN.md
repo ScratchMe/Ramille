@@ -276,6 +276,15 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
   nommait à tort : relevé dans `pg_get_functiondef` le 19/09/2026, la ligne est dans la fonction
   interne, donc toute reprise de calcul en masse régénère aussi les plans. L'appel y est enveloppé
   dans un `begin … exception` : le bilan aboutit même si le plan échoue, et le cron rattrape.
+  **Et le cron rattrape compte par compte depuis le 04/10/2026** (`20261004200000`, seconde passe de
+  la revue finale) : sa boucle tenait dans une seule transaction, donc un seul compte dont la
+  génération levait annulait le passage de tout le monde, chaque nuit. Chaque compte passe dans sa
+  sous-transaction, et le passage s'inscrit dans `plan_cycle_runs`, que l'alerte d'exploitation lit
+  (`plans_en_echec`, registre d'exploitation §8.5 bis′).
+- `commit_plan_action` n'engage que sur le **dernier** cycle du compte, celui que l'écran montre
+  (`lecture-du-plan.ts`, trié par `period_start`) — et non sur celui qui couvre aujourd'hui : entre
+  minuit et le passage nocturne d'un changement de saison, l'écran montre encore le cycle d'avant.
+  Un appel direct à l'API pouvait engager une action d'une saison close (04/10/2026).
 - Cadence du plan de réduction : saisons **météorologiques** (blocs calendaires de 3 mois,
   pas astronomiques) par défaut, ou trimestre glissant ancré sur la date du bilan si
   `profiles.cadence_type = 'rolling_quarter'`.
