@@ -63,6 +63,12 @@
 // ferait bloquer en production — l'app rendrait alors sans s'hydrater, sur chaque page. Le message
 // donne l'empreinte à recopier.
 //
+// Et, depuis le 04/10/2026, **le statut de chaque route** : le serveur des gardes sert désormais
+// `404.html` comme Vercel, donc une route absente de `dist/` monte la page introuvable, et une route
+// sans marqueur passait — React monte, le texte n'est pas vide, aucun écran de panne. Trouvé par
+// la contre-lecture, éprouvé le même soir sur un export privé de `suivi/index.html` : sans le
+// contrôle du statut, le script sort 0 ; avec lui, il tombe sur `/suivi`, et sur elle seule.
+//
 // Ce qui n'est PAS vérifié ici, volontairement : le réseau. L'export de CI est construit avec
 // une configuration Supabase factice, donc chaque page échoue à joindre la base — les erreurs
 // de console sont attendues et ne font pas échouer ce contrôle. On teste le rendu, pas les
@@ -264,7 +270,12 @@ for (const { chemin, marqueur, unChoixCoche } of ROUTES) {
   const infractions = await releverLaCsp(page);
 
   try {
-    await page.goto(base + chemin, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    const reponse = await page.goto(base + chemin, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    // **La route doit exister dans l'export** (contre-lecture du 04/10/2026). Depuis que le serveur
+    // des gardes sert `404.html` comme Vercel, une route absente de `dist/` monte la page
+    // introuvable : React prend la main, le texte n'est pas vide, aucun écran de panne — et une
+    // route sans marqueur passait. Le statut, lui, ne ment pas.
+    const statut = reponse?.status() ?? null;
     // **Ce qu'on attend d'abord, c'est que React ait pris la main.** Et c'est la seule attente
     // qui prouve quelque chose : l'export d'Expo Router **pré-rend** le corps de chaque page,
     // donc « la page n'est pas vide » et même le marqueur sont vrais dès `domcontentloaded`,
@@ -329,7 +340,12 @@ for (const { chemin, marqueur, unChoixCoche } of ROUTES) {
     // signaler « le marqueur est absent » cacherait la cause derrière son symptôme.
     const panne = ECRANS_DE_PANNE.find((ecran) => texte.includes(ecran.texte));
 
-    if (!monte) {
+    if (statut !== 200) {
+      echecs.push(
+        `${chemin} : le serveur répond ${statut}, et non 200 — la route n'est pas dans l'export` +
+          ` (une route dynamique, un fichier déplacé ?), et Vercel servirait la page introuvable.`
+      );
+    } else if (!monte) {
       // **En tête de la cascade**, pour la raison qui ordonne déjà les trois suivants : une app qui
       // ne monte pas rend le corps pré-rendu, donc le texte et le marqueur seraient trouvés et le
       // script se tairait. Dire « le marqueur est là » d'une page morte cacherait la cause

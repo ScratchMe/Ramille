@@ -127,6 +127,17 @@
 // autre nom) décrivent l'ancienne page ; ce qu'elles gardaient l'est désormais par le bloc du geste,
 // qui exige l'appel portant le jeton et la sortie de « Un instant ».
 //
+// **Et la seconde passe du même soir** : trois exports mutés de plus (même méthode, `--output-dir`
+// propre à chacun, joués l'un après l'autre), plus le serveur des gardes, chacun ne faisant tomber
+// que sa ligne :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | le focus ne suit plus le geste de « Couper mes rappels » | « le focus est retombé sur le document » (D, le bloc du geste) |
+//   | le bouton actif avant l'hydratation | « le HTML statique rend « Couper mes rappels » actif » (D) |
+//   | « Revenir à l'accueil » ne fait rien | « la page n'a pas quitté l'adresse inconnue » (D, la page introuvable) |
+//   | `servir-export.mjs` ne sert plus `404.html` (sans export) | « la page introuvable ne s'affiche pas » (D) |
+//
 // ── Section F, éprouvée en cassant le 25/09/2026 ───────────────────────────────────────────────
 //
 // Un témoin d'abord : l'export d'**avant** le correctif fait tomber les trois choix, et deux fois
@@ -547,11 +558,13 @@ const PARAMETRES = [
     // Un jeton de forme valide mais inconnu : depuis le 04/10/2026, la page **demande** le geste
     // (« Couper mes rappels ») au lieu de couper dès l'ouverture — un analyseur de liens qui exécutait
     // la page coupait les rappels sans que personne ait cliqué. Montée, elle rend donc ce que dit le
-    // HTML statique, et c'est juste ; ce qui la distingue, le geste qui fait partir l'appel et l'absence
-    // d'appel avant lui, se vérifie dans le bloc qui suit cette boucle.
+    // HTML statique, et c'est juste : **seule l'hydratation se vérifie ici**, sans texte interdit —
+    // « Un instant » voudrait dire un appel parti sans geste, et le message de la boucle (« resté au
+    // HTML statique ») dirait alors le contraire de la panne. Le geste qui fait partir l'appel, et
+    // l'absence d'appel avant lui, se vérifient dans le bloc qui suit cette boucle.
     chemin: `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`,
     attendu: 'Couper mes rappels',
-    interdit: 'Un instant',
+    interdit: null,
   },
   {
     // Ouvert depuis le suivi, le bilan porte `?id=` ; le HTML statique, sans identifiant, rendait
@@ -677,6 +690,20 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
       const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
       if (texte.includes('Couper mes rappels') || texte.includes('Un instant')) {
         echecs.push(`${chemin} : la page n’a pas quitté le geste après le toucher. Rendu : « ${texte.slice(0, 160)}… »`);
+      } else {
+        // **Et le focus suit** (04/10/2026, seconde passe) : le bouton touché sort de l'arbre, et
+        // le focus retombait sur le document — rien n'annonçait l'issue. Il doit porter sur une
+        // phrase de ce qui est arrivé (`FRONT.md` §2.4).
+        const focus = await page.evaluate(() => {
+          const actif = document.activeElement;
+          return !actif || actif === document.body ? null : actif.innerText.replace(/\s+/g, ' ').trim();
+        });
+        if (!focus) {
+          echecs.push(
+            `${chemin} : après le toucher, le focus est retombé sur le document — l’issue n’est annoncée` +
+              ' à personne (`FRONT.md` §2.4).'
+          );
+        }
       }
     }
   } catch (erreur) {
@@ -699,6 +726,48 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
     );
   } else if (!html.includes('Couper mes rappels')) {
     echecs.push('/rappels/stop : le HTML statique ne demande plus le geste (« Couper mes rappels »).');
+  } else if (
+    !(html.match(/<button\b[^>]*aria-label="Couper mes rappels"[^>]*>/)?.[0] ?? '').includes('aria-disabled="true"')
+  ) {
+    // Le bouton n'a pas de gestionnaire avant l'hydratation : actif d'apparence, il perdait les
+    // touchers sans un mot sur un réseau lent (04/10/2026, seconde passe). La balise du bouton
+    // lui-même, par son libellé : un autre élément désactivé de la page ne doit pas répondre à sa
+    // place (contre-lecture du même soir). Le bloc du geste, lui, le touche une fois la page
+    // montée — un bouton resté inerte le ferait tomber.
+    echecs.push('/rappels/stop : le HTML statique rend « Couper mes rappels » actif, avant tout gestionnaire.');
+  }
+}
+
+// **La page introuvable, sur une adresse inconnue, comme Vercel la sert** (04/10/2026, seconde passe
+// de la revue finale) : `404.html`, en statut 404, à l'adresse demandée (`servir-export.mjs`). Sa pose
+// était vérifiée à l'octet près (`verifier-titres-export.mjs`), mais personne ne l'ouvrait : qu'elle
+// s'hydrate sur une adresse qui n'est pas la sienne, et que sa seule sortie mène quelque part, était
+// raisonné. Où « Revenir à l'accueil » finit n'est pas épinglé — la racine aiguille selon l'appareil.
+{
+  const chemin = '/n-existe-pas';
+  const exceptions = [];
+  const statut = await fetch(base + chemin).then((r) => r.status).catch(() => null);
+  const page = await ouvrir(chemin, {}, { exceptions });
+  try {
+    const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
+    const hydratation = exceptions.filter((e) => HYDRATATION.test(e));
+    if (statut !== 404) {
+      echecs.push(`${chemin} : le serveur répond ${statut}, et non 404 — la page introuvable n’est pas servie comme Vercel la sert.`);
+    } else if (!texte.includes('Cette page n’existe pas')) {
+      echecs.push(`${chemin} : la page introuvable ne s’affiche pas. Rendu : « ${texte.slice(0, 160)}… »`);
+    } else if (hydratation.length > 0) {
+      echecs.push(`${chemin} : l’hydratation de la page introuvable échoue (${hydratation[0].slice(0, 90)}…).`);
+    } else {
+      await page.getByRole('button', { name: 'Revenir à l’accueil' }).click({ timeout: ATTENTE });
+      await page.waitForURL((url) => url.pathname !== chemin, { timeout: ATTENTE }).catch(() => {});
+      if (new URL(page.url()).pathname === chemin) {
+        echecs.push(`${chemin} : « Revenir à l’accueil » touché, et la page n’a pas quitté l’adresse inconnue.`);
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`${chemin} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
   }
 }
 
@@ -2491,7 +2560,8 @@ if (echecs.length > 0) {
 console.log(
   `${ETATS_DE_BARRE.length} états de barre d’onglets et ${ETAPES.length} ouvertures du` +
     ` questionnaire conformes ; onglets à ${CIBLE_TACTILE} px et actif lisible sans sa teinte ;` +
-    ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; focus et animations réduites` +
+    ` ${PARAMETRES.length} routes à paramètre hydratées sans écart ; la désinscription attend le` +
+    ' geste, et la page introuvable rend la main ; focus et animations réduites' +
     ` de l’onboarding conformes ; ${CASES_A_L_ESPACE.length} choix cochés à la barre d’espace sans` +
     ' que la page défile ; le focus du questionnaire suit l’étape, et « Voir les autres modes » le' +
     ' pose sur le premier mode révélé ; un arrêt de tabulation par groupe d’options, et les flèches' +

@@ -534,6 +534,10 @@ exactement ce qui avait laissé passer le mauvais caractère.
   phrase de ce qui arrive, et `MonCompte` sur la phrase de la confirmation, puis sur « C'est fait. ».
   Gardé par la section L de `verifier-etats-export.mjs` et deux étapes du parcours réel ; les phases
   de `/compte/suppression` et le code de `/connexion/retrouver` ne sont gardés par rien.
+  **`/rappels/stop` aussi, depuis le 04/10/2026** (seconde passe de la revue finale) : « Couper mes
+  rappels » sort de l'arbre au toucher, et le focus va à la première phrase de ce qui arrive — « Un
+  instant », « C'est fait », la panne, ou le lien refusé —, jamais avant le geste. Gardé par le bloc
+  du geste de la section D de `verifier-etats-export.mjs`.
 - **Le focus d'un champ est une forme, pas une couleur** (01/10/2026, `v1-33` Q-12, `cadreDuChamp`
   dans `src/components/cadre-du-champ.ts` depuis le 02/10/2026). La bordure passe à l'accent au focus comme au
   remplissage, à la même épaisseur (`Stroke.field`) — mais gris contre vert, le changement ne tient

@@ -66,11 +66,21 @@ lisible dans la console et par un appel direct, et rien dans GoTrue ne la masque
   l'état de l'adresse, et l'atteindre demande une course que seul celui qui a pris l'adresse peut
   provoquer. Sur
 natif, un lien de connexion arrivait hors de l'app (messagerie) et remontait par `Linking.useURL()`
-dans `_layout.tsx`. Depuis le 20/09/2026 il n'y a plus de lien : cette branche n'est plus qu'un
-filet, qui refuse nommément une URL à jetons injectée (plus bas, PKCE). Le scheme `ramille://` reste
-dans les Redirect URLs Supabase pour le retour de Google sur natif, qui ne passe pas par elle :
-`linkGoogleIdentity` reçoit l'URL de `openAuthSessionAsync` et appelle lui-même
-`createSessionFromUrl`.
+dans `_layout.tsx`. Depuis le 20/09/2026 il n'y a plus de lien : cette branche refuse nommément
+une URL à jetons injectée (plus bas, PKCE), échange le `?code=` d'une fenêtre Google dont l'app a été
+tuée entre-temps, et se tait sur ce que la fenêtre a pris (plus bas, les trois écouteurs). Le scheme `ramille://` reste
+dans les Redirect URLs Supabase pour le retour de Google sur natif : `linkGoogleIdentity` reçoit
+l'URL de `openAuthSessionAsync` et appelle lui-même `createSessionFromUrl`.
+
+**Ce paragraphe disait que ce retour « ne passe pas par » le filet, et c'était faux sur Android**
+(seconde passe de la revue finale, 04/10/2026). `openAuthSessionAsync` y est un polyfill qui attend
+l'événement `url` de `Linking` — le même que `Linking.useURL()` et qu'Expo Router. Les trois le
+recevaient : le code partait deux fois à l'échange, le second échec remplaçait l'écran, et Expo
+Router empilait la racine. **Ce que la fenêtre a pris n'appartient qu'à elle** : le layout se tait
+dessus (`estUnRetourDuNavigateurDAuth`, `src/lib/auth.ts`), et Expo Router ne navigue sur aucune URL
+`ramille:` d'authentification arrivée app ouverte (`src/app/+native-intent.tsx`,
+`cheminPourLeRouteur`) — les liens `https` du plan, eux, passent, même s'ils portaient un jour un
+`code=`. Ajouter un écouteur de `Linking` ailleurs dans l'app impose la même question.
 
 **Le flux est en PKCE depuis le 20/09/2026, et le lien ne s'ouvre plus que là où il a été
 demandé.** Le défaut d'`auth-js` est `implicit` : tout lien livrait alors `access_token` **et**
@@ -147,8 +157,9 @@ rattachement rattachait son adresse au compte d'un inconnu d'un seul clic. Sept 
 - **Les Redirect URLs ne servent plus qu'à Google.** `emailRedirectTo` a disparu des deux appels :
   il ne remplissait que `{{ .ConfirmationURL }}`, que plus aucun gabarit n'emprunte. Le chemin de
   lien profond (`Linking.useURL()` dans `_layout.tsx`) est resté le 20/09/2026 comme **filet** pour
-  un lien parti avant le changement — expiré depuis, la validité étant d'une heure — et ne fait
-  plus que refuser une URL à jetons injectée. Le scheme `ramille://` et `createSessionFromUrl`
+  un lien parti avant le changement — expiré depuis, la validité étant d'une heure. Il refuse une
+  URL à jetons injectée, échange le code d'une fenêtre Google dont l'app a été tuée, et se tait sur
+  le retour que la fenêtre a pris (plus haut). Le scheme `ramille://` et `createSessionFromUrl`
   servent, eux, au retour OAuth de Google sur natif, qui revient par `openAuthSessionAsync`.
 
 **`estPanneDeTransport` couvre les 5xx, et c'est assumé** — `auth-js` lève

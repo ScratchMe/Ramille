@@ -20,7 +20,9 @@
  * que `production`, 1 ; élargir la liste blanche à `src/`, 4. Aucune mutation ne passe.
  *
  * Et le 04/10/2026, les deux scripts que `vercel-build` lance remis dans la liste blanche avec le reste
- * de `scripts/*` : 2 tests tombent, ceux qui les nomment.
+ * de `scripts/*` : 2 tests tombent, ceux qui les nomment. Le même soir, la liste lue dans
+ * `package.json` : un troisième script ajouté à `vercel-build` sans exception fait tomber son cas
+ * (1) ; un import de `./servir-export.mjs` ajouté au script de la page 404, le sien (1).
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -155,6 +157,34 @@ describe("l'Ignored Build Step", () => {
     const d = depotAvecSocle();
     d.commettre('code', ['docs/note.md', fichier]);
     expect(d.ignorer({ VERCEL_ENV: 'production' }).code).toBe(1);
+  });
+
+  // **La liste ci-dessus est recopiée à la main, celle-ci se lit dans `package.json`** (04/10/2026,
+  // seconde passe de la revue finale). Un troisième script entré dans `vercel-build` sans exception
+  // serait sauté seul, et sa correction ne partirait pas ; un script du build qui importerait un
+  // module voisin de `scripts/` le serait aussi quand seul ce module change. Les deux se vérifient
+  // donc sur la commande réelle.
+  const scriptsDuBuild = [
+    ...JSON.parse(fs.readFileSync(path.join(racine, 'package.json'), 'utf8')).scripts['vercel-build'].matchAll(
+      /node (scripts\/[^\s&|;]+)/g
+    ),
+  ].map((m: RegExpMatchArray) => m[1]);
+
+  test('vercel-build lance au moins les deux scripts qui entrent dans le build', () => {
+    expect(scriptsDuBuild).toEqual(
+      expect.arrayContaining(['scripts/poser-la-page-introuvable.mjs', 'scripts/verifier-origine-supabase-de-la-csp.mjs'])
+    );
+  });
+
+  test.each(scriptsDuBuild)('construit quand %s, lancé par vercel-build, change seul', (fichier) => {
+    const d = depotAvecSocle();
+    d.commettre('script du build', [fichier]);
+    expect(d.ignorer({ VERCEL_ENV: 'production' }).code).toBe(1);
+  });
+
+  test.each(scriptsDuBuild)("%s n'importe aucun module voisin, que le saut ne verrait pas", (fichier) => {
+    const source = fs.readFileSync(path.join(racine, fichier), 'utf8');
+    expect(source).not.toMatch(/(?:from\s+|import\s*\(\s*|import\s+|require\(\s*)['"]\.{1,2}\//);
   });
 
   test('sans VERCEL_ENV, la comparaison de fichiers décide — jamais le repli de prévisualisation', () => {

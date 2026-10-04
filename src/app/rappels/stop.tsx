@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +11,7 @@ import { APP_NAME } from '@/constants/produit';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { couperLesRappels } from '@/lib/desinscription';
+import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import {
   etatApres,
   etatDeLaPage,
@@ -91,6 +92,17 @@ export default function StopRappels() {
   const apresHydratation = useApresHydratation();
   const etat = etatDeLaPage({ apresHydratation, jeton, demandee, reponse });
 
+  // **Le focus suit le geste** (04/10/2026, seconde passe de la revue finale, `FRONT.md` §2.4) :
+  // « Couper mes rappels » sort de l'arbre au toucher, « Réessayer » aussi, et le focus retombait
+  // sur le document — rien n'annonçait « Un instant », ni « C'est fait », ni la panne. Il va à la
+  // première phrase de ce qui arrive, et seulement après le geste : avant, un état qui change est
+  // l'hydratation, que personne n'a demandée. Une seule référence suffit, un bloc à la fois.
+  const premierePhrase = useRef<unknown>(null);
+  useEffect(() => {
+    if (demandee) donnerLeFocus(premierePhrase.current);
+  }, [etat, demandee]);
+  const focalisable = { ref: premierePhrase, ...FOCALISABLE_PAR_PROGRAMME } as TitreFocalisable;
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -110,19 +122,26 @@ export default function StopRappels() {
                   Tu ne recevras plus de rappels, ni par email ni par notification. Ton compte, tes
                   bilans et ton plan ne changent pas.
                 </ThemedText>
-                <Button title="Couper mes rappels" onPress={() => setDemandee(true)} />
+                {/* Inerte jusqu'à l'hydratation, et il le montre : le HTML statique rendait un
+                    bouton d'apparence active, sans gestionnaire — sur un réseau lent, les touchers
+                    se perdaient sans un mot. Même rendu des deux côtés, donc pas d'écart (418). */}
+                <Button
+                  title="Couper mes rappels"
+                  disabled={!apresHydratation}
+                  onPress={() => setDemandee(true)}
+                />
               </>
             )}
 
             {etat === 'en-cours' && (
-              <ThemedText themeColor="textSecondary" style={styles.corps}>
+              <ThemedText themeColor="textSecondary" style={styles.corps} {...focalisable}>
                 Un instant, on coupe tes rappels.
               </ThemedText>
             )}
 
             {etat === 'coupes' && (
               <>
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                <ThemedText themeColor="textSecondary" style={styles.corps} {...focalisable}>
                   C’est fait : tu ne recevras plus de rappels, ni par email ni par notification.
                 </ThemedText>
                 {/* Ce que la personne n'a pas demandé reste intact, et il faut le dire : un lien
@@ -139,8 +158,8 @@ export default function StopRappels() {
               <>
                 {/* Un jeton inconnu, déjà utilisé ou purgé aboutissent ici, et un lien tronqué
                     aussi : la page ne laisse pas deviner si un jeton a existé (même registre que
-                    `/connexion/retrouver`). */}
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                    `/connexion/retrouver`). Après le geste, si le serveur refuse le jeton. */}
+                <ThemedText themeColor="textSecondary" style={styles.corps} {...focalisable}>
                   Ce lien n’est plus valable — il ne sert qu’une fois.
                 </ThemedText>
                 <ThemedText themeColor="textSecondary" style={styles.corps}>
@@ -154,7 +173,7 @@ export default function StopRappels() {
               <>
                 {/* « N'a pas abouti » et non « n'est pas partie » : la demande a bien quitté le
                     navigateur, et le geste à faire est le même dans les deux cas. */}
-                <ThemedText themeColor="textSecondary" style={styles.corps}>
+                <ThemedText themeColor="textSecondary" style={styles.corps} {...focalisable}>
                   {phraseDeLaPanne(genreDeLaPanne)}
                 </ThemedText>
                 {/* Le passage par « en cours » se fait **ici**, dans le gestionnaire du bouton :

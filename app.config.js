@@ -30,10 +30,12 @@ function variablesManquantes(env) {
 module.exports = ({ config }) => {
   const manquantes = variablesManquantes(process.env);
   if (manquantes.length > 0) {
+    const plusieurs = manquantes.length > 1;
     throw new Error(
-      `Build « ${process.env.EAS_BUILD_PROFILE} » refusé : ${manquantes.join(', ')} manque dans` +
-        ' l’environnement EAS de ce profil (expo.dev → projet → Environment variables). Sans elle,' +
-        ' l’app se construit mais ne reçoit aucune notification, ou démarre sans configuration' +
+      `Build « ${process.env.EAS_BUILD_PROFILE} » refusé : ${manquantes.join(', ')} ` +
+        `${plusieurs ? 'manquent' : 'manque'} dans l’environnement EAS de ce profil (expo.dev →` +
+        ` projet → Environment variables). Sans ${plusieurs ? 'elles' : 'elle'}, l’app se construit` +
+        ' mais ne reçoit aucune notification, ou démarre sans configuration' +
         ' (docs/exploitation/README.md §3.3).'
     );
   }

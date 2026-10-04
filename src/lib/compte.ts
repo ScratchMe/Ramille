@@ -172,6 +172,9 @@ export async function apresUneReconnexion(): Promise<void> {
   await noterUneReconnexion();
 }
 
+// Ce que « Me déconnecter » attend la désinscription du jeton de notification, au plus (plus bas).
+const DELAI_DU_JETON_A_LA_DECONNEXION_MS = 5_000;
+
 /**
  * Se déconnecter de cet appareil — C2.11, point 4 (arbitrage D17).
  *
@@ -203,7 +206,24 @@ export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
   // l'autre sens : si le jeton part et que le `signOut` échoue avec la session encore là (plus bas),
   // le compte reste connecté sans jeton actif, et ses rappels passent par l'e-mail jusqu'au prochain
   // lancement, qui réinscrit le jeton. Plus rare que l'inverse, et sans rien envoyer dans le vide.
-  await desinscrireLeJetonDeCetAppareil().catch(() => undefined);
+  //
+  // **Et pas plus de cinq secondes** (seconde passe de la revue) : le `fetch` de React Native n'a
+  // aucun délai par défaut, et cet appel ajouté devant le `signOut` pouvait tenir le bouton en
+  // attente aussi longtemps que le réseau se tait. Passé le délai, la déconnexion part, et l'appel
+  // est abandonné : sa réponse tardive n'efface plus la marque que la session suivante aura posée
+  // (`desinscrireLeJetonDeCetAppareil`). Le minuteur se défait quand l'appel répond à temps.
+  const abandon = new AbortController();
+  let minuteur: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    desinscrireLeJetonDeCetAppareil(abandon.signal).catch(() => undefined),
+    new Promise<void>((resoudre) => {
+      minuteur = setTimeout(() => {
+        abandon.abort();
+        resoudre();
+      }, DELAI_DU_JETON_A_LA_DECONNEXION_MS);
+    }),
+  ]);
+  clearTimeout(minuteur);
 
   // **Un départ voulu, déclaré comme tel** (02/10/2026, `v1-27` §12.27) : la session qu'`auth-js` retire
   // ici n'est pas un refus, et la session anonyme suivante doit s'ouvrir (`src/lib/supabase.ts`).

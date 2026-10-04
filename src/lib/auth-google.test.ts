@@ -17,6 +17,13 @@
  * de la lecture du code fait tomber les deux premiers tests, et eux seuls ; `compteGoogleDejaConnu`
  * réduit à l'identité déjà prise fait tomber le deuxième, seul ici — et la première assertion de
  * `compteGoogleDejaConnu` dans `src/types/connexion.test.ts`.
+ *
+ * **Et le silence du layout racine sur ce retour** (même jour, seconde passe), éprouvé de même : le
+ * drapeau jamais levé fait tomber le premier test du dernier bloc, l'URL rendue jamais retenue le
+ * second, et chacun seul ; le drapeau abaissé juste après avoir lancé la fenêtre, avant de l'attendre
+ * (contre-lecture du même soir), le premier, seul. Ce que ce fichier ne voit pas : que `_layout.tsx` **lise** ce silence —
+ * aucun test ne monte le layout racine ; la ligne se vérifie sur appareil (recette d'octobre, 02.4
+ * et R.1).
  */
 const mockLinkIdentity = jest.fn();
 const mockOpenAuthSession = jest.fn();
@@ -33,7 +40,7 @@ jest.mock('@/lib/supabase', () => ({
 
 // Chargé après les doubles : `auth.ts` lit ses modules à l'import.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { linkGoogleIdentity } = require('./auth') as typeof import('./auth');
+const { estUnRetourDuNavigateurDAuth, linkGoogleIdentity } = require('./auth') as typeof import('./auth');
 
 beforeEach(() => {
   mockLinkIdentity.mockReset();
@@ -76,5 +83,34 @@ describe('linkGoogleIdentity — le retour en erreur', () => {
     mockOpenAuthSession.mockResolvedValue({ type: 'cancel' });
 
     expect(await linkGoogleIdentity()).toEqual({ issue: 'annulation' });
+  });
+});
+
+describe('estUnRetourDuNavigateurDAuth — le layout racine se tait sur le retour de Google', () => {
+  // Sur Android, le même événement `url` arrive à la fenêtre et au layout (`src/lib/auth.ts`) :
+  // sans ce silence, le code partait deux fois à l'échange, et le second échec remplaçait l'écran.
+  it('couvre toute URL tant que la fenêtre est ouverte', async () => {
+    let pendantLOuverture: boolean | null = null;
+    mockOpenAuthSession.mockImplementation(async () => {
+      // Un tour d'attente d'abord : lu au moment de l'appel, le drapeau laisserait passer un code
+      // qui l'abaisserait juste après avoir lancé la fenêtre, avant de l'attendre.
+      await Promise.resolve();
+      pendantLOuverture = estUnRetourDuNavigateurDAuth('ramille://?code=pendant');
+      return { type: 'cancel' };
+    });
+
+    await linkGoogleIdentity();
+
+    expect(pendantLOuverture).toBe(true);
+    expect(estUnRetourDuNavigateurDAuth('ramille://?code=pendant')).toBe(false);
+  });
+
+  it('couvre ensuite l’URL que la fenêtre a rendue — même revenue en erreur, sans réseau —, et elle seule', async () => {
+    const collision = 'ramille://?error=server_error&error_code=identity_already_exists';
+    retour(collision);
+    await linkGoogleIdentity();
+
+    expect(estUnRetourDuNavigateurDAuth(collision)).toBe(true);
+    expect(estUnRetourDuNavigateurDAuth('ramille://?code=un-autre')).toBe(false);
   });
 });

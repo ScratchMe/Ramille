@@ -491,7 +491,14 @@ props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
   où la page s'est mise à **demander** le geste (« Couper mes rappels ») au lieu de couper à
   l'ouverture. Sa page montée dit alors ce que dit le HTML, et c'est juste ; ce qui la distingue se
   vérifie dans un bloc à part de la section D : aucun appel avant le geste, l'appel portant le jeton
-  après lui, et la page qui quitte le bouton. La section E ne lisait
+  après lui, la page qui quitte le bouton — et, depuis la seconde passe du même soir, le focus posé
+  sur ce qui arrive et le bouton inerte dans le HTML statique, avant tout gestionnaire. La même passe
+  y a ajouté **la page introuvable**, que le serveur des gardes sert désormais comme Vercel
+  (`404.html`, en statut 404, à l'adresse demandée) : elle s'hydrate sur une adresse qui n'est pas la
+  sienne, et « Revenir à l'accueil » la quitte. Ce serveur-là affaiblissait en silence le contrôle de
+  rendu (`verifier-rendu-export.mjs`) : une route disparue de l'export y montait la page introuvable,
+  qui n'est ni vide ni un écran de panne — il exige donc désormais un statut 200 de chaque route
+  (contre-lecture du même soir). La section E ne lisait
   le focus qu'au repos, et restait verte pendant qu'il revenait sur la page qu'on quitte : un
   journal posé avant le chargement relève désormais chaque `focusin` et chaque bascule d'`inert`
   **pendant** la transition. Et **G** tient le focus d'étape du questionnaire sur web, qu'aucune

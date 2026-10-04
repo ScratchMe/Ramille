@@ -158,6 +158,17 @@ export async function servirExport(dist, port = 0) {
   const serveur = createServer((requete, reponse) => {
     const fichier = resoudre(dist, requete.url ?? '/');
     if (!fichier) {
+      // **Comme Vercel : `404.html`, en statut 404, sur l'adresse demandée** (04/10/2026, seconde
+      // passe de la revue finale). Sans elle, aucune garde n'ouvrait la page introuvable — sa pose
+      // était vérifiée à l'octet près (`verifier-titres-export.mjs`), son hydratation sur une
+      // adresse inconnue raisonnée seulement. Un export qui ne l'a pas encore (sans
+      // `poser-la-page-introuvable.mjs`) répond comme avant.
+      const introuvable = join(dist, '404.html');
+      if (existsSync(introuvable)) {
+        reponse.writeHead(404, { ...enTetes, 'content-type': TYPES['.html'] });
+        createReadStream(introuvable).pipe(reponse);
+        return;
+      }
       reponse.writeHead(404).end('introuvable');
       return;
     }

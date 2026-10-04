@@ -25,7 +25,7 @@ import { SessionRefusee } from '@/components/session-refusee';
 import { TitreDePage } from '@/components/titre-de-page';
 import { useTrackView } from '@/hooks/use-track-view';
 import { envoyerLesErreursEnAttente, track } from '@/lib/analytics';
-import { createSessionFromUrl } from '@/lib/auth';
+import { createSessionFromUrl, estUnRetourDuNavigateurDAuth } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
 import { effacerLesMarquesDuCompte } from '@/lib/marques-locales';
 import {
@@ -254,11 +254,15 @@ export default function RootLayout() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  // Lien de connexion par email ouvert depuis la messagerie du téléphone : il revient par le
-  // scheme `ramille://` avec les jetons dans le fragment, et personne n'attend cette URL —
-  // contrairement au retour Google, qui passe par `openAuthSessionAsync`. Sur web,
-  // `detectSessionInUrl` ouvre la session tout seul. Une fois la session ouverte, la racine route
-  // vers le plan ou l'onboarding selon ce que porte le compte retrouvé.
+  // Ce qui arrive par le scheme `ramille://` et que personne d'autre n'attend. C'était le lien de
+  // connexion par e-mail ouvert depuis la messagerie, jusqu'au 20/09/2026 où les e-mails ont pris
+  // un code ; il reste trois cas : refuser une URL à jetons injectée, échanger le `?code=` d'une
+  // fenêtre Google dont l'app a été tuée entre-temps, et **se taire sur ce que la fenêtre a pris**
+  // — sur Android, son retour arrive aussi ici (`estUnRetourDuNavigateurDAuth`, plus bas). Sur
+  // web, `detectSessionInUrl` ouvre la session tout seul. Une fois la session ouverte, la racine
+  // route vers le plan ou l'onboarding selon ce que porte le compte retrouvé. Les paragraphes
+  // qui suivent racontent les liens d'e-mail : c'est l'histoire de ce code, et le filet qu'il
+  // garde pour un lien parti avant le changement.
   //
   // **Un lien qui ne marche plus ne produisait rien du tout** (A1-6, A6-6) : la garde ne
   // reconnaissait que `access_token=`, alors que Supabase renvoie l'expiration dans le même
@@ -336,6 +340,12 @@ export default function RootLayout() {
         setTimeout(resoudre, 0);
       });
       if (annule) return;
+      // **Le retour de Google sur Android n'est pas à nous** (04/10/2026) : la fenêtre
+      // d'authentification l'a reçu sur le même événement, et `linkGoogleIdentity` l'échange déjà.
+      // Le traiter ici une seconde fois, c'est échouer à coup sûr — le code ne s'échange qu'une
+      // fois — et remplacer l'écran par celui d'un lien mort. Lu après l'attente : c'est le côté
+      // sûr, la fenêtre a rendu son URL, ou elle est encore ouverte (`src/lib/auth.ts`).
+      if (estUnRetourDuNavigateurDAuth(urlEntrante)) return;
 
       // Valeur du cas `erreur`, où le lien est revenu porteur d'un échec et où il n'y a rien à
       // tenter ; les branches ci-dessous la corrigent selon ce qui a échoué.

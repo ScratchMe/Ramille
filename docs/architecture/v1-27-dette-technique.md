@@ -2004,4 +2004,57 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   adresse IP, sans captcha) : chaque session neuve repart à zéro sur les retours et les événements
   d'usage, et des comptes en masse finiraient par bloquer la purge (sa garde des 20 %). La question
   du captcha est posée à la personne qui pilote le 04/10/2026, avec l'alternative de plafonds globaux
-  côté base ; rien ne se fait avant sa réponse.
+  côté base ; rien ne se fait avant sa réponse. **Tranché le même soir** : captcha Turnstile
+  (Cloudflare accepté comme sous-traitant), plafonds globaux et purge qui tient, plafonds d'e-mail,
+  carte de partage durcie, et Brevo pour les e-mails — le plan anti-abus, livré par chantiers.
+- **Toute adresse inconnue lance désormais l'app** (relevé à la seconde passe) : avant la page 404,
+  Vercel servait sa page brute, sans JavaScript. Une adresse inventée ouvre donc une session anonyme
+  et compte une arrivée (`app_open`) dans le dénominateur des entonnoirs. Pas pire en nature que `/`,
+  et la réponse est un 404, que la plupart des robots ne rendent pas ; c'est la même surface que la
+  ligne précédente, et le même plan la couvre.
+
+### 12.36 Ce que la seconde passe de la revue a trouvé, avant le build (04/10/2026)
+
+La seconde passe (quatre relectures, sur `main` après #355) a trouvé **un bloquant**, corrigé dans la
+PR qui suit : **sur Android, le retour de Google arrivait à trois écouteurs.** `openAuthSessionAsync`
+n'y est qu'un polyfill, qui attend l'événement `url` de `Linking` comme `Linking.useURL()` du layout
+racine et comme Expo Router. Le même `?code=` partait donc deux fois à l'échange, et le second échec
+se lisait à l'écran — « La connexion avec Google n'a pas abouti » sur un compte bien rattaché, ou le
+plan remplacé par `/connexion/retrouver` ; sur la collision, l'aiguillage écrasé par « Ce lien ne
+marche plus » ; et Expo Router empilait la racine, dont le démarrage remplace l'écran du dessus.
+Trouvé dans `node_modules`, **et la course avait déjà eu lieu sur appareil sans se voir** : 02.4,
+jouée le 04/10/2026 à 1 h 14, a fini sur le plan, mais l'identité Google rattachée ce soir-là n'a
+émis aucun `connexion_success` (relevé en base le même jour) — l'échange du layout avait gagné, et
+son `router.replace('/')` menait au plan. Le layout se tait sur ce que la fenêtre a pris
+(`estUnRetourDuNavigateurDAuth`), Expo Router aussi (`src/app/+native-intent.tsx`) ; R.1 et R.5 de
+la recette d'octobre le jouent, et 02.4 compte désormais `connexion_success`. Corrigés avec lui :
+le focus et le bouton inerte avant l'hydratation de « Couper mes rappels », un délai à la
+désinscription du jeton pendant la déconnexion — et l'appel abandonné passé ce délai, pour que sa
+réponse tardive n'efface pas la marque de la session suivante —, la page 404 servie et ouverte par
+les gardes, le contrôle de rendu qui exige un statut 200 (sans lui, servir la page 404 l'aurait
+rendu aveugle à une route disparue de l'export), la liste des scripts de `vercel-build` lue par le
+test du saut, R.1 déplacée après 11.2, et R.5 qui rejoue le rattachement réussi.
+
+Ce qui reste, et pourquoi :
+
+- **Le retour de Google dans une app tuée entre-temps.** Si Android tue l'app pendant que l'onglet
+  Google est ouvert, le retour la relance : la fenêtre n'existe plus, et le layout traite seul l'URL.
+  Un `?code=` s'échange alors avec le vérifieur resté en stockage, et c'est juste ; une collision,
+  elle, s'affiche comme un lien mort (« Ce lien ne marche plus »). **La piste** : sur natif, lire
+  `compteGoogleDejaConnu` dans le layout et aiguiller vers `/connexion/retrouver?source=google`. **Pas
+  fait** : rare, et le layout est le code le plus délicat du démarrage.
+- **Le nouvel essai d'une soumission ne survit pas au remontage de `/bilan`.** `bilanEnCours` est une
+  référence de l'écran : la réponse du calcul perdue, puis l'app tuée, et la recherche suivante ne
+  regarde que les bilans `in_progress` — elle ne voit pas le bilan `completed` resté sans résultat, et
+  en crée un second. Déjà vrai avant #355, qui n’aggrave rien : le premier reste sans résultat, le
+  second se calcule. **La piste** : chercher aussi un bilan `completed`
+  sans résultat du même compte. **Pas fait** : un cas de coupure précise, à éprouver avec un double.
+- **Cinq constats de la couche base, laissés au chantier des plafonds globaux, qui touche les mêmes
+  fichiers et n'attend pas de build** : le cron des plans n'isole pas un compte qui échoue — une
+  exception annule le passage de tout le monde (`generate_plan_cycles`) ; un client peut créer un
+  bilan directement `completed`, et écrire des réponses après la finalisation ; `commit_plan_action`
+  accepte une action d'un cycle clos ; `push_tokens` laisse lire `proprietaire_precedent` ; et
+  `compute_assessment_results` lève « introuvable » sans le code `no_data_found` que
+  `src/types/soumission.ts` attend. Aucun ne touche les données d'un autre compte. Un commentaire de
+  `20261004173905` promet aussi trop (« le client ne déclenche pas de recalcul » :
+  `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.
