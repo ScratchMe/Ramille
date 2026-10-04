@@ -118,13 +118,18 @@ select ok(
   'Le journal des purges n''est ni lisible ni écrivable par anon ou authenticated'
 );
 
--- Soixante sessions anonymes muettes depuis cent jours. Les quatre sessions actives plus haut
--- restent en base : soixante candidats sur soixante-quatre comptes, soit bien au-delà du seuil
+-- Soixante sessions anonymes muettes depuis cent jours, **qui portent chacune un bilan** : depuis le
+-- plan anti-abus (04/10/2026), la garde ne compte que les comptes qui portent quelque chose, et les
+-- comptes vides partent à chaque passage (`49`). Soixante candidats porteurs, bien au-delà du seuil
 -- (20 %, plancher 50 comptes).
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at, last_sign_in_at)
 select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
        now() - interval '100 days', now(), now() - interval '100 days'
+from generate_series(1, 60) as g(i);
+
+insert into public.assessments (user_id, status, created_at)
+select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid, 'in_progress', now() - interval '100 days'
 from generate_series(1, 60) as g(i);
 
 select public.purge_stale_anonymous_accounts();
