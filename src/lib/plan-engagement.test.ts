@@ -63,7 +63,7 @@ describe('commitPlanAction', () => {
   // Une nouvelle saison pendant la nuit, ou un plan refait ailleurs : l'action n'est plus sur le plan
   // en cours (`v1-27` §12.36). Chaque essai échouait sous un message de panne.
   it('relit le plan quand l’action n’est plus sur le plan en cours', async () => {
-    mockRpc.mockResolvedValue({ data: null, error: { code: 'P0002', message: 'Action introuvable.' }, status: 404 });
+    mockRpc.mockResolvedValue({ data: null, error: { code: 'P0002', message: 'Action introuvable.' }, status: 500 });
     expect(await engager()).toEqual({
       ok: false,
       message: 'Ton choix n’a pas été enregistré : ton plan a changé entre-temps. Il vient d’être relu.',
@@ -90,7 +90,7 @@ describe('clearPlanActionCommitment', () => {
   });
 
   it('relit le plan quand l’engagement n’est plus sur le plan en cours', async () => {
-    mockRpc.mockResolvedValue({ data: null, error: { code: 'P0002', message: 'Action introuvable.' }, status: 404 });
+    mockRpc.mockResolvedValue({ data: null, error: { code: 'P0002', message: 'Action introuvable.' }, status: 500 });
     expect(await clearPlanActionCommitment('a1')).toEqual({
       ok: false,
       message: 'Le changement n’a pas été enregistré : ton plan a changé entre-temps. Il vient d’être relu.',

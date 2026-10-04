@@ -103,7 +103,7 @@ export async function clearPlanActionCommitment(planActionId: string): Promise<E
   });
 
   if (error?.code === PLAN_CHANGE) {
-    // Le même plan périmé, côté « Ne plus suivre » : la phrase garde le mot de ce geste-ci.
+    // Le même plan périmé, côté « Changer d'avis » : la phrase garde le mot de ce geste-ci.
     return {
       ok: false,
       message: 'Le changement n’a pas été enregistré : ton plan a changé entre-temps. Il vient d’être relu.',

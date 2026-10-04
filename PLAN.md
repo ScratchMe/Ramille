@@ -206,7 +206,8 @@ direct à l'API pouvait engager une action d'une saison close, ou en relâcher l
 l'archiver en `changement`. Un écran resté ouvert pendant le passage nocturne reçoit `P0002` : l'écran
 relit alors le plan et le dit (« Ton choix n'a pas été enregistré : ton plan a changé entre-temps. Il
 vient d'être relu. », phrase choisie par la personne qui pilote le 04/10/2026), comme pour `RM001`
-(`src/lib/plan-engagement.ts`). Dans l'app à partir du build qui suit le 04/10/2026.
+(`src/lib/plan-engagement.ts`), à l'engagement comme au retrait. Sur le web dès le déploiement du
+04/10/2026, sur Android au build qui suit.
 
 **Aucun chemin du produit ne détruit un engagement sans en laisser une trace** (C2.2, 11/09/2026,
 `20260912150000_engagement_qui_survit.sql`). Il y en avait quatre, et ils se ressemblent assez pour

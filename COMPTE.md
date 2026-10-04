@@ -223,9 +223,11 @@ annonce —, le texte de Supabase dessous en chasse fixe tertiaire, recopiable.
 ### Le captcha de la session anonyme et des codes (04/10/2026)
 
 **Deux appels seulement portent un jeton Turnstile** : `signInAnonymously` (`ensureSession`) et
-`signInWithOtp` (`demanderLaConnexion`) — ce sont les seuls que Supabase protège quand le captcha
-est activé ; `updateUser`, `verifyOtp` et `linkIdentity` n'en demandent pas, donc le rattachement
-par e-mail ne passe pas par lui. Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
+`signInWithOtp` (`demanderLaConnexion`) — ce sont les seuls du produit que Supabase protège quand le
+captcha est activé (sa documentation : inscription, session anonyme comprise, connexion,
+réinitialisation) ; `updateUser`, `verifyOtp` et `linkIdentity` n'en demandent pas, donc **le code
+de rattachement**, envoyé par `updateUser({ email })`, **ne passe pas par lui** : ce flux d'e-mails
+relève des plafonds d'e-mail. Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
 lève jamais : sans clé de site (développement, CI, parcours réel), sans `document` (natif, rendu
 de l'export) ou sur un widget qui n'a rien rendu en vingt secondes, l'appel part **sans** jeton, et
 c'est Supabase qui tranche. Avant l'activation, il passe ; après, une session qui ne s'ouvre pas

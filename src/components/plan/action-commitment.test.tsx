@@ -25,6 +25,10 @@
  * **Et le soir même, une quatrième** (contre-lecture de la PR #314) : le nombre de lectures lu au
  * toucher, dans la fermeture de `submit` (la version d'avant) → « une lecture terminée pendant
  * l'aller-retour… », seul.
+ *
+ * **Le 04/10/2026, le refus qui demande une relecture** (contre-lecture de la PR #359) : le bloc
+ * `rechargerLePlan` de `release` retiré → « au retrait… », seul ; celui de `submit` → « à
+ * l'engagement… », seul.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
@@ -43,6 +47,7 @@ jest.mock('@/lib/plan-engagement', () => ({
 const onChanged = jest.fn();
 const onEngage = jest.fn();
 const onModifie = jest.fn();
+const onRefus = jest.fn();
 
 /** Un trajet domicile-travail : l'intention se dit en jours — sauf `poste` qui dit autre chose. */
 const carte = (
@@ -65,6 +70,7 @@ const carte = (
     onChanged={onChanged}
     onEngage={onEngage}
     onModifie={onModifie}
+    onRefus={onRefus}
     lectures={surcharge.lectures ?? 3}
     engageeLe={surcharge.engageeLe ?? null}
   />
@@ -89,6 +95,7 @@ beforeEach(() => {
   onChanged.mockReset();
   onEngage.mockReset();
   onModifie.mockReset();
+  onRefus.mockReset();
 });
 
 describe('ActionCommitment — jusqu’à la relecture', () => {
@@ -495,5 +502,32 @@ describe('ActionCommitment — modifier l’intention sans libérer (D15)', () =
       expect(screen.getByText('Modifier les jours')).toBeTruthy();
       expect(libellesFocalises()).not.toContain('Modifier les jours');
     });
+  });
+});
+
+// Un refus qui demande une relecture — `RM001` (une autre action est engagée) ou `P0002` (le plan a
+// changé entre-temps, seconde passe du 04/10/2026) : la phrase va à l'écran, qui relit le plan, et
+// rien ne s'affiche dans la carte, que la relecture remonterait. Le retrait n'avait pas ce chemin.
+describe('ActionCommitment — un refus qui demande une relecture', () => {
+  const refus = { ok: false, message: 'Ton plan a changé entre-temps.', rechargerLePlan: true };
+
+  it('au retrait (« Changer d’avis ») : la phrase va à l’écran, et le plan est relu', async () => {
+    mockLiberer.mockResolvedValue(refus);
+    render(carte({ committed: true, intentionDays: [2] }));
+    fireEvent.press(screen.getByText('Changer d’avis'));
+
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+    expect(onRefus).toHaveBeenLastCalledWith('Ton plan a changé entre-temps.');
+    expect(screen.queryByText('Ton plan a changé entre-temps.')).toBeNull();
+  });
+
+  it('à l’engagement : de même', async () => {
+    mockEngager.mockResolvedValue(refus);
+    render(carte());
+    await sEngager();
+
+    expect(onRefus).toHaveBeenLastCalledWith('Ton plan a changé entre-temps.');
+    expect(screen.queryByText('Ton plan a changé entre-temps.')).toBeNull();
+    expect(onEngage).not.toHaveBeenCalled();
   });
 });

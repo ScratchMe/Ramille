@@ -76,7 +76,8 @@ export default function PistesScreen() {
   const [cle, setCle] = useState(0);
 
   /**
-   * La phrase d'un remplacement refusé (`RM001`), portée par l'écran et non par la carte.
+   * La phrase d'un refus qui demande une relecture — un remplacement refusé (`RM001`), un plan
+   * refait entre-temps (`P0002`, 04/10/2026) —, portée par l'écran et non par la carte.
    *
    * C'est le contrat explicite d'`ActionCommitment` : le même chemin appelle `onChanged()`, donc
    * la liste est relue — une phrase gardée dans l'état local de la carte ne survivrait pas à un
@@ -389,7 +390,8 @@ export default function PistesScreen() {
                 // l'affichage : on relit plutôt que de parler de réseau, et la carte reste
                 // ouverte (`enChoix` ne bouge pas) pour que le message porte sur une action qu'on
                 // voit encore. Relue, elle lit « une autre est engagée », et un nouvel essai part
-                // avec le remplacement.
+                // avec le remplacement. Sur `P0002` (le plan a été refait), l'action n'est plus
+                // dans la liste relue : la carte part avec elle, et la phrase reste au-dessus.
                 setRefusDeRemplacement(message);
                 rafraichir();
               }}

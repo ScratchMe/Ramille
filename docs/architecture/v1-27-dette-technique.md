@@ -2076,14 +2076,15 @@ Ce qui reste, et pourquoi :
   en crée un second. Déjà vrai avant #355, qui n’aggrave rien : le premier reste sans résultat, le
   second se calcule. **La piste** : chercher aussi un bilan `completed`
   sans résultat du même compte. **Pas fait** : un cas de coupure précise, à éprouver avec un double.
-- **Un écran du plan resté ouvert pendant le passage nocturne d'un changement de saison** : il
-  appelle `commit_plan_action` ou `clear_plan_action_commitment` sur le cycle d'avant, et reçoit
-  désormais `P0002` (« Action introuvable »), que `plan-engagement.ts` ne recharge pas — il ne
-  recharge que sur `RM001`. Le message reste générique jusqu'au prochain retour sur l'écran. Avant,
-  l'engagement atterrissait en silence sur la saison close, ce qui était pire. **La piste** : traiter
-  `P0002` comme `RM001`. **Tranché et fait le soir même** : la personne qui pilote a choisi la phrase
+- **Fait le 04/10/2026. Un écran du plan resté ouvert pendant le passage nocturne d'un changement
+  de saison** : il appelait `commit_plan_action` ou `clear_plan_action_commitment` sur le cycle
+  d'avant, et recevait `P0002` (« Action introuvable »), que `plan-engagement.ts` ne rechargeait
+  pas — il ne rechargeait que sur `RM001` —, donc un message générique jusqu'au prochain retour sur
+  l'écran. Avant la seconde passe, l'engagement atterrissait en silence sur la saison close, ce qui
+  était pire. `P0002` suit désormais le chemin de `RM001`, à l'engagement comme au retrait
+  (« Changer d'avis ») : l'écran relit le plan et dit la phrase choisie par la personne qui pilote
   (« Ton choix n'a pas été enregistré : ton plan a changé entre-temps. Il vient d'être relu. », et
-  son pendant « Le changement… » pour « Ne plus suivre »), et l'écran relit le plan. Dans l'app à
-  partir du build suivant.
+  son pendant « Le changement… » pour le retrait). Sur le web dès le déploiement qui suit, sur
+  Android au build suivant.
 - **Un commentaire de `20261004173905` promet trop** (« le client ne déclenche pas de recalcul » :
   `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.
