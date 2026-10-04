@@ -2029,9 +2029,9 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   l'envoi des pannes en attente, ni les canaux Android : son `ensureSession()` de montage a échoué, et
   il ne réessaie pas (`src/app/_layout.tsx`). Le défaut existait derrière l'écran technique ; une fois
   le captcha activé, il touche un chemin normal de nouveau venu, et biaise `app_open`, le dénominateur
-  des entonnoirs. **La piste** : faire partir ces appels à la première session obtenue, quel que soit
-  l'appelant (`ouvertureDejaComptee` empêche déjà le doublon). **Pas fait** : à faire avant
-  l'activation. **La carte de
+  des entonnoirs. **Fait le soir même** : l'écoute d'auth du layout rattrape l'ouverture et ce qui la
+  suit à la première session obtenue après l'échec de celle du montage (`rattraperLOuverture`,
+  `src/types/analytics.ts`, testée ; l'appel depuis le layout, lui, n'est vu par aucun test). **La carte de
   partage a sa première protection le même soir** : une limite de débit au pare-feu de Vercel, 60
   requêtes par 10 minutes et par IP sur `/api/`, puis 429 (registre §3.2, posée par la personne qui
   pilote, l'API ne créant pas la première configuration du pare-feu). Reste à décider si `poste`,

@@ -42,7 +42,7 @@ import {
   repartirSurCetAppareil,
   supabase,
 } from '@/lib/supabase';
-import { appErrorCategory, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
+import { appErrorCategory, rattraperLOuverture, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
 import { estVerifieurManquant, lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
 import { lEcranDeReconnexionSePose } from '@/types/session';
 
@@ -59,6 +59,22 @@ if (estNatif) afficherLesNotificationsAuPremierPlan();
 // recompterait une ouverture — dans la même base que la production, puisque le développement
 // courant tape sur le projet distant. Le biais serait homogène, donc invisible dans les chiffres.
 let ouvertureDejaComptee = false;
+
+// La session du montage a échoué — le refus du captcha, une coupure : l'ouverture et ce qui la suit se
+// rattrapent à la première session obtenue ailleurs (`rattraperLOuverture`, `src/types/analytics.ts`).
+let sessionDuMontageEchouee = false;
+
+/** Ce qui part une fois la première session obtenue : l'ouverture, les pannes gardées, les canaux. */
+function apresLaSessionDuDemarrage() {
+  if (!ouvertureDejaComptee) {
+    ouvertureDejaComptee = true;
+    track('app_open', { origine: 'demarrage' });
+  }
+  // Les pannes gardées faute de session ou de réseau partent maintenant qu'il y a une session
+  // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Sans session — un refus —, rien ne part.
+  void envoyerLesErreursEnAttente();
+  void preparerLesCanauxAndroid();
+}
 
 // **Le jeton d'appareil appartient à la personne connectée, pas à l'appareil.**
 // `register_push_token` le *reprend* à son propriétaire précédent (v1-12 §5.3), et il n'y avait
@@ -169,18 +185,12 @@ export default function RootLayout() {
         // prochain lancement réessaie.
         if (etatDeLaSession() === 'refusee') setRefus(true);
 
-        if (!ouvertureDejaComptee) {
-          ouvertureDejaComptee = true;
-          track('app_open', { origine: 'demarrage' });
-        }
-        // Les pannes gardées faute de session ou de réseau partent maintenant qu'il y a une session
-        // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Sans session — un refus —, rien ne part.
-        void envoyerLesErreursEnAttente();
-        void preparerLesCanauxAndroid();
+        apresLaSessionDuDemarrage();
         return enregistrerLeJetonPour(session?.user.id ?? null);
       })
       .catch((error) => {
         console.error('ensureSession() a échoué au démarrage :', error);
+        sessionDuMontageEchouee = true;
       });
   }, []);
 
@@ -250,6 +260,17 @@ export default function RootLayout() {
     if (!configurationSupabase.complete) return;
     const { data } = supabase.auth.onAuthStateChange((_evenement, session) => {
       void enregistrerLeJetonPour(session?.user.id ?? null);
+      // La session du montage a échoué, et celle-ci vient d'ailleurs (la racine, après « Réessayer ») :
+      // l'ouverture de ce chargement se rattrape ici, une fois.
+      if (
+        rattraperLOuverture({
+          session: session !== null,
+          montageEchoue: sessionDuMontageEchouee,
+          dejaComptee: ouvertureDejaComptee,
+        })
+      ) {
+        apresLaSessionDuDemarrage();
+      }
     });
     return () => data.subscription.unsubscribe();
   }, []);

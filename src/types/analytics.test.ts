@@ -10,6 +10,7 @@ import {
   USAGE_EVENT_NAMES,
   sourceRetrouver,
   SEJOUR_INITIAL,
+  rattraperLOuverture,
   suivreLEtatDeLApp,
   type UsageEventName,
   type UsageEventPropsByName,
@@ -81,6 +82,25 @@ describe('USAGE_EVENT_NAMES', () => {
       bilan_submit_error: 'bilan_submit_error',
     };
     expect(Object.keys(_exhaustif)).toHaveLength(USAGE_EVENT_NAMES.length);
+  });
+});
+
+// Éprouvé en le cassant le 04/10/2026 : la condition sur l'échec du montage retirée fait tomber « ne
+// fait rien au démarrage normal… », seul ; celle de l'ouverture déjà comptée, « ne compte jamais deux
+// fois… », seul. Ce que ce bloc ne voit pas : que le layout appelle la décision depuis son écoute
+// d'auth — aucun test ne monte le layout racine.
+describe('rattraperLOuverture', () => {
+  it('rattrape l’ouverture quand la session arrive après l’échec de celle du montage', () => {
+    expect(rattraperLOuverture({ session: true, montageEchoue: true, dejaComptee: false })).toBe(true);
+  });
+
+  it('ne fait rien au démarrage normal : la suite de la session du montage émet déjà', () => {
+    expect(rattraperLOuverture({ session: true, montageEchoue: false, dejaComptee: false })).toBe(false);
+  });
+
+  it('ne compte jamais deux fois, et pas sans session', () => {
+    expect(rattraperLOuverture({ session: true, montageEchoue: true, dejaComptee: true })).toBe(false);
+    expect(rattraperLOuverture({ session: false, montageEchoue: true, dejaComptee: false })).toBe(false);
   });
 });
 
