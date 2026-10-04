@@ -108,11 +108,15 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
   un rebond qui coûte de la délivrabilité au domaine. Ce fichier ne se rejoue pas en entier sur le
   distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
   message, seulement au statut).
-- `16_purge_anonyme_inactivite` et `36_cohortes_avant_la_purge` (son assertion 18) fabriquent soixante sessions
-  muettes pour déclencher la garde de volume de la purge, dont le seuil vaut `max(50, 20 %)` des
-  comptes anonymes. **Au-delà de 240 comptes anonymes en base, soixante ne suffisent plus**, et le
-  passage supprime au lieu de bloquer. Le compte qui décide est celui de la base, pas du fichier
-  (relevé par la contre-lecture du lot 6, 27/09/2026).
+- `16_purge_anonyme_inactivite`, `36_cohortes_avant_la_purge` (son assertion 18) et
+  `49_les_plafonds_globaux` fabriquent soixante sessions muettes **qui portent un bilan** pour
+  déclencher la garde de volume de la purge, dont le seuil vaut `max(50, 20 %)` des comptes anonymes
+  **porteurs** (un bilan ou un retour) depuis le 04/10/2026. **Au-delà d'environ 240 comptes
+  anonymes porteurs en base, soixante ne suffisent plus**, et le passage supprime au lieu de bloquer.
+  Le compte qui décide est celui de la base, pas du fichier (relevé par la contre-lecture du lot 6,
+  27/09/2026). `49` suppose aussi qu'aucune ligne `blocked` n'existe déjà dans `purge_runs`, et ses
+  plafonds de l'heure comptent ce que la base a reçu dans l'heure : sur le distant, il ne se rejoue
+  qu'en connaissant ces chiffres.
 - `35_mot_de_la_veille`, **sa section 8, et c'est le plus dangereux de la liste** : ses passes
   d'envoi (`send_pending_reminders()`, `envoyer_les_notifications('veille')`) prennent **toute la
   file réelle** due, pas seulement ses fixtures. Sur le distant, de vrais emails partiraient par

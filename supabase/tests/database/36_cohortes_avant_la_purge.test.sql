@@ -428,9 +428,10 @@ select results_eq(
 
 -- ── 6. Un passage bloqué ne compte rien ─────────────────────────────────────────────────────────
 --
--- Soixante sessions de plus, nées la même semaine et muettes : au-delà du seuil de la garde de
--- volume (plancher 50). Le passage ne supprime rien — il ne doit donc rien compter, sans quoi
--- chaque nuit de blocage recompterait les mêmes personnes.
+-- Soixante sessions de plus, nées la même semaine, muettes, **et qui portent un bilan** — la garde
+-- ne compte plus que celles-là depuis le plan anti-abus (04/10/2026) : au-delà du seuil de la garde
+-- de volume (plancher 50). Le passage ne les supprime pas — il ne doit donc pas les compter, sans
+-- quoi chaque nuit de blocage recompterait les mêmes personnes.
 
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('c3600000-0000-0000-0001-' || lpad(i::text, 12, '0'))::uuid,
@@ -438,12 +439,16 @@ select ('c3600000-0000-0000-0001-' || lpad(i::text, 12, '0'))::uuid,
        now() - interval '3000 days', now()
 from generate_series(1, 60) as g(i);
 
+insert into public.assessments (user_id, status, created_at)
+select ('c3600000-0000-0000-0001-' || lpad(i::text, 12, '0'))::uuid, 'in_progress', now() - interval '3000 days'
+from generate_series(1, 60) as g(i);
+
 select public.purge_stale_anonymous_accounts();
 
 select ok(
   (select sum(comptes) from public.purges_par_cohorte where semaine_d_arrivee = current_setting('c36.w')::date) = 8
   and (select count(*) from auth.users where id::text like 'c3600000-0000-0000-0001-%') = 60,
-  'un passage retenu par la garde de volume ne supprime rien et ne compte rien'
+  'un passage retenu par la garde de volume ne supprime ni ne compte les comptes qui portent un bilan'
 );
 
 -- ── 7. La suppression de compte compte son mois ─────────────────────────────────────────────────

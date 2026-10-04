@@ -2006,7 +2006,17 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   du captcha est posée à la personne qui pilote le 04/10/2026, avec l'alternative de plafonds globaux
   côté base ; rien ne se fait avant sa réponse. **Tranché le même soir** : captcha Turnstile
   (Cloudflare accepté comme sous-traitant), plafonds globaux et purge qui tient, plafonds d'e-mail,
-  carte de partage durcie, et Brevo pour les e-mails — le plan anti-abus, livré par chantiers.
+  carte de partage durcie, et Brevo pour les e-mails — le plan anti-abus, livré par chantiers. **Les
+  plafonds globaux et la purge sont livrés le soir même** (`20261004201217`, test `49`) : 6 000
+  événements d'usage par heure pour tout le projet, dont 300 pannes, 60 retours par heure, et une
+  garde de volume qui ne compte plus que les comptes qui portent un bilan ou un retour — les vides
+  partent à chaque passage. Les plafonds ne refusent que les comptes nés depuis moins de
+  vingt-quatre heures, pour qu'un flot ne coûte pas leurs signes de vie aux vrais comptes. Le captcha,
+  les plafonds d'e-mail et la carte de partage restent à faire. **Ce que ces plafonds laissent** : un
+  refus par plafond global est un `check_violation`, que la file des pannes différées vide au lieu de
+  la garder comme un 429 — un SQLSTATE propre, que le client garderait, demande un build ; et le
+  commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,
+  à corriger à la prochaine retouche de ce fichier.
 - **Toute adresse inconnue lance désormais l'app** (relevé à la seconde passe) : avant la page 404,
   Vercel servait sa page brute, sans JavaScript. Une adresse inventée ouvre donc une session anonyme
   et compte une arrivée (`app_open`) dans le dénominateur des entonnoirs. Pas pire en nature que `/`,
