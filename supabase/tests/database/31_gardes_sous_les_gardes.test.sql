@@ -106,6 +106,10 @@ select throws_ok(
 select set_config('role', 'postgres', true);
 insert into public.assessments (id, user_id, status) values
   ('31000000-0000-0000-0000-0000000000a1', '31000000-0000-0000-0000-000000000001', 'in_progress');
+-- Une réponse, comme la soumission l'écrit avant de finaliser : depuis `20261004194921`, un bilan sans
+-- réponses ne passe plus `completed` sous un rôle du client.
+insert into public.assessment_answers (assessment_id, commute_has_regular_trip, leisure_frequency) values
+  ('31000000-0000-0000-0000-0000000000a1', false, 'rarely');
 select set_config('role', 'authenticated', true);
 
 select lives_ok(

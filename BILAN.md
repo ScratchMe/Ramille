@@ -313,11 +313,12 @@ enveloppée dans un `begin … exception … end` : les deux fonctions partagent
 donc sans cette sous-transaction un plan qui échoue emportait le résultat que le calcul venait
 d'écrire.
 
-**Et la base le tient depuis le 04/10/2026, plus seulement l'app** (`20261004200000`, seconde passe
+**Et la base le tient depuis le 04/10/2026, plus seulement l'app** (`20261004194921`, seconde passe
 de la revue finale) : un bilan **naît** `in_progress` — le trigger `refuser_le_retour_en_arriere_du_bilan`
-refuse à un rôle du client toute autre valeur à l'insertion (`RM007`) —, et ses réponses ne
-s'insèrent que tant qu'il l'est, comme elles ne se mettaient déjà à jour que dans cet état. Un appel
-direct à l'API pouvait créer le bilan fantôme que la séquence évite. `mettre_a_jour_le_contexte`,
+refuse à un rôle du client toute autre valeur à l'insertion (`RM007`) —, **ne passe `completed` que
+s'il a des réponses** (même trigger, même code), et ses réponses ne s'insèrent que tant qu'il est en
+cours, comme elles ne se mettaient déjà à jour que dans cet état. Un appel direct à l'API pouvait
+créer le bilan fantôme que la séquence évite, en un appel comme en deux. `mettre_a_jour_le_contexte`,
 qui corrige les réponses d'un bilan complété, écrit en `security definer` et n'est pas concerné.
 
 **Le nouvel essai d'une soumission interrompue ne rejoue que ce qui reste, et le calcul ne se refait

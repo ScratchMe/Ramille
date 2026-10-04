@@ -557,6 +557,6 @@ un jeton repris deux cents fois dirait un appareil partagé ou une boucle, et c'
 que ces trois colonnes servent à trancher. Dans le `on conflict do update`, `push_tokens.user_id`
 désigne la ligne **existante** et `excluded` la ligne proposée — s'y tromper lirait la nouvelle
 valeur, donc ne compterait jamais rien. **Ces trois colonnes restent au serveur** depuis le
-04/10/2026 (`20261004200000`) : le client lit `push_tokens` par colonnes, et
+04/10/2026 (`20261004194921`) : le client lit `push_tokens` par colonnes, et
 `proprietaire_precedent` — l'identifiant du compte qui avait l'appareil avant lui — n'en fait plus
 partie. L'app ne lit que `token`.

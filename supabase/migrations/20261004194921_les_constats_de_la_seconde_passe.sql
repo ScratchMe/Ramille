@@ -1,10 +1,12 @@
 -- Les constats de la couche base trouvés à la seconde passe de la revue finale (04/10/2026,
--- `docs/architecture/v1-27-dette-technique.md` §12.36). **Aucun ne touche les données d'un autre
--- compte** : chacun borne ce qu'un appel direct à l'API pouvait faire à son propre compte, ou rend
--- un passage nocturne robuste à un seul compte. Cinq parties, une par constat.
+-- `docs/architecture/v1-27-dette-technique.md` §12.36). **Aucun ne permettait d'écrire chez un autre
+-- compte** ; le quatrième laissait lire l'identifiant d'un autre. Les autres bornent ce qu'un appel
+-- direct à l'API pouvait faire à son propre compte, ou rendent un passage nocturne robuste à un seul
+-- compte. Cinq parties, une par constat, et la contre-lecture du même soir en a élargi deux.
 --
--- Les fonctions réécrites partent de `pg_get_functiondef` (SUPABASE.md §2.3), et celles qu'on
--- réécrit gagnent `pg_temp` en fin de `search_path` au passage (v1-27 §12.35).
+-- Les fonctions réécrites partent de `pg_get_functiondef` du distant (SUPABASE.md §2.3), et gagnent
+-- `pg_temp` en fin de `search_path` au passage (v1-27 §12.35). Le fichier se rejoue tel quel :
+-- `if not exists` sur la table et l'index, `if exists` sur la policy.
 
 -- ── 1. Le passage nocturne des plans n'est plus arrêté par un compte ──────────────────────────
 --
@@ -14,10 +16,11 @@
 -- passe désormais dans sa sous-transaction, comme les compteurs de la purge. L'échec d'un compte ne
 -- doit pas pour autant devenir muet : la tâche ne tombe plus, donc `taches_en_echec` ne le verrait
 -- plus. D'où un journal, sur le modèle de `purge_runs` et de `reminder_send_runs`, que l'alerte
--- d'exploitation lit (`plans_en_echec`). Le message du premier échec y est gardé, jamais
--- l'identifiant du compte : le journal se lit dans un e-mail, qui ne nomme personne ; l'identifiant
--- part dans le journal de Postgres (`raise warning`), lisible du seul tableau de bord.
-create table public.plan_cycle_runs (
+-- d'exploitation lit (`plans_en_echec`, une somme). Le message du premier échec y est gardé, jamais
+-- l'identifiant du compte : la table se relit depuis le registre d'exploitation, qui ne nomme
+-- personne ; l'identifiant part dans le journal de Postgres (`raise warning`), lisible du seul
+-- tableau de bord.
+create table if not exists public.plan_cycle_runs (
   id uuid primary key default gen_random_uuid(),
   ran_at timestamptz not null default now(),
   comptes integer not null default 0,
@@ -31,7 +34,7 @@ comment on table public.plan_cycle_runs is
 alter table public.plan_cycle_runs enable row level security;
 revoke all privileges on public.plan_cycle_runs from public, anon, authenticated;
 
-create index plan_cycle_runs_ran_at_idx on public.plan_cycle_runs (ran_at desc);
+create index if not exists plan_cycle_runs_ran_at_idx on public.plan_cycle_runs (ran_at desc);
 
 create or replace function public.generate_plan_cycles()
 returns void
@@ -148,7 +151,7 @@ CREATE OR REPLACE FUNCTION public.texte_de_l_alerte(p_releve jsonb, p_depuis tim
  RETURNS text
  LANGUAGE plpgsql
  STABLE
- SET search_path TO 'public'
+ SET search_path TO 'public', 'pg_temp'
 AS $function$
 declare
   v_lignes text[] := array[]::text[];
@@ -177,7 +180,7 @@ begin
     v_lignes := v_lignes || format('- Purges des sessions anonymes bloquées : %s', p_releve ->> 'purges_bloquees');
   end if;
   if coalesce((p_releve ->> 'plans_en_echec')::int, 0) > 0 then
-    v_lignes := v_lignes || format('- Comptes dont le plan n''a pas pu être préparé cette nuit (generate_plan_cycles) : %s', p_releve ->> 'plans_en_echec');
+    v_lignes := v_lignes || format('- Échecs de la préparation nocturne des plans (generate_plan_cycles) : %s', p_releve ->> 'plans_en_echec');
   end if;
   if (p_releve ->> 'rappels_bloques')::int > p_rappels_bloques_vus then
     v_lignes := v_lignes || format('- Rappels bloqués : %s (%s de plus qu''au relevé précédent)',
@@ -195,14 +198,16 @@ begin
 end;
 $function$;
 
--- ── 2. Un bilan naît en cours, et ses réponses ne s'écrivent que tant qu'il l'est ──────────────
+-- ── 2. Un bilan naît en cours, ne se finalise qu'avec ses réponses, et elles ne s'écrivent que tant qu'il est en cours
 --
 -- Le client insère `user_id` et `status` (20261004173905), et rien ne bornait `status` à
 -- l'insertion, sinon `withdrawn` : un bilan pouvait naître `completed`, sans réponses ni résultat,
 -- et devenir le « dernier bilan complété » que lisent `/contexte`, les cohortes et la racine de
 -- l'app. Et la policy d'insertion des réponses n'avait pas le prédicat `status = 'in_progress'` que
 -- celle de mise à jour a reçu (20260824180100) : les réponses d'un bilan finalisé pouvaient encore
--- s'écrire, par un `insert` qui ne heurtait rien. Le refus vise les rôles du client seulement : les
+-- s'écrire, par un `insert` qui ne heurtait rien. **Et le même bilan fantôme naissait en deux appels**
+-- (contre-lecture du même soir) : créé `in_progress`, puis passé `completed` sans une réponse. Le
+-- passage à `completed` exige donc ses réponses. Le refus vise les rôles du client seulement : les
 -- fonctions du serveur et les fixtures pgTAP écrivent en propriétaire. L'app n'insère que
 -- `in_progress` (`src/app/bilan/index.tsx`), et n'écrit ses réponses qu'avant la finalisation ;
 -- `mettre_a_jour_le_contexte` écrit en `security definer`, donc hors de la policy.
@@ -250,11 +255,17 @@ begin
       using errcode = 'RM005';
   end if;
 
+  if new.status = 'completed' and current_user in ('anon', 'authenticated')
+     and not exists (select 1 from public.assessment_answers r where r.assessment_id = new.id) then
+    raise exception 'Un bilan se finalise une fois ses réponses écrites.'
+      using errcode = 'RM007';
+  end if;
+
   return new;
 end;
 $function$;
 
-drop policy "assessment_answers insert own" on public.assessment_answers;
+drop policy if exists "assessment_answers insert own" on public.assessment_answers;
 create policy "assessment_answers insert own" on public.assessment_answers
   for insert to authenticated
   with check (
@@ -390,18 +401,69 @@ begin
 end;
 $function$;
 
+-- `clear_plan_action_commitment`, la fonction jumelle, reçoit la même borne (contre-lecture du même
+-- soir) : par un appel direct, elle désengageait une action d'une saison close et l'archivait en
+-- `changement`, un relâchement qui n'a pas eu lieu. Réécrite depuis le corps du distant.
+create or replace function public.clear_plan_action_commitment(p_plan_action_id uuid)
+ returns void
+ language plpgsql
+ security definer
+ set search_path to 'public', 'pg_temp'
+as $function$
+declare
+  v_lignes integer;
+  v_eng record;
+begin
+  -- La capture est sous vérification de propriété : `archiver_engagement` est `security definer` et
+  -- ne vérifie rien. Et, comme `commit_plan_action`, sur le dernier cycle du compte seulement.
+  select pc.user_id, pc.id as cycle_id, pa.action_template_id, pa.intention_days,
+         pa.intention_timing, pa.committed_at
+    into v_eng
+  from public.plan_actions pa
+  join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+  where pa.id = p_plan_action_id and pc.user_id = auth.uid()
+    and pc.period_start = (
+      select max(dernier.period_start) from public.plan_cycles dernier where dernier.user_id = auth.uid()
+    );
+
+  update public.plan_actions pa
+  set committed_at = null, intention_days = null, intention_timing = null, carried_over_from = null
+  where pa.id = p_plan_action_id
+    and exists (
+      select 1 from public.plan_cycles pc
+      where pc.id = pa.plan_cycle_id and pc.user_id = auth.uid()
+        and pc.period_start = (
+          select max(dernier.period_start) from public.plan_cycles dernier where dernier.user_id = auth.uid()
+        )
+    );
+
+  get diagnostics v_lignes = row_count;
+
+  -- Un succès muet quand aucune ligne ne correspond ferait afficher « ok » sur un engagement
+  -- toujours en place (C1.12).
+  if v_lignes = 0 then
+    raise exception 'Action introuvable.' using errcode = 'no_data_found';
+  end if;
+
+  perform public.archiver_engagement(
+    v_eng.user_id, v_eng.cycle_id, v_eng.action_template_id,
+    v_eng.intention_days, v_eng.intention_timing, v_eng.committed_at, 'changement'
+  );
+end;
+$function$;
+
 -- ── 4. `push_tokens` : le client ne lit plus qui avait ce téléphone avant lui ─────────────────
 --
 -- Le `select` était accordé sur toute la table (20260910110000) : le propriétaire d'un jeton
 -- lisait aussi `proprietaire_precedent`, l'identifiant du compte qui avait l'appareil avant lui
--- (téléphone partagé, changement de compte) — une petite fuite entre comptes. L'app ne lit que
--- `token` (`src/lib/notification-prefs.ts`) ; la suppression a besoin de `token` et de `user_id`
--- pour son filtre. Les trois colonnes de la reprise restent au serveur, comme l'export qui les lit en
--- `security definer`. Même idiome que `20261004173905` : le privilège de table retiré d'abord, sans
--- quoi le privilège de colonne ne restreint rien.
+-- (téléphone partagé, changement de compte) — une petite fuite entre comptes. Le client ne garde
+-- que ce qu'un appel réel lit (SUPABASE.md §1.4) : `token` et `disabled_at`, que l'app sélectionne
+-- et filtre (`src/lib/notification-prefs.ts`), et `user_id`, que la suppression et la policy
+-- désignent. L'inscription, la désinscription et l'export passent par des fonctions `security
+-- definer`. Même idiome que `20261004173905` : le privilège de table retiré d'abord, sans quoi le
+-- privilège de colonne ne restreint rien.
 revoke select on public.push_tokens from authenticated;
-grant select (token, user_id, platform, created_at, last_seen_at, disabled_at, disabled_reason)
-  on public.push_tokens to authenticated;
+grant select (token, user_id, disabled_at) on public.push_tokens to authenticated;
 
 -- ── 5. `compute_assessment_results` dit « introuvable » avec le code qu'on attend ─────────────
 --

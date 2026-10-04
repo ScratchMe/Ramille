@@ -189,7 +189,7 @@ select results_eq(
 -- ── Garde d'accès ────────────────────────────────────────────────────────────────────────
 -- Un utilisateur authentifié ne doit jamais pouvoir déclencher le calcul du bilan d'un tiers
 -- (cf. `if v_owner_id is null or v_owner_id <> auth.uid() then raise exception`).
--- `P0002` (`no_data_found`) depuis `20261004200000` : le `raise` sans code partait en `P0001`, et la
+-- `P0002` (`no_data_found`) depuis `20261004194921` : le `raise` sans code partait en `P0001`, et la
 -- mesure de la soumission, qui attend `P0002` pour « introuvable » (`src/types/soumission.ts`), le
 -- rangeait dans « autre ». Ce que ces deux assertions gardent ne change pas : le même code et le
 -- même message pour le bilan d'un autre et pour un bilan qui n'existe pas.

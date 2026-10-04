@@ -283,7 +283,7 @@ select ok(
   'et le privilège UPDATE de table de `profiles` a disparu'
 );
 
--- `push_tokens` (seconde passe de la revue, `20261004200000`) : le propriétaire d'un jeton lisait aussi
+-- `push_tokens` (seconde passe de la revue, `20261004194921`) : le propriétaire d'un jeton lisait aussi
 -- `proprietaire_precedent`, l'identifiant du compte qui avait l'appareil avant lui. Les trois colonnes
 -- de la reprise restent au serveur ; le refus lui-même est éprouvé dans `48`.
 select is(
@@ -291,8 +291,8 @@ select is(
      from information_schema.column_privileges
     where table_schema = 'public' and table_name = 'push_tokens'
       and grantee = 'authenticated' and privilege_type = 'SELECT'),
-  array['created_at', 'disabled_at', 'disabled_reason', 'last_seen_at', 'platform', 'token', 'user_id'],
-  'push_tokens : le client lit son jeton, jamais les colonnes de la reprise'
+  array['disabled_at', 'token', 'user_id'],
+  'push_tokens : le client ne lit que ce que l''app demande, jamais les colonnes de la reprise'
 );
 
 select ok(
