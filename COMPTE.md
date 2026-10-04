@@ -240,8 +240,10 @@ mais « La vérification n'a pas abouti », la cause réaliste selon la platefor
 web, le réseau dans l'app) et « Réessayer », qui relance la racine et donc un nouveau widget.
 Un widget à la fois (une file), et `ensureSession` relit la session après l'attente : une session
 ouverte entre-temps n'est plus écrasée par une anonyme. **D'où l'ordre d'activation du registre
-d'exploitation (§3.11)**, qui ne se discute pas : l'app Android n'envoie pas encore de jeton, et
-l'activer avant le build qui le porte laisserait chaque nouvelle installation à la porte.
+d'exploitation (§3.11)**, qui ne se discute pas : l'app Android n'envoie un jeton qu'à partir du
+build qui embarque sa vue web (`CaptchaNatif`, `src/components/captcha-natif.tsx`, écrit le
+04/10/2026), et l'activer avant que ce build soit installé laisserait chaque nouvelle installation à
+la porte.
 
 ## 2. Retrouver un compte existant
 

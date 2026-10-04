@@ -18,6 +18,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform, StyleSheet, View } from 'react-native';
 
+import { CaptchaNatif } from '@/components/captcha-natif';
 import { ConfigurationManquante } from '@/components/configuration-manquante';
 import { ErreurInattendue } from '@/components/erreur-inattendue';
 import { RetourDeNotification } from '@/components/retour-de-notification';
@@ -490,6 +491,9 @@ export default function RootLayout() {
               }}
             />
           )}
+          {/* Le captcha de l'app : une vue web posée à la demande, par-dessus tout, invisible tant
+              que Cloudflare ne demande pas de cocher (`src/components/captcha-natif.tsx`). */}
+          {estNatif && <CaptchaNatif />}
         </>
       ) : (
         <ConfigurationManquante problemes={configurationSupabase.problemes} />

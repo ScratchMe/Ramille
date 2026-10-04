@@ -23,6 +23,10 @@
  * **La carte de la case à cocher** (04/10/2026), éprouvée de même, chaque mutation ne faisant tomber
  * que « quand Cloudflare demande de cocher… » : le délai non prolongé à la demande ; le plafond
  * supprimé à la demande, sans relais — le retour au blocage sans fin ; la carte jamais montrée.
+ *
+ * **Le pont de l'app Android** (04/10/2026), éprouvé de même : la case demandée sans délai relais fait
+ * tomber « la case demandée laisse deux minutes… », seul ; la vue web jamais retirée, les trois
+ * premiers tests du bloc natif ; le pont ignoré (aucun jeton sans `document`), les trois mêmes.
  */
 type Element = {
   tag: string;
@@ -260,3 +264,71 @@ describe('jetonDuCaptcha', () => {
     await expect(second).resolves.toBe('jeton-2');
   });
 });
+
+// Dans l'app Android : pas de `document`, une vue web branchée par `CaptchaNatif`. Le même contrat que
+// le web — trente secondes, deux minutes à partir de la demande de cocher, le widget toujours retiré.
+describe('jetonDuCaptcha — dans l’app, par la vue web', () => {
+  type Pose = { cle: string; usage: string; jeton: (j: string) => void; erreur: () => void; interaction: () => void };
+  let poses: Pose[];
+  let retraits: number;
+
+  function brancher(module: typeof import('./captcha')) {
+    poses = [];
+    retraits = 0;
+    return module.brancherLeCaptchaNatif((demande) => {
+      poses.push(demande);
+      return () => {
+        retraits += 1;
+      };
+    });
+  }
+
+  beforeEach(() => {
+    delete (globalThis as Record<string, unknown>).document;
+  });
+
+  test('rend le jeton de la vue web, pour la clé et l’usage demandés, puis la retire', async () => {
+    const module = charger();
+    brancher(module);
+    const promesse = module.jetonDuCaptcha('code_de_connexion', 'cle');
+    await laisserPasser();
+    expect(poses[0]).toMatchObject({ cle: 'cle', usage: 'code_de_connexion' });
+    poses[0]?.jeton('jeton-natif');
+    await expect(promesse).resolves.toBe('jeton-natif');
+    expect(retraits).toBe(1);
+  });
+
+  test('une erreur de la vue web ne rend rien, et la retire', async () => {
+    const module = charger();
+    brancher(module);
+    const promesse = module.jetonDuCaptcha('session_anonyme', 'cle');
+    await laisserPasser();
+    poses[0]?.erreur();
+    await expect(promesse).resolves.toBeUndefined();
+    expect(retraits).toBe(1);
+  });
+
+  test('la case demandée laisse deux minutes au lieu de trente secondes, et pas plus', async () => {
+    jest.useFakeTimers();
+    const module = charger();
+    brancher(module);
+    const promesse = module.jetonDuCaptcha('session_anonyme', 'cle');
+    await laisserPasser();
+    jest.advanceTimersByTime(module.DELAI_MAXIMAL_MS - 1_000);
+    poses[0]?.interaction();
+    jest.advanceTimersByTime(module.DELAI_POUR_COCHER_MS - 1_000);
+    expect(retraits).toBe(0);
+    jest.advanceTimersByTime(1_000);
+    await expect(promesse).resolves.toBeUndefined();
+    expect(retraits).toBe(1);
+  });
+
+  test('débranchée, plus de vue web : aucun jeton, rien de posé', async () => {
+    const module = charger();
+    const debrancher = brancher(module);
+    debrancher();
+    await expect(module.jetonDuCaptcha('session_anonyme', 'cle')).resolves.toBeUndefined();
+    expect(poses).toHaveLength(0);
+  });
+});
+
