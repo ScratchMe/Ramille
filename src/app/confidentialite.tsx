@@ -155,6 +155,14 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // plus. Relevé par la contre-lecture de la file ; la phrase a été validée par la personne qui pilote
 // le même jour (« OK pour corriger la phrase »), comme chaque phrase de cette page. La date suit la
 // mise en ligne, heure de Paris.
+//
+// **04/10/2026 : Cloudflare Turnstile** (`src/lib/captcha.ts`, plan anti-abus). Celle-ci **change ce
+// que le produit fait** : l'adresse IP et des informations techniques sur le navigateur partent chez
+// un nouveau destinataire, dès la mise en ligne. C'est donc l'élargissement que « Évolutions de ce
+// document » promet d'annoncer dans l'application avant qu'il prenne effet — relevé par la
+// contre-lecture du captcha —, et la personne qui pilote a décidé le même soir que la mise à jour
+// datée de cette page en tient lieu, sans annonce dans l'application. Le texte de l'entrée
+// Cloudflare et du paragraphe des transferts a été validé par elle, comme chaque phrase de cette page.
 const UPDATED_AT = '4 octobre 2026';
 
 const SECTIONS: LegalSection[] = [

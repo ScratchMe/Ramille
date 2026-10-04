@@ -2022,7 +2022,7 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   secondes), une session de compte écrasée par une anonyme pendant l'attente (`ensureSession` relit
   la session), et le refus du captcha pris pour un code parti (`estRefusDuCaptcha`). Pas encore dans
   l'app Android, qui attend une vue web et donc un build ; pas activé dans Supabase — **ce qui doit
-  être vrai avant, cinq points dont trois questions de produit, est au registre §3.11**. **Ce que ces plafonds laissent** : un
+  être vrai avant, cinq points dont des questions de produit, est au registre §3.11**. **Ce que ces plafonds laissent** : un
   refus par plafond global est un `check_violation`, que la file des pannes différées vide au lieu de
   la garder comme un 429 — un SQLSTATE propre, que le client garderait, demande un build ; et le
   commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,
