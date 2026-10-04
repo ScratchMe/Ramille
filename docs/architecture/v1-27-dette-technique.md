@@ -2013,8 +2013,12 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   partent à chaque passage. Les plafonds ne refusent que les comptes nés depuis moins de
   vingt-quatre heures, pour qu'un flot ne coûte pas leurs signes de vie aux vrais comptes. Le captcha,
   les plafonds d'e-mail et la carte de partage restent à faire. **Le widget Turnstile est créé le même
-  soir** (registre d'exploitation §3.11, la clé de site y est) ; le captcha n'est encore ni branché
-  dans l'app, ni activé dans Supabase, et l'ordre est fixé : l'app d'abord, l'activation ensuite. **Ce que ces plafonds laissent** : un
+  soir** (registre d'exploitation §3.11, la clé de site y est), et **le captcha est branché sur le
+  web le même soir** (`src/lib/captcha.ts` : la session anonyme et la demande de code, la CSP qui
+  laisse entrer Cloudflare, la clé posée dans l'environnement Production de Vercel, la page de
+  confidentialité qui le dit, texte validé par la personne qui pilote). Pas encore dans l'app
+  Android, qui attend une vue web et donc un build ; pas activé dans Supabase, et l'ordre est fixé :
+  le web, puis le build installé, puis l'activation. **Ce que ces plafonds laissent** : un
   refus par plafond global est un `check_violation`, que la file des pannes différées vide au lieu de
   la garder comme un 429 — un SQLSTATE propre, que le client garderait, demande un build ; et le
   commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,

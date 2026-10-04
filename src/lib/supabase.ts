@@ -3,6 +3,7 @@ import { createClient, type Session, type SupabaseClient } from '@supabase/supab
 import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
+import { jetonDuCaptcha } from '@/lib/captcha';
 import type { Database } from '@/lib/database.types';
 import { noterUnCompteRattache, oublierLeCompteRattache, porteUnCompteRattache } from '@/lib/marque-de-compte';
 import { concilierLesMarques } from '@/lib/marques-locales';
@@ -333,7 +334,9 @@ export const ensureSession = uneSeuleFois(async () => {
   changerDEtat(etatDeSession(false, error, porteUnCompte));
   if (!doitOuvrirUneSessionAnonyme(dernierEtatDeSession)) return null;
 
-  const { data, error: erreurCreation } = await supabase.auth.signInAnonymously();
+  // Le jeton du captcha, que Supabase exige une fois la protection activée (`captcha.ts`).
+  const captchaToken = await jetonDuCaptcha('session_anonyme');
+  const { data, error: erreurCreation } = await supabase.auth.signInAnonymously({ options: { captchaToken } });
   if (erreurCreation) throw erreurCreation;
   if (data.session) await accueillirLaSession(data.session);
   changerDEtat('presente');
