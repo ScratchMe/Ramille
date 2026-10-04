@@ -11,7 +11,7 @@
  * revoient en production (`docs/exploitation/README.md` §3.11).
  *
  * Éprouvé en cassant ce qu'il garde, le 04/10/2026, puis rejoué après la contre-lecture de la PR
- * #359 : le contrôle de la clé retiré fait tomber le premier test, seul ; le conteneur jamais
+ * #359, puis pour la carte de la case à cocher (voir plus bas) : le contrôle de la clé retiré fait tomber le premier test, seul ; le conteneur jamais
  * retiré, les troisième, quatrième, cinquième et sixième ; le widget jamais retiré, les troisième
  * et quatrième ; le chargement qui pend jamais oublié au plafond, le sixième, seul — sa balise
  * jamais retirée, le sixième aussi ; deux widgets posés ensemble (la file retirée), le septième,
@@ -19,16 +19,25 @@
  * ne fait rien tomber, et c'est une mutation équivalente** : sans lui, l'accès à `document` lève
  * dans la promesse, et le `catch` rend le même `undefined`. Il reste pour qu'on lise la règle au
  * lieu de la déduire.
+ *
+ * **La carte de la case à cocher** (04/10/2026), éprouvée de même, chaque mutation ne faisant tomber
+ * que « quand Cloudflare demande de cocher… » : le délai non prolongé à la demande ; le plafond
+ * supprimé à la demande, sans relais — le retour au blocage sans fin ; la carte jamais montrée.
  */
 type Element = {
   tag: string;
   style: Record<string, string>;
   attributs: Record<string, string>;
+  enfants: Element[];
+  textContent: string;
   retire: boolean;
+  focalise: boolean;
   src?: string;
   onload?: () => void;
   onerror?: () => void;
   setAttribute(nom: string, valeur: string): void;
+  appendChild(enfant: Element): void;
+  focus(): void;
   remove(): void;
 };
 
@@ -37,6 +46,7 @@ type OptionsRecues = {
   action: string;
   callback: (jeton: string) => void;
   'error-callback': () => boolean;
+  'before-interactive-callback': () => void;
 };
 
 let scripts: Element[];
@@ -49,9 +59,18 @@ function element(tag: string): Element {
     tag,
     style: {},
     attributs: {},
+    enfants: [],
+    textContent: '',
     retire: false,
+    focalise: false,
     setAttribute(nom, valeur) {
       el.attributs[nom] = valeur;
+    },
+    appendChild(enfant) {
+      el.enfants.push(enfant);
+    },
+    focus() {
+      el.focalise = true;
     },
     remove() {
       el.retire = true;
@@ -149,7 +168,7 @@ describe('jetonDuCaptcha', () => {
     expect(conteneurs[0]?.retire).toBe(true);
   });
 
-  test('sans jeton au plafond, case à cocher comprise, l’appel part sans, et le widget part avec', async () => {
+  test('sans jeton au plafond, l’appel part sans, et le widget part avec', async () => {
     jest.useFakeTimers();
     declarerTurnstile();
     const { jetonDuCaptcha, DELAI_MAXIMAL_MS } = charger();
@@ -160,6 +179,36 @@ describe('jetonDuCaptcha', () => {
     await expect(promesse).resolves.toBeUndefined();
     expect(retires).toEqual(['widget-1']);
     expect(conteneurs[0]?.retire).toBe(true);
+  });
+
+  test('quand Cloudflare demande de cocher : une carte, sa phrase, et deux minutes au lieu de trente secondes', async () => {
+    jest.useFakeTimers();
+    declarerTurnstile();
+    const { jetonDuCaptcha, DELAI_MAXIMAL_MS, DELAI_POUR_COCHER_MS, PHRASE_DE_LA_CASE } = charger();
+    const promesse = jetonDuCaptcha('session_anonyme', 'cle');
+    await laisserPasser();
+    const voile = conteneurs[0]!;
+    const carte = voile.enfants[0]!;
+    const phrase = carte.enfants[0]!;
+    // Avant la demande : rien ne se voit, et la page reste utilisable sous le voile.
+    expect(voile.style.pointerEvents).toBe('none');
+    expect(phrase.style.display).toBe('none');
+
+    jest.advanceTimersByTime(DELAI_MAXIMAL_MS - 1_000);
+    rendus[0]?.['before-interactive-callback']();
+    expect(voile.style.pointerEvents).toBe('auto');
+    expect(phrase.style.display).toBe('block');
+    expect(phrase.textContent).toBe(PHRASE_DE_LA_CASE);
+    expect(carte.attributs.role).toBe('dialog');
+    expect(carte.focalise).toBe(true);
+
+    // Les trente secondes passent sans couper la personne qui coche…
+    jest.advanceTimersByTime(DELAI_POUR_COCHER_MS - 1_000);
+    expect(voile.retire).toBe(false);
+    // … mais pas au-delà des deux minutes : le visiteur qui laisse la case de côté n'attend pas sans fin.
+    jest.advanceTimersByTime(1_000);
+    await expect(promesse).resolves.toBeUndefined();
+    expect(voile.retire).toBe(true);
   });
 
   test('un script qui ne répond jamais ne suspend pas l’appel, et il est oublié : l’appel suivant recharge', async () => {

@@ -384,14 +384,15 @@ retarde d'une nuit — est en §1.1.
   en dur**, la seule valeur qu'aucune garde ne peut voir : `vercel-build` lance après l'export
   `scripts/verifier-origine-supabase-de-la-csp.mjs`, qui fait échouer un build de production dont
   `EXPO_PUBLIC_SUPABASE_URL` n'est pas l'origine de `connect-src` — le déploiement précédent reste
-  alors en ligne. Un changement de projet impose donc de changer les deux ensemble. Depuis le
-  04/10/2026, `scripts/verifier-cle-turnstile-du-bundle.mjs` le suit dans `vercel-build`, sur le même
-  modèle : un build de production sans la clé de site du captcha, ou sans elle dans le bundle, échoue. **Il est bien
+  alors en ligne. Un changement de projet impose donc de changer les deux ensemble. **Il est bien
   bloquant chez Vercel** : le journal d'un build de production qui le porte dit « build de
   production, contrôle bloquant » (relevé le 03/10/2026 par la personne qui pilote — l'outil MCP
   d'une session ne lit pas les journaux de build, §1.8), donc `VERCEL_ENV` est exposée au build.
   Vérifiée en production le même jour : l'en-tête servi est celui de `vercel.json`, et les
-  dix-neuf routes montent sans une infraction.
+  dix-neuf routes montent sans une infraction. **Depuis le 04/10/2026, `vercel-build` lance aussi
+  `scripts/verifier-cle-turnstile-du-bundle.mjs`**, sur le même modèle : un build de production sans
+  la clé de site du captcha, ou sans elle dans le bundle, échoue, et le déploiement précédent reste en
+  ligne. Son premier passage en production se relit dans le journal du build, comme celui-ci.
 
 ### 2.3 La convention de fusion : on fusionne quand on veut, on mesure chaque déploiement
 

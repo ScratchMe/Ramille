@@ -60,9 +60,10 @@ if (estNatif) afficherLesNotificationsAuPremierPlan();
 // courant tape sur le projet distant. Le biais serait homogène, donc invisible dans les chiffres.
 let ouvertureDejaComptee = false;
 
-// La session du montage a échoué — le refus du captcha, une coupure : l'ouverture et ce qui la suit se
-// rattrapent à la première session obtenue ailleurs (`rattraperLOuverture`, `src/types/analytics.ts`).
-let sessionDuMontageEchouee = false;
+// Le montage a fini sans session — sa création a échoué (le refus du captcha, une coupure), ou il n'en
+// avait pas à ouvrir (un jeton expiré hors ligne, une session refusée) : l'ouverture et ce qui la suit
+// se rattrapent à la première session obtenue ensuite (`rattraperLOuverture`, `src/types/analytics.ts`).
+let montageSansSession = false;
 
 /** Ce qui part une fois la première session obtenue : l'ouverture, les pannes gardées, les canaux. */
 function apresLaSessionDuDemarrage() {
@@ -185,12 +186,19 @@ export default function RootLayout() {
         // prochain lancement réessaie.
         if (etatDeLaSession() === 'refusee') setRefus(true);
 
-        apresLaSessionDuDemarrage();
+        if (session) {
+          apresLaSessionDuDemarrage();
+        } else {
+          // Sans session, `track()` renoncerait : l'ouverture attend la première session, au lieu
+          // d'être comptée perdue. Les canaux Android, eux, n'ont pas besoin de session.
+          montageSansSession = true;
+          void preparerLesCanauxAndroid();
+        }
         return enregistrerLeJetonPour(session?.user.id ?? null);
       })
       .catch((error) => {
         console.error('ensureSession() a échoué au démarrage :', error);
-        sessionDuMontageEchouee = true;
+        montageSansSession = true;
       });
   }, []);
 
@@ -260,12 +268,12 @@ export default function RootLayout() {
     if (!configurationSupabase.complete) return;
     const { data } = supabase.auth.onAuthStateChange((_evenement, session) => {
       void enregistrerLeJetonPour(session?.user.id ?? null);
-      // La session du montage a échoué, et celle-ci vient d'ailleurs (la racine, après « Réessayer ») :
-      // l'ouverture de ce chargement se rattrape ici, une fois.
+      // Le montage a fini sans session, et celle-ci arrive ensuite (la racine après « Réessayer », le
+      // réseau revenu, une reconnexion) : l'ouverture de ce chargement se rattrape ici, une fois.
       if (
         rattraperLOuverture({
           session: session !== null,
-          montageEchoue: sessionDuMontageEchouee,
+          montageSansSession,
           dejaComptee: ouvertureDejaComptee,
         })
       ) {

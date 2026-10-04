@@ -47,8 +47,9 @@ export function issueDeLaSession(erreur: ErreurAuth): IssueDeLaSession {
  * l'app, arriver sur cet écran prouve que Supabase a répondu (une coupure franche donne le repli hors
  * ligne) : « Vérifie ta connexion » vaut pour un réseau instable, et ne couvre pas un bloqueur système
  * (DNS filtrant, VPN) — l'app n'envoie de toute façon pas encore de jeton. Le visiteur à qui
- * Cloudflare a demandé de cocher, et qui ne l'a pas fait à temps, arrive aussi ici : ce qu'on lui dit
- * reste une question ouverte (registre d'exploitation §3.11, point 4).
+ * Cloudflare a demandé de cocher, et qui ne l'a pas fait dans les deux minutes que lui laisse la carte
+ * de la case (`src/lib/captcha.ts`), arrive aussi ici, et lit la même phrase (registre d'exploitation
+ * §3.11, point 4).
  */
 export function phraseDeLaVerification(plateforme: Plateforme): string {
   const debut =

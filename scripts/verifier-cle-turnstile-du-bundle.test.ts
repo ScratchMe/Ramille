@@ -19,9 +19,15 @@ const racine = path.resolve(__dirname, '..');
 const script = path.join(racine, 'scripts', 'verifier-cle-turnstile-du-bundle.mjs');
 const CLE = '0x4AAAAAAFNv5EbSVnEyqbgF';
 
+const exports: string[] = [];
+afterAll(() => {
+  for (const dist of exports) fs.rmSync(dist, { recursive: true, force: true });
+});
+
 /** Un export minimal : un seul fichier de bundle, avec ou sans la clé. */
 function unExport(contenu: string): string {
   const dist = fs.mkdtempSync(path.join(os.tmpdir(), 'cle-turnstile-'));
+  exports.push(dist);
   const dossier = path.join(dist, '_expo', 'static', 'js', 'web');
   fs.mkdirSync(dossier, { recursive: true });
   fs.writeFileSync(path.join(dossier, 'entry-abc.js'), contenu);

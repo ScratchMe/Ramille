@@ -60,11 +60,10 @@ pas dans un chiffre** (11/09/2026) :
   pour six vues d'étape d'onboarding. Et le second chemin n'existait pas du tout : le layout n'est
   monté qu'une fois par chargement du bundle, or le chemin nominal de la boucle d'engagement est
   une app en arrière-plan que la notification ramène devant. `retour` n'existe que sur natif.
-  **Et quand la session du montage échoue** (le refus du captcha, une coupure), le `demarrage` se
-  rattrape à la première session obtenue ailleurs — la racine, après « Réessayer » —, une fois
-  (`rattraperLOuverture`, 04/10/2026).
   C'est aussi ce qui rend vraie la phrase sur laquelle `purge_stale_anonymous_accounts()` fonde sa
-  fenêtre de 90 jours.
+  fenêtre de 90 jours. **Et quand le montage finit sans session** — un refus du captcha ou une coupure
+  à la création, un jeton expiré hors ligne, une session refusée —, le `demarrage` se rattrape à la
+  première session obtenue ensuite, une fois (`rattraperLOuverture`, 04/10/2026).
 - **`connexion_demande` est l'intention, `connexion_success` le fait constaté.** L'écran email
   émettait `connexion_success` juste après `updateUser({ email })`, que `etatDuRattachement`
   classe pourtant en `a_confirmer` : `is_anonymous` ne bascule qu'au clic du lien reçu — à la saisie du code depuis le 20/09/2026. Le chemin

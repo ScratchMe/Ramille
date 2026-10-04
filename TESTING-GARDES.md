@@ -723,7 +723,9 @@ auparavant en rapport seul, sans collecteur — donc sans mesure. La mesure, c'e
   `scripts/verifier-origine-supabase-de-la-csp.mjs`, qui fait échouer un build de production
   (`VERCEL_ENV=production`) dont `EXPO_PUBLIC_SUPABASE_URL` n'est pas l'origine de `connect-src`, et
   se contente d'avertir ailleurs. Il dit son mode dans le journal, et un build de production qui le
-  porte disait « contrôle bloquant » (03/10/2026).
+  porte disait « contrôle bloquant » (03/10/2026). **La clé de site du captcha est dans le même cas**
+  — la CI n'en a pas, exprès — et a le même contrôle depuis le 04/10/2026 :
+  `scripts/verifier-cle-turnstile-du-bundle.mjs`, lancé juste après.
 - **`scripts/vercel-csp.test.ts` garde la forme** de la politique (appliquée, sans `'unsafe-inline'`
   ni `'unsafe-eval'` pour les scripts, un seul hôte de script nommé — Turnstile, depuis le
   04/10/2026 —, `frame-src` réduit à ce même hôte, un seul projet Supabase nommé, aucun joker), la
