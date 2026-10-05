@@ -595,6 +595,13 @@ exactement ce qui avait laissé passer le mauvais caractère.
   **aucune suite ne compare les deux entre eux** : chacune pingle sa moitié sur une valeur écrite
   à la main, donc changer la règle des deux côtés sauf un la laisse verte des deux côtés.
   Toucher à un formatage affiché impose donc de chercher son jumeau dans `api/`.
+  **Une recopie, elle, est comparée** depuis le 05/10/2026 : la liste fermée des libellés de
+  `poste` (le bloc `<postes-partageables>`, à l'identique dans les deux fonctions). Un libellé que
+  l'app produit et que la liste refuse fait perdre aux vrais partages leur ligne « Poste
+  principal », sans rien casser d'un côté ni de l'autre ; `scripts/postes-partageables.test.ts`
+  construit chaque libellé par `dominantShareLabel` et le passe à la page, et exige les deux blocs
+  identiques. **Renommer un poste ou ajouter un mode impose donc de suivre dans `api/`**, et le
+  test dit lequel.
 - **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche** — lire la
   variable dans un `const`, jamais en valeur d'une propriété homonyme ;
   `scripts/verifier-configuration-export.mjs` garde ce point : `EXPO.md` §1.2 et §2.1.
