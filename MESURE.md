@@ -37,8 +37,9 @@ ajouté impose de relire le formulaire « Sécurité des données » de Play**
 déclaration publiée ne nomme pas, et rien ne le signale.
 
 **La même règle vaut pour une valeur de propriété, et elle est plus discrète** : la base ne valide
-pas les valeurs de `props` — `check_usage_event_props` ne compte que des clés et des longueurs —
-donc rien n'arrête la dérive. `connexion_view` déclarait cinq provenances dont deux qu'aucun écran
+pas les valeurs de `props` — `check_usage_event_props` ne compte que des clés et des longueurs, celle
+des nombres comprise depuis le 05/10/2026 (32 caractères : un nombre de 131 000 chiffres faisait d'un
+événement 400 Ko, passe avant le lancement) —, donc rien n'arrête la dérive. `connexion_view` déclarait cinq provenances dont deux qu'aucun écran
 n'émettait plus, et une sixième (`compte`) que l'écran de connexion réécrivait en
 `resultat_transition` faute de la reconnaître : la provenance la plus intéressante à mesurer
 gonflait exactement le chiffre auquel on voulait la comparer. D'où `SOURCES_CONNEXION`

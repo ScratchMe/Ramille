@@ -18,7 +18,7 @@ export type MessageDuCaptcha =
   | { type: 'erreur' };
 
 /** L'action du widget, comme sur le web (`UsageDuCaptcha` de `src/lib/captcha.ts`). */
-export type UsageDuCaptchaNatif = 'session_anonyme' | 'code_de_connexion';
+export type UsageDuCaptchaNatif = 'session_anonyme' | 'code_de_connexion' | 'rattachement';
 
 /**
  * La page de la vue web : Turnstile en rendu explicite, mode `interaction-only` comme sur le web, et

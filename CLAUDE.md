@@ -293,9 +293,11 @@ joué sans être installé, et chacun décidé avec la personne qui pilote, comm
   par git.** Le second a porté jusqu'à ce jour, dans un dépôt public, les jokers `mcp__Supabase` et
   `mcp__Supabase__*` : tout outil du serveur passait sans confirmation sur la production,
   `pause_project` et `restore_project` compris. **Un outil accordé se nomme**, et un test refuse le
-  joker. La liste nommée garde `apply_migration` et `execute_sql`, qui écrivent sur la production
-  sans confirmation, et c'est décidé (27/09/2026, la personne qui pilote : « On peut les garder sans
-  confirmation ») : les retirer ferait confirmer chaque migration, qui passe déjà par une PR relue.
+  joker. La liste nommée a gardé `apply_migration` et `execute_sql`, qui écrivent sur la production,
+  sans confirmation du 27/09 au 05/10/2026 ; **la personne qui pilote les en a retirés le 05/10/2026**
+  (passe avant le lancement, `v1-27` §12.38) : le dépôt public recevra des textes d'inconnus, qu'une
+  session lit, et une écriture en production se confirme désormais d'un clic. Le retrait dans ce
+  fichier lui revient — l'agent n'écrit pas ses propres permissions, et ça lui est refusé.
 - **Un hook refuse de modifier une migration livrée** (`scripts/proteger-les-migrations-livrees.mjs`) :
   « livrée » veut dire présente dans `origin/main`, pas sur le disque, parce qu'une migration en
   cours s'écrit en plusieurs retouches. Il ne voit ni le shell ni une autre session — **la CI, si,
@@ -652,6 +654,9 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
   **huit** chiffres, dont le `type` (`email_change` / `email`) n'est pas interchangeable ; Google
   passe par `linkIdentity` ;
 - aucun écran ne dit si une adresse a un compte ;
+- aucun compte ne naît hors d'une session anonyme (hook `before_user_created`), et le code de
+  rattachement coûte un captcha que la base vérifie elle-même — sa clé dans le Vault allume
+  l'exigence, donc un build Android qui n'appelle pas l'autorisation ne rattache plus par e-mail ;
 - le flux est en PKCE, et une erreur d'auth se reconnaît à son **code**, jamais à son message ;
 - dès que le hook d'envoi est allumé, les deux codes partent de la base (`envoyer_l_e_mail_d_auth`) ;
   ses plafonds ne valent que pour le rattachement et sont **muets** — un refus dirait qui a un

@@ -435,6 +435,28 @@ export type Database = {
           },
         ]
       }
+      // La passe avant le lancement (20261005170000) : aucun privilège client, le hook d'envoi la lit
+      autorisations_de_rattachement: {
+        Row: {
+          accordee_le: string | null
+          essais: number
+          essais_depuis: string
+          user_id: string
+        }
+        Insert: {
+          accordee_le?: string | null
+          essais?: number
+          essais_depuis?: string
+          user_id: string
+        }
+        Update: {
+          accordee_le?: string | null
+          essais?: number
+          essais_depuis?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       emission_factor_sources: {
         Row: {
           impactco2_slugs: string[]
@@ -1261,6 +1283,11 @@ export type Database = {
         Args: { p_rappels_bloques_vus: number; p_releve: Json }
         Returns: boolean
       }
+      // La passe avant le lancement (20261005170000) : ce qui passe le plafond de l'alerte
+      alerte_du_serveur: {
+        Args: { p_rappels_bloques_vus: number; p_releve: Json }
+        Returns: boolean
+      }
       archiver_engagement: {
         Args: {
           p_action_template_id: string
@@ -1277,6 +1304,10 @@ export type Database = {
         Args: { p_plan_action_id: string; p_raison: string }
         Returns: undefined
       }
+      // La passe avant le lancement (20261005170000) : l'autorisation du captcha avant un rattachement
+      autoriser_le_rattachement: { Args: { p_jeton: string }; Returns: boolean }
+      // …et le hook `before_user_created`, serveur seulement
+      avant_la_creation_d_un_compte: { Args: { event: Json }; Returns: Json }
       // Lot 6 — les vues de l'administration (20260929210541)
       boucle_de_la_personne: { Args: { p_user_id: string }; Returns: string }
       // La carte d'attente sait si une boucle tourne (20260930105923)
@@ -1348,6 +1379,11 @@ export type Database = {
         }[]
       }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
+      // La passe avant le lancement (20261005170000) : l'appel à Expo, à part pour qu'un test le remplace
+      envoyer_a_expo: {
+        Args: { p_expo_token: string; p_messages: Json }
+        Returns: unknown
+      }
       envoyer_l_e_mail_d_auth: { Args: { event: Json }; Returns: Json }
       // C4.2 — le mot de la veille (20260928075453)
       envoyer_les_notifications: { Args: { p_genre: string }; Returns: number }
@@ -1520,6 +1556,11 @@ export type Database = {
       // v1-34 — la forme rangée de la réponse aux transports (20261002231530), serveur seulement
       transports_ranges: { Args: { p_transports: string[] }; Returns: string[] }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
+      // La passe avant le lancement (20261005170000) : la vérification auprès de Cloudflare, serveur seulement
+      verifier_le_jeton_du_captcha: {
+        Args: { p_jeton: string; p_secret: string }
+        Returns: boolean
+      }
       // L'alerte d'exploitation (20261002203259)
       verifier_les_alertes: { Args: never; Returns: string }
     }

@@ -226,8 +226,18 @@ annonce —, le texte de Supabase dessous en chasse fixe tertiaire, recopiable.
 `signInWithOtp` (`demanderLaConnexion`) — ce sont les seuls du produit que Supabase protège quand le
 captcha est activé (sa documentation : inscription, session anonyme comprise, connexion,
 réinitialisation) ; `updateUser`, `verifyOtp` et `linkIdentity` n'en demandent pas, donc **le code
-de rattachement**, envoyé par `updateUser({ email })`, **ne passe pas par lui** : ce flux d'e-mails
-relève des plafonds d'e-mail. Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
+de rattachement**, envoyé par `updateUser({ email })`, **ne passe pas par lui**. **Depuis le
+05/10/2026, c'est la base qui vérifie le sien** (passe avant le lancement, `v1-27` §12.38) :
+`demanderLeRattachement` obtient un jeton (`rattachement`), le passe à `autoriser_le_rattachement`,
+qui le vérifie auprès de Cloudflare avec le secret Vault `turnstile_secret_rattachement`, et le hook
+d'envoi tait tout code sans autorisation de moins de dix minutes — une autorisation, un code, renvoi
+compris. Sans le secret (la stack locale, la CI), rien n'est exigé. Un refus se dit avant tout envoi,
+comme celui de Supabase (`captcha_failed`), et une autorisation qu'on n'a pas pu demander, comme une
+panne de transport : ni l'un ni l'autre ne parle de l'adresse. **Un build Android qui n'appelle pas
+l'autorisation ne rattache plus rien dès que le secret existe** — en silence, puisque le hook se tait.
+L'ordre sûr est celui du captcha de Supabase (§3.11 du registre) : le secret après le build qui
+l'appelle. Le 05/10/2026, il a été posé avant, et c'est accepté : la personne qui pilote, seule à
+tester, ne reprend qu'avec le build du 07/10 (`v1-27` §12.38). Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
 lève jamais : sans clé de site (développement, CI, parcours réel), hors du web sans vue web branchée
 (`brancherLeCaptchaNatif` — le rendu de l'export, ou l'app avant le montage du layout), ou sans jeton
 au bout de trente secondes — **deux minutes à partir du moment où Cloudflare demande de cocher**
@@ -253,12 +263,15 @@ la porte.
 d'authentification, il compte, puis envoie avec les deux gabarits du dépôt, recopiés à l'identique —
 **par l'API de Brevo dès que sa clé est posée, sinon par celle de Resend** (depuis le 05/10/2026,
 `20261005125029_les_codes_par_brevo.sql` : seuls les codes passent par Brevo, les rappels restent
-chez Resend). **Seul le rattachement est plafonné**, et les valeurs sont celles de la personne
-qui pilote : **5 codes par heure et par compte demandeur, 5 par heure et par adresse, et pour tout le
-projet 200 par jour quand Brevo envoie, 60 quand c'est Resend** — 200 sur les 300 de Brevo en laisse 100
+chez Resend). **Seul le rattachement est plafonné** : **5 codes par heure et 10 par jour par compte
+demandeur, 5 par jour et par adresse** (par heure jusqu'à la passe avant le lancement : une adresse en
+recevait 120 par jour), **et pour tout le projet 200 par jour quand Brevo envoie, 60 quand c'est
+Resend**. Les valeurs de l'heure et du projet sont celles de la personne qui pilote ; celles du jour
+ont été proposées par la passe et acceptées le 05/10/2026 — 3 par adresse dans la proposition, porté
+à 5 en l'écrivant, pour laisser à la personne un code, deux renvois et deux essais ratés — 200 sur les 300 de Brevo en laisse 100
 aux reconnexions ; 60 sur les 100 de Resend laisse leur part aux rappels. Le hook choisit son
 fournisseur avant de compter, donc le plafond suit la clé. La minute de Supabase entre deux codes d'un même compte reste devant ; son plafond
-horaire (30) n'est pas compté, faute de mesure qui tranche pour la production. Six choses à savoir
+horaire (30) n'est pas compté, faute de mesure qui tranche pour la production. Sept choses à savoir
 avant d'y toucher :
 
 - **La reconnexion n'est pas plafonnée par le hook, et c'est voulu** (décision du 05/10/2026, après la
@@ -273,9 +286,9 @@ avant d'y toucher :
   titulaire. **Ce que le silence coûte** : Supabase renouvelle le code avant d'appeler le hook, donc un
   plafond atteint tue le code de rattachement déjà reçu sans en envoyer d'autre — l'écran dit « Un
   nouveau code vient de partir ». Et le plafond de l'adresse compte les demandes de tout le monde :
-  cinq rattachements vers une adresse dans l'heure, d'où qu'ils viennent, et la personne qui la possède
-  ne peut plus la rattacher avant que la fenêtre passe — son compte et sa reconnexion ne sont pas
-  touchés. « Trop de demandes pour le moment. Réessaie plus tard. » ne vient donc que des limites de
+  cinq rattachements vers une adresse dans la journée, d'où qu'ils viennent, et la personne qui la
+  possède ne peut plus la rattacher avant que la fenêtre passe — son compte et sa reconnexion ne sont
+  pas touchés. Le captcha (plus haut) met un prix à chacune de ces demandes. « Trop de demandes pour le moment. Réessaie plus tard. » ne vient donc que des limites de
   Supabase lui-même, et un échec d'envoi rend un `500`, lu comme une panne de transport (ce qu'il dit
   d'une adresse : `SUPABASE.md` §2.4).
 - **Le hook a deux secondes, imposées par Supabase** (`statement_timeout`, mesuré) : l'envoi est
@@ -286,6 +299,14 @@ avant d'y toucher :
   `email_change` (le rattachement). Les autres — inscription par mot de passe, réinitialisation,
   invitation — ne partent plus du tout hook allumé, sans erreur, parce qu'une erreur dirait qui a un
   compte.
+- **Aucun compte ne naît hors d'une session anonyme** (passe avant le lancement, 05/10/2026) : le hook
+  `before_user_created` (`avant_la_creation_d_un_compte`) refuse `/auth/v1/signup` et `/otp` avec
+  `create_user`. Avant lui, un tiers créait au prix d'un captcha un compte non confirmé à l'adresse de
+  quelqu'un, jamais purgé — le `signup` que Supabase lui envoyait ensuite à chaque demande tombait
+  dans les types ignorés, et la personne ne recevait plus jamais de code. Le produit ne crée pas de
+  compte autrement : il convertit une session anonyme (`updateUser`, `linkIdentity`), ce qui n'en crée
+  aucun. L'API d'administration ne passe pas par ce hook (mesuré), donc les comptes de la CI non plus.
+  Allumé dans `supabase/config.toml` et, en production, dans Authentication → Hooks.
 - **Les gabarits ont trois copies dans le dépôt** — le document, `supabase/templates/` et la migration
   — que `scripts/verifier-gabarits-email.mjs` compare ; `gabarits-email.md` dit pourquoi les trois.
 - **La stack locale passe par le même chemin** : `supabase/config.toml` allume le hook, qui poste au

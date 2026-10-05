@@ -127,9 +127,10 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
   distant ; ce qui s'y valide se valide en sautant ces appels (ils ne touchent pas au corps du
   message, seulement au statut).
 - `16_purge_anonyme_inactivite`, `36_cohortes_avant_la_purge` (son assertion 18) et
-  `49_les_plafonds_globaux` fabriquent soixante sessions muettes **qui portent un bilan** pour
+  `49_les_plafonds_globaux` fabriquent soixante sessions muettes **qui portent un bilan finalisé** pour
   déclencher la garde de volume de la purge, dont le seuil vaut `max(50, 20 %)` des comptes anonymes
-  **porteurs** (un bilan ou un retour) depuis le 04/10/2026. **Au-delà d'environ 240 comptes
+  **porteurs** (un bilan ou un retour depuis le 04/10/2026, un bilan finalisé depuis le 05/10/2026 — et
+  `submitted_at`, posé par le serveur, s'y recule). **Au-delà d'environ 240 comptes
   anonymes porteurs en base, soixante ne suffisent plus**, et le passage supprime au lieu de bloquer.
   Le compte qui décide est celui de la base, pas du fichier (relevé par la contre-lecture du lot 6,
   27/09/2026). `49` suppose aussi qu'aucune ligne `blocked` n'existe déjà dans `purge_runs`, et ses
@@ -155,10 +156,11 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
 - `42_l_alerte_d_exploitation` **est rejouable, et c'est une construction, pas une chance** : il
   appelle `verifier_les_alertes()`, qui sur le distant a ses trois secrets Vault et enverrait un vrai
   e-mail au premier « du neuf » — et du neuf peut être validé pendant le rejeu, la panne d'un testeur
-  ou un cron en échec. Ses montages posent donc `plafond_par_jour = 0` : ce neuf-là donne « Plafond… »,
-  un test rouge, jamais un envoi. Le seul montage au plafond libre, celui du destinataire manquant, se
-  saute là où le secret existe. **Un montage ajouté au plafond libre rouvrirait l'envoi** (relevé par
-  la contre-lecture du 02/10/2026, quand le fichier ne posait pas encore le plafond).
+  ou un cron en échec. **Depuis le 05/10/2026, le fichier retire le secret `alerte_destinataire` dans sa
+  transaction annulée**, comme `50` retire les clés d'envoi : rien ne peut partir. Avant, la garde était
+  `plafond_par_jour = 0` dans chaque montage — et la passe avant le lancement l'a rendue insuffisante,
+  un signal du serveur passant désormais le plafond (relevé par sa contre-lecture). **Un montage qui
+  remettrait le secret rouvrirait l'envoi.**
 Le reste de la suite est rejouable sur le distant et c'est la façon la plus rapide de valider un
 fichier pgTAP sans Docker — à condition de rejouer le **fichier entier**, bascules de
 `request.jwt.claims` comprises, et de savoir que celles-là ne prouvent rien là-bas.

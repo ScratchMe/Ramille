@@ -2,7 +2,8 @@
 // activée, des deux appels qui créent quelque chose sans session permanente : la session anonyme
 // (`signInAnonymously`) et la demande d'un code de connexion (`signInWithOtp`). Les autres appels
 // d'auth du produit — `updateUser`, `verifyOtp`, `linkIdentity` — n'en portent pas : Supabase ne
-// le leur demande pas. Plan anti-abus, `v1-27` §12.35 ; le widget et sa clé de site sont au
+// le leur demande pas. **Le code de rattachement en coûte un quand même** depuis le 05/10/2026 :
+// c'est la base qui le vérifie (`autoriser_le_rattachement`, appelé par `demanderLeRattachement`). Plan anti-abus, `v1-27` §12.35 ; le widget et sa clé de site sont au
 // registre d'exploitation, §3.11.
 //
 // **Sans clé de site, aucun jeton, et c'est voulu** : en local, en CI et dans le parcours réel, la
@@ -52,8 +53,12 @@ export const DELAI_POUR_COCHER_MS = 120_000;
 /** La phrase de la carte qui entoure la case — validée par la personne qui pilote le 04/10/2026. */
 export const PHRASE_DE_LA_CASE = 'Une dernière vérification : coche la case ci-dessous.';
 
-/** Ce que le jeton sert à ouvrir — l'`action` du widget, lisible dans l'analyse de Cloudflare. */
-export type UsageDuCaptcha = 'session_anonyme' | 'code_de_connexion';
+/**
+ * Ce que le jeton sert à ouvrir — l'`action` du widget, lisible dans l'analyse de Cloudflare.
+ * **`rattachement` est relu par la base** (`verifier_le_jeton_du_captcha`, 05/10/2026) : un jeton dont
+ * l'action diffère n'y vaut rien, donc la renommer ici sans la migration tairait tous les rattachements.
+ */
+export type UsageDuCaptcha = 'session_anonyme' | 'code_de_connexion' | 'rattachement';
 
 type OptionsDuWidget = {
   sitekey: string;
@@ -340,7 +345,8 @@ export function ecouterLaCaseDuCaptcha(ecouteur: () => void): () => void {
 let file: Promise<unknown> = Promise.resolve();
 
 /**
- * Le jeton à joindre à `signInAnonymously` ou à `signInWithOtp` (`options.captchaToken`), ou
+ * Le jeton à joindre à `signInAnonymously` ou à `signInWithOtp` (`options.captchaToken`), ou à
+ * passer à `autoriser_le_rattachement` avant un `updateUser` (`demanderLeRattachement`), ou
  * `undefined` quand il n'y en a pas — pas de clé, ni web ni vue web branchée (le rendu statique de
  * l'export, un test), ou un widget qui n'a rien rendu.
  * Ne lève jamais : un captcha en panne ne doit pas casser un appel que Supabase accepterait.

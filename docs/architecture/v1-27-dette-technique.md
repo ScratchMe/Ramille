@@ -2187,3 +2187,96 @@ alors que la règle de la boucle est que ce qui s'espace est le message, jamais 
 deux générateurs garderait les points, mais **ferait taire l'alerte**, qui lit les échecs de
 `cron.job_run_details` : il faudrait que l'échec isolé s'écrive là où elle lit. Pas fait dans le
 correctif de l'incident, qui reste minimal.
+
+### 12.38 La passe de sécurité avant le lancement public (05/10/2026)
+
+**La demande** (la personne qui pilote, 05/10/2026) : une passe comme celle qui avait fait naître le
+plan anti-abus, à la recherche de ce qu'un inconnu malveillant pourrait faire une fois le lancement
+public fait. Quatre relectures en parallèle — le web et les fonctions de Vercel, l'authentification,
+la base, les abus, les coûts et le dépôt public —, chaque constat grave rejoué avant d'être cru.
+
+**Personne ne lisait ni ne modifiait les données d'un autre, ni n'obtenait plus de droits.** La RLS
+de chaque table de `public`, chaque fonction `security definer` appelable par un client (relues avant
+cette migration, qui ajoute une table et une fonction de plus, toutes deux couvertes), l'échappement des
+e-mails, la désinscription, la CI, la sauvegarde et les 450 commits de l'historique (aucun secret)
+sont sains. Tout ce que la passe a trouvé tient au **volume** et à deux impasses qu'un tiers pouvait
+fabriquer. **Corrigé** par `20261005170000_la_passe_avant_le_lancement.sql` (test `51`, et `16`,
+`36`, `42`, `47`, `48`, `49`, `50` alignés), le client du rattachement et `supabase/config.toml` :
+
+- **une session anonyme remplissait la base de 500 Mo** — le plan gratuit la passe alors en lecture
+  seule pour tout le monde. Un événement d'usage aux nombres de 131 000 chiffres pesait 400 Ko ; les
+  bilans n'avaient aucun plafond (20 000 en deux secondes) ; les réponses aucune borne de taille. Les
+  nombres des événements sont bornés, un compte a un bilan en cours à la fois et dix par jour, les
+  distances sont bornées à 10 000 km avec vingt décimales au plus — ce qui écarte aussi `NaN` et
+  `Infinity`, que `> 0` laissait passer et qui empoisonnaient toutes les moyennes de l'analyse —, et
+  les jetons d'appareil neufs (dix par jour) comme les engagements archivés (trente par jour) ont leur
+  plafond. La taille de la base entre dans l'alerte d'exploitation, à partir de 300 Mo. (La liste des
+  transports proches, signalée aussi, ne grossissait pas : le trigger la dédoublonne avant l'écriture,
+  et le test `51` l'épingle.) La production pesait 18 Mo, et rien n'y montrait d'abus ;
+- **la purge se bloquait exprès** : un bilan en cours suffisait à faire d'un compte un porteur, et une
+  vague de robots déclenchait la garde nuit après nuit. Un bilan en cours ne porte plus rien ;
+- **l'alerte se noyait** : une panne émise par heure consommait les six envois du jour, et l'échec
+  d'une tâche du soir n'était dit que le lendemain. Les signaux du serveur passent le plafond ;
+- **un jeton Expo d'un autre projet faisait tomber le lot de rappels entier** (`PUSH_TOO_MANY_EXPERIENCE_IDS`,
+  trois nuits, sans repli) : un 400 sur un lot de plusieurs comptes le coupe en deux, jusqu'à isoler la
+  ligne fautive ;
+- **le code de rattachement partait sans captcha** — Supabase ne vérifie pas de jeton sur
+  `updateUser` : 120 codes par jour vers l'adresse d'un tiers depuis une seule session, et quarante
+  sessions épuisaient les 200 envois du jour. La base vérifie désormais le jeton auprès de Cloudflare
+  (`autoriser_le_rattachement`, secret Vault `turnstile_secret_rattachement`, posé par la personne qui
+  pilote le 05/10/2026), son hook d'envoi tait tout code sans autorisation fraîche (dix minutes, un
+  code), le plafond de l'adresse compte sur vingt-quatre heures et non plus sur une (cinq), et le compte
+  a un plafond du jour (dix) en plus de celui de l'heure. **L'APK `preview` du 05/10 (29012e62)
+  n'appelle pas l'autorisation** : il ne rattache plus d'adresse par e-mail dès l'application, et ce
+  jusqu'au build du 07/10 — accepté par la personne qui pilote, seule à tester d'ici là, qui ne
+  reprendra qu'avec ce build ;
+- **un tiers squattait une adresse** : un compte créé par `/auth/v1/signup` ou par `/otp` avec
+  `create_user`, au prix d'un captcha, jamais confirmé ni purgé — et la personne ne recevait plus
+  jamais de code, sans un mot (reproduit en local). Le hook `before_user_created` refuse désormais
+  toute création qui n'est pas une session anonyme ; mesuré le même jour, l'API d'administration ne
+  passe pas par lui, donc les comptes que la CI crée ne sont pas touchés. La production n'avait aucun
+  compte de ce genre.
+
+**La prochaine passe a son prompt** : `docs/exploitation/passe-de-securite.md`, à coller dans une
+session neuve, et à mettre à jour après chaque passe.
+
+**Et trois gestes hors du dépôt, le même jour** : l'intégration Vercel–Supabase désinstallée — elle
+avait copié dans les variables de Vercel le mot de passe de la base, la clé `service_role` et le
+secret JWT, qu'aucun code ne lisait (registre §3.2) ; le mot de passe de la base changé, le secret
+GitHub `SUPABASE_DB_URL` suivi (la sauvegarde a échoué une fois, le pooler n'avait pas encore le
+nouveau mot de passe, puis est passée) ; la clé `sb_secret` supprimée. **Le secret JWT n'a pas été
+changé, et ne doit pas l'être** : toutes les sessions anonymes tomberaient, et avec elles l'accès de
+ces personnes à leurs bilans. La clé `sb_publishable` reste : c'est celle que l'app embarque.
+
+Ce qui reste, et pourquoi :
+
+- **Les quotas d'e-mails restent épuisables par qui paie des captchas.** Chaque code coûte désormais
+  un captcha, mais le plafond de 200 rattachements par jour, et les 300 e-mails de Brevo que les
+  reconnexions partagent, restent communs à tout le projet. Le plan gratuit ne laisse pas mieux.
+- **Viser l'adresse de quelqu'un la plafonne pour la journée** : cinq codes demandés par un tiers, et
+  la personne ne rattache plus cette adresse avant le lendemain, en silence. Le prix est passé d'une
+  session à cinq captchas, et le plafond borne le harcèlement à cinq e-mails par jour.
+- **La reprise d'un jeton d'appareil reste ouverte** (`register_push_token`, `v1-10` §3.4) : qui
+  connaît le jeton d'un autre en devient le destinataire. C'est un choix de produit, et le jeton n'est
+  lisible d'aucun autre compte.
+- **La carte de partage se recalcule à chaque variante d'adresse** : les paramètres inconnus entrent
+  dans la clé du cache, donc des requêtes qui en changent un font tourner la fonction. Le pare-feu de
+  Vercel borne déjà chaque adresse IP à 60 requêtes par dix minutes sur `/api/` (registre §3.2) ; reste
+  une attaque répartie sur beaucoup d'adresses, qui pourrait approcher les limites du plan gratuit.
+  **La piste** : rediriger vers l'adresse canonique (paramètres connus, valeurs réécrites). Dans une PR
+  à part.
+- **En-têtes du web à resserrer**, sans faille connue : HSTS sans `includeSubDomains` (à ne poser qu'en
+  sachant tous les sous-domaines en HTTPS), pas de `Cross-Origin-Opener-Policy`, et la vue web du
+  captcha natif avec `originWhitelist ['*']`.
+- **Les actions de la CI sont épinglées par étiquette**, pas par empreinte. Borné : le déclencheur est
+  `pull_request`, le jeton en lecture, aucun secret. Dependabot suivrait des empreintes aussi bien.
+- **`braces` (GHSA-vfj7-8cjw-p6xm), neuf depuis le tri du 02/10** : il n'arrive que par l'indexation
+  des fichiers de Metro, au build, sur des motifs du dépôt — ni dans le bundle ni dans `api/`.
+  Inatteignable, à passer en `overrides` quand une version corrigée existe (registre §8.8).
+- **Les écritures de l'agent en production.** La personne qui pilote a décidé le 05/10/2026 de ne
+  plus pré-autoriser `apply_migration` ni `execute_sql` — le dépôt public recevra des textes
+  d'inconnus, qu'une session lit — et les a retirés de ses réglages. **`.claude/settings.json` les
+  porte encore** : l'agent ne peut pas l'écrire (une modification de ses propres permissions lui est
+  refusée), donc le retrait dans le dépôt revient à la personne qui pilote. Et le jeton
+  `SUPABASE_ACCESS_TOKEN` de l'environnement ouvre toujours l'API de gestion par le shell ; le fermer
+  veut dire le retirer de l'environnement et ne l'y remettre que pour appliquer une migration.

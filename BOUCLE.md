@@ -564,3 +564,16 @@ valeur, donc ne compterait jamais rien. **Ces trois colonnes restent au serveur*
 04/10/2026 (`20261004194921`) : le client lit `push_tokens` par colonnes, et
 `proprietaire_precedent` — l'identifiant du compte qui avait l'appareil avant lui — n'en fait plus
 partie. L'app ne lit que `token`.
+
+**Dix jetons neufs par jour et par compte** (passe avant le lancement, 05/10/2026,
+`20261005170000`) : chaque jeton inventé laissait une ligne, gardée 90 jours une fois désactivée.
+Un appareil réel rappelle avec le même jeton, qui existe déjà et ne compte pas ; une reprise non plus.
+
+**Un 400 d'Expo sur un lot de plusieurs comptes coupe le lot en deux** (même passe,
+`envoyer_lot_push`). Expo refuse le lot **entier** quand il mêle des jetons de plusieurs projets
+(`PUSH_TOO_MANY_EXPERIENCE_IDS`), et n'importe qui peut enregistrer sur son compte le jeton d'une app
+Expo à lui : une ligne faisait tomber jusqu'à cent rappels, trois nuits de suite, sans repli. La coupe
+se répète jusqu'à isoler la ligne fautive, qui échoue seule. **Elle suit les lignes, jamais les
+jetons** : une ligne aux jetons répartis sur deux moitiés serait jugée « tous refusés » dans l'une
+alors que l'autre est partie. L'appel lui-même vit dans `envoyer_a_expo`, pour que le test `51` le
+remplace sans réseau.

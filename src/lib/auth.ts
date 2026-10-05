@@ -226,6 +226,14 @@ export async function createSessionFromUrl(url: string): Promise<AuthResult> {
  * Une adresse déjà rattachée à un autre compte rend `422 email_exists` — ce n'est pas une erreur
  * à afficher mais le signe que la personne cherchait « retrouver » (`suiteDeLaDemandeDeCode`).
  *
+ * **Un captcha avant chaque code** (passe avant le lancement, 05/10/2026). Supabase ne vérifie pas
+ * de jeton sur `updateUser`, et une seule session envoyait 120 codes par jour à l'adresse d'un tiers.
+ * La base le vérifie donc elle-même (`autoriser_le_rattachement`), et son hook d'envoi tait tout code
+ * sans autorisation fraîche — une autorisation, un code, renvoi compris : l'écran du code rappelle
+ * cette fonction. Un refus se dit ici, avant tout envoi, comme celui du captcha de Supabase
+ * (`captcha_failed`) : il ne parle pas de l'adresse. Sans secret côté base (la stack locale, la CI),
+ * l'autorisation est toujours accordée, et un jeton absent ne coûte rien.
+ *
  * **La session d'abord, et ce n'est pas une précaution** (relevé le 25/09/2026, `v1-29` §4). La
  * session anonyme s'ouvre en parallèle du premier affichage ; un « Recevoir un code » touché avant
  * qu'elle existe faisait répondre `updateUser` par `AuthSessionMissingError`, **sans aucune
@@ -243,8 +251,38 @@ export async function demanderLeRattachement(email: string): Promise<AuthResult>
   } catch (erreur) {
     return { error: sessionIntrouvable(erreur) };
   }
+  let autorise: boolean | null;
+  try {
+    const { data, error } = await supabase.rpc('autoriser_le_rattachement', {
+      p_jeton: (await jetonDuCaptcha('rattachement')) ?? '',
+    });
+    if (error) return { error: autorisationImpossible(error) };
+    autorise = data;
+  } catch (erreur) {
+    return { error: autorisationImpossible(erreur) };
+  }
+  if (autorise !== true) return { error: captchaRefuse() };
   const { error } = await supabase.auth.updateUser({ email: email.trim() });
   return { error };
+}
+
+/**
+ * L'autorisation n'a pas pu être demandée — le réseau, la base : rien n'est parti. Au statut 0 et sans
+ * `code`, comme `sessionIntrouvable` : une panne de transport, jamais « un code vient de partir ».
+ * Une erreur PostgREST porte un `code` (`PGRST…`, SQLSTATE), que l'écran ne lirait pas comme une panne.
+ */
+function autorisationImpossible(cause: unknown): Error {
+  return Object.assign(new Error('Le captcha n’a pas pu être vérifié : rien n’a été envoyé.', { cause }), {
+    status: 0,
+  });
+}
+
+/** Le captcha refusé par la base : la même erreur que celui de Supabase, reconnue au code. */
+function captchaRefuse(): Error {
+  return Object.assign(new Error('Le captcha a été refusé : rien n’a été envoyé.'), {
+    code: 'captcha_failed',
+    status: 400,
+  });
 }
 
 /**

@@ -827,6 +827,25 @@ export function distanceSortieKm(reponses: BilanAnswers): number | null {
 export const COMMUTE_DISTANCE_A_RELIRE_KM = 200;
 
 /**
+ * La plus longue distance qu'un champ laisse saisir, en km : **la borne de la colonne**
+ * (`assessment_answers_*_distance_km_bornee`, passe avant le lancement, 05/10/2026), et rien de plus.
+ * Même raison que `COMPTE_MAXIMUM` : au-delà, l'écriture des réponses échouerait à chaque essai sans
+ * désigner le champ. Aucun trajet réel n'en approche — le seuil où l'app fait relire reste
+ * `COMMUTE_DISTANCE_A_RELIRE_KM` —, donc ce n'est pas un blocage ; une borne plus basse en serait un,
+ * et se déciderait avec la personne qui pilote. Comparée à la base par `verifier-miroirs-de-check.mjs`
+ * (`BORNE_DES_DISTANCES_KM`).
+ */
+export const DISTANCE_MAXIMUM_KM = 10_000;
+
+/** La borne, en liste : la forme que la garde des miroirs compare à la base. */
+export const BORNE_DES_DISTANCES_KM = [DISTANCE_MAXIMUM_KM] as const;
+
+/** Une distance saisie, ramenée sous la borne de la colonne. */
+export function distanceBornee(valeur: number | null): number | null {
+  return valeur === null ? null : Math.min(valeur, DISTANCE_MAXIMUM_KM);
+}
+
+/**
  * La phrase qui confirme, sous la répartition des vols, ce que le calcul comptera en long-courrier.
  *
  * **À zéro, elle le dit en mots** (27/09/2026, décision de la personne qui pilote). « 0 vol

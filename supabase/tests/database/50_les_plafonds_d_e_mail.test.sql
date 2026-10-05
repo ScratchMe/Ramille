@@ -33,9 +33,9 @@
 --   | toutes les issues comptées, pas seulement les envois partis | 19, 20 et 25 |
 --   | un plafond qui refuse en 429 au lieu de se taire | 4, 5, 10, 11, 15 et 16 |
 --   | l'empreinte sans minuscules ni espaces retirés | 15 et 16 |
---   | la fenêtre du jour portée à 48 heures | 9 |
+--   | la fenêtre du jour portée à 48 heures | 9 et 18 bis |
 --   | la fenêtre de l'heure du compte portée à deux heures | 13 |
---   | la fenêtre de l'heure de l'adresse portée à deux heures | 18 |
+--   | la fenêtre de l'adresse ramenée à une heure (sa valeur d'avant le 05/10/2026) | 18 |
 --   | un envoi qui échoue consigné comme parti | 21 et 25 |
 --   | un type inconnu refusé en erreur au lieu d'être ignoré | 1 |
 --   | la garde des deux codes retirée | 3 |
@@ -53,11 +53,13 @@
 --   | le hook qui passe `resend` à la requête alors que Brevo est choisi | 34 |
 --
 -- (Les numéros sont ceux des libellés ; les huit dernières lignes datent du 05/10/2026, migration des
--- codes par Brevo.) Témoin sans mutation : aucun écart.
+-- codes par Brevo. La fenêtre de l'adresse est le jour depuis la passe avant le lancement, le même
+-- jour : sa ligne a été rejouée alors, celle du jour à 48 heures aussi, avec 18 bis.) Témoin sans
+-- mutation : aucun écart.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(35);
 
 -- Trois comptes : A demande des rattachements, B est visé par des reconnexions, C a déjà une adresse.
 insert into auth.users (id, instance_id, aud, role, email, is_anonymous, created_at, updated_at) values
@@ -222,14 +224,16 @@ select ok(
 
 delete from public.envois_d_e_mails_d_auth;
 
--- ── 5. Le plafond de l'adresse : 5 par heure, de qui que ce soit ──────────────────────────────
+-- ── 5. Le plafond de l'adresse : 5 par jour, de qui que ce soit ───────────────────────────────
+--
+-- Par heure jusqu'au 05/10/2026 : 120 codes par jour vers l'adresse d'un tiers (20261005170000).
 
 select pg_temp.envoye(null, 'cible@exemple.fr', now() - interval '30 minutes') from generate_series(1, 5);
 
 select is(
   public.envoyer_l_e_mail_d_auth(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', '  Cible@Exemple.FR ')),
   '{}'::jsonb,
-  '15. au-delà de 5 rattachements dans l''heure vers une adresse — casse et espaces mis à part —, le suivant se tait'
+  '15. au-delà de 5 rattachements en vingt-quatre heures vers une adresse — casse et espaces mis à part —, le suivant se tait'
 );
 
 select is(
@@ -247,11 +251,20 @@ select ok(
 );
 
 select pg_temp.envoye(null, 'cible@exemple.fr', now() - interval '30 minutes');
-update public.envois_d_e_mails_d_auth set cree_le = now() - interval '61 minutes';
+update public.envois_d_e_mails_d_auth set cree_le = now() - interval '23 hours 59 minutes';
+
+select is(
+  public.envoyer_l_e_mail_d_auth(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', 'cible@exemple.fr')),
+  '{}'::jsonb,
+  '18. une heure plus tard, l''adresse reste plafonnée : la fenêtre est le jour'
+);
+
+delete from public.envois_d_e_mails_d_auth where issue <> 'envoye';
+update public.envois_d_e_mails_d_auth set cree_le = now() - interval '24 hours 1 minute';
 
 select ok(
   pg_temp.jusqu_au_transport(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', 'cible@exemple.fr')),
-  '18. une heure plus tard, l''adresse se rattache de nouveau'
+  '18 bis. vingt-quatre heures plus tard, l''adresse se rattache de nouveau'
 );
 
 delete from public.envois_d_e_mails_d_auth;

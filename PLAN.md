@@ -223,7 +223,10 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   qui relirait la ligne n'archiverait **rien**, en silence, dans le cas principal du chantier. Les
   deux chemins clients passent par `archiver_engagement_de_laction`, qui délègue. `action_text` y est
   **figé** : C3.8 reformule plusieurs gabarits, et relire le libellé courant réécrirait ce que la
-  personne a lu en choisissant.
+  personne a lu en choisissant. **Trente archivages par jour et par compte au plus** (passe avant le
+  lancement, 05/10/2026, `20261005170000`) : `commit_plan_action` refuse au-delà (`RM002`), parce
+  que mille changements d'intention laissaient mille lignes. Le plafond est dans le RPC client, pas
+  dans `archiver_engagement`, que le re-bilan et la reconduction appellent aussi.
 - **Modifier l'intention ne libère pas, et laisse sa trace** (`v1-33` D15, 02/10/2026,
   `20261002220916_modifier_l_intention_sans_liberer.sql`, test `44`). « Modifier les jours » et
   « Modifier l'échéance » rouvrent le sélecteur prérempli et rappellent `commit_plan_action` sur
