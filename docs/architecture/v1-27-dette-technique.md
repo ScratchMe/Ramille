@@ -2225,7 +2225,10 @@ fabriquer. **Corrigé** par `20261005170000_la_passe_avant_le_lancement.sql` (te
   (`autoriser_le_rattachement`, secret Vault `turnstile_secret_rattachement`, posé par la personne qui
   pilote le 05/10/2026), son hook d'envoi tait tout code sans autorisation fraîche (dix minutes, un
   code), le plafond de l'adresse compte sur vingt-quatre heures et non plus sur une (cinq), et le compte
-  a un plafond du jour (dix) en plus de celui de l'heure ;
+  a un plafond du jour (dix) en plus de celui de l'heure. **L'APK `preview` du 05/10 (29012e62)
+  n'appelle pas l'autorisation** : il ne rattache plus d'adresse par e-mail dès l'application, et ce
+  jusqu'au build du 07/10 — accepté par la personne qui pilote, seule à tester d'ici là, qui ne
+  reprendra qu'avec ce build ;
 - **un tiers squattait une adresse** : un compte créé par `/auth/v1/signup` ou par `/otp` avec
   `create_user`, au prix d'un captcha, jamais confirmé ni purgé — et la personne ne recevait plus
   jamais de code, sans un mot (reproduit en local). Le hook `before_user_created` refuse désormais
