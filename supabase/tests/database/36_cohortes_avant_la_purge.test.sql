@@ -64,8 +64,10 @@
 --   - la purge qui compte APRÈS son `delete`                   → 4 : 15, 16, 17 et 18 — rien n'est
 --     compté, la cascade ayant tout emporté ;
 --   - la purge qui compte AVANT sa garde de volume             → 1 : la 18 ;
---   - la garde qui bloque au lieu de ralentir, ou qui laisse partir tous les porteurs
---                                                              → 1 : la 18 (05/10/2026) ;
+--   - la garde qui bloque au lieu de ralentir                  → ici, la 18 ; sur la suite, aussi
+--     9 à 12 de `16` et les libellés 7, 9 et 11 de `49` (05/10/2026) ;
+--   - la garde qui laisse partir tous les porteurs             → ici, la 18 ; sur la suite, aussi
+--     9, 10 et 12 de `16` et les libellés 7, 9 et 11 de `49` (05/10/2026) ;
 --   - le prédicat de la purge sans `is_anonymous`              → 5 : 14 à 18 — le compte rattaché
 --     part, et il est compté ;
 --   - `delete_my_account` qui compte sans condition            → 1 : la 20 ;

@@ -11,7 +11,8 @@
 --
 -- **Le correctif** : au-delà du seuil, la purge laisse partir les comptes vides **et les `v_seuil`
 -- porteurs inactifs depuis le plus longtemps** ; les autres attendent le passage suivant. Un tiers
--- ne fait plus que retarder de quelques nuits ; un défaut du prédicat d'inactivité, lui, coûterait
+-- ne fait plus que retarder — de quelques nuits à quelques semaines selon le volume de sa rafale, le
+-- seuil suivant 20 % des porteurs restants ; un défaut du prédicat d'inactivité, lui, coûterait
 -- au plus `v_seuil` comptes par nuit au lieu de zéro — c'est le prix accepté, et l'alerte le dit à
 -- chaque nuit où la garde se déclenche. Le journal garde `blocked`, qui veut désormais dire « garde
 -- déclenchée, purge ralentie » : l'alerte, les vues et la contrainte de `purge_runs` n'ont pas à
@@ -125,7 +126,7 @@ begin
   v_a_supprimer := case when v_bloque then v_vides || v_porteurs_partants else v_candidats end;
 
   if v_bloque then
-    raise warning 'purge_stale_anonymous_accounts : garde de volume déclenchée (% comptes porteurs candidats sur %, seuil %), purge ralentie : % porteurs les plus anciens et % vides supprimés.',
+    raise warning 'purge_stale_anonymous_accounts : garde de volume déclenchée (% comptes porteurs candidats sur %, seuil %), purge ralentie : % porteurs les plus anciennement inactifs et % vides supprimés.',
       v_nb_porteurs, v_total, v_seuil, coalesce(array_length(v_porteurs_partants, 1), 0), coalesce(array_length(v_vides, 1), 0);
   end if;
 
@@ -162,7 +163,7 @@ begin
       v_supprimes,
       concat_ws(' — ',
         format(
-          'Garde de volume : %s comptes anonymes porteurs (un bilan finalisé ou un retour) candidats sur %s, au-delà du seuil de %s (20 %%, plancher %s). Purge ralentie : les %s plus anciens sont partis avec les %s comptes vides, %s attendent le passage suivant — vérifier le prédicat d''inactivité si la garde se déclenche plusieurs nuits de suite.',
+          'Garde de volume : %s comptes anonymes porteurs (un bilan finalisé ou un retour) candidats sur %s, au-delà du seuil de %s (20 %%, plancher %s). Purge ralentie : les %s porteurs les plus anciennement inactifs sont partis avec les %s comptes vides, %s attendent le passage suivant — vérifier le prédicat d''inactivité si la garde se déclenche plusieurs nuits de suite.',
           v_nb_porteurs, v_total, v_seuil, c_plancher,
           coalesce(array_length(v_porteurs_partants, 1), 0),
           coalesce(array_length(v_vides, 1), 0),
@@ -177,3 +178,78 @@ begin
   end if;
 end;
 $$;
+
+-- L'alerte d'exploitation disait « Purges des sessions anonymes bloquées » (contre-lecture du
+-- 05/10/2026) : le mécanisme ne change pas — `releve_des_alertes` compte toujours les lignes
+-- `blocked` —, mais le mot faisait lire « rien n'est parti, on a le temps », alors qu'un passage
+-- `blocked` emporte désormais jusqu'au seuil de comptes porteurs. Dans le cas que la garde couvre, un
+-- prédicat d'inactivité fautif, c'est exactement la phrase qu'il ne fallait pas. Réécrite depuis
+-- `pg_get_functiondef` du corps installé (`20261005170000`) : seule cette ligne change.
+create or replace function public.texte_de_l_alerte(p_releve jsonb, p_depuis timestamp with time zone, p_rappels_bloques_vus integer)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'public', 'pg_temp'
+AS $$
+declare
+  v_lignes text[] := array[]::text[];
+  v_detail text;
+begin
+  if (p_releve ->> 'pannes')::int > 0 then
+    select string_agg(format('%s · %s (%s)', l ->> 'route', l ->> 'categorie', l ->> 'nombre'), ', ')
+      into v_detail
+    from jsonb_array_elements(p_releve -> 'pannes_detail') as l;
+    v_lignes := v_lignes || format('- Pannes de l''app (app_error) : %s — %s', p_releve ->> 'pannes', v_detail);
+  end if;
+  if (p_releve ->> 'soumissions_en_echec')::int > 0 then
+    v_lignes := v_lignes || format('- Soumissions de bilan en échec (bilan_submit_error) : %s', p_releve ->> 'soumissions_en_echec');
+  end if;
+  if jsonb_array_length(p_releve -> 'taches_en_echec') > 0 then
+    select string_agg(t, ', ') into v_detail from jsonb_array_elements_text(p_releve -> 'taches_en_echec') as t;
+    v_lignes := v_lignes || format('- Tâches planifiées en échec : %s', v_detail);
+  end if;
+  if (p_releve ->> 'envois_en_echec')::int > 0 then
+    v_lignes := v_lignes || format('- Passages d''envoi des rappels en échec, partiels ou sautés : %s', p_releve ->> 'envois_en_echec');
+  end if;
+  if (p_releve ->> 'synchronisations_en_echec')::int > 0 then
+    v_lignes := v_lignes || format('- Synchronisations des facteurs ADEME non réussies : %s', p_releve ->> 'synchronisations_en_echec');
+  end if;
+  if (p_releve ->> 'purges_bloquees')::int > 0 then
+    v_lignes := v_lignes || format('- Purges des sessions anonymes ralenties par la garde de volume (des comptes qui portent un bilan sont partis, d''autres attendent) : %s', p_releve ->> 'purges_bloquees');
+  end if;
+  if coalesce((p_releve ->> 'plans_en_echec')::int, 0) > 0 then
+    v_lignes := v_lignes || format('- Échecs de la préparation nocturne des plans (generate_plan_cycles) : %s', p_releve ->> 'plans_en_echec');
+  end if;
+  if coalesce((p_releve ->> 'taille_de_la_base_mo')::int, 0) >= 300 then
+    v_lignes := v_lignes || format('- Taille de la base : %s Mo, sur les 500 du plan gratuit — au-delà, elle passe en lecture seule pour tout le monde',
+      p_releve ->> 'taille_de_la_base_mo');
+  end if;
+  if (p_releve ->> 'rappels_bloques')::int > p_rappels_bloques_vus then
+    v_lignes := v_lignes || format('- Rappels bloqués : %s (%s de plus qu''au relevé précédent)',
+      p_releve ->> 'rappels_bloques', (p_releve ->> 'rappels_bloques')::int - p_rappels_bloques_vus);
+  end if;
+
+  return format(
+    E'Bonjour,\n\nDepuis le %s (heure de Paris), l''exploitation de Ramille a relevé :\n\n%s\n\n'
+    'Les requêtes pour y voir clair : docs/exploitation/README.md §8, et docs/exploitation/remontee-erreurs.md §4 '
+    'pour les pannes de l''app.\n\n'
+    'Pour couper ces alertes : tableau de bord Supabase, Table Editor, table alertes_d_exploitation, décocher « actives ».',
+    to_char(p_depuis at time zone 'Europe/Paris', 'DD/MM/YYYY à HH24"h"MI'),
+    array_to_string(v_lignes, E'\n')
+  );
+end;
+$$;
+
+-- `create or replace` garde le commentaire d'un objet, qui décrivait la garde qui retient.
+comment on table public.purge_runs is
+  'Journal des passages de purge_stale_anonymous_accounts(). status = blocked : la garde de volume '
+  's''est déclenchée — depuis 20261006130000 elle ralentit au lieu de bloquer : deleted compte les '
+  'comptes vides et les porteurs les plus anciennement inactifs partis (jusqu''au seuil), les autres '
+  'attendent le passage suivant. Écrit par le serveur, jamais lu par un client.';
+
+comment on function public.purge_stale_anonymous_accounts() is
+  'Supprime les sessions anonymes muettes depuis 90 jours. La garde de volume (20 %, plancher 50) ne '
+  'compte que les comptes qui portent un bilan finalisé ou un retour : au-delà du seuil, elle ralentit '
+  '(depuis 20261006130000) — partent les vides et les porteurs les plus anciennement inactifs, jusqu''au '
+  'seuil, les autres la nuit suivante. Compte les cohortes avant de supprimer, et journalise chaque '
+  'passage dans purge_runs.';

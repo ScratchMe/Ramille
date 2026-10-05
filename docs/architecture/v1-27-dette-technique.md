@@ -2340,6 +2340,18 @@ HS256).
   pour que le build du 07/10 soit le premier à embarquer la clé `sb_publishable_…` et qu'on puisse
   ensuite révoquer la clé HS256 (ci-dessous).
 
+**Corrigé dans une PR à part, le même soir : la garde de volume de la purge ralentit au lieu de bloquer**
+  (`20261006130000_la_purge_ralentit_au_lieu_de_bloquer.sql`, constat MOYENNE, finding B du rapport). Un
+  retour de trois lettres ou un bilan finalisé rend un compte « porteur », et le plancher est 50 :
+  cinquante et un comptes vieillis 90 jours bloquaient la purge chaque nuit, retenant de vrais comptes
+  au-delà des 90 jours promis (**vérifié**). Arbitrage de la personne qui pilote, sur recommandation :
+  **ralentir** — au-delà du seuil, partent les vides et les `seuil` porteurs inactifs depuis le plus
+  longtemps, les autres attendent la nuit suivante. Un tiers ne fait plus que retarder ; le prix est
+  qu'un prédicat d'inactivité fautif coûterait jusqu'au seuil de comptes réels par nuit, au lieu de zéro,
+  et l'alerte `blocked` le dit chaque nuit. Tests `16` (des dates d'activité distinctes, pour éprouver
+  *lesquels* partent), `36` (assertion 18 : un passage ralenti ne compte que ce qu'il supprime) et `49`
+  suivis, trois mutations jouées.
+
 **Ce qui revient à la personne qui pilote, au tableau de bord** (gestes, pas des arbitrages — l'agent
 ne les fait pas) :
 
@@ -2414,18 +2426,6 @@ ne les fait pas) :
   d'aperçu ; les plafonds par compte contournables par une course (un `pg_advisory_xact_lock` par compte).
 - **BASSE — sessions sans expiration absolue** (`sessions_timebox=0`) : poser un timebox prolongerait
   moins une session volée. Geste au tableau de bord.
-- **Fait le 05/10/2026, dans une PR à part : la garde de volume de la purge ralentit au lieu de bloquer**
-  (`20261006130000_la_purge_ralentit_au_lieu_de_bloquer.sql`, constat MOYENNE, finding B du rapport). Un
-  retour de trois lettres ou un bilan finalisé rend un compte « porteur », et le plancher est 50 :
-  cinquante et un comptes vieillis 90 jours bloquaient la purge chaque nuit, retenant de vrais comptes
-  au-delà des 90 jours promis (**vérifié**). Arbitrage de la personne qui pilote, sur recommandation :
-  **ralentir** — au-delà du seuil, partent les vides et les `seuil` porteurs inactifs depuis le plus
-  longtemps, les autres attendent la nuit suivante. Un tiers ne fait plus que retarder ; le prix est
-  qu'un prédicat d'inactivité fautif coûterait jusqu'au seuil de comptes réels par nuit, au lieu de zéro,
-  et l'alerte `blocked` le dit chaque nuit. Tests `16` (des dates d'activité distinctes, pour éprouver
-  *lesquels* partent), `36` (assertion 18 : un passage ralenti ne compte que ce qu'il supprime) et `49`
-  suivis, trois mutations jouées.
-
 **Les zones relues et saines** sont au rapport de la session ; en bref : RLS inter-comptes, les 23 RPC
 d'un client (propriété par `auth.uid()`), suppression et export (aucun jeton ni secret rendu), PKCE et
 liens profonds, le captcha du rattachement (`action` vérifiée, fail-closed), les gabarits (seul

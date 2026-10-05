@@ -132,8 +132,10 @@ nombre de celles qui restent ne s'écrit pas** — il s'est déjà périmé deux
   **porteurs** (un bilan ou un retour depuis le 04/10/2026, un bilan finalisé depuis le 05/10/2026 — et
   `submitted_at`, posé par le serveur, s'y recule). **Depuis que la garde ralentit au lieu de bloquer**
   (05/10/2026, `20261006130000`), ces fichiers attendent le seuil exact — cinquante départs, dix comptes
-  restés : **au-delà de 250 comptes anonymes porteurs en base, le seuil dépasse 50** et leurs comptes ne
-  tiennent plus ; au-delà d'environ 300, soixante ne le dépassent même plus, et le passage supprime tout.
+  restés : **au-delà de 190 comptes anonymes porteurs déjà en base** (250 avec les soixante du fichier),
+  le seuil dépasse 50 et leurs comptes ne tiennent plus ; **à partir de 236** (296 avec eux), soixante ne
+  le dépassent même plus, la garde ne se déclenche pas, et le passage supprime tout. Le compte à relever
+  sur le distant avant de rejouer est donc celui des porteurs **existants**.
   Le compte qui décide est celui de la base, pas du fichier (relevé par la contre-lecture du lot 6,
   27/09/2026). `49` suppose aussi qu'aucune ligne `blocked` n'existe déjà dans `purge_runs`, et ses
   plafonds de l'heure comptent ce que la base a reçu dans l'heure : sur le distant, il ne se rejoue

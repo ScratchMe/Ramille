@@ -12,7 +12,7 @@
 --   | le plafond des retours pour tout le projet retiré | 4 |
 --   | `enforce_feedback_rate_limit` sans `security definer` | 4 — le compte ne voit plus que ses propres retours |
 --   | la garde qui compte tous les candidats, vides compris | 6, 9 et 10 (la 5 passe : les vides partent quand même) |
---   | un passage retenu qui ne supprime rien | 7, 8 et 9 |
+--   | un passage retenu qui ne supprime rien | 7, 8, 9 et 11 |
 --   | la garde qui bloque au lieu de ralentir (aucun porteur ne part) | 7, 9 et 11 (05/10/2026) |
 --   | le dénominateur de la garde compte de nouveau tous les comptes anonymes | 11 |
 --   | les plafonds de tout le projet sans la borne d'âge des comptes | 1 bis et 4 bis |
@@ -192,8 +192,8 @@ select ok(
 -- cents sessions vides et actives — des robots du jour — gonflaient le total des comptes anonymes, donc
 -- le seuil, et soixante vrais comptes muets passaient sous lui. Les comptes restés plus haut partent
 -- d'abord, pour que ces soixante-là soient les seuls porteurs candidats. Compté sur les porteurs, le
--- seuil reste à 50 et la garde ralentit (dix restent) ; compté sur tous, il monterait à 72 et les
--- soixante partiraient d'un coup.
+-- seuil reste à 50 et la garde ralentit (dix restent) ; compté sur tous les comptes anonymes de la
+-- base, il dépasserait soixante, et les soixante partiraient d'un coup.
 delete from auth.users where id::text like '49222222-%';
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('49333333-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
