@@ -1304,11 +1304,11 @@ export type Database = {
         Args: { p_plan_action_id: string; p_raison: string }
         Returns: undefined
       }
-      // Lot 6 — les vues de l'administration (20260929210541)
       // La passe avant le lancement (20261005170000) : l'autorisation du captcha avant un rattachement
       autoriser_le_rattachement: { Args: { p_jeton: string }; Returns: boolean }
       // …et le hook `before_user_created`, serveur seulement
       avant_la_creation_d_un_compte: { Args: { event: Json }; Returns: Json }
+      // Lot 6 — les vues de l'administration (20260929210541)
       boucle_de_la_personne: { Args: { p_user_id: string }; Returns: string }
       // La carte d'attente sait si une boucle tourne (20260930105923)
       boucles_du_dernier_bilan: {
@@ -1556,12 +1556,12 @@ export type Database = {
       // v1-34 — la forme rangée de la réponse aux transports (20261002231530), serveur seulement
       transports_ranges: { Args: { p_transports: string[] }; Returns: string[] }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
-      // L'alerte d'exploitation (20261002203259)
       // La passe avant le lancement (20261005170000) : la vérification auprès de Cloudflare, serveur seulement
       verifier_le_jeton_du_captcha: {
         Args: { p_jeton: string; p_secret: string }
         Returns: boolean
       }
+      // L'alerte d'exploitation (20261002203259)
       verifier_les_alertes: { Args: never; Returns: string }
     }
     Enums: {

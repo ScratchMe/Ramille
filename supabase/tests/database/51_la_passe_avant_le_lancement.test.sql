@@ -13,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(40);
+select plan(43);
 
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at) values
   ('51000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '3 days', now()),
@@ -233,6 +233,9 @@ create or replace function public.envoyer_a_expo(p_messages jsonb, p_expo_token 
 returns extensions.http_response language plpgsql as $$
 begin
   insert into appels_expo values (jsonb_array_length(p_messages));
+  if p_messages::text like '%ExponentPushToken[mal-forme]%' then
+    return (400, 'application/json', null, '{"errors":[{"code":"VALIDATION_ERROR"}]}')::extensions.http_response;
+  end if;
   if p_messages::text like '%ExponentPushToken[etranger]%' then
     return (400, 'application/json', null,
             '{"errors":[{"code":"PUSH_TOO_MANY_EXPERIENCE_IDS"}]}')::extensions.http_response;
@@ -272,6 +275,21 @@ select is(
   (select array_agg(messages order by messages desc) from appels_expo),
   array[3, 2, 1, 1, 1],
   '27. le lot entier, refusé, puis ses moitiés jusqu''à isoler la ligne fautive — une ligne à part (A), puis B et C ensemble, refusées, puis chacune'
+);
+
+-- Un autre 400 ne se coupe pas : une charge refusée pour tout le monde l'est en un appel, pas en 2N − 1.
+delete from appels_expo;
+update public.notification_outbox set status = 'sent', sent_at = now(), attempts = 1, last_error = null
+ where id in ('51000000-0000-0000-0000-0000000000e1', '51000000-0000-0000-0000-0000000000e2');
+select public.envoyer_lot_push(
+  array['51000000-0000-0000-0000-0000000000e1', '51000000-0000-0000-0000-0000000000e2']::uuid[],
+  array['ExponentPushToken[a]', 'ExponentPushToken[mal-forme]'],
+  '[{"to":"ExponentPushToken[a]"},{"to":"ExponentPushToken[mal-forme]"}]'::jsonb,
+  null);
+select is(
+  (select array_agg(messages) from appels_expo),
+  array[2],
+  '27 bis. un 400 qui n''est pas le mélange de projets ne coupe pas le lot : un seul appel'
 );
 
 -- ── 8. Le rattachement : un captcha par code, et le plafond du jour du compte ───────────────
@@ -394,6 +412,28 @@ select ok(
   '39. à dix, le suivant se tait, sous le plafond du jour du compte — celui de l''heure ne voyait rien'
 );
 
+-- L'export rend la ligne d'autorisation, et une purge nocturne l'efface au bout d'un jour.
+select pg_temp.en_tant_que('51000000-0000-0000-0000-00000000000a');
+select ok(
+  (select jsonb_array_length(public.export_my_data() -> 'verifications_du_captcha') = 1
+      and (public.export_my_data() #>> '{verifications_du_captcha,0,essais_dans_l_heure}') is not null),
+  '39 bis. l''export rend la vérification du captcha du compte : une table qui porte un `user_id` y entre'
+);
+reset role;
+select set_config('request.jwt.claims', ''::text, true);
+
+update public.autorisations_de_rattachement set essais_depuis = now() - interval '25 hours', accordee_le = null
+ where user_id = '51000000-0000-0000-0000-00000000000a';
+insert into public.autorisations_de_rattachement (user_id, essais, essais_depuis)
+values ('51000000-0000-0000-0000-00000000000c', 1, now());
+do $$ begin execute (select command from cron.job where jobname = 'purge-autorisations-de-rattachement'); end $$;
+select is(
+  (select array_agg(user_id::text order by user_id) from public.autorisations_de_rattachement
+    where user_id::text like '51000000-%'),
+  array['51000000-0000-0000-0000-00000000000c'],
+  '39 ter. la purge de la nuit efface la ligne de plus d''un jour, et garde celle de l''heure'
+);
+
 -- ── 9. Aucun compte ne naît hors d'une session anonyme ──────────────────────────────────────
 
 select ok(
@@ -429,6 +469,7 @@ rollback;
 --   | le plafond des engagements archivés porté à 100 | 21 |
 --   | un bilan en cours de nouveau porteur, dans les deux prédicats de la purge | 23 et 24 |
 --   | la coupe du lot retirée | 25, 26 et 27 |
+--   | la coupe sur tout 400, sans lire le code d'Expo | 27 bis |
 --   | le captcha du hook retiré | 30, 31, 35 et 36 |
 --   | l'autorisation qui ne se consomme pas | 35 |
 --   | l'autorisation valable vingt minutes | 36 |
@@ -440,6 +481,8 @@ rollback;
 --   | le refus d'un jeton vide retiré (Cloudflare serait appelé pour rien) | 32 |
 --   | `autoriser_le_rattachement` exécutable par `anon` | 40 |
 --   | sans le secret, l'autorisation refusée au lieu d'accordée | 28 |
+--   | la clé `verifications_du_captcha` retirée de l'export | 39 bis |
+--   | la purge qui efface tout, ou qui attend deux jours | 39 ter |
 --
 -- Ce que ce fichier ne garde pas : que la coupe suive les lignes plutôt que les jetons. Ici, chaque
 -- ligne n'a qu'un jeton ; le motif est écrit dans la migration.

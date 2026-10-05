@@ -60,7 +60,9 @@ AS $function$
           or length(entry.key) > 32
           or (jsonb_typeof(entry.value) = 'string' and length(entry.value #>> '{}') > 48)
           -- Les nombres aussi (passe avant le lancement, 05/10/2026) : un nombre JSON de 131 000
-          -- chiffres passait, et un événement pesait 400 Ko. 32 caractères écrivent tout `double`.
+          -- chiffres passait, et un événement pesait 400 Ko. La longueur est celle du `numeric` que
+          -- jsonb en garde, en notation développée : 32 caractères suffisent aux compteurs, aux durées
+          -- arrondies et aux décimales d'un `double` que l'app envoie, pas à `1e300`.
           or (jsonb_typeof(entry.value) = 'number' and length(entry.value::text) > 32)
      );
 $function$;
@@ -858,7 +860,10 @@ begin
   -- lui. Une ligne faisait alors tomber jusqu'à cent rappels, trois nuits de suite. La coupe suit
   -- les lignes, jamais les jetons : une ligne aux jetons répartis sur deux moitiés serait jugée
   -- « tous refusés » dans l'une alors que l'autre est partie. Au bout, la ligne fautive échoue seule.
-  if v_erreur is not null and v_response.status = 400 then
+  -- **Sur ce refus-là seulement** : un autre 400 (une charge mal formée pour tout le monde) se
+  -- couperait en 2N − 1 appels pour rien.
+  if v_erreur is not null and v_response.status = 400
+     and position('PUSH_TOO_MANY_EXPERIENCE_IDS' in coalesce(v_response.content, '')) > 0 then
     select array_agg(l order by l) into v_uniques from (select distinct l from unnest(p_lignes) as l) d;
     if array_length(v_uniques, 1) > 1 then
       v_premiere := v_uniques[1:array_length(v_uniques, 1) / 2];
@@ -950,8 +955,9 @@ $function$;
 -- ── 9. Le rattachement : un captcha par code, et des plafonds du jour ───────────────────────
 --
 -- Une ligne par compte : l'autorisation en cours, et les essais de l'heure — chaque essai est un appel
--- à Cloudflare depuis la base, donc il se plafonne aussi. Ni l'app ni personne ne la lit ; la cascade
--- l'emporte avec le compte.
+-- à Cloudflare depuis la base, donc il se plafonne aussi. L'app ne la lit pas ; l'export la rend, la
+-- cascade l'emporte avec le compte, et une purge nocturne l'efface au bout d'un jour — la page de
+-- confidentialité promet deux jours au plus pour la trace des demandes de code.
 
 create table if not exists public.autorisations_de_rattachement (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -1050,6 +1056,199 @@ $$;
 
 revoke execute on function public.autoriser_le_rattachement(text) from public, anon, authenticated;
 grant execute on function public.autoriser_le_rattachement(text) to authenticated;
+
+-- La purge, à 0h45 UTC, après celle du journal des codes (0h40) : un cron de plus se pose entre minuit
+-- et 1h (registre d'exploitation §3.1, les tâches planifiées).
+do $$
+begin
+  perform cron.unschedule('purge-autorisations-de-rattachement');
+exception when others then
+  null;
+end;
+$$;
+
+select cron.schedule(
+  'purge-autorisations-de-rattachement',
+  '45 0 * * *',
+  $$delete from public.autorisations_de_rattachement
+     where essais_depuis < now() - interval '1 day'
+       and (accordee_le is null or accordee_le < now() - interval '1 day')$$
+);
+
+-- L'export rend la ligne : une table neuve qui porte un `user_id` y entre (COMPTE.md §4). Réécrit
+-- depuis son corps en base, le même que celui du distant (empreinte `04dd1d6a…`, relevée le
+-- 05/10/2026, registre §7 bis).
+CREATE OR REPLACE FUNCTION public.export_my_data()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_user_id uuid := auth.uid();
+  v_export jsonb;
+begin
+  if v_user_id is null then
+    raise exception 'Aucune session.' using errcode = 'insufficient_privilege';
+  end if;
+
+  select jsonb_build_object(
+    'export_genere_le', now(),
+    'compte', (
+      select jsonb_build_object(
+        'identifiant', u.id,
+        'email', u.email,
+        'compte_anonyme', u.is_anonymous,
+        'cree_le', u.created_at,
+        'cadence_du_plan', p.cadence_type,
+        'canal_de_rappel', p.reminder_channel,
+        'mot_de_la_veille', p.mot_de_la_veille,
+        'metadonnees', u.raw_user_meta_data,
+        'adresse_en_attente_de_confirmation', nullif(u.email_change, '')
+      )
+      from auth.users u join public.profiles p on p.id = u.id
+      where u.id = v_user_id
+    ),
+    'identites_de_connexion', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'fournisseur', i.provider,
+        'donnees_transmises', i.identity_data,
+        'liee_le', i.created_at,
+        'derniere_connexion_le', i.last_sign_in_at
+      ) order by i.created_at), '[]'::jsonb)
+      from auth.identities i where i.user_id = v_user_id
+    ),
+    'sessions', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'ouverte_le', s.created_at,
+        'mise_a_jour_le', s.updated_at,
+        'adresse_ip', host(s.ip),
+        'appareil', s.user_agent
+      ) order by s.created_at), '[]'::jsonb)
+      from auth.sessions s where s.user_id = v_user_id
+    ),
+    'appareils_pour_les_rappels', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'plateforme', t.platform,
+        'jeton_derniers_caracteres', right(t.token, 6),
+        'enregistre_le', t.created_at,
+        'vu_le', t.last_seen_at,
+        'desactive_le', t.disabled_at
+      ) order by t.created_at), '[]'::jsonb)
+      from public.push_tokens t where t.user_id = v_user_id
+    ),
+    'bilans', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'soumis_le', a.submitted_at,
+        'statut', a.status,
+        'reponses', to_jsonb(ans.*) - 'assessment_id',
+        'resultats', to_jsonb(r.*) - 'assessment_id' - 'id'
+      ) order by a.created_at), '[]'::jsonb)
+      from public.assessments a
+      left join public.assessment_answers ans on ans.assessment_id = a.id
+      left join public.assessment_results r on r.assessment_id = a.id
+      where a.user_id = v_user_id
+    ),
+    'plans', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'periode', pc.period_label,
+        'du', pc.period_start,
+        'au', pc.period_end,
+        'objectif_pct', pc.target_reduction_pct,
+        'premier_engagement_le', pc.premier_engagement_le,
+        'actions', (
+          select coalesce(jsonb_agg(jsonb_build_object(
+            'action', t.action_text,
+            'gain_kg_par_an', pa.saving_kg_year,
+            'engagement_pris_le', pa.committed_at,
+            'jours_choisis', pa.intention_days,
+            'echeance_choisie', pa.intention_timing
+          ) order by pa.rank), '[]'::jsonb)
+          from public.plan_actions pa
+          join public.action_templates t on t.id = pa.action_template_id
+          where pa.plan_cycle_id = pc.id
+        )
+      ) order by pc.period_start), '[]'::jsonb)
+      from public.plan_cycles pc where pc.user_id = v_user_id
+    ),
+    'points_de_suivi', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'periode', c.period_label,
+        'trajet', c.trip_label,
+        'statut', c.status,
+        'reponse', c.response,
+        'type_de_reponse', c.response_kind,
+        'question', c.committed_question,
+        'poste', c.poste,
+        'mode', c.mode,
+        'action_suivie', c.committed_action_text,
+        'jours_choisis', c.committed_intention_days,
+        'echeance_choisie', c.committed_intention_timing,
+        'repondu_le', c.responded_at
+      ) order by c.period_start), '[]'::jsonb)
+      from public.engagement_checkins c where c.user_id = v_user_id
+    ),
+    'rappels_envoyes', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'genre', o.genre,
+        'periode', c.period_label,
+        'jour_vise', o.jour_vise,
+        'canal', o.channel,
+        'destinataire', case when o.channel = 'email' then o.recipient_email end,
+        'objet', case when o.channel = 'email' then o.subject end,
+        'message', case when o.channel = 'email'
+          then regexp_replace(o.body, 'jeton=[0-9A-Fa-f-]+', 'jeton=(retiré de l''export)', 'g') end,
+        'notification', case when o.channel = 'push' then o.push_body end,
+        'statut', o.status,
+        'envoye_le', o.sent_at,
+        'desinscription_utilisee_le', o.unsubscribe_used_at
+      ) order by o.created_at), '[]'::jsonb)
+      from public.notification_outbox o
+      left join public.engagement_checkins c on c.id = o.checkin_id
+      where o.user_id = v_user_id
+    ),
+    'engagements_relaches', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'action', ar2.action_text,
+        'engagement_pris_le', ar2.committed_at,
+        'jours_choisis', ar2.intention_days,
+        'echeance_choisie', ar2.intention_timing,
+        'relache_le', ar2.released_at,
+        'raison', ar2.released_reason
+      ) order by ar2.released_at), '[]'::jsonb)
+      from public.plan_action_commitments_archive ar2 where ar2.user_id = v_user_id
+    ),
+    'retours_envoyes', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'categorie', f.kind, 'message', f.message, 'ecran', f.context, 'envoye_le', f.created_at
+      ) order by f.created_at), '[]'::jsonb)
+      from public.feedback f where f.user_id = v_user_id
+    ),
+    'codes_de_connexion_envoyes', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'type', ev.type, 'issue', ev.issue, 'le', ev.cree_le
+      ) order by ev.cree_le), '[]'::jsonb)
+      from public.envois_d_e_mails_d_auth ev where ev.user_id = v_user_id
+    ),
+    -- Le captcha du rattachement (passe avant le lancement, 05/10/2026) : une ligne au plus, purgée au
+    -- bout d'un jour comme le journal des codes.
+    'verifications_du_captcha', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'autorisation_accordee_le', a.accordee_le, 'essais_dans_l_heure', a.essais, 'essais_depuis', a.essais_depuis
+      )), '[]'::jsonb)
+      from public.autorisations_de_rattachement a where a.user_id = v_user_id
+    ),
+    'reperes_de_parcours', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'evenement', e.name, 'details', e.props, 'plateforme', e.platform, 'le', e.occurred_at
+      ) order by e.occurred_at), '[]'::jsonb)
+      from public.usage_events e where e.user_id = v_user_id
+    )
+  ) into v_export;
+
+  return v_export;
+end;
+$function$;
 
 alter table public.envois_d_e_mails_d_auth
   drop constraint if exists envois_d_e_mails_d_auth_issue_check;

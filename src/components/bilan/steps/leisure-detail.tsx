@@ -29,6 +29,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { donnerLeFocus } from '@/lib/focus';
 import { Depliage } from '@/lib/mouvement';
 import {
+  distanceBornee,
   TAILLES_DE_COVOITURAGE,
   type BilanAnswers,
   type LeisureDistanceBracket,
@@ -316,7 +317,7 @@ export function LeisureDetailStep({
                 <NumericField
                   ref={cibleDeLaDistance}
                   value={answers.leisure_distance_km}
-                  onChange={(value) => update({ leisure_distance_km: value })}
+                  onChange={(value) => update({ leisure_distance_km: distanceBornee(value) })}
                   unit="km"
                   label="Distance d’un aller"
                 />

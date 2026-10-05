@@ -7,9 +7,11 @@ import {
   BROUILLON_ANCIEN_JOURS,
   CHAMPS_DE_L_ETAPE,
   COMMUTE_DISTANCE_A_RELIRE_KM,
+  DISTANCE_MAXIMUM_KM,
   EMPTY_BILAN_ANSWERS,
   afficherNombreSaisi,
   avancementDeLaReprise,
+  distanceBornee,
   brouillonEstAncien,
   decompteDesLongsCourriers,
   distanceBracketMidpointKm,
@@ -898,6 +900,23 @@ describe('distance d’une sortie', () => {
     expect(distanceSortieKm(answers({ leisure_distance_km: null }))).toBeNull();
     expect(distanceSortieKm(answers({ leisure_distance_km: 120 }))).toBe(120);
     expect(distanceSortieKm(answers({ leisure_distance_km: 32.5 }))).toBe(32.5);
+  });
+});
+
+describe('distanceBornee', () => {
+  // La borne de la colonne (passe avant le lancement, 05/10/2026) : au-delà, l'écriture des réponses
+  // échouait à chaque essai sans désigner le champ. Éprouvé en le cassant le même jour : sans le
+  // `Math.min`, le premier test tombe ; la borne portée à 10 001, la garde des miroirs rougit.
+  it('ramène une faute de frappe sous la borne de la colonne', () => {
+    expect(distanceBornee(15000)).toBe(DISTANCE_MAXIMUM_KM);
+    expect(distanceBornee(10000.5)).toBe(DISTANCE_MAXIMUM_KM);
+  });
+
+  it('laisse passer toute distance réelle, et le champ vide', () => {
+    expect(distanceBornee(12.5)).toBe(12.5);
+    expect(distanceBornee(DISTANCE_MAXIMUM_KM)).toBe(DISTANCE_MAXIMUM_KM);
+    expect(distanceBornee(null)).toBeNull();
+    expect(DISTANCE_MAXIMUM_KM).toBeGreaterThan(COMMUTE_DISTANCE_A_RELIRE_KM * 10);
   });
 });
 

@@ -234,9 +234,10 @@ d'envoi tait tout code sans autorisation de moins de dix minutes — une autoris
 compris. Sans le secret (la stack locale, la CI), rien n'est exigé. Un refus se dit avant tout envoi,
 comme celui de Supabase (`captcha_failed`), et une autorisation qu'on n'a pas pu demander, comme une
 panne de transport : ni l'un ni l'autre ne parle de l'adresse. **Un build Android qui n'appelle pas
-l'autorisation ne rattache plus rien dès que le secret existe** — en silence, puisque le hook se tait :
-le secret ne se pose qu'une fois le build qui l'appelle installé, comme le captcha de Supabase
-(§3.11 du registre). Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
+l'autorisation ne rattache plus rien dès que le secret existe** — en silence, puisque le hook se tait.
+L'ordre sûr est celui du captcha de Supabase (§3.11 du registre) : le secret après le build qui
+l'appelle. Le 05/10/2026, il a été posé avant, et c'est accepté : la personne qui pilote, seule à
+tester, ne reprend qu'avec le build du 07/10 (`v1-27` §12.38). Le jeton vient de `jetonDuCaptcha` (`src/lib/captcha.ts`), qui ne
 lève jamais : sans clé de site (développement, CI, parcours réel), hors du web sans vue web branchée
 (`brancherLeCaptchaNatif` — le rendu de l'export, ou l'app avant le montage du layout), ou sans jeton
 au bout de trente secondes — **deux minutes à partir du moment où Cloudflare demande de cocher**
@@ -262,10 +263,12 @@ la porte.
 d'authentification, il compte, puis envoie avec les deux gabarits du dépôt, recopiés à l'identique —
 **par l'API de Brevo dès que sa clé est posée, sinon par celle de Resend** (depuis le 05/10/2026,
 `20261005125029_les_codes_par_brevo.sql` : seuls les codes passent par Brevo, les rappels restent
-chez Resend). **Seul le rattachement est plafonné**, et les valeurs sont celles de la personne
-qui pilote : **5 codes par heure et 10 par jour par compte demandeur, 5 par jour et par adresse** (par
-heure jusqu'à la passe avant le lancement : une adresse en recevait 120 par jour), **et pour tout le
-projet 200 par jour quand Brevo envoie, 60 quand c'est Resend** — 200 sur les 300 de Brevo en laisse 100
+chez Resend). **Seul le rattachement est plafonné** : **5 codes par heure et 10 par jour par compte
+demandeur, 5 par jour et par adresse** (par heure jusqu'à la passe avant le lancement : une adresse en
+recevait 120 par jour), **et pour tout le projet 200 par jour quand Brevo envoie, 60 quand c'est
+Resend**. Les valeurs de l'heure et du projet sont celles de la personne qui pilote ; celles du jour
+ont été proposées par la passe et acceptées le 05/10/2026 — 3 par adresse dans la proposition, porté
+à 5 en l'écrivant, pour laisser à la personne un code, deux renvois et deux essais ratés — 200 sur les 300 de Brevo en laisse 100
 aux reconnexions ; 60 sur les 100 de Resend laisse leur part aux rappels. Le hook choisit son
 fournisseur avant de compter, donc le plafond suit la clé. La minute de Supabase entre deux codes d'un même compte reste devant ; son plafond
 horaire (30) n'est pas compté, faute de mesure qui tranche pour la production. Sept choses à savoir

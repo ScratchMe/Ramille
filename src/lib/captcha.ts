@@ -2,7 +2,8 @@
 // activée, des deux appels qui créent quelque chose sans session permanente : la session anonyme
 // (`signInAnonymously`) et la demande d'un code de connexion (`signInWithOtp`). Les autres appels
 // d'auth du produit — `updateUser`, `verifyOtp`, `linkIdentity` — n'en portent pas : Supabase ne
-// le leur demande pas. Plan anti-abus, `v1-27` §12.35 ; le widget et sa clé de site sont au
+// le leur demande pas. **Le code de rattachement en coûte un quand même** depuis le 05/10/2026 :
+// c'est la base qui le vérifie (`autoriser_le_rattachement`, appelé par `demanderLeRattachement`). Plan anti-abus, `v1-27` §12.35 ; le widget et sa clé de site sont au
 // registre d'exploitation, §3.11.
 //
 // **Sans clé de site, aucun jeton, et c'est voulu** : en local, en CI et dans le parcours réel, la

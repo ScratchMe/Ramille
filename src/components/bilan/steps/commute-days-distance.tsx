@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 import {
   afficherNombreSaisi,
   distanceBracketMidpointKm,
+  distanceBornee,
   distanceDomicileTravailARelire,
   type BilanAnswers,
   type DistanceBracket,
@@ -154,7 +155,7 @@ export function CommuteDaysDistanceStep({
           <NumericField
             ref={cibleDeLaDistance as RefObject<TextInput | null>}
             value={answers.commute_distance_km}
-            onChange={(value) => update({ commute_distance_km: value })}
+            onChange={(value) => update({ commute_distance_km: distanceBornee(value) })}
             unit="km"
             label="Distance pour un aller"
           />

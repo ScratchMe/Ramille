@@ -656,7 +656,7 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
 - aucun écran ne dit si une adresse a un compte ;
 - aucun compte ne naît hors d'une session anonyme (hook `before_user_created`), et le code de
   rattachement coûte un captcha que la base vérifie elle-même — sa clé dans le Vault allume
-  l'exigence, donc elle ne se pose qu'avec le build Android qui l'appelle ;
+  l'exigence, donc un build Android qui n'appelle pas l'autorisation ne rattache plus par e-mail ;
 - le flux est en PKCE, et une erreur d'auth se reconnaît à son **code**, jamais à son message ;
 - dès que le hook d'envoi est allumé, les deux codes partent de la base (`envoyer_l_e_mail_d_auth`) ;
   ses plafonds ne valent que pour le rattachement et sont **muets** — un refus dirait qui a un

@@ -2196,7 +2196,8 @@ public fait. Quatre relectures en parallèle — le web et les fonctions de Verc
 la base, les abus, les coûts et le dépôt public —, chaque constat grave rejoué avant d'être cru.
 
 **Personne ne lisait ni ne modifiait les données d'un autre, ni n'obtenait plus de droits.** La RLS
-des 25 tables, les 13 fonctions `security definer` appelables par un client, l'échappement des
+de chaque table de `public`, chaque fonction `security definer` appelable par un client (relues avant
+cette migration, qui ajoute une table et une fonction de plus, toutes deux couvertes), l'échappement des
 e-mails, la désinscription, la CI, la sauvegarde et les 450 commits de l'historique (aucun secret)
 sont sains. Tout ce que la passe a trouvé tient au **volume** et à deux impasses qu'un tiers pouvait
 fabriquer. **Corrigé** par `20261005170000_la_passe_avant_le_lancement.sql` (test `51`, et `16`,

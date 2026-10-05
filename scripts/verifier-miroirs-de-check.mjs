@@ -379,6 +379,21 @@ const MIROIRS = [
     bornes: true,
   },
   {
+    // La borne des distances (passe avant le lancement, 05/10/2026), une fois par colonne. Pas de
+    // `bornes` : la liste n'a qu'une valeur, et `9999` est accepté. Ce qui compte est le sens
+    // dangereux — une base qui baisserait sa borne sous ce que le champ laisse saisir.
+    genre: 'domaine',
+    constante: 'BORNE_DES_DISTANCES_KM',
+    module: 'src/types/bilan.ts',
+    colonne: 'assessment_answers.commute_distance_km',
+  },
+  {
+    genre: 'domaine',
+    constante: 'BORNE_DES_DISTANCES_KM',
+    module: 'src/types/bilan.ts',
+    colonne: 'assessment_answers.leisure_distance_km',
+  },
+  {
     // Pas de `bornes` : les trois parts ne sont pas un intervalle d'entiers, et `0` comme `1` sont
     // refusés sans que ça dise quoi que ce soit des puces proposées.
     genre: 'domaine',
