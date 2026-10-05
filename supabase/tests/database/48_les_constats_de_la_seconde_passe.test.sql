@@ -13,7 +13,7 @@
 --   | sa ligne retirée de `texte_de_l_alerte` | 6 |
 --   | le refus d'un bilan né finalisé retiré du trigger | 8 |
 --   | `status = 'in_progress'` retiré de la policy d'insertion des réponses | 9 |
---   | le refus d'une finalisation sans réponses retiré du trigger | 10 bis |
+--   | le refus d'une finalisation sans réponses retiré du trigger | 10 ter |
 --   | le dernier cycle retiré de `commit_plan_action` | 11 |
 --   | le dernier cycle retiré de `clear_plan_action_commitment` | 12 bis |
 --   | `grant select on public.push_tokens` de nouveau au niveau table | 13 et 14 |
@@ -155,7 +155,13 @@ select lives_ok(
   '10. et la soumission écrit toujours celles d''un bilan en cours, qu''elle crée en cours'
 );
 
--- Le bilan fantôme en deux appels : créé en cours, puis finalisé sans une réponse.
+select lives_ok(
+  $$ update public.assessments set status = 'completed' where id = '48000000-0000-0000-0000-0000000000a2' $$,
+  '10 bis. et celui dont les réponses sont écrites se finalise, comme la soumission le fait'
+);
+
+-- Le bilan fantôme en deux appels : créé en cours, puis finalisé sans une réponse. Après la
+-- finalisation du précédent : un compte n'a qu'un bilan en cours à la fois (20261005170000).
 reset role;
 insert into public.assessments (id, user_id, status) values
   ('48000000-0000-0000-0000-0000000000a3', '48000000-0000-0000-0000-000000000001', 'in_progress');
@@ -164,12 +170,7 @@ select set_config('role', 'authenticated', true);
 select throws_ok(
   $$ update public.assessments set status = 'completed' where id = '48000000-0000-0000-0000-0000000000a3' $$,
   'RM007', null,
-  '10 bis. un bilan sans réponses ne se finalise pas : c''était le même fantôme, en deux appels'
-);
-
-select lives_ok(
-  $$ update public.assessments set status = 'completed' where id = '48000000-0000-0000-0000-0000000000a2' $$,
-  '10 ter. et celui dont les réponses sont écrites se finalise, comme la soumission le fait'
+  '10 ter. un bilan sans réponses ne se finalise pas : c''était le même fantôme, en deux appels'
 );
 
 -- ── 3. `commit_plan_action` n'engage que sur le dernier cycle du compte ───────────────────────

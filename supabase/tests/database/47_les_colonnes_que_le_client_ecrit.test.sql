@@ -24,17 +24,17 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, c
   ('47000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-colonnes@test.local', 'x', now(), now());
 
 -- Un bilan finalisé avec ses réponses, écrit en propriétaire comme la soumission l'écrit : réponses
--- tant qu'il est en cours, puis la finalisation. Un second, laissé en cours, pour le refus du calcul.
+-- tant qu'il est en cours, puis la finalisation. Le second, laissé en cours pour le refus du calcul,
+-- naît en section C : un compte n'a qu'un bilan en cours à la fois (20261005170000), et la section A
+-- en insère un.
 insert into public.assessments (id, user_id, status) values
-  ('47000000-0000-0000-0000-0000000000a1', '47000000-0000-0000-0000-000000000001', 'in_progress'),
-  ('47000000-0000-0000-0000-0000000000a2', '47000000-0000-0000-0000-000000000001', 'in_progress');
+  ('47000000-0000-0000-0000-0000000000a1', '47000000-0000-0000-0000-000000000001', 'in_progress');
 
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
   commute_is_carpool, commute_second_mode_used, leisure_frequency
 ) values
-  ('47000000-0000-0000-0000-0000000000a1', true, 5, 20, 'voiture', false, false, 'rarely'),
-  ('47000000-0000-0000-0000-0000000000a2', true, 5, 20, 'voiture', false, false, 'rarely');
+  ('47000000-0000-0000-0000-0000000000a1', true, 5, 20, 'voiture', false, false, 'rarely');
 
 update public.assessments set status = 'completed' where id = '47000000-0000-0000-0000-0000000000a1';
 
@@ -91,6 +91,19 @@ select is(
 );
 
 -- ── C. `compute_assessment_results` : un bilan finalisé, calculé une fois ──────────────────────
+
+-- Le bilan en cours de la section A cède la place au second, écrit en propriétaire avec ses réponses.
+reset role;
+delete from public.assessments
+ where user_id = '47000000-0000-0000-0000-000000000001' and status = 'in_progress';
+insert into public.assessments (id, user_id, status) values
+  ('47000000-0000-0000-0000-0000000000a2', '47000000-0000-0000-0000-000000000001', 'in_progress');
+insert into public.assessment_answers (
+  assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
+  commute_is_carpool, commute_second_mode_used, leisure_frequency
+) values
+  ('47000000-0000-0000-0000-0000000000a2', true, 5, 20, 'voiture', false, false, 'rarely');
+select set_config('role', 'authenticated', true);
 
 select throws_ok(
   $$ select public.compute_assessment_results('47000000-0000-0000-0000-0000000000a2') $$,

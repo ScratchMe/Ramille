@@ -352,10 +352,14 @@ max_frequency = "5s"
 # Force log out if the user has been inactive longer than the specified duration.
 # inactivity_timeout = "8h"
 
-# This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
-# [auth.hook.before_user_created]
-# enabled = true
-# uri = "pg-functions://postgres/auth/before-user-created-hook"
+# Aucun compte ne naît hors d'une session anonyme (passe avant le lancement, 05/10/2026) : la
+# fonction refuse `/signup` et `/otp` avec création, qui laissaient un tiers squatter une adresse. Le
+# produit convertit toujours une session anonyme (`updateUser`, `linkIdentity`), ce qui ne crée aucun
+# compte, et l'API d'administration ne passe pas par ce hook (les comptes de la CI). Même réglage en
+# production, dans Authentication → Hooks (registre d'exploitation §3.1).
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/avant_la_creation_d_un_compte"
 
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]

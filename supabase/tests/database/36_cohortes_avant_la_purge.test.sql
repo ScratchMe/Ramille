@@ -439,9 +439,12 @@ select ('c3600000-0000-0000-0001-' || lpad(i::text, 12, '0'))::uuid,
        now() - interval '3000 days', now()
 from generate_series(1, 60) as g(i);
 
+-- Finalisés : un bilan en cours ne porte rien, et le compte partirait comme un compte vide
+-- (20261005170000). `submitted_at`, posé par le serveur, se recule : la purge le lit comme un signe de vie.
 insert into public.assessments (user_id, status, created_at)
-select ('c3600000-0000-0000-0001-' || lpad(i::text, 12, '0'))::uuid, 'in_progress', now() - interval '3000 days'
+select ('c3600000-0000-0000-0001-' || lpad(i::text, 12, '0'))::uuid, 'completed', now() - interval '3000 days'
 from generate_series(1, 60) as g(i);
+update public.assessments set submitted_at = created_at where user_id::text like 'c3600000-0000-0000-0001-%';
 
 select public.purge_stale_anonymous_accounts();
 

@@ -321,6 +321,17 @@ cours, comme elles ne se mettaient déjà à jour que dans cet état. Un appel d
 créer le bilan fantôme que la séquence évite, en un appel comme en deux. `mettre_a_jour_le_contexte`,
 qui corrige les réponses d'un bilan complété, écrit en `security definer` et n'est pas concerné.
 
+**Et un compte n'a qu'un bilan en cours à la fois, dix créations par jour** (passe avant le
+lancement, 05/10/2026, `20261005170000`) : sans plafond, une session anonyme insérait vingt mille
+bilans en deux secondes et pouvait remplir la base de 500 Mo, que le plan gratuit passe alors en
+lecture seule pour tout le monde. L'index unique partiel `assessments_un_seul_en_cours` épouse la
+reprise de l'écran (il reprend le bilan qui traîne, jamais n'en crée un second) et refuse une
+insertion de plusieurs lignes ; le trigger `plafonner_les_bilans` compte les créations du jour
+(`RM002`). **Les distances sont bornées à 10 000 km, vingt décimales au plus**, et la part du second
+mode à vingt décimales (une contrainte par colonne, `…_bornee` : la garde des miroirs ne sait pas évaluer une contrainte qui en nomme plusieurs) : `> 0` laissait passer `NaN` et
+`Infinity`, qui empoisonnaient toutes les moyennes de l'analyse, et un nombre de 131 000 chiffres.
+La borne n'arrête aucun trajet réel ; le seuil où l'app fait relire reste `COMMUTE_DISTANCE_A_RELIRE_KM`.
+
 **Le nouvel essai d'une soumission interrompue ne rejoue que ce qui reste, et le calcul ne se refait
 pas** (04/10/2026, revue finale avant la production, `20261004173905`). Une coupure entre la
 finalisation et le calcul — ou la réponse d'une écriture perdue en chemin — laissait un bilan
