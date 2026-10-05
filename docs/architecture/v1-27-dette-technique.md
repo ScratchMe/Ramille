@@ -2062,12 +2062,14 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   après qu'une seconde contre-lecture a montré qu'un tiers pouvait bloquer la reconnexion d'un autre.
   **Brevo est écrit le même jour** (`20261005121351_les_codes_par_brevo.sql`, décisions de la
   personne qui pilote) : seuls les codes y passent, dès que sa clé est posée dans le Vault — Resend
-  sinon —, avec sa mesure anonymisée ; le plafond du jour des rattachements passe à 200 sur ses 300
-  e-mails quotidiens, et le journal dit qui a envoyé (registre §3.12). **Ce qu'il laisse** : la
-  mesure de Brevo n'est qu'anonymisée tant que son support ne l'a pas coupée ; le badge « Sent with
-  Brevo » du plan gratuit reste à vérifier sur le premier envoi ; et la clé retirée, les codes
-  reviennent chez Resend avec un plafond calculé pour Brevo, qui ne protège plus la part des rappels.
-  **Ce qu'ils laissent** : un plafond muet tue le code de rattachement déjà
+  sinon —, avec sa mesure anonymisée ; le plafond du jour des rattachements passe à 200 quand Brevo
+  envoie, et reste à 60 quand c'est Resend (la contre-lecture a relevé qu'un 200 fixe aurait valu dès
+  l'application, codes encore chez Resend) ; la page de confidentialité nomme Brevo ; le journal dit
+  qui a envoyé (registre §3.12). **Ce que Brevo laisse** : sa mesure n'est qu'anonymisée tant que son
+  support ne l'a pas coupée ; le badge « Sent with Brevo » du plan gratuit reste à vérifier sur le
+  premier envoi ; son blocage des adresses IP inconnues doit rester coupé, sans quoi chaque code
+  échoue ; et un échec d'envoi chez Brevo ne retombe pas sur Resend. **Ce que les plafonds
+  laissent** : un plafond muet tue le code de rattachement déjà
   reçu sans en envoyer d'autre (Supabase l'a renouvelé avant d'appeler le hook), et cinq rattachements
   vers une adresse, d'où qu'ils viennent, empêchent son titulaire de la rattacher pendant l'heure ; qui
   coche une case par e-mail peut épuiser le quota d'envoi des codes (Brevo) par des codes de

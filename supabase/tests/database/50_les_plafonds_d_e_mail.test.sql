@@ -1,8 +1,9 @@
 -- Tests pgTAP des plafonds d'e-mails de connexion (migration `20261005103733_les_plafonds_d_e_mail.sql`,
 -- plan anti-abus, `v1-27` §12.35) : le hook `envoyer_l_e_mail_d_auth`, ce qu'il compte, ce qu'il tait
 -- — ses plafonds ne valent que pour le rattachement, et tous sont muets —, et le corps qui part.
--- Depuis `20261005121351_les_codes_par_brevo.sql` : le plafond du jour à 200, et le fournisseur
--- (Brevo, Resend ou le collecteur local) — son choix et sa requête, lus sans rien envoyer (§10).
+-- Depuis `20261005121351_les_codes_par_brevo.sql` : le fournisseur (Brevo, Resend ou le collecteur
+-- local) — son choix et sa requête, lus sans rien envoyer (§10) — et le plafond du jour qui en dépend,
+-- 200 quand Brevo envoie et 60 sinon, avec ce que le hook passe à la requête (§11).
 --
 -- **Ce que ce fichier ne voit pas : un envoi réussi.** La CI de pgTAP n'a que la base, sans collecteur
 -- d'e-mails, ni Resend, ni Brevo ; chaque cas qui passe les plafonds y bute donc sur le transport
@@ -22,7 +23,7 @@
 --   | Ce qu'on casse | Ce qui tombe |
 --   |---|---|
 --   | le plafond du projet retiré | 4 et 5 |
---   | le plafond du projet ramené à 199 (05/10/2026, à 200) | 7 |
+--   | le plafond du projet ramené à 59 | 7 |
 --   | le plafond du compte retiré | 10 et 11 |
 --   | le plafond du compte ramené à 4 | 12 |
 --   | le plafond de l'adresse retiré | 15 et 16 |
@@ -46,14 +47,17 @@
 --   | Brevo choisi après Resend (l'ordre inversé) | 27 |
 --   | la clé Brevo dans `Authorization` au lieu d'`api-key` | 29 |
 --   | l'expéditeur ou le destinataire de Brevo sous les noms de Resend (`from`, `to` en chaîne) | 30 |
---   | les deux fonctions exécutables par `authenticated` | 32 |
+--   | les deux fonctions exécutables par `service_role` | 32 |
+--   | le plafond de 200 quel que soit le fournisseur | 4 et 5 |
+--   | le plafond de Brevo ramené à 199 | 34 |
+--   | le hook qui passe `resend` à la requête alors que Brevo est choisi | 34 |
 --
--- (Les numéros sont ceux des libellés ; les cinq dernières lignes datent du 05/10/2026, migration des
+-- (Les numéros sont ceux des libellés ; les huit dernières lignes datent du 05/10/2026, migration des
 -- codes par Brevo.) Témoin sans mutation : aucun écart.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(32);
+select plan(34);
 
 -- Trois comptes : A demande des rattachements, B est visé par des reconnexions, C a déjà une adresse.
 insert into auth.users (id, instance_id, aud, role, email, is_anonymous, created_at, updated_at) values
@@ -119,14 +123,17 @@ select is(
 
 delete from public.envois_d_e_mails_d_auth;
 
--- ── 2. Le plafond du projet : 200 rattachements sur vingt-quatre heures ───────────────────────
+-- ── 2. Le plafond du projet : 60 rattachements sur vingt-quatre heures, hors Brevo ─────────────
+--
+-- Sans clé Brevo — Resend, le collecteur, ou rien comme ici —, le plafond reste celui qui laisse leur
+-- part aux rappels dans les 100 e-mails de Resend. Celui de Brevo (200) est en §11.
 
-select pg_temp.envoye(null, 'filler' || g || '@exemple.fr', now() - interval '23 hours') from generate_series(1, 200) as g;
+select pg_temp.envoye(null, 'filler' || g || '@exemple.fr', now() - interval '23 hours') from generate_series(1, 60) as g;
 
 select is(
   public.envoyer_l_e_mail_d_auth(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', 'neuve@exemple.fr')),
   '{}'::jsonb,
-  '4. au-delà de 200 rattachements en vingt-quatre heures, le suivant se tait — un refus dirait que l''adresse est libre'
+  '4. au-delà de 60 rattachements en vingt-quatre heures, le suivant se tait — un refus dirait que l''adresse est libre'
 );
 
 select is(
@@ -145,15 +152,15 @@ delete from public.envois_d_e_mails_d_auth where issue <> 'envoye';
 
 select ok(
   pg_temp.jusqu_au_transport(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', 'neuve@exemple.fr')),
-  '7. à 199 rattachements, le deux-centième passe'
+  '7. à 59 rattachements, le soixantième passe'
 );
 
 delete from public.envois_d_e_mails_d_auth;
-select pg_temp.envoye(null, 'filler' || g || '@exemple.fr', now() - interval '23 hours', 'magiclink') from generate_series(1, 200) as g;
+select pg_temp.envoye(null, 'filler' || g || '@exemple.fr', now() - interval '23 hours', 'magiclink') from generate_series(1, 60) as g;
 
 select ok(
   pg_temp.jusqu_au_transport(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', 'neuve@exemple.fr')),
-  '8. deux cents reconnexions ne remplissent pas le plafond des rattachements'
+  '8. soixante reconnexions ne remplissent pas le plafond des rattachements'
 );
 
 update public.envois_d_e_mails_d_auth set type = 'email_change', cree_le = now() - interval '25 hours';
@@ -347,10 +354,10 @@ select is(
 );
 
 select is(
-  (select r.method::text || ' ' || r.uri
+  (select r.method::text || ' ' || r.uri || ' ' || r.content_type
      from public.requete_d_e_mail_d_auth('brevo', 'cle-brevo-factice', 'a@exemple.fr', 'Sujet', '<p>x</p>') r),
-  'POST https://api.brevo.com/v3/smtp/email',
-  '28. Brevo : la requête part vers son API d''envoi transactionnel'
+  'POST https://api.brevo.com/v3/smtp/email application/json',
+  '28. Brevo : la requête part vers son API d''envoi transactionnel, en JSON'
 );
 
 select ok(
@@ -379,6 +386,10 @@ select ok(
                                                      'subject', 'Sujet', 'html', '<p>x</p>')
      from public.requete_d_e_mail_d_auth('resend', 'cle-resend-factice', 'a@exemple.fr', 'Sujet', '<p>x</p>') r)
   and (select r.uri = 'http://boite.local/api/v1/send' and r.headers is null
+          and r.content::jsonb = jsonb_build_object(
+                'From', jsonb_build_object('Email', 'connexion@ramille.fr', 'Name', 'Ramille'),
+                'To', jsonb_build_array(jsonb_build_object('Email', 'a@exemple.fr')),
+                'Subject', 'Sujet', 'HTML', '<p>x</p>')
      from public.requete_d_e_mail_d_auth('boite', 'http://boite.local/api/v1/send', 'a@exemple.fr', 'Sujet', '<p>x</p>') r),
   '31. Resend et le collecteur local gardent la requête qu''ils avaient'
 );
@@ -387,8 +398,47 @@ select ok(
   not has_function_privilege('authenticated', 'public.fournisseur_d_e_mail_d_auth()', 'execute')
     and not has_function_privilege('anon', 'public.fournisseur_d_e_mail_d_auth()', 'execute')
     and not has_function_privilege('authenticated', 'public.requete_d_e_mail_d_auth(text, text, text, text, text)', 'execute')
-    and not has_function_privilege('anon', 'public.requete_d_e_mail_d_auth(text, text, text, text, text)', 'execute'),
-  '32. ni le choix ni la requête ne sont appelables par un client : l''un rend la clé, l''autre la porte'
+    and not has_function_privilege('anon', 'public.requete_d_e_mail_d_auth(text, text, text, text, text)', 'execute')
+    and not has_function_privilege('service_role', 'public.fournisseur_d_e_mail_d_auth()', 'execute')
+    and not has_function_privilege('service_role', 'public.requete_d_e_mail_d_auth(text, text, text, text, text)', 'execute'),
+  '32. ni le choix ni la requête ne sont appelables par l''API, clé de service comprise : l''un rend la clé, l''autre la porte'
+);
+
+-- ── 11. Sous Brevo : le plafond de 200, et ce que le hook passe à la requête ───────────────────
+--
+-- La clé Brevo factice de §10 est posée. Pour que le hook aille jusqu'à la requête sans toucher au
+-- réseau, `requete_d_e_mail_d_auth` est remplacée, le temps de la transaction, par un espion qui
+-- consigne ce qu'il reçoit et rend une requête vers un port fermé — l'appel échoue alors en local, en
+-- `500`, comme en 20. Les assertions 28 à 31 ont lu la vraie fonction avant.
+
+create table pg_temp.appels_de_requete (fournisseur text, secret text, adresse text, sujet text, html text);
+create or replace function public.requete_d_e_mail_d_auth(
+  p_fournisseur text, p_secret text, p_adresse text, p_sujet text, p_html text)
+returns extensions.http_request language plpgsql as $$
+begin
+  insert into pg_temp.appels_de_requete values (p_fournisseur, p_secret, p_adresse, p_sujet, p_html);
+  return ('POST', 'http://127.0.0.1:9/', null, 'application/json', '{}')::extensions.http_request;
+end;
+$$;
+
+delete from public.envois_d_e_mails_d_auth;
+select pg_temp.envoye(null, 'filler' || g || '@exemple.fr', now() - interval '23 hours') from generate_series(1, 200) as g;
+
+select is(
+  public.envoyer_l_e_mail_d_auth(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', 'neuve@exemple.fr')),
+  '{}'::jsonb,
+  '33. sous Brevo, au-delà de 200 rattachements en vingt-quatre heures, le suivant se tait'
+);
+
+delete from public.envois_d_e_mails_d_auth where issue <> 'envoye';
+delete from public.envois_d_e_mails_d_auth where id = (select max(id) from public.envois_d_e_mails_d_auth);
+select public.envoyer_l_e_mail_d_auth(pg_temp.rattachement('50000000-0000-0000-0000-00000000000a', 'neuve@exemple.fr'));
+
+select ok(
+  (select fournisseur = 'brevo' and secret = 'cle-brevo-factice' and adresse = 'neuve@exemple.fr'
+          and sujet = 'Cette adresse vient d''être saisie dans Ramille' and position('12345678' in html) > 0
+     from pg_temp.appels_de_requete),
+  '34. à 199, le deux-centième va jusqu''à la requête — celle de Brevo, avec sa clé, l''adresse, le sujet et le code'
 );
 
 select * from finish();

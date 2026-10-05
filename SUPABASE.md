@@ -605,7 +605,7 @@ contre-lecture avant la fusion. La minute, elle, reste dite : son sondage envoie
 titulaire, ce qui le rend visible et coûteux. **Et un échec d'envoi parle aussi** : le hook rend un
 `500` (secret manquant, fournisseur — Brevo, ou Resend en repli — en panne ou à court de quota) que seules les adresses connues
 atteignent sur `/connexion/retrouver` et `/compte/suppression` — une adresse inconnue s'arrête avant,
-en `422 otp_disabled` —, donc pendant une panne de Resend « Ta demande n'a pas abouti » contre
+en `422 otp_disabled` —, donc pendant une panne du fournisseur « Ta demande n'a pas abouti » contre
 l'écran de code dit qui a un compte. Le SMTP de Supabase faisait déjà de même ; c'est su, pas fermé.
 
 La console du navigateur, elle, affiche le 422, et toute session anonyme
