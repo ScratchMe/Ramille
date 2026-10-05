@@ -2042,7 +2042,7 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   la garder comme un 429 — un SQLSTATE propre, que le client garderait, demande un build ; et le
   commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,
   à corriger à la prochaine retouche de ce fichier. **Les plafonds d'e-mail sont écrits le 05/10/2026**
-  (`20261005100000_les_plafonds_d_e_mail.sql`, test `50`, `COMPTE.md`) : un hook d'envoi en fonction
+  (`20261005103733_les_plafonds_d_e_mail.sql`, test `50`, `COMPTE.md`) : un hook d'envoi en fonction
   Postgres prend les e-mails de connexion à Supabase et envoie par Resend ; il s'allume au tableau de
   bord (registre §3.1). **Seul le rattachement est plafonné** — 5 codes par heure et par compte, 5 par
   heure et par adresse, 60 par jour —, et ses plafonds sont **muets** ; la reconnexion, qui coûte déjà

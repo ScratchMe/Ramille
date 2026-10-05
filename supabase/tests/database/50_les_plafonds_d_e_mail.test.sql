@@ -1,4 +1,4 @@
--- Tests pgTAP des plafonds d'e-mails de connexion (migration `20261005100000_les_plafonds_d_e_mail.sql`,
+-- Tests pgTAP des plafonds d'e-mails de connexion (migration `20261005103733_les_plafonds_d_e_mail.sql`,
 -- plan anti-abus, `v1-27` §12.35) : le hook `envoyer_l_e_mail_d_auth`, ce qu'il compte, ce qu'il tait
 -- — ses plafonds ne valent que pour le rattachement, et tous sont muets —, et le corps qui part.
 --

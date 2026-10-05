@@ -490,7 +490,7 @@ export function codeSemblePlausible(saisie: string): boolean {
  * c'est su : la minute de Supabase entre deux codes ne frappe qu'une adresse connue (`SUPABASE.md`
  * §2.4). Les plafonds du hook d'envoi (05/10/2026) n'ajoutent rien à cette fuite parce qu'ils se
  * taisent tous : rien ne part, et l'écran de code s'ouvre comme pour un envoi accepté
- * (`20261005100000_les_plafonds_d_e_mail.sql`).
+ * (`20261005103733_les_plafonds_d_e_mail.sql`).
  */
 export type SuiteDeLaDemande = 'code' | 'bascule' | 'message';
 
@@ -520,7 +520,7 @@ export function messageDeLaDemande(error: ErreurAuth): string {
   // **Une seule phrase pour toutes les limites de Supabase** (choisie par la personne qui pilote le
   // 05/10/2026, avec les plafonds d'e-mail) : la minute entre deux codes et le plafond horaire, où
   // « quelques minutes » pouvait être faux. Les plafonds du hook d'envoi, eux, ne rendent jamais de
-  // refus — ils se taisent (`20261005100000_les_plafonds_d_e_mail.sql`).
+  // refus — ils se taisent (`20261005103733_les_plafonds_d_e_mail.sql`).
   if (estLimiteDEnvoi(error)) {
     return 'Trop de demandes pour le moment. Réessaie plus tard.';
   }

@@ -171,7 +171,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // Cloudflare et du paragraphe des transferts a été validé par elle, comme chaque phrase de cette page.
 //
 // **05/10/2026 : la trace des codes de connexion envoyés** (plafonds d'e-mail, plan anti-abus,
-// `20261005100000_les_plafonds_d_e_mail.sql`). Les plafonds comptent chaque code parti — compte, date,
+// `20261005103733_les_plafonds_d_e_mail.sql`). Les plafonds comptent chaque code parti — compte, date,
 // empreinte de l'adresse — dans un journal purgé au bout de deux jours au plus : une donnée de plus,
 // que la liste des durées de conservation devait nommer, et que l'export rend. Le journal garde aussi
 // les demandes que les plafonds ont tues, d'où « demandes » et « ce qu'il en est advenu ». Et la fiche

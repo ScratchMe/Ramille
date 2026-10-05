@@ -50,7 +50,7 @@
  * → l'assertion 4 tombe, seule — l'assertion 1, elle, reste verte, et c'est ce qui la justifie.
  *
  * ET DEUX DEPUIS LE 05/10/2026, quand le hook d'envoi a pris les e-mails à Supabase (plafonds d'e-mail,
- * `20261005100000_les_plafonds_d_e_mail.sql`) : le corps et le sujet vivent aussi dans la migration,
+ * `20261005103733_les_plafonds_d_e_mail.sql`) : le corps et le sujet vivent aussi dans la migration,
  * entre des balises `$gabarit_<nom>$` et `$sujet_<nom>$`, et c'est cette copie-là qui part en
  * production quand le hook est allumé. 5. le corps de la dernière migration qui porte la balise est
  * le fichier, à l'octet près des fins de ligne ; 6. son sujet est celui du titre du document. Les
