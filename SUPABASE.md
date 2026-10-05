@@ -295,6 +295,27 @@ sur la stack locale :
   et s'allume au tableau de bord pour le distant, qui ne lit pas ce fichier. Un secret Vault posé dans
   `[db.vault]` n'existe qu'en local : c'est ce qui permet au hook de choisir un transport de test sans
   qu'aucune valeur de production ne descende dans le dépôt.
+- **Le plafond `rate_limit_email_sent` est GLOBAL au projet, et vérifié AVANT le hook d'envoi.** Lu
+  dans le code de GoTrue (v2.197.0, `internal/api/mail.go` → `sendEmail`) : `limiterOpts.Email.Allow()`
+  est un limiteur **unique et partagé**, non indexé par IP ni par compte, évalué avant l'invocation du
+  hook. Deux conséquences qu'un plafond par compte écrit dans le hook ne change pas : un tiers qui
+  épuise le plafond horaire (30/h sur la production) **bloque tous les envois du projet** — reconnexion
+  comme rattachement —, et **aucune ligne ne s'écrit dans le journal du hook** (`envois_d_e_mails_d_auth`),
+  puisque le refus précède le hook. Le seul endroit où ça se voit est les Logs → Auth (429
+  `over_email_send_rate_limit` sur `/otp`, `/user`). Et `/auth/v1/recover`, un type que le produit
+  n'emprunte pas, arme quand même le minuteur `recovery_sent_at` partagé avec le magiclink de
+  reconnexion (60 s) : un tiers y bloque la reconnexion d'une adresse sans qu'aucun e-mail parte
+  (`v1-27` §12.39).
+- **Un trigger sur `auth.users` se déclenche pour tous les rôles, GoTrue (`supabase_auth_admin`)
+  compris**, donc il borne ce que le client peut y écrire là où aucun plafond `public.*` ne voit cette
+  table. Premier emploi : `borner_les_ecritures_sur_le_compte` (`20261006120000`,
+  `v1-27` §12.39) refuse des métadonnées de plus de 8 Ko (une session anonyme remplissait sinon la base
+  par `PUT /user {data}`, que le captcha ne couvre pas) et la pose d'un mot de passe par un `UPDATE`
+  (le produit n'en a pas ; `grant_type=password` rouvrait sinon une session survivant au logout
+  global). Deux pièges : le refus du mot de passe vise l'`UPDATE` seul — les fixtures pgTAP posent
+  `encrypted_password = 'x'` à l'`INSERT` — ; et `postgres` ne peut pas devenir `supabase_auth_admin`
+  sur la stack locale, donc un test pgTAP éprouve le trigger en `UPDATE` sous `postgres` (il se
+  déclenche pour tous), et la preuve que GoTrue y est pris se joue par les parcours HTTP réels.
 
 ---
 

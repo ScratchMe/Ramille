@@ -2280,3 +2280,147 @@ Ce qui reste, et pourquoi :
   refusée), donc le retrait dans le dépôt revient à la personne qui pilote. Et le jeton
   `SUPABASE_ACCESS_TOKEN` de l'environnement ouvre toujours l'API de gestion par le shell ; le fermer
   veut dire le retirer de l'environnement et ne l'y remettre que pour appliquer une migration.
+
+### 12.39 La seconde passe de sécurité avant le lancement (05-06/10/2026)
+
+**La demande** (la personne qui pilote, 05/10/2026) : la passe prévue par `docs/exploitation/passe-de-securite.md`,
+une session neuve avec le prompt que §12.38 a laissé. Quatre relectures en parallèle (le web et les
+fonctions de Vercel, l'authentification, la base, les abus et le dépôt public), chaque constat grave
+rejoué avant d'être cru, la production relue en lecture seule. **La production porte exactement le
+code du dépôt** (les 90 fonctions de `public`/`analytics` ont la même empreinte qu'en local, les
+privilèges de table et de colonne sont identiques, les trois Redirect URLs conformes). Personne ne
+lit ni n'écrit les données d'un autre, personne n'obtient plus de droits : tout ce que la passe a
+trouvé tient au **volume**, à la **persistance d'accès** et à des **plafonds globaux qu'un tiers
+remplit exprès**.
+
+**Un incident de la passe elle-même, consigné** : en relevant la configuration PostgREST par l'API
+de management, la réponse portait le secret JWT HS256 en clair, imprimé dans la sortie d'une commande
+avant d'être masqué. Il n'est écrit dans aucun fichier du dépôt ; il figure une fois dans la
+transcription de la session. C'est une raison de plus pour le constat 4 ci-dessous (révoquer la clé
+HS256).
+
+**Corrigé dans la PR de la passe** (`20261006120000_le_durcissement_avant_le_lancement.sql`, test
+`52`, `app.config.js` et sa garde `app-config.test.ts`) :
+
+- **CRITIQUE — une session anonyme remplissait la base par `auth.users.raw_user_meta_data`.** `PUT
+  /auth/v1/user {"data": …}` n'est pas protégé par le captcha (il ne couvre que signup/anonyme/otp/
+  recover) et GoTrue **fusionne** par clé : une session anonyme (un captcha) garde son jeton une heure
+  et écrit ~1 Mo par requête, ~360 Mo/h/IP — la base passe en lecture seule à 500 Mo (la prod pèse
+  18 Mo). La purge des comptes anonymes ne regarde que l'inactivité à 90 jours, pas la taille, et rien
+  côté `public.*` ne voit `auth.users`. **Vérifié** en local : 960 022 octets stockés pour un compte
+  en deux requêtes. Fermé par un trigger `before insert or update on auth.users`
+  (`borner_les_ecritures_sur_le_compte`) qui refuse toute écriture dont `raw_user_meta_data` dépasse
+  8 Ko de texte JSON — très au-dessus de tout usage réel (5 o pour une session anonyme, 27 o au plus
+  en production, quelques centaines pour un profil Google).
+- **HAUTE — un mot de passe posé sur un compte survivait à toute déconnexion.** Le produit n'a pas de
+  mot de passe, mais GoTrue accepte `PUT /user {"password": …}` (sans réauthentification, sans
+  captcha), puis `grant_type=password` rouvre une session **même après une déconnexion globale** ; la
+  personne ne peut ni le voir ni le retirer. **Vérifié** : chaîne complète rejouée en local (la session
+  par mot de passe revient après `logout?scope=global`). Le hook « Password Verification Attempt » qui
+  le fermerait est réservé aux plans Teams/Enterprise ; sur le plan gratuit, le même trigger refuse la
+  **transition** d'`encrypted_password` vers une valeur non vide sur un `UPDATE` (l'`INSERT` n'est pas
+  visé — les fixtures pgTAP y posent `'x'`, et la création directe est déjà fermée par
+  `avant_la_creation_d_un_compte`). Rejoué après le correctif : `grant_type=password` ne rend plus de
+  jeton. Les parcours réels (session anonyme, rattachement, Google, reconnexion) traversent le trigger
+  sans rien poser de tout cela — éprouvé par `verifier-code-de-connexion.mjs` et
+  `verifier-parcours-reel.mjs`.
+- **MOYENNE — `feedback.message` était borné sur `btrim`, pas sur le brut.** Un retour de 2000
+  caractères utiles pouvait être entouré d'un rembourrage d'espaces de plusieurs Mo (seule table où un
+  client écrit du texte libre, oubliée par §12.38). **Vérifié** : un corps de 10 000 003 caractères
+  accepté. La contrainte `feedback_message_check` gagne `and length(message) <= 4000`.
+- **MOYENNE — `verifier_le_jeton_du_captcha` tenait une connexion jusqu'à 3 s.** Appel HTTP synchrone à
+  Cloudflare dans une requête PostgREST, appelable par `authenticated` ; ~1 800 captchas/h saturaient le
+  petit pool du plan gratuit (la borne de 10 essais/h/compte, comptée avant l'appel, limite déjà). Délai
+  ramené à 1,5 s, comme le hook d'envoi.
+- **BASSE — `check_intention_days` acceptait un `smallint[]` à deux dimensions** (`{{1},{2}}`), que le
+  questionnaire ne produit jamais : on exige `array_ndims(p_days) = 1`. Sans effet sur les données
+  existantes.
+- **Constat 4, premier geste — la garde de la clé Android.** `app.config.js` refuse désormais un build
+  `preview`/`production` dont `EXPO_PUBLIC_SUPABASE_ANON_KEY` est encore un JWT legacy (préfixe `eyJ`),
+  pour que le build du 07/10 soit le premier à embarquer la clé `sb_publishable_…` et qu'on puisse
+  ensuite révoquer la clé HS256 (ci-dessous).
+
+**Ce qui revient à la personne qui pilote, au tableau de bord** (gestes, pas des arbitrages — l'agent
+ne les fait pas) :
+
+- **Constat MOYENNE — les anciens déploiements Vercel sont publics.** Chaque déploiement de production
+  a une URL immuable `https://ramille-<hash>-me-c4a3.vercel.app`, publiée par l'API GitHub, et ceux
+  d'avant le 05/10 servent encore l'ancien `/api/partage` au `poste` en texte libre. **Vérifié** : un
+  ancien déploiement rend `og:description` portant une phrase arbitraire aux couleurs du produit. Donc
+  tout durcissement côté client du web est contournable par une URL plus ancienne (la fermeture de
+  `poste` du 05/10 ne tient pas). **Geste** : Vercel → projet ramille → Settings → Deployment Protection
+  → **Vercel Authentication, Standard Protection** (disponible sur Hobby ; `www.ramille.fr` reste
+  public). Relevé le 06/10 par l'API de management : `ssoProtection` désactivé.
+- **Constat 4 — révoquer la clé HS256**, dans l'ordre sûr : (1) poser la clé `sb_publishable_…` dans
+  `EXPO_PUBLIC_SUPABASE_ANON_KEY` des environnements EAS `preview` et `production` (la garde
+  d'`app.config.js` l'exige au prochain build) ; (2) build du 07/10 installé ; (3) désactiver les clés
+  d'API legacy (réversible), vérifier, puis retirer la clé de signature HS256 « previously_used »
+  (irréversible). **Correction à §12.38** : le registre disait « le secret JWT ne doit pas être changé,
+  toutes les sessions anonymes tomberaient » — cela vaut pour la clé **active** (ES256, la seule publiée
+  au JWKS) ; la HS256 en attente ne signe plus de session, donc la retirer ne devrait pas les faire
+  tomber (à vérifier avant le geste irréversible). L'APK du 05/10 (`29012e62`) embarque encore le JWT
+  `anon` HS256 (mesuré) : révoquer avant le build du 07/10 couperait l'app Android.
+- **Constat MOYENNE — le ménage GoTrue est éteint.** **Vérifié** en lecture seule : 25 jetons révoqués
+  de plus de 2 jours, des `flow_state` de 7 jours, 95 sessions de plus de 5 jours subsistent
+  (`GOTRUE_DB_CLEANUP` manifestement `false`). Seconde voie de gonflement, invisible aux plafonds
+  `public.*` et non rattrapée par la purge 90 j. Volumes encore minimes. **Geste** : activer le ménage
+  GoTrue (réglage hébergé / support).
+- **Constat MOYENNE — MFA TOTP activé** (`mfa_totp_enroll_enabled`/`verify_enabled` vrais) alors que le
+  produit n'en a pas : une session peut enrôler jusqu'à 10 facteurs (bornés, aucun e-mail). Surface
+  inutile. **Geste** : Supabase → Authentication → désactiver TOTP.
+- **Le jeton `SUPABASE_ACCESS_TOKEN` de l'environnement des sessions** ouvre l'API de management (lecture
+  du secret JWT comprise, comme l'incident ci-dessus). **Geste** : le retirer de l'environnement, ne
+  l'y remettre que pour appliquer une migration. Aggravé par ce que le dépôt fait exécuter à une session
+  (ci-dessous).
+
+**Ce qui reste, et pourquoi** :
+
+- **HAUTE — le verrou e-mail global de 30/h coupe toute connexion par e-mail du projet, invisible au
+  journal.** Lu dans le code de GoTrue (v2.197.0 en production) : `sendEmail()` vérifie
+  `limiterOpts.Email.Allow()` — un limiteur **unique, partagé pour tout le projet**, non indexé par IP —
+  **avant** d'appeler le hook d'envoi, donc aucune ligne dans `envois_d_e_mails_d_auth`. `magiclink`
+  (reconnexion) et `email_change` (rattachement) y passent tous deux. Un tiers demande 30 codes/h
+  (30 captchas, ~1-2 $/jour) et bloque reconnexion comme rattachement pour tout le monde, en continu.
+  **Tranche la question ouverte de §12.35** (« le plafond horaire 30 n'est pas mesuré avec le hook ») :
+  il s'applique, globalement, avant le hook. Le plan gratuit ne permet pas mieux côté Supabase ; la
+  parade est d'alerter sur les 429 `over_email_send_rate_limit` des Logs Auth (que l'alerte
+  d'exploitation ne lit pas) et de garder Google en chemin principal (déjà le cas). Décision de produit :
+  Google mis en avant, confirmé par la personne qui pilote le 05/10/2026.
+- **MOYENNE — `/recover` arme un verrou muet de 60 s sur la reconnexion.** Lu dans le code : `/auth/v1/recover`
+  et le magiclink de reconnexion partagent le minuteur `recovery_sent_at` (60 s). Un tiers appelle
+  `/recover` sur l'adresse d'une victime (le hook ignore ce type, donc aucun e-mail, aucun signal) et
+  arme la fenêtre ; la reconnexion légitime de la victime reçoit 429. **Vérifié** en local. Le hook ne
+  peut pas le fermer sans devenir un oracle (une erreur sur `recovery` ne se produirait que pour les
+  adresses connues). Non fermable en base sur le plan gratuit ; à surveiller côté Logs Auth.
+- **MOYENNE — le dépôt fait exécuter du code tiers à une session d'agent portant le jeton.** Au-delà de
+  §12.38 : le hook `PreToolUse` de `.claude/settings.json` lance `scripts/proteger-les-migrations-livrees.mjs`
+  depuis l'arbre de travail courant à chaque Edit/Write, le `postinstall` de `package.json` à chaque
+  `npm install`, et le sous-agent `contre-lecture` a Bash. Une PR d'un inconnu que la session extrait ou
+  teste fait tourner ses scripts avec `SUPABASE_ACCESS_TOKEN`. **Parade** : ne pas extraire/tester une
+  PR d'inconnu dans une session qui porte le jeton ; le retirer de l'environnement (ci-dessus) ; relire
+  les scripts modifiés par une PR avant tout Edit/Write ou `npm install`.
+- **BASSE, reportés à une PR à part** (écran + export, hors du périmètre de cette PR serveur) : le jeton
+  de désinscription reste dans l'URL de `/rappels/stop` (lisible par le script Turnstile chargé sur la
+  page ; `history.replaceState` après lecture) ; `/_sitemap` et `/status` servis en production
+  (`sitemap: false`, et statuer sur `/status`) ; la limite de débit `/api/` retournable contre un robot
+  d'aperçu ; les plafonds par compte contournables par une course (un `pg_advisory_xact_lock` par compte).
+- **BASSE — sessions sans expiration absolue** (`sessions_timebox=0`) : poser un timebox prolongerait
+  moins une session volée. Geste au tableau de bord.
+- **La garde de volume de la purge reste bloquable** (constat MOYENNE, finding B du rapport) : un retour
+  de trois lettres ou un bilan finalisé rend un compte « porteur », et le plancher est 50 ; 51 comptes
+  vieillis 90 jours bloquent la purge chaque nuit, retenant de vrais comptes stale au-delà des 90 jours
+  promis. **Vérifié** (mécanisme). La correction (bloquer vs ralentir au-delà du seuil) est un arbitrage
+  de produit en attente de décision ; elle fera sa propre PR.
+
+**Les zones relues et saines** sont au rapport de la session ; en bref : RLS inter-comptes, les 23 RPC
+d'un client (propriété par `auth.uid()`), suppression et export (aucun jeton ni secret rendu), PKCE et
+liens profonds, le captcha du rattachement (`action` vérifiée, fail-closed), les gabarits (seul
+`.NewEmail` du demandeur, HTML-échappé), les fonctions pures sur entrées absurdes (pas de boucle,
+`statement_timeout` d'`anon` à 3 s), l'absence de SSRF (`extensions.http` non exposé par PostgREST),
+les vues `analytics.*` et l'e-mail d'alerte (pas de division par zéro, `route`/`category` filtrés),
+la CI (pas de `pull_request_target`, pas de secret pour une PR de fork), l'historique git (aucun
+secret ; l'adresse d'auteur en clair est connue et irréversible, `depot-public.md` §1), et le bundle
+de production (seulement les clés publiques).
+
+**La prochaine passe garde son prompt** : `docs/exploitation/passe-de-securite.md`, mis à jour après
+celle-ci.
