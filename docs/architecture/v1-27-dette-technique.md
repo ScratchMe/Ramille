@@ -2044,7 +2044,7 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   à corriger à la prochaine retouche de ce fichier. **Les plafonds d'e-mail sont écrits le 05/10/2026**
   (`20261005103733_les_plafonds_d_e_mail.sql`, test `50`, `COMPTE.md`) : un hook d'envoi en fonction
   Postgres prend les e-mails de connexion à Supabase et envoie par Resend ; il s'allume au tableau de
-  bord (registre §3.1). **Seul le rattachement est plafonné** — 5 codes par heure et par compte, 5 par
+  bord (registre §3.1), **et il est allumé en production depuis le 05/10/2026**, deux envois relus. **Seul le rattachement est plafonné** — 5 codes par heure et par compte, 5 par
   heure et par adresse, 60 par jour —, et ses plafonds sont **muets** ; la reconnexion, qui coûte déjà
   une case cochée par code, ne l'est pas. Les trois choix sont de la personne qui pilote, le dernier
   après qu'une seconde contre-lecture a montré qu'un tiers pouvait bloquer la reconnexion d'un autre.
