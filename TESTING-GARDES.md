@@ -188,7 +188,8 @@ compte » → l'adresse envoyée par **Entrée** → le focus sur « Regarde tes
 Mailpit (comme `verifier-code-de-connexion.mjs`) → la base relue (même utilisateur, plus anonyme, à
 cette adresse) → **le retour quitte l'app** ; puis « Me déconnecter » et le même retour. Tout se joue
 sur un onglet neuf. **Il envoie un e-mail par passage**, un rattachement : depuis le 05/10/2026, le
-hook d'envoi allumé en local le compte dans son plafond de 60 rattachements par jour, partagé avec
+hook d'envoi allumé en local le compte dans son plafond de 60 rattachements par jour — celui qui vaut
+hors Brevo, et la stack locale n'a pas de clé Brevo —, partagé avec
 `verifier-code-de-connexion.mjs` et tout passage simultané — un plafond muet, où le code n'arrive
 jamais dans Mailpit et le parcours expire sans erreur ; `supabase db reset` le vide (le rejeu de la CI
 repart d'une stack neuve). Le plafond local de 30 par heure de Supabase ne compte plus hook allumé.

@@ -37,9 +37,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //   - trace des demandes de code de connexion (deux jours au plus) -> `envois_d_e_mails_d_auth`,
 //     cron `purge-envois-d-e-mails-d-auth` (ce qui a plus d'un jour, chaque nuit), rendue par l'export ;
 //   - sous-traitants et localisation -> les seuls tiers appelés par le produit :
-//     `api.resend.com` et `exp.host` dans `send_pending_reminders()`, `api.resend.com` dans
-//     `envoyer_l_e_mail_d_auth()` pour les codes de connexion (le SMTP de Supabase passait déjà
-//     par Resend), Supabase (Paris) pour la
+//     `api.resend.com` et `exp.host` dans `send_pending_reminders()`, `api.brevo.com` dans
+//     `requete_d_e_mail_d_auth()` pour les codes de connexion depuis le 05/10/2026 (`api.resend.com`
+//     en repli tant que la clé Brevo manque ; le SMTP de Supabase passait déjà par Resend),
+//     Supabase (Paris) pour la
 //     base, Vercel pour servir la version web et fabriquer la carte de partage, Google pour
 //     OAuth et pour FCM, GitHub Actions et Cloudflare R2 pour la sauvegarde
 //     (`.github/workflows/sauvegarde.yml`, `docs/exploitation/sauvegarde.md`), et depuis le
@@ -178,6 +179,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // Resend ne parlait que des rappels, alors que les codes de connexion y passaient déjà par le SMTP —
 // faux depuis le 20/09/2026, relevé par la contre-lecture du hook. Les deux textes validés par la
 // personne qui pilote le même jour.
+//
+// **05/10/2026 encore : les codes de connexion passent par Brevo** (`20261005125029_les_codes_par_brevo.sql`).
+// Brevo entre dans la liste, avec sa mesure des ouvertures, anonymisée — Brevo ne laisse pas la couper
+// soi-même —, et Resend n'y garde que les rappels. La page est en ligne avant que la clé Brevo soit
+// posée : jusque-là les codes partent encore par Resend, et la page dit l'état qui arrive. Textes
+// validés par la personne qui pilote le même jour.
 const UPDATED_AT = '5 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -390,9 +397,14 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'Resend',
             text:
-              'Envoi des emails : les codes de connexion — reçoit alors ton adresse email et le code —, et les rappels ' +
-              'si tu as choisi ce canal : reçoit alors ton adresse email et le texte du rappel, c’est-à-dire la question ' +
-              'de ton point (le détail plus bas).',
+              'Envoi des rappels par email, si tu as choisi ce canal : reçoit alors ton adresse email et le texte du ' +
+              'rappel, c’est-à-dire la question de ton point (le détail plus bas).',
+          },
+          {
+            term: 'Brevo',
+            text:
+              'Envoi des codes de connexion par email : reçoit alors ton adresse email et le code. Brevo mesure ' +
+              'l’ouverture de ces emails de façon anonymisée ; nous ne lisons pas cette mesure. Société française.',
           },
           {
             term: 'Expo',

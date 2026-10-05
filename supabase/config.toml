@@ -68,7 +68,7 @@ default_pool_size = 20
 max_client_conn = 100
 
 # L'adresse du collecteur d'e-mails local, vue depuis le conteneur de la base : c'est là que le hook
-# d'envoi (`[auth.hook.send_email]`, plus bas) poste quand il n'a pas de clé Resend. La production n'a
+# d'envoi (`[auth.hook.send_email]`, plus bas) poste quand il n'a ni clé Brevo ni clé Resend. La production n'a
 # jamais ce secret. Pas une valeur secrète : une adresse interne au réseau Docker de la stack.
 [db.vault]
 boite_d_essai_des_e_mails = "http://supabase_inbucket_ramille:8025/api/v1/send"
@@ -366,7 +366,7 @@ max_frequency = "5s"
 # anti-abus) : Supabase confie chacun à `public.envoyer_l_e_mail_d_auth`, qui compte puis envoie. Allumé
 # ici pour que la stack locale — le parcours réel et `verifier-code-de-connexion` — passe par le même
 # chemin que la production, où le hook s'allume dans le tableau de bord (registre d'exploitation §3.1).
-# Sans clé Resend, la fonction envoie au collecteur d'e-mails local, dont l'adresse est posée dans
+# Sans clé Brevo ni Resend, la fonction envoie au collecteur d'e-mails local, dont l'adresse est posée dans
 # `[db.vault]` plus haut. Les gabarits de `[auth.email.template.*]` ne servent alors plus qu'au hook
 # éteint, comme ceux du tableau de bord.
 [auth.hook.send_email]

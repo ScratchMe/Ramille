@@ -12,7 +12,8 @@
 // Ce script est donc le seul à jouer le hook de bout en bout — Supabase qui l'appelle, le corps qui
 // part, le code qui se vérifie ; ses plafonds, eux, sont gardés par le pgTAP `50`. Chaque passage écrit
 // des adresses neuves (`marque`), et la reconnexion n'est pas plafonnée : seul le plafond du projet peut
-// finir par mordre — soixante rattachements en vingt-quatre heures, trois par passage, une vingtaine de
+// finir par mordre — soixante rattachements en vingt-quatre heures (le plafond hors Brevo : la stack
+// locale n'a pas de clé Brevo), trois par passage, une vingtaine de
 // rejeux sur la même base, moins si le parcours réel en ajoute. Il se tait : le code n'arrive pas,
 // et le journal du hook le dit (`public.envois_d_e_mails_d_auth`). `supabase db reset` le vide ; un
 // `stop` puis `start` garde la base (le rejeu de la CI, lui, repart d'une stack neuve).
@@ -23,7 +24,9 @@
 //      portant l'adresse — **en passant par la reprise depuis « Toi »**, c'est-à-dire en quittant
 //      l'écran de code entre l'envoi et la saisie. C'est le produit : s'il tombe, plus personne ne
 //      peut se rattacher ; et si la reprise tombe, une adresse reste en attente sans moyen de la
-//      confirmer, ce qui est un cul-de-sac.
+//      confirmer, ce qui est un cul-de-sac. Depuis le 05/10/2026, le journal du hook doit aussi dire
+//      que ce code est parti par le collecteur (`fournisseur`) : éprouvé en retirant la colonne de
+//      l'insertion du hook — le parcours passe, et seule cette vérification tombe.
 //   2. **La reconnexion par code depuis un navigateur NEUF marche.** C'est le cas que le lien ne
 //      pouvait pas faire — en PKCE il ne valait que dans le navigateur qui l'avait demandé, donc un
 //      bilan fait sur un ordinateur et un e-mail lu sur un téléphone ne se rejoignaient jamais.
@@ -383,6 +386,18 @@ try {
   verifier(
     rattache?.email === adresseA,
     `la base ne porte pas l’adresse rattachée : ${rattache?.email ?? 'rien'} au lieu de ${adresseA}`,
+  );
+
+  // Et le journal du hook dit qui a envoyé ce code (05/10/2026, passage des codes par Brevo) : c'est la
+  // seule trace qui dira, en production, que la bascule a eu lieu, et aucune suite ne la voyait
+  // s'écrire — pgTAP ne réussit jamais un envoi. En local, c'est le collecteur.
+  const journal = await fetch(
+    `${API}/rest/v1/envois_d_e_mails_d_auth?select=fournisseur&user_id=eq.${anonymeA?.id}&type=eq.email_change&issue=eq.envoye`,
+    { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` } },
+  ).then((r) => r.json());
+  verifier(
+    Array.isArray(journal) && journal.length > 0 && journal.every((ligne) => ligne.fournisseur === 'boite'),
+    `le journal du hook ne dit pas que le collecteur a envoyé ce code : ${JSON.stringify(journal)}`,
   );
 
   // ── 2. La reconnexion par code depuis un navigateur NEUF ─────────────────────────────────────

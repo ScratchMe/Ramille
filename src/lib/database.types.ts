@@ -605,6 +605,7 @@ export type Database = {
         Row: {
           adresse_empreinte: string
           cree_le: string
+          fournisseur: string | null
           id: number
           issue: string
           statut_http: number | null
@@ -614,6 +615,7 @@ export type Database = {
         Insert: {
           adresse_empreinte: string
           cree_le?: string
+          fournisseur?: string | null
           id?: never
           issue: string
           statut_http?: number | null
@@ -623,6 +625,7 @@ export type Database = {
         Update: {
           adresse_empreinte?: string
           cree_le?: string
+          fournisseur?: string | null
           id?: never
           issue?: string
           statut_http?: number | null
@@ -1376,6 +1379,8 @@ export type Database = {
           dernier_soir: string
         }[]
       }
+      // Le passage des codes par Brevo (20261005125029)
+      fournisseur_d_e_mail_d_auth: { Args: never; Returns: Record<string, unknown> }
       gabarit_d_e_mail_d_auth: {
         Args: { p_type: string }
         Returns: Record<string, unknown>
@@ -1447,6 +1452,16 @@ export type Database = {
       repondre_au_checkin: {
         Args: { p_checkin_id: string; p_reponse: string }
         Returns: number
+      }
+      requete_d_e_mail_d_auth: {
+        Args: {
+          p_adresse: string
+          p_fournisseur: string
+          p_html: string
+          p_secret: string
+          p_sujet: string
+        }
+        Returns: unknown
       }
       resolve_car_mode: {
         Args: { p_engine: string; p_mode_id: string }

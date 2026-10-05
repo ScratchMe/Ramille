@@ -250,18 +250,22 @@ la porte.
 
 **Les deux codes partent de la base, plus de Supabase, dès que le hook d'envoi est allumé**
 (`public.envoyer_l_e_mail_d_auth`, registre d'exploitation §3.1) : Supabase lui confie chaque e-mail
-d'authentification, il compte, puis envoie par l'API de Resend avec les deux gabarits du dépôt,
-recopiés à l'identique. **Seul le rattachement est plafonné**, et les valeurs sont celles de la personne
-qui pilote : **5 codes par heure et par compte demandeur, 5 par heure et par adresse, 60 par jour pour
-tout le projet**. La minute de Supabase entre deux codes d'un même compte reste devant ; son plafond
-horaire (30) n'est pas compté, faute de mesure qui tranche pour la production. Cinq choses à savoir
+d'authentification, il compte, puis envoie avec les deux gabarits du dépôt, recopiés à l'identique —
+**par l'API de Brevo dès que sa clé est posée, sinon par celle de Resend** (depuis le 05/10/2026,
+`20261005125029_les_codes_par_brevo.sql` : seuls les codes passent par Brevo, les rappels restent
+chez Resend). **Seul le rattachement est plafonné**, et les valeurs sont celles de la personne
+qui pilote : **5 codes par heure et par compte demandeur, 5 par heure et par adresse, et pour tout le
+projet 200 par jour quand Brevo envoie, 60 quand c'est Resend** — 200 sur les 300 de Brevo en laisse 100
+aux reconnexions ; 60 sur les 100 de Resend laisse leur part aux rappels. Le hook choisit son
+fournisseur avant de compter, donc le plafond suit la clé. La minute de Supabase entre deux codes d'un même compte reste devant ; son plafond
+horaire (30) n'est pas compté, faute de mesure qui tranche pour la production. Six choses à savoir
 avant d'y toucher :
 
 - **La reconnexion n'est pas plafonnée par le hook, et c'est voulu** (décision du 05/10/2026, après la
   seconde contre-lecture) : elle coûte déjà une case cochée par code. Plafonnée, elle laissait n'importe
   qui bloquer celle d'un autre — cinq demandes vers une adresse, et son titulaire ne recevait plus rien
-  de l'heure. Ce qu'on accepte : qui coche une case par e-mail peut épuiser le quota de Resend par des
-  codes de reconnexion.
+  de l'heure. Ce qu'on accepte : qui coche une case par e-mail peut épuiser le quota de Brevo par des
+  codes de reconnexion — les rappels, chez Resend, n'en souffrent plus tant que la clé Brevo est posée.
 - **Les plafonds du rattachement sont muets, et c'est la non-divulgation qui l'impose** : au-delà, rien
   ne part et l'écran de code s'ouvre comme pour un envoi accepté. Sur `/connexion/email`, une adresse
   libre part en rattachement quand une adresse prise bascule en reconnexion : si le rattachement
@@ -285,7 +289,7 @@ avant d'y toucher :
 - **Les gabarits ont trois copies dans le dépôt** — le document, `supabase/templates/` et la migration
   — que `scripts/verifier-gabarits-email.mjs` compare ; `gabarits-email.md` dit pourquoi les trois.
 - **La stack locale passe par le même chemin** : `supabase/config.toml` allume le hook, qui poste au
-  collecteur d'e-mails faute de clé Resend — `verifier-code-de-connexion.mjs` joue donc le hook de
+  collecteur d'e-mails faute de clé Brevo ou Resend — `verifier-code-de-connexion.mjs` joue donc le hook de
   bout en bout à chaque PR. Le journal des plafonds (`envois_d_e_mails_d_auth`, une empreinte d'adresse
   et jamais l'adresse, purgé au plus tard au bout de deux jours) entre dans l'export, et la page de
   confidentialité le nomme, comme elle nomme Resend pour les codes.
