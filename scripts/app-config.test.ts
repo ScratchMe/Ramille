@@ -12,7 +12,7 @@
  * `preview` des profils distribués en fait tomber 1 ; ne plus regarder `EAS_BUILD` (refuser
  * aussi en local) en fait tomber 1.
  *
- * Et depuis le 06/10/2026 (v1-27 §12.39), la garde de la clé legacy : retirer le refus de la clé
+ * Et depuis le 05/10/2026 (v1-27 §12.39), la garde de la clé legacy : retirer le refus de la clé
  * `eyJ…` fait tomber 1 test ; l'étendre à un build local (sans `EAS_BUILD`) en fait tomber 1.
  */
 

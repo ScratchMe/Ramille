@@ -2281,7 +2281,7 @@ Ce qui reste, et pourquoi :
   `SUPABASE_ACCESS_TOKEN` de l'environnement ouvre toujours l'API de gestion par le shell ; le fermer
   veut dire le retirer de l'environnement et ne l'y remettre que pour appliquer une migration.
 
-### 12.39 La seconde passe de sécurité avant le lancement (05-06/10/2026)
+### 12.39 La seconde passe de sécurité avant le lancement (05/10/2026)
 
 **La demande** (la personne qui pilote, 05/10/2026) : la passe prévue par `docs/exploitation/passe-de-securite.md`,
 une session neuve avec le prompt que §12.38 a laissé. Quatre relectures en parallèle (le web et les
@@ -2350,7 +2350,7 @@ ne les fait pas) :
   tout durcissement côté client du web est contournable par une URL plus ancienne (la fermeture de
   `poste` du 05/10 ne tient pas). **Geste** : Vercel → projet ramille → Settings → Deployment Protection
   → **Vercel Authentication, Standard Protection** (disponible sur Hobby ; `www.ramille.fr` reste
-  public). Relevé le 06/10 par l'API de management : `ssoProtection` désactivé.
+  public). Relevé le 05/10 par l'API de Vercel : `ssoProtection` désactivé.
 - **Constat 4 — révoquer la clé HS256**, dans l'ordre sûr : (1) poser la clé `sb_publishable_…` dans
   `EXPO_PUBLIC_SUPABASE_ANON_KEY` des environnements EAS `preview` et `production` (la garde
   d'`app.config.js` l'exige au prochain build) ; (2) build du 07/10 installé ; (3) désactiver les clés

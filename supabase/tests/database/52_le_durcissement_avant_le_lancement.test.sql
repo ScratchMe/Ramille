@@ -117,15 +117,24 @@ select is(
 select * from finish();
 rollback;
 
--- ── Éprouvé en le cassant (06/10/2026) ──────────────────────────────────────────────────────
--- Chaque garde retirée de la migration fait tomber l'assertion en face, et elle seule :
+-- ── Éprouvé en le cassant (05/10/2026) ──────────────────────────────────────────────────────
+-- Chaque mutation remise dans la fonction ou la contrainte, puis ce fichier rejoué dans la même
+-- transaction annulée ; le témoin sans mutation passe ses dix assertions.
 --
---   | mutation du code remise                                             | assertion qui tombe |
---   |---------------------------------------------------------------------|---------------------|
---   | la borne des métadonnées retirée du trigger                         | 1                   |
---   | la borne portée sur `pg_column_size` (que l'espace comprime) …      | 1 (via l'espace)    |
---   | le refus du mot de passe retiré, ou étendu à l'`INSERT`             | 3 (ou fixtures KO)  |
---   | le refus du mot de passe élargi à un UPDATE quelconque              | 4                   |
---   | `length(message) <= 4000` retiré de `feedback_message_check`        | 5                   |
---   | le délai laissé à 3 000 ms                                          | 7 et 8              |
---   | `array_ndims(p_days) = 1` retiré de `check_intention_days`          | 9                   |
+--   | mutation                                                            | ce qui tombe         |
+--   |---------------------------------------------------------------------|----------------------|
+--   | la borne des métadonnées retirée du trigger                         | 1                    |
+--   | le refus du mot de passe retiré                                     | 3                    |
+--   | le refus du mot de passe sur tout UPDATE (ses deux conditions ôtées) | 2 et 4               |
+--   | le refus du mot de passe étendu à l'INSERT                          | rien ici (fixtures à |
+--   |                                                                     | `''`) ; `03`, dont   |
+--   |                                                                     | les fixtures posent  |
+--   |                                                                     | `'x'`, échoue dès    |
+--   |                                                                     | elles                |
+--   | `length(message) <= 4000` retiré de `feedback_message_check`        | 5                    |
+--   | le délai laissé à 3 000 ms                                          | 7 et 8               |
+--   | `array_ndims(p_days) = 1` retiré de `check_intention_days`          | 9                    |
+--
+-- Mesuré aussi, et sans effet : borner par `pg_column_size` au lieu d'`octet_length`. Dans un trigger
+-- `before`, la valeur n'est pas encore compressée, donc les deux mesurent la même taille brute et
+-- gardent pareil. La première version de ce tableau affirmait l'inverse sans l'avoir joué.
