@@ -2022,8 +2022,8 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   secondes), une session de compte écrasée par une anonyme pendant l'attente (`ensureSession` relit
   la session), et le refus du captcha pris pour un code parti (`estRefusDuCaptcha`). Pas encore dans
   l'app Android, qui attend une vue web et donc un build (la vue web est écrite le même soir,
-  `src/components/captcha-natif.tsx` ; elle tourne à partir du premier build qui l'embarque) ; pas activé dans Supabase — **ce qui doit
-  être vrai avant est au registre §3.11**, dont une question de produit (le visiteur qui ne coche pas
+  `src/components/captcha-natif.tsx` ; elle tourne à partir du premier build qui l'embarque) ; pas activé dans Supabase — **ce qui devait
+  être vrai avant est au registre §3.11**, où se lit l'activation du 05/10/2026, web et Android vérifiés en séance, dont une question de produit (le visiteur qui ne coche pas
   la case à temps) ; l'écran du refus au démarrage et le contrôle de la clé au build y sont faits le
   soir même. **Ce que l'écran du refus laisse** : après un refus puis un « Réessayer » qui réussit, le
   layout ne fait rien de ce qu'il fait après la session pour ce chargement — `app_open` ne part pas, ni
