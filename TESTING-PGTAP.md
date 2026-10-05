@@ -17,7 +17,7 @@ un document daté — se retrouve ici, et la table en tête de `TESTING.md` dit 
 
 ## 1. Ce qui vaut sur n'importe quel projet
 
-### 1.7 pgTAP : cinq pièges d'une transaction
+### 1.7 pgTAP : six pièges d'une transaction
 
 - **`now()` est l'horodatage de début de transaction.** Deux lignes écrites par le même appel
   portent le même `created_at`, et `order by created_at limit 1` retombe sur l'ordre du tas : une
@@ -38,6 +38,13 @@ un document daté — se retrouve ici, et la table en tête de `TESTING.md` dit 
   « répondue » sans réponse, un horodatage choisi que le serveur pose lui-même) : quand une
   contrainte ou un trigger arrive, les fixtures qui le faisaient tombent, et c'est une bonne
   chose — elles éprouvaient une fiction.
+- **Un résultat qui dépend du plan ne se teste que sous le plan qui le casse.** Une base de test est
+  petite et jamais analysée ; le distant a des statistiques, et l'optimiseur n'y fait pas les mêmes
+  choix. Une fonction volatile dans une sous-requête qui ne nomme pas la ligne était réévaluée à
+  chaque ligne en CI et calculée une fois sur le distant (05/10/2026) : la même assertion passait
+  d'un côté et le cron tombait de l'autre. Un `analyze` de la table dans la transaction (annulé
+  avec elle, sauf `reltuples`) suffit à basculer le plan — et la mutation qui le retire doit
+  montrer que l'assertion repasse sur le code fautif, sans quoi rien ne dit qu'elle tient à lui.
 
 Et une base **vierge** n'est pas la base **distante** : une assertion qui lit `min()` sur toute
 une table, ou qui attend un envoi *sauté* faute de secret, passe sur l'une et échoue sur l'autre.

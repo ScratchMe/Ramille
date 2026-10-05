@@ -42,7 +42,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(33);
+select plan(36);
 
 -- ── 1. Les gardes de structure ──────────────────────────────────────────────────────────
 
@@ -388,6 +388,59 @@ select is(
   (select reprises from public.push_tokens where token = 'ExponentPushToken[pgtap-c29-reprise]'),
   1,
   'un réenregistrement par le même compte ne compte pas pour une reprise'
+);
+
+-- ── 8. Plusieurs rappels dans la même exécution, sous le plan du distant ─────────────────
+-- L'incident du 05/10/2026 (`20261005111000_un_jeton_par_rappel.sql`) : le jeton venait d'une
+-- sous-requête qui ne nommait pas la ligne, et le distant l'a calculée une fois pour toute
+-- l'instruction. Deux rappels, un seul jeton, l'index unique refuse, et le générateur de la semaine
+-- échoue en entier. La §3 met déjà deux rappels en file dans le même appel — et elle passait, parce
+-- que **le plan dépend des statistiques** : sur une table jamais analysée, Postgres réévalue la
+-- sous-requête à chaque ligne ; dès que la table est analysée et porte quelques points en attente,
+-- il la sort de la boucle, comme le distant ce matin-là.
+--
+-- D'où l'`analyze` ci-dessous : c'est lui qui met cette section sous le plan du distant, et sans
+-- lui elle ne garde rien. `pg_statistic` est annulé avec la transaction ; `reltuples` et `relpages`,
+-- écrits en place, ne le sont pas — sur le distant, cinq lignes de trop jusqu'au prochain passage
+-- de l'autovacuum, ce que n'importe quelle insertion fait aussi.
+--
+-- Éprouvé en le cassant, le 05/10/2026 : la sous-requête rendue à sa forme d'avant
+-- (`select gen_random_uuid() as unsubscribe_token`, sans `c.id`) fait tomber les trois assertions —
+-- la première sur l'index unique, les deux autres faute de lignes ; l'`analyze` retiré, elles
+-- repassent toutes les trois sur l'ancien corps, et c'est ce qui dit que la section tient à lui.
+
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous)
+select ('c2900000-0000-0000-0000-00000000004' || i)::uuid, '00000000-0000-0000-0000-000000000000',
+       'authenticated', 'authenticated', 'pgtap-c29-lot-' || i || '@test.local', 'x', now(), now(), now(), false
+from generate_series(1, 5) as i;
+
+update public.profiles set reminder_channel = 'email' where id::text like 'c2900000-0000-0000-0000-00000000004%';
+
+insert into public.engagement_checkins (user_id, loop_type, period_start, period_label, trip_label, poste, status)
+select ('c2900000-0000-0000-0000-00000000004' || i)::uuid, 'commute', current_date - 7, 'Semaine',
+       'Trajet domicile-travail', 'commute', 'pending'
+from generate_series(1, 5) as i;
+
+analyze public.engagement_checkins;
+
+select lives_ok(
+  $$select public.enqueue_checkin_reminders()$$,
+  'cinq rappels mis en file par la même exécution, sous le plan qu''a choisi le distant le 05/10/2026'
+);
+
+select is(
+  (select count(distinct unsubscribe_token)::int from public.notification_outbox
+   where user_id::text like 'c2900000-0000-0000-0000-00000000004%'),
+  5,
+  'chaque rappel a son jeton — c''est lui, à lui seul, qui autorise à couper les rappels'
+);
+
+select is(
+  (select count(*)::int from public.notification_outbox
+   where user_id::text like 'c2900000-0000-0000-0000-00000000004%'
+     and position(unsubscribe_token::text in body) > 0),
+  5,
+  'et chacun écrit le sien dans son corps : le lien du message est celui de sa ligne'
 );
 
 select * from finish();

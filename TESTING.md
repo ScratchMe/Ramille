@@ -19,7 +19,7 @@ daté, se retrouve donc par cette table :
 
 | Sections | Vivent dans |
 |---|---|
-| §1.7 (pgTAP, cinq pièges), §2.2 à §2.5 | `TESTING-PGTAP.md` |
+| §1.7 (pgTAP, six pièges), §2.2 à §2.5 | `TESTING-PGTAP.md` |
 | §2.6 à §2.9, §2.11, §2.12, §2.14 à §2.16 | `TESTING-GARDES.md` |
 | tout le reste | ici |
 

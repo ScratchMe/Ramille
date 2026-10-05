@@ -2124,3 +2124,31 @@ Ce qui reste, et pourquoi :
   Android au build suivant.
 - **Un commentaire de `20261004173905` promet trop** (« le client ne déclenche pas de recalcul » :
   `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.
+
+### 12.37 Le générateur des points de la semaine en échec (05/10/2026)
+
+**L'incident.** Le lundi 05/10/2026 à 06:00 UTC, `generate-commute-checkins` a échoué sur
+`notification_outbox_unsubscribe_token` : deux rappels mis en file par la même exécution portaient
+le même jeton de désinscription. L'échec annule toute la transaction du générateur, donc **aucun
+point de la semaine n'a été créé, pour personne**. L'alerte d'exploitation l'a rapporté au passage
+de 9h20 UTC (registre §8.11) — sa première alerte réelle, et elle a dit exactement quoi.
+
+**La cause**, depuis `20260912170000` : `enqueue_checkin_reminders` tirait le jeton dans une
+sous-requête latérale qui ne nommait aucune colonne de la ligne. Le distant l'a calculée une fois
+pour toute l'instruction (`Nested Loop -> Result -> Hash Join`), la CI à chaque ligne : le plan suit
+les statistiques, et il bascule en local dès cinq points en attente sur une table analysée. Tant
+qu'une exécution ne mettait en file qu'un rappel, rien ne se voyait ; ce lundi-là il en fallait
+plusieurs.
+
+**Corrigé** par `20261005111000_un_jeton_par_rappel.sql` : la sous-requête nomme la ligne, et le
+jeton se tire une fois par rappel quel que soit le plan. La §8 de `22` force le plan du distant
+(`analyze`) et met cinq rappels en file d'un coup : sur l'ancien corps, ses trois assertions
+tombent ; sans l'`analyze`, elles repassent sur l'ancien corps, ce qui dit qu'elles tiennent à lui.
+Le piège est consigné en `SUPABASE.md` §1.5 et en `TESTING-PGTAP.md` §1.7. **Aucune autre fonction
+du distant** ne tire une valeur volatile dans une sous-requête latérale (relevé sur `pg_proc` le
+même jour) ; le mot de la veille tire son jeton dans la liste des colonnes, une fois par ligne.
+
+**Ce qui reste.** Les points de la semaine du 28/09 sont générés à la main après l'application, par
+le même appel que le cron (`select public.generate_commute_checkins()` : la période se calcule sur
+`now()` et l'insertion ignore ce qui existe déjà) ; les rappels par notification partent aussitôt,
+ceux par e-mail s'étalent sur les jours qui suivent comme d'habitude.
