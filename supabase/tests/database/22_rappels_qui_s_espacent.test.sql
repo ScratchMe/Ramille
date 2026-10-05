@@ -7,7 +7,7 @@
 -- « Ne pas faire » du chantier l'exclut : c'est pourquoi l'assertion « le point reste en attente »
 -- est ici, au milieu des assertions d'envoi.
 --
--- ## Trois choses à savoir avant de « corriger » un test de ce fichier
+-- ## Quatre choses à savoir avant de « corriger » un test de ce fichier
 --
 -- **1. Les assertions sont toutes bornées à leur propre utilisateur**, jamais à la table entière —
 -- contrairement au fichier 09, qui lit `notification_outbox` en entier et ne passe donc que sur une
@@ -15,14 +15,17 @@
 -- façon de valider du pgTAP sans Docker. Remplacer une borne par un `count(*)` global réintroduirait
 -- cette dépendance à une base vierge.
 --
--- **2. La mise en file est appelée une fois par point en attente, et ce n'est pas de la
--- paresse.** Le plafond « au plus un message par mois » est un `not exists` sur
+-- **2. Les périodes successives d'un compte espacé sont mises en file par des appels successifs, et
+-- ce n'est pas de la paresse.** Le plafond « au plus un message par mois » est un `not exists` sur
 -- `notification_outbox` : deux points du même compte insérés par **une seule** exécution de
 -- l'`insert` ne se verraient pas l'un l'autre, et passeraient tous les deux. Le cas n'existe pas en
 -- production — le générateur clôt la période précédente *avant* d'insérer la nouvelle, donc un
--- compte n'a jamais deux points en attente pour la même boucle, et les deux boucles sont mises en
--- file par deux appels distincts (`generate_commute_checkins` et `generate_extras_checkins`). Le test
--- reproduit cette séquence au lieu de fabriquer un cas impossible.
+-- compte n'a jamais deux points en attente pour la même boucle, et les deux boucles sont générées
+-- par deux crons distincts (`generate_commute_checkins` et `generate_extras_checkins`), qui appellent
+-- chacun la mise en file. Le test reproduit cette séquence au lieu de fabriquer un cas impossible.
+-- Les §3, §4 et §8 mettent bien plusieurs points en file d'un seul appel — la mise en file ne
+-- filtre pas la boucle —, mais de comptes différents ou d'un compte en régime normal, que le
+-- plafond ne concerne pas.
 --
 -- **3. L'en-tête `List-Unsubscribe` est vérifié sur la source, et c'est tout ce qu'un test peut
 -- faire ici.** La branche email de `send_pending_reminders` n'évalue son `jsonb_build_object` que
@@ -42,7 +45,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(36);
+select plan(37);
 
 -- ── 1. Les gardes de structure ──────────────────────────────────────────────────────────
 
@@ -391,7 +394,7 @@ select is(
 );
 
 -- ── 8. Plusieurs rappels dans la même exécution, sous le plan du distant ─────────────────
--- L'incident du 05/10/2026 (`20261005111000_un_jeton_par_rappel.sql`) : le jeton venait d'une
+-- L'incident du 05/10/2026 (`v1-27` §12.37) : le jeton venait d'une
 -- sous-requête qui ne nommait pas la ligne, et le distant l'a calculée une fois pour toute
 -- l'instruction. Deux rappels, un seul jeton, l'index unique refuse, et le générateur de la semaine
 -- échoue en entier. La §3 met déjà deux rappels en file dans le même appel — et elle passait, parce
@@ -400,14 +403,23 @@ select is(
 -- il la sort de la boucle, comme le distant ce matin-là.
 --
 -- D'où l'`analyze` ci-dessous : c'est lui qui met cette section sous le plan du distant, et sans
--- lui elle ne garde rien. `pg_statistic` est annulé avec la transaction ; `reltuples` et `relpages`,
--- écrits en place, ne le sont pas — sur le distant, cinq lignes de trop jusqu'au prochain passage
--- de l'autovacuum, ce que n'importe quelle insertion fait aussi.
+-- lui elle ne garde rien. **Le témoin qui le suit le vérifie à chaque passage** : la requête de
+-- l'ancien corps, rejouée telle quelle, doit n'y tirer qu'un jeton pour toute l'instruction. Si une
+-- montée de version ou un réglage de coût rendait l'ancien plan, le témoin tomberait seul — la
+-- section ne garderait plus rien, et il le dit au lieu de rester vert.
 --
--- Éprouvé en le cassant, le 05/10/2026 : la sous-requête rendue à sa forme d'avant
--- (`select gen_random_uuid() as unsubscribe_token`, sans `c.id`) fait tomber les trois assertions —
--- la première sur l'index unique, les deux autres faute de lignes ; l'`analyze` retiré, elles
--- repassent toutes les trois sur l'ancien corps, et c'est ce qui dit que la section tient à lui.
+-- **Ce que l'`analyze` laisse derrière lui**, transaction annulée : `pg_statistic` repart avec
+-- elle, mais `reltuples` et `relpages` sont écrits en place et comptent toutes les lignes que le
+-- fichier a insérées avant lui ; `last_analyze`, `analyze_count` et `n_live_tup` sont des compteurs
+-- de statistiques, hors transaction, et `n_mod_since_analyze` repart de zéro. En CI, les fichiers
+-- qui suivent le 22 dans le même passage voient donc ces lignes fantômes dans `reltuples` ; sur le
+-- distant, l'autoanalyze suivant est repoussé, `pg_statistic` gardant ses anciennes valeurs —
+-- `TESTING-PGTAP.md` §2.3.
+--
+-- Éprouvé en le cassant, le 05/10/2026 : l'ancien corps du distant (la sous-requête sans `c.id`,
+-- et `c.id` dans la liste de l'insertion) fait tomber les trois assertions de la mise en file — la
+-- première sur l'index unique, les deux autres faute de lignes ; l'`analyze` retiré, elles
+-- repassent sur l'ancien corps, et le témoin tombe.
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at, email_confirmed_at, is_anonymous)
 select ('c2900000-0000-0000-0000-00000000004' || i)::uuid, '00000000-0000-0000-0000-000000000000',
@@ -422,6 +434,37 @@ select ('c2900000-0000-0000-0000-00000000004' || i)::uuid, 'commute', current_da
 from generate_series(1, 5) as i;
 
 analyze public.engagement_checkins;
+
+-- Le témoin : la sélection de l'ancien corps, au jeton près — mêmes jointures, mêmes filtres —,
+-- avec la sous-requête qui ne nomme pas la ligne.
+select is(
+  (select count(distinct o.unsubscribe_token)::int
+   from public.engagement_checkins c
+   join auth.users u on u.id = c.user_id
+   cross join lateral (select public.reminder_channel_for(c.user_id) as canal) ch
+   cross join lateral (select public.regime_de_rappel(c.user_id, c.loop_type) as regime) r
+   cross join lateral (
+     select coalesce(
+       c.committed_question,
+       public.checkin_question(c.loop_type, c.question_kind, c.poste, c.mode, c.period_start)
+     ) as question
+   ) q
+   cross join lateral (select public.poste_inserable(c.poste, c.loop_type) as etiquette) e
+   cross join lateral (select gen_random_uuid() as unsubscribe_token) o
+   where c.status = 'pending'
+     and ch.canal is not null
+     and r.regime <> 'silence'
+     and (
+       r.regime = 'normal'
+       or not exists (
+         select 1 from public.notification_outbox o2
+         where o2.user_id = c.user_id
+           and o2.created_at >= date_trunc('month', now())
+       )
+     )),
+  1,
+  'témoin : sous ce plan, l''ancienne sous-requête ne tire qu''un jeton pour toute l''instruction — sinon cette section ne garde plus rien'
+);
 
 select lives_ok(
   $$select public.enqueue_checkin_reminders()$$,

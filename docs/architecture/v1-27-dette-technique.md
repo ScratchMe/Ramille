@@ -2136,19 +2136,31 @@ de 9h20 UTC (registre §8.11) — sa première alerte réelle, et elle a dit exa
 **La cause**, depuis `20260912170000` : `enqueue_checkin_reminders` tirait le jeton dans une
 sous-requête latérale qui ne nommait aucune colonne de la ligne. Le distant l'a calculée une fois
 pour toute l'instruction (`Nested Loop -> Result -> Hash Join`), la CI à chaque ligne : le plan suit
-les statistiques, et il bascule en local dès cinq points en attente sur une table analysée. Tant
-qu'une exécution ne mettait en file qu'un rappel, rien ne se voyait ; ce lundi-là il en fallait
-plusieurs.
+les statistiques, et il bascule en local dès quelques points en attente sur une table analysée.
+Les passages des 21 et 28/09 et du 01/10 avaient mis un rappel chacun en file (relu dans
+`notification_outbox`) ; ce lundi-là il en fallait plusieurs. Le passage mensuel du 01/10 a réussi
+(`cron.job_run_details`), et c'est le seul échec de tâche planifiée des quatorze derniers jours.
 
-**Corrigé** par `20261005111000_un_jeton_par_rappel.sql` : la sous-requête nomme la ligne, et le
-jeton se tire une fois par rappel quel que soit le plan. La §8 de `22` force le plan du distant
-(`analyze`) et met cinq rappels en file d'un coup : sur l'ancien corps, ses trois assertions
-tombent ; sans l'`analyze`, elles repassent sur l'ancien corps, ce qui dit qu'elles tiennent à lui.
-Le piège est consigné en `SUPABASE.md` §1.5 et en `TESTING-PGTAP.md` §1.7. **Aucune autre fonction
-du distant** ne tire une valeur volatile dans une sous-requête latérale (relevé sur `pg_proc` le
-même jour) ; le mot de la veille tire son jeton dans la liste des colonnes, une fois par ligne.
+**Corrigé** par `20261005113558_un_jeton_par_rappel.sql`, appliquée le même jour : la sous-requête
+nomme la ligne, et le jeton se tire une fois par rappel quel que soit le plan. La §8 de `22` force
+le plan du distant (`analyze`), le vérifie par un témoin, et met cinq rappels en file d'un coup : sur
+l'ancien corps, les trois assertions de la mise en file tombent ; sans l'`analyze`, le témoin tombe
+seul. Le piège est consigné en `SUPABASE.md` §1.5, `TESTING-PGTAP.md` §1.7 et `BOUCLE.md`. **Aucune
+autre fonction du distant** ne tire une valeur volatile dans une sous-requête latérale (relevé sur
+`pg_proc` le même jour) ; le mot de la veille tire son jeton dans la liste des colonnes, une fois par
+ligne.
 
-**Ce qui reste.** Les points de la semaine du 28/09 sont générés à la main après l'application, par
-le même appel que le cron (`select public.generate_commute_checkins()` : la période se calcule sur
-`now()` et l'insertion ignore ce qui existe déjà) ; les rappels par notification partent aussitôt,
-ceux par e-mail s'étalent sur les jours qui suivent comme d'habitude.
+**Le rattrapage**, le même jour vers 11h36 UTC : `select public.generate_commute_checkins()`, le même
+appel que le cron — la période se calcule sur `now()`, celle du 28/09, et l'insertion ignore ce qui
+existe déjà. Onze points créés, deux rappels mis en file, par e-mail, chacun son jeton et son lien
+dans le corps. Aucun n'était dû : un rappel par e-mail part entre zéro et quatre jours après sa mise
+en file, au passage de 7h, donc ces deux-là partiront **un jour plus tard** que si le cron avait
+réussi à 6h — sa mise en file a eu lieu après le passage du jour. Aucun rappel par notification
+n'était concerné ; il aurait attendu lui aussi le passage de 7h du lendemain.
+
+**Ce qui reste.** Un échec de la mise en file annule la génération des points pour tout le monde,
+alors que la règle de la boucle est que ce qui s'espace est le message, jamais le point (`BOUCLE.md`)
+— la même classe que §12.36 a fermée pour `generate_plan_cycles`. Isoler la mise en file dans les
+deux générateurs garderait les points, mais **ferait taire l'alerte**, qui lit les échecs de
+`cron.job_run_details` : il faudrait que l'échec isolé s'écrive là où elle lit. Pas fait dans le
+correctif de l'incident, qui reste minimal.

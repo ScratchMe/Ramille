@@ -510,7 +510,11 @@ accessibles à ce rôle n'ont jamais été révoquées du `PUBLIC` de leur créa
 et le jeton *est* l'autorisation. Trois pièges :
 - **le jeton est écrit explicitement dans l'`insert`** de la mise en file. Laissé au `default` de la
   colonne, il aurait tiré un second uuid, différent de celui que le corps du message venait
-  d'afficher : un lien mort au premier clic, sans qu'aucune des deux moitiés ait l'air fausse ;
+  d'afficher : un lien mort au premier clic, sans qu'aucune des deux moitiés ait l'air fausse. Et la
+  sous-requête qui le tire **nomme la ligne** : sans quoi le plan peut la calculer une fois pour toute
+  l'exécution, et deux rappels du même passage portent le même jeton — l'index unique refuse, et le
+  générateur de la semaine tombe en entier (incident du 05/10/2026, `SUPABASE.md` §1.5, `v1-27`
+  §12.37) ;
 - la réponse **ne distingue jamais** un jeton inconnu d'un jeton déjà utilisé (même non-divulgation
   que `/connexion/retrouver`), et la page vérifie la **forme uuid** avant d'appeler — sans quoi un
   lien tronqué par une messagerie recevrait un `22P02`, c'est-à-dire l'écran de panne et une

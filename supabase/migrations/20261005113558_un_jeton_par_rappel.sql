@@ -11,18 +11,22 @@
 -- placer **à l'extérieur** de la boucle de jointure et la calculer une fois pour toute
 -- l'instruction. C'est le plan que le distant a choisi ce matin (`Nested Loop -> Result -> Hash
 -- Join`), et ce n'était pas celui de la CI, où le `Result` restait à l'intérieur, réévalué à chaque
--- ligne. Le choix tient aux statistiques : il bascule en local dès cinq points en attente sur une
--- table analysée. Tant qu'une exécution ne mettait en file qu'un rappel, un jeton unique pour
--- l'instruction ne se voyait pas ; c'est le premier lundi où il en fallait plusieurs.
+-- ligne. Le choix tient aux statistiques : il bascule en local dès quelques points en attente sur
+-- une table analysée. Tant qu'une exécution ne mettait en file qu'un rappel, un jeton unique pour
+-- l'instruction ne se voyait pas : les passages des 21 et 28/09 et du 01/10 en ont mis un chacun
+-- (relu dans `notification_outbox`), et ce lundi-là il en fallait plusieurs.
 --
 -- **La sous-requête nomme maintenant la ligne** (`c.id as checkin_id`), et l'insertion lit cette
 -- colonne-là. Une sous-requête latérale qui dépend de la ligne se réévalue pour chaque ligne — le
 -- plan n'a plus le choix —, et Postgres ne la fond jamais dans la requête englobante parce qu'elle
 -- porte une fonction volatile : le jeton est donc tiré une fois par ligne, et le corps du message
--- et la colonne lisent la même valeur. L'insertion lit `o.checkin_id` plutôt que `c.id`, la même
--- valeur : une version qui ne la lit pas se comporte pareil sur le Postgres 17.6 du distant (mesuré
--- le 05/10/2026), mais rien ne promet qu'un optimiseur futur garde une colonne que personne ne lit,
--- et c'est cette colonne qui tient la sous-requête attachée à la ligne.
+-- et la colonne lisent la même valeur. Ce qui attache la sous-requête à la ligne est la référence
+-- latérale, relevée avant que l'optimiseur n'élague les colonnes : une version où l'insertion lit
+-- `c.id` se comporte pareil (mesuré en local le 05/10/2026, Postgres 17.6 comme le distant), et
+-- `explain verbose` y montre `Output: NULL::uuid, gen_random_uuid()` — la colonne non lue est déjà
+-- remplacée par un nul, et le `Result` reste dans la boucle. L'insertion lit tout de même
+-- `o.checkin_id` : la référence à la ligne figure alors dans l'expression même que le `Result`
+-- calcule, et ne tient plus à l'ordre de deux étapes de l'optimiseur.
 --
 -- Le reste du corps est celui du distant (`pg_get_functiondef`, 05/10/2026), à l'identique.
 create or replace function public.enqueue_checkin_reminders()
@@ -89,7 +93,7 @@ begin
   ) q
   cross join lateral (select public.poste_inserable(c.poste, c.loop_type) as etiquette) e
   -- Un jeton par ligne : la sous-requête nomme la ligne, donc elle se réévalue pour chacune
-  -- (incident du 05/10/2026, en tête de `20261005111000_un_jeton_par_rappel.sql`).
+  -- (incident du 05/10/2026, `v1-27` §12.37).
   cross join lateral (select c.id as checkin_id, gen_random_uuid() as unsubscribe_token) o
   where c.status = 'pending'
     and ch.canal is not null
@@ -105,3 +109,5 @@ begin
   on conflict (checkin_id) do nothing;
 end;
 $function$;
+
+revoke execute on function public.enqueue_checkin_reminders() from public, anon, authenticated;
