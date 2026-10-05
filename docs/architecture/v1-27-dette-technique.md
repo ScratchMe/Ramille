@@ -2124,3 +2124,43 @@ Ce qui reste, et pourquoi :
   Android au build suivant.
 - **Un commentaire de `20261004173905` promet trop** (« le client ne déclenche pas de recalcul » :
   `mettre_a_jour_le_contexte` le fait, exprès) — la migration est livrée, donc la nuance s'écrit ici.
+
+### 12.37 Le générateur des points de la semaine en échec (05/10/2026)
+
+**L'incident.** Le lundi 05/10/2026 à 06:00 UTC, `generate-commute-checkins` a échoué sur
+`notification_outbox_unsubscribe_token` : deux rappels mis en file par la même exécution portaient
+le même jeton de désinscription. L'échec annule toute la transaction du générateur, donc **aucun
+point de la semaine n'a été créé, pour personne**. L'alerte d'exploitation l'a rapporté au passage
+de 9h20 UTC (registre §8.11) — sa première alerte réelle, et elle a dit exactement quoi.
+
+**La cause**, depuis `20260912170000` : `enqueue_checkin_reminders` tirait le jeton dans une
+sous-requête latérale qui ne nommait aucune colonne de la ligne. Le distant l'a calculée une fois
+pour toute l'instruction (`Nested Loop -> Result -> Hash Join`), la CI à chaque ligne : le plan suit
+les statistiques, et il bascule en local dès quelques points en attente sur une table analysée.
+Les passages des 21 et 28/09 et du 01/10 avaient mis un rappel chacun en file (relu dans
+`notification_outbox`) ; ce lundi-là il en fallait plusieurs. Le passage mensuel du 01/10 a réussi
+(`cron.job_run_details`), et c'est le seul échec de tâche planifiée des quatorze derniers jours.
+
+**Corrigé** par `20261005113558_un_jeton_par_rappel.sql`, appliquée le même jour : la sous-requête
+nomme la ligne, et le jeton se tire une fois par rappel quel que soit le plan. La §8 de `22` force
+le plan du distant (`analyze`), le vérifie par un témoin, et met cinq rappels en file d'un coup : sur
+l'ancien corps, les trois assertions de la mise en file tombent ; sans l'`analyze`, le témoin tombe
+seul. Le piège est consigné en `SUPABASE.md` §1.5, `TESTING-PGTAP.md` §1.7 et `BOUCLE.md`. **Aucune
+autre fonction du distant** ne tire une valeur volatile dans une sous-requête latérale (relevé sur
+`pg_proc` le même jour) ; le mot de la veille tire son jeton dans la liste des colonnes, une fois par
+ligne.
+
+**Le rattrapage**, le même jour vers 11h36 UTC : `select public.generate_commute_checkins()`, le même
+appel que le cron — la période se calcule sur `now()`, celle du 28/09, et l'insertion ignore ce qui
+existe déjà. Onze points créés, deux rappels mis en file, par e-mail, chacun son jeton et son lien
+dans le corps. Aucun n'était dû : un rappel par e-mail part entre zéro et quatre jours après sa mise
+en file, au passage de 7h, donc ces deux-là partiront **un jour plus tard** que si le cron avait
+réussi à 6h — sa mise en file a eu lieu après le passage du jour. Aucun rappel par notification
+n'était concerné ; il aurait attendu lui aussi le passage de 7h du lendemain.
+
+**Ce qui reste.** Un échec de la mise en file annule la génération des points pour tout le monde,
+alors que la règle de la boucle est que ce qui s'espace est le message, jamais le point (`BOUCLE.md`)
+— la même classe que §12.36 a fermée pour `generate_plan_cycles`. Isoler la mise en file dans les
+deux générateurs garderait les points, mais **ferait taire l'alerte**, qui lit les échecs de
+`cron.job_run_details` : il faudrait que l'échec isolé s'écrive là où elle lit. Pas fait dans le
+correctif de l'incident, qui reste minimal.

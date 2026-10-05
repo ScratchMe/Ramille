@@ -226,6 +226,18 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   pousser. Ce n'est pas réécrire un historique — rien d'appliqué ne change, aucun ordre ne bouge :
   c'est donner au fichier le nom de son enregistrement, pour qu'on puisse, en partant d'un
   enregistrement, retrouver le fichier qui l'a produit.
+- **Une sous-requête latérale qui ne nomme pas la ligne n'est évaluée qu'au gré du plan.**
+  `cross join lateral (select gen_random_uuid() as jeton) o` ne dépend d'aucune colonne : rien
+  n'oblige Postgres à la refaire pour chaque ligne, et selon les statistiques il la sort de la
+  boucle de jointure et la calcule une fois pour toute l'instruction — un seul jeton pour tous les
+  rappels de l'exécution, refusé par l'index unique dès la deuxième ligne. Elle doit **nommer la
+  ligne** (`select c.id as checkin_id, gen_random_uuid() as jeton`) : une sous-requête qui dépend
+  de la ligne se réévalue pour chacune, et Postgres ne fond pas dans la requête englobante une
+  sous-requête qui porte une fonction volatile, donc les deux usages de la valeur lisent le même
+  tirage. C'est la référence latérale, relevée avant l'élagage des colonnes, qui l'attache : en
+  17.6 une colonne non lue devient déjà `NULL` sans que rien ne change ; la lire en plus met la
+  référence dans l'expression même que le plan calcule. La CI ne le voit pas : sa base, petite et
+  jamais analysée, garde l'autre plan (`TESTING-PGTAP.md` §1.7).
 - **Un fichier de types tenu à la main dérive sans que le typecheck le voie** — il vérifie le code
   contre le fichier, jamais le fichier contre la base. Comparer en CI les **colonnes** du fichier
   à celles d'une base reconstruite (`supabase gen types typescript --local`), et jamais le

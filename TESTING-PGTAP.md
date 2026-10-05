@@ -17,7 +17,7 @@ un document daté — se retrouve ici, et la table en tête de `TESTING.md` dit 
 
 ## 1. Ce qui vaut sur n'importe quel projet
 
-### 1.7 pgTAP : cinq pièges d'une transaction
+### 1.7 pgTAP : six pièges d'une transaction
 
 - **`now()` est l'horodatage de début de transaction.** Deux lignes écrites par le même appel
   portent le même `created_at`, et `order by created_at limit 1` retombe sur l'ordre du tas : une
@@ -38,6 +38,16 @@ un document daté — se retrouve ici, et la table en tête de `TESTING.md` dit 
   « répondue » sans réponse, un horodatage choisi que le serveur pose lui-même) : quand une
   contrainte ou un trigger arrive, les fixtures qui le faisaient tombent, et c'est une bonne
   chose — elles éprouvaient une fiction.
+- **Un résultat qui dépend du plan ne se teste que sous le plan qui le casse.** Une base de test est
+  petite et jamais analysée ; le distant a des statistiques, et l'optimiseur n'y fait pas les mêmes
+  choix. Une fonction volatile dans une sous-requête qui ne nomme pas la ligne était réévaluée à
+  chaque ligne en CI et calculée une fois sur le distant (05/10/2026) : la même assertion passait
+  d'un côté et le cron tombait de l'autre. Un `analyze` de la table dans la transaction suffit à
+  basculer le plan — `pg_statistic` repart avec elle, pas `reltuples` ni les compteurs (§2.3) —, la
+  mutation qui le retire doit montrer que l'assertion repasse sur le code fautif, et un **témoin**
+  juste après lui (la requête fautive, qui doit s'y tromper) dit à chaque passage que le plan est
+  toujours celui qui casse : sans lui, une montée de version laisserait l'assertion verte sans
+  qu'elle garde rien.
 
 Et une base **vierge** n'est pas la base **distante** : une assertion qui lit `min()` sur toute
 une table, ou qui attend un envoi *sauté* faute de secret, passe sur l'une et échoue sur l'autre.
@@ -71,6 +81,14 @@ vérifiées. Le piège se referme d'autant plus facilement que la validation sur
 distant passe : celui-ci est déjà migré, il ne rejoue pas les scénarios des tests.
 
 ### 2.3 Ce que le projet distant ne prouve pas
+
+**Le fichier `22` analyse `engagement_checkins` dans sa transaction** (§8, depuis le 05/10/2026), et
+une transaction annulée n'annule pas tout ce qu'un `analyze` écrit : `reltuples` et `relpages`,
+écrits en place, comptent toutes les lignes que le fichier a insérées avant lui ; `last_analyze`,
+`analyze_count` et `n_live_tup` sont des compteurs hors transaction, et `n_mod_since_analyze` repart
+de zéro. En CI, les fichiers qui suivent le 22 dans le même passage voient ces lignes fantômes dans
+`reltuples`. Rejoué sur le distant, il repousse l'autoanalyze suivant de la table pendant que
+`pg_statistic` garde ses anciennes valeurs — sans gravité, mais à savoir avant de le rejouer.
 
 **Ce piège avait un symétrique LOCAL, et il est fermé depuis le 21/09/2026.** Relevé le
 20/09/2026 : la suite pgTAP ne passait pas sur une stack locale qui avait déjà servi les gardes de
