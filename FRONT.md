@@ -590,11 +590,19 @@ exactement ce qui avait laissé passer le mauvais caractère.
   L'oubli ne se voit d'aucun côté pris séparément : quand `formatTonnes` a basculé en kilos sous
   1 t, le message de partage s'est mis à dire « 40 kg CO₂e » pendant que l'aperçu et l'image
   gardaient « 0,0 t CO₂e » — les deux chiffres du même partage se contredisaient, sur la seule
-  surface publique du produit. Chaque côté est épinglé depuis le 20/09/2026 — Jest sur
-  `src/lib/format.ts`, `scripts/verifier-api.mjs` sur le « 40 kg et non 0,0 t » d'`api/` — mais
-  **aucune suite ne compare les deux entre eux** : chacune pingle sa moitié sur une valeur écrite
-  à la main, donc changer la règle des deux côtés sauf un la laisse verte des deux côtés.
-  Toucher à un formatage affiché impose donc de chercher son jumeau dans `api/`.
+  surface publique du produit. Chaque côté est épinglé — Jest sur `src/lib/format.ts`,
+  `scripts/verifier-api.mjs` sur le « 40 kg et non 0,0 t » d'`api/` —, et depuis le 17/09/2026
+  `src/lib/format-jumeaux.test.ts` confronte les deux copies d'`api/` à la règle de `src/` dans un
+  même test, en **lisant leurs sources** (les importer ferait entrer le rendu d'image dans Jest) :
+  il voit une moitié qui bouge sans l'autre, pas une copie au bon seuil et à la mauvaise
+  arithmétique. Toucher à un formatage affiché impose donc encore de chercher son jumeau dans `api/`.
+  **La liste fermée des libellés de `poste`** (depuis le 05/10/2026, le bloc
+  `<postes-partageables>`, à l'identique dans les deux fonctions) est gardée autrement : un libellé
+  que l'app produit et que la liste refuse fait perdre aux vrais partages leur ligne « Poste
+  principal », sans rien casser d'un côté ni de l'autre, donc `scripts/postes-partageables.test.ts`
+  construit chaque libellé par `dominantShareLabel`, **appelle la page pour de vrai** avec, et exige
+  les deux blocs identiques au caractère près. **Renommer un poste ou ajouter un mode impose donc de
+  suivre dans `api/`**, et le test dit lequel.
 - **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche** — lire la
   variable dans un `const`, jamais en valeur d'une propriété homonyme ;
   `scripts/verifier-configuration-export.mjs` garde ce point : `EXPO.md` §1.2 et §2.1.

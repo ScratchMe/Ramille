@@ -26,7 +26,10 @@
 //     runtime Node.js —, **elle y rend la même image qu'à l'absolue, et une autre qu'à vide.** Les
 //     deux dernières se tiennent : l'égalité seule ne verrait pas une analyse qui perd la chaîne
 //     de requête, puisqu'elle la perdrait sur les deux appels à la fois ; c'est la comparaison à
-//     un rendu **sans paramètre** qui dit que la carte porte bien le chiffre de quelqu'un.
+//     un rendu **sans paramètre** qui dit que la carte porte bien le chiffre de quelqu'un ;
+//   - **un libellé forgé ne passe ni sur la page ni sur la carte** (05/10/2026, `poste` en liste
+//     fermée) : la page ne le reflète pas, la carte rend octet pour octet la carte sans poste, et
+//     un libellé de l'app la change.
 //
 // **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — sept mutations sur l'arbre de
 // travail, chacune remise en place aussitôt par l'opération inverse :
@@ -61,6 +64,17 @@
 //     quatrième fois dans la même journée, relevé par une relecture des gardes. Elles sont
 //     parties, et les deux blocs disent désormais **pourquoi** plutôt que de laisser croire à une
 //     couverture qui n'existait pas.
+//
+// **Et le 05/10/2026, pour la liste fermée de `poste` et le total réécrit** — quatre mutations, chacune
+// remise en place :
+//   - la carte relit le texte libre (`(searchParams.get('poste') ?? '').slice(0, 120)`) → « un
+//     libellé forgé ne rend pas la carte sans poste », 1 écart ;
+//   - la page relit le texte libre → « un libellé forgé se retrouve dans le HTML rendu », 1 écart ;
+//   - la carte refuse tout libellé (`poste = null`) → « un libellé de l'app rend la même carte que
+//     sans poste », 1 écart ;
+//   - la page recopie de nouveau le total reçu dans l'`og:image` → « le texte qui suit le chiffre
+//     du total se retrouve dans le HTML rendu », 1 écart (la section 2 envoie déjà `2.400`, la
+//     forme de l'app, donc elle ne voit pas la différence).
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
@@ -105,8 +119,12 @@ try {
 
 const ORIGINE = 'https://www.ramille.fr';
 const PARAMS = new URLSearchParams({
-  total: '2.4',
-  poste: 'Trajet domicile-travail (Voiture thermique)',
+  // La forme qu'envoie l'app (`urlDePartage`, `toFixed(3)`) : c'est aussi celle que la page
+  // renvoie à la carte, qui ne recopie plus le total reçu.
+  total: '2.400',
+  // Un libellé que l'app produit (`dominantShareLabel`) : la liste est fermée depuis le 05/10/2026,
+  // et l'ancienne forme « Trajet domicile-travail (Voiture thermique) » y est refusée.
+  poste: 'Trajet domicile-travail en voiture thermique',
   percent: '58',
 });
 const TITRE_SANS_CHIFFRE = '<title>Mon empreinte transport</title>';
@@ -209,7 +227,7 @@ verifier(
 // échappée en `&#39;` — c'est-à-dire le défaut même, que la règle `no-restricted-syntax` d'eslint
 // interdit désormais dans les chaînes de `api/`.
 verifier(
-  html.includes('Poste principal (58 % de l’empreinte) : Trajet domicile-travail (Voiture thermique).'),
+  html.includes('Poste principal (58 % de l’empreinte) : Trajet domicile-travail en voiture thermique.'),
   'page : la description ne nomme pas le poste avec sa part'
 );
 const image = html.match(/property="og:image" content="([^"]+)"/);
@@ -257,6 +275,58 @@ verifier(
   'page : le paramètre parasite a emporté le titre avec lui'
 );
 
+// ── 2 ter. Un libellé forgé ne passe ni sur la page ni sur la carte ───────────────────────
+//
+// `poste` est une liste fermée depuis le 05/10/2026 (le bloc `<postes-partageables>` des deux
+// fonctions) : c'était la seule partie de l'aperçu qu'un tiers pouvait écrire à sa guise, sous la
+// marque du produit. Que chaque libellé de l'app passe, `scripts/postes-partageables.test.ts` le
+// prouve sur la page ; ici, ce que la carte fait d'un libellé refusé — le **rendu**, que Jest ne
+// charge pas.
+const FORGE = 'Achetez sur un-site-quelconque.example';
+const pageForgee = await (
+  await partage(new Request(`${ORIGINE}/api/partage?total=2.4&percent=58&poste=${encodeURIComponent(FORGE)}`))
+).text();
+verifier(!pageForgee.includes('un-site-quelconque'), 'page : un libellé forgé se retrouve dans le HTML rendu');
+// Et le total : `parseFloat` n'en lit que le préfixe, donc la suite passait la borne et voyageait
+// jusque dans l'`og:image` tant que la page le recopiait au lieu de le réécrire.
+const pageTotalForge = await (
+  await partage(new Request(`${ORIGINE}/api/partage?total=${encodeURIComponent(`2.4 ${FORGE}`)}&percent=58`))
+).text();
+verifier(
+  !pageTotalForge.includes('un-site-quelconque') &&
+    pageTotalForge.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
+  'page : le texte qui suit le chiffre du total se retrouve dans le HTML rendu — la carte reçoit le total reçu, pas le total lu'
+);
+verifier(
+  pageForgee.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
+  'page : le libellé forgé a emporté le titre avec lui'
+);
+// Les trois rendus comparés ici — les deux suivants et celui de la section 1 — ne se comparent
+// **que s'ils ont eu lieu** : sur le repli, ils seraient le même pixel, et l'égalité passerait sans
+// rien dire du libellé (même raison qu'en 1 bis).
+const carteForgee = await GET({ url: `/api/share-card?total=2.4&percent=58&poste=${encodeURIComponent(FORGE)}` });
+const carteSansPoste = await GET({ url: '/api/share-card?total=2.4&percent=58' });
+const rendus = [carte, carteForgee, carteSansPoste].every((r) =>
+  (r.headers.get('cache-control') ?? '').startsWith('public')
+);
+verifier(rendus, 'carte : un libellé forgé ou absent part par le repli statique au lieu du vrai rendu');
+if (rendus) {
+  const pngForge = Buffer.from(await carteForgee.arrayBuffer());
+  const pngSansPoste = Buffer.from(await carteSansPoste.arrayBuffer());
+  // L'égalité octet à octet : un libellé refusé doit donner **exactement** la carte sans poste —
+  // ni la ligne « Poste principal », ni le texte. Le témoin inverse (un libellé de l'app change
+  // la carte) est déjà là : `png`, en section 1, porte le poste de `PARAMS`.
+  verifier(
+    pngForge.equals(pngSansPoste),
+    `carte : un libellé forgé ne rend pas la carte sans poste (${pngForge.length} octets contre ` +
+      `${pngSansPoste.length}) — il est dessiné, ou il dessine quelque chose`
+  );
+  verifier(
+    !png.equals(pngSansPoste),
+    'carte : un libellé de l’app rend la même carte que sans poste — la liste le refuse'
+  );
+}
+
 // ── 3. Hors borne, les deux côtés retombent ensemble ──────────────────────────────────────
 const pageHorsBorne = await (await partage(new Request(`${ORIGINE}/api/partage?total=201`))).text();
 verifier(pageHorsBorne.includes(TITRE_SANS_CHIFFRE), 'page : 201 t devrait rendre le titre sans chiffre');
@@ -286,5 +356,5 @@ if (ecarts.length > 0) {
 
 console.log(
   `api/ : carte de partage rendue (${png.length} octets, 1200 × 630, cache public) et page d'aperçu ` +
-    `conforme sur quatre URL — carte rejouée sur un chemin relatif, comme Vercel l'envoie.`
+    `conforme — carte rejouée sur un chemin relatif, comme Vercel l'envoie, et libellé forgé refusé des deux côtés.`
 );

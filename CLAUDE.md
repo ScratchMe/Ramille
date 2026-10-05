@@ -436,7 +436,7 @@ contexte tourne en Web Fetch API (Request/Response), pas dans React Native. Util
 négociable, et son échec est muet** (`FUNCTION_INVOCATION_FAILED` générique, aucun détail côté
 client) : `VERCEL.md` §1.6, et le détail de chaque point avec les vrais logs qui l'ont diagnostiqué
 en `docs/architecture/v1-06-partage-social.md` §3. **Et depuis le 20/09/2026, les deux fonctions
-sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, sept mutations datées en tête) :
+sont rendues sous Node à chaque PR** (`scripts/verifier-api.mjs`, ses mutations datées en tête) :
 la carte par son vrai chemin — et une seconde fois sur un chemin **relatif**, plus une troisième
 sans paramètre pour prouver que la chaîne de requête atteint le rendu —, la page avec son chiffre.
 La panne muette a donc une garde ; ce qu'elle ne voit pas est nommé en `VERCEL.md` §1.6, et c'est

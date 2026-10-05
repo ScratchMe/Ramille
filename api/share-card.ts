@@ -43,7 +43,8 @@
 // node_modules, pour ne pas dépendre de la structure interne du paquet.
 //
 // Paramètres (query string) : `total` (tonnes CO2e/an, ex. "4.2"), `poste` (libellé du poste
-// dominant, déjà en français et sans pronom — cf. dominantShareLabel dans bilan/resultat.tsx),
+// dominant, déjà en français et sans pronom, pris dans une liste fermée — cf. `dominantShareLabel`
+// dans `src/types/resultat.ts`, et le bloc `<postes-partageables>` plus bas),
 // `percent` (part du poste dominant dans l'empreinte totale, entier 0-100). `poste` seul, sans
 // préciser qu'il s'agit du poste dominant ni sa part, ne voulait rien dire pour qui reçoit le
 // lien (retour utilisateur du 04/09/2026) — `percent` lui donne un sens réel. Tous optionnels
@@ -113,7 +114,8 @@ function mascot() {
 // qui se contredisent dans le même aperçu. Sans borne, `Number.parseFloat` acceptait un négatif ou
 // un 1e40 — une carte aux couleurs et à la mascotte du produit annonçant « -5,0 t », et un nombre
 // à quarante chiffres qui débordait les 1200 px en `fontSize: 104` sans que rien ne l'arrête.
-// Garde de robustesse, pas de sécurité : `poste` reste du texte libre (cf. `api/partage.ts`).
+// Garde de robustesse, pas de sécurité : un total inventé dans la borne reste plausible (cf.
+// `api/partage.ts`). Le libellé, lui, est une liste fermée (le bloc ci-dessous).
 const TOTAL_TONNES_MAX = 200;
 
 // **La règle des kilos sous la tonne, recopiée depuis `src/lib/format.ts`.** `api/` ne peut pas
@@ -140,6 +142,66 @@ function formatPercent(raw: string | null): number | null {
   const n = raw ? Number.parseInt(raw, 10) : NaN;
   return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
 }
+
+// <postes-partageables>
+// **`poste` est une liste fermée** (05/10/2026, plan anti-abus) : les libellés que
+// `dominantShareLabel` (`src/types/resultat.ts`) sait produire — un poste, suivi ou non de la
+// préposition de son mode —, et rien d'autre. Il était du texte libre tronqué à 120 caractères :
+// n'importe qui fabriquait un aperçu aux couleurs du produit, portant la phrase de son choix sous
+// « Poste principal ». Un libellé inconnu est ignoré, et la page comme la carte retombent sur leur
+// forme sans poste, celle d'une URL qui n'en porte pas.
+//
+// **Ce bloc est recopié à l'identique dans `api/partage.ts` et `api/share-card.ts`** : une Function
+// qui en importe une autre ajoute un chemin de compilation que rien ne rejoue avant le déploiement,
+// et son échec y serait muet (`VERCEL.md` §1.6). `scripts/postes-partageables.test.ts` exige que
+// les deux copies soient les mêmes, et que chaque libellé que l'app produit soit accepté. L'inverse
+// n'est pas exigé, et c'est voulu : un libellé que l'app ne produit plus garde lisibles les liens
+// déjà partagés.
+const POSTES_PARTAGEABLES = [
+  'Trajet domicile-travail',
+  'Loisirs du week-end',
+  'Loisirs occasionnels',
+  'Voyages longue distance',
+];
+
+const MODES_PARTAGEABLES = [
+  'en voiture',
+  'en voiture thermique',
+  'en voiture électrique',
+  'en voiture hybride',
+  'en voiture hybride rechargeable',
+  'en deux-roues motorisé',
+  'en scooter thermique',
+  'en scooter électrique',
+  'en moto de petite cylindrée',
+  'en moto de grosse cylindrée',
+  'en train',
+  'en TER',
+  'en RER ou Transilien',
+  'en Intercités',
+  'en TGV',
+  'en bus',
+  'en métro ou tram',
+  'à vélo',
+  'à vélo électrique',
+  'à pied',
+  'en trottinette',
+  'en autocar',
+  'en avion (court/moyen-courrier)',
+  'en avion long-courrier',
+];
+
+function posteFerme(brut: string | null): string | null {
+  if (!brut) return null;
+  for (const poste of POSTES_PARTAGEABLES) {
+    if (brut === poste) return poste;
+    if (brut.startsWith(`${poste} `) && MODES_PARTAGEABLES.includes(brut.slice(poste.length + 1))) {
+      return brut;
+    }
+  }
+  return null;
+}
+// </postes-partageables>
 
 // `export function GET` plutôt qu'un export par défaut : en runtime Node.js (contrairement à
 // Edge, toujours fetch-style), un export par défaut est traité par Vercel comme l'ancienne
@@ -197,7 +259,7 @@ async function carte(request: Request): Promise<Uint8Array> {
   // intéressent ici, la base n'est jamais utilisée pour construire une URL de sortie.
   const { searchParams } = new URL(request.url, 'http://localhost');
   const total = formatTonnes(searchParams.get('total'));
-  const poste = (searchParams.get('poste') ?? '').slice(0, 120);
+  const poste = posteFerme(searchParams.get('poste'));
   const percent = formatPercent(searchParams.get('percent'));
 
   const element = h(
