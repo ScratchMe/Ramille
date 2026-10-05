@@ -2041,7 +2041,15 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   refus par plafond global est un `check_violation`, que la file des pannes différées vide au lieu de
   la garder comme un 429 — un SQLSTATE propre, que le client garderait, demande un build ; et le
   commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,
-  à corriger à la prochaine retouche de ce fichier.
+  à corriger à la prochaine retouche de ce fichier. **Les plafonds d'e-mail sont écrits le 05/10/2026**
+  (`20261005100000_les_plafonds_d_e_mail.sql`, test `50`, `COMPTE.md`) : un hook d'envoi en fonction
+  Postgres prend les e-mails de connexion à Supabase, compte — 5 codes par heure et par compte, 3 par
+  heure et par adresse, 60 par jour, valeurs et phrase choisies par la personne qui pilote —, puis
+  envoie par Resend ; il s'allume au tableau de bord (registre §3.1). **Ce qu'ils laissent** : un refus
+  dit (`429`) ou un échec d'envoi (`500`) n'a pas de trace en base, la transaction d'Auth l'emportant
+  avec le journal — seuls les journaux d'Auth le voient ; la nouvelle phrase n'arrive dans l'app
+  Android qu'au prochain build ; et la minute de Supabase entre deux codes dit toujours, au second
+  essai, qu'une adresse a un compte (`SUPABASE.md` §2.4).
 - **Toute adresse inconnue lance désormais l'app** (relevé à la seconde passe) : avant la page 404,
   Vercel servait sa page brute, sans JavaScript. Une adresse inventée ouvre donc une session anonyme
   et compte une arrivée (`app_open`) dans le dénominateur des entonnoirs. Pas pire en nature que `/`,

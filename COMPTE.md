@@ -246,6 +246,36 @@ build qui embarque sa vue web (`CaptchaNatif`, `src/components/captcha-natif.tsx
 04/10/2026), et l'activer avant que ce build soit installé laisserait chaque nouvelle installation à
 la porte.
 
+### Les plafonds d'e-mail (05/10/2026)
+
+**Les deux codes partent de la base, plus de Supabase, dès que le hook d'envoi est allumé**
+(`public.envoyer_l_e_mail_d_auth`, registre d'exploitation §3.1) : Supabase lui confie chaque e-mail
+d'authentification, il compte, puis envoie par l'API de Resend avec les deux gabarits du dépôt,
+recopiés à l'identique. Les plafonds, choisis par la personne qui pilote : **5 codes par heure et par
+compte, 3 par heure et par adresse, 60 par jour pour tout le projet** — devant eux, le plafond de
+Supabase (30 par heure) et sa minute par compte restent. Cinq choses à savoir avant d'y toucher :
+
+- **Ce qui se tait et ce qui se dit suit la non-divulgation.** Pour la reconnexion, seules les adresses
+  qui ont un compte atteignent le hook, et le compte compté est celui de l'adresse visée : tout plafond
+  y est muet — rien ne part, l'écran de code s'ouvre comme pour une adresse inconnue. Au rattachement,
+  le plafond de l'adresse est muet aussi ; ceux du compte qui demande et du projet rendent un `429`,
+  que l'app lit par son statut (`estLimiteDEnvoi` — le hook n'a pas de code d'erreur, Supabase le rend
+  en `unknown`) : « Trop de demandes pour le moment. Réessaie plus tard. », une seule phrase pour toutes
+  les limites. Un échec d'envoi rend un `500`, lu comme une panne de transport.
+- **Le hook a deux secondes, imposées par Supabase** (`statement_timeout`, mesuré) : l'envoi est
+  synchrone et borné à 1,5 s. Rien de lent ne s'y ajoute — un compte, une requête, un appel.
+- **Deux types d'e-mail seulement partent** : `magiclink` (la reconnexion, vérifiée en `email`) et
+  `email_change` (le rattachement). Les autres — inscription par mot de passe, réinitialisation,
+  invitation — ne partent plus du tout hook allumé, sans erreur, parce qu'une erreur dirait qui a un
+  compte.
+- **Les gabarits ont trois copies dans le dépôt** — le document, `supabase/templates/` et la migration
+  — que `scripts/verifier-gabarits-email.mjs` compare ; `gabarits-email.md` dit pourquoi les trois.
+- **La stack locale passe par le même chemin** : `supabase/config.toml` allume le hook, qui poste au
+  collecteur d'e-mails faute de clé Resend — `verifier-code-de-connexion.mjs` joue donc le hook de
+  bout en bout à chaque PR. Le journal des plafonds (`envois_d_e_mails_d_auth`, une empreinte d'adresse
+  et jamais l'adresse, purgé au bout de deux jours) entre dans l'export, et la page de confidentialité
+  le nomme.
+
 ## 2. Retrouver un compte existant
 
 `/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **huit**

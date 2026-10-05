@@ -165,7 +165,13 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // officiel n'a eu lieu et qu'elle en est alors la seule utilisatrice**. La raison ne vaut que pour
 // cette fois : après le lancement, un élargissement s'annonce. Le texte de l'entrée
 // Cloudflare et du paragraphe des transferts a été validé par elle, comme chaque phrase de cette page.
-const UPDATED_AT = '4 octobre 2026';
+//
+// **05/10/2026 : la trace des codes de connexion envoyés** (plafonds d'e-mail, plan anti-abus,
+// `20261005100000_les_plafonds_d_e_mail.sql`). Les plafonds comptent chaque code parti — compte, date,
+// empreinte de l'adresse — dans un journal purgé au bout de deux jours : une donnée de plus, que la
+// liste des durées de conservation devait nommer, et que l'export rend. Ligne validée par la personne
+// qui pilote le même jour.
+const UPDATED_AT = '5 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -486,6 +492,9 @@ const SECTIONS: LegalSection[] = [
           'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +
             'd’envoi, message — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',
+          'Codes de connexion envoyés par e-mail : pour chacun, nous gardons deux jours une trace — le compte ' +
+            'concerné, la date et une empreinte de l’adresse, jamais l’adresse elle-même — le temps d’appliquer les ' +
+            'plafonds qui empêchent les envois abusifs. Elle est supprimée ensuite.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours, ' +
             'repères de parcours et sessions est supprimé.',
           'Après une suppression, il ne reste que des compteurs, sans aucun identifiant — et, le temps qu’elles ' +

@@ -248,6 +248,37 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   manquent, ni le distant, où le rejouer enverrait pour de vrai. Ce qui s'y vérifie s'évalue à la
   main sur une vraie ligne.
 
+### 1.7 Les hooks d'Auth en fonction Postgres
+
+Appris le 05/10/2026 en écrivant le « Send Email Hook » (plafonds d'e-mail, `COMPTE.md`), tout mesuré
+sur la stack locale :
+
+- **Deux secondes, et rien ne les allonge.** Auth pose `statement_timeout = 2s` avant d'appeler la
+  fonction ; un `set statement_timeout` en attribut de fonction ne change rien (la minuterie court déjà),
+  et le dépassement rend un `500 unexpected_failure`. Un appel HTTP synchrone s'y borne donc lui-même
+  (`CURLOPT_TIMEOUT_MS`), et se mesure depuis le projet avant d'être choisi.
+- **Une erreur du hook annule la transaction d'Auth, la sienne comprise** : un refus ne laisse aucune
+  ligne dans un journal que le hook tiendrait. Seul ce qui réussit se consigne ; le reste se lit dans
+  les journaux d'Auth.
+- **L'erreur rendue arrive au client avec son `http_code` et le code `unknown`** — `{"error":
+  {"http_code": 429, "message": …}}` donne `429`, `error_code: "unknown"`. Un client qui reconnaît les
+  erreurs à leur code doit donc garder le statut en repli.
+- **`pg_net`, l'envoi asynchrone, ouvre l'exécution à `anon` et `authenticated`, et sa file à PUBLIC**
+  (accordés par `supabase_admin` ; `postgres` ne peut pas les retirer). Sans exposition du schéma `net`
+  par l'API ce n'est pas exploitable, mais une clé d'API passée en en-tête y transite par une table
+  lisible de tous, et un échec du fournisseur devient muet. Le synchrone (`http`) est préférable quand
+  il tient dans le délai.
+- **Le hook d'envoi reçoit des types que le produit n'emprunte pas** (inscription, réinitialisation,
+  notifications) : répondre `{}` sans envoyer les éteint, mais répondre une erreur dirait qui a un
+  compte, puisqu'Auth ne les fait partir que pour des adresses connues. Et pour `email_change`, les
+  noms des champs sont croisés (`token_hash_new` va avec l'adresse **actuelle**) : avec « Secure email
+  change », un compte qui a déjà une adresse reçoit deux codes ; une session anonyme, un seul, dans
+  `token`.
+- **Une fonction de hook se déclare dans `config.toml` pour la stack locale** (`[auth.hook.send_email]`)
+  et s'allume au tableau de bord pour le distant, qui ne lit pas ce fichier. Un secret Vault posé dans
+  `[db.vault]` n'existe qu'en local : c'est ce qui permet au hook de choisir un transport de test sans
+  qu'aucune valeur de production ne descende dans le dépôt.
+
 ---
 
 ## 2. Propre à Ramille
@@ -543,11 +574,13 @@ répondent différemment selon qu'une adresse a un compte : `updateUser({ email 
 email_exists` ou `200`) et `signInWithOtp` sans création (`422 otp_disabled` ou `200`). Les écrans
 de Ramille rendent la même chose dans les deux cas — **sauf sous la limite d'envoi**, qui ne frappe
 qu'une adresse à laquelle un code vient réellement de partir : demander deux fois en moins d'une
-minute rend « Trop de demandes coup sur coup » pour une adresse qui a un compte, et jamais pour une
-adresse qui n'en a pas (contre-lecture du 28/09/2026). On ne le masque pas, parce que masquer
+minute rend « Trop de demandes » (« coup sur coup » jusqu'au 05/10/2026, « pour le moment » depuis)
+pour une adresse qui a un compte, et jamais pour une adresse qui n'en a pas (contre-lecture du
+28/09/2026). Les plafonds du hook d'envoi (05/10/2026, `COMPTE.md`) n'ouvrent pas de seconde fuite :
+ceux qui comptent une adresse se taisent. On ne le masque pas, parce que masquer
 voudrait dire annoncer un code qui n'est pas parti à une personne réelle, et ce sondage-là envoie un
 vrai e-mail au titulaire. La console du navigateur, elle, affiche le 422, et toute session anonyme
-peut appeler ces deux routes sans l'app et sans plafond. Aucun réglage du
+peut appeler ces deux routes sans l'app — le hook d'envoi borne ce qui part, pas ce que la réponse dit. Aucun réglage du
 service ne masque ces réponses, et une fonction serveur ne fermerait pas l'appel direct. Ce qu'il
 faut en retenir avant d'écrire une ligne d'auth : **« aucune réponse différenciée » veut dire
 « aucune à l'écran »**, et ne s'écrit jamais sans cette précision — le 21/09/2026, l'arbitrage a été

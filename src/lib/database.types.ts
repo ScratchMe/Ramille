@@ -601,6 +601,36 @@ export type Database = {
           },
         ]
       }
+      envois_d_e_mails_d_auth: {
+        Row: {
+          adresse_empreinte: string
+          cree_le: string
+          id: number
+          issue: string
+          statut_http: number | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          adresse_empreinte: string
+          cree_le?: string
+          id?: never
+          issue: string
+          statut_http?: number | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          adresse_empreinte?: string
+          cree_le?: string
+          id?: never
+          issue?: string
+          statut_http?: number | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           context: string | null
@@ -1316,6 +1346,7 @@ export type Database = {
       }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
       // C4.2 — le mot de la veille (20260928075453)
+      envoyer_l_e_mail_d_auth: { Args: { event: Json }; Returns: Json }
       envoyer_les_notifications: { Args: { p_genre: string }; Returns: number }
       envoyer_lot_push: {
         Args: {
@@ -1344,6 +1375,10 @@ export type Database = {
           action_de_trajet: boolean
           dernier_soir: string
         }[]
+      }
+      gabarit_d_e_mail_d_auth: {
+        Args: { p_type: string }
+        Returns: Record<string, unknown>
       }
       generate_commute_checkins: { Args: never; Returns: undefined }
       generate_extras_checkins: { Args: never; Returns: undefined }
@@ -1401,6 +1436,10 @@ export type Database = {
         Returns: undefined
       }
       reminder_channel_for: { Args: { p_user_id: string }; Returns: string }
+      rendre_l_e_mail_d_auth: {
+        Args: { p_adresse: string; p_code: string; p_type: string }
+        Returns: Record<string, unknown>
+      }
       replier_rappel_sur_email: {
         Args: { p_outbox_id: string; p_raison: string }
         Returns: undefined

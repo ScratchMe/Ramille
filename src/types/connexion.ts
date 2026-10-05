@@ -485,8 +485,12 @@ export function codeSemblePlausible(saisie: string): boolean {
  * **Tout le reste mène à l'écran de code, `otp_disabled` compris.** C'est la règle de
  * non-divulgation, et elle est la raison d'être de cette dérivation : une adresse sans compte
  * rend un `422 otp_disabled` qui doit mener au **même** écran qu'un envoi accepté, sinon l'écran
- * dit qui utilise Ramille. Seuls trois échecs se disent, parce qu'aucun ne parle de l'adresse :
- * la limite d'envoi, la panne de transport et, depuis le 04/10/2026, le refus du captcha.
+ * dit qui utilise Ramille. Seuls trois échecs se disent : la limite d'envoi, la panne de transport et,
+ * depuis le 04/10/2026, le refus du captcha. **La limite d'envoi, elle, peut parler de l'adresse**, et
+ * c'est su : la minute de Supabase entre deux codes ne frappe qu'une adresse connue (`SUPABASE.md`
+ * §2.4). Les plafonds du hook d'envoi (05/10/2026) n'ajoutent rien à cette fuite : tous ceux de la
+ * reconnexion se taisent, comme celui de l'adresse au rattachement — rien ne part, et l'écran de code
+ * s'ouvre comme pour un envoi accepté (`20261005100000_les_plafonds_d_e_mail.sql`).
  */
 export type SuiteDeLaDemande = 'code' | 'bascule' | 'message';
 
@@ -513,8 +517,13 @@ export function suiteDeLaDemandeDeCode(
  * ou `suiteDuRenvoi`, et jamais sur l'erreur nue.
  */
 export function messageDeLaDemande(error: ErreurAuth): string {
+  // **Une seule phrase pour toutes les limites** (choisie par la personne qui pilote le 05/10/2026,
+  // avec les plafonds d'e-mail) : la minute de Supabase entre deux codes, son plafond horaire, et ceux
+  // du hook d'envoi — cinq codes par heure et par compte, soixante par jour pour tout le projet. L'app
+  // ne les distingue pas (le hook rend un `429` sans code), et « quelques minutes » aurait été faux
+  // pour les deux derniers.
   if (estLimiteDEnvoi(error)) {
-    return 'Trop de demandes coup sur coup. Réessaie dans quelques minutes.';
+    return 'Trop de demandes pour le moment. Réessaie plus tard.';
   }
   // Le refus du captcha prend la phrase de la panne de transport : son cas réaliste est un
   // Cloudflare injoignable, et aucune phrase neuve ne part sans la personne qui pilote.

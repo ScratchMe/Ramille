@@ -67,8 +67,11 @@ default_pool_size = 20
 # Maximum number of client connections allowed.
 max_client_conn = 100
 
-# [db.vault]
-# secret_key = "env(SECRET_VALUE)"
+# L'adresse du collecteur d'e-mails local, vue depuis le conteneur de la base : c'est là que le hook
+# d'envoi (`[auth.hook.send_email]`, plus bas) poste quand il n'a pas de clé Resend. La production n'a
+# jamais ce secret. Pas une valeur secrète : une adresse interne au réseau Docker de la stack.
+[db.vault]
+boite_d_essai_des_e_mails = "http://supabase_inbucket_ramille:8025/api/v1/send"
 
 [db.migrations]
 # If disabled, migrations will be skipped during a db push or reset.
@@ -358,6 +361,17 @@ max_frequency = "5s"
 # [auth.hook.custom_access_token]
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
+
+# **Les e-mails d'authentification passent par la base depuis le 05/10/2026** (plafonds d'e-mail, plan
+# anti-abus) : Supabase confie chacun à `public.envoyer_l_e_mail_d_auth`, qui compte puis envoie. Allumé
+# ici pour que la stack locale — le parcours réel et `verifier-code-de-connexion` — passe par le même
+# chemin que la production, où le hook s'allume dans le tableau de bord (registre d'exploitation §3.1).
+# Sans clé Resend, la fonction envoie au collecteur d'e-mails local, dont l'adresse est posée dans
+# `[db.vault]` plus haut. Les gabarits de `[auth.email.template.*]` ne servent alors plus qu'au hook
+# éteint, comme ceux du tableau de bord.
+[auth.hook.send_email]
+enabled = true
+uri = "pg-functions://postgres/public/envoyer_l_e_mail_d_auth"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]

@@ -7,6 +7,13 @@
 // recevant cet e-mail rattachait son adresse au compte d'un inconnu d'un seul clic, et le passage en
 // PKCE n'y changeait rien (il protège la session, pas la confirmation).
 //
+// **Et depuis le 05/10/2026, ces e-mails partent du hook d'envoi**, plus de GoTrue : `supabase/config.toml`
+// l'allume pour la stack locale, où il poste au collecteur d'e-mails (plafonds d'e-mail, `COMPTE.md`).
+// Ce script est donc le seul à jouer le hook de bout en bout — Supabase qui l'appelle, le corps qui
+// part, le code qui se vérifie ; ses plafonds, eux, sont gardés par le pgTAP `50`. Une session rejouée
+// plusieurs fois dans l'heure peut buter sur le plafond de l'adresse (trois codes) : le journal du
+// hook le dit (`public.envois_d_e_mails_d_auth`), et une stack redémarrée à neuf repart de zéro.
+//
 // ── Ce que chaque assertion garde, et pourquoi aucune ne remplace une autre ───────────────────────
 //
 //   1. **Le rattachement par code marche**, du champ d'adresse jusqu'à une session non anonyme

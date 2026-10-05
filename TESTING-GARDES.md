@@ -451,6 +451,15 @@ passage croit la dérive attrapée. La garde a été écrite plutôt que la phra
 rien » vient **avant** le code (jugement 05.2, `v1-13` §19). Un ordre ne se voit pas dans une égalité
 de textes : la phrase remise en bas des deux côtés passe l'assertion 1, et la mutation l'a montré.
 
+**Et deux de plus depuis le 05/10/2026**, quand le hook d'envoi a pris les e-mails à Supabase
+(plafonds d'e-mail, `COMPTE.md`) : le corps et le sujet ont une troisième copie, dans la migration
+qui écrit `public.gabarit_d_e_mail_d_auth`, entre des balises `$gabarit_<nom>$` et `$sujet_<nom>$` —
+et c'est celle-là qui part, hook allumé. 5. le corps de la **dernière** migration qui porte la balise
+est le fichier (une migration livrée ne se retouche pas : un texte changé vient dans une migration
+plus récente, que la garde lit à son tour) ; 6. son sujet est celui que le titre du document écrit
+entre « ». Mutations jouées le même jour : une espace dans le corps de la migration, une lettre du
+sujet, la balise renommée — chacune fait tomber sa seule assertion.
+
 **Ce qui lui échappe**, et c'est structurel : `GABARITS` est une liste **déclarée**, comme `MIROIRS`,
 donc un gabarit que personne n'y déclare lui reste invisible — aucune garde déclarative ne s'annonce
 exhaustive. *Confirm signup* et *Reset Password* sont traduits dans le document et ne vivent **que**

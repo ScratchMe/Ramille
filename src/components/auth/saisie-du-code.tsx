@@ -168,7 +168,7 @@ export function SaisieDuCode({
     // Le champ se vide ici, et seulement quand un code est reparti : l'ancien vient alors d'être
     // invalidé par le nouveau (mesuré le 20/09/2026), donc garder ses chiffres ferait réessayer un
     // code mort. **Un renvoi refusé, lui, ne vide rien** (recette du 28/09/2026) : « Trop de
-    // demandes coup sur coup » ne fait partir aucun code, celui du champ vaut peut-être encore, et
+    // demandes pour le moment » ne fait partir aucun code, celui du champ vaut peut-être encore, et
     // le vider faisait perdre les chiffres qu'on comparait à l'e-mail. Et c'est `suite` qui décide,
     // pas `error` : une adresse sans compte rend une erreur que `suiteDuRenvoi` lit « renvoyé », et
     // un champ qui se viderait pour l'une et pas pour l'autre rouvrirait l'oracle par l'écran. **Ce

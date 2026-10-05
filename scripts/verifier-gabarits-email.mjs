@@ -49,13 +49,25 @@
  * MUTATION JOUÉE LE 01/10/2026 : la phrase remise après le code, dans le document **et** le fichier
  * → l'assertion 4 tombe, seule — l'assertion 1, elle, reste verte, et c'est ce qui la justifie.
  *
+ * ET DEUX DEPUIS LE 05/10/2026, quand le hook d'envoi a pris les e-mails à Supabase (plafonds d'e-mail,
+ * `20261005100000_les_plafonds_d_e_mail.sql`) : le corps et le sujet vivent aussi dans la migration,
+ * entre des balises `$gabarit_<nom>$` et `$sujet_<nom>$`, et c'est cette copie-là qui part en
+ * production quand le hook est allumé. 5. le corps de la dernière migration qui porte la balise est
+ * le fichier, à l'octet près des fins de ligne ; 6. son sujet est celui du titre du document. Les
+ * fichiers restent la référence parce que le hook éteint rend l'envoi à GoTrue, qui les lit.
+ *
+ * MUTATIONS JOUÉES LE 05/10/2026 : une espace ajoutée dans le corps de la migration → l'assertion 5
+ * tombe, seule ; une lettre changée dans le sujet de la migration → l'assertion 6 tombe, seule ; la
+ * balise renommée → l'assertion 5 tombe en disant qu'aucune migration ne la porte.
+ *
  * Ne lit que le système de fichiers : ni npm ci, ni export, ni Docker.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const DOCUMENT = 'docs/exploitation/gabarits-email.md';
 const CONFIG = 'supabase/config.toml';
+const MIGRATIONS = 'supabase/migrations';
 
 /**
  * Les gabarits que le produit emprunte, et le titre sous lequel le document les porte.
@@ -71,6 +83,8 @@ const GABARITS = [
     // Le flux de reconnexion (`signInWithOtp`), écran `/connexion/retrouver` et la page publique
     // de suppression.
     cle: 'magic_link',
+    // Le bloc `$gabarit_lien_de_connexion$` de la migration qui porte le hook d'envoi.
+    bloc: 'lien_de_connexion',
   },
   {
     fichier: 'supabase/templates/rattachement-adresse.html',
@@ -78,6 +92,7 @@ const GABARITS = [
     // Le rattachement d'une adresse à une session anonyme (`updateUser({ email })`), et le gabarit
     // dont le lien ÉTAIT la faille du 19/09/2026.
     cle: 'email_change',
+    bloc: 'rattachement_adresse',
     // Ce que lit d'abord quelqu'un qui n'a rien demandé (jugement 05.2, 01/10/2026).
     avantLeCode: "Si ce n'est pas toi, ne fais rien",
   },
@@ -112,6 +127,33 @@ function normaliser(texte) {
     .map((ligne) => ligne.replace(/\s+$/, ''))
     .join('\n')
     .replace(/\n+$/, '');
+}
+
+/**
+ * Le texte entre deux balises `$nom$` de la dernière migration qui les porte : c'est elle qui a
+ * installé la version en vigueur de la fonction (une migration livrée ne se retouche pas, une
+ * nouvelle version vient dans une migration plus récente).
+ */
+function blocDeMigration(nom) {
+  const balise = `$${nom}$`;
+  const fichiers = readdirSync(MIGRATIONS)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()
+    .filter((f) => readFileSync(`${MIGRATIONS}/${f}`, 'utf8').includes(balise));
+  if (fichiers.length === 0) return null;
+  const sql = readFileSync(`${MIGRATIONS}/${fichiers.at(-1)}`, 'utf8');
+  const debut = sql.indexOf(balise) + balise.length;
+  const fin = sql.indexOf(balise, debut);
+  return fin === -1 ? null : { texte: sql.slice(debut, fin), fichier: fichiers.at(-1) };
+}
+
+/** Le sujet écrit dans le titre du document, entre « » : `### Magic Link — « … »`. */
+function sujetDuTitre(markdown, titre) {
+  const debut = markdown.indexOf(titre);
+  if (debut === -1) return null;
+  const ligne = markdown.slice(debut, markdown.indexOf('\n', debut));
+  const sujet = ligne.match(/«\s*(.+?)\s*»/);
+  return sujet ? sujet[1] : null;
 }
 
 const markdown = readFileSync(DOCUMENT, 'utf8');
@@ -170,6 +212,25 @@ for (const gabarit of GABARITS) {
     );
   }
 
+  // 5 et 6. Le hook d'envoi (depuis le 05/10/2026) porte sa propre copie du corps et du sujet.
+  const corps = blocDeMigration(`gabarit_${gabarit.bloc}`);
+  verifier(
+    corps !== null,
+    `aucune migration ne porte \`$gabarit_${gabarit.bloc}$\` — le hook d'envoi n'a plus de corps pour ${gabarit.cle}`
+  );
+  if (corps !== null) {
+    verifier(
+      normaliser(corps.texte) === fichier,
+      `le bloc \`$gabarit_${gabarit.bloc}$\` de ${corps.fichier} diffère de ${gabarit.fichier} — le hook enverrait un autre texte que celui de la référence`
+    );
+  }
+  const sujetMigration = blocDeMigration(`sujet_${gabarit.bloc}`);
+  const sujetDocument = sujetDuTitre(markdown, gabarit.titre);
+  verifier(
+    sujetMigration !== null && sujetDocument !== null && sujetMigration.texte === sujetDocument,
+    `le sujet de ${gabarit.cle} diffère entre ${sujetMigration?.fichier ?? 'les migrations'} (${JSON.stringify(sujetMigration?.texte ?? null)}) et le titre de ${DOCUMENT} (${JSON.stringify(sujetDocument)})`
+  );
+
   for (const forme of FORMES_DE_LIEN) {
     verifier(
       !fichier.includes(forme),
@@ -183,4 +244,4 @@ if (echecs > 0) {
   console.error(`${echecs} écart(s) entre les gabarits et leur référence.`);
   process.exit(1);
 }
-console.log(`${GABARITS.length} gabarit(s) conformes à leur référence, déclarés dans ${CONFIG}, sans lien de confirmation.`);
+console.log(`${GABARITS.length} gabarit(s) conformes à leur référence, déclarés dans ${CONFIG}, recopiés à l'identique par le hook d'envoi, sans lien de confirmation.`);

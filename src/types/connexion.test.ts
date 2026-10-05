@@ -29,6 +29,10 @@
  * La troisième est le relevé qui compte : elle dit la forme exacte que la garde d'arité ne voit
  * pas, et c'est pour ça qu'elle est écrite ici plutôt que tue. Ce qui la rattrape est l'assertion 6
  * de `scripts/verifier-code-de-connexion.mjs`, qui lit le texte rendu et non la signature.
+ *
+ * **Une le 05/10/2026**, avec les plafonds d'e-mail : `estLimiteDEnvoi` sans le repli sur le 429 fait
+ * tomber « retombe sur le 429 si le code manque » et « se dit en une seule phrase… » — le refus du
+ * hook d'envoi arrive sans code reconnu, et serait lu comme un code parti.
  */
 
 import {
@@ -615,6 +619,18 @@ describe('le refus du captcha', () => {
     expect(suiteDeLaDemandeDeCode('rattachement', refus)).toBe('message');
     expect(suiteDuRenvoi('connexion', refus)).toBe('message');
     expect(messageDeLaDemande(refus)).toBe('Ta demande n’a pas abouti. Vérifie ta connexion et réessaie.');
+  });
+});
+
+// Les limites d'envoi (05/10/2026) : la minute de Supabase, son plafond horaire et ceux du hook
+// d'envoi rendent tous un 429, et une seule phrase les dit — choisie par la personne qui pilote.
+describe('la limite d’envoi', () => {
+  it('se dit en une seule phrase, vraie pour une minute comme pour un jour', () => {
+    const phrase = 'Trop de demandes pour le moment. Réessaie plus tard.';
+    expect(messageDeLaDemande({ code: 'over_email_send_rate_limit', status: 429 })).toBe(phrase);
+    // Le refus du hook : un 429 sans code reconnu (`unknown`, mesuré sur la stack locale).
+    expect(messageDeLaDemande({ code: 'unknown', status: 429 })).toBe(phrase);
+    expect(suiteDeLaDemandeDeCode('rattachement', { code: 'unknown', status: 429 })).toBe('message');
   });
 });
 
