@@ -316,7 +316,7 @@ GitHub, et l'en-tête ou le contenu servi — pas la CI, qui est verte quoi qu'i
 | Poids de `share-card` **retenu par Vercel** | **1 595 453 octets ≈ 1,6 Mo** (export du tableau de bord, 15/09/2026 — l'archive compressée, 37 % du disque) |
 | Poids de `partage` | 0,03 Mo sur disque ; l'export du tableau de bord ne lui donne aucune taille (Edge) |
 | **Coût d'un déploiement sur le compteur** | **1,76 Mo**, mesuré deux fois le 16/09/2026 sur des intervalles qui n'en contenaient qu'un (PR #191 et #201) — et c'est un **plancher** (§1.1). Deux fusions « doc seule » entre les deux n'ont **rien** ajouté : l'Ignored Build Step mesuré sur le compteur lui-même |
-| **Mesure hors ligne de référence** (§1.2, §2.3 règle de mesure) | **4 366 425 octets (4,16 Mio)** le 29/09/2026, à l'identique du 21/09 |
+| **Mesure hors ligne de référence** (§1.2, §2.3 règle de mesure) | **4 378 974 octets (4,18 Mio)** le 06/10/2026 : +12 549 sur les 4 366 425 du 29/09, déjà dans `main` et identiques fichier à fichier sur la branche des points d'écran de la seconde passe de sécurité ; l'écart tient au code entré dans `api/` entre-temps (les textes du 02/10, PR #316, puis la liste fermée de `poste`, PR #367 : +145 lignes de source), sans dépendance nouvelle |
 
 **L'écart entre l'export (1,6 Mo) et le compteur (1,76 Mo) n'est pas expliqué, et on ne l'explique
 pas à la place de la mesure** : ni 1,5955 Mo décimaux ni 1,5216 Mio ne font 1,76, et `partage`

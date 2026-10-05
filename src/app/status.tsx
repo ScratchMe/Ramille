@@ -13,8 +13,15 @@ import { APP_NAME } from '@/constants/produit';
 // Écran de diagnostic — ancien contenu de `/` (smoke test app -> Supabase -> RLS lecture
 // publique du référentiel), déplacé ici une fois la vraie logique de routing de la racine
 // posée (cf. src/app/index.tsx). Volontairement non lié depuis nulle part dans l'app —
-// accessible en tapant l'URL directement, pour du diagnostic manuel après déploiement.
-type ConnectionState = { status: 'loading' } | { status: 'ok'; count: number } | { status: 'error'; message: string };
+// accessible en tapant l'URL directement, pour du diagnostic manuel après déploiement — c'est le
+// bloc 00 de chaque recette (`RECETTE.md` §2.2).
+//
+// **L'erreur s'affiche par son code, jamais par son message** (06/10/2026, seconde passe de
+// sécurité, `v1-27` §12.39) : la page est servie à quiconque tape l'adresse, et le message de
+// PostgREST décrit le schéma (« permission denied for table … »). Le code (`42501`, `PGRST301`…)
+// suffit au diagnostic, se cherche dans la documentation, et ne raconte rien à un inconnu. Une
+// erreur sans code est une panne du transport, et le dit.
+type ConnectionState = { status: 'loading' } | { status: 'ok'; count: number } | { status: 'error'; code: string };
 
 export default function StatusScreen() {
   const [connection, setConnection] = useState<ConnectionState>({ status: 'loading' });
@@ -25,7 +32,7 @@ export default function StatusScreen() {
       .select('*', { count: 'exact', head: true })
       .then(({ count, error }) => {
         if (error) {
-          setConnection({ status: 'error', message: error.message });
+          setConnection({ status: 'error', code: error.code || 'pas de réponse du serveur' });
           return;
         }
         setConnection({ status: 'ok', count: count ?? 0 });
@@ -49,7 +56,7 @@ export default function StatusScreen() {
           )}
           {connection.status === 'error' && (
             <ThemedText type="small" themeColor="text">
-              Erreur : {connection.message}
+              Erreur : {connection.code}
             </ThemedText>
           )}
         </ThemedView>

@@ -2419,11 +2419,22 @@ ne les fait pas) :
   teste fait tourner ses scripts avec `SUPABASE_ACCESS_TOKEN`. **Parade** : ne pas extraire/tester une
   PR d'inconnu dans une session qui porte le jeton ; le retirer de l'environnement (ci-dessus) ; relire
   les scripts modifiés par une PR avant tout Edit/Write ou `npm install`.
-- **BASSE, reportés à une PR à part** (écran + export, hors du périmètre de cette PR serveur) : le jeton
-  de désinscription reste dans l'URL de `/rappels/stop` (lisible par le script Turnstile chargé sur la
-  page ; `history.replaceState` après lecture) ; `/_sitemap` et `/status` servis en production
-  (`sitemap: false`, et statuer sur `/status`) ; la limite de débit `/api/` retournable contre un robot
-  d'aperçu ; les plafonds par compte contournables par une course (un `pg_advisory_xact_lock` par compte).
+- **BASSE, côté écran — faits le 06/10/2026 dans une PR à part** :
+  - **le jeton de désinscription ne quittait pas l'adresse de `/rappels/stop`** (historique, `Referer` de
+    nos propres requêtes, scripts de la page dont Turnstile). Il est lu une fois, posé dans le
+    `sessionStorage` de l'onglet, puis retiré de l'adresse (`src/lib/jeton-de-desinscription.ts`) ; un
+    rechargement le retrouve, et il en sort quand le serveur a répondu sur lui. Deux pièges, mesurés :
+    `history.replaceState` ne tient pas, la navigation réécrit l'adresse depuis son état et y remettait
+    le jeton (d'où `router.setParams`, `EXPO.md` §1.4) ; et retirer le paramètre relançait l'effet qui
+    retenait le jeton — la page n'aurait plus tenu qu'au stockage, et dit « plus valable » dès
+    l'ouverture là où il est bloqué. Gardé par le bloc du geste de `verifier-etats-export.mjs` (adresse
+    nettoyée, rechargement, appel portant le jeton) ;
+  - **`/_sitemap` n'est plus exporté** (`sitemap: false` du plugin `expo-router`, `app.json`), et le
+    contrôle 7 de `verifier-titres-export.mjs` refuse qu'il revienne ;
+  - **`/status` reste** — c'est le bloc 00 de chaque recette (`RECETTE.md` §2.2) —, mais l'erreur s'y
+    affiche par son **code** et plus par son message, qui décrivait le schéma à quiconque tape l'adresse.
+- **BASSE, toujours ouverts** : la limite de débit `/api/` retournable contre un robot d'aperçu ; les
+  plafonds par compte contournables par une course (un `pg_advisory_xact_lock` par compte).
 - **BASSE — sessions sans expiration absolue** (`sessions_timebox=0`) : poser un timebox prolongerait
   moins une session volée. Geste au tableau de bord.
 **Les zones relues et saines** sont au rapport de la session ; en bref : RLS inter-comptes, les 23 RPC

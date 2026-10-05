@@ -9,7 +9,7 @@
 // casse rien de visible (l'onglet affiche l'URL, le crawler se rabat sur le contenu), donc
 // rien ne le signale : même piège silencieux que `cleanUrls` dans vercel.json.
 //
-// Six contrôles, et les quatre du milieu sont venus après le premier :
+// Sept contrôles ; les quatre qui suivent le premier sont venus après lui :
 //
 //   1. **Aucun titre vide.** Le contrôle d'origine.
 //   2. **Aucun titre réduit au seul nom du produit**, hors racine. `pageTitle` retombe sur
@@ -38,6 +38,8 @@
 //      `poser-la-page-introuvable.mjs` la copie depuis `+not-found.html`. Éprouvé le même jour : la
 //      page retirée fait tomber « absente », une page d'un autre contenu fait tomber « n'est pas la
 //      page introuvable », plus le titre et le `noindex` qu'elle n'a pas.
+//   7. **Le plan de site de développement d'Expo Router n'est pas exporté** (06/10/2026, seconde
+//      passe de sécurité) : `_sitemap.html` listait toutes les routes, et la production le servait.
 //
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -45,11 +47,11 @@ import { join } from 'node:path';
 
 const DIST = process.argv[2] ?? 'dist';
 
-// `_sitemap` est la page de développement d'Expo Router, listant les routes ; elle n'est ni
-// exportée avec du contenu (coquille vide, hydratée côté client) ni atteignable en
-// production. La titrer demanderait de remplacer une page du framework pour un écran que
-// personne ne voit. `public/robots.txt` l'interdit au crawl.
-const PAGES_IGNOREES = new Set(['_sitemap.html']);
+// `_sitemap` est la page de développement d'Expo Router, qui liste toutes les routes. Jusqu'au
+// 06/10/2026 elle était exportée, ignorée ici et servie en production (`200` sur `/_sitemap`,
+// seconde passe de sécurité, `v1-27` §12.39) ; l'option `sitemap: false` du plugin `expo-router`
+// (`app.json`) ne la produit plus, et le contrôle 7 refuse qu'elle revienne.
+const PLAN_DE_SITE_DE_DEVELOPPEMENT = '_sitemap.html';
 
 // **Couplé à la main à `PAGE_DESCRIPTIONS` (src/constants/page-titles.ts).** Ce script est du
 // Node pur : il ne peut pas importer un module TypeScript du bundle applicatif, et le tsconfig
@@ -117,7 +119,7 @@ const APP_NAME = constanteDuProduit('APP_NAME');
 // changement de domaine laisserait sinon un sitemap et un robots.txt désignant l'ancien, sans
 // que rien ne le signale.
 const ORIGINE_CANONIQUE = constanteDuProduit('ORIGINE_CANONIQUE');
-const pages = pagesHtml(DIST).filter((page) => !PAGES_IGNOREES.has(page.nom));
+const pages = pagesHtml(DIST);
 
 if (pages.length === 0) {
   console.error(`Aucune page HTML dans ${DIST}/ — l'export a-t-il tourné ?`);
@@ -199,6 +201,16 @@ for (const page of pages) {
   } else if (!existsSync(introuvable) || readFileSync(page404, 'utf8') !== readFileSync(introuvable, 'utf8')) {
     echecs.push('404.html n’est pas la page introuvable de l’app (+not-found.html) telle que l’export la produit.');
   }
+}
+
+// Le plan de site de développement d'Expo Router ne sort plus (contrôle 7). Il revient si l'option
+// `sitemap: false` quitte `app.json`, ou si une version d'Expo Router cesse de la lire.
+if (existsSync(join(DIST, PLAN_DE_SITE_DE_DEVELOPPEMENT))) {
+  echecs.push(
+    `${PLAN_DE_SITE_DE_DEVELOPPEMENT} est revenue dans l’export : la page de développement d’Expo` +
+      ' Router, qui liste toutes les routes, serait servie en production. L’option `sitemap: false`' +
+      ' du plugin `expo-router` (app.json) la retire.',
+  );
 }
 
 // `robots.txt` et `sitemap.xml` viennent de `public/`, recopié tel quel par l'export.

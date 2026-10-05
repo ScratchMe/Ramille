@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { couperLesRappels } from '@/lib/desinscription';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
+import { garderLeJeton, oublierLeJeton, relireLeJetonGarde } from '@/lib/jeton-de-desinscription';
 import {
   etatApres,
   etatDeLaPage,
@@ -56,7 +57,37 @@ import type { GenreDEchec } from '@/types/lecture-en-echec';
 // après quatre-vingt-dix jours d'inactivité.
 export default function StopRappels() {
   const { jeton: brut } = useLocalSearchParams<{ jeton?: string | string[] }>();
-  const jeton = jetonDuLien(brut);
+  const duLien = jetonDuLien(brut);
+  // **Le jeton est lu une fois, puis retiré de l'adresse** (06/10/2026, seconde passe de sécurité) :
+  // il restait dans l'historique, dans le `Referer` de nos propres requêtes et à portée de tout
+  // script de la page (`src/lib/jeton-de-desinscription.ts`). Celui du lien passe d'abord ; sans
+  // lien, celui que l'onglet a gardé, pour qu'un rechargement ne dise pas « plus valable » à qui
+  // n'a rien coupé. `null` tant que ce n'est pas fait, et la page attend alors comme avant
+  // l'hydratation : rien n'affirme l'absence d'un jeton qu'on n'a pas encore cherché.
+  const [retenu, setRetenu] = useState<{ jeton: string | null } | null>(null);
+  useEffect(() => {
+    if (retenu) return;
+    let annule = false;
+    if (duLien) garderLeJeton(duLien);
+    const jetonRetenu = duLien ?? jetonDuLien(relireLeJetonGarde() ?? undefined);
+    // Écrit après une promesse, hors du corps de l'effet : même motif que la racine (`index.tsx`),
+    // que le React Compiler exige (`react-hooks/set-state-in-effect`).
+    void Promise.resolve().then(() => {
+      if (annule) return;
+      setRetenu({ jeton: jetonRetenu });
+      // **Retenu d'abord, retiré de l'adresse ensuite**, dans le même lot de rendus : retirer le
+      // paramètre change `duLien` et relance cet effet, qui annulait l'écriture encore en vol — la
+      // page ne tenait plus alors qu'au `sessionStorage`, et un stockage bloqué lui faisait dire
+      // « plus valable » dès l'ouverture (mesuré le 06/10/2026). Et par les paramètres de la route,
+      // pas par `history.replaceState` : la navigation réécrit l'adresse depuis son propre état, et
+      // y remettait le jeton juste après.
+      if (duLien) router.setParams({ jeton: undefined });
+    });
+    return () => {
+      annule = true;
+    };
+  }, [duLien, retenu]);
+  const jeton = retenu?.jeton ?? null;
   // Le geste de la personne : rien ne part avant (`etatDeLaPage`).
   const [demandee, setDemandee] = useState(false);
   // La réponse du serveur pour l'essai en cours, `null` tant qu'elle n'est pas arrivée.
@@ -74,7 +105,11 @@ export default function StopRappels() {
     couperLesRappels(jeton).then((resultat) => {
       if (annule) return;
       if (!resultat.ok) setGenreDeLaPanne(resultat.genre);
-      setReponse(etatApres(resultat));
+      const suite = etatApres(resultat);
+      // Le serveur a répondu sur ce jeton — coupé, ou refusé : il ne servira plus. Une panne le
+      // garde, pour « Réessayer » comme pour un rechargement.
+      if (suite !== 'panne') oublierLeJeton();
+      setReponse(suite);
     });
     return () => {
       annule = true;
@@ -90,7 +125,8 @@ export default function StopRappels() {
   // celui qui n'affirme rien de faux à qui arrive par le lien, c'est-à-dire presque tout le monde ;
   // sans jeton, la page le dit une fois hydratée (`EXPO.md` §2.2, `useApresHydratation`).
   const apresHydratation = useApresHydratation();
-  const etat = etatDeLaPage({ apresHydratation, jeton, demandee, reponse });
+  const pret = apresHydratation && retenu !== null;
+  const etat = etatDeLaPage({ apresHydratation: pret, jeton, demandee, reponse });
 
   // **Le focus suit le geste** (04/10/2026, seconde passe de la revue finale, `FRONT.md` §2.4) :
   // « Couper mes rappels » sort de l'arbre au toucher, « Réessayer » aussi, et le focus retombait
@@ -127,7 +163,7 @@ export default function StopRappels() {
                     se perdaient sans un mot. Même rendu des deux côtés, donc pas d'écart (418). */}
                 <Button
                   title="Couper mes rappels"
-                  disabled={!apresHydratation}
+                  disabled={!pret}
                   onPress={() => setDemandee(true)}
                 />
               </>

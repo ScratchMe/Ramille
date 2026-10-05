@@ -123,6 +123,17 @@
 //   | « Couper mes rappels » ne fait rien | « aucun appel ne porte le jeton » **et** « n'a pas quitté le geste » (D, le bloc du geste) |
 //   | le HTML statique dit « Un instant » avant l'hydratation | « le HTML statique ne demande plus le geste » (D) |
 //
+// **Et le 06/10/2026, le jeton qui quitte l'adresse** (seconde passe de sécurité) : deux exports mutés
+// (`--clear`, `--output-dir` propre à chacun, joués l'un après l'autre), sur un arbre dont le témoin
+// sort vert. La seconde a d'abord fait tomber **deux** lignes, dont la première ouverture : retirer le
+// paramètre relançait l'effet et annulait le jeton retenu, et la page ne tenait plus qu'au stockage.
+// Corrigé (retenu avant d'être retiré), elle n'en fait plus tomber qu'une.
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | le jeton n'est plus retiré (`router.setParams`) | « le jeton est encore dans l'adresse » (D, le bloc du geste) |
+//   | le jeton n'est plus gardé pour l'onglet (`garderLeJeton`) | « rechargée sans le jeton dans l'adresse, la page ne le retrouve plus » (D, le bloc du geste) |
+//
 // Les deux lignes du 25/09 sur `/rappels/stop` (« Un instant » après la réponse, le jeton lu sous un
 // autre nom) décrivent l'ancienne page ; ce qu'elles gardaient l'est désormais par le bloc du geste,
 // qui exige l'appel portant le jeton et la sortie de « Un instant ».
@@ -667,12 +678,45 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
     // `ouvrir` a attendu que React prenne la main, puis le repos : un appel parti à l'hydratation
     // serait déjà là. Une seconde de plus pour un effet qui attendrait un rendu.
     await page.waitForTimeout(1_000);
+    // **Le jeton quitte l'adresse une fois lu, et un rechargement le retrouve** (06/10/2026, seconde
+    // passe de sécurité, `src/lib/jeton-de-desinscription.ts`). Laissé dans l'adresse, il restait dans
+    // l'historique, dans le `Referer` de nos requêtes et à portée des scripts de la page ; retiré sans
+    // être gardé, un rechargement aurait dit « plus valable » à qui n'a rien coupé. Le geste qui suit
+    // se joue **après** le rechargement : l'appel qu'il doit porter prouve que le jeton gardé est le
+    // bon.
+    let rechargee = false;
+    if (page.url().includes(JETON_DE_FORME_VALIDE)) {
+      echecs.push(
+        `${chemin} : le jeton est encore dans l’adresse une fois la page montée — historique, Referer` +
+          ' et scripts de la page le lisent (`router.setParams`).'
+      );
+    } else {
+      await page.reload({ waitUntil: 'load' });
+      await page
+        .waitForFunction(
+          () =>
+            document.body.innerText.includes('plus valable') ||
+            document.querySelector('[aria-label="Couper mes rappels"]:not([aria-disabled="true"])') !== null,
+          null,
+          { timeout: ATTENTE }
+        )
+        .catch(() => {});
+      const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
+      if (!texte.includes('Couper mes rappels') || texte.includes('plus valable')) {
+        echecs.push(
+          `${chemin} : rechargée sans le jeton dans l’adresse, la page ne le retrouve plus — elle dirait` +
+            ` « plus valable » à qui n’a rien coupé (\`garderLeJeton\`). Rendu : « ${texte.slice(0, 160)}… »`
+        );
+      } else {
+        rechargee = true;
+      }
+    }
     if (requetes.some(appelDuJeton)) {
       echecs.push(
         `${chemin} : la page a appelé le serveur sans geste. Un analyseur de liens qui l’ouvre` +
           ' couperait les rappels à la place de la personne (`etatDeLaPage`).'
       );
-    } else {
+    } else if (rechargee) {
       await page.getByRole('button', { name: 'Couper mes rappels' }).click({ timeout: ATTENTE });
       await page
         .waitForFunction(

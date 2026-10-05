@@ -533,6 +533,12 @@ et le jeton *est* l'autorisation. Trois pièges :
   `src/types/desinscription.ts`), et `scripts/verifier-etats-export.mjs` garde les deux moitiés :
   aucun appel avant le geste, l'appel portant le jeton après. Supabase décrit le même piège pour ses
   propres liens de connexion. Ne pas « simplifier » en revenant à l'appel au montage.
+- **le jeton quitte l'adresse dès qu'il est lu** (06/10/2026, seconde passe de sécurité, `v1-27`
+  §12.39) : il restait dans l'historique, dans le `Referer` de nos requêtes et à portée des scripts de
+  la page, celui du captcha compris. Il est gardé dans le `sessionStorage` de l'onglet, pour qu'un
+  rechargement ne dise pas « plus valable » à qui n'a rien coupé, et en sort quand le serveur a
+  répondu sur lui (`src/lib/jeton-de-desinscription.ts`). Le retrait passe par `router.setParams` et
+  non par `history.replaceState`, que la navigation défait (`EXPO.md` §1.4).
 - **`List-Unsubscribe-Post` n'est pas envoyé, et son absence est épinglée par un contrôle de la
   migration.** L'annoncer engage l'URL à accepter un POST sans confirmation ; `/rappels/stop` est
   une page de l'export statique, qui ne peut pas y répondre — l'ajouter par symétrie ferait échouer

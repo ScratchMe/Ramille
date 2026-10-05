@@ -79,6 +79,14 @@ que lit la personne le temps que le JavaScript arrive. Le même `useSyncExternal
 le premier rendu est celui du HTML statique, qui ne doit rien affirmer, et la valeur lue prend le
 relais au rendu suivant.
 
+**Retirer un paramètre de l'adresse se fait par la navigation, pas par `history`** (06/10/2026,
+mesuré sur l'export). `history.replaceState` est défait aussitôt : la liaison d'URL de React
+Navigation réécrit l'adresse depuis **son** état, qui porte encore le paramètre — l'effet de l'écran
+passe, puis celui de la liaison remet la chaîne entière. `router.setParams({ cle: undefined })`
+change l'état lui-même, et l'adresse suit. Le paramètre retiré relance alors tout effet qui en
+dépend : ce qu'il fallait en garder s'écrit **avant** de le retirer, dans le même lot de rendus.
+Ramille le fait pour le jeton de `/rappels/stop` (`src/app/rappels/stop.tsx`).
+
 ### 1.5 `react-native-web` : ce qui ne se comporte pas comme sur natif
 
 - **La touche d'action du clavier s'écrit `enterKeyHint`, pas `returnKeyType`** : react-native-web

@@ -11,7 +11,9 @@
 # `src/components/titre-de-page.tsx` pour tout chemin absent de `PAGE_DESCRIPTIONS`. Ne sont
 # interdits ici que les chemins qu'un crawler n'a aucune raison d'ouvrir :
 #
-#   /_sitemap     le plan de site de développement d'Expo Router, qui énumère toutes les routes
+#   /_sitemap     le plan de site de développement d'Expo Router, qui énumère toutes les routes ;
+#                 l'export ne le produit plus depuis le 06/10/2026 (`sitemap: false`, app.json),
+#                 la ligne reste au cas où il reviendrait
 #   /status       l'écran de diagnostic, volontairement non lié depuis nulle part
 #   /(tabs)/      les doublons d'URL que l'export produit pour le groupe d'onglets, servant le
 #                 même contenu que /plan, /suivi et /suivi/bilan (les deux écritures, brute et
