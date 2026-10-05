@@ -187,8 +187,11 @@ rattaché par code, et rien derrière », `v1-33` T-1). Depuis le plan : « Toi 
 compte » → l'adresse envoyée par **Entrée** → le focus sur « Regarde tes emails » → le code lu dans
 Mailpit (comme `verifier-code-de-connexion.mjs`) → la base relue (même utilisateur, plus anonyme, à
 cette adresse) → **le retour quitte l'app** ; puis « Me déconnecter » et le même retour. Tout se joue
-sur un onglet neuf. **Il envoie un e-mail par passage**, sur un plafond local de 30 par heure
-partagé avec `verifier-code-de-connexion.mjs` et tout passage simultané.
+sur un onglet neuf. **Il envoie un e-mail par passage**, un rattachement : depuis le 05/10/2026, le
+hook d'envoi allumé en local le compte dans son plafond de 60 rattachements par jour, partagé avec
+`verifier-code-de-connexion.mjs` et tout passage simultané — un plafond muet, où le code n'arrive
+jamais dans Mailpit et le parcours expire sans erreur ; `supabase db reset` le vide (le rejeu de la CI
+repart d'une stack neuve). Le plafond local de 30 par heure de Supabase ne compte plus hook allumé.
 
 **Depuis le 01/10/2026, le parcours répond aussi aux vols et aux longs trajets** (`v1-33` D1) —
 profil 1 : ses deux vols, puis « Oui » ; cycliste et profil sans boucle : « 0 », puis « Non » — et
@@ -386,10 +389,11 @@ tierce. Il est un **porteur** — mesuré, un `POST /auth/v1/verify` sans aucune
 rend une session sur le compte du demandeur. Le code relève le prix du mauvais geste, il ne le
 supprime pas, et l'en-tête du script le dit pour que personne ne lise l'inverse dans le vert.
 
-**Et une mutation de gabarit exige un redémarrage de la stack** : GoTrue inline les gabarits au
-démarrage du conteneur, donc modifier `supabase/templates/` sans `supabase stop && start` ne change
-rien à l'e-mail envoyé — la garde reste verte, et on croit avoir éprouvé l'assertion 4. Relevé le
-20/09/2026 en jouant justement cette mutation.
+**Et une mutation de gabarit ne passe plus par `supabase/templates/`** : depuis le 05/10/2026, le hook
+d'envoi est allumé en local et envoie le corps de `public.gabarit_d_e_mail_d_auth` — c'est la fonction
+qu'on mute, rejouée sur la base locale, pour éprouver l'assertion 4. Avant, GoTrue inlinait les
+fichiers au démarrage du conteneur, et les modifier sans `supabase stop && start` ne changeait rien —
+la garde restait verte, et on croyait avoir éprouvé l'assertion (relevé le 20/09/2026).
 
 **Deux prérequis à connaître avant de s'étonner qu'il ne tourne pas** :
 
@@ -424,7 +428,8 @@ identifiants et l'URL finale, et c'est ce qui l'a montré.
 ci, ni export, ni Docker — il ne lit que des fichiers, et tombe en une seconde.
 
 **Pourquoi il existe.** Les deux gabarits que le produit emprunte vivent à **deux endroits** :
-`supabase/templates/`, la copie que GoTrue inline au démarrage de la stack locale, et
+`supabase/templates/`, la copie que GoTrue inline au démarrage de la stack locale (et qui ne part
+plus que hook d'envoi éteint, depuis le 05/10/2026), et
 `docs/exploitation/gabarits-email.md`, la référence relisable — celle qu'on ouvre pour savoir ce que
 la production envoie. Deux copies d'un même texte divergent par une faute de frappe que personne ne
 relit : c'est le raisonnement de `mois_francais` et de sa jumelle `MOIS_FRANCAIS`, et celui du
@@ -450,6 +455,20 @@ passage croit la dérive attrapée. La garde a été écrite plutôt que la phra
 **Et une quatrième depuis le 01/10/2026**, pour le seul rattachement : « Si ce n'est pas toi, ne fais
 rien » vient **avant** le code (jugement 05.2, `v1-13` §19). Un ordre ne se voit pas dans une égalité
 de textes : la phrase remise en bas des deux côtés passe l'assertion 1, et la mutation l'a montré.
+
+**Et deux de plus depuis le 05/10/2026**, quand le hook d'envoi a pris les e-mails à Supabase
+(plafonds d'e-mail, `COMPTE.md`) : le corps et le sujet ont une troisième copie, dans la migration
+qui écrit `public.gabarit_d_e_mail_d_auth`, entre des balises `$gabarit_<nom>$` et `$sujet_<nom>$` —
+et c'est celle-là qui part, hook allumé. 5. le corps de la **dernière** migration qui porte la balise
+est le fichier (une migration livrée ne se retouche pas : un texte changé vient dans une migration
+plus récente, que la garde lit à son tour) ; 6. son sujet est celui que le titre du document écrit
+entre « ». Mutations jouées le même jour : une espace dans le corps de la migration, une lettre du
+sujet, la balise renommée — chacune fait tomber sa seule assertion.
+
+**Et une septième** : le fichier ne porte que les variables que le hook remplace (`variables` —
+`{{ .Token }}`, plus `{{ .NewEmail }}` pour le rattachement). GoTrue en connaît d'autres, que le hook
+laisserait partir telles quelles, accolades comprises. Mutation jouée le 05/10/2026 : `{{ .Email }}`
+ajouté au fichier et à la migration → l'assertion 7 tombe (la 1 aussi, le document n'ayant pas bougé).
 
 **Ce qui lui échappe**, et c'est structurel : `GABARITS` est une liste **déclarée**, comme `MIROIRS`,
 donc un gabarit que personne n'y déclare lui reste invisible — aucune garde déclarative ne s'annonce

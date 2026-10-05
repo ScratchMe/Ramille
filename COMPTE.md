@@ -246,6 +246,50 @@ build qui embarque sa vue web (`CaptchaNatif`, `src/components/captcha-natif.tsx
 04/10/2026), et l'activer avant que ce build soit installé laisserait chaque nouvelle installation à
 la porte.
 
+### Les plafonds d'e-mail (05/10/2026)
+
+**Les deux codes partent de la base, plus de Supabase, dès que le hook d'envoi est allumé**
+(`public.envoyer_l_e_mail_d_auth`, registre d'exploitation §3.1) : Supabase lui confie chaque e-mail
+d'authentification, il compte, puis envoie par l'API de Resend avec les deux gabarits du dépôt,
+recopiés à l'identique. **Seul le rattachement est plafonné**, et les valeurs sont celles de la personne
+qui pilote : **5 codes par heure et par compte demandeur, 5 par heure et par adresse, 60 par jour pour
+tout le projet**. La minute de Supabase entre deux codes d'un même compte reste devant ; son plafond
+horaire (30) n'est pas compté, faute de mesure qui tranche pour la production. Cinq choses à savoir
+avant d'y toucher :
+
+- **La reconnexion n'est pas plafonnée par le hook, et c'est voulu** (décision du 05/10/2026, après la
+  seconde contre-lecture) : elle coûte déjà une case cochée par code. Plafonnée, elle laissait n'importe
+  qui bloquer celle d'un autre — cinq demandes vers une adresse, et son titulaire ne recevait plus rien
+  de l'heure. Ce qu'on accepte : qui coche une case par e-mail peut épuiser le quota de Resend par des
+  codes de reconnexion.
+- **Les plafonds du rattachement sont muets, et c'est la non-divulgation qui l'impose** : au-delà, rien
+  ne part et l'écran de code s'ouvre comme pour un envoi accepté. Sur `/connexion/email`, une adresse
+  libre part en rattachement quand une adresse prise bascule en reconnexion : si le rattachement
+  refusait, l'écran dirait laquelle des deux branches est partie — sans même qu'un e-mail parte chez le
+  titulaire. **Ce que le silence coûte** : Supabase renouvelle le code avant d'appeler le hook, donc un
+  plafond atteint tue le code de rattachement déjà reçu sans en envoyer d'autre — l'écran dit « Un
+  nouveau code vient de partir ». Et le plafond de l'adresse compte les demandes de tout le monde :
+  cinq rattachements vers une adresse dans l'heure, d'où qu'ils viennent, et la personne qui la possède
+  ne peut plus la rattacher avant que la fenêtre passe — son compte et sa reconnexion ne sont pas
+  touchés. « Trop de demandes pour le moment. Réessaie plus tard. » ne vient donc que des limites de
+  Supabase lui-même, et un échec d'envoi rend un `500`, lu comme une panne de transport (ce qu'il dit
+  d'une adresse : `SUPABASE.md` §2.4).
+- **Le hook a deux secondes, imposées par Supabase** (`statement_timeout`, mesuré) : l'envoi est
+  synchrone et borné à 1,5 s (mesuré : une requête qui pend est coupée à 1 502 ms). Le verrou qui
+  sérialise les demandes ne vaut que pour une même adresse : un verrou commun ferait attendre chaque
+  demande derrière l'envoi des autres, dans ses deux secondes.
+- **Deux types d'e-mail seulement partent** : `magiclink` (la reconnexion, vérifiée en `email`) et
+  `email_change` (le rattachement). Les autres — inscription par mot de passe, réinitialisation,
+  invitation — ne partent plus du tout hook allumé, sans erreur, parce qu'une erreur dirait qui a un
+  compte.
+- **Les gabarits ont trois copies dans le dépôt** — le document, `supabase/templates/` et la migration
+  — que `scripts/verifier-gabarits-email.mjs` compare ; `gabarits-email.md` dit pourquoi les trois.
+- **La stack locale passe par le même chemin** : `supabase/config.toml` allume le hook, qui poste au
+  collecteur d'e-mails faute de clé Resend — `verifier-code-de-connexion.mjs` joue donc le hook de
+  bout en bout à chaque PR. Le journal des plafonds (`envois_d_e_mails_d_auth`, une empreinte d'adresse
+  et jamais l'adresse, purgé au plus tard au bout de deux jours) entre dans l'export, et la page de
+  confidentialité le nomme, comme elle nomme Resend pour les codes.
+
 ## 2. Retrouver un compte existant
 
 `/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **huit**

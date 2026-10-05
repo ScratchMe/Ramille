@@ -485,8 +485,12 @@ export function codeSemblePlausible(saisie: string): boolean {
  * **Tout le reste mène à l'écran de code, `otp_disabled` compris.** C'est la règle de
  * non-divulgation, et elle est la raison d'être de cette dérivation : une adresse sans compte
  * rend un `422 otp_disabled` qui doit mener au **même** écran qu'un envoi accepté, sinon l'écran
- * dit qui utilise Ramille. Seuls trois échecs se disent, parce qu'aucun ne parle de l'adresse :
- * la limite d'envoi, la panne de transport et, depuis le 04/10/2026, le refus du captcha.
+ * dit qui utilise Ramille. Seuls trois échecs se disent : la limite d'envoi, la panne de transport et,
+ * depuis le 04/10/2026, le refus du captcha. **La limite d'envoi, elle, peut parler de l'adresse**, et
+ * c'est su : la minute de Supabase entre deux codes ne frappe qu'une adresse connue (`SUPABASE.md`
+ * §2.4). Les plafonds du hook d'envoi (05/10/2026) n'ajoutent rien à cette fuite parce qu'ils se
+ * taisent tous : rien ne part, et l'écran de code s'ouvre comme pour un envoi accepté
+ * (`20261005103733_les_plafonds_d_e_mail.sql`).
  */
 export type SuiteDeLaDemande = 'code' | 'bascule' | 'message';
 
@@ -513,8 +517,12 @@ export function suiteDeLaDemandeDeCode(
  * ou `suiteDuRenvoi`, et jamais sur l'erreur nue.
  */
 export function messageDeLaDemande(error: ErreurAuth): string {
+  // **Une seule phrase pour toutes les limites de Supabase** (choisie par la personne qui pilote le
+  // 05/10/2026, avec les plafonds d'e-mail) : la minute entre deux codes et le plafond horaire, où
+  // « quelques minutes » pouvait être faux. Les plafonds du hook d'envoi, eux, ne rendent jamais de
+  // refus — ils se taisent (`20261005103733_les_plafonds_d_e_mail.sql`).
   if (estLimiteDEnvoi(error)) {
-    return 'Trop de demandes coup sur coup. Réessaie dans quelques minutes.';
+    return 'Trop de demandes pour le moment. Réessaie plus tard.';
   }
   // Le refus du captcha prend la phrase de la panne de transport : son cas réaliste est un
   // Cloudflare injoignable, et aucune phrase neuve ne part sans la personne qui pilote.
@@ -608,7 +616,9 @@ export const MESSAGE_DE_LA_SUITE_MANQUEE =
  *
  * - **`parti`** — on sait qu'un code est parti à cette adresse. C'est le cas de `/connexion/email`,
  *   **dans ses deux branches** : l'adresse libre reçoit un code de rattachement, l'adresse prise un
- *   code de connexion. Rien dans la phrase ne dit laquelle.
+ *   code de connexion. Rien dans la phrase ne dit laquelle. **Une exception, choisie** : au-delà d'un
+ *   plafond de rattachement (05/10/2026), le hook d'envoi se tait et la phrase annonce un envoi qui
+ *   n'a pas eu lieu — la dire autrement dirait si l'adresse est libre.
  * - **`peut_etre`** — on ne peut pas l'affirmer sans dire si l'adresse a un compte, d'où le « si ».
  *   C'est `/connexion/retrouver` et `/compte/suppression`, où `shouldCreateUser: false` fait qu'une
  *   adresse inconnue ne reçoit rien.
@@ -712,7 +722,8 @@ export function suiteDuRenvoi(contexte: ContexteDuCode, error: ErreurAuth): Suit
 /**
  * **Le renvoi suit la VOIX, pas le contexte** — sinon l'oracle se rouvre au second envoi, ce qui
  * serait le même défaut que celui relevé en revue le 21/09/2026 par une autre porte. Depuis
- * `/connexion/email`, les deux branches renvoient un code pour de vrai : la phrase peut l'affirmer.
+ * `/connexion/email`, les deux branches renvoient un code pour de vrai : la phrase peut l'affirmer
+ * (sauf au-delà d'un plafond de rattachement, muet — `voix 'parti'`, plus haut).
  */
 export function messageDuRenvoi(voix: VoixDeLaSaisie): string {
   return voix === 'parti'

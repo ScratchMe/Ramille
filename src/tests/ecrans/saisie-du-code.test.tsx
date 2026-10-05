@@ -2,7 +2,7 @@
  * La saisie du code, quand on redemande un code (recette du 28/09/2026, constat H2).
  *
  * Le champ se vidait à **chaque** « Renvoyer un code », y compris refusé : un second envoi à moins
- * d'une minute rend « Trop de demandes coup sur coup », aucun code ne part, celui qu'on était en
+ * d'une minute rend « Trop de demandes pour le moment », aucun code ne part, celui qu'on était en
  * train de comparer à l'e-mail vaut peut-être encore — et ses chiffres avaient disparu. La règle
  * écrite était pourtant « le champ ne se vide qu'au renvoi ».
  *

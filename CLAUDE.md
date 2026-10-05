@@ -653,6 +653,10 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
   passe par `linkIdentity` ;
 - aucun écran ne dit si une adresse a un compte ;
 - le flux est en PKCE, et une erreur d'auth se reconnaît à son **code**, jamais à son message ;
+- dès que le hook d'envoi est allumé, les deux codes partent de la base (`envoyer_l_e_mail_d_auth`) ;
+  ses plafonds ne valent que pour le rattachement et sont **muets** — un refus dirait qui a un
+  compte — ; un gabarit se change en trois copies dans le dépôt (document, `supabase/templates/`,
+  migration), plus le tableau de bord, qui reprend l'envoi hook éteint ;
 - hors ligne se reconnaît à `status === 0`, et la marque locale de bilan n'est lue qu'en repli ;
 - la suppression efface une ligne d'`auth.users` et laisse la cascade faire le reste — jamais une
   table rattachée à `profiles` autrement qu'en `on delete cascade` ;
