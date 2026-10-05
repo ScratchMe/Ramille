@@ -2060,15 +2060,17 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   heure et par adresse, 60 par jour —, et ses plafonds sont **muets** ; la reconnexion, qui coûte déjà
   une case cochée par code, ne l'est pas. Les trois choix sont de la personne qui pilote, le dernier
   après qu'une seconde contre-lecture a montré qu'un tiers pouvait bloquer la reconnexion d'un autre.
-  **Brevo est écrit le même jour** (`20261005125029_les_codes_par_brevo.sql`, décisions de la
+  **Brevo est écrit le même jour, et en service depuis 15 h 35** (premier code relu au journal et
+  reçu, sans badge « Sent with Brevo » ; `20261005125029_les_codes_par_brevo.sql`, décisions de la
   personne qui pilote) : seuls les codes y passent, dès que sa clé est posée dans le Vault — Resend
   sinon —, avec sa mesure anonymisée ; le plafond du jour des rattachements passe à 200 quand Brevo
   envoie, et reste à 60 quand c'est Resend (la contre-lecture a relevé qu'un 200 fixe aurait valu dès
   l'application, codes encore chez Resend) ; la page de confidentialité nomme Brevo ; le journal dit
   qui a envoyé (registre §3.12). **Ce que Brevo laisse** : sa mesure n'est qu'anonymisée tant que son
-  support ne l'a pas coupée ; le badge « Sent with Brevo » du plan gratuit reste à vérifier sur le
-  premier envoi ; son blocage des adresses IP inconnues doit rester coupé, sans quoi chaque code
-  échoue ; et un échec d'envoi chez Brevo ne retombe pas sur Resend. **Ce que les plafonds
+  support ne l'a pas coupée ; Brevo active seul, après trente jours sans adresse neuve, le blocage
+  des adresses IP inconnues, et la base Supabase n'a pas d'adresse de sortie garantie — d'où la
+  désactivation conseillée (registre §3.12), sans quoi un changement d'adresse ferait échouer chaque
+  code ; et un échec d'envoi chez Brevo ne retombe pas sur Resend. **Ce que les plafonds
   laissent** : un plafond muet tue le code de rattachement déjà
   reçu sans en envoyer d'autre (Supabase l'a renouvelé avant d'appeler le hook), et cinq rattachements
   vers une adresse, d'où qu'ils viennent, empêchent son titulaire de la rattacher pendant l'heure ; qui
