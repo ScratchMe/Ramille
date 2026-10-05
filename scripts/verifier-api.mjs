@@ -65,12 +65,16 @@
 //     parties, et les deux blocs disent désormais **pourquoi** plutôt que de laisser croire à une
 //     couverture qui n'existait pas.
 //
-// **Et le 05/10/2026, pour la liste fermée de `poste`** — trois mutations, chacune remise en place :
+// **Et le 05/10/2026, pour la liste fermée de `poste` et le total réécrit** — quatre mutations, chacune
+// remise en place :
 //   - la carte relit le texte libre (`(searchParams.get('poste') ?? '').slice(0, 120)`) → « un
 //     libellé forgé ne rend pas la carte sans poste », 1 écart ;
 //   - la page relit le texte libre → « un libellé forgé se retrouve dans le HTML rendu », 1 écart ;
 //   - la carte refuse tout libellé (`poste = null`) → « un libellé de l'app rend la même carte que
-//     sans poste », 1 écart.
+//     sans poste », 1 écart ;
+//   - la page recopie de nouveau le total reçu dans l'`og:image` → « le texte qui suit le chiffre
+//     du total se retrouve dans le HTML rendu », 1 écart (la section 2 envoie déjà `2.400`, la
+//     forme de l'app, donc elle ne voit pas la différence).
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
@@ -115,7 +119,9 @@ try {
 
 const ORIGINE = 'https://www.ramille.fr';
 const PARAMS = new URLSearchParams({
-  total: '2.4',
+  // La forme qu'envoie l'app (`urlDePartage`, `toFixed(3)`) : c'est aussi celle que la page
+  // renvoie à la carte, qui ne recopie plus le total reçu.
+  total: '2.400',
   // Un libellé que l'app produit (`dominantShareLabel`) : la liste est fermée depuis le 05/10/2026,
   // et l'ancienne forme « Trajet domicile-travail (Voiture thermique) » y est refusée.
   poste: 'Trajet domicile-travail en voiture thermique',
@@ -281,15 +287,26 @@ const pageForgee = await (
   await partage(new Request(`${ORIGINE}/api/partage?total=2.4&percent=58&poste=${encodeURIComponent(FORGE)}`))
 ).text();
 verifier(!pageForgee.includes('un-site-quelconque'), 'page : un libellé forgé se retrouve dans le HTML rendu');
+// Et le total : `parseFloat` n'en lit que le préfixe, donc la suite passait la borne et voyageait
+// jusque dans l'`og:image` tant que la page le recopiait au lieu de le réécrire.
+const pageTotalForge = await (
+  await partage(new Request(`${ORIGINE}/api/partage?total=${encodeURIComponent(`2.4 ${FORGE}`)}&percent=58`))
+).text();
+verifier(
+  !pageTotalForge.includes('un-site-quelconque') &&
+    pageTotalForge.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
+  'page : le texte qui suit le chiffre du total se retrouve dans le HTML rendu — la carte reçoit le total reçu, pas le total lu'
+);
 verifier(
   pageForgee.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
   'page : le libellé forgé a emporté le titre avec lui'
 );
-// Les trois rendus suivants ne se comparent **que s'ils ont eu lieu** : sur le repli, ils seraient
-// le même pixel, et l'égalité passerait sans rien dire du libellé (même raison qu'en 1 bis).
+// Les trois rendus comparés ici — les deux suivants et celui de la section 1 — ne se comparent
+// **que s'ils ont eu lieu** : sur le repli, ils seraient le même pixel, et l'égalité passerait sans
+// rien dire du libellé (même raison qu'en 1 bis).
 const carteForgee = await GET({ url: `/api/share-card?total=2.4&percent=58&poste=${encodeURIComponent(FORGE)}` });
 const carteSansPoste = await GET({ url: '/api/share-card?total=2.4&percent=58' });
-const rendus = [carteForgee, carteSansPoste].every((r) =>
+const rendus = [carte, carteForgee, carteSansPoste].every((r) =>
   (r.headers.get('cache-control') ?? '').startsWith('public')
 );
 verifier(rendus, 'carte : un libellé forgé ou absent part par le repli statique au lieu du vrai rendu');

@@ -21,8 +21,8 @@
  * Éprouvé en le cassant le 05/10/2026 (chaque mutation remise en place avant la suivante) : retirer
  * « en TGV » de la page seule fait tomber 2 tests (le bloc diffère, et 4 libellés sont refusés) ;
  * retirer « Loisirs occasionnels » des deux copies, 1 (4 × 25 = 100 attendus, 25 refusés) ; ajouter
- * un mode à l'app (`MODE_IDS` et sa préposition) sans le recopier, 1 ; faire accepter tout libellé (`return brut`),
- * 1 — le libellé forgé passe.
+ * un mode à l'app (`MODE_IDS` et sa préposition) sans le recopier, 1 ; faire accepter tout libellé (`return brut`)
+ * dans les deux copies, 1 — le libellé forgé passe.
  */
 import fs from 'node:fs';
 import path from 'node:path';

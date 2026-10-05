@@ -2037,14 +2037,17 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   partage a sa première protection le même soir** : une limite de débit au pare-feu de Vercel, 60
   requêtes par 10 minutes et par IP sur `/api/`, puis 429 (registre §3.2, posée par la personne qui
   pilote, l'API ne créant pas la première configuration du pare-feu). **`poste` est une liste fermée
-  depuis le 05/10/2026** (décision de la personne qui pilote) : les libellés que `dominantShareLabel`
-  sait produire, recopiés à l'identique dans les deux fonctions, et un libellé inconnu est ignoré —
-  l'aperçu retombe sur sa forme sans poste (`scripts/postes-partageables.test.ts`,
+  depuis le 05/10/2026** (la fermeture est une décision de la personne qui pilote ; le repli qui
+  suit, un choix technique) : les libellés que `dominantShareLabel` sait produire, recopiés à
+  l'identique dans les deux fonctions, et un libellé inconnu est ignoré — l'aperçu retombe sur sa
+  forme sans poste, total et part gardés (`scripts/postes-partageables.test.ts`,
   `scripts/verifier-api.mjs`). Il était du texte libre : un tiers fabriquait un aperçu aux couleurs
   du produit, portant la phrase de son choix. **Ce qu'elle laisse** : un total inventé entre 0 et
-  200 t reste un aperçu plausible (seule une query string signée le fermerait) ; `total` reste une
-  chaîne décimale, bornée en valeur mais pas en écriture (`4.2`, `4.20`, `4.200001`…), donc une
-  dimension infinie de clés de cache pour la carte, que seul le pare-feu limite ; et un lien déjà
+  200 t reste un aperçu plausible (seule une query string signée le fermerait) ; la page renvoie
+  désormais le total à la carte sous sa forme lue (`toFixed(3)`) — elle recopiait tout ce qui
+  suivait son préfixe numérique dans l'`og:image` —, mais la carte appelée en direct accepte encore
+  toute chaîne dont seul le préfixe est lu (`4.2`, `4.20`, `4.2 et la suite`…), donc une dimension
+  infinie de clés de cache, que seul le pare-feu limite ; et un lien déjà
   partagé dont le libellé n'existe plus (un poste renommé depuis) perd sa ligne « Poste
   principal », la carte gardant son chiffre. **Ce que ces plafonds laissent** : un
   refus par plafond global est un `check_violation`, que la file des pannes différées vide au lieu de

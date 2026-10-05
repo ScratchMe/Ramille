@@ -1,5 +1,6 @@
-// Vercel Edge Function (cf. commentaire d'en-tête de share-card.tsx pour le contexte
-// d'exécution). Page de destination d'un lien partagé depuis /bilan/resultat — jamais
+// Vercel Edge Function (cf. commentaire d'en-tête de `api/share-card.ts` pour le contexte
+// d'exécution). Page de destination d'un lien partagé depuis la restitution d'un bilan
+// (`/suivi/bilan`, le bouton « Partager mon bilan ») — jamais
 // générée par l'export statique Expo (qui ne peut pas produire des balises og:* uniques par
 // paramètre, cf. discussion increment "carte de résultat partageable" du 04/09/2026) : cette
 // route sert le HTML directement, avec les balises Open Graph que les apps de messagerie
@@ -9,7 +10,7 @@
 //
 // Aucune lecture de base de données : les chiffres transitent uniquement par l'URL, générée
 // côté client à partir de ce que l'utilisateur voit déjà sur son propre écran de résultat
-// (cf. bilan/resultat.tsx) — pas de nouvelle surface d'exposition de données, pas de RLS à
+// (`urlDePartage`, dans `src/types/resultat.ts`) — pas de nouvelle surface d'exposition de données, pas de RLS à
 // repenser pour ce premier increment.
 export const config = { runtime: 'edge' };
 
@@ -201,8 +202,14 @@ function pageDePartage(request: Request): Response {
   // est une clé de cache neuve, donc un rendu complet (satori + resvg) qui se paie en
   // invocations. Trois paramètres, dans un ordre fixe : c'est exactement ce que la carte lit,
   // et deux partages identiques produisent maintenant la même clé.
+  //
+  // **Et chacun sous sa forme lue, pas sous sa forme reçue** (05/10/2026). Le total était recopié
+  // tel quel : `Number.parseFloat` ne lit que le préfixe numérique, donc `total=4.2 Achetez sur…`
+  // passait la borne et portait tout le reste jusque dans l'`og:image`. Il repart en
+  // `toFixed(3)`, la forme qu'envoie l'app (`urlDePartage`) ; le libellé est déjà celui de la liste
+  // fermée, la part un entier.
   const queryDeLaCarte = new URLSearchParams();
-  if (tonnes !== null) queryDeLaCarte.set('total', url.searchParams.get('total') ?? '');
+  if (tonnes !== null) queryDeLaCarte.set('total', tonnes.toFixed(3));
   if (poste) queryDeLaCarte.set('poste', poste);
   if (percent !== null) queryDeLaCarte.set('percent', String(percent));
 
@@ -258,7 +265,8 @@ function htmlDePartage({
   // pourrait sortir de l'attribut, et passer ses `&` en `&amp;` modifierait une chaîne dont
   // l'aperçu a été vérifié en conditions réelles (v1-06 §2-3) — un lecteur d'aperçu qui
   // n'interprète pas les entités irait chercher une autre URL. Le titre et la description, eux,
-  // portent du texte libre : ils sont échappés.
+  // sont faits de valeurs fermées depuis le 05/10/2026 (un nombre, un entier, un libellé de la
+  // liste) : ils restent échappés, pour le jour où l'une d'elles rouvrirait.
   const titreEchappe = escapeHtml(titre);
   const descriptionEchappee = escapeHtml(description);
 
