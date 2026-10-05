@@ -2236,6 +2236,9 @@ fabriquer. **Corrigé** par `20261005170000_la_passe_avant_le_lancement.sql` (te
   passe pas par lui, donc les comptes que la CI crée ne sont pas touchés. La production n'avait aucun
   compte de ce genre.
 
+**La prochaine passe a son prompt** : `docs/exploitation/passe-de-securite.md`, à coller dans une
+session neuve, et à mettre à jour après chaque passe.
+
 **Et trois gestes hors du dépôt, le même jour** : l'intégration Vercel–Supabase désinstallée — elle
 avait copié dans les variables de Vercel le mot de passe de la base, la clé `service_role` et le
 secret JWT, qu'aucun code ne lisait (registre §3.2) ; le mot de passe de la base changé, le secret
