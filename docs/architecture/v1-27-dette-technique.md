@@ -2350,7 +2350,10 @@ ne les fait pas) :
   tout durcissement côté client du web est contournable par une URL plus ancienne (la fermeture de
   `poste` du 05/10 ne tient pas). **Geste** : Vercel → projet ramille → Settings → Deployment Protection
   → **Vercel Authentication, Standard Protection** (disponible sur Hobby ; `www.ramille.fr` reste
-  public). Relevé le 05/10 par l'API de Vercel : `ssoProtection` désactivé.
+  public). Relevé le 05/10 par l'API de Vercel : `ssoProtection` désactivé. **Fait le 05/10/2026** par la
+  personne qui pilote : relu par l'API, `ssoProtection` actif en `all_except_custom_domains` ; l'ancien
+  déploiement qui rendait le `poste` libre répond 302 vers l'authentification Vercel, et `www.ramille.fr`
+  toujours 200.
 - **Constat 4 — révoquer la clé HS256**, dans l'ordre sûr : (1) poser la clé `sb_publishable_…` dans
   `EXPO_PUBLIC_SUPABASE_ANON_KEY` des environnements EAS `preview` et `production` (la garde
   d'`app.config.js` l'exige au prochain build) ; (2) build du 07/10 installé ; (3) désactiver les clés
@@ -2359,7 +2362,9 @@ ne les fait pas) :
   toutes les sessions anonymes tomberaient » — cela vaut pour la clé **active** (ES256, la seule publiée
   au JWKS) ; la HS256 en attente ne signe plus de session, donc la retirer ne devrait pas les faire
   tomber (à vérifier avant le geste irréversible). L'APK du 05/10 (`29012e62`) embarque encore le JWT
-  `anon` HS256 (mesuré) : révoquer avant le build du 07/10 couperait l'app Android.
+  `anon` HS256 (mesuré) : révoquer avant le build du 07/10 couperait l'app Android. **Étape 1 faite le
+  05/10/2026** par la personne qui pilote (la clé publishable posée dans EAS), qui est la seule à avoir
+  un APK installé ; les étapes 2 et 3 attendent le build du 07/10.
 - **Constat MOYENNE — le ménage GoTrue est éteint.** **Vérifié** en lecture seule : 25 jetons révoqués
   de plus de 2 jours, des `flow_state` de 7 jours, 95 sessions de plus de 5 jours subsistent
   (`GOTRUE_DB_CLEANUP` manifestement `false`). Seconde voie de gonflement, invisible aux plafonds
@@ -2367,11 +2372,14 @@ ne les fait pas) :
   GoTrue (réglage hébergé / support).
 - **Constat MOYENNE — MFA TOTP activé** (`mfa_totp_enroll_enabled`/`verify_enabled` vrais) alors que le
   produit n'en a pas : une session peut enrôler jusqu'à 10 facteurs (bornés, aucun e-mail). Surface
-  inutile. **Geste** : Supabase → Authentication → désactiver TOTP.
+  inutile. **Geste** : Supabase → Authentication → désactiver TOTP. **Fait le 05/10/2026** par la personne
+  qui pilote.
 - **Le jeton `SUPABASE_ACCESS_TOKEN` de l'environnement des sessions** ouvre l'API de management (lecture
   du secret JWT comprise, comme l'incident ci-dessus). **Geste** : le retirer de l'environnement, ne
   l'y remettre que pour appliquer une migration. Aggravé par ce que le dépôt fait exécuter à une session
-  (ci-dessous).
+  (ci-dessous). **Fait le 05/10/2026, et plus que retiré** : la personne qui pilote l'a retiré de
+  l'environnement et **révoqué** dans Supabase (l'API de management répond 401 au jeton resté dans la
+  session en cours). Un jeton neuf se crée le jour où il faut appliquer une migration.
 
 **Ce qui reste, et pourquoi** :
 
