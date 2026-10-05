@@ -50,7 +50,7 @@ alter table public.envois_d_e_mails_d_auth
   check (fournisseur in ('brevo', 'resend', 'boite'));
 
 comment on column public.envois_d_e_mails_d_auth.fournisseur is
-  'Qui a envoyé ce code : brevo, resend ou boite (le collecteur de la stack locale). Nul pour une demande tue ou ignorée, et pour les envois d''avant la colonne (20261005121351).';
+  'Qui a envoyé ce code : brevo, resend ou boite (le collecteur de la stack locale). Nul pour une demande tue ou ignorée, et pour les envois d''avant la colonne (20261005125029).';
 
 -- ── 2. Le choix du fournisseur ───────────────────────────────────────────────────────────────
 --

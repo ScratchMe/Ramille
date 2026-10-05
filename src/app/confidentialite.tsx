@@ -180,7 +180,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // faux depuis le 20/09/2026, relevé par la contre-lecture du hook. Les deux textes validés par la
 // personne qui pilote le même jour.
 //
-// **05/10/2026 encore : les codes de connexion passent par Brevo** (`20261005121351_les_codes_par_brevo.sql`).
+// **05/10/2026 encore : les codes de connexion passent par Brevo** (`20261005125029_les_codes_par_brevo.sql`).
 // Brevo entre dans la liste, avec sa mesure des ouvertures, anonymisée — Brevo ne laisse pas la couper
 // soi-même —, et Resend n'y garde que les rappels. La page est en ligne avant que la clé Brevo soit
 // posée : jusque-là les codes partent encore par Resend, et la page dit l'état qui arrive. Textes

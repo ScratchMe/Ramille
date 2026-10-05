@@ -2060,7 +2060,7 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   heure et par adresse, 60 par jour —, et ses plafonds sont **muets** ; la reconnexion, qui coûte déjà
   une case cochée par code, ne l'est pas. Les trois choix sont de la personne qui pilote, le dernier
   après qu'une seconde contre-lecture a montré qu'un tiers pouvait bloquer la reconnexion d'un autre.
-  **Brevo est écrit le même jour** (`20261005121351_les_codes_par_brevo.sql`, décisions de la
+  **Brevo est écrit le même jour** (`20261005125029_les_codes_par_brevo.sql`, décisions de la
   personne qui pilote) : seuls les codes y passent, dès que sa clé est posée dans le Vault — Resend
   sinon —, avec sa mesure anonymisée ; le plafond du jour des rattachements passe à 200 quand Brevo
   envoie, et reste à 60 quand c'est Resend (la contre-lecture a relevé qu'un 200 fixe aurait valu dès

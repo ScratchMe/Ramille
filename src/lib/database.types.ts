@@ -1379,7 +1379,7 @@ export type Database = {
           dernier_soir: string
         }[]
       }
-      // Le passage des codes par Brevo (20261005121351)
+      // Le passage des codes par Brevo (20261005125029)
       fournisseur_d_e_mail_d_auth: { Args: never; Returns: Record<string, unknown> }
       gabarit_d_e_mail_d_auth: {
         Args: { p_type: string }

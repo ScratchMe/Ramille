@@ -252,7 +252,7 @@ la porte.
 (`public.envoyer_l_e_mail_d_auth`, registre d'exploitation §3.1) : Supabase lui confie chaque e-mail
 d'authentification, il compte, puis envoie avec les deux gabarits du dépôt, recopiés à l'identique —
 **par l'API de Brevo dès que sa clé est posée, sinon par celle de Resend** (depuis le 05/10/2026,
-`20261005121351_les_codes_par_brevo.sql` : seuls les codes passent par Brevo, les rappels restent
+`20261005125029_les_codes_par_brevo.sql` : seuls les codes passent par Brevo, les rappels restent
 chez Resend). **Seul le rattachement est plafonné**, et les valeurs sont celles de la personne
 qui pilote : **5 codes par heure et par compte demandeur, 5 par heure et par adresse, et pour tout le
 projet 200 par jour quand Brevo envoie, 60 quand c'est Resend** — 200 sur les 300 de Brevo en laisse 100

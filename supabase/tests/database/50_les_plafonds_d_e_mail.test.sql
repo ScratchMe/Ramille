@@ -1,7 +1,7 @@
 -- Tests pgTAP des plafonds d'e-mails de connexion (migration `20261005103733_les_plafonds_d_e_mail.sql`,
 -- plan anti-abus, `v1-27` §12.35) : le hook `envoyer_l_e_mail_d_auth`, ce qu'il compte, ce qu'il tait
 -- — ses plafonds ne valent que pour le rattachement, et tous sont muets —, et le corps qui part.
--- Depuis `20261005121351_les_codes_par_brevo.sql` : le fournisseur (Brevo, Resend ou le collecteur
+-- Depuis `20261005125029_les_codes_par_brevo.sql` : le fournisseur (Brevo, Resend ou le collecteur
 -- local) — son choix et sa requête, lus sans rien envoyer (§10) — et le plafond du jour qui en dépend,
 -- 200 quand Brevo envoie et 60 sinon, avec ce que le hook passe à la requête (§11).
 --
