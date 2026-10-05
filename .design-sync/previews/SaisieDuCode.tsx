@@ -2,7 +2,8 @@ import React from 'react';
 import { SaisieDuCode } from 'ramille-design-system';
 
 /**
- * Rattacher une adresse : l'envoi est certain, et la phrase conditionnelle dit, avant la saisie,
+ * Rattacher une adresse : l'envoi est certain (sauf plafond de rattachement atteint, muet), et la
+ * phrase conditionnelle dit, avant la saisie,
  * ce que le code fera si un compte existait déjà — sans jamais le révéler.
  */
 export const Rattachement = () => (

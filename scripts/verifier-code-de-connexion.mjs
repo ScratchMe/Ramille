@@ -11,8 +11,9 @@
 // l'allume pour la stack locale, où il poste au collecteur d'e-mails (plafonds d'e-mail, `COMPTE.md`).
 // Ce script est donc le seul à jouer le hook de bout en bout — Supabase qui l'appelle, le corps qui
 // part, le code qui se vérifie ; ses plafonds, eux, sont gardés par le pgTAP `50`. Chaque passage écrit
-// des adresses neuves (`marque`), donc seul le plafond du projet peut finir par mordre — soixante codes
-// en vingt-quatre heures, une douzaine de rejeux sur la même base. Il se tait : le code n'arrive pas,
+// des adresses neuves (`marque`), et la reconnexion n'est pas plafonnée : seul le plafond du projet peut
+// finir par mordre — soixante rattachements en vingt-quatre heures, trois par passage, une vingtaine de
+// rejeux sur la même base, moins si le parcours réel en ajoute. Il se tait : le code n'arrive pas,
 // et le journal du hook le dit (`public.envois_d_e_mails_d_auth`). `supabase db reset` le vide ; un
 // `stop` puis `start` garde la base (le rejeu de la CI, lui, repart d'une stack neuve).
 //

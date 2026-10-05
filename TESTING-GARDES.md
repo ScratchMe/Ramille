@@ -187,8 +187,11 @@ rattaché par code, et rien derrière », `v1-33` T-1). Depuis le plan : « Toi 
 compte » → l'adresse envoyée par **Entrée** → le focus sur « Regarde tes emails » → le code lu dans
 Mailpit (comme `verifier-code-de-connexion.mjs`) → la base relue (même utilisateur, plus anonyme, à
 cette adresse) → **le retour quitte l'app** ; puis « Me déconnecter » et le même retour. Tout se joue
-sur un onglet neuf. **Il envoie un e-mail par passage**, sur un plafond local de 30 par heure
-partagé avec `verifier-code-de-connexion.mjs` et tout passage simultané.
+sur un onglet neuf. **Il envoie un e-mail par passage**, un rattachement : depuis le 05/10/2026, le
+hook d'envoi allumé en local le compte dans son plafond de 60 rattachements par jour, partagé avec
+`verifier-code-de-connexion.mjs` et tout passage simultané — un plafond muet, où le code n'arrive
+jamais dans Mailpit et le parcours expire sans erreur ; `supabase db reset` le vide (le rejeu de la CI
+repart d'une stack neuve). Le plafond local de 30 par heure de Supabase ne compte plus hook allumé.
 
 **Depuis le 01/10/2026, le parcours répond aussi aux vols et aux longs trajets** (`v1-33` D1) —
 profil 1 : ses deux vols, puis « Oui » ; cycliste et profil sans boucle : « 0 », puis « Non » — et
@@ -461,6 +464,11 @@ est le fichier (une migration livrée ne se retouche pas : un texte changé vien
 plus récente, que la garde lit à son tour) ; 6. son sujet est celui que le titre du document écrit
 entre « ». Mutations jouées le même jour : une espace dans le corps de la migration, une lettre du
 sujet, la balise renommée — chacune fait tomber sa seule assertion.
+
+**Et une septième** : le fichier ne porte que les variables que le hook remplace (`variables` —
+`{{ .Token }}`, plus `{{ .NewEmail }}` pour le rattachement). GoTrue en connaît d'autres, que le hook
+laisserait partir telles quelles, accolades comprises. Mutation jouée le 05/10/2026 : `{{ .Email }}`
+ajouté au fichier et à la migration → l'assertion 7 tombe (la 1 aussi, le document n'ayant pas bougé).
 
 **Ce qui lui échappe**, et c'est structurel : `GABARITS` est une liste **déclarée**, comme `MIROIRS`,
 donc un gabarit que personne n'y déclare lui reste invisible — aucune garde déclarative ne s'annonce

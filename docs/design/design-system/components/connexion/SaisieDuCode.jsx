@@ -8,7 +8,8 @@ import { ChampDeCode } from './ChampDeCode.jsx';
 // rattacher une adresse (`/connexion/email`), retrouver un compte (`/connexion/retrouver`), et la page de suppression.
 //
 // Ce que l'écran a le droit d'AFFIRMER suit la voix de l'hôte, jamais l'état de l'adresse :
-// — `parti` : l'envoi est certain (« Un code à 8 chiffres vient de partir à … »), et une phrase conditionnelle dit, AVANT
+// — `parti` : l'envoi est certain (« Un code à 8 chiffres vient de partir à … ») — sauf plafond de rattachement atteint,
+//   où le serveur se tait pour ne rien révéler —, et une phrase conditionnelle dit, AVANT
 //   la saisie, ce que le code fera si un compte existait déjà — vraie dans les deux cas, donc montrable dans les deux ;
 // — `peut_etre` : l'envoi n'est certain que si un compte existe, et une carte dit que le code ne crée jamais de compte —
 //   ni ne révèle si l'adresse en a un. Dire lequel des deux cas s'est produit reviendrait à dire qui utilise Ramille.

@@ -15,28 +15,32 @@
 -- change rien tant qu'il est éteint, et l'éteindre rend l'envoi au SMTP et aux gabarits du tableau
 -- de bord, qui restent en place pour ça (registre d'exploitation §3.1).
 --
--- **Les plafonds** (fenêtres glissantes, seuls les envois partis comptent) :
---   - 5 codes par heure et par compte ;
+-- **Les plafonds ne valent que pour le rattachement** (décision de la personne qui pilote, 05/10/2026),
+-- en fenêtres glissantes, et seuls les rattachements partis comptent :
+--   - 5 codes par heure et par compte demandeur ;
 --   - 5 codes par heure et par adresse ;
 --   - 60 codes par jour pour tout le projet, ce qui laisse leur part aux rappels dans les 100 e-mails
 --     par jour de Resend.
--- Le minimum d'une minute de Supabase entre deux codes d'un même compte reste devant. Son plafond
--- horaire (30), lui, n'est pas compté : sur la stack locale, 32 rattachements d'affilée sont tous partis
--- par le hook — une stack sans SMTP, donc la mesure ne tranche pas pour la production.
+-- **La reconnexion n'est pas plafonnée par le hook** : elle coûte déjà une case cochée par code
+-- (captcha), et Supabase impose une minute entre deux codes d'un même compte. La plafonner laissait
+-- n'importe qui bloquer celle d'un autre — cinq demandes vers une adresse, cinq cases cochées, et son
+-- titulaire ne recevait plus rien de l'heure ; douze sessions anonymes, et plus personne ne recevait
+-- de code jusqu'au lendemain (seconde contre-lecture). Ce qu'on accepte en échange : qui coche une case
+-- par e-mail peut épuiser le quota de Resend par des codes de reconnexion. Le plafond horaire de
+-- Supabase (30) n'est pas compté non plus : sur la stack locale, 32 rattachements d'affilée sont tous
+-- partis par le hook — une stack sans SMTP, donc la mesure ne tranche pas pour la production.
 --
--- **Tous les plafonds sont muets** (décision de la personne qui pilote, 05/10/2026) : au-delà, rien ne
--- part, et l'écran dit « envoyé ». Un refus dirait qui a un compte, par deux chemins. Pour la
--- reconnexion, seules les adresses qui ont un compte arrivent jusqu'ici (une adresse inconnue rend
--- `422 otp_disabled` avant le hook), et le compte compté est celui de l'adresse visée. Et sur
--- `/connexion/email`, une adresse libre part en rattachement (compte du demandeur) quand une adresse
--- prise bascule en reconnexion (compte visé) : un refus du seul rattachement dirait laquelle des deux
--- branches est partie, sans même qu'un e-mail parte chez le titulaire — relevé par la contre-lecture.
--- **Ce que le silence coûte, et c'est su** : Supabase renouvelle quand même le code avant d'appeler le
--- hook, donc un plafond atteint tue le code déjà reçu sans en envoyer d'autre. Une personne qui
--- redemande un sixième code dans l'heure reste sans code valable jusqu'à ce que la fenêtre passe,
--- devant un écran qui dit « Un nouveau code vient de partir ». La minute imposée entre deux codes rend
--- ce cas rare, et c'est pourquoi le plafond de l'adresse est de cinq et non de trois.
---
+-- **Ces plafonds sont muets** (même décision) : au-delà, rien ne part, et l'écran dit « envoyé ». Sur
+-- `/connexion/email`, une adresse libre part en rattachement quand une adresse prise bascule en
+-- reconnexion : un refus du seul rattachement dirait laquelle des deux branches est partie — donc si
+-- l'adresse a un compte —, sans même qu'un e-mail parte chez le titulaire (relevé par la première
+-- contre-lecture). **Ce que le silence coûte, et c'est su** : Supabase renouvelle quand même le code
+-- avant d'appeler le hook, donc un plafond atteint tue le code de rattachement déjà reçu sans en
+-- envoyer d'autre, devant un écran qui dit « Un nouveau code vient de partir ». Le plafond de l'adresse
+-- compte les demandes de tout le monde : cinq rattachements vers une adresse dans l'heure, d'où qu'ils
+-- viennent — cinq sessions, cinq cases cochées —, et la personne qui la possède ne peut plus la
+-- rattacher avant que la fenêtre passe. Son compte et sa reconnexion, eux, ne sont pas touchés.
+
 -- **Le hook a deux secondes, pas une de plus** (mesuré le 05/10/2026 sur la stack locale : Supabase
 -- pose `statement_timeout = 2s` sur son appel, et un `set statement_timeout` de fonction ne
 -- l'allonge pas). L'envoi est synchrone, par l'extension `http` comme celui des rappels, borné à
@@ -64,7 +68,7 @@ create table if not exists public.envois_d_e_mails_d_auth (
 );
 
 comment on table public.envois_d_e_mails_d_auth is
-  'Les e-mails d''authentification confiés au hook envoyer_l_e_mail_d_auth : ce que ses plafonds comptent. Empreinte de l''adresse, jamais l''adresse ; purgé au bout de deux jours.';
+  'Les e-mails d''authentification confiés au hook envoyer_l_e_mail_d_auth : ce que ses plafonds comptent. Empreinte de l''adresse, jamais l''adresse ; purgé chaque nuit de ce qui a plus d''un jour, gardé deux jours au plus.';
 
 create index if not exists envois_d_e_mails_d_auth_user_id_idx on public.envois_d_e_mails_d_auth (user_id, cree_le);
 create index if not exists envois_d_e_mails_d_auth_adresse_idx on public.envois_d_e_mails_d_auth (adresse_empreinte, cree_le);
@@ -205,31 +209,37 @@ begin
   end if;
 
   v_empreinte := sha256(convert_to(lower(btrim(v_adresse)), 'UTF8'));
-  -- Deux demandes simultanées vers la même adresse compteraient le même passé : une à la fois, pour
-  -- cette adresse seulement. Le verrou tient jusqu'à la fin de la transaction d'Auth, envoi compris :
-  -- un verrou commun à tout le projet ferait attendre chaque demande derrière l'envoi des autres, dans
-  -- ses deux secondes. Entre adresses différentes, des demandes simultanées peuvent donc dépasser d'une
-  -- ou deux unités les plafonds du compte et du projet ; c'est accepté.
-  perform pg_advisory_xact_lock(hashtext('envois_d_e_mails_d_auth:' || encode(v_empreinte, 'hex')));
-  select count(*),
-         count(*) filter (where user_id = v_user and cree_le > now() - interval '1 hour'),
-         count(*) filter (where adresse_empreinte = v_empreinte and cree_le > now() - interval '1 hour')
-    into v_jour, v_compte, v_par_adresse
-    from public.envois_d_e_mails_d_auth
-   where issue = 'envoye'
-     and cree_le > now() - interval '24 hours';
 
-  v_plafond := case
-    when v_jour >= c_projet_par_jour then 'plafond_projet'
-    when v_compte >= c_par_compte_par_heure then 'plafond_compte'
-    when v_par_adresse >= c_par_adresse_par_heure then 'plafond_adresse'
-  end;
+  -- Les plafonds ne valent que pour le rattachement (en-tête de la migration) : une reconnexion coûte
+  -- déjà une case cochée par code, et la plafonner laissait n'importe qui bloquer celle d'un autre.
+  if v_type = 'email_change' then
+    -- Deux demandes simultanées vers la même adresse compteraient le même passé : une à la fois, pour
+    -- cette adresse seulement. Le verrou tient jusqu'à la fin de la transaction d'Auth, envoi compris :
+    -- un verrou commun à tout le projet ferait attendre chaque demande derrière l'envoi des autres,
+    -- dans ses deux secondes. Entre adresses différentes, des demandes simultanées peuvent donc
+    -- dépasser le plafond du projet, d'autant qu'elles sont nombreuses à la même seconde ; c'est accepté.
+    perform pg_advisory_xact_lock(hashtext('envois_d_e_mails_d_auth:' || encode(v_empreinte, 'hex')));
+    select count(*),
+           count(*) filter (where user_id = v_user and cree_le > now() - interval '1 hour'),
+           count(*) filter (where adresse_empreinte = v_empreinte and cree_le > now() - interval '1 hour')
+      into v_jour, v_compte, v_par_adresse
+      from public.envois_d_e_mails_d_auth
+     where issue = 'envoye'
+       and type = 'email_change'
+       and cree_le > now() - interval '24 hours';
 
-  if v_plafond is not null then
-    -- Muet, quel que soit le plafond et quel que soit le type (en-tête de la migration).
-    insert into public.envois_d_e_mails_d_auth (user_id, adresse_empreinte, type, issue)
-    values (v_user, v_empreinte, v_type, v_plafond);
-    return '{}'::jsonb;
+    v_plafond := case
+      when v_jour >= c_projet_par_jour then 'plafond_projet'
+      when v_compte >= c_par_compte_par_heure then 'plafond_compte'
+      when v_par_adresse >= c_par_adresse_par_heure then 'plafond_adresse'
+    end;
+
+    if v_plafond is not null then
+      -- Muet, quel que soit le plafond (en-tête de la migration).
+      insert into public.envois_d_e_mails_d_auth (user_id, adresse_empreinte, type, issue)
+      values (v_user, v_empreinte, v_type, v_plafond);
+      return '{}'::jsonb;
+    end if;
   end if;
 
   -- La production envoie par Resend. La stack locale n'a pas de clé : elle porte à la place l'adresse
@@ -294,7 +304,7 @@ end;
 $$;
 
 comment on function public.envoyer_l_e_mail_d_auth(jsonb) is
-  'Send Email Hook de Supabase : applique les plafonds d''e-mails de connexion (5 par heure et par compte, 5 par heure et par adresse, 60 par jour), muets, puis envoie par Resend. S''allume dans Authentication → Hooks.';
+  'Send Email Hook de Supabase : applique aux codes de rattachement des plafonds muets (5 par heure et par compte, 5 par heure et par adresse, 60 par jour), puis envoie par Resend. S''allume dans Authentication → Hooks.';
 
 revoke execute on function public.envoyer_l_e_mail_d_auth(jsonb) from public, anon, authenticated;
 grant usage on schema public to supabase_auth_admin;

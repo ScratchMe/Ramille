@@ -616,7 +616,9 @@ export const MESSAGE_DE_LA_SUITE_MANQUEE =
  *
  * - **`parti`** — on sait qu'un code est parti à cette adresse. C'est le cas de `/connexion/email`,
  *   **dans ses deux branches** : l'adresse libre reçoit un code de rattachement, l'adresse prise un
- *   code de connexion. Rien dans la phrase ne dit laquelle.
+ *   code de connexion. Rien dans la phrase ne dit laquelle. **Une exception, choisie** : au-delà d'un
+ *   plafond de rattachement (05/10/2026), le hook d'envoi se tait et la phrase annonce un envoi qui
+ *   n'a pas eu lieu — la dire autrement dirait si l'adresse est libre.
  * - **`peut_etre`** — on ne peut pas l'affirmer sans dire si l'adresse a un compte, d'où le « si ».
  *   C'est `/connexion/retrouver` et `/compte/suppression`, où `shouldCreateUser: false` fait qu'une
  *   adresse inconnue ne reçoit rien.
@@ -720,7 +722,8 @@ export function suiteDuRenvoi(contexte: ContexteDuCode, error: ErreurAuth): Suit
 /**
  * **Le renvoi suit la VOIX, pas le contexte** — sinon l'oracle se rouvre au second envoi, ce qui
  * serait le même défaut que celui relevé en revue le 21/09/2026 par une autre porte. Depuis
- * `/connexion/email`, les deux branches renvoient un code pour de vrai : la phrase peut l'affirmer.
+ * `/connexion/email`, les deux branches renvoient un code pour de vrai : la phrase peut l'affirmer
+ * (sauf au-delà d'un plafond de rattachement, muet — `voix 'parti'`, plus haut).
  */
 export function messageDuRenvoi(voix: VoixDeLaSaisie): string {
   return voix === 'parti'

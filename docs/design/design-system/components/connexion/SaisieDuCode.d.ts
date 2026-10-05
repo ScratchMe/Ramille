@@ -4,8 +4,8 @@
  */
 export interface SaisieDuCodeProps {
   /**
-   * Ce que l'écran a le droit d'affirmer — une propriété de l'hôte, jamais de l'adresse : `parti` (l'envoi est certain :
-   * rattacher une adresse) ou `peut_etre` (il ne l'est que si un compte existe : retrouver un compte, page de suppression).
+   * Ce que l'écran a le droit d'affirmer — une propriété de l'hôte, jamais de l'adresse : `parti` (l'envoi est certain, sauf
+   * plafond de rattachement atteint, où le serveur se tait : rattacher une adresse) ou `peut_etre` (il ne l'est que si un compte existe : retrouver un compte, page de suppression).
    */
   voix: 'parti' | 'peut_etre';
   /**

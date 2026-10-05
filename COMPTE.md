@@ -251,23 +251,29 @@ la porte.
 **Les deux codes partent de la base, plus de Supabase, dès que le hook d'envoi est allumé**
 (`public.envoyer_l_e_mail_d_auth`, registre d'exploitation §3.1) : Supabase lui confie chaque e-mail
 d'authentification, il compte, puis envoie par l'API de Resend avec les deux gabarits du dépôt,
-recopiés à l'identique. Les plafonds, choisis par la personne qui pilote : **5 codes par heure et par
-compte, 5 par heure et par adresse, 60 par jour pour tout le projet** — devant eux, la minute de
-Supabase entre deux codes d'un même compte reste ; son plafond horaire (30) n'est pas compté, faute de
-mesure qui tranche pour la production. Cinq choses à savoir avant d'y toucher :
+recopiés à l'identique. **Seul le rattachement est plafonné**, et les valeurs sont celles de la personne
+qui pilote : **5 codes par heure et par compte demandeur, 5 par heure et par adresse, 60 par jour pour
+tout le projet**. La minute de Supabase entre deux codes d'un même compte reste devant ; son plafond
+horaire (30) n'est pas compté, faute de mesure qui tranche pour la production. Cinq choses à savoir
+avant d'y toucher :
 
-- **Tous les plafonds sont muets, et c'est la non-divulgation qui l'impose** (décision du 05/10/2026,
-  après la contre-lecture) : au-delà, rien ne part et l'écran de code s'ouvre comme pour un envoi
-  accepté. Deux chemins l'exigent. Pour la reconnexion, seules les adresses qui ont un compte atteignent
-  le hook, et le compte compté est celui de l'adresse visée. Et sur `/connexion/email`, une adresse
-  libre part en rattachement quand une adresse prise bascule en reconnexion : si l'un des deux refusait
-  et l'autre se taisait, l'écran dirait laquelle des deux branches est partie — sans même qu'un e-mail
-  parte chez le titulaire. **Ce que le silence coûte** : Supabase renouvelle le code avant d'appeler le
-  hook, donc un plafond atteint tue le code déjà reçu sans en envoyer d'autre — l'écran dit « Un
-  nouveau code vient de partir », et la personne reste sans code valable jusqu'à ce que la fenêtre
-  passe. Avec la minute entre deux codes, il faut redemander six fois dans l'heure pour y tomber.
-  « Trop de demandes pour le moment. Réessaie plus tard. » ne vient donc que des limites de Supabase
-  lui-même, et un échec d'envoi rend un `500`, lu comme une panne de transport.
+- **La reconnexion n'est pas plafonnée par le hook, et c'est voulu** (décision du 05/10/2026, après la
+  seconde contre-lecture) : elle coûte déjà une case cochée par code. Plafonnée, elle laissait n'importe
+  qui bloquer celle d'un autre — cinq demandes vers une adresse, et son titulaire ne recevait plus rien
+  de l'heure. Ce qu'on accepte : qui coche une case par e-mail peut épuiser le quota de Resend par des
+  codes de reconnexion.
+- **Les plafonds du rattachement sont muets, et c'est la non-divulgation qui l'impose** : au-delà, rien
+  ne part et l'écran de code s'ouvre comme pour un envoi accepté. Sur `/connexion/email`, une adresse
+  libre part en rattachement quand une adresse prise bascule en reconnexion : si le rattachement
+  refusait, l'écran dirait laquelle des deux branches est partie — sans même qu'un e-mail parte chez le
+  titulaire. **Ce que le silence coûte** : Supabase renouvelle le code avant d'appeler le hook, donc un
+  plafond atteint tue le code de rattachement déjà reçu sans en envoyer d'autre — l'écran dit « Un
+  nouveau code vient de partir ». Et le plafond de l'adresse compte les demandes de tout le monde :
+  cinq rattachements vers une adresse dans l'heure, d'où qu'ils viennent, et la personne qui la possède
+  ne peut plus la rattacher avant que la fenêtre passe — son compte et sa reconnexion ne sont pas
+  touchés. « Trop de demandes pour le moment. Réessaie plus tard. » ne vient donc que des limites de
+  Supabase lui-même, et un échec d'envoi rend un `500`, lu comme une panne de transport (ce qu'il dit
+  d'une adresse : `SUPABASE.md` §2.4).
 - **Le hook a deux secondes, imposées par Supabase** (`statement_timeout`, mesuré) : l'envoi est
   synchrone et borné à 1,5 s (mesuré : une requête qui pend est coupée à 1 502 ms). Le verrou qui
   sérialise les demandes ne vaut que pour une même adresse : un verrou commun ferait attendre chaque

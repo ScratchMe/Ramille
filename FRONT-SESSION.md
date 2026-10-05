@@ -202,7 +202,9 @@ périmerait en silence au prochain passage :
   - **`VoixDeLaSaisie` (`parti` | `peut_etre`) décide ce que l'écran a le droit d'AFFIRMER**, et
     c'est une propriété de l'**hôte** : elle ne bouge pas d'une branche à l'autre.
   `/connexion/email` est en voix `parti` **dans ses deux branches**, parce qu'un code part
-  réellement dans les deux et que la personne vient de taper l'adresse ; `/connexion/retrouver` et
+  réellement dans les deux et que la personne vient de taper l'adresse — **sauf au-delà d'un plafond
+  de rattachement** (05/10/2026, `COMPTE.md`), muet : l'écran annonce alors un envoi qui n'a pas eu
+  lieu, et c'est le prix choisi de la non-divulgation ; `/connexion/retrouver` et
   `/compte/suppression` sont en `peut_etre`, où `shouldCreateUser: false` fait qu'une adresse
   inconnue ne reçoit rien, d'où le « si ». Faire suivre la voix au contexte rendrait le mécanisme
   juste et la fuite intacte : n'importe qui lirait dans la phrase si l'adresse a un compte. Recopier

@@ -34,8 +34,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //   - panne d'affichage enregistrée sans son message -> événement `app_error` de `usage_events` ;
 //   - aucune géolocalisation -> non-goal explicite de la spec §2 ;
 //   - retours utilisateur -> table `feedback`, insert-only côté client, issue #29 ;
+//   - trace des demandes de code de connexion (deux jours au plus) -> `envois_d_e_mails_d_auth`,
+//     cron `purge-envois-d-e-mails-d-auth` (ce qui a plus d'un jour, chaque nuit), rendue par l'export ;
 //   - sous-traitants et localisation -> les seuls tiers appelés par le produit :
-//     `api.resend.com` et `exp.host` dans `send_pending_reminders()`, Supabase (Paris) pour la
+//     `api.resend.com` et `exp.host` dans `send_pending_reminders()`, `api.resend.com` dans
+//     `envoyer_l_e_mail_d_auth()` pour les codes de connexion (le SMTP de Supabase passait déjà
+//     par Resend), Supabase (Paris) pour la
 //     base, Vercel pour servir la version web et fabriquer la carte de partage, Google pour
 //     OAuth et pour FCM, GitHub Actions et Cloudflare R2 pour la sauvegarde
 //     (`.github/workflows/sauvegarde.yml`, `docs/exploitation/sauvegarde.md`), et depuis le

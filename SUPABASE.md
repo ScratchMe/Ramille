@@ -581,13 +581,22 @@ de Ramille rendent la même chose dans les deux cas — **sauf sous la limite d'
 qu'une adresse à laquelle un code vient réellement de partir : demander deux fois en moins d'une
 minute rend « Trop de demandes » (« coup sur coup » jusqu'au 05/10/2026, « pour le moment » depuis)
 pour une adresse qui a un compte, et jamais pour une adresse qui n'en a pas (contre-lecture du
-28/09/2026). Les plafonds du hook d'envoi (05/10/2026, `COMPTE.md`) n'ouvrent pas de seconde fuite
-parce qu'ils se taisent **tous** : une première version refusait le rattachement au-delà du plafond
-du compte ou du projet, et `/connexion/email` serait devenu un oracle silencieux — une adresse libre
-part en rattachement (refusé), une adresse prise bascule en reconnexion (tue) — relevé par la
-contre-lecture avant la fusion. On ne le masque pas, parce que masquer
-voudrait dire annoncer un code qui n'est pas parti à une personne réelle, et ce sondage-là envoie un
-vrai e-mail au titulaire. La console du navigateur, elle, affiche le 422, et toute session anonyme
+28/09/2026). On ne le masque pas, parce que masquer voudrait dire annoncer un code qui n'est pas
+parti à une personne réelle, et ce sondage-là envoie un vrai e-mail au titulaire.
+
+**Les plafonds du hook d'envoi (05/10/2026, `COMPTE.md`) ont fait l'arbitrage inverse, et ce n'est pas
+une contradiction** : eux se taisent — rien ne part, l'écran annonce un envoi — parce qu'aucun e-mail
+ne prévient alors le titulaire. Une première version refusait le rattachement au-delà du plafond du
+compte ou du projet, et `/connexion/email` serait devenu un oracle silencieux : une adresse libre part
+en rattachement (refusé), une adresse prise bascule en reconnexion (envoyée) — relevé par la
+contre-lecture avant la fusion. La minute, elle, reste dite : son sondage envoie un vrai code au
+titulaire, ce qui le rend visible et coûteux. **Et un échec d'envoi parle aussi** : le hook rend un
+`500` (secret manquant, Resend en panne ou à court de quota) que seules les adresses connues
+atteignent sur `/connexion/retrouver` et `/compte/suppression` — une adresse inconnue s'arrête avant,
+en `422 otp_disabled` —, donc pendant une panne de Resend « Ta demande n'a pas abouti » contre
+l'écran de code dit qui a un compte. Le SMTP de Supabase faisait déjà de même ; c'est su, pas fermé.
+
+La console du navigateur, elle, affiche le 422, et toute session anonyme
 peut appeler ces deux routes sans l'app — le hook d'envoi borne ce qui part, pas ce que la réponse dit. Aucun réglage du
 service ne masque ces réponses, et une fonction serveur ne fermerait pas l'appel direct. Ce qu'il
 faut en retenir avant d'écrire une ligne d'auth : **« aucune réponse différenciée » veut dire
