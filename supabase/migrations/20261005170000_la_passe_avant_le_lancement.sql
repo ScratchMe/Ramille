@@ -21,8 +21,8 @@
 --      une vague de robots déclenchait la garde chaque nuit. Un bilan en cours ne porte plus rien.
 --   3. **L'alerte se noyait** : une panne émise par heure consommait les six envois du jour. Les
 --      signaux du serveur passent désormais le plafond.
---   4. **Un jeton Expo d'un autre projet faisait tomber le lot de rappels entier.** Un 400 sur un lot
---      de plusieurs comptes le coupe désormais en deux, jusqu'à isoler la ligne fautive.
+--   4. **Un jeton Expo d'un autre projet faisait tomber le lot de rappels entier.** Le refus
+--      `PUSH_TOO_MANY_EXPERIENCE_IDS` coupe désormais le lot en deux, jusqu'à isoler la ligne fautive.
 --   5. **Le code de rattachement partait sans captcha** : 120 codes par jour vers l'adresse d'un
 --      tiers depuis une seule session, et quarante sessions épuisaient les 200 envois du jour. Chaque
 --      code coûte désormais un captcha, vérifié par la base auprès de Cloudflare
