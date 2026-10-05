@@ -168,9 +168,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //
 // **05/10/2026 : la trace des codes de connexion envoyés** (plafonds d'e-mail, plan anti-abus,
 // `20261005100000_les_plafonds_d_e_mail.sql`). Les plafonds comptent chaque code parti — compte, date,
-// empreinte de l'adresse — dans un journal purgé au bout de deux jours : une donnée de plus, que la
-// liste des durées de conservation devait nommer, et que l'export rend. Ligne validée par la personne
-// qui pilote le même jour.
+// empreinte de l'adresse — dans un journal purgé au bout de deux jours au plus : une donnée de plus,
+// que la liste des durées de conservation devait nommer, et que l'export rend. Le journal garde aussi
+// les demandes que les plafonds ont tues, d'où « demandes » et « ce qu'il en est advenu ». Et la fiche
+// Resend ne parlait que des rappels, alors que les codes de connexion y passaient déjà par le SMTP —
+// faux depuis le 20/09/2026, relevé par la contre-lecture du hook. Les deux textes validés par la
+// personne qui pilote le même jour.
 const UPDATED_AT = '5 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -383,8 +386,9 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'Resend',
             text:
-              'Envoi des emails de rappel, uniquement si tu as choisi ce canal : reçoit alors ton adresse email et le ' +
-              'texte du rappel, c’est-à-dire la question de ton point (le détail plus bas).',
+              'Envoi des emails : les codes de connexion — reçoit alors ton adresse email et le code —, et les rappels ' +
+              'si tu as choisi ce canal : reçoit alors ton adresse email et le texte du rappel, c’est-à-dire la question ' +
+              'de ton point (le détail plus bas).',
           },
           {
             term: 'Expo',
@@ -492,9 +496,9 @@ const SECTIONS: LegalSection[] = [
           'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +
             'd’envoi, message — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',
-          'Codes de connexion envoyés par e-mail : pour chacun, nous gardons deux jours une trace — le compte ' +
-            'concerné, la date et une empreinte de l’adresse, jamais l’adresse elle-même — le temps d’appliquer les ' +
-            'plafonds qui empêchent les envois abusifs. Elle est supprimée ensuite.',
+          'Demandes de code de connexion par e-mail : pour chacune, nous gardons deux jours une trace — le compte ' +
+            'concerné, la date, ce qu’il en est advenu et une empreinte de l’adresse, jamais l’adresse elle-même — le ' +
+            'temps d’appliquer les plafonds qui empêchent les envois abusifs. Elle est supprimée ensuite.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours, ' +
             'repères de parcours et sessions est supprimé.',
           'Après une suppression, il ne reste que des compteurs, sans aucun identifiant — et, le temps qu’elles ' +

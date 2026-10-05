@@ -268,6 +268,11 @@ sur la stack locale :
   par l'API ce n'est pas exploitable, mais une clé d'API passée en en-tête y transite par une table
   lisible de tous, et un échec du fournisseur devient muet. Le synchrone (`http`) est préférable quand
   il tient dans le délai.
+- **Répondre `{}` vaut succès, et Auth a déjà renouvelé le code** : un plafond « muet » (le hook ne
+  renvoie rien et n'envoie rien) laisse Auth enregistrer le nouveau jeton, donc le code que la personne
+  avait reçu ne vaut plus, et aucun autre n'arrive. Se taire protège la non-divulgation au prix de ce
+  cul-de-sac ; refuser l'éviterait (l'erreur annule la transaction, l'ancien code reste) au prix de dire
+  ce que le silence tait. Ce choix-là est un choix de produit.
 - **Le hook d'envoi reçoit des types que le produit n'emprunte pas** (inscription, réinitialisation,
   notifications) : répondre `{}` sans envoyer les éteint, mais répondre une erreur dirait qui a un
   compte, puisqu'Auth ne les fait partir que pour des adresses connues. Et pour `email_change`, les
@@ -576,8 +581,11 @@ de Ramille rendent la même chose dans les deux cas — **sauf sous la limite d'
 qu'une adresse à laquelle un code vient réellement de partir : demander deux fois en moins d'une
 minute rend « Trop de demandes » (« coup sur coup » jusqu'au 05/10/2026, « pour le moment » depuis)
 pour une adresse qui a un compte, et jamais pour une adresse qui n'en a pas (contre-lecture du
-28/09/2026). Les plafonds du hook d'envoi (05/10/2026, `COMPTE.md`) n'ouvrent pas de seconde fuite :
-ceux qui comptent une adresse se taisent. On ne le masque pas, parce que masquer
+28/09/2026). Les plafonds du hook d'envoi (05/10/2026, `COMPTE.md`) n'ouvrent pas de seconde fuite
+parce qu'ils se taisent **tous** : une première version refusait le rattachement au-delà du plafond
+du compte ou du projet, et `/connexion/email` serait devenu un oracle silencieux — une adresse libre
+part en rattachement (refusé), une adresse prise bascule en reconnexion (tue) — relevé par la
+contre-lecture avant la fusion. On ne le masque pas, parce que masquer
 voudrait dire annoncer un code qui n'est pas parti à une personne réelle, et ce sondage-là envoie un
 vrai e-mail au titulaire. La console du navigateur, elle, affiche le 422, et toute session anonyme
 peut appeler ces deux routes sans l'app — le hook d'envoi borne ce qui part, pas ce que la réponse dit. Aucun réglage du

@@ -2,8 +2,8 @@
 /**
  * Les gabarits d'e-mail vivent à DEUX endroits dans le dépôt, et rien ne les comparait.
  *
- * `supabase/templates/` porte la copie exécutable — c'est elle que GoTrue inline au démarrage de la
- * stack locale —, et `docs/exploitation/gabarits-email.md` porte la référence relisable, celle qu'on
+ * `supabase/templates/` porte la copie que GoTrue inline au démarrage de la stack locale — elle ne
+ * part plus que hook d'envoi éteint, depuis le 05/10/2026 (assertions 5 à 7) —, et `docs/exploitation/gabarits-email.md` porte la référence relisable, celle qu'on
  * ouvre pour savoir ce que la production envoie. Deux copies d'un même texte divergent par une faute
  * de frappe que personne ne relit : c'est le raisonnement de `mois_francais` et de sa jumelle
  * `MOIS_FRANCAIS`, et celui du tableau `MIROIRS` de `verifier-miroirs-de-check.mjs`.
@@ -56,9 +56,14 @@
  * le fichier, à l'octet près des fins de ligne ; 6. son sujet est celui du titre du document. Les
  * fichiers restent la référence parce que le hook éteint rend l'envoi à GoTrue, qui les lit.
  *
+ * 7. le fichier ne porte que les variables que le hook remplace (`variables`) : une autre partirait
+ * brute, puisque le hook ne fait que deux remplacements.
+ *
  * MUTATIONS JOUÉES LE 05/10/2026 : une espace ajoutée dans le corps de la migration → l'assertion 5
  * tombe, seule ; une lettre changée dans le sujet de la migration → l'assertion 6 tombe, seule ; la
- * balise renommée → l'assertion 5 tombe en disant qu'aucune migration ne la porte.
+ * balise renommée → l'assertion 5 tombe en disant qu'aucune migration ne la porte ; `{{ .Email }}`
+ * ajouté au fichier et à la migration → l'assertion 7 tombe (la 1 aussi, le document n'ayant pas
+ * bougé).
  *
  * Ne lit que le système de fichiers : ni npm ci, ni export, ni Docker.
  */
@@ -85,6 +90,9 @@ const GABARITS = [
     cle: 'magic_link',
     // Le bloc `$gabarit_lien_de_connexion$` de la migration qui porte le hook d'envoi.
     bloc: 'lien_de_connexion',
+    // Les seules variables que le hook d'envoi remplace (`rendre_l_e_mail_d_auth`) : toute autre
+    // partirait brute, accolades comprises.
+    variables: ['{{ .Token }}'],
   },
   {
     fichier: 'supabase/templates/rattachement-adresse.html',
@@ -93,6 +101,7 @@ const GABARITS = [
     // dont le lien ÉTAIT la faille du 19/09/2026.
     cle: 'email_change',
     bloc: 'rattachement_adresse',
+    variables: ['{{ .Token }}', '{{ .NewEmail }}'],
     // Ce que lit d'abord quelqu'un qui n'a rien demandé (jugement 05.2, 01/10/2026).
     avantLeCode: "Si ce n'est pas toi, ne fais rien",
   },
@@ -209,6 +218,15 @@ for (const gabarit of GABARITS) {
     verifier(
       phrase !== -1 && phrase < fichier.indexOf('{{ .Token }}'),
       `${gabarit.fichier} : « ${gabarit.avantLeCode} » doit venir avant le code — lu en deux secondes par quelqu'un qui n'a rien demandé, le message montre d'abord le code (jugement 05.2, \`v1-13\` §19)`
+    );
+  }
+
+  // 7. Aucune variable que le hook ne remplace pas : GoTrue en connaît d'autres (`{{ .Email }}`,
+  // `{{.Token}}` sans espaces), que le hook laisserait partir telles quelles.
+  for (const variable of fichier.match(/\{\{[^}]*\}\}/g) ?? []) {
+    verifier(
+      gabarit.variables.includes(variable),
+      `${gabarit.fichier} porte \`${variable}\`, que le hook d'envoi ne remplace pas — elle partirait brute (seules ${gabarit.variables.join(', ')})`
     );
   }
 

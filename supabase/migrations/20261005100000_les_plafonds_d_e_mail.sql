@@ -9,24 +9,33 @@
 -- rappels partagent, ou inonder la boîte d'une vraie personne.
 --
 -- **Comment.** Supabase confie chaque e-mail d'authentification à une fonction de la base (le « Send
--- Email Hook », `envoyer_l_e_mail_d_auth`), qui compte, puis envoie elle-même par l'API de Resend.
+-- Email Hook », `envoyer_l_e_mail_d_auth`), qui compte, puis envoie elle-même par l'API de Resend — en
+-- attendant Brevo (plan anti-abus, chantier à part), qui ne changera que l'appel et le plafond du jour.
 -- Le hook s'allume dans le tableau de bord (Authentication → Hooks), pas ici : cette migration ne
 -- change rien tant qu'il est éteint, et l'éteindre rend l'envoi au SMTP et aux gabarits du tableau
 -- de bord, qui restent en place pour ça (registre d'exploitation §3.1).
 --
 -- **Les plafonds** (fenêtres glissantes, seuls les envois partis comptent) :
 --   - 5 codes par heure et par compte ;
---   - 3 codes par heure et par adresse ;
---   - 60 codes par jour pour tout le projet — la part des rappels dans les 100 de Resend.
--- Le plafond de Supabase (30 par heure) et son minimum d'une minute par compte restent devant.
+--   - 5 codes par heure et par adresse ;
+--   - 60 codes par jour pour tout le projet, ce qui laisse leur part aux rappels dans les 100 e-mails
+--     par jour de Resend.
+-- Le minimum d'une minute de Supabase entre deux codes d'un même compte reste devant. Son plafond
+-- horaire (30), lui, n'est pas compté : sur la stack locale, 32 rattachements d'affilée sont tous partis
+-- par le hook — une stack sans SMTP, donc la mesure ne tranche pas pour la production.
 --
--- **Ce que la personne voit au-delà, et la non-divulgation.** Pour la reconnexion, seules les adresses
--- qui ont un compte arrivent jusqu'ici (une adresse inconnue rend `422 otp_disabled` avant le hook),
--- et le compte compté est celui de l'adresse visée : un refus dirait à n'importe qui que l'adresse
--- utilise Ramille. Tout plafond de la reconnexion est donc **muet** — rien ne part, et l'écran dit
--- « envoyé », comme pour une adresse inconnue. Pour le rattachement, seul le plafond par adresse
--- l'est, pour la même raison ; les deux autres refusent en `429`, que l'app lit par son statut
--- (`estLimiteDEnvoi`) et dit « Trop de demandes pour le moment. Réessaie plus tard. ».
+-- **Tous les plafonds sont muets** (décision de la personne qui pilote, 05/10/2026) : au-delà, rien ne
+-- part, et l'écran dit « envoyé ». Un refus dirait qui a un compte, par deux chemins. Pour la
+-- reconnexion, seules les adresses qui ont un compte arrivent jusqu'ici (une adresse inconnue rend
+-- `422 otp_disabled` avant le hook), et le compte compté est celui de l'adresse visée. Et sur
+-- `/connexion/email`, une adresse libre part en rattachement (compte du demandeur) quand une adresse
+-- prise bascule en reconnexion (compte visé) : un refus du seul rattachement dirait laquelle des deux
+-- branches est partie, sans même qu'un e-mail parte chez le titulaire — relevé par la contre-lecture.
+-- **Ce que le silence coûte, et c'est su** : Supabase renouvelle quand même le code avant d'appeler le
+-- hook, donc un plafond atteint tue le code déjà reçu sans en envoyer d'autre. Une personne qui
+-- redemande un sixième code dans l'heure reste sans code valable jusqu'à ce que la fenêtre passe,
+-- devant un écran qui dit « Un nouveau code vient de partir ». La minute imposée entre deux codes rend
+-- ce cas rare, et c'est pourquoi le plafond de l'adresse est de cinq et non de trois.
 --
 -- **Le hook a deux secondes, pas une de plus** (mesuré le 05/10/2026 sur la stack locale : Supabase
 -- pose `statement_timeout = 2s` sur son appel, et un `set statement_timeout` de fonction ne
@@ -40,8 +49,9 @@
 --
 -- Ce que les plafonds comptent. **Aucune adresse en clair** : son empreinte (SHA-256 de l'adresse en
 -- minuscules) suffit à compter, et une adresse de rattachement peut être celle d'un tiers qui n'a
--- rien demandé. Purgé au bout de deux jours (§4). Les refus en `429` n'y laissent pas de ligne : ils
--- annulent la transaction de Supabase, la nôtre comprise — ils se lisent dans les journaux d'Auth.
+-- rien demandé. Purgé au plus tard au bout de deux jours (§4). Les échecs d'envoi (`500`) n'y laissent
+-- pas de ligne : ils annulent la transaction de Supabase, la nôtre comprise — ils se lisent dans les
+-- journaux d'Auth.
 create table if not exists public.envois_d_e_mails_d_auth (
   id bigint generated always as identity primary key,
   cree_le timestamptz not null default now(),
@@ -66,13 +76,13 @@ revoke all on table public.envois_d_e_mails_d_auth from public, anon, authentica
 
 -- ── 2. Les gabarits ──────────────────────────────────────────────────────────────────────────
 --
--- **Le texte exact de `supabase/templates/`**, octet pour octet, et ce n'est pas une copie qu'on
--- relit : `scripts/verifier-gabarits-email.mjs` compare chaque bloc `$gabarit_…$` de la dernière
--- migration qui les porte au fichier du même nom. Les fichiers restent la référence parce que la
--- stack locale et le tableau de bord s'en servent quand le hook est éteint. Les sujets sont ceux du
--- tableau de bord (relus par l'API de management le 05/10/2026), comparés au document de la même
--- façon. `{{ .Token }}` et `{{ .NewEmail }}` gardent la syntaxe de Supabase : c'est le hook qui
--- les remplace, et la garde reste une égalité stricte.
+-- **Le texte exact de `supabase/templates/`**, aux espaces de fin de ligne près, et ce n'est pas une
+-- copie qu'on relit : `scripts/verifier-gabarits-email.mjs` compare chaque bloc `$gabarit_…$` de la
+-- dernière migration qui les porte au fichier du même nom. Les fichiers restent la référence parce que
+-- le tableau de bord s'en sert quand le hook est éteint (en local, quand on l'éteint dans
+-- `supabase/config.toml`). Les sujets sont ceux du tableau de bord (relus par l'API de management le
+-- 05/10/2026), comparés au document de la même façon. `{{ .Token }}` et `{{ .NewEmail }}` gardent la
+-- syntaxe de Supabase : c'est le hook qui les remplace, et la garde n'en admet pas d'autre.
 create or replace function public.gabarit_d_e_mail_d_auth(p_type text, out sujet text, out html text)
 language sql
 immutable
@@ -149,7 +159,7 @@ set search_path = public, pg_temp
 as $$
 declare
   c_par_compte_par_heure constant integer := 5;
-  c_par_adresse_par_heure constant integer := 3;
+  c_par_adresse_par_heure constant integer := 5;
   c_projet_par_jour constant integer := 60;
   v_type text := event -> 'email_data' ->> 'email_action_type';
   v_user uuid := nullif(event -> 'user' ->> 'id', '')::uuid;
@@ -194,10 +204,13 @@ begin
       'http_code', 500, 'message', 'E-mail d''authentification sans adresse ou sans code.'));
   end if;
 
-  -- Deux demandes simultanées compteraient le même passé : une à la fois.
-  perform pg_advisory_xact_lock(hashtext('public.envois_d_e_mails_d_auth'));
-
   v_empreinte := sha256(convert_to(lower(btrim(v_adresse)), 'UTF8'));
+  -- Deux demandes simultanées vers la même adresse compteraient le même passé : une à la fois, pour
+  -- cette adresse seulement. Le verrou tient jusqu'à la fin de la transaction d'Auth, envoi compris :
+  -- un verrou commun à tout le projet ferait attendre chaque demande derrière l'envoi des autres, dans
+  -- ses deux secondes. Entre adresses différentes, des demandes simultanées peuvent donc dépasser d'une
+  -- ou deux unités les plafonds du compte et du projet ; c'est accepté.
+  perform pg_advisory_xact_lock(hashtext('envois_d_e_mails_d_auth:' || encode(v_empreinte, 'hex')));
   select count(*),
          count(*) filter (where user_id = v_user and cree_le > now() - interval '1 hour'),
          count(*) filter (where adresse_empreinte = v_empreinte and cree_le > now() - interval '1 hour')
@@ -213,12 +226,7 @@ begin
   end;
 
   if v_plafond is not null then
-    -- Le seul refus qui se dit : le rattachement, au-delà du plafond du demandeur ou du projet. Rien
-    -- n'y parle d'une adresse — le compte compté est celui de la session qui demande.
-    if v_type = 'email_change' and v_plafond <> 'plafond_adresse' then
-      return jsonb_build_object('error', jsonb_build_object(
-        'http_code', 429, 'message', 'Trop de demandes pour le moment.'));
-    end if;
+    -- Muet, quel que soit le plafond et quel que soit le type (en-tête de la migration).
     insert into public.envois_d_e_mails_d_auth (user_id, adresse_empreinte, type, issue)
     values (v_user, v_empreinte, v_type, v_plafond);
     return '{}'::jsonb;
@@ -286,7 +294,7 @@ end;
 $$;
 
 comment on function public.envoyer_l_e_mail_d_auth(jsonb) is
-  'Send Email Hook de Supabase : applique les plafonds d''e-mails de connexion (5 par heure et par compte, 3 par heure et par adresse, 60 par jour), puis envoie par Resend. S''allume dans Authentication → Hooks.';
+  'Send Email Hook de Supabase : applique les plafonds d''e-mails de connexion (5 par heure et par compte, 5 par heure et par adresse, 60 par jour), muets, puis envoie par Resend. S''allume dans Authentication → Hooks.';
 
 revoke execute on function public.envoyer_l_e_mail_d_auth(jsonb) from public, anon, authenticated;
 grant usage on schema public to supabase_auth_admin;
@@ -294,8 +302,9 @@ grant execute on function public.envoyer_l_e_mail_d_auth(jsonb) to supabase_auth
 
 -- ── 4. La purge ──────────────────────────────────────────────────────────────────────────────
 --
--- Les fenêtres les plus longues durent vingt-quatre heures : deux jours suffisent. Entre minuit et
--- une heure (UTC), où le registre d'exploitation range les crons neufs (§3.1, tâches planifiées).
+-- Les fenêtres les plus longues durent vingt-quatre heures : le passage quotidien efface ce qui a plus
+-- d'un jour, donc une ligne vit au plus deux jours — la durée que promet la page de confidentialité.
+-- Entre minuit et une heure (UTC), où le registre d'exploitation range les crons neufs (§3.1).
 do $$
 begin
   perform cron.unschedule('purge-envois-d-e-mails-d-auth');
@@ -307,7 +316,7 @@ $$;
 select cron.schedule(
   'purge-envois-d-e-mails-d-auth',
   '40 0 * * *',
-  $$delete from public.envois_d_e_mails_d_auth where cree_le < now() - interval '2 days'$$
+  $$delete from public.envois_d_e_mails_d_auth where cree_le < now() - interval '1 day'$$
 );
 
 -- ── 5. L'export ──────────────────────────────────────────────────────────────────────────────

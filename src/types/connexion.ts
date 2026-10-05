@@ -488,9 +488,9 @@ export function codeSemblePlausible(saisie: string): boolean {
  * dit qui utilise Ramille. Seuls trois échecs se disent : la limite d'envoi, la panne de transport et,
  * depuis le 04/10/2026, le refus du captcha. **La limite d'envoi, elle, peut parler de l'adresse**, et
  * c'est su : la minute de Supabase entre deux codes ne frappe qu'une adresse connue (`SUPABASE.md`
- * §2.4). Les plafonds du hook d'envoi (05/10/2026) n'ajoutent rien à cette fuite : tous ceux de la
- * reconnexion se taisent, comme celui de l'adresse au rattachement — rien ne part, et l'écran de code
- * s'ouvre comme pour un envoi accepté (`20261005100000_les_plafonds_d_e_mail.sql`).
+ * §2.4). Les plafonds du hook d'envoi (05/10/2026) n'ajoutent rien à cette fuite parce qu'ils se
+ * taisent tous : rien ne part, et l'écran de code s'ouvre comme pour un envoi accepté
+ * (`20261005100000_les_plafonds_d_e_mail.sql`).
  */
 export type SuiteDeLaDemande = 'code' | 'bascule' | 'message';
 
@@ -517,11 +517,10 @@ export function suiteDeLaDemandeDeCode(
  * ou `suiteDuRenvoi`, et jamais sur l'erreur nue.
  */
 export function messageDeLaDemande(error: ErreurAuth): string {
-  // **Une seule phrase pour toutes les limites** (choisie par la personne qui pilote le 05/10/2026,
-  // avec les plafonds d'e-mail) : la minute de Supabase entre deux codes, son plafond horaire, et ceux
-  // du hook d'envoi — cinq codes par heure et par compte, soixante par jour pour tout le projet. L'app
-  // ne les distingue pas (le hook rend un `429` sans code), et « quelques minutes » aurait été faux
-  // pour les deux derniers.
+  // **Une seule phrase pour toutes les limites de Supabase** (choisie par la personne qui pilote le
+  // 05/10/2026, avec les plafonds d'e-mail) : la minute entre deux codes et le plafond horaire, où
+  // « quelques minutes » pouvait être faux. Les plafonds du hook d'envoi, eux, ne rendent jamais de
+  // refus — ils se taisent (`20261005100000_les_plafonds_d_e_mail.sql`).
   if (estLimiteDEnvoi(error)) {
     return 'Trop de demandes pour le moment. Réessaie plus tard.';
   }

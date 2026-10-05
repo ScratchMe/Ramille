@@ -252,18 +252,26 @@ la porte.
 (`public.envoyer_l_e_mail_d_auth`, registre d'exploitation §3.1) : Supabase lui confie chaque e-mail
 d'authentification, il compte, puis envoie par l'API de Resend avec les deux gabarits du dépôt,
 recopiés à l'identique. Les plafonds, choisis par la personne qui pilote : **5 codes par heure et par
-compte, 3 par heure et par adresse, 60 par jour pour tout le projet** — devant eux, le plafond de
-Supabase (30 par heure) et sa minute par compte restent. Cinq choses à savoir avant d'y toucher :
+compte, 5 par heure et par adresse, 60 par jour pour tout le projet** — devant eux, la minute de
+Supabase entre deux codes d'un même compte reste ; son plafond horaire (30) n'est pas compté, faute de
+mesure qui tranche pour la production. Cinq choses à savoir avant d'y toucher :
 
-- **Ce qui se tait et ce qui se dit suit la non-divulgation.** Pour la reconnexion, seules les adresses
-  qui ont un compte atteignent le hook, et le compte compté est celui de l'adresse visée : tout plafond
-  y est muet — rien ne part, l'écran de code s'ouvre comme pour une adresse inconnue. Au rattachement,
-  le plafond de l'adresse est muet aussi ; ceux du compte qui demande et du projet rendent un `429`,
-  que l'app lit par son statut (`estLimiteDEnvoi` — le hook n'a pas de code d'erreur, Supabase le rend
-  en `unknown`) : « Trop de demandes pour le moment. Réessaie plus tard. », une seule phrase pour toutes
-  les limites. Un échec d'envoi rend un `500`, lu comme une panne de transport.
+- **Tous les plafonds sont muets, et c'est la non-divulgation qui l'impose** (décision du 05/10/2026,
+  après la contre-lecture) : au-delà, rien ne part et l'écran de code s'ouvre comme pour un envoi
+  accepté. Deux chemins l'exigent. Pour la reconnexion, seules les adresses qui ont un compte atteignent
+  le hook, et le compte compté est celui de l'adresse visée. Et sur `/connexion/email`, une adresse
+  libre part en rattachement quand une adresse prise bascule en reconnexion : si l'un des deux refusait
+  et l'autre se taisait, l'écran dirait laquelle des deux branches est partie — sans même qu'un e-mail
+  parte chez le titulaire. **Ce que le silence coûte** : Supabase renouvelle le code avant d'appeler le
+  hook, donc un plafond atteint tue le code déjà reçu sans en envoyer d'autre — l'écran dit « Un
+  nouveau code vient de partir », et la personne reste sans code valable jusqu'à ce que la fenêtre
+  passe. Avec la minute entre deux codes, il faut redemander six fois dans l'heure pour y tomber.
+  « Trop de demandes pour le moment. Réessaie plus tard. » ne vient donc que des limites de Supabase
+  lui-même, et un échec d'envoi rend un `500`, lu comme une panne de transport.
 - **Le hook a deux secondes, imposées par Supabase** (`statement_timeout`, mesuré) : l'envoi est
-  synchrone et borné à 1,5 s. Rien de lent ne s'y ajoute — un compte, une requête, un appel.
+  synchrone et borné à 1,5 s (mesuré : une requête qui pend est coupée à 1 502 ms). Le verrou qui
+  sérialise les demandes ne vaut que pour une même adresse : un verrou commun ferait attendre chaque
+  demande derrière l'envoi des autres, dans ses deux secondes.
 - **Deux types d'e-mail seulement partent** : `magiclink` (la reconnexion, vérifiée en `email`) et
   `email_change` (le rattachement). Les autres — inscription par mot de passe, réinitialisation,
   invitation — ne partent plus du tout hook allumé, sans erreur, parce qu'une erreur dirait qui a un
@@ -273,8 +281,8 @@ Supabase (30 par heure) et sa minute par compte restent. Cinq choses à savoir a
 - **La stack locale passe par le même chemin** : `supabase/config.toml` allume le hook, qui poste au
   collecteur d'e-mails faute de clé Resend — `verifier-code-de-connexion.mjs` joue donc le hook de
   bout en bout à chaque PR. Le journal des plafonds (`envois_d_e_mails_d_auth`, une empreinte d'adresse
-  et jamais l'adresse, purgé au bout de deux jours) entre dans l'export, et la page de confidentialité
-  le nomme.
+  et jamais l'adresse, purgé au plus tard au bout de deux jours) entre dans l'export, et la page de
+  confidentialité le nomme, comme elle nomme Resend pour les codes.
 
 ## 2. Retrouver un compte existant
 

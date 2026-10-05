@@ -2043,13 +2043,18 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   commentaire de `CODE_TROP_DE_RETOURS` (`src/lib/feedback.ts`) ne nomme que les dix par jour,
   à corriger à la prochaine retouche de ce fichier. **Les plafonds d'e-mail sont écrits le 05/10/2026**
   (`20261005100000_les_plafonds_d_e_mail.sql`, test `50`, `COMPTE.md`) : un hook d'envoi en fonction
-  Postgres prend les e-mails de connexion à Supabase, compte — 5 codes par heure et par compte, 3 par
-  heure et par adresse, 60 par jour, valeurs et phrase choisies par la personne qui pilote —, puis
-  envoie par Resend ; il s'allume au tableau de bord (registre §3.1). **Ce qu'ils laissent** : un refus
-  dit (`429`) ou un échec d'envoi (`500`) n'a pas de trace en base, la transaction d'Auth l'emportant
-  avec le journal — seuls les journaux d'Auth le voient ; la nouvelle phrase n'arrive dans l'app
-  Android qu'au prochain build ; et la minute de Supabase entre deux codes dit toujours, au second
-  essai, qu'une adresse a un compte (`SUPABASE.md` §2.4).
+  Postgres prend les e-mails de connexion à Supabase, compte — 5 codes par heure et par compte, 5 par
+  heure et par adresse, 60 par jour, **tous muets**, valeurs choisies par la personne qui pilote —,
+  puis envoie par Resend ; il s'allume au tableau de bord (registre §3.1). **Brevo reste à faire**, et
+  ne changera que l'appel du hook et le plafond du jour, calculé sur les 100 e-mails de Resend. **Ce
+  qu'ils laissent** : un plafond muet tue le code déjà reçu sans en envoyer d'autre (Supabase l'a
+  renouvelé avant d'appeler le hook) — le prix choisi de la non-divulgation, rare avec la minute entre
+  deux codes ; un échec d'envoi (`500`) n'a pas de trace en base, la transaction d'Auth l'emportant
+  avec le journal ; un plafond atteint ne se voit que dans ce journal (§8.12 du registre) — l'alerte
+  d'exploitation ne le lit pas encore ; le plafond horaire de Supabase (30) n'est pas mesuré avec le
+  hook en production ; la nouvelle phrase des limites de Supabase n'arrive dans l'app Android qu'au
+  prochain build ; et la minute de Supabase entre deux codes dit toujours, au second essai, qu'une
+  adresse a un compte (`SUPABASE.md` §2.4).
 - **Toute adresse inconnue lance désormais l'app** (relevé à la seconde passe) : avant la page 404,
   Vercel servait sa page brute, sans JavaScript. Une adresse inventée ouvre donc une session anonyme
   et compte une arrivée (`app_open`) dans le dénominateur des entonnoirs. Pas pire en nature que `/`,

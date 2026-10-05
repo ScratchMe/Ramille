@@ -10,9 +10,11 @@
 // **Et depuis le 05/10/2026, ces e-mails partent du hook d'envoi**, plus de GoTrue : `supabase/config.toml`
 // l'allume pour la stack locale, où il poste au collecteur d'e-mails (plafonds d'e-mail, `COMPTE.md`).
 // Ce script est donc le seul à jouer le hook de bout en bout — Supabase qui l'appelle, le corps qui
-// part, le code qui se vérifie ; ses plafonds, eux, sont gardés par le pgTAP `50`. Une session rejouée
-// plusieurs fois dans l'heure peut buter sur le plafond de l'adresse (trois codes) : le journal du
-// hook le dit (`public.envois_d_e_mails_d_auth`), et une stack redémarrée à neuf repart de zéro.
+// part, le code qui se vérifie ; ses plafonds, eux, sont gardés par le pgTAP `50`. Chaque passage écrit
+// des adresses neuves (`marque`), donc seul le plafond du projet peut finir par mordre — soixante codes
+// en vingt-quatre heures, une douzaine de rejeux sur la même base. Il se tait : le code n'arrive pas,
+// et le journal du hook le dit (`public.envois_d_e_mails_d_auth`). `supabase db reset` le vide ; un
+// `stop` puis `start` garde la base (le rejeu de la CI, lui, repart d'une stack neuve).
 //
 // ── Ce que chaque assertion garde, et pourquoi aucune ne remplace une autre ───────────────────────
 //

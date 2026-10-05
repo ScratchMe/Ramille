@@ -1345,8 +1345,8 @@ export type Database = {
         }[]
       }
       enqueue_checkin_reminders: { Args: never; Returns: undefined }
-      // C4.2 — le mot de la veille (20260928075453)
       envoyer_l_e_mail_d_auth: { Args: { event: Json }; Returns: Json }
+      // C4.2 — le mot de la veille (20260928075453)
       envoyer_les_notifications: { Args: { p_genre: string }; Returns: number }
       envoyer_lot_push: {
         Args: {
