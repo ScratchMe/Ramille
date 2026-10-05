@@ -40,6 +40,9 @@
 //      page introuvable », plus le titre et le `noindex` qu'elle n'a pas.
 //   7. **Le plan de site de développement d'Expo Router n'est pas exporté** (06/10/2026, seconde
 //      passe de sécurité) : `_sitemap.html` listait toutes les routes, et la production le servait.
+//      Éprouvé le même jour : `sitemap: false` retiré d'`app.json`, l'export remet la page, et elle
+//      fait tomber ce contrôle **et** les contrôles 1 (titre vide) et 3 (pas de `noindex`) — trois
+//      lignes pour la même cause, dont seule la septième la nomme.
 //
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -218,8 +221,8 @@ const robotsTxt = join(DIST, 'robots.txt');
 if (!existsSync(robotsTxt)) {
   echecs.push(
     'robots.txt est absent de l’export. Il vit dans public/, qu’Expo recopie tel quel — sans lui,' +
-      ' le plan de site de développement d’Expo Router et l’écran de diagnostic redeviennent' +
-      ' parcourables, sans que rien ne le signale.',
+      ' l’écran de diagnostic et les doublons d’URL des onglets redeviennent parcourables, sans que' +
+      ' rien ne le signale.',
   );
 } else {
   const contenu = readFileSync(robotsTxt, 'utf8');

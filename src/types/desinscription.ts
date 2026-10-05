@@ -86,18 +86,45 @@ export function phraseDeLaPanne(genre: GenreDEchec): string {
  * valable ». Supabase décrit le même piège pour ses propres liens de connexion. Le RPC ne part
  * donc plus qu'au toucher du bouton.
  *
- * Avant l'hydratation, la page demande le geste : c'est ce que dit le HTML statique à tout le
- * monde, et c'est vrai pour qui arrive par le lien — presque tout le monde. Sans jeton, elle dit
- * une fois montée que le lien n'est plus valable (`EXPO.md` §2.2, `useApresHydratation`).
+ * Tant que la page n'est pas `pret`e, elle demande le geste : c'est ce que dit le HTML statique à
+ * tout le monde, et c'est vrai pour qui arrive par le lien — presque tout le monde. `pret` réunit
+ * deux conditions depuis le 06/10/2026 : l'hydratation faite (`EXPO.md` §2.2,
+ * `useApresHydratation`), **et** le jeton cherché, dans le lien puis dans l'onglet
+ * (`jetonARetenir`) — sans la seconde, la page dirait un instant « plus valable » à qui recharge.
+ * Prête et sans jeton, elle dit que le lien n'est plus valable.
  */
 export function etatDeLaPage(entree: {
-  apresHydratation: boolean;
+  pret: boolean;
   jeton: string | null;
   demandee: boolean;
   reponse: EtatDesinscription | null;
 }): EtatDesinscription {
-  if (!entree.apresHydratation) return 'a-confirmer';
+  if (!entree.pret) return 'a-confirmer';
   if (entree.jeton === null) return 'lien-invalide';
   if (!entree.demandee) return 'a-confirmer';
   return entree.reponse ?? 'en-cours';
+}
+
+/**
+ * Le jeton sur lequel la page agit : celui du lien, sinon celui que l'onglet a gardé (06/10/2026,
+ * seconde passe de sécurité, `src/lib/jeton-de-desinscription.ts`).
+ *
+ * **Le lien passe d'abord** : un second lien ouvert dans le même onglet vise le message qu'on vient
+ * de lire, pas celui d'avant. **Et un lien abîmé n'efface pas le jeton gardé** : `duLien` vaut alors
+ * `null` (`jetonDuLien` refuse la forme), et la page agit sur le jeton du lien valable ouvert plus
+ * tôt dans cet onglet — elle ne peut couper que les rappels de qui l'a reçu, et c'est le seul jeton
+ * qu'elle ait. Le jeton gardé passe par la même vérification de forme que celui du lien : le
+ * stockage de l'onglet n'est pas plus sûr qu'une adresse.
+ */
+export function jetonARetenir(duLien: string | null, garde: string | null): string | null {
+  return duLien ?? jetonDuLien(garde ?? undefined);
+}
+
+/**
+ * Le jeton gardé s'oublie-t-il après cette réponse ? Oui quand le serveur a répondu sur lui — coupé,
+ * ou refusé : il ne servira plus. Non sur une panne, où rien n'a été fait : « Réessayer » et un
+ * rechargement en ont encore besoin.
+ */
+export function leJetonSOublieApres(etat: EtatDesinscription): boolean {
+  return etat === 'coupes' || etat === 'lien-invalide';
 }

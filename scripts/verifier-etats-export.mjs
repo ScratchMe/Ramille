@@ -134,6 +134,14 @@
 //   | le jeton n'est plus retiré (`router.setParams`) | « le jeton est encore dans l'adresse » (D, le bloc du geste) |
 //   | le jeton n'est plus gardé pour l'onglet (`garderLeJeton`) | « rechargée sans le jeton dans l'adresse, la page ne le retrouve plus » (D, le bloc du geste) |
 //
+// Puis, après la contre-lecture du même jour (le jeton capté au premier passage, et retiré seulement
+// s'il est gardé), un export muté de plus : la page au stockage bloqué, ajoutée ce jour-là, fait
+// tomber sa ligne, seule.
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | le jeton quitte l'adresse même sans être gardé (`if (garde)` défait) | « le jeton a quitté l'adresse sans avoir été gardé » (D, stockage bloqué) |
+//
 // Les deux lignes du 25/09 sur `/rappels/stop` (« Un instant » après la réponse, le jeton lu sous un
 // autre nom) décrivent l'ancienne page ; ce qu'elles gardaient l'est désormais par le bloc du geste,
 // qui exige l'appel portant le jeton et la sortie de « Un instant ».
@@ -233,7 +241,16 @@ const navigateur = await chromium.launch(
 async function ouvrir(
   chemin,
   marques = {},
-  { reduire = false, exceptions = null, requetes = null, journal = false, releve = null, hauteur = 844, largeur = 390 } = {}
+  {
+    reduire = false,
+    exceptions = null,
+    requetes = null,
+    journal = false,
+    releve = null,
+    hauteur = 844,
+    largeur = 390,
+    sansStockageDOnglet = false,
+  } = {}
 ) {
   // 390 de large par défaut ; 360 pour les cas que les planches mettent à 360 × 800 (section K).
   const page = await navigateur.newPage({ viewport: { width: largeur, height: hauteur } });
@@ -257,6 +274,18 @@ async function ouvrir(
   // Le relevé image par image, pour la même raison : `releve` vaut `true` pour l'installer, ou le
   // relevé à lancer avant que React ne monte (section J).
   if (releve) await page.addInitScript(releverParImage, releve === true ? null : releve);
+  // Un `sessionStorage` qui refuse tout accès, comme un navigateur dont le stockage est bloqué (le
+  // jeton de `/rappels/stop`, section D) : posé avant le premier script, il lève dès la lecture.
+  if (sansStockageDOnglet) {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'sessionStorage', {
+        configurable: true,
+        get() {
+          throw new DOMException('Stockage refusé', 'SecurityError');
+        },
+      });
+    });
+  }
   await page.addInitScript((entrees) => {
     for (const [cle, valeur] of Object.entries(entrees)) window.localStorage.setItem(cle, valeur);
   }, marques);
@@ -702,7 +731,10 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
         )
         .catch(() => {});
       const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
-      if (!texte.includes('Couper mes rappels') || texte.includes('plus valable')) {
+      const actif = await page.evaluate(
+        () => document.querySelector('[aria-label="Couper mes rappels"]:not([aria-disabled="true"])') !== null
+      );
+      if (!actif || texte.includes('plus valable')) {
         echecs.push(
           `${chemin} : rechargée sans le jeton dans l’adresse, la page ne le retrouve plus — elle dirait` +
             ` « plus valable » à qui n’a rien coupé (\`garderLeJeton\`). Rendu : « ${texte.slice(0, 160)}… »`
@@ -752,6 +784,52 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
     }
   } catch (erreur) {
     echecs.push(`${chemin} : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+}
+
+// **Et sans stockage d'onglet, la page fait comme avant** (06/10/2026, contre-lecture de la seconde
+// passe de sécurité). Un jeton qu'on n'a pas pu garder reste dans l'adresse (`garderLeJeton` le
+// dit) : retiré quand même, un rechargement dirait « plus valable » à qui n'a rien coupé. Trois
+// choses, sur une page dont le `sessionStorage` lève : la première ouverture offre le geste, actif ;
+// l'adresse garde le jeton ; et rechargée, la page l'offre encore — puis l'appel porte le jeton.
+{
+  const chemin = `/rappels/stop?jeton=${JETON_DE_FORME_VALIDE}`;
+  const requetes = [];
+  const page = await ouvrir(chemin, {}, { requetes, sansStockageDOnglet: true });
+  const appelDuJeton = ({ url, corps }) =>
+    url.includes('/rest/v1/rpc/desinscrire_des_rappels') && corps.includes(JETON_DE_FORME_VALIDE);
+  const geste = '[aria-label="Couper mes rappels"]:not([aria-disabled="true"])';
+  try {
+    await page.waitForSelector(geste, { timeout: ATTENTE }).catch(() => {});
+    await page.waitForTimeout(1_000);
+    const offert = async () => (await page.$(geste)) !== null;
+    if (!(await offert())) {
+      echecs.push(
+        `${chemin} (stockage bloqué) : la première ouverture n’offre pas le geste — la page ne tient` +
+          ' plus qu’au stockage pour retrouver le jeton du lien.'
+      );
+    } else if (!page.url().includes(JETON_DE_FORME_VALIDE)) {
+      echecs.push(
+        `${chemin} (stockage bloqué) : le jeton a quitté l’adresse sans avoir été gardé — un` +
+          ' rechargement dirait « plus valable » (`garderLeJeton`).'
+      );
+    } else {
+      await page.reload({ waitUntil: 'load' });
+      await page.waitForSelector(geste, { timeout: ATTENTE }).catch(() => {});
+      if (!(await offert())) {
+        echecs.push(`${chemin} (stockage bloqué) : rechargée, la page n’offre plus le geste.`);
+      } else {
+        await page.click(geste, { timeout: ATTENTE });
+        await page.waitForTimeout(1_000);
+        if (!requetes.some(appelDuJeton)) {
+          echecs.push(`${chemin} (stockage bloqué) : « Couper mes rappels » touché, et aucun appel ne porte le jeton.`);
+        }
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`${chemin} (stockage bloqué) : ${String(erreur).slice(0, 180)}`);
   } finally {
     await page.close();
   }

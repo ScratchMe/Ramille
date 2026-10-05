@@ -2420,19 +2420,27 @@ ne les fait pas) :
   PR d'inconnu dans une session qui porte le jeton ; le retirer de l'environnement (ci-dessus) ; relire
   les scripts modifiés par une PR avant tout Edit/Write ou `npm install`.
 - **BASSE, côté écran — faits le 06/10/2026 dans une PR à part** :
-  - **le jeton de désinscription ne quittait pas l'adresse de `/rappels/stop`** (historique, `Referer` de
-    nos propres requêtes, scripts de la page dont Turnstile). Il est lu une fois, posé dans le
-    `sessionStorage` de l'onglet, puis retiré de l'adresse (`src/lib/jeton-de-desinscription.ts`) ; un
-    rechargement le retrouve, et il en sort quand le serveur a répondu sur lui. Deux pièges, mesurés :
-    `history.replaceState` ne tient pas, la navigation réécrit l'adresse depuis son état et y remettait
-    le jeton (d'où `router.setParams`, `EXPO.md` §1.4) ; et retirer le paramètre relançait l'effet qui
-    retenait le jeton — la page n'aurait plus tenu qu'au stockage, et dit « plus valable » dès
-    l'ouverture là où il est bloqué. Gardé par le bloc du geste de `verifier-etats-export.mjs` (adresse
-    nettoyée, rechargement, appel portant le jeton) ;
+  - **le jeton de désinscription ne quittait pas l'adresse de `/rappels/stop`.** Il est lu une fois,
+    posé dans le `sessionStorage` de l'onglet, puis retiré de l'adresse (`src/lib/jeton-de-desinscription.ts`) ;
+    un rechargement le retrouve, et il en sort quand le serveur a répondu sur lui. **Ce que ça ferme** :
+    le `Referer` des requêtes qui partent après le montage, et l'entrée de l'historique de l'onglet.
+    **Ce que ça laisse, nommé** : la requête du document et le bundle partent avec le jeton (donc les
+    journaux de Vercel le voient), l'historique global du navigateur garde l'adresse, et un script de
+    la page — Turnstile compris — lit le `sessionStorage` comme l'adresse. Trois pièges, mesurés :
+    `history.replaceState` ne tient pas, la navigation réécrit l'adresse depuis son état (d'où
+    `router.setParams`, `EXPO.md` §1.4) ; retirer le paramètre relance l'effet qui retenait le jeton,
+    et la page n'aurait plus tenu qu'au stockage (le jeton du lien est donc capté au premier passage) ;
+    et un jeton retiré sans être gardé faisait dire « plus valable » au rechargement là où le stockage
+    est bloqué (il ne quitte plus l'adresse que s'il est gardé). Le bloc du geste de
+    `verifier-etats-export.mjs` garde le retrait, le rechargement et le stockage bloqué. La capture au
+    premier passage n'a pas de garde : depuis que l'adresse n'est nettoyée qu'avec un jeton gardé, aucun
+    état réel d'un navigateur ne fait plus voir son absence — elle est une défense de plus, nommée ;
   - **`/_sitemap` n'est plus exporté** (`sitemap: false` du plugin `expo-router`, `app.json`), et le
     contrôle 7 de `verifier-titres-export.mjs` refuse qu'il revienne ;
   - **`/status` reste** — c'est le bloc 00 de chaque recette (`RECETTE.md` §2.2) —, mais l'erreur s'y
-    affiche par son **code** et plus par son message, qui décrivait le schéma à quiconque tape l'adresse.
+    affiche par son code, ou à défaut par son statut HTTP (`HTTP 401`…), plus jamais par son message.
+    La requête est un `HEAD` : une réponse d'erreur n'a pas de corps, et `postgrest-js` la rend sans
+    code — le statut est donc ce qui reste, et il suffit au diagnostic du bloc 00.
 - **BASSE, toujours ouverts** : la limite de débit `/api/` retournable contre un robot d'aperçu ; les
   plafonds par compte contournables par une course (un `pg_advisory_xact_lock` par compte).
 - **BASSE — sessions sans expiration absolue** (`sessions_timebox=0`) : poser un timebox prolongerait

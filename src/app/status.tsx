@@ -16,11 +16,13 @@ import { APP_NAME } from '@/constants/produit';
 // accessible en tapant l'URL directement, pour du diagnostic manuel après déploiement — c'est le
 // bloc 00 de chaque recette (`RECETTE.md` §2.2).
 //
-// **L'erreur s'affiche par son code, jamais par son message** (06/10/2026, seconde passe de
-// sécurité, `v1-27` §12.39) : la page est servie à quiconque tape l'adresse, et le message de
-// PostgREST décrit le schéma (« permission denied for table … »). Le code (`42501`, `PGRST301`…)
-// suffit au diagnostic, se cherche dans la documentation, et ne raconte rien à un inconnu. Une
-// erreur sans code est une panne du transport, et le dit.
+// **L'erreur s'affiche par son statut HTTP, jamais par son message** (06/10/2026, seconde passe de
+// sécurité, `v1-27` §12.39) : la page est servie à quiconque tape l'adresse, et elle n'a pas à lui
+// raconter ce qui a échoué. La requête est un `HEAD` : une réponse d'erreur n'a donc pas de corps, et
+// `postgrest-js` la rend **sans code** (`{ message: '' }`) — le statut est la seule chose qui en
+// reste, et il suffit au bloc 00 (401 : la clé ; 403 : un privilège ; 404 : la table). Le code reste
+// lu quand il y en a un. Sans statut (0), aucune réponse n'est arrivée : le transport, et la page le
+// dit — c'était le seul cas où l'ancien message disait quelque chose (`FetchError: …`).
 type ConnectionState = { status: 'loading' } | { status: 'ok'; count: number } | { status: 'error'; code: string };
 
 export default function StatusScreen() {
@@ -30,9 +32,12 @@ export default function StatusScreen() {
     supabase
       .from('transport_modes')
       .select('*', { count: 'exact', head: true })
-      .then(({ count, error }) => {
+      .then(({ count, error, status }) => {
         if (error) {
-          setConnection({ status: 'error', code: error.code || 'pas de réponse du serveur' });
+          setConnection({
+            status: 'error',
+            code: error.code || (status ? `HTTP ${status}` : 'pas de réponse du serveur'),
+          });
           return;
         }
         setConnection({ status: 'ok', count: count ?? 0 });

@@ -22,8 +22,8 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
  * **Deux traitements, jamais un seul.** Une page qui a une description dans
  * `PAGE_DESCRIPTIONS` est une surface publique : elle la pose, avec les balises Open Graph que
  * les messageries lisent pour composer un aperçu. Toute autre page — le questionnaire, les deux
- * onglets, le compte, la connexion, le diagnostic, le plan de site de développement d'Expo
- * Router — reçoit `noindex, nofollow`. L'export produit une page HTML par route et « non liée »
+ * onglets, le compte, la connexion, le diagnostic — reçoit `noindex, nofollow` (le plan de site
+ * de développement d'Expo Router en était, et n'est plus exporté depuis le 06/10/2026). L'export produit une page HTML par route et « non liée »
  * n'est pas « non indexée » : sans cette balise, seize coquilles d'application concourent dans
  * les résultats de recherche avec les deux pages légales, qui sont les seules surfaces qu'un
  * moteur doit voir. `public/robots.txt` ne suffit pas — il empêche le crawl, pas l'indexation

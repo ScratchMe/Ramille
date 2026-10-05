@@ -84,8 +84,8 @@ mesuré sur l'export). `history.replaceState` est défait aussitôt : la liaison
 Navigation réécrit l'adresse depuis **son** état, qui porte encore le paramètre — l'effet de l'écran
 passe, puis celui de la liaison remet la chaîne entière. `router.setParams({ cle: undefined })`
 change l'état lui-même, et l'adresse suit. Le paramètre retiré relance alors tout effet qui en
-dépend : ce qu'il fallait en garder s'écrit **avant** de le retirer, dans le même lot de rendus.
-Ramille le fait pour le jeton de `/rappels/stop` (`src/app/rappels/stop.tsx`).
+dépend : ce qu'il fallait en garder se capte **au premier passage** (une référence), pas dans un
+état que l'effet relancé annulerait en vol.
 
 ### 1.5 `react-native-web` : ce qui ne se comporte pas comme sur natif
 
@@ -393,6 +393,10 @@ tient déjà `width: 390` alors que le HTML dit `0px`, et rien ne le corrige jam
 `onLayout`, ni `key`, ni le compilateur. C'est ce qui a fait échouer la première tentative
 du pager d'onboarding (v1-11 §9.10). `useSyncExternalStore` avec un instantané serveur
 distinct fait voir le passage à React ; `useWindowDimensions` ne le fait pas.
+
+**Le jeton de `/rappels/stop` quitte l'adresse par `router.setParams`** (06/10/2026, §1.4) : capté au
+premier passage de l'effet, gardé dans le `sessionStorage` de l'onglet, et retiré seulement s'il a pu
+être gardé (`src/app/rappels/stop.tsx`, `src/lib/jeton-de-desinscription.ts`).
 
 **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`).
 `userInterfaceStyle: light` d'`app.json` ne s'applique qu'au natif : sur web, `useColorScheme`

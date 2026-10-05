@@ -16,7 +16,9 @@ import { garderLeJeton, oublierLeJeton, relireLeJetonGarde } from '@/lib/jeton-d
 import {
   etatApres,
   etatDeLaPage,
+  jetonARetenir,
   jetonDuLien,
+  leJetonSOublieApres,
   phraseDeLaPanne,
   type EtatDesinscription,
 } from '@/types/desinscription';
@@ -58,30 +60,36 @@ import type { GenreDEchec } from '@/types/lecture-en-echec';
 export default function StopRappels() {
   const { jeton: brut } = useLocalSearchParams<{ jeton?: string | string[] }>();
   const duLien = jetonDuLien(brut);
-  // **Le jeton est lu une fois, puis retiré de l'adresse** (06/10/2026, seconde passe de sécurité) :
-  // il restait dans l'historique, dans le `Referer` de nos propres requêtes et à portée de tout
-  // script de la page (`src/lib/jeton-de-desinscription.ts`). Celui du lien passe d'abord ; sans
-  // lien, celui que l'onglet a gardé, pour qu'un rechargement ne dise pas « plus valable » à qui
-  // n'a rien coupé. `null` tant que ce n'est pas fait, et la page attend alors comme avant
-  // l'hydratation : rien n'affirme l'absence d'un jeton qu'on n'a pas encore cherché.
+  // **Le jeton est lu une fois, puis retiré de l'adresse** (06/10/2026, seconde passe de sécurité,
+  // `src/lib/jeton-de-desinscription.ts`, qui dit ce que le retrait ferme et ce qu'il laisse). Celui
+  // du lien passe d'abord ; sans lien, celui que l'onglet a gardé, pour qu'un rechargement ne dise pas
+  // « plus valable » à qui n'a rien coupé (`jetonARetenir`). `null` tant que ce n'est pas fait, et la
+  // page attend alors comme avant l'hydratation : rien n'affirme l'absence d'un jeton qu'on n'a pas
+  // encore cherché.
   const [retenu, setRetenu] = useState<{ jeton: string | null } | null>(null);
+  // **Le jeton du lien est capté au premier passage de l'effet**, et c'est lui qui est retenu même
+  // si l'effet repart : retirer le paramètre change `duLien` (il vaut alors `null`) et relance
+  // l'effet, qui annule l'écriture encore en vol. Sans cette capture, la page ne retrouvait le jeton
+  // que dans le stockage, et l'exactitude tenait à l'ordre dans lequel React rend les deux mises à
+  // jour (mesuré le 06/10/2026 : la page disait « plus valable » dès l'ouverture, stockage retiré).
+  const jetonCapte = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (retenu) return;
     let annule = false;
-    if (duLien) garderLeJeton(duLien);
-    const jetonRetenu = duLien ?? jetonDuLien(relireLeJetonGarde() ?? undefined);
+    if (jetonCapte.current === undefined) jetonCapte.current = duLien;
+    const duPremierLien = jetonCapte.current;
+    const garde = duPremierLien ? garderLeJeton(duPremierLien) : false;
+    const jetonRetenu = jetonARetenir(duPremierLien, relireLeJetonGarde());
     // Écrit après une promesse, hors du corps de l'effet : même motif que la racine (`index.tsx`),
     // que le React Compiler exige (`react-hooks/set-state-in-effect`).
     void Promise.resolve().then(() => {
       if (annule) return;
       setRetenu({ jeton: jetonRetenu });
-      // **Retenu d'abord, retiré de l'adresse ensuite**, dans le même lot de rendus : retirer le
-      // paramètre change `duLien` et relance cet effet, qui annulait l'écriture encore en vol — la
-      // page ne tenait plus alors qu'au `sessionStorage`, et un stockage bloqué lui faisait dire
-      // « plus valable » dès l'ouverture (mesuré le 06/10/2026). Et par les paramètres de la route,
-      // pas par `history.replaceState` : la navigation réécrit l'adresse depuis son propre état, et
-      // y remettait le jeton juste après.
-      if (duLien) router.setParams({ jeton: undefined });
+      // Retiré de l'adresse **seulement s'il est gardé** : sinon un rechargement dirait « plus
+      // valable », et la page reste comme avant. Et par les paramètres de la route, pas par
+      // `history.replaceState` : la navigation réécrit l'adresse depuis son propre état, et y
+      // remettait le jeton juste après (mesuré le 06/10/2026, `EXPO.md` §1.4).
+      if (garde) router.setParams({ jeton: undefined });
     });
     return () => {
       annule = true;
@@ -106,9 +114,7 @@ export default function StopRappels() {
       if (annule) return;
       if (!resultat.ok) setGenreDeLaPanne(resultat.genre);
       const suite = etatApres(resultat);
-      // Le serveur a répondu sur ce jeton — coupé, ou refusé : il ne servira plus. Une panne le
-      // garde, pour « Réessayer » comme pour un rechargement.
-      if (suite !== 'panne') oublierLeJeton();
+      if (leJetonSOublieApres(suite)) oublierLeJeton();
       setReponse(suite);
     });
     return () => {
@@ -123,10 +129,11 @@ export default function StopRappels() {
   // **tout le monde** en ouvrant le lien d'un rappel, le temps que l'app démarre — puis React
   // constatait l'écart et jetait la page (erreur n° 418, relevée sur l'export). L'état de départ est
   // celui qui n'affirme rien de faux à qui arrive par le lien, c'est-à-dire presque tout le monde ;
-  // sans jeton, la page le dit une fois hydratée (`EXPO.md` §2.2, `useApresHydratation`).
+  // sans jeton, la page le dit une fois prête — hydratée (`EXPO.md` §2.2, `useApresHydratation`)
+  // **et** le jeton cherché (06/10/2026).
   const apresHydratation = useApresHydratation();
   const pret = apresHydratation && retenu !== null;
-  const etat = etatDeLaPage({ apresHydratation: pret, jeton, demandee, reponse });
+  const etat = etatDeLaPage({ pret, jeton, demandee, reponse });
 
   // **Le focus suit le geste** (04/10/2026, seconde passe de la revue finale, `FRONT.md` §2.4) :
   // « Couper mes rappels » sort de l'arbre au toucher, « Réessayer » aussi, et le focus retombait
@@ -158,9 +165,10 @@ export default function StopRappels() {
                   Tu ne recevras plus de rappels, ni par email ni par notification. Ton compte, tes
                   bilans et ton plan ne changent pas.
                 </ThemedText>
-                {/* Inerte jusqu'à l'hydratation, et il le montre : le HTML statique rendait un
-                    bouton d'apparence active, sans gestionnaire — sur un réseau lent, les touchers
-                    se perdaient sans un mot. Même rendu des deux côtés, donc pas d'écart (418). */}
+                {/* Inerte jusqu'à ce que la page soit prête (hydratée, le jeton cherché), et il le
+                    montre : le HTML statique rendait un bouton d'apparence active, sans
+                    gestionnaire — sur un réseau lent, les touchers se perdaient sans un mot. Même
+                    rendu des deux côtés, donc pas d'écart (418). */}
                 <Button
                   title="Couper mes rappels"
                   disabled={!pret}

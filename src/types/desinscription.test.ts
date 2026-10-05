@@ -1,4 +1,11 @@
-import { etatApres, etatDeLaPage, jetonDuLien, phraseDeLaPanne } from './desinscription';
+import {
+  etatApres,
+  etatDeLaPage,
+  jetonARetenir,
+  jetonDuLien,
+  leJetonSOublieApres,
+  phraseDeLaPanne,
+} from './desinscription';
 
 describe('jetonDuLien', () => {
   const jeton = '3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b';
@@ -76,22 +83,58 @@ describe('phraseDeLaPanne', () => {
 describe('etatDeLaPage', () => {
   const JETON = '6f1f3a9e-2b7c-4d1e-9a3b-1c2d3e4f5a6b';
 
-  it('demande le geste avant l’hydratation, jeton ou pas : c’est ce que dit le HTML statique', () => {
-    expect(etatDeLaPage({ apresHydratation: false, jeton: null, demandee: false, reponse: null })).toBe('a-confirmer');
-    expect(etatDeLaPage({ apresHydratation: false, jeton: JETON, demandee: false, reponse: null })).toBe('a-confirmer');
+  it('demande le geste tant qu’elle n’est pas prête, jeton ou pas : c’est ce que dit le HTML statique', () => {
+    expect(etatDeLaPage({ pret: false, jeton: null, demandee: false, reponse: null })).toBe('a-confirmer');
+    expect(etatDeLaPage({ pret: false, jeton: JETON, demandee: false, reponse: null })).toBe('a-confirmer');
   });
 
   it('attend le geste une fois montée, sans rien faire partir', () => {
-    expect(etatDeLaPage({ apresHydratation: true, jeton: JETON, demandee: false, reponse: null })).toBe('a-confirmer');
+    expect(etatDeLaPage({ pret: true, jeton: JETON, demandee: false, reponse: null })).toBe('a-confirmer');
   });
 
-  it('dit que le lien n’est plus valable une fois montée, sans jeton', () => {
-    expect(etatDeLaPage({ apresHydratation: true, jeton: null, demandee: false, reponse: null })).toBe('lien-invalide');
+  it('dit que le lien n’est plus valable une fois prête, sans jeton', () => {
+    expect(etatDeLaPage({ pret: true, jeton: null, demandee: false, reponse: null })).toBe('lien-invalide');
   });
 
   it('attend la réponse après le geste, puis la montre', () => {
-    expect(etatDeLaPage({ apresHydratation: true, jeton: JETON, demandee: true, reponse: null })).toBe('en-cours');
-    expect(etatDeLaPage({ apresHydratation: true, jeton: JETON, demandee: true, reponse: 'coupes' })).toBe('coupes');
-    expect(etatDeLaPage({ apresHydratation: true, jeton: JETON, demandee: true, reponse: 'panne' })).toBe('panne');
+    expect(etatDeLaPage({ pret: true, jeton: JETON, demandee: true, reponse: null })).toBe('en-cours');
+    expect(etatDeLaPage({ pret: true, jeton: JETON, demandee: true, reponse: 'coupes' })).toBe('coupes');
+    expect(etatDeLaPage({ pret: true, jeton: JETON, demandee: true, reponse: 'panne' })).toBe('panne');
+  });
+});
+
+// Le jeton retiré de l'adresse et gardé pour l'onglet (06/10/2026, seconde passe de sécurité).
+//
+// Éprouvé en cassant ce qu'il garde, le 06/10/2026 : faire passer le jeton gardé avant celui du lien
+// fait tomber le premier test, seul ; ne plus vérifier la forme du jeton gardé, le troisième, seul ;
+// oublier le jeton après une panne fait tomber le dernier, seul.
+describe('jetonARetenir', () => {
+  const DU_LIEN = '6f1f3a9e-2b7c-4d1e-9a3b-1c2d3e4f5a6b';
+  const GARDE = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+
+  it('prend le jeton du lien d’abord : un second lien vise le message qu’on vient de lire', () => {
+    expect(jetonARetenir(DU_LIEN, GARDE)).toBe(DU_LIEN);
+    expect(jetonARetenir(DU_LIEN, null)).toBe(DU_LIEN);
+  });
+
+  it('retombe sur le jeton gardé quand l’adresse n’en porte plus, ou un abîmé', () => {
+    // Un rechargement après le retrait, ou un lien tronqué (`jetonDuLien` rend alors `null`).
+    expect(jetonARetenir(null, GARDE)).toBe(GARDE);
+  });
+
+  it('vérifie la forme du jeton gardé comme celle du lien', () => {
+    expect(jetonARetenir(null, 'pas-un-uuid')).toBeNull();
+    expect(jetonARetenir(null, null)).toBeNull();
+  });
+});
+
+describe('leJetonSOublieApres', () => {
+  it('oublie le jeton quand le serveur a répondu sur lui', () => {
+    expect(leJetonSOublieApres('coupes')).toBe(true);
+    expect(leJetonSOublieApres('lien-invalide')).toBe(true);
+  });
+
+  it('le garde après une panne : « Réessayer » et un rechargement en ont besoin', () => {
+    expect(leJetonSOublieApres('panne')).toBe(false);
   });
 });
