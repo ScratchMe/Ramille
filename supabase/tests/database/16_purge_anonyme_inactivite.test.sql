@@ -12,8 +12,10 @@
 -- n'y touche pas). S'en servir reproduirait le bug en ayant l'air de le corriger.
 --
 -- La seconde moitié du fichier couvre la garde de volume ajoutée par la migration
--- 20260910100000 (chantier C0.2) : au-delà de son seuil, un passage ne supprime **rien** et
--- laisse une ligne dans `public.purge_runs`. Ce que ces deux scénarios épinglent, c'est la
+-- 20260910100000 (chantier C0.2) : au-delà de son seuil, un passage ne supprimait **rien** et
+-- laissait une ligne dans `public.purge_runs` ; depuis le 04/10/2026 les comptes vides partent quand
+-- même, et depuis `20261006130000` (05/10/2026) la garde ralentit au lieu de bloquer — partent aussi
+-- les porteurs les plus anciennement inactifs, jusqu'au seuil. Ce que ces deux scénarios épinglent, c'est la
 -- frontière : le seuil porte un plancher absolu, sans quoi il bloquerait la purge normale d'une
 -- base de quelques dizaines de comptes — une garde qui mord tout le temps finit désactivée.
 begin;
@@ -118,46 +120,52 @@ select ok(
   'Le journal des purges n''est ni lisible ni écrivable par anon ou authenticated'
 );
 
--- Soixante sessions anonymes muettes depuis cent jours, **qui portent chacune un bilan** : depuis le
--- plan anti-abus (04/10/2026), la garde ne compte que les comptes qui portent quelque chose, et les
--- comptes vides partent à chaque passage (`49`). Soixante candidats porteurs, bien au-delà du seuil
--- (20 %, plancher 50 comptes).
+-- Soixante sessions anonymes muettes depuis plus de cent jours, **qui portent chacune un bilan** :
+-- depuis le plan anti-abus (04/10/2026), la garde ne compte que les comptes qui portent quelque
+-- chose, et les comptes vides partent à chaque passage (`49`). Soixante candidats porteurs, au-delà
+-- du seuil (20 %, plancher 50 comptes). **Chacun a une date d'activité distincte** — le compte `i` est
+-- né cent jours et `i` heures avant le test : plus `i` est grand, plus il est ancien —, pour que la
+-- garde ralentie (05/10/2026, `v1-27` §12.39) s'éprouve sur *lesquels* partent, pas seulement sur
+-- combien. **Et les dix plus anciennement nés (`i` de 51 à 60) ont soumis leur bilan plus tard**, il y
+-- a 95 jours : candidats encore, mais leur dernier signe de vie est le plus récent de tous. Ce sont eux
+-- qui doivent rester. Un ordre sur la seule date de création les ferait partir et garderait 1 à 10 :
+-- c'est ce qui prouve que l'ordre lit le même `greatest(...)` des signes de vie que le prédicat.
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at, last_sign_in_at)
 select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
-       now() - interval '100 days', now(), now() - interval '100 days'
+       now() - interval '100 days' - make_interval(hours => i), now(),
+       now() - interval '100 days' - make_interval(hours => i)
 from generate_series(1, 60) as g(i);
 
 -- Finalisés : un bilan en cours ne porte rien, et le compte partirait comme un compte vide
 -- (20261005170000). `submitted_at`, posé par le serveur, se recule : la purge le lit comme un signe de vie.
 insert into public.assessments (user_id, status, created_at)
-select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid, 'completed', now() - interval '100 days'
+select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid, 'completed',
+       now() - interval '100 days' - make_interval(hours => i)
 from generate_series(1, 60) as g(i);
 update public.assessments set submitted_at = created_at where user_id::text like 'c6222222-2222-2222-2222-%';
+update public.assessments set submitted_at = now() - interval '95 days'
+where user_id in (select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid
+                  from generate_series(51, 60) as g(i));
 
 select public.purge_stale_anonymous_accounts();
 
 select is(
-  (select count(*)::int from auth.users where id::text like 'c6222222%'),
-  60,
-  'Au-delà du seuil, la purge ne supprime aucun des comptes qui portent un bilan'
+  (select array_agg(right(id::text, 12)::int order by right(id::text, 12)::int)
+     from auth.users where id::text like 'c6222222%'),
+  (select array_agg(i) from generate_series(51, 60) as g(i)),
+  'Au-delà du seuil, la purge ralentit : les cinquante porteurs les plus anciennement inactifs partent, les dix dont le dernier signe de vie est le plus récent restent'
 );
 
 select isnt_empty(
   $$ select 1 from public.purge_runs
-     where status = 'blocked' and candidates = 60 and deleted = 0 $$,
-  'Le passage bloqué laisse une ligne de journal qui dit combien de comptes étaient en jeu'
+     where status = 'blocked' and candidates = 60 and deleted = 50 $$,
+  'Le passage ralenti laisse une ligne `blocked`, qui alerte, et dit combien de comptes étaient en jeu et combien sont partis'
 );
 
--- Même prédicat, volume ramené sous le plancher : quinze candidats. Ils représentent toujours
--- une forte proportion des comptes restants — c'est précisément ce que le plancher autorise,
--- pour qu'une base minuscule ne soit pas gelée par sa propre garde.
-delete from auth.users u
-where u.id in (
-  select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid
-  from generate_series(16, 60) as g(i)
-);
-
+-- Le passage suivant : les dix restants sont sous le plancher, la garde ne s'en mêle plus — c'est
+-- précisément ce que le plancher autorise, pour qu'une base minuscule ne soit pas gelée par sa
+-- propre garde, et c'est ce qui fait qu'un blocage ne dure plus : il s'écoule, nuit après nuit.
 select public.purge_stale_anonymous_accounts();
 
 select is_empty(
@@ -167,9 +175,24 @@ select is_empty(
 
 select isnt_empty(
   $$ select 1 from public.purge_runs
-     where status = 'applied' and candidates = 15 and deleted = 15 $$,
+     where status = 'applied' and candidates = 10 and deleted = 10 $$,
   'Un passage appliqué est journalisé lui aussi : sans ligne, on ne distingue pas « rien à purger » de « cron à l''arrêt »'
 );
 
 select * from finish();
 rollback;
+
+-- ── Éprouvé en le cassant (05/10/2026) : la garde ralentie ─────────────────────────────────────
+-- Chaque mutation remise dans `purge_stale_anonymous_accounts`, puis ce fichier rejoué dans la même
+-- transaction annulée (le témoin passe ses douze assertions) :
+--
+--   | mutation                                                     | ce qui tombe                 |
+--   |--------------------------------------------------------------|------------------------------|
+--   | l'ancien blocage : aucun porteur ne part                     | 9, 10, 11 et 12              |
+--   | les porteurs les plus récemment actifs partent d'abord       | 9 seule — `36` et `49` ne la |
+--   |                                                              | voient pas, leurs fixtures   |
+--   |                                                              | ont toutes la même date      |
+--   | plus de limite : tous les porteurs partent d'un coup         | 9, 10 et 12                  |
+--   | l'ordre sur la seule date de création, pas sur les signes de | 9 seule — c'est la soumission |
+--   | vie (les deux copies de `greatest(...)` qui divergeraient)   | reculée des comptes 51 à 60   |
+--   | un passage retenu qui ne supprime rien, pas même les vides   | 9, 10, 11 et 12              |

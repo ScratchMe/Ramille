@@ -64,6 +64,10 @@
 --   - la purge qui compte APRÈS son `delete`                   → 4 : 15, 16, 17 et 18 — rien n'est
 --     compté, la cascade ayant tout emporté ;
 --   - la purge qui compte AVANT sa garde de volume             → 1 : la 18 ;
+--   - la garde qui bloque au lieu de ralentir                  → ici, la 18 ; sur la suite, aussi
+--     9 à 12 de `16` et les libellés 7, 9 et 11 de `49` (05/10/2026) ;
+--   - la garde qui laisse partir tous les porteurs             → ici, la 18 ; sur la suite, aussi
+--     9, 10 et 12 de `16` et les libellés 7, 9 et 11 de `49` (05/10/2026) ;
 --   - le prédicat de la purge sans `is_anonymous`              → 5 : 14 à 18 — le compte rattaché
 --     part, et il est compté ;
 --   - `delete_my_account` qui compte sans condition            → 1 : la 20 ;
@@ -426,12 +430,13 @@ select results_eq(
   'la vue rend, pour la semaine d''arrivée, la répartition des étapes, des semaines tenues et des rappels'
 );
 
--- ── 6. Un passage bloqué ne compte rien ─────────────────────────────────────────────────────────
+-- ── 6. Un passage ralenti ne compte que ce qu'il supprime ───────────────────────────────────────
 --
 -- Soixante sessions de plus, nées la même semaine, muettes, **et qui portent un bilan** — la garde
 -- ne compte plus que celles-là depuis le plan anti-abus (04/10/2026) : au-delà du seuil de la garde
--- de volume (plancher 50). Le passage ne les supprime pas — il ne doit donc pas les compter, sans
--- quoi chaque nuit de blocage recompterait les mêmes personnes.
+-- de volume (plancher 50). Depuis le 05/10/2026 (`v1-27` §12.39), la garde ralentit au lieu de
+-- bloquer : cinquante partent et sont comptés, dix restent et ne le sont pas — sans quoi la nuit
+-- suivante recompterait les mêmes personnes.
 
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('c3600000-0000-0000-0001-' || lpad(i::text, 12, '0'))::uuid,
@@ -449,9 +454,9 @@ update public.assessments set submitted_at = created_at where user_id::text like
 select public.purge_stale_anonymous_accounts();
 
 select ok(
-  (select sum(comptes) from public.purges_par_cohorte where semaine_d_arrivee = current_setting('c36.w')::date) = 8
-  and (select count(*) from auth.users where id::text like 'c3600000-0000-0000-0001-%') = 60,
-  'un passage retenu par la garde de volume ne supprime ni ne compte les comptes qui portent un bilan'
+  (select sum(comptes) from public.purges_par_cohorte where semaine_d_arrivee = current_setting('c36.w')::date) = 8 + 50
+  and (select count(*) from auth.users where id::text like 'c3600000-0000-0000-0001-%') = 10,
+  'un passage ralenti par la garde de volume compte les cinquante qu''il supprime, et pas les dix qu''il garde'
 );
 
 -- ── 7. La suppression de compte compte son mois ─────────────────────────────────────────────────
@@ -521,7 +526,7 @@ select ok(
   'toute valeur que rend regime_de_rappel est admise par le check de rappels_au_depart'
 );
 
--- La garde de volume a retenu les soixante de la section 6 : on les retire, pour que le passage
+-- La garde de volume a gardé dix des soixante de la section 6 : on les retire, pour que le passage
 -- suivant ait un seul candidat.
 delete from auth.users where id::text like 'c3600000-0000-0000-0001-%';
 

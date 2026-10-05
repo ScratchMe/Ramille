@@ -12,7 +12,8 @@
 --   | le plafond des retours pour tout le projet retiré | 4 |
 --   | `enforce_feedback_rate_limit` sans `security definer` | 4 — le compte ne voit plus que ses propres retours |
 --   | la garde qui compte tous les candidats, vides compris | 6, 9 et 10 (la 5 passe : les vides partent quand même) |
---   | un passage retenu qui ne supprime rien | 7, 8 et 9 |
+--   | un passage retenu qui ne supprime rien | 7, 8, 9 et 11 |
+--   | la garde qui bloque au lieu de ralentir (aucun porteur ne part) | 7, 9 et 11 (05/10/2026) |
 --   | le dénominateur de la garde compte de nouveau tous les comptes anonymes | 11 |
 --   | les plafonds de tout le projet sans la borne d'âge des comptes | 1 bis et 4 bis |
 --
@@ -143,8 +144,10 @@ select is(
   '6. et le passage est appliqué, pas retenu'
 );
 
--- Soixante comptes muets qui portent un bilan, et dix vides : la garde retient les premiers, et
--- les seconds partent quand même.
+-- Soixante comptes muets qui portent un bilan, et dix vides : la garde se déclenche, et depuis le
+-- 05/10/2026 (`v1-27` §12.39) elle ralentit au lieu de bloquer — les dix vides partent, plus les
+-- cinquante porteurs les plus anciennement actifs (le seuil) ; dix porteurs attendent le passage
+-- suivant.
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('49222222-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
@@ -162,8 +165,8 @@ select public.purge_stale_anonymous_accounts();
 
 select is(
   (select count(*)::int from auth.users where id::text like '49222222-%'),
-  60,
-  '7. au-delà du seuil, les comptes qui portent un bilan restent'
+  10,
+  '7. au-delà du seuil, la purge ralentit : cinquante comptes porteurs partent, dix restent'
 );
 
 select is(
@@ -176,19 +179,21 @@ select is(
 
 select results_eq(
   $$ select status, deleted from public.purge_runs where status = 'blocked' $$,
-  $$ values ('blocked'::text, 10) $$,
-  '9. le journal dit `blocked`, ce qui alerte, avec les dix comptes vides partis'
+  $$ values ('blocked'::text, 60) $$,
+  '9. le journal dit `blocked`, ce qui alerte, avec les dix vides et les cinquante porteurs partis'
 );
 
 select ok(
   (select detail from public.purge_runs where status = 'blocked') like '%60 comptes anonymes porteurs%',
-  '10. et il dit combien de comptes porteurs la garde a retenus'
+  '10. et il dit combien de comptes porteurs étaient en jeu'
 );
 
 -- **Le dénominateur ne compte que les porteurs, lui aussi** (contre-lecture du 04/10/2026) : trois
 -- cents sessions vides et actives — des robots du jour — gonflaient le total des comptes anonymes, donc
--- le seuil, et soixante vrais comptes muets passaient sous lui. Les comptes retenus plus haut partent
--- d'abord, pour que ces soixante-là soient les seuls porteurs candidats.
+-- le seuil, et soixante vrais comptes muets passaient sous lui. Les comptes restés plus haut partent
+-- d'abord, pour que ces soixante-là soient les seuls porteurs candidats. Compté sur les porteurs, le
+-- seuil reste à 50 et la garde ralentit (dix restent) ; compté sur tous les comptes anonymes de la
+-- base, il dépasserait soixante, et les soixante partiraient d'un coup.
 delete from auth.users where id::text like '49222222-%';
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('49333333-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
@@ -210,8 +215,8 @@ select public.purge_stale_anonymous_accounts();
 
 select is(
   (select count(*)::int from auth.users where id::text like '49444444-%'),
-  60,
-  '11. trois cents sessions vides du jour ne desserrent pas la garde : soixante vrais comptes muets restent'
+  10,
+  '11. trois cents sessions vides du jour ne desserrent pas la garde : elle ralentit, dix vrais comptes muets restent'
 );
 
 select * from finish();
