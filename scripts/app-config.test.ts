@@ -11,6 +11,9 @@
  * place avant la suivante) : ne plus exiger `GOOGLE_SERVICES_JSON` fait tomber 2 tests ; retirer
  * `preview` des profils distribués en fait tomber 1 ; ne plus regarder `EAS_BUILD` (refuser
  * aussi en local) en fait tomber 1.
+ *
+ * Et depuis le 05/10/2026 (v1-27 §12.39), la garde de la clé legacy : retirer le refus de la clé
+ * `eyJ…` fait tomber 1 test ; l'étendre à un build local (sans `EAS_BUILD`) en fait tomber 1.
  */
 
 type Configuration = { android?: Record<string, unknown>; name?: string };
@@ -84,6 +87,40 @@ describe('app.config.js — un build distribué refuse ce qui lui manque', () =>
         GOOGLE_SERVICES_JSON: COMPLET.GOOGLE_SERVICES_JSON,
       })
     ).toThrow(/EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY/);
+  });
+
+  it('refuse un build distribué qui embarque encore la clé legacy (JWT, préfixe eyJ)', () => {
+    expect(() =>
+      evaluer({
+        EAS_BUILD: 'true',
+        EAS_BUILD_PROFILE: 'production',
+        GOOGLE_SERVICES_JSON: COMPLET.GOOGLE_SERVICES_JSON,
+        EXPO_PUBLIC_SUPABASE_URL: COMPLET.EXPO_PUBLIC_SUPABASE_URL,
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.charge.utile',
+      })
+    ).toThrow(/clé legacy/);
+  });
+
+  it('laisse passer un build distribué avec la clé publishable', () => {
+    const config = evaluer({
+      EAS_BUILD: 'true',
+      EAS_BUILD_PROFILE: 'production',
+      GOOGLE_SERVICES_JSON: COMPLET.GOOGLE_SERVICES_JSON,
+      EXPO_PUBLIC_SUPABASE_URL: COMPLET.EXPO_PUBLIC_SUPABASE_URL,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_xxxxxxxxxxxxxxxxxxxxxx',
+    });
+    expect(config.android).toEqual({
+      package: 'fr.ramille.app',
+      googleServicesFile: COMPLET.GOOGLE_SERVICES_JSON,
+    });
+  });
+
+  it('ne regarde pas la forme de la clé hors du builder (build local)', () => {
+    const config = evaluer({
+      EAS_BUILD_PROFILE: 'production',
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.charge.utile',
+    });
+    expect(config.android).toEqual({ package: 'fr.ramille.app' });
   });
 
   it('laisse passer un build development, qui n’est pas distribué', () => {
