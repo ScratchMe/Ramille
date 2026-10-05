@@ -507,7 +507,7 @@ rend un écran plausible et périmé.
 **Ce qui fait marcher Ramille sans vivre dans le dépôt a un registre : `docs/exploitation/`**
 (lot 0 du plan v1-13, livré le 10/09/2026). Son `README.md` nomme les comptes tiers — Supabase,
 Vercel, EAS/Expo, Google Play, Google Cloud et le projet Firebase d'où viennent
-`google-services.json` et la clé FCM v1, Resend, le registrar du domaine, GitHub — les réglages
+`google-services.json` et la clé FCM v1, Resend, Brevo, le registrar du domaine, GitHub — les réglages
 qu'ils portent, ce qui tombe si l'un manque, la checklist à parcourir avant de publier sur Play,
 et la question de continuité (tout tient à une seule personne, elle n'est pas tranchée). Son §8
 est la porte d'entrée des journaux : `analytics.rappels_par_jour`, `analytics.rappels_bloques`,

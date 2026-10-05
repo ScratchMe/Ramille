@@ -2060,12 +2060,19 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   heure et par adresse, 60 par jour —, et ses plafonds sont **muets** ; la reconnexion, qui coûte déjà
   une case cochée par code, ne l'est pas. Les trois choix sont de la personne qui pilote, le dernier
   après qu'une seconde contre-lecture a montré qu'un tiers pouvait bloquer la reconnexion d'un autre.
-  **Brevo reste à faire**, et ne changera que l'appel du hook et le plafond du jour, calculé sur les
-  100 e-mails de Resend. **Ce qu'ils laissent** : un plafond muet tue le code de rattachement déjà
+  **Brevo est écrit le même jour** (`20261005121351_les_codes_par_brevo.sql`, décisions de la
+  personne qui pilote) : seuls les codes y passent, dès que sa clé est posée dans le Vault — Resend
+  sinon —, avec sa mesure anonymisée ; le plafond du jour des rattachements passe à 200 sur ses 300
+  e-mails quotidiens, et le journal dit qui a envoyé (registre §3.12). **Ce qu'il laisse** : la
+  mesure de Brevo n'est qu'anonymisée tant que son support ne l'a pas coupée ; le badge « Sent with
+  Brevo » du plan gratuit reste à vérifier sur le premier envoi ; et la clé retirée, les codes
+  reviennent chez Resend avec un plafond calculé pour Brevo, qui ne protège plus la part des rappels.
+  **Ce qu'ils laissent** : un plafond muet tue le code de rattachement déjà
   reçu sans en envoyer d'autre (Supabase l'a renouvelé avant d'appeler le hook), et cinq rattachements
   vers une adresse, d'où qu'ils viennent, empêchent son titulaire de la rattacher pendant l'heure ; qui
-  coche une case par e-mail peut épuiser le quota de Resend par des codes de reconnexion ; un échec
-  d'envoi (`500`) n'a pas de trace en base, et pendant une panne de Resend il dit qui a un compte
+  coche une case par e-mail peut épuiser le quota d'envoi des codes (Brevo) par des codes de
+  reconnexion ; un échec
+  d'envoi (`500`) n'a pas de trace en base, et pendant une panne du fournisseur il dit qui a un compte
   (`SUPABASE.md` §2.4) ; un plafond atteint ne se voit que dans le journal (§8.12 du registre) —
   l'alerte d'exploitation ne le lit pas encore ; le plafond horaire de Supabase (30) n'est pas mesuré
   avec le hook en production ; la nouvelle phrase des limites de Supabase n'arrive dans l'app Android
