@@ -2401,7 +2401,9 @@ ne les fait pas) :
   `limiterOpts.Email.Allow()` — un limiteur **unique, partagé pour tout le projet**, non indexé par IP —
   **avant** d'appeler le hook d'envoi, donc aucune ligne dans `envois_d_e_mails_d_auth`. `magiclink`
   (reconnexion) et `email_change` (rattachement) y passent tous deux. Un tiers demande 30 codes/h
-  (30 captchas, ~1-2 $/jour) et bloque reconnexion comme rattachement pour tout le monde, en continu.
+  (30 captchas, ~1-2 $/jour) et bloque reconnexion comme rattachement pour tout le monde, en continu —
+  **ou trente récupérations de mot de passe**, qui passent par le même limiteur sans faire partir
+  aucun e-mail (lu dans le code le 06/10/2026, §12.40).
   **Tranche la question ouverte de §12.35** (« le plafond horaire 30 n'est pas mesuré avec le hook ») :
   il s'applique, globalement, avant le hook. Le plan gratuit ne permet pas mieux côté Supabase ; la
   parade est d'alerter sur les 429 `over_email_send_rate_limit` des Logs Auth (que l'alerte
@@ -2479,19 +2481,27 @@ Trois restes de §12.39, que la personne qui pilote a voulu voir expliqués puis
   d'envoi** est appelé pour la récupération, et l'inscrit dans `envois_d_e_mails_d_auth` (`type_ignore`)
   sans rien envoyer — et seulement pour une adresse qui a un compte (une adresse inconnue répond 200
   sans l'appeler). Le produit n'envoie jamais ce type : l'alerte dit désormais chaque demande, avec le
-  nombre d'adresses visées. Le verrou n'est pas fermé pour autant (§12.39).
+  nombre d'adresses visées. Le verrou n'est pas fermé pour autant (§12.39). **Et une récupération use
+  aussi le plafond horaire global** : la contre-lecture l'a soupçonné, le code de GoTrue (v2.197.0,
+  `internal/api/mail.go`) le confirme — `sendPasswordRecovery` passe par `sendEmail`, qui consomme le
+  limiteur avant le hook. Trente récupérations par heure coupent donc toute connexion par e-mail, au prix
+  de trente captchas et sans un e-mail parti ; la ligne de l'alerte le dit. La stack locale n'applique pas
+  ce plafond (soixante et un envois dans l'heure, mesuré), donc le constat se lit au code.
 - **Le plafond horaire global de Supabase** ne laisse aucune ligne en base : l'app le signale par un
-  événement neuf, `connexion_limite` (`props.ecran`), aux quatre endroits qui demandent un code, et
-  l'alerte le dit à partir de trois — le même code d'erreur sert à la minute d'une adresse, et une
-  personne qui redemande trop vite ne doit pas faire partir d'e-mail.
-- **Et notre propre plafond** : `plafond_projet` (200 rattachements par jour avec Brevo), muet par
-  non-divulgation, que l'alerte dit aussi. **Aucun des trois ne passe le plafond des envois de
+  événement neuf, `connexion_limite` (`props.ecran`), aux quatre endroits qui demandent un code — sur le
+  seul code `over_email_send_rate_limit` (`estLaLimiteDEnvoiDeSupabase`), pas sur tout 429 : la limite par
+  adresse IP n'en est pas —, et l'alerte le dit à partir de trois : le même code d'erreur sert à la
+  minute d'une adresse, et une personne qui redemande trop vite ne doit pas faire partir d'e-mail.
+- **Et notre propre plafond** : `plafond_projet` (200 rattachements par jour avec Brevo, sur une fenêtre
+  glissante de vingt-quatre heures), muet par non-divulgation, que l'alerte dit aussi. **Aucun des trois ne passe le plafond des envois de
   l'alerte** : ce sont des clients qui les provoquent, et un signal du serveur ferait partir un e-mail
   par heure pendant une attaque, sur le quota de Resend que les rappels partagent. Une première
   écriture le comptait parmi les signaux du serveur, et disait « plus aucun code ne part, pour
   personne » — faux, la reconnexion n'est jamais plafonnée par le hook.
 
-**Ce qui reste, et pourquoi** : remonter le plafond horaire de Supabase (30 par heure) est une décision
+**Ce qui reste, et pourquoi** : l'émission de `connexion_limite` n'est gardée que sur le renvoi
+(`saisie-du-code.test.tsx`) — les trois autres écrans ne le sont par rien, et le parcours réel ne
+rencontre jamais la limite. Remonter le plafond horaire de Supabase (30 par heure) est une décision
 qui se prend au vu des premiers `connexion_limite` — le relever rend le blocage plus cher, mais laisse un
 tiers faire partir plus de messages depuis notre domaine ; la fermeture des sessions inactives, ci-dessus.
 

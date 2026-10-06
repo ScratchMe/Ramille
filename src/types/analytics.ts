@@ -141,7 +141,7 @@ export type SourceRetrouver = (typeof SOURCES_RETROUVER)[number];
 //
 // Le plafond horaire d'e-mails de Supabase est **global au projet et vérifié avant le hook d'envoi** :
 // il ne laisse aucune ligne en base, et seule l'app voit le refus (`over_email_send_rate_limit`,
-// `estLimiteDEnvoi`). Les quatre écrans qui demandent un code le signalent donc, et l'alerte
+// `estLaLimiteDEnvoiDeSupabase` — pas tout 429 : la limite par adresse IP n'en est pas). Les quatre écrans qui demandent un code le signalent donc, et l'alerte
 // d'exploitation compte ces refus (`20261006140000`, 06/10/2026). Une liste fermée, pour la même
 // raison que les provenances : la base ne valide pas les valeurs de `props`.
 export const ECRANS_DE_LA_LIMITE = ['email', 'retrouver', 'suppression', 'renvoi'] as const;
@@ -299,9 +299,9 @@ export type UsageEventPropsByName = {
    *  ne porte pas de texte libre (cf. l'en-tête de 20260905170000 et
    *  `src/types/soumission.ts`). */
   bilan_submit_error: { etape: EtapeSoumission; genre: GenreErreurSoumission };
-  /** Supabase a refusé d'envoyer un code (`estLimiteDEnvoi`) : le plafond horaire du projet, ou la
-   *  minute d'une adresse — le même code d'erreur sert aux deux, et l'événement ne les distingue pas
-   *  plus que lui. **Ne double aucun fait du schéma** : le refus précède le hook d'envoi, qui seul
+  /** Supabase a refusé d'envoyer un code (`estLaLimiteDEnvoiDeSupabase`) : le plafond horaire du
+   *  projet, ou la minute d'une adresse — le même code d'erreur sert aux deux, et l'événement ne les
+   *  distingue pas plus que lui. Un 429 de la limite par adresse IP n'en est pas. **Ne double aucun fait du schéma** : le refus précède le hook d'envoi, qui seul
    *  écrit en base. Aucune adresse, seulement l'écran. Comme tout événement, il renonce sans session :
    *  un refus sur un appareil sans session ne se compte pas. */
   connexion_limite: { ecran: EcranDeLaLimite };

@@ -20,7 +20,7 @@ import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs
 import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   adresseSemblePlausible,
-  estLimiteDEnvoi,
+  estLaLimiteDEnvoiDeSupabase,
   messageDeLaDemande,
   messageDuRetourDeLien,
   motifRetourLien,
@@ -234,7 +234,7 @@ export default function RetrouverMonCompte() {
     // d'envoi et panne de transport se disent, et **tout le reste mène à l'écran de code**, y
     // compris le 422 d'une adresse inconnue.
     if (suiteDeLaDemandeDeCode('connexion', error) === 'message') {
-      if (estLimiteDEnvoi(error)) track('connexion_limite', { ecran: 'retrouver' });
+      if (estLaLimiteDEnvoiDeSupabase(error)) track('connexion_limite', { ecran: 'retrouver' });
       setMessage(messageDeLaDemande(error));
       return;
     }

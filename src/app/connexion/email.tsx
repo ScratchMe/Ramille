@@ -26,7 +26,7 @@ import {
 } from '@/lib/connexion-prefs';
 import {
   adresseSemblePlausible,
-  estLimiteDEnvoi,
+  estLaLimiteDEnvoiDeSupabase,
   messageDeLaDemande,
   messageDuRetourDeLien,
   motifRetourLien,
@@ -178,7 +178,7 @@ export default function ConnexionEmail() {
     if (suite === 'message') {
       // Le plafond horaire de Supabase ne laisse aucune trace en base : l'app seule le voit
       // (`connexion_limite`, `MESURE.md` §1).
-      if (estLimiteDEnvoi(error)) track('connexion_limite', { ecran: 'email' });
+      if (estLaLimiteDEnvoiDeSupabase(error)) track('connexion_limite', { ecran: 'email' });
       setEnvoi(false);
       setMessage(messageDeLaDemande(error));
       return;
@@ -199,7 +199,7 @@ export default function ConnexionEmail() {
       // la saisie. `otp_disabled` ne peut pas arriver ici — l'adresse existe, c'est ce qui nous a
       // amenés dans cette branche.
       if (suiteDeLaDemandeDeCode('connexion', erreurConnexion) === 'message') {
-        if (estLimiteDEnvoi(erreurConnexion)) track('connexion_limite', { ecran: 'email' });
+        if (estLaLimiteDEnvoiDeSupabase(erreurConnexion)) track('connexion_limite', { ecran: 'email' });
         setEnvoi(false);
         setMessage(messageDeLaDemande(erreurConnexion));
         return;

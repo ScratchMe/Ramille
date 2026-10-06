@@ -1433,6 +1433,8 @@ export type Database = {
         Args: { p_maintenant: string }
         Returns: boolean
       }
+      // Le ménage d'Auth que GoTrue ne fait pas (20261006140000) : serveur seulement.
+      menage_des_jetons_d_auth: { Args: never; Returns: Json }
       // Les boucles à venir, une par une (20260930131841) — remplace ma_boucle_a_venir
       mes_boucles_a_venir: { Args: never; Returns: string[] }
       // v1-34 : la réponse aux transports à la place de l'accès (20261002231530)
@@ -1445,8 +1447,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      // Le ménage d'Auth que GoTrue ne fait pas (20261006140000) : serveur seulement.
-      menage_des_jetons_d_auth: { Args: never; Returns: Json }
       // C4.2 — le mot de la veille (20260928075453)
       mettre_en_file_les_mots_de_la_veille: {
         Args: { p_aujourdhui?: string }

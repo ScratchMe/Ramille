@@ -21,7 +21,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(17);
 
 -- ── 1. Le ménage : qui l'appelle, et quand ─────────────────────────────────────────────────────
 
@@ -189,6 +189,12 @@ select ok(
   'le texte de l''alerte dit les trois signaux'
 );
 
+select ok(
+  (select t not like '%connexion_limite%'
+   from (select public.texte_de_l_alerte(r || '{"codes_refuses_par_la_limite": 2}', now(), 0) as t from calme) x),
+  'deux codes refusés n''écrivent pas de ligne : le texte suit le seuil d''alerte_a_dire'
+);
+
 select * from finish();
 rollback;
 
@@ -209,7 +215,19 @@ rollback;
 --   | le ménage accordé à `authenticated` | 1 |
 --   | la tâche planifiée sous un autre nom | 2 |
 --
+-- Puis, après la contre-lecture du même jour, six de plus, pour les assertions qui n'en avaient pas :
+--
+--   | Ce qu'on casse | Ce qui tombe |
+--   |---|---|
+--   | le ménage supprime aussi les sessions de deux jours | 5, 6 et 7 (les jetons partent avec leur session, par la cascade) |
+--   | la fenêtre des connexions OAuth ramenée à trente minutes | 9 |
+--   | les adresses comptées sans `distinct` | 11 |
+--   | le plafond compté avec les envois réussis | 12 |
+--   | les codes refusés lus sous un autre nom d'événement | 13 |
+--   | le seuil du texte ramené à un (celui d'`alerte_a_dire` gardé) | 17 |
+--
 -- Ce que le fichier ne voit pas : que GoTrue de la production écrive ces tables comme celui de la
 -- stack locale (la tâche échouerait alors, et l'alerte la nommerait), et que l'app émette
--- `connexion_limite` — c'est `src/tests/ecrans/saisie-du-code.test.tsx` pour le renvoi, et le
--- typecheck pour les trois autres écrans.
+-- `connexion_limite`. `src/tests/ecrans/saisie-du-code.test.tsx` garde le renvoi ; **les trois autres
+-- écrans ne sont gardés par rien** — le typecheck garde la valeur d'`ecran`, pas l'existence de
+-- l'appel, et le parcours réel ne rencontre jamais la limite.

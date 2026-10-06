@@ -10,14 +10,18 @@
 --   * **le volume** : chaque rafraîchissement de session écrit un jeton et révoque le précédent, et
 --     Supabase en accepte jusqu'à 150 par cinq minutes et par adresse IP — une session qui boucle sur
 --     le rafraîchissement remplit la base de 500 Mo sans qu'aucun plafond de `public.*` ne le voie ;
---   * **la vie privée** : une ligne de `flow_state` garde les jetons du fournisseur
---     (`provider_access_token`, `provider_refresh_token`), ceux de Google compris, longtemps après
---     que la connexion a abouti ou échoué.
+--   * **la vie privée** : une connexion **abandonnée** entre le retour du fournisseur et l'échange du
+--     code laisse sa ligne de `flow_state`, avec les jetons du fournisseur (`provider_access_token`,
+--     `provider_refresh_token`), ceux de Google compris — un échange réussi, lui, détruit la ligne.
 --
--- Les critères sont prudents, et ceux du ménage de GoTrue lui-même :
+-- Les critères sont plus prudents que ceux du ménage de GoTrue (qui efface les jetons révoqués après
+-- vingt-quatre heures) :
 --   * un jeton **révoqué** depuis plus de **deux jours**. Le jeton en cours d'une session ne l'est
---     jamais, donc aucune session ne tombe ; GoTrue ne relit un jeton révoqué que pour détecter sa
---     réutilisation, dans les dix secondes qui suivent sa révocation ;
+--     jamais, donc aucune session ne tombe. **Ce qu'on perd, et c'est la même perte que le ménage de
+--     GoTrue** : un jeton révoqué rejoué après sa tolérance de dix secondes fait révoquer toute la
+--     session (la détection de réutilisation) ; une fois effacé, il ne rend plus qu'« introuvable », et
+--     la session reste. Un jeton volé et rejoué plus de deux jours après sa révocation n'ouvre rien
+--     pour autant ;
 --   * une connexion commencée il y a plus d'**un jour** : un échange PKCE se conclut en minutes.
 -- **Les sessions elles-mêmes ne sont pas touchées** : en fermer une après une longue inactivité
 -- déconnecterait quelqu'un, et c'est une décision de produit (`v1-27` §12.40). Les sessions anonymes
@@ -39,17 +43,29 @@
 --     (`user_recovery_requested`) pour une récupération et pour une reconnexion, donc ne les distingue
 --     pas ; **le hook d'envoi, si** — il est appelé pour la récupération et l'inscrit déjà dans
 --     `envois_d_e_mails_d_auth` (issue `type_ignore`), sans rien envoyer. Toute ligne de ce genre est
---     donc une demande que Ramille ne fait jamais : l'alerte la dit, avec le nombre d'adresses. Le
---     journal ne garde qu'un jour, ce que l'alerte, horaire, couvre. Le hook n'est appelé que pour une
---     adresse qui a un compte, mais l'alerte n'en dit rien à personne d'autre que l'exploitation ;
+--     donc une demande que Ramille ne fait jamais : l'alerte la dit, avec le nombre d'adresses. **Et
+--     chacune use le plafond horaire global ci-dessous** : lu dans le code de GoTrue (v2.197.0,
+--     `internal/api/mail.go`), `sendPasswordRecovery` passe par `sendEmail`, qui consomme le limiteur
+--     **avant** d'appeler le hook — trente récupérations par heure, sur des adresses connues, coupent
+--     toute connexion par e-mail du projet sans qu'aucun e-mail parte (chacune coûte un captcha, comme
+--     une demande de code). La stack locale ne l'applique pas (mesuré le 06/10/2026 : soixante et un
+--     envois dans l'heure, plafond à trente), donc le constat se lit au code. `type_ignore` réunit tous
+--     les types que le produit n'envoie pas ; seule la récupération arme en plus la minute de l'adresse.
+--     Le journal ne garde qu'un jour, ce que l'alerte couvre **tant que sa fenêtre avance** : un secret
+--     du Vault manquant ou un refus de Resend la retient, et une ligne de plus d'un jour est purgée à
+--     0h40 avant d'être dite. Le hook n'est appelé que pour une adresse qui a un compte (une adresse
+--     inconnue répond 200 sans l'appeler, mesuré le même jour), mais l'alerte n'en dit rien à personne
+--     d'autre que l'exploitation ;
 --   * **le plafond horaire global de Supabase** (30 par heure), vérifié **avant** le hook : il ne
 --     laisse aucune ligne en base. Seule l'app le voit — `over_email_send_rate_limit` —, et elle le
---     signale désormais par un événement d'usage, `connexion_limite`. Le même code sert à la minute
+--     signale désormais par un événement d'usage, `connexion_limite`, sur ce code seulement (un 429 de
+--     la limite par adresse IP, `over_request_rate_limit`, n'en est pas). Le même code sert à la minute
 --     d'une adresse : un événement isolé est souvent quelqu'un qui redemande trop vite, d'où le seuil
 --     de trois dans l'alerte.
 -- Et un troisième, le nôtre : **le plafond quotidien du projet** dans le hook (200 rattachements par
--- jour avec Brevo). Atteint, plus aucun compte ne peut se rattacher par e-mail avant que la fenêtre de
--- vingt-quatre heures passe — la reconnexion, elle, n'est jamais plafonnée par le hook —, et le hook se
+-- jour avec Brevo). Atteint, plus aucun compte ne peut se rattacher par e-mail tant que les envois des
+-- vingt-quatre dernières heures n'ont pas commencé à sortir de la fenêtre, qui glisse — la reconnexion,
+-- elle, n'est jamais plafonnée par le hook —, et le hook se
 -- tait par non-divulgation. L'alerte le dit. **Il reste sous le plafond des envois de l'alerte**, comme
 -- tout ce qu'un client provoque : ce sont des demandes de clients, chacune au prix d'un captcha, qui le
 -- font atteindre, et un signal du serveur passerait ce plafond — une attaque continue ferait partir un
@@ -112,7 +128,7 @@ select cron.schedule(
 insert into public.usage_event_types (name, description) values
   (
     'connexion_limite',
-    'Supabase a refusé d''envoyer un code de connexion (over_email_send_rate_limit, avant le hook d''envoi) : le plafond horaire du projet, ou la minute d''une adresse. props.ecran : « email » (rattachement, ou reconnexion d''une adresse déjà prise), « retrouver », « suppression », « renvoi » (le renvoi depuis la saisie du code). Aucune adresse. Lu par l''alerte d''exploitation, à partir de trois.'
+    'Supabase a refusé d''envoyer un code de connexion (over_email_send_rate_limit, avant le hook d''envoi) : le plafond horaire du projet, ou la minute d''une adresse. Seulement sur ce code : un 429 de la limite par adresse IP (over_request_rate_limit) n''en est pas. props.ecran : « email » (rattachement, ou reconnexion d''une adresse déjà prise), « retrouver », « suppression », « renvoi » (le renvoi depuis la saisie du code). Aucune adresse. Lu par l''alerte d''exploitation, à partir de trois.'
   )
 on conflict (name) do nothing;
 
@@ -184,8 +200,8 @@ AS $function$
       where not (genre = 'veille' and statut = 'failed')
     ),
     -- Les demandes d'un e-mail d'Auth que le produit n'envoie jamais (`recovery` surtout) : le hook les
-    -- journalise sans rien envoyer. Chacune arme le minuteur d'une minute de l'adresse, partagé avec la
-    -- reconnexion par code (06/10/2026, voir l'en-tête de 20261006140000).
+    -- journalise sans rien envoyer. Chacune use le plafond horaire global d'e-mails du projet, et une
+    -- récupération arme en plus la minute de l'adresse (06/10/2026, voir l'en-tête de 20261006140000).
     'demandes_ignorees', (
       select count(*) from public.envois_d_e_mails_d_auth
       where issue = 'type_ignore' and cree_le > p_depuis
@@ -195,7 +211,8 @@ AS $function$
       where issue = 'type_ignore' and cree_le > p_depuis
     ),
     -- Le plafond quotidien des rattachements atteint : le hook ne fait plus partir aucun code de
-    -- rattachement avant vingt-quatre heures — et il se tait, par non-divulgation.
+    -- rattachement tant que la fenêtre glissante de vingt-quatre heures est pleine — et il se tait, par
+    -- non-divulgation.
     'plafond_du_projet_atteint', (
       select count(*) from public.envois_d_e_mails_d_auth
       where issue = 'plafond_projet' and cree_le > p_depuis
@@ -249,11 +266,11 @@ begin
       p_releve ->> 'taille_de_la_base_mo');
   end if;
   if coalesce((p_releve ->> 'plafond_du_projet_atteint')::int, 0) > 0 then
-    v_lignes := v_lignes || format('- Plafond quotidien des rattachements par e-mail atteint (%s demandes retenues) : plus aucun compte ne se rattache par e-mail avant vingt-quatre heures ; la reconnexion passe',
+    v_lignes := v_lignes || format('- Plafond quotidien des rattachements par e-mail atteint (%s demandes retenues) : plus aucun compte ne se rattache par e-mail tant que la fenêtre glissante de vingt-quatre heures est pleine ; la reconnexion passe',
       p_releve ->> 'plafond_du_projet_atteint');
   end if;
   if coalesce((p_releve ->> 'demandes_ignorees')::int, 0) > 0 then
-    v_lignes := v_lignes || format('- Demandes d''un e-mail que Ramille n''envoie jamais (récupération de mot de passe…) : %s, sur %s adresse(s) — chacune bloque une minute la reconnexion par code de son adresse',
+    v_lignes := v_lignes || format('- Demandes d''un e-mail que Ramille n''envoie jamais (récupération de mot de passe…) : %s, sur %s adresse(s) — chacune use le plafond horaire d''e-mails du projet (trente par heure, toute connexion par e-mail comprise), et une récupération bloque une minute la reconnexion par code de son adresse',
       p_releve ->> 'demandes_ignorees', p_releve ->> 'demandes_ignorees_adresses');
   end if;
   if coalesce((p_releve ->> 'codes_refuses_par_la_limite')::int, 0) >= 3 then
@@ -299,4 +316,4 @@ $function$;
 comment on function public.releve_des_alertes(timestamp with time zone) is
   'Ce que l''exploitation a vu depuis un instant : des comptes, jamais une personne. Lu par verifier_les_alertes. '
   'Depuis 20261006140000, aussi les demandes d''un e-mail que le produit n''envoie jamais, le plafond quotidien '
-  'des codes atteint, et les codes refusés par la limite de Supabase (connexion_limite).';
+  'des rattachements atteint, et les codes refusés par la limite de Supabase (connexion_limite).';

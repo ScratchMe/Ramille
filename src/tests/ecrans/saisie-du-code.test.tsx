@@ -95,7 +95,8 @@ describe('« Renvoyer un code »', () => {
  *
  * **Éprouvé en le cassant, le 06/10/2026** : la ligne d'émission retirée de `surRenvoi` fait tomber le
  * premier cas, seul ; émise sur tout `suite === 'message'` sans regarder la limite, le troisième
- * (une panne de transport), seul.
+ * (la limite par adresse IP) et le quatrième (une panne de transport), eux seuls ; émise sur
+ * `estLimiteDEnvoi`, le prédicat de l'écran, le troisième, seul.
  */
 describe('« Renvoyer un code » refusé par la limite d’envoi', () => {
   beforeEach(() => jest.mocked(track).mockClear());
@@ -112,6 +113,16 @@ describe('« Renvoyer un code » refusé par la limite d’envoi', () => {
     monter(async () => ({ error: null }));
     await renvoyerUnCode();
     expect(track).not.toHaveBeenCalled();
+  });
+
+  it('ne compte pas la limite par adresse IP : le plafond du projet n’y est pour rien', async () => {
+    monter(async () => ({
+      error: { code: 'over_request_rate_limit', status: 429, message: 'Request rate limit reached' },
+    }));
+    await renvoyerUnCode();
+    expect(track).not.toHaveBeenCalled();
+    // L'écran, lui, dit la même phrase qu'à toute limite : réessayer tout de suite ne servirait à rien.
+    expect(screen.getByText(/Trop de demandes/)).toBeTruthy();
   });
 
   it('ne compte pas une panne de transport comme une limite', async () => {

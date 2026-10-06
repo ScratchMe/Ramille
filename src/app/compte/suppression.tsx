@@ -22,7 +22,7 @@ import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from 
 import { type EtatSuppression } from '@/types/compte-suppression';
 import {
   adresseSemblePlausible,
-  estLimiteDEnvoi,
+  estLaLimiteDEnvoiDeSupabase,
   messageDeLaDemande,
   suiteDeLaDemandeDeCode,
 } from '@/types/connexion';
@@ -126,7 +126,7 @@ export default function SuppressionCompte() {
     // reste mène à l'écran de code**, y compris le 422 d'une adresse inconnue — sinon cette page
     // dirait qui a un compte Ramille.
     if (suiteDeLaDemandeDeCode('connexion', error) === 'message') {
-      if (estLimiteDEnvoi(error)) track('connexion_limite', { ecran: 'suppression' });
+      if (estLaLimiteDEnvoiDeSupabase(error)) track('connexion_limite', { ecran: 'suppression' });
       setMessage(messageDeLaDemande(error));
       return;
     }

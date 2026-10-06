@@ -303,8 +303,9 @@ sur la stack locale :
   comme rattachement —, et **aucune ligne ne s'écrit dans le journal du hook** (`envois_d_e_mails_d_auth`),
   puisque le refus précède le hook. Il se voit dans les Logs → Auth (429
   `over_email_send_rate_limit` sur `/otp`, `/user`) et, depuis le 06/10/2026, par l'app, qui le signale
-  (`connexion_limite`). Et `/auth/v1/recover`, un type que le produit n'emprunte pas, arme quand même le
-  minuteur `recovery_sent_at` partagé avec le magiclink de reconnexion (60 s) : un tiers y bloque la
+  (`connexion_limite`). Et `/auth/v1/recover`, un type que le produit n'emprunte pas, **use ce même
+  limiteur** (`sendPasswordRecovery` passe par `sendEmail`, lu le 06/10/2026) sans qu'aucun e-mail parte,
+  et arme le minuteur `recovery_sent_at` partagé avec le magiclink de reconnexion (60 s) : un tiers y bloque la
   reconnexion d'une adresse sans qu'aucun e-mail parte (`v1-27` §12.39). **Celui-là laisse une ligne** :
   le hook est appelé, pour une adresse qui a un compte, et l'inscrit en `type_ignore` ; le journal d'Auth
   (`auth.audit_log_entries`), lui, écrit `user_recovery_requested` pour une récupération **et** pour une
