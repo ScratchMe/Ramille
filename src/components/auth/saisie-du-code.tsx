@@ -10,11 +10,13 @@ import { ThemedView } from '@/components/themed-view';
 import { TitreDArrivee } from '@/components/titre-d-arrivee';
 import { APP_NAME } from '@/constants/produit';
 import { Radius, Spacing } from '@/constants/theme';
+import { track } from '@/lib/analytics';
 import { verifierLeCode } from '@/lib/auth';
 import {
   codeSemblePlausible,
   consequenceDeLaSaisie,
   corpsDeLaSaisie,
+  estLimiteDEnvoi,
   issueDeLaVerification,
   LONGUEUR_DU_CODE,
   messageDeLaDemande,
@@ -175,6 +177,7 @@ export function SaisieDuCode({
     // qui reste distinct, et c'est su** : la limite d'envoi ne frappe qu'une adresse connue, à qui un
     // code vient de partir — le message diffère donc déjà, et le champ avec lui (`SUPABASE.md` §2.4).
     if (suite === 'renvoye') setCode('');
+    if (suite === 'message' && estLimiteDEnvoi(error)) track('connexion_limite', { ecran: 'renvoi' });
     setMessage(suite === 'message' ? messageDeLaDemande(error) : messageDuRenvoi(voix));
   };
 

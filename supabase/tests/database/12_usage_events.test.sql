@@ -162,8 +162,8 @@ select bag_eq(
             ('resultat_view'), ('resultat_share'), ('connexion_view'), ('connexion_demande'),
             ('connexion_success'), ('connexion_dismiss'), ('plan_view'), ('suivi_view'),
             ('compte_view'), ('retrouver_view'), ('retrouver_send'), ('rappels_view'),
-            ('app_error'), ('bilan_submit_error') $$,
-  'le référentiel contient exactement les dix-huit événements du produit'
+            ('app_error'), ('bilan_submit_error'), ('connexion_limite') $$,
+  'le référentiel contient exactement les dix-neuf événements du produit'
 );
 
 -- On n'instrumente jamais ce que le schéma enregistre déjà : `assessments.submitted_at`,

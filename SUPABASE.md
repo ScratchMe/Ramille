@@ -301,11 +301,19 @@ sur la stack locale :
   hook. Deux conséquences qu'un plafond par compte écrit dans le hook ne change pas : un tiers qui
   épuise le plafond horaire (30/h sur la production) **bloque tous les envois du projet** — reconnexion
   comme rattachement —, et **aucune ligne ne s'écrit dans le journal du hook** (`envois_d_e_mails_d_auth`),
-  puisque le refus précède le hook. Le seul endroit où ça se voit est les Logs → Auth (429
-  `over_email_send_rate_limit` sur `/otp`, `/user`). Et `/auth/v1/recover`, un type que le produit
-  n'emprunte pas, arme quand même le minuteur `recovery_sent_at` partagé avec le magiclink de
-  reconnexion (60 s) : un tiers y bloque la reconnexion d'une adresse sans qu'aucun e-mail parte
-  (`v1-27` §12.39).
+  puisque le refus précède le hook. Il se voit dans les Logs → Auth (429
+  `over_email_send_rate_limit` sur `/otp`, `/user`) et, depuis le 06/10/2026, par l'app, qui le signale
+  (`connexion_limite`). Et `/auth/v1/recover`, un type que le produit n'emprunte pas, arme quand même le
+  minuteur `recovery_sent_at` partagé avec le magiclink de reconnexion (60 s) : un tiers y bloque la
+  reconnexion d'une adresse sans qu'aucun e-mail parte (`v1-27` §12.39). **Celui-là laisse une ligne** :
+  le hook est appelé, pour une adresse qui a un compte, et l'inscrit en `type_ignore` ; le journal d'Auth
+  (`auth.audit_log_entries`), lui, écrit `user_recovery_requested` pour une récupération **et** pour une
+  reconnexion, donc ne les distingue pas (mesuré le 06/10/2026). L'alerte lit les deux (`v1-27` §12.40).
+- **Une tâche du dépôt écrit dans `auth`, et c'est assumé** : le ménage de GoTrue est éteint sur la
+  production et ne se règle pas, donc `menage_des_jetons_d_auth` (0h50 UTC) supprime les jetons révoqués
+  de plus de deux jours et les `flow_state` de plus d'un jour — jamais une session. `postgres` en a le
+  droit sur la production. **Une mise à jour d'Auth** qui renommerait une colonne de ces tables ferait
+  échouer la tâche : l'alerte la nomme, rien n'est perdu, et sa requête se relit contre le nouveau schéma.
 - **Un trigger sur `auth.users` se déclenche pour tous les rôles, GoTrue (`supabase_auth_admin`)
   compris**, donc il borne ce que le client peut y écrire là où aucun plafond `public.*` ne voit cette
   table. Premier emploi : `borner_les_ecritures_sur_le_compte` (`20261006120000`,

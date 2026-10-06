@@ -40,6 +40,7 @@ describe('USAGE_EVENT_NAMES', () => {
       'rappels_view',
       'app_error',
       'bilan_submit_error',
+      'connexion_limite',
     ]);
   });
 
@@ -80,6 +81,7 @@ describe('USAGE_EVENT_NAMES', () => {
       rappels_view: 'rappels_view',
       app_error: 'app_error',
       bilan_submit_error: 'bilan_submit_error',
+      connexion_limite: 'connexion_limite',
     };
     expect(Object.keys(_exhaustif)).toHaveLength(USAGE_EVENT_NAMES.length);
   });

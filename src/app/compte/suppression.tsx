@@ -15,12 +15,14 @@ import { RAMILLE } from '@/constants/mascotte';
 import { APP_NAME } from '@/constants/produit';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { SaisieDuCode } from '@/components/auth/saisie-du-code';
+import { track } from '@/lib/analytics';
 import { demanderLaConnexion } from '@/lib/auth';
 import { deleteMyAccount, lireEtatDuCompte } from '@/lib/compte';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { type EtatSuppression } from '@/types/compte-suppression';
 import {
   adresseSemblePlausible,
+  estLimiteDEnvoi,
   messageDeLaDemande,
   suiteDeLaDemandeDeCode,
 } from '@/types/connexion';
@@ -124,6 +126,7 @@ export default function SuppressionCompte() {
     // reste mène à l'écran de code**, y compris le 422 d'une adresse inconnue — sinon cette page
     // dirait qui a un compte Ramille.
     if (suiteDeLaDemandeDeCode('connexion', error) === 'message') {
+      if (estLimiteDEnvoi(error)) track('connexion_limite', { ecran: 'suppression' });
       setMessage(messageDeLaDemande(error));
       return;
     }
