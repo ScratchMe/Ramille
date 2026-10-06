@@ -59,6 +59,13 @@ désormais dans l'un d'eux : cette table dit lequel.
 
 ### Ce que la personne qui pilote a demandé
 
+- **Ramille n'est pas encore lancé, et rien ne s'annonce dans l'app avant qu'il le soit** (redit le
+  06/10/2026, pour la troisième fois : « faut que je te le dise combien de fois ? »). La promesse de la
+  page de confidentialité — un élargissement de la collecte s'annonce avant de prendre effet — ne vaut
+  qu'après le lancement ; d'ici là, la date de mise à jour de la page en tient lieu. **Conséquence :
+  une phrase publique qui doit changer se change tout de suite**, dans la PR qui la rend nécessaire,
+  et ne se pose pas comme une question : différer coûterait une annonce plus tard, la faire maintenant
+  ne coûte rien. Le détail : `docs/exploitation/fiche-google-play.md` §1.7.
 - **Elle est le Product Manager, et c'est ce qui départage les décisions** (17/09/2026). Ce qui
   touche au **produit** — ce qu'on montre, ce qu'on tait, ce qu'on demande à la personne, dans quel
   ordre on livre — lui revient, et se pose avant d'écrire. Ce qui est **technique** revient à

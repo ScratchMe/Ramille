@@ -28,6 +28,19 @@ export function estLimiteDEnvoi(error: ErreurAuth): boolean {
 }
 
 /**
+ * Le refus que la mesure compte (`connexion_limite`, 06/10/2026) : la limite d'**envoi d'e-mails** de
+ * Supabase, et elle seule — le plafond horaire du projet, ou la minute d'une adresse.
+ *
+ * **Plus étroit qu'`estLimiteDEnvoi`, exprès.** L'écran dit la même phrase à tout 429, et c'est juste :
+ * réessayer tout de suite ne servirait à rien. Mais un 429 sans ce code est la limite **par adresse
+ * IP** (`over_request_rate_limit`), qu'un réseau d'opérateur ou de campus déclenche sans que le
+ * plafond du projet soit en cause : la compter ferait parler l'alerte d'un verrou qui n'est pas posé.
+ */
+export function estLaLimiteDEnvoiDeSupabase(error: ErreurAuth): boolean {
+  return error?.code === 'over_email_send_rate_limit';
+}
+
+/**
  * La demande n'a pas abouti côté transport — le seul échec qu'un écran d'envoi de lien peut
  * nommer sans rien divulguer (A6-12).
  *

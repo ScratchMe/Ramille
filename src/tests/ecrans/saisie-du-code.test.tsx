@@ -24,11 +24,14 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { SaisieDuCode } from '@/components/auth/saisie-du-code';
+import { track } from '@/lib/analytics';
 import type { ErreurAuth } from '@/types/connexion';
 
 // La vérification part au huitième chiffre et appellerait Supabase : on n'en tape que sept, et le
 // module est doublé pour que son import ne monte pas de client.
 jest.mock('@/lib/auth', () => ({ verifierLeCode: jest.fn() }));
+// Et la mesure, doublée pour lire ce qui part (`connexion_limite`, plus bas).
+jest.mock('@/lib/analytics', () => ({ track: jest.fn() }));
 
 const LIBELLE_DU_CHAMP = 'Code reçu par email, 8 chiffres';
 
@@ -82,5 +85,51 @@ describe('« Renvoyer un code »', () => {
     );
     await renvoyerUnCode();
     expect(valeurDuChamp()).toBe('');
+  });
+});
+
+/**
+ * Le renvoi refusé par la limite de Supabase se signale (06/10/2026, `connexion_limite`). Le plafond
+ * horaire du projet est vérifié avant le hook d'envoi et ne laisse aucune ligne en base : l'app seule
+ * le voit, et l'alerte d'exploitation compte ces refus (`20261006140000`).
+ *
+ * **Éprouvé en le cassant, le 06/10/2026** : la ligne d'émission retirée de `surRenvoi` fait tomber le
+ * premier cas, seul ; émise sur tout `suite === 'message'` sans regarder la limite, le troisième
+ * (la limite par adresse IP) et le quatrième (une panne de transport), eux seuls ; émise sur
+ * `estLimiteDEnvoi`, le prédicat de l'écran, le troisième, seul.
+ */
+describe('« Renvoyer un code » refusé par la limite d’envoi', () => {
+  beforeEach(() => jest.mocked(track).mockClear());
+
+  it('signale le refus, avec son écran', async () => {
+    monter(async () => ({
+      error: { code: 'over_email_send_rate_limit', status: 429, message: 'rate limit' },
+    }));
+    await renvoyerUnCode();
+    expect(track).toHaveBeenCalledWith('connexion_limite', { ecran: 'renvoi' });
+  });
+
+  it('ne signale rien quand le code est reparti', async () => {
+    monter(async () => ({ error: null }));
+    await renvoyerUnCode();
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('ne compte pas la limite par adresse IP : le plafond du projet n’y est pour rien', async () => {
+    monter(async () => ({
+      error: { code: 'over_request_rate_limit', status: 429, message: 'Request rate limit reached' },
+    }));
+    await renvoyerUnCode();
+    expect(track).not.toHaveBeenCalled();
+    // L'écran, lui, dit la même phrase qu'à toute limite : réessayer tout de suite ne servirait à rien.
+    expect(screen.getByText(/Trop de demandes/)).toBeTruthy();
+  });
+
+  it('ne compte pas une panne de transport comme une limite', async () => {
+    monter(async () => ({
+      error: { name: 'AuthRetryableFetchError', status: 0, message: 'Failed to fetch' },
+    }));
+    await renvoyerUnCode();
+    expect(track).not.toHaveBeenCalled();
   });
 });

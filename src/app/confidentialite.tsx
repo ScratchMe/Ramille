@@ -167,8 +167,8 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // document » promet d'annoncer dans l'application avant qu'il prenne effet — relevé par la
 // contre-lecture du captcha —, et la personne qui pilote a décidé le même soir que la mise à jour
 // datée de cette page en tient lieu, sans annonce dans l'application, **parce qu'aucun lancement
-// officiel n'a eu lieu et qu'elle en est alors la seule utilisatrice**. La raison ne vaut que pour
-// cette fois : après le lancement, un élargissement s'annonce. Le texte de l'entrée
+// officiel n'a eu lieu et qu'elle en est alors la seule utilisatrice**. La raison vaut jusqu'au
+// lancement (redit le 06/10/2026) : après lui, un élargissement s'annonce. Le texte de l'entrée
 // Cloudflare et du paragraphe des transferts a été validé par elle, comme chaque phrase de cette page.
 //
 // **05/10/2026 : la trace des codes de connexion envoyés** (plafonds d'e-mail, plan anti-abus,
@@ -185,7 +185,15 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // soi-même —, et Resend n'y garde que les rappels. La page est en ligne avant que la clé Brevo soit
 // posée : jusque-là les codes partent encore par Resend, et la page dit l'état qui arrive. Textes
 // validés par la personne qui pilote le même jour.
-const UPDATED_AT = '5 octobre 2026';
+//
+// **06/10/2026 : un code de connexion qui n'a pas pu partir** (`connexion_limite`,
+// `20261006140000_le_menage_d_auth_et_les_verrous_visibles.sql`). L'app enregistre désormais qu'une
+// demande de code a été refusée par la limite d'envoi, avec l'écran d'où elle part, jamais l'adresse :
+// un échec de plus parmi ceux que nomme le paragraphe des repères. Phrase proposée le 06/10/2026 et
+// voulue par la personne qui pilote le même jour (« faisons les modifs maintenant »). Pas d'annonce dans
+// l'application : **tant que Ramille n'est pas lancé, la date de mise à jour en tient lieu**, et ce n'est
+// plus une exception (la règle du 04/10/2026 ci-dessus vaut jusqu'au lancement, fiche Play §1.7).
+const UPDATED_AT = '6 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -282,7 +290,8 @@ const SECTIONS: LegalSection[] = [
           'd’où tu y arrivais, à quelle étape du questionnaire tu en es, si tu as partagé ton bilan, demandé un code ' +
           'de connexion ou rattaché un compte — et, quand tu cherches un compte existant, si cet appareil portait déjà ' +
           'un bilan —, et le fait qu’un écran n’a pas réussi à ' +
-          's’afficher ou qu’un envoi de ton bilan a échoué (le type de l’erreur et l’endroit, jamais son message). Ces ' +
+          's’afficher, qu’un envoi de ton bilan a échoué ou qu’un code de connexion n’a pas pu partir (le type de ' +
+          'l’erreur et l’endroit, jamais son message). Ces ' +
           'repères ne portent rien d’autre : ni texte que tu aurais saisi, ni adresse IP, ni identifiant d’appareil, et ' +
           'aucun suivi de ce que tu fais ailleurs. Ils servent à voir où le produit décroche pour le réparer. ' +
           'L’ouverture de l’application sert aussi à savoir que tu es toujours là : elle remet tes rappels à leur ' +

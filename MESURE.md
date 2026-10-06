@@ -47,6 +47,12 @@ gonflait exactement le chiffre auquel on voulait la comparer. D'où `SOURCES_CON
 d'appartenance — et le fait que les valeurs attendues soient écrites dans la description du
 référentiel, seul endroit où la base peut les porter.
 
+**`connexion_limite` est le seul événement qui signale un refus d'un tiers** (06/10/2026, `v1-27`
+§12.40) : le plafond horaire d'e-mails de Supabase est vérifié avant le hook d'envoi et ne laisse
+aucune ligne en base, donc il ne double aucun fait du schéma. Il porte l'écran (`ECRANS_DE_LA_LIMITE`)
+et jamais l'adresse, et l'alerte d'exploitation le compte à partir de trois — le même code d'erreur sert
+à la minute d'une adresse, et une personne qui redemande trop vite ne doit pas faire partir d'e-mail.
+
 **`app_error` peut arriver en retard, et le dit** (02/10/2026) : une panne survenue sans session, sans
 réseau ou pendant une panne passagère du serveur attend sur l'appareil et part plus tard, avec `differee` et `retard_h`
 (`docs/exploitation/remontee-erreurs.md` §3 bis). C'est le seul événement qui attend : les autres

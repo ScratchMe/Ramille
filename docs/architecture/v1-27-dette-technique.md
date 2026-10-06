@@ -2381,7 +2381,8 @@ ne les fait pas) :
   de plus de 2 jours, des `flow_state` de 7 jours, 95 sessions de plus de 5 jours subsistent
   (`GOTRUE_DB_CLEANUP` manifestement `false`). Seconde voie de gonflement, invisible aux plafonds
   `public.*` et non rattrapée par la purge 90 j. Volumes encore minimes. **Geste** : activer le ménage
-  GoTrue (réglage hébergé / support).
+  GoTrue (réglage hébergé / support). **Fait autrement le 06/10/2026** : une tâche de nuit le fait à sa
+  place (§12.40).
 - **Constat MOYENNE — MFA TOTP activé** (`mfa_totp_enroll_enabled`/`verify_enabled` vrais) alors que le
   produit n'en a pas : une session peut enrôler jusqu'à 10 facteurs (bornés, aucun e-mail). Surface
   inutile. **Geste** : Supabase → Authentication → désactiver TOTP. **Fait le 05/10/2026** par la personne
@@ -2400,18 +2401,22 @@ ne les fait pas) :
   `limiterOpts.Email.Allow()` — un limiteur **unique, partagé pour tout le projet**, non indexé par IP —
   **avant** d'appeler le hook d'envoi, donc aucune ligne dans `envois_d_e_mails_d_auth`. `magiclink`
   (reconnexion) et `email_change` (rattachement) y passent tous deux. Un tiers demande 30 codes/h
-  (30 captchas, ~1-2 $/jour) et bloque reconnexion comme rattachement pour tout le monde, en continu.
+  (30 captchas, ~1-2 $/jour) et bloque reconnexion comme rattachement pour tout le monde, en continu —
+  **ou trente récupérations de mot de passe**, qui passent par le même limiteur sans faire partir
+  aucun e-mail (lu dans le code le 06/10/2026, §12.40).
   **Tranche la question ouverte de §12.35** (« le plafond horaire 30 n'est pas mesuré avec le hook ») :
   il s'applique, globalement, avant le hook. Le plan gratuit ne permet pas mieux côté Supabase ; la
   parade est d'alerter sur les 429 `over_email_send_rate_limit` des Logs Auth (que l'alerte
   d'exploitation ne lit pas) et de garder Google en chemin principal (déjà le cas). Décision de produit :
-  Google mis en avant, confirmé par la personne qui pilote le 05/10/2026.
+  Google mis en avant, confirmé par la personne qui pilote le 05/10/2026. **Visible depuis le
+  06/10/2026** : l'app le signale, et l'alerte le compte (§12.40) ; il n'est toujours pas fermable.
 - **MOYENNE — `/recover` arme un verrou muet de 60 s sur la reconnexion.** Lu dans le code : `/auth/v1/recover`
   et le magiclink de reconnexion partagent le minuteur `recovery_sent_at` (60 s). Un tiers appelle
   `/recover` sur l'adresse d'une victime (le hook ignore ce type, donc aucun e-mail, aucun signal) et
   arme la fenêtre ; la reconnexion légitime de la victime reçoit 429. **Vérifié** en local. Le hook ne
   peut pas le fermer sans devenir un oracle (une erreur sur `recovery` ne se produirait que pour les
-  adresses connues). Non fermable en base sur le plan gratuit ; à surveiller côté Logs Auth.
+  adresses connues). Non fermable en base sur le plan gratuit. **Visible en base depuis le 06/10/2026**
+  — le hook le journalisait déjà, l'alerte le dit désormais (§12.40).
 - **MOYENNE — le dépôt fait exécuter du code tiers à une session d'agent portant le jeton.** Au-delà de
   §12.38 : le hook `PreToolUse` de `.claude/settings.json` lance `scripts/proteger-les-migrations-livrees.mjs`
   depuis l'arbre de travail courant à chaque Edit/Write, le `postinstall` de `package.json` à chaque
@@ -2457,3 +2462,50 @@ de production (seulement les clés publiques).
 
 **La prochaine passe garde son prompt** : `docs/exploitation/passe-de-securite.md`, mis à jour après
 celle-ci.
+
+### 12.40 Le ménage d'Auth, et les verrous e-mail rendus visibles (06/10/2026)
+
+Trois restes de §12.39, que la personne qui pilote a voulu voir expliqués puis traités. Migration
+`20261006140000_le_menage_d_auth_et_les_verrous_visibles.sql`, test `53`.
+
+- **Le ménage que GoTrue ne fait pas** : une tâche de nuit (`menage-des-jetons-d-auth`, 0h50 UTC — la fenêtre où le registre pose une tâche de plus)
+  supprime les jetons de session **révoqués** depuis plus de deux jours et les connexions OAuth
+  (`auth.flow_state`) commencées il y a plus d'un jour — ces dernières gardent les jetons du
+  fournisseur, Google compris. Aucune session n'est touchée : en fermer une après une longue inactivité
+  déconnecterait quelqu'un, et c'est une décision de produit, **non posée** — la recommandation était de
+  ne pas y toucher tant que rien ne pèse. `postgres` a le droit d'y supprimer sur la production (relu
+  par la personne qui pilote le 06/10/2026). Une mise à jour d'Auth qui changerait ces tables ferait
+  échouer la tâche, et l'alerte la nommerait.
+- **Le verrou muet de `/recover` se voyait déjà en base, et personne ne le lisait.** Mesuré en local :
+  le journal d'Auth écrit la même action pour une récupération et pour une reconnexion, mais **le hook
+  d'envoi** est appelé pour la récupération, et l'inscrit dans `envois_d_e_mails_d_auth` (`type_ignore`)
+  sans rien envoyer — et seulement pour une adresse qui a un compte (une adresse inconnue répond 200
+  sans l'appeler). Le produit n'envoie jamais ce type : l'alerte dit désormais chaque demande, avec le
+  nombre d'adresses visées. Le verrou n'est pas fermé pour autant (§12.39). **Et une récupération use
+  aussi le plafond horaire global** : la contre-lecture l'a soupçonné, le code de GoTrue (v2.197.0,
+  `internal/api/mail.go`) le confirme — `sendPasswordRecovery` passe par `sendEmail`, qui consomme le
+  limiteur avant le hook. Trente récupérations par heure coupent donc toute connexion par e-mail, au prix
+  de trente captchas et sans un e-mail parti ; la ligne de l'alerte le dit. La stack locale n'applique pas
+  ce plafond (soixante et un envois dans l'heure, mesuré), donc le constat se lit au code.
+- **Le plafond horaire global de Supabase** ne laisse aucune ligne en base : l'app le signale par un
+  événement neuf, `connexion_limite` (`props.ecran`), aux quatre endroits qui demandent un code — sur le
+  seul code `over_email_send_rate_limit` (`estLaLimiteDEnvoiDeSupabase`), pas sur tout 429 : la limite par
+  adresse IP n'en est pas —, et l'alerte le dit à partir de trois : le même code d'erreur sert à la
+  minute d'une adresse, et une personne qui redemande trop vite ne doit pas faire partir d'e-mail. La
+  page de confidentialité le nomme depuis le même jour (« qu'un code de connexion n'a pas pu partir »,
+  mise à jour du 6 octobre), et la fiche Play aussi — sans annonce dans l'app, qui n'est pas lancée.
+  La question avait été posée à tort : avant le lancement, une phrase publique se corrige tout de
+  suite (`CLAUDE.md`, fiche Play §1.7).
+- **Et notre propre plafond** : `plafond_projet` (200 rattachements par jour avec Brevo, sur une fenêtre
+  glissante de vingt-quatre heures), muet par non-divulgation, que l'alerte dit aussi. **Aucun des trois ne passe le plafond des envois de
+  l'alerte** : ce sont des clients qui les provoquent, et un signal du serveur ferait partir un e-mail
+  par heure pendant une attaque, sur le quota de Resend que les rappels partagent. Une première
+  écriture le comptait parmi les signaux du serveur, et disait « plus aucun code ne part, pour
+  personne » — faux, la reconnexion n'est jamais plafonnée par le hook.
+
+**Ce qui reste, et pourquoi** : l'émission de `connexion_limite` n'est gardée que sur le renvoi
+(`saisie-du-code.test.tsx`) — les trois autres écrans ne le sont par rien, et le parcours réel ne
+rencontre jamais la limite. Remonter le plafond horaire de Supabase (30 par heure) est une décision
+qui se prend au vu des premiers `connexion_limite` — le relever rend le blocage plus cher, mais laisse un
+tiers faire partir plus de messages depuis notre domaine ; la fermeture des sessions inactives, ci-dessus.
+

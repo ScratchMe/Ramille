@@ -38,6 +38,7 @@
 import {
   adresseDejaRattachee,
   adresseSemblePlausible,
+  estLaLimiteDEnvoiDeSupabase,
   estLimiteDEnvoi,
   estPanneDeTransport,
   estRefusDuCaptcha,
@@ -932,3 +933,20 @@ describe('les phrases de la demande et de la saisie', () => {
     expect(consequenceDeLaSaisie('peut_etre', 'Ramille')).toBeNull();
   });
 });
+
+// Le refus que la mesure compte (`connexion_limite`, 06/10/2026). Éprouvé en le cassant le même jour :
+// le prédicat élargi à tout 429 fait tomber le second cas, seul dans ce fichier ; réduit à `false`, le
+// premier, seul dans ce fichier (le test d'écran du renvoi tombe aussi, les deux fois).
+describe('estLaLimiteDEnvoiDeSupabase', () => {
+  it('reconnaît la limite d’envoi d’e-mails, et elle seule', () => {
+    expect(estLaLimiteDEnvoiDeSupabase({ code: 'over_email_send_rate_limit', status: 429 })).toBe(true);
+  });
+
+  it('ne compte ni la limite par adresse IP, ni une panne, ni l’absence d’erreur', () => {
+    expect(estLaLimiteDEnvoiDeSupabase({ code: 'over_request_rate_limit', status: 429 })).toBe(false);
+    expect(estLaLimiteDEnvoiDeSupabase({ status: 429 })).toBe(false);
+    expect(estLaLimiteDEnvoiDeSupabase({ name: 'AuthRetryableFetchError', status: 0 })).toBe(false);
+    expect(estLaLimiteDEnvoiDeSupabase(null)).toBe(false);
+  });
+});
+
