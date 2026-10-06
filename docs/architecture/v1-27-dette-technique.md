@@ -2491,7 +2491,11 @@ Trois restes de §12.39, que la personne qui pilote a voulu voir expliqués puis
   événement neuf, `connexion_limite` (`props.ecran`), aux quatre endroits qui demandent un code — sur le
   seul code `over_email_send_rate_limit` (`estLaLimiteDEnvoiDeSupabase`), pas sur tout 429 : la limite par
   adresse IP n'en est pas —, et l'alerte le dit à partir de trois : le même code d'erreur sert à la
-  minute d'une adresse, et une personne qui redemande trop vite ne doit pas faire partir d'e-mail.
+  minute d'une adresse, et une personne qui redemande trop vite ne doit pas faire partir d'e-mail. La
+  page de confidentialité le nomme depuis le même jour (« qu'un code de connexion n'a pas pu partir »,
+  mise à jour du 6 octobre), et la fiche Play aussi — sans annonce dans l'app, qui n'est pas lancée.
+  La question avait été posée à tort : avant le lancement, une phrase publique se corrige tout de
+  suite (`CLAUDE.md`, fiche Play §1.7).
 - **Et notre propre plafond** : `plafond_projet` (200 rattachements par jour avec Brevo, sur une fenêtre
   glissante de vingt-quatre heures), muet par non-divulgation, que l'alerte dit aussi. **Aucun des trois ne passe le plafond des envois de
   l'alerte** : ce sont des clients qui les provoquent, et un signal du serveur ferait partir un e-mail
