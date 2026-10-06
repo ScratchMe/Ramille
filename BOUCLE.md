@@ -507,7 +507,7 @@ d'outbox, ne sert qu'une fois, et ne peut rien d'autre que couper les rappels du
 ce message-là. C'est **le seul RPC qui écrit et que `anon` peut appeler** — les autres fonctions
 accessibles à ce rôle n'ont jamais été révoquées du `PUBLIC` de leur création, et sont toutes pures
 (`emission_factor`, `resolve_*`, `season_bounds`, les deux `check_*`) ; ici le `grant` est explicite
-et le jeton *est* l'autorisation. Trois pièges :
+et le jeton *est* l'autorisation. Ces pièges, et ces choix :
 - **le jeton est écrit explicitement dans l'`insert`** de la mise en file. Laissé au `default` de la
   colonne, il aurait tiré un second uuid, différent de celui que le corps du message venait
   d'afficher : un lien mort au premier clic, sans qu'aucune des deux moitiés ait l'air fausse. Et la
@@ -533,6 +533,14 @@ et le jeton *est* l'autorisation. Trois pièges :
   `src/types/desinscription.ts`), et `scripts/verifier-etats-export.mjs` garde les deux moitiés :
   aucun appel avant le geste, l'appel portant le jeton après. Supabase décrit le même piège pour ses
   propres liens de connexion. Ne pas « simplifier » en revenant à l'appel au montage.
+- **le jeton quitte l'adresse dès qu'il est lu, s'il a pu être gardé** (06/10/2026, seconde passe de
+  sécurité, `v1-27` §12.39). Il est posé dans le `sessionStorage` de l'onglet, pour qu'un
+  rechargement ne dise pas « plus valable » à qui n'a rien coupé, et en sort quand le serveur a
+  répondu sur lui ; un stockage refusé le laisse dans l'adresse, comme avant. Le retrait ferme le
+  `Referer` des requêtes qui suivent le montage et l'entrée de l'historique de l'onglet ; il laisse la
+  requête du document (les journaux de Vercel), l'historique global, et les scripts de la page, qui
+  lisent le stockage comme l'adresse (`src/lib/jeton-de-desinscription.ts`). Il passe par
+  `router.setParams` et non par `history.replaceState`, que la navigation défait (`EXPO.md` §1.4).
 - **`List-Unsubscribe-Post` n'est pas envoyé, et son absence est épinglée par un contrôle de la
   migration.** L'annoncer engage l'URL à accepter un POST sans confirmation ; `/rappels/stop` est
   une page de l'export statique, qui ne peut pas y répondre — l'ajouter par symétrie ferait échouer

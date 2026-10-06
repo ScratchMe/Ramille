@@ -103,8 +103,8 @@ export const PAGES_ALIAS = new Set(['/bilan/resultat']);
  *
  * **Tout le reste est en `noindex`** (cf. `src/components/titre-de-page.tsx`) : l'export statique
  * produit une page HTML par route, donc `/plan`, `/suivi`, `/bilan`, `/compte`, `/connexion/*`,
- * `/feedback`, `/status` et le plan de site de développement d'Expo Router sortaient tous
- * indexables — seize coquilles vides qui concourent avec les deux pages légales, lesquelles sont
+ * `/feedback`, `/status` et le plan de site de développement d'Expo Router (plus exporté depuis le
+ * 06/10/2026) sortaient tous indexables — seize coquilles vides qui concourent avec les deux pages légales, lesquelles sont
  * les seuls titres qu'un moteur affichera jamais (leurs URL sont données à Google Play et à
  * l'écran de consentement Google). `public/robots.txt` empêche le **crawl** ; seule une balise
  * `robots` par page empêche l'**indexation** d'une URL découverte ailleurs, d'où cette liste.

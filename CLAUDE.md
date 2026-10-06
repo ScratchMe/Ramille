@@ -88,8 +88,8 @@ désormais dans l'un d'eux : cette table dit lequel.
   veux. Continue simplement de regarder combien ça doit déployer pour vérifier qu'il n'y ait pas
   une hausse soudaine, il faudrait alors l'expliquer »). Le budget des 150 Mo du 15 au 25/09/2026
   et le relevé à demander avant chaque fusion sont levés ; **la mesure hors ligne avant chaque
-  fusion de code reste**, comparée au relevé précédent (4,16 Mio, soit 4 366 425 octets, le
-  29/09/2026), et **un écart
+  fusion de code reste**, comparée au relevé précédent (4,18 Mio, soit 4 378 974 octets, le
+  06/10/2026), et **un écart
   s'explique dans la PR avant de fusionner** — un saut veut dire qu'une dépendance est entrée dans
   `api/`. La méthode, et ce que la fenêtre des dix jours a appris : `VERCEL.md` §1.2 et §2.3.
 - **L'agent relit et fusionne ses propres PR** (01/10/2026 : « C'est toi qui en charge de relire

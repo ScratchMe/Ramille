@@ -512,7 +512,10 @@ props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
   l'ouverture. Sa page montée dit alors ce que dit le HTML, et c'est juste ; ce qui la distingue se
   vérifie dans un bloc à part de la section D : aucun appel avant le geste, l'appel portant le jeton
   après lui, la page qui quitte le bouton — et, depuis la seconde passe du même soir, le focus posé
-  sur ce qui arrive et le bouton inerte dans le HTML statique, avant tout gestionnaire. La même passe
+  sur ce qui arrive et le bouton inerte dans le HTML statique, avant tout gestionnaire — et, depuis le
+06/10/2026 (seconde passe de sécurité), le jeton parti de l'adresse une fois la page montée, un
+rechargement qui le retrouve, puis une page au `sessionStorage` bloqué où il reste dans l'adresse et
+où le geste marche encore. La même passe
   y a ajouté **la page introuvable**, que le serveur des gardes sert désormais comme Vercel
   (`404.html`, en statut 404, à l'adresse demandée) : elle s'hydrate sur une adresse qui n'est pas la
   sienne, et « Revenir à l'accueil » la quitte. Ce serveur-là affaiblissait en silence le contrôle de
