@@ -2376,7 +2376,13 @@ ne les fait pas) :
   tomber (à vérifier avant le geste irréversible). L'APK du 05/10 (`29012e62`) embarque encore le JWT
   `anon` HS256 (mesuré) : révoquer avant le build du 07/10 couperait l'app Android. **Étape 1 faite le
   05/10/2026** par la personne qui pilote (la clé publishable posée dans EAS), qui est la seule à avoir
-  un APK installé ; les étapes 2 et 3 attendent le build du 07/10.
+  un APK installé ; les étapes 2 et 3 attendent le build du 07/10. **Fermé le 12/10/2026** : le
+  build du 07/10 n'a pas eu lieu, celui du 12/10 (`45a93161`, registre §3.3) porte la clé publishable
+  et aucun JWT HS256 (relevé dans l'APK). La personne qui pilote l'a installé — l'ancien désinstallé
+  avant —, puis a **désactivé les clés legacy**, vérifié l'app et `/status`, et **révoqué la clé
+  HS256**, puis revérifié l'app et `/status` : rien n'est tombé. Avant le geste irréversible, rien du
+  dépôt n'en dépendait : la `service_role` de la CI est celle de la stack locale, la sauvegarde passe
+  par l'URL de la base, ni la base ni `api/` n'appellent l'API de Supabase avec une clé.
 - **Constat MOYENNE — le ménage GoTrue est éteint.** **Vérifié** en lecture seule : 25 jetons révoqués
   de plus de 2 jours, des `flow_state` de 7 jours, 95 sessions de plus de 5 jours subsistent
   (`GOTRUE_DB_CLEANUP` manifestement `false`). Seconde voie de gonflement, invisible aux plafonds
