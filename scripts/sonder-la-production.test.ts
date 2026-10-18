@@ -563,6 +563,7 @@ type Panne = Partial<{
   bundleSansCle: boolean;
   santeRefusee: boolean;
   partageSansChiffre: boolean;
+  confidentialiteRedirigee: boolean;
 }>;
 
 /** Le faux site : la production saine, ou une panne précise. Écrit sur la sortie les deux ports. */
@@ -588,6 +589,7 @@ const FAUX_SITE = `
       if (pannes.accueil503) return envoyer(503, 'text/html', 'indisponible');
       return envoyer(200, 'text/html; charset=utf-8', '<html><head><meta property="og:url" content="' + origine + '/"/></head><body><script src="/_expo/static/js/web/entry-abc123.js" defer></script>' + pad(12000) + '</body></html>');
     }
+    if (pannes.confidentialiteRedirigee && chemin === 'confidentialite') return envoyer(308, 'text/plain', '', { location: '/conditions' });
     if (ENTETES_DES_PAGES[chemin]) {
       return envoyer(200, 'text/html; charset=utf-8', '<html><head><meta property="og:url" content="' + origine + url.pathname + '"/></head><body><h1 class="c">' + ENTETES_DES_PAGES[chemin] + '</h1>' + pad(40000) + '</body></html>');
     }
@@ -676,6 +678,12 @@ describe('la sonde entière, contre un faux site local', () => {
     expect(r.code).toBe(1);
     expect(r.sortie).toContain('✗ Carte de partage (/api/share-card) — servie par le repli statique');
     expect(r.sortie.match(/^✗ /gm)).toHaveLength(1);
+  });
+
+  test('sort en 1 quand une page est redirigée, au lieu de suivre la redirection jusqu’à une page saine', async () => {
+    const r = await sonderLeFauxSite({ confidentialiteRedirigee: true });
+    expect(r.code).toBe(1);
+    expect(r.sortie).toMatch(/✗ Politique de confidentialité \(\/confidentialite\) — statut 308, redirigé vers \/conditions au lieu de répondre 200/);
   });
 
   test('sort en 1 quand assetlinks.json ne déclare plus le paquet', async () => {
