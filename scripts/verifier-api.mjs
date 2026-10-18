@@ -82,7 +82,7 @@
 // Avec VERIFIER_API_PNG=<chemin>, la carte rendue est écrite là pour être regardée.
 
 import { Buffer } from 'node:buffer';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import fs, { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
@@ -146,6 +146,15 @@ registerHooks({
   },
 });
 
+// Le wasm de resvg se lit au premier rendu, pas au chargement du module : on note chaque lecture pour
+// savoir, plus bas, si une redirection ou un refus de la carte l'a déclenchée.
+const lecturesDuWasmDeResvg = [];
+const lireOrigine = fs.readFileSync;
+fs.readFileSync = function lireEnNotant(chemin, ...suite) {
+  if (String(chemin).endsWith('index_bg.wasm')) lecturesDuWasmDeResvg.push(String(chemin));
+  return lireOrigine.call(fs, chemin, ...suite);
+};
+
 let GET;
 let partage;
 let commun;
@@ -173,8 +182,27 @@ const PARAMS = new URLSearchParams({
 });
 const TITRE_SANS_CHIFFRE = '<title>Mon empreinte transport</title>';
 
+// ── 0 bis. Une redirection ou un refus de la carte ne charge pas le wasm de rendu ───────────
+//
+// C'est ce qui fait de la forme canonique une protection : une variante coûte une invocation, jamais
+// un rendu. Jouée **avant** le premier rendu du script, parce que le wasm, une fois chargé, reste en
+// mémoire et ne dirait plus rien. Le témoin suit le premier rendu : sans lui, une lecture qui ne
+// serait plus notée ferait passer cette garde pour la mauvaise raison.
+await GET({ url: '/api/share-card?fbclid=x' });
+await GET({ url: '/api/share-card?total=abc' });
+verifier(
+  lecturesDuWasmDeResvg.length === 0,
+  'carte : une redirection ou un refus charge le wasm de resvg — le jugement de la forme canonique ' +
+    'doit venir avant tout rendu'
+);
+
 // ── 1. La carte, sur un partage réaliste ──────────────────────────────────────────────────
 const carte = await GET(new Request(`${ORIGINE}/api/share-card?${PARAMS}`));
+verifier(
+  lecturesDuWasmDeResvg.length === 1,
+  `carte : le premier rendu a lu le wasm de resvg ${lecturesDuWasmDeResvg.length} fois, attendu 1 — la ` +
+    `garde « une variante ne charge pas le wasm » ne note plus ce qu'elle croit noter`
+);
 const png = Buffer.from(await carte.arrayBuffer());
 // **Ni le statut ni le `content-type` ne sont affirmés, et c'est délibéré.** Les deux fonctions
 // enveloppent tout leur corps dans un `try/catch` par décision documentée — jamais de 500 sur un
@@ -484,11 +512,13 @@ const VARIANTES = [
   ['paramètre inconnu au milieu', `total=2.400&utm_source=x&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
   ['zéros de tête', `total=02.400&poste=${POSTE_PLUS}&percent=058`, Q_COMPLETE],
   ['décimales en trop', `total=2.4000000&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
+  ['décimales qui s’arrondissent au kilo', `total=2.4006&poste=${POSTE_PLUS}&percent=58`, `total=2.401&poste=${POSTE_PLUS}&percent=58`],
   ['chiffre encodé en %30', `total=2.40%30&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
   ['libellé vide', `total=2.400&poste=&percent=58`, 'total=2.400&percent=58'],
   ['total vide', `total=&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
   ['total hors borne', `total=200.001&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
   ['part hors borne', `total=2.400&poste=${POSTE_PLUS}&percent=101`, `total=2.400&poste=${POSTE_PLUS}`],
+  ['part à quatre chiffres', `total=2.400&poste=${POSTE_PLUS}&percent=1000`, `total=2.400&poste=${POSTE_PLUS}`],
   ['libellé hors de la liste', `total=2.400&poste=Trajet+en+jet+prive&percent=58`, 'total=2.400&percent=58'],
   ['rien d’autre qu’un paramètre inconnu', 'utm_source=x', ''],
 ];

@@ -123,7 +123,7 @@ export type LectureDePartage =
 // Ce que l’app envoie (`urlDePartage`) : un décimal positif, un entier. Rien d’autre n’est lu — ni
 // exposant, ni signe, ni espace, ni suite après le nombre.
 const FORME_DU_TOTAL = /^\d{1,12}(?:\.\d{1,12})?$/;
-const FORME_DE_LA_PART = /^\d{1,3}$/;
+const FORME_DE_LA_PART = /^\d{1,12}$/;
 
 /**
  * Lit la chaîne de requête d’une adresse de partage, et la ramène à **une** forme.
