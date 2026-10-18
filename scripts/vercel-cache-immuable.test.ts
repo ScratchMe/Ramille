@@ -21,7 +21,14 @@
  * `vercel build` hors ligne, et recopié plus bas : si Vercel lit autrement, ce test ne le sait pas.
  *
  * Non-vacuité, mesurée le 18/10/2026 en cassant (chaque mutation remise en place avant la suivante) :
- * RESULTATS_DES_MUTATIONS
+ * retirer la règle des assets de `vercel.json` fait tomber 8 tests ; retirer `immutable` de la valeur, 7 ;
+ * élargir la règle des assets à `/assets/(.*)`, 4 ; poser un `Cache-Control` sur la règle de tout le
+ * site, 6 ; dans `controlerLeCacheImmuable`, ne plus comparer le md5, 1 ; ne plus voir un fichier haché
+ * que la règle ne vise pas, 1 ; ne plus regarder les dossiers de fichiers hachés, 1 ; ne plus se
+ * plaindre de l'absence de règle, 1 ; dans le serveur, n'appliquer que la dernière règle d'un chemin
+ * (la CSP manque aux fichiers hachés), 1 ; ne plus échapper les points d'un segment littéral, 1 ; ne plus
+ * poser les en-têtes de la route sur la réponse (la table est juste, la réponse non), 1. Aucune
+ * mutation ne passe.
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';

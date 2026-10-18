@@ -30,12 +30,16 @@
  * vers `.ts`.
  *
  * Éprouvé en le cassant le 18/10/2026 (chaque mutation remise en place avant la suivante) :
- * retirer « en TGV » de la liste fait tomber 1 test (4 libellés refusés) ; retirer « Loisirs
- * occasionnels », 1 (25 refusés) ; ajouter un mode à l'app (`MODE_IDS` et sa préposition) sans le
- * recopier, 1 ; faire accepter tout libellé (`return brut`), 1 — le libellé forgé passe ; passer le
- * total canonique à deux décimales, 1 (chaque adresse de l'app serait redirigée) ; inverser l'ordre
- * canonique de `poste` et `percent`, 1 ; changer le seuil des kilos (`< 1000` → `<= 1000`), 1 ;
- * remettre une copie de `posteFerme` dans `api/partage.ts`, 1.
+ * retirer « en TGV » de la liste fait tomber 2 tests (4 libellés refusés, et les adresses de l'app
+ * qui le portent ne sont plus canoniques) ; retirer « Loisirs occasionnels », 2 ; faire renommer
+ * le TGV par l'app sans que la liste suive, 2 ; faire accepter tout libellé (`return brut`), 1 — le
+ * libellé forgé passe ; passer le total canonique à deux décimales, 2 (chaque adresse de l'app serait
+ * redirigée) ; mettre `percent` avant `poste` dans la forme canonique, 1 ; changer le seuil des kilos
+ * (`< 1000` → `<= 1000`), 1 ; ne plus mettre la virgule décimale, 2 ; remettre une copie de
+ * `posteFerme` dans `api/partage.ts`, 1. **Une mutation passait** : remplacer l'arrondi des kilos par
+ * une troncature (`Math.floor`) — équivalente sur tout ce que l'app envoie, des kilos entiers passés
+ * par trois décimales, donc invisible du balayage ; elle a sa propre assertion (0,9996 t est une
+ * tonne), qui la fait tomber seule.
  */
 import fs from 'node:fs';
 import path from 'node:path';
