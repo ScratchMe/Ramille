@@ -375,7 +375,10 @@ porte, et il lit chaque code de sortie sur le processus lui-même, jamais à tra
 
 **Sa sortie vaut 0 si, et seulement si, chaque pas choisi a été joué ET a réussi.** Un pas « non
 joué » — Docker éteint, export raté, stack prise — n'a rien vérifié, et c'est la règle de ce
-fichier : on n'annonce pas « vérifié » pour ce qui n'a pas tourné. La première ligne nomme le commit
+fichier : on n'annonce pas « vérifié » pour ce qui n'a pas tourné. **Une seule exception, qui est
+celle de la CI : `expo-doctor` est non bloquant** (`!` dans le journal, un avertissement dans le
+bilan, sortie inchangée), parce que sa dérive vient d'Expo et non de l'arbre (`EXPO.md` §1.9) ;
+`--planifie` le rend bloquant, comme le passage du lundi et un lancement à la main. La première ligne nomme le commit
 rejoué et prévient quand l'arbre porte des modifications ou des fichiers non suivis que la CI ne
 verra pas.
 
@@ -411,7 +414,12 @@ lit `ci.yml` **par blocs d'étapes**, quelle que soit la clé qui ouvre une éta
 - que la version du CLI et la configuration factice soient celles de la CI, et que chaque export
   porte `--clear` et son propre cache ;
 - que toute variable lue par un script de `scripts/` soit écartée par le rejeu, ou déclarée
-  inoffensive avec sa raison.
+  inoffensive avec sa raison ;
+- que le pas que la CI laisse passer rouge (`continue-on-error`) soit le pas non bloquant du rejeu,
+  et lui seul, et que l'expression se comporte comme annoncée — tolérée sur une PR et un push,
+  jamais sur le passage du lundi ni à la main — en l'évaluant au lieu de la recopier ;
+- que le passage du lundi ne joue que « Typecheck & lint », et que la concurrence annule une PR
+  sans jamais annuler ni mettre en file un push sur `main`.
 
 La première version lisait les seules étapes écrites `- run:`, ne comparait pas les commandes et
 consignait une mutation qui ne faisait pas ce qu'elle disait ; la contre-lecture du 27/09/2026 a
@@ -420,6 +428,13 @@ stack, le verrou) fait de plus ou de moins que son pendant — c'est l'en-tête 
 Premier passage complet le 27/09/2026 : 33 pas, tous réussis, stack comprise ; et le soir, après la
 contre-lecture, 31 pas réussis — la stack arrêtée puis redémarrée en une demi-minute, chaque export
 dans son propre cache, effacé à la sortie.
+
+**Ce que le rejeu ne couvre pas : tout ce qui n'est pas un travail de `ci.yml`.** `android.yml` (prebuild
+et `assembleDebug`) a besoin d'un SDK Android, que l'environnement d'agent n'a pas ; `sonde.yml` et le
+lundi de `ci.yml` n'ont rien à rejouer. La sonde de la production a sa garde, jouée par `npm test` sans
+réseau (`scripts/sonder-la-production.test.ts` : la décision sur des réponses fabriquées, la vraie
+`api/partage.ts`, la vraie `assetlinks.json`, et sept pannes jouées contre un faux site loopback) ; le
+build Android, lui, n'a de garde que son premier passage sur GitHub.
 
 **Le verrou a sa propre garde** (`scripts/verrou-de-la-stack.test.ts`), jouée sans Docker ni stack :
 il se prend libre et se rend à la sortie, il refuse un rejeu vivant en le nommant, il reprend celui

@@ -3,20 +3,11 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk",
-        "image": "latest"
-      },
-      "environment": "development"
-    },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "image": "latest"
+        "image": "ubuntu-26.04-jdk-17-ndk-r27b-sdk-57"
       },
       "environment": "preview",
       "env": {
@@ -27,7 +18,7 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
-        "image": "latest"
+        "image": "ubuntu-26.04-jdk-17-ndk-r27b-sdk-57"
       },
       "environment": "production",
       "env": {
