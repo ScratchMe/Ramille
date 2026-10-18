@@ -429,6 +429,13 @@ Premier passage complet le 27/09/2026 : 33 pas, tous réussis, stack comprise ; 
 contre-lecture, 31 pas réussis — la stack arrêtée puis redémarrée en une demi-minute, chaque export
 dans son propre cache, effacé à la sortie.
 
+**Ce que le rejeu ne couvre pas : tout ce qui n'est pas un travail de `ci.yml`.** `android.yml` (prebuild
+et `assembleDebug`) a besoin d'un SDK Android, que l'environnement d'agent n'a pas ; `sonde.yml` et le
+lundi de `ci.yml` n'ont rien à rejouer. La sonde de la production a sa garde, jouée par `npm test` sans
+réseau (`scripts/sonder-la-production.test.ts` : la décision sur des réponses fabriquées, la vraie
+`api/partage.ts`, la vraie `assetlinks.json`, et sept pannes jouées contre un faux site loopback) ; le
+build Android, lui, n'a de garde que son premier passage sur GitHub.
+
 **Le verrou a sa propre garde** (`scripts/verrou-de-la-stack.test.ts`), jouée sans Docker ni stack :
 il se prend libre et se rend à la sortie, il refuse un rejeu vivant en le nommant, il reprend celui
 d'un rejeu tué, et un seul de deux rejeux lancés ensemble l'obtient. **La course elle-même n'est pas

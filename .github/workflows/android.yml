@@ -38,8 +38,8 @@ jobs:
   assemble-debug:
     name: Android (prebuild et assembleDebug)
     runs-on: ubuntu-24.04
-    # Un build à froid dure une vingtaine de minutes ; le plafond est là pour un blocage, pas pour la
-    # lenteur (voir `ci.yml`).
+    # Un build à froid est long et sa durée n'a pas encore été mesurée sur un runner : le plafond est là
+    # pour un blocage, pas pour la lenteur (voir `ci.yml`). À resserrer après les premiers passages.
     timeout-minutes: 60
     env:
       EXPO_NO_TELEMETRY: '1'

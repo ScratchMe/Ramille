@@ -294,6 +294,22 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   `steps.<id>.outcome` : c'est `outcome`, et non `conclusion`, qui garde l'échec que
   `continue-on-error` masque. Quand le passage du lundi rougit, la conduite est
   `npx expo install --fix`, puis rejouer typecheck, lint, tests et export.
+- **Une image de build EAS se nomme en entier** (`ubuntu-26.04-jdk-17-ndk-r27b-sdk-57` pour le SDK 57,
+  page « Build server infrastructure » d'Expo), et ni `latest` ni `auto` : `latest` suit la dernière
+  image publiée, donc change de NDK ou de Java sous un projet resté sur son SDK, et la page de
+  « Build from GitHub » demande qu'une `image` soit **posée**, pas que ce soit `latest`. Le nom complet
+  garantit « un environnement constant, aux mises à jour mineures près » ; l'alias `sdk-57` est le repli si
+  Expo retirait un jour le nom. **Un profil `developmentClient: true` exige `expo-dev-client`** installé
+  et configuré, sans quoi l'outil d'EAS refuse de le construire : un profil qui n'a jamais construit
+  est un profil à retirer.
+- **Rien ne construit le natif tant qu'un build EAS ne le fait pas, et ce build est rationné.** Un
+  runner de CI peut faire le même chemin sans signature ni secret : `npx expo prebuild --platform
+  android --no-install` (le lockfile ne bouge pas) puis `./gradlew assembleDebug`. Il attrape l'autolinking
+  cassé, un plugin de config, une version de Gradle ou de NDK refusée. Trois précautions : **une seule
+  architecture** (`-PreactNativeArchitectures=arm64-v8a`) — la compilation C++ fait presque tout le temps —,
+  un JDK explicite (17), et **un fichier de secret que la config exige doit l'exiger sur le builder
+  seulement** (`EAS_BUILD`), sans quoi ce build n'a pas lieu ; pour éprouver quand même le plugin qui
+  lit ce fichier (Google Services), un fichier **factice** et marqué, posé hors du dépôt.
 - **Un `app.json` qui ne déclare aucune permission n'en demande pas « aucune », et
   `android.permissions` n'y peut rien** : la clé ne fait qu'**ajouter**. Le prebuild pose les
   permissions de son gabarit, des greffons qu'Expo applique d'office en ajoutent (`expo-file-system`,
@@ -489,6 +505,20 @@ change : **Google Play resigne l'AAB avec sa propre clé**, donc l'empreinte de 
 différera de celle du keystore EAS et devra être **ajoutée** au tableau (qui en accepte
 plusieurs) au moment de la publication, sans retirer la première. `scripts/verifier-assetlinks-export.mjs`
 garde le reste.
+
+**Le build natif de la CI et l'image EAS** (18/10/2026). `.github/workflows/android.yml` fait
+`expo prebuild` puis `assembleDebug` sur les PR qui touchent `package.json`, le lockfile, `app.json`,
+`app.config.js`, `eas.json` ou les images natives, chaque mercredi et à la main ; il pose un
+`google-services.json` factice (paquet `fr.ramille.app`) dans `GOOGLE_SERVICES_JSON` — la garde de
+`app.config.js` ne vaut que sur le builder d'EAS, donc rien n'y change. Le projet généré demande
+Gradle 9.3.1, compileSdk 36, build tools 36.0.0, minSdk 24 et le NDK 27.1.12297006 (relevé sur le
+prebuild du jour) ; avec le fichier factice, le plugin `com.google.gms.google-services` 4.4.4 est
+appliqué comme sur un build de production. **Ce qui n'a pas été joué ici** : le conteneur d'agent n'a pas
+de SDK Android, donc `assembleDebug` n'a pas tourné ; le prebuild, lui, a abouti, et la configuration de
+Gradle (plugins Kotlin et AGP, autolinking d'Expo — sous le JDK 21 du conteneur, non le 17 du workflow) est
+allée jusqu'à la recherche du SDK, où elle s'arrête. La PR qui
+introduit le workflow en est le premier passage. `eas.json` épingle `ubuntu-26.04-jdk-17-ndk-r27b-sdk-57`
+et n'a plus de profil `development` (registre d'exploitation, §3.3).
 
 **Une dépendance native nouvelle impose un build**, et il n'y a aucun moyen de s'en rendre
 compte depuis le code : `expo-notifications` (v1-12) est arrivée ainsi, et `react-native-webview`
