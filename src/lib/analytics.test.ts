@@ -87,7 +87,7 @@ describe('la file d’attente des erreurs', () => {
     expect(await AsyncStorage.getItem(FILE)).toBeNull();
   });
 
-  it('envoie les pannes gardées en un lot, différées, et vide la file', async () => {
+  it('envoie les pannes gardées une par une, différées, et vide la file', async () => {
     mockSession.mockResolvedValue(SANS_SESSION);
     track('app_error', { category: 'type', route: '/plan' });
     track('app_error', { category: 'autre', route: '/' });
@@ -96,13 +96,63 @@ describe('la file d’attente des erreurs', () => {
 
     await envoyerLesErreursEnAttente();
 
-    expect(mockInsert).toHaveBeenCalledTimes(1);
-    const lignes = mockInsert.mock.calls[0][0] as { name: string; user_id: string; props: Record<string, unknown> }[];
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+    const lignes = mockInsert.mock.calls.map(
+      ([ligne]) => ligne as { name: string; user_id: string; props: Record<string, unknown> }
+    );
     expect(lignes.map((l) => [l.name, l.user_id, l.props.route, l.props.differee])).toEqual([
       ['app_error', 'u1', '/plan', true],
       ['app_error', 'u1', '/', true],
     ]);
     expect(await AsyncStorage.getItem(FILE)).toBeNull();
+  });
+
+  /**
+   * **Le budget du jour se compte ligne à ligne** (`enforce_usage_events_rate_limit`) : un lot en un seul
+   * insert qui le franchissait était refusé en entier, et la file se vidait des pannes qui tenaient
+   * encore dessous. Éprouvé le 18/10/2026, une mutation à la fois, l'état d'avant réécrit après chacune :
+   *   - un seul insert pour tout le lot (l'état d'avant) → quatre : « un refus au milieu… », « une
+   *     panne passagère au milieu… », « envoie les pannes gardées une par une… » et « une panne gardée
+   *     garde son origine… », qui lisent une ligne et non un tableau ;
+   *   - l'envoi qui continue après un échec → « un refus au milieu… » et « une panne passagère au
+   *     milieu… », deux ;
+   *   - un refus qui garde le reste du lot → « un refus au milieu… », seul ;
+   *   - une panne passagère qui vide tout le lot → « une panne passagère au milieu… » et « garde la file
+   *     quand le lot n'a pas eu de réponse… », deux.
+   */
+  const LOT = ['/a', '/b', '/c'].map((route, i) => ({ category: 'type', route, noteeLe: Date.now() - i }));
+
+  it('un refus au milieu du lot : les pannes d’avant sont parties, le reste sort de la file sans être tenté', async () => {
+    await AsyncStorage.setItem(FILE, JSON.stringify(LOT));
+    mockInsert
+      .mockResolvedValueOnce({ error: null, status: 201 })
+      .mockResolvedValueOnce({ error: { message: 'Trop de pannes remontées pour cet utilisateur sur 24 h.' }, status: 400 });
+    // Le refus se dit en développement, et ce test le provoque exprès : il ne salit pas la sortie.
+    const avertir = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      await envoyerLesErreursEnAttente();
+    } finally {
+      avertir.mockRestore();
+    }
+
+    expect(mockInsert.mock.calls.map(([ligne]) => (ligne as { props: { route: string } }).props.route)).toEqual([
+      '/a',
+      '/b',
+    ]);
+    expect(await AsyncStorage.getItem(FILE)).toBeNull();
+  });
+
+  it('une panne passagère au milieu du lot : celles d’avant sont parties, celle-là et les suivantes restent', async () => {
+    await AsyncStorage.setItem(FILE, JSON.stringify(LOT));
+    mockInsert
+      .mockResolvedValueOnce({ error: null, status: 201 })
+      .mockResolvedValueOnce({ error: { message: 'Failed to fetch' }, status: 0 });
+
+    await envoyerLesErreursEnAttente();
+
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+    expect((await fileStockee()).map((e) => e.route)).toEqual(['/b', '/c']);
   });
 
   it('garde la file quand le lot n’a pas eu de réponse, et n’envoie rien sans session', async () => {
@@ -131,8 +181,8 @@ describe('la file d’attente des erreurs', () => {
 
     await envoyerLesErreursEnAttente();
 
-    const lignes = mockInsert.mock.calls[0][0] as { props: Record<string, unknown> }[];
-    expect(lignes[0].props).toEqual(
+    const ligne = mockInsert.mock.calls[0][0] as { props: Record<string, unknown> };
+    expect(ligne.props).toEqual(
       expect.objectContaining({ origine: 'promesse', version: '1.0.0+14', differee: true })
     );
   });

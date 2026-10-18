@@ -93,3 +93,11 @@ rollback;
 --
 -- La 4 et la 5 n'ont pas été cassées : elles lisent une description que cette migration écrit, et rien
 -- d'autre ne l'écrit.
+--
+-- La 6, le même jour et de la même façon — une migration temporaire qui réécrit `releve_des_alertes`
+-- depuis `pg_get_functiondef` :
+--
+--   | Ce qu'on casse | Ce qui tombe dans la suite entière |
+--   |---|---|
+--   | `/+not-found` plus admise (la forme d'avant) | 6, seule |
+--   | le `+` admis dans toute route, au lieu de la seule page introuvable | 6, seule |

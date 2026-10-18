@@ -89,20 +89,31 @@ describe('USAGE_EVENT_NAMES', () => {
 
 // Éprouvé en le cassant le 04/10/2026 : la condition sur le montage sans session retirée fait tomber « ne
 // fait rien au démarrage normal… », seul ; celle de l'ouverture déjà comptée, « ne compte jamais deux
-// fois… », seul. Ce que ce bloc ne voit pas : que le layout appelle la décision depuis son écoute
-// d'auth — aucun test ne monte le layout racine.
+// fois… », seul. Et le 18/10/2026 : la condition sur la route retirée fait tomber « ne rattrape rien sur
+// une surface sans compte… », seul. Ce que ce bloc ne voit pas : que le layout appelle la décision depuis
+// son écoute d'auth, avec la route affichée — aucun test ne monte le layout racine.
 describe('rattraperLOuverture', () => {
+  const ARRIVEE = { session: true, montageSansSession: true, dejaComptee: false, chemin: '/plan' };
+
   it('rattrape l’ouverture quand la session arrive après un montage qui n’en a pas eu', () => {
-    expect(rattraperLOuverture({ session: true, montageSansSession: true, dejaComptee: false })).toBe(true);
+    expect(rattraperLOuverture(ARRIVEE)).toBe(true);
   });
 
   it('ne fait rien au démarrage normal : la suite de la session du montage émet déjà', () => {
-    expect(rattraperLOuverture({ session: true, montageSansSession: false, dejaComptee: false })).toBe(false);
+    expect(rattraperLOuverture({ ...ARRIVEE, montageSansSession: false })).toBe(false);
   });
 
   it('ne compte jamais deux fois, et pas sans session', () => {
-    expect(rattraperLOuverture({ session: true, montageSansSession: true, dejaComptee: true })).toBe(false);
-    expect(rattraperLOuverture({ session: false, montageSansSession: true, dejaComptee: false })).toBe(false);
+    expect(rattraperLOuverture({ ...ARRIVEE, dejaComptee: true })).toBe(false);
+    expect(rattraperLOuverture({ ...ARRIVEE, session: false })).toBe(false);
+  });
+
+  // Le code reçu sur `/compte/suppression` ouvre la session du compte qu'on va supprimer : ce n'est pas une
+  // ouverture de l'app, et elle ne doit pas lui donner signe de vie. Quitter la page pour l'app l'ouvre.
+  it('ne rattrape rien sur une surface sans compte, et rattrape dès qu’on en sort pour l’app', () => {
+    expect(rattraperLOuverture({ ...ARRIVEE, chemin: '/compte/suppression' })).toBe(false);
+    expect(rattraperLOuverture({ ...ARRIVEE, chemin: '/confidentialite/' })).toBe(false);
+    expect(rattraperLOuverture({ ...ARRIVEE, chemin: '/' })).toBe(true);
   });
 });
 

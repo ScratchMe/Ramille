@@ -179,7 +179,9 @@ describe('suiteDuDemarrage', () => {
  *     double pas » et « seul le dernier lancé conclut » ;
  *   - la conclusion d'un appel dépassé gardée (la génération ignorée, sauf changement d'utilisateur) →
  *     « seul le dernier lancé conclut », seul — et seulement depuis que le premier appel d'A y échoue :
- *     réussi, il concluait comme le troisième, et la mutation passait.
+ *     réussi, il concluait comme le troisième, et la mutation passait ;
+ *   - la mémoire gardée quand la session devient nulle (l'état d'avant la contre-lecture du même jour)
+ *     → « réinscrit le même utilisateur après une déconnexion… », seul.
  */
 describe('gardeDuJeton', () => {
   /** Un enregistrement doublé, dont chaque appel se règle à la main. */
@@ -204,6 +206,20 @@ describe('gardeDuJeton', () => {
     await demander('b', 'session');
     await demander(null, 'session');
 
+    expect(enregistrer).toHaveBeenCalledTimes(2);
+  });
+
+  // La déconnexion désinscrit le jeton de cet appareil : la même personne qui revient dans le même
+  // lancement doit le réinscrire, et une session nulle ne lance rien.
+  it('réinscrit le même utilisateur après une déconnexion, sans rien lancer pour la session nulle', async () => {
+    const enregistrer = jest.fn(async () => true);
+    const demander = gardeDuJeton(enregistrer);
+
+    await demander('a', 'session');
+    await demander(null, 'session');
+    expect(enregistrer).toHaveBeenCalledTimes(1);
+
+    await demander('a', 'session');
     expect(enregistrer).toHaveBeenCalledTimes(2);
   });
 

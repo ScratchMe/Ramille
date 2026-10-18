@@ -73,8 +73,11 @@ occurrences.
 
 **Une surface sans compte ouverte sans session ne compte pas d'ouverture** (18/10/2026, `COMPTE.md` §1) :
 `/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'en créent plus,
-donc `app_open` n'a personne à qui s'attribuer tant qu'on n'en sort pas pour l'app — l'ouverture se
-rattrape alors (`rattraperLOuverture`). Ce que ça coûte : un `connexion_limite` levé sur
+donc `app_open` n'a personne à qui s'attribuer tant qu'on n'en sort pas pour l'app — l'ouverture part
+alors, avec la session que le layout ouvre en quittant la page. **Une session qui s'ouvre sur la page
+même ne la rattrape pas** : le code reçu sur `/compte/suppression` ouvre celle du compte qu'on vient
+supprimer, et `rattraperLOuverture` lit la route (`laSessionSOuvreSur`) pour ne compter à son nom ni
+une ouverture ni un signe de vie. Ce que ça coûte : un `connexion_limite` levé sur
 `/compte/suppression` dans un navigateur neuf ne se compte plus — il se comptait sous la session
 anonyme que la page ouvrait pour rien.
 

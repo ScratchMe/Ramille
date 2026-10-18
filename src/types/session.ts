@@ -181,6 +181,11 @@ export function suiteDuDemarrage(etat: EtatDeSession): SuiteDuDemarrage {
  * l'enregistrement rend `false` sur ses échecs courants (pas de réseau, le RPC refusé), donc un échec
  * passait pour fait jusqu'au démarrage à froid suivant. « Pas inscrit » couvre aussi la permission
  * refusée : la retenter au retour, c'est voir celle qu'on vient de rouvrir dans les réglages.
+ *
+ * **Une session qui devient nulle efface la mémoire** : la déconnexion désinscrit le jeton de cet
+ * appareil (`seDeconnecterDeCetAppareil`), donc la personne qui se reconnecte dans le même lancement —
+ * le même utilisateur — doit le réinscrire. La garde la croyait encore inscrite, et l'appareil restait
+ * sans rappels jusqu'au démarrage à froid suivant.
  */
 export type MomentDuJeton = 'session' | 'retour';
 
@@ -195,7 +200,11 @@ export function gardeDuJeton(
   let generation = 0;
 
   return async (utilisateur, moment) => {
-    if (utilisateur === null) return;
+    if (utilisateur === null) {
+      pour = null;
+      aRetenter = false;
+      return;
+    }
     if (utilisateur === pour && (enCours || !(moment === 'retour' && aRetenter))) return;
     pour = utilisateur;
     enCours = true;

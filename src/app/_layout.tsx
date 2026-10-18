@@ -148,6 +148,12 @@ export default function RootLayout() {
    */
   const [refus, setRefus] = useState(false);
   const chemin = usePathname();
+  // La route affichée, pour l'écoute d'auth posée une fois au montage : une session qui arrive sur une
+  // surface sans compte n'y rattrape pas l'ouverture (`rattraperLOuverture`).
+  const cheminAffiche = useRef(chemin);
+  useEffect(() => {
+    cheminAffiche.current = chemin;
+  }, [chemin]);
   const ecranDeReconnexion = refus && lEcranDeReconnexionSePose(chemin);
   const laSessionSOuvreIci = laSessionSOuvreSur(chemin);
 
@@ -305,12 +311,15 @@ export default function RootLayout() {
     const { data } = supabase.auth.onAuthStateChange((_evenement, session) => {
       void enregistrerLeJetonPour(session?.user.id ?? null, 'session');
       // Le montage a fini sans session, et celle-ci arrive ensuite (la racine après « Réessayer », le
-      // réseau revenu, une reconnexion) : l'ouverture de ce chargement se rattrape ici, une fois.
+      // réseau revenu, une reconnexion) : l'ouverture de ce chargement se rattrape ici, une fois — mais
+      // pas sur une surface sans compte, où la session qui s'ouvre est celle de la page (le code reçu
+      // sur `/compte/suppression`) ; c'est en la quittant pour l'app que l'effet du montage l'émet.
       if (
         rattraperLOuverture({
           session: session !== null,
           montageSansSession,
           dejaComptee: ouvertureDejaComptee,
+          chemin: cheminAffiche.current,
         })
       ) {
         apresLaSessionDuDemarrage();
