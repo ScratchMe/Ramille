@@ -109,9 +109,10 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   (et le drapeau `auto_expose_new_tables` de la stack locale, en voie de suppression) accorde
   tout à `anon` et `authenticated` sans qu'aucun fichier ne le dise ; une base reconstruite depuis
   les migrations n'accorde alors rien à personne — « permission denied » **avant** la RLS. Une
-  migration qui ne contient que des `grant`/`revoke` est rejouable telle quelle, et un test
-  épingle la matrice. **Ajouter une table impose un geste explicite**, et un privilège se justifie
-  par un appel réel depuis l'app, jamais par « un test en a besoin ».
+  migration qui ne contient que des `grant`/`revoke` est idempotente — mais la rejouer après une plus
+  récente qui a resserré la matrice rouvre ce que celle-ci a fermé (§2.2) —, et un test épingle la
+  matrice. **Ajouter une table impose un geste explicite**, et un privilège se justifie par un appel réel
+  depuis l'app, jamais par « un test en a besoin ».
 - **Le 30/10/2026, la plateforme cesse d'accorder d'office l'accès aux tables neuves de `public`
   sur les projets existants** (annonce reçue le 28/09/2026 ; le CLI avait basculé le
   30/05/2026, §2.2). Un dépôt qui écrit déjà ses privilèges n'a rien à changer, et trois
@@ -559,8 +560,7 @@ l'appariement par texte sûr, pas la relecture.
 du point précédent : pour corriger l'appariement il a fallu rejouer le fichier entier sur le distant, et
 il s'est arrêté sur un `42710` — une contrainte ajoutée sans `drop constraint if exists` devant. Le
 défaut ne se voit ni en CI (base neuve, un seul passage) ni au premier déploiement ; il se voit le jour
-d'une restauration, c'est-à-dire le plus mauvais. Même exigence que
-`20260910110000_grants_explicites.sql`, « rejouable tel quel après une restauration ».
+d'une restauration, c'est-à-dire le plus mauvais.
 
 **Et une substitution vérifiée est à un coup par nature, donc elle doit reconnaître « déjà
 appliquée ».** Le contrôle `if occurrences <> 1 then raise` est juste au premier passage et faux au
@@ -634,10 +634,10 @@ quelque chose la réécrit, et il vaut mieux l'apprendre là que sur un écran.
 
 ### 2.4 Sessions : pannes, refus et doublons
 
-Le modèle lui-même — session anonyme dès l'ouverture, conversion qui garde le `user_id`, pas de
-mot de passe, `/connexion/retrouver` comme seul chemin délibéré vers un compte existant — est dans
-`CLAUDE.md`, « Modèle d'authentification », pour ses deux paragraphes fondateurs, et dans
-`COMPTE.md` pour tout le reste. Ici, ce qui s'est cassé autour.
+Le modèle lui-même — session anonyme dès l'ouverture de l'app (sauf sur les cinq surfaces sans compte,
+`COMPTE.md` §1), conversion qui garde le `user_id`, pas de mot de passe, `/connexion/retrouver` comme seul
+chemin délibéré vers un compte existant — est dans `CLAUDE.md`, « Modèle d'authentification », pour ses deux
+paragraphes fondateurs, et dans `COMPTE.md` pour tout le reste. Ici, ce qui s'est cassé autour.
 
 **La non-divulgation se tient à l'écran, jamais au réseau — et c'est une limite de GoTrue, pas un
 oubli** (relevé à la recette web du 28/09/2026, documenté le même jour par décision). Deux appels
