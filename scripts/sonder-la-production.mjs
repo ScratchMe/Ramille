@@ -56,6 +56,10 @@ const TAILLE_MINIMALE_DE_LA_CARTE = 10_000;
  * `og:url`, et le début du `<h1>` qui prouve que le corps de la page a été rendu (et pas seulement
  * son `<head>`). `src/constants/page-titles.ts` reste la source des titres : le test de ce fichier
  * exige que chaque début de `<h1>` d'ici en soit un début.
+ *
+ * `tailleMinimale` vaut à peu près la moitié de ce que la page pèse (22, 56, 34 et 24 Ko le
+ * 18/10/2026) : assez pour refuser une coquille vide, assez bas pour qu'une relecture du texte ne
+ * fasse pas rougir la sonde.
  */
 export const PAGES = [
   { id: 'accueil', libelle: 'Accueil', chemin: '/', entete: null, tailleMinimale: 10_000 },
