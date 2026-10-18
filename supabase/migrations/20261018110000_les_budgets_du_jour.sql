@@ -44,7 +44,10 @@
 --    la première, un appel à la fois par compte. Une correction qui ne change rien ne compte pas.
 --
 -- 4. **L'alerte d'exploitation dit quand un budget du jour passe 80 %** : un événement refusé ne laisse
---    aucune trace, et sans elle un budget atteint ne se verrait qu'à un entonnoir qui s'aplatit.
+--    aucune trace, et sans elle un budget atteint ne se verrait qu'à un entonnoir qui s'aplatit. **Et son
+--    détail des pannes nomme la page introuvable** : l'app écrit `/+not-found` pour toute adresse hors du
+--    produit (`routeDeLaPanne`, même jour), que la forme des routes du relevé classait « route hors
+--    forme » à cause du `+`.
 --
 -- Les fonctions réécrites partent de `pg_get_functiondef` (SUPABASE.md §2.3) ; seuls les fragments que
 -- cet en-tête nomme changent.
@@ -529,9 +532,12 @@ AS $function$
       from (
         select jsonb_build_object('route', route, 'categorie', categorie, 'nombre', count(*)) as ligne
         from (
-          -- La forme, jamais le texte du client (voir l'en-tête).
+          -- La forme, jamais le texte du client (voir l'en-tête). La page introuvable s'écrit
+          -- `/+not-found` (`routeDeLaPanne`), seul chemin du produit qui porte un `+` : elle est admise
+          -- telle quelle, sans ouvrir le `+` aux autres.
           select
-            case when props ->> 'route' ~ '^/[a-z/_-]{0,47}$' then props ->> 'route'
+            case when props ->> 'route' ~ '^/[a-z/_-]{0,47}$' or props ->> 'route' = '/+not-found'
+              then props ->> 'route'
               else 'route hors forme' end as route,
             case when props ->> 'category' ~ '^[a-z]{1,16}$' then props ->> 'category'
               else 'hors forme' end as categorie
@@ -735,6 +741,9 @@ begin
   end if;
   if position('budgets_des_evenements_entames' in v_releve) = 0 then
     raise exception 'L''alerte ne lit plus les budgets du jour des événements';
+  end if;
+  if position('''/+not-found''' in v_releve) = 0 then
+    raise exception 'L''alerte classe de nouveau la page introuvable en « route hors forme »';
   end if;
   if not (select relrowsecurity from pg_class where oid = 'public.evenements_d_usage_par_heure'::regclass)
      or has_table_privilege('authenticated', 'public.evenements_d_usage_par_heure', 'select')
