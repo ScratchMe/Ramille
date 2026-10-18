@@ -74,6 +74,12 @@
 // de console sont attendues et ne font pas échouer ce contrôle. On teste le rendu, pas les
 // données.
 //
+// Et le cache immuable de `vercel.json` (`controlerLeCacheImmuable`, dans `servir-export.mjs`) : il se juge
+// sur l'export, avant tout rendu. Chaque fichier que la règle vise porte dans son nom le md5 de son
+// contenu, aucun fichier haché ne lui échappe, et rien sans hachage n'entre sous `_expo/static` ni
+// `assets`. Ses mutations sont consignées dans `scripts/vercel-cache-immuable.test.ts`, qui le joue sur
+// des exports fabriqués ; ici il est branché sur l'export réel.
+//
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
