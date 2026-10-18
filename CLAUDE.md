@@ -56,6 +56,7 @@ désormais dans l'un d'eux : cette table dit lequel.
 | **`BOUCLE.md`** | Toucher aux points de suivi (`engagement_checkins`, les générateurs, la question, la réponse, la carte du point) · à une paire SQL/TypeScript de la boucle · décider qui reçoit quelle boucle · toucher aux rappels : canal, `notification_outbox`, envoi, mot de la veille, espacement, désinscription, jeton d'appareil |
 | **`COMPTE.md`** | Toucher à la connexion, au rattachement, au code reçu par e-mail ou à `/connexion/*` · à la session (`ensureSession`, PKCE, lien profond, jeton refusé) · ajouter une provenance vers `/connexion/retrouver` · toucher au démarrage hors ligne ou à une marque locale · à la suppression de compte ou à l'export |
 | **`MESURE.md`** | Ajouter, émettre ou lire un événement d'usage ou une valeur de propriété · toucher à la purge des sessions anonymes, aux cohortes ou aux vues `analytics.*` · toucher au canal de retour (`feedback`) |
+| **`docs/exploitation/registre-des-traitements.md`**, **`sous-traitants.md`**, **`violations.md`** | Ajouter ou retirer un prestataire, ou changer ce qu'il reçoit · une table ou une colonne qui porte une donnée personnelle · une durée de conservation ou une purge · un incident de sécurité, même sans conséquence — le registre, l'inventaire et la page de confidentialité se tiennent ensemble |
 
 ### Ce que la personne qui pilote a demandé
 
@@ -377,8 +378,9 @@ cycliste au **plan à zéro action** est le seul chemin où la carte « Ton prem
 jamais, donc le seul où la barre d'onglets arrive autrement — et depuis C4.7 il finit par **retirer
 ses deux bilans**, le seul chemin qui efface la marque locale de bilan sans quitter le compte ; le
 troisième, depuis le 30/09/2026, n'a **aucune boucle**, et c'est le seul où ni le plan ni le suivi
-ne peuvent promettre un point. **Docker tourne dans cet environnement** — `sudo dockerd &`,
-mesuré le 20/09/2026 —, donc pgTAP et le parcours s'exécutent ici, et le `BEGIN`/`ROLLBACK` sur le
+ne peuvent promettre un point. **Docker tourne dans cet environnement** — mesuré le 20/09/2026,
+et lancé **détaché** depuis le 18/10/2026 (`TESTING-GARDES.md` §2.6 : en tâche de fond de l'outil de
+commande, le démon meurt à la limite de la tâche) —, donc pgTAP et le parcours s'exécutent ici, et le `BEGIN`/`ROLLBACK` sur le
 projet distant n'est plus la seule validation d'un fichier pgTAP. Les trois tournent en CI sur
 chaque pull request. La
 règle qui décide de ce qui se teste (**toute dérivation pure affichée à la personne ou décidant

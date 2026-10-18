@@ -357,8 +357,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
 
 - **Les pages légales (`/confidentialite`, `/conditions`) partent d'un fait juridique qu'il ne
   faut pas « corriger » par réflexe : le produit est édité par un particulier, à titre non
-  professionnel et sans but lucratif.** L'article 6 III-2 de la LCEN autorise alors à ne
-  publier que les coordonnées de l'hébergeur, et le médiateur de la consommation (code de la
+  professionnel et sans but lucratif.** L'article 1er-1, II, de la LCEN (l'ancien 6 III-2,
+  déplacé par la loi n° 2024-449) autorise alors à ne publier que le nom et l'adresse de
+  l'hébergeur, et le médiateur de la consommation (code de la
   consommation L612-1) ne s'applique pas du tout — il ne vise que les professionnels. D'où
   l'absence assumée de statut juridique, d'adresse postale, d'immatriculation et de directeur
   de la publication. Seul le RGPD (art. 13) reste incompressible : nom et coordonnées du

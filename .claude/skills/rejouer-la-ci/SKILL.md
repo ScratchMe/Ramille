@@ -13,9 +13,10 @@ La commande est `node scripts/rejouer-la-ci.mjs $ARGUMENTS`. Sans argument, elle
 servir.
 
 1. **Docker d'abord, si `base` ou `parcours` sont joués.** `docker info` doit répondre. Dans
-   l'environnement d'agent, le démon ne démarre pas seul : lance `sudo dockerd > /tmp/dockerd.log
-   2>&1` en arrière-plan (`TESTING-GARDES.md` §2.6). Le premier démarrage de la stack tire les images, ce
-   qui prend quelques minutes.
+   l'environnement d'agent, le démon ne démarre pas seul : lance-le détaché,
+   `sudo sh -c 'setsid nohup dockerd > /tmp/dockerd.log 2>&1 < /dev/null &'` — en tâche de fond de
+   l'outil de commande, il meurt à la limite de la tâche (`TESTING-GARDES.md` §2.6). Le premier
+   démarrage de la stack tire les images, ce qui prend quelques minutes.
 2. **Lance le rejeu en arrière-plan** : un passage complet dure plus que le délai d'une commande.
    Redirige la sortie vers un fichier, sans tube, car un tube masquerait le code de sortie
    (`CLAUDE.md`).
