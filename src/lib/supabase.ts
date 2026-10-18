@@ -169,7 +169,8 @@ if (configurationSupabase.complete && Platform.OS !== 'web') {
 // Chaque visiteur a besoin d'un `user_id` réel dès l'entrée dans l'app (RLS owner-scoped
 // sur tout ce qui touche au bilan) — cf. docs/architecture/v1-04-authentification.md.
 // Idempotent : ne crée une session anonyme que si aucune session (anonyme ou non)
-// n'existe déjà. Appelée au démarrage (_layout.tsx, en fire-and-forget) et re-vérifiée
+// n'existe déjà. Appelée au démarrage (_layout.tsx, en fire-and-forget) — sauf sur une surface
+// sans compte, où le layout ne fait que restaurer (`restaurerLaSession`, plus bas) — et re-vérifiée
 // avant toute écriture bilan pour couvrir un démarrage à froid trop rapide ou un
 // deep-link direct vers /bilan.
 //
@@ -316,7 +317,11 @@ export function etatDeLaSession(): EtatDeSession {
   return dernierEtatDeSession;
 }
 
-export const ensureSession = uneSeuleFois(async () => {
+/**
+ * La session qui est là, accueillie, et l'état de la session posé — **sans rien créer**. Le tronc commun
+ * de `ensureSession()` et de `restaurerLaSession()`.
+ */
+async function lireLaSession(): Promise<Session | null> {
   const {
     data: { session },
     error,
@@ -332,6 +337,21 @@ export const ensureSession = uneSeuleFois(async () => {
   // La marque ne se lit que sans session, et seulement sans erreur : c'est le seul cas où elle décide.
   const porteUnCompte = error ? false : await porteUnCompteRattache();
   changerDEtat(etatDeSession(false, error, porteUnCompte));
+  return null;
+}
+
+/**
+ * **La session de l'appareil, restaurée si elle existe — et rien de créé sinon** (18/10/2026). C'est ce
+ * que le layout racine demande sur une surface sans compte (`laSessionSOuvreSur`, `src/types/session.ts`) :
+ * la politique de confidentialité ouverte dans un navigateur neuf n'ouvre ni compte anonyme ni captcha.
+ * Une session déjà là s'accueille comme dans `ensureSession()` — ses marques, son état —, et un refus se
+ * dit de même. Rend la session, ou `null`.
+ */
+export const restaurerLaSession = uneSeuleFois(lireLaSession);
+
+export const ensureSession = uneSeuleFois(async () => {
+  const session = await lireLaSession();
+  if (session) return session;
   if (!doitOuvrirUneSessionAnonyme(dernierEtatDeSession)) return null;
 
   // Le jeton du captcha, que Supabase exige une fois la protection activée (`captcha.ts`).

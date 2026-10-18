@@ -25,7 +25,6 @@ import { ErreurInattendue } from '@/components/erreur-inattendue';
 import { RetourDeNotification } from '@/components/retour-de-notification';
 import { SessionRefusee } from '@/components/session-refusee';
 import { TitreDePage } from '@/components/titre-de-page';
-import { useTrackView } from '@/hooks/use-track-view';
 import { envoyerLesErreursEnAttente, track } from '@/lib/analytics';
 import { createSessionFromUrl, estUnRetourDuNavigateurDAuth } from '@/lib/auth';
 import { lireEtatDuRattachement } from '@/lib/compte';
@@ -37,18 +36,30 @@ import {
   preparerLesCanauxAndroid,
 } from '@/lib/rappels';
 import {
+  installerLaRemonteeDesPannes,
+  noterLaRoute,
+  signalerUnePanne,
+  versionDeCetteApp,
+} from '@/lib/remontee-des-pannes';
+import {
   configurationSupabase,
   ecouterLeRefus,
   ensureSession,
   etatDeLaSession,
   repartirSurCetAppareil,
+  restaurerLaSession,
   supabase,
 } from '@/lib/supabase';
-import { appErrorCategory, rattraperLOuverture, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
+import { rattraperLOuverture, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
 import { estVerifieurManquant, lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
-import { lEcranDeReconnexionSePose } from '@/types/session';
+import { gardeDuJeton, laSessionSOuvreSur, lEcranDeReconnexionSePose } from '@/types/session';
 
 SplashScreen.preventAutoHideAsync();
+
+// Les pannes que le rendu ne voit pas — une exception que personne n'a rattrapée, une promesse rejetée
+// sans personne pour l'attendre —, écoutées dès le chargement du layout, avant le premier rendu
+// (`src/lib/remontee-des-pannes.ts`). Rien en développement.
+installerLaRemonteeDesPannes();
 
 // Hors du composant : le gestionnaire est global à l'app, et l'installer à chaque rendu ne
 // servirait à rien. Sans lui, un rappel reçu app ouverte disparaît sans laisser de trace —
@@ -71,7 +82,7 @@ let montageSansSession = false;
 function apresLaSessionDuDemarrage() {
   if (!ouvertureDejaComptee) {
     ouvertureDejaComptee = true;
-    track('app_open', { origine: 'demarrage' });
+    track('app_open', { origine: 'demarrage', version: versionDeCetteApp() });
   }
   // Les pannes gardées faute de session ou de réseau partent maintenant qu'il y a une session
   // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Sans session — un refus —, rien ne part.
@@ -86,29 +97,34 @@ function apresLaSessionDuDemarrage() {
 // téléphone, si bien que l'appareil restait inscrit au nom de celui qu'on vient de quitter — et
 // recevait ses rappels jusqu'au prochain démarrage à froid (A4-7).
 //
-// Un enregistrement par utilisateur, et le garde vit **hors du composant** comme
+// Un enregistrement par utilisateur, et la garde vit **hors du composant** comme
 // `ouvertureDejaComptee` : `onAuthStateChange` émet aussi à chaque rafraîchissement de jeton,
 // c'est-à-dire toutes les heures, et sans garde cela ferait un appel RPC par heure pour rien.
-let utilisateurDuJeton: string | null = null;
+//
+// **Un enregistrement qui n'a rien inscrit se retente au retour au premier plan** (`'retour'`, l'écoute
+// `AppState` plus bas) et au démarrage suivant, jamais de lui-même : pas de réseau au moment du
+// `setSession`, RPC en erreur, et l'appareil restait inscrit au nom de celui qu'on vient de quitter
+// jusqu'au prochain démarrage à froid — exactement A4-7, que ce code existe pour corriger. La règle
+// vit dans `gardeDuJeton` (`src/types/session.ts`), avec ses tests ; elle ne se fondait que sur une
+// exception, alors que l'enregistrement rend `false` sur ses échecs courants.
+const enregistrerLeJetonPour = gardeDuJeton(enregistrerLeJeton);
 
-// **Le garde ne se valide qu'après coup.** Posé avant l'appel, il retenait un enregistrement
-// qui n'avait pas eu lieu : pas de réseau au moment du `setSession`, RPC en erreur, et
-// l'appareil restait inscrit au nom de celui qu'on vient de quitter jusqu'au prochain démarrage
-// à froid — c'est-à-dire exactement A4-7, que ce code existe pour corriger. Il est quand même
-// posé **pendant** l'appel, pour que deux émissions rapprochées d'`onAuthStateChange` ne
-// lancent pas deux RPC concurrents ; seul un échec le rend à son propriétaire précédent, et la
-// tentative suivante repart.
-async function enregistrerLeJetonPour(utilisateur: string | null): Promise<void> {
-  if (utilisateur === null || utilisateur === utilisateurDuJeton) return;
-  const precedent = utilisateurDuJeton;
-  utilisateurDuJeton = utilisateur;
-  try {
-    await enregistrerLeJeton();
-  } catch (error) {
-    utilisateurDuJeton = precedent;
-    console.error('Le jeton d’appareil n’a pas pu être enregistré :', error);
-  }
+/** Le retour au premier plan : l'enregistrement se retente pour la session courante s'il n'a rien inscrit. */
+function retenterLeJeton(): void {
+  void supabase.auth
+    .getSession()
+    .then(({ data }) => enregistrerLeJetonPour(data.session?.user.id ?? null, 'retour'))
+    .catch(() => undefined);
 }
+
+// **La session du montage, une fois par chargement du bundle, et selon la route** (18/10/2026). Sur une
+// surface sans compte — la politique de confidentialité, la page de suppression —, le montage ne fait que
+// restaurer la session qui est là (`restaurerLaSession`) : un navigateur neuf ne reçoit ni compte anonyme
+// ni captcha (`laSessionSOuvreSur`, `src/types/session.ts`). **Il l'ouvre dès qu'on en sort pour l'app**
+// — l'effet se relit à chaque changement de route —, et une écriture la garantit de toute façon avant de
+// partir. Les deux drapeaux vivent hors du composant, comme `ouvertureDejaComptee`.
+let sessionRestauree = false;
+let sessionOuverte = false;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -133,6 +149,11 @@ export default function RootLayout() {
   const [refus, setRefus] = useState(false);
   const chemin = usePathname();
   const ecranDeReconnexion = refus && lEcranDeReconnexionSePose(chemin);
+  const laSessionSOuvreIci = laSessionSOuvreSur(chemin);
+
+  // La route d'une panne que le rendu ne voit pas (`src/lib/remontee-des-pannes.ts`) : hors de l'arbre,
+  // personne d'autre ne peut la lire.
+  useEffect(() => noterLaRoute(chemin), [chemin]);
   // La case du captcha, posée par-dessus la pile comme l'écran de reconnexion : la pile se cache de
   // même tant qu'elle est montrée (`signalerLaCaseDuCaptcha`, `src/lib/captcha.ts`).
   const caseDuCaptcha = useSyncExternalStore(ecouterLaCaseDuCaptcha, laCaseDuCaptchaEstMontree, () => false);
@@ -156,7 +177,9 @@ export default function RootLayout() {
 
   // Fire-and-forget : la session anonyme n'a pas besoin d'exister avant le premier
   // rendu (rien à l'écran ne la lit tout de suite), seulement avant la première écriture
-  // bilan — re-garantie à ce moment-là de toute façon (cf. ensureSession).
+  // bilan — re-garantie à ce moment-là de toute façon (cf. ensureSession). **Et pas du tout sur
+  // une surface sans compte**, où la session déjà là se restaure sans qu'aucune ne se crée
+  // (`sessionRestauree`, plus haut) : la même suite part, avec ou sans session.
   //
   // **`app_open` part ici, après la session, et plus au montage.** `track()` renonce quand
   // aucune session n'existe encore : émis au rendu du layout, l'événement était **perdu**
@@ -183,7 +206,10 @@ export default function RootLayout() {
   // déjà, elle, si les notifications sont coupées.
   useEffect(() => {
     if (!configurationSupabase.complete) return;
-    ensureSession()
+    if (laSessionSOuvreIci ? sessionOuverte : sessionRestauree || sessionOuverte) return;
+    if (laSessionSOuvreIci) sessionOuverte = true;
+    else sessionRestauree = true;
+    (laSessionSOuvreIci ? ensureSession() : restaurerLaSession())
       .then((session) => {
         // **Un jeton refusé s'affiche, il ne se contourne pas** (C2.11). `ensureSession` n'ouvre
         // plus de session anonyme dans ce cas, donc sans cet écran l'app resterait sans session du
@@ -200,13 +226,13 @@ export default function RootLayout() {
           montageSansSession = true;
           void preparerLesCanauxAndroid();
         }
-        return enregistrerLeJetonPour(session?.user.id ?? null);
+        return enregistrerLeJetonPour(session?.user.id ?? null, 'session');
       })
       .catch((error) => {
-        console.error('ensureSession() a échoué au démarrage :', error);
+        console.error('La session du démarrage n’a pas pu s’ouvrir :', error);
         montageSansSession = true;
       });
-  }, []);
+  }, [laSessionSOuvreIci]);
 
   // **Une ouverture, c'est aussi un retour au premier plan.** Le layout racine n'est monté
   // qu'une fois par chargement du bundle : sans cette écoute, `app_open` ne compte pas des
@@ -242,11 +268,15 @@ export default function RootLayout() {
       const suite = suivreLEtatDeLApp(sejour, etat, Date.now());
       sejour = suite.sejour;
       if (suite.ouverture) {
-        track('app_open', { origine: 'retour' });
+        track('app_open', { origine: 'retour', version: versionDeCetteApp() });
         // Le retour au premier plan est l'autre moment où le réseau revient (un rappel ouvert dans le
         // métro) : les pannes gardées partent aussi.
         void envoyerLesErreursEnAttente();
       }
+      // **À chaque retour, même court** : l'aller-retour dans les réglages du téléphone, où l'on vient
+      // de rouvrir les notifications, est le cas que la garde attend. Sans effet tant que le jeton est
+      // inscrit (`gardeDuJeton`).
+      if (etat === 'active') retenterLeJeton();
     });
 
     // `?.` et pas un appel sec, bien que l'effet sorte désormais hors natif : la garde coûte un
@@ -273,7 +303,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (!configurationSupabase.complete) return;
     const { data } = supabase.auth.onAuthStateChange((_evenement, session) => {
-      void enregistrerLeJetonPour(session?.user.id ?? null);
+      void enregistrerLeJetonPour(session?.user.id ?? null, 'session');
       // Le montage a fini sans session, et celle-ci arrive ensuite (la racine après « Réessayer », le
       // réseau revenu, une reconnexion) : l'ouverture de ce chargement se rattrape ici, une fois.
       if (
@@ -521,8 +551,10 @@ export default function RootLayout() {
 // **Aucune API de module natif ici, et c'est structurel.** C'est le composant qui reste quand
 // tout le reste est tombé : un hook d'`expo-notifications` appelé au rendu à cet endroit
 // relèverait une exception dans le gestionnaire d'exceptions, et la page blanche du 08/09/2026
-// reviendrait — avec, cette fois, plus personne pour l'attraper. Les deux seuls hooks utilisés
-// ci-dessous lisent l'un le store de navigation, l'autre une mesure d'usage qui n'échoue jamais.
+// reviendrait — avec, cette fois, plus personne pour l'attraper. Les hooks utilisés ci-dessous
+// lisent le store de navigation, et lancent une mesure d'usage qui ne lève jamais : la version que
+// `signalerUnePanne` lit vient d'une constante native déjà chargée, par une lecture qui rend `null`
+// plutôt que de lever (`src/lib/remontee-des-pannes.ts`).
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   // Le store de navigation est global à l'app, pas un contexte de l'arbre tombé, et
   // `getRouteInfo()` retombe sur une valeur par défaut quand rien n'est encore monté : lire la
@@ -531,14 +563,20 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   // `docs/exploitation/remontee-erreurs.md` §2.
   const route = usePathname();
 
-  // Remontée minimale, et volontairement pauvre : une catégorie dérivée du type de l'exception
-  // et la route, jamais le message ni la pile (cf. `src/types/analytics.ts`). Une panne au
-  // démarrage est justement le moment où la session peut manquer : sans elle, ou sans réseau,
-  // `track()` la garde sur l'appareil, et elle part au prochain démarrage qui a une session
-  // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Ce qui reste hors d'atteinte — la panne de
-  // configuration, et celle où notre code ne tourne plus — est dit dans
-  // `docs/exploitation/remontee-erreurs.md` §3 bis.
-  useTrackView('app_error', { category: appErrorCategory(error), route });
+  // Remontée minimale, et volontairement pauvre : une catégorie dérivée du type de l'exception,
+  // la route, l'origine et la version, jamais le message ni la pile (`src/types/remontee-des-pannes.ts`).
+  // Une panne au démarrage est justement le moment où la session peut manquer : sans elle, ou sans
+  // réseau, `track()` la garde sur l'appareil, et elle part au prochain démarrage qui a une session
+  // (`src/types/erreurs-en-attente.ts`, 02/10/2026). Une fois par montage de ce filet, et une fois par
+  // lancement pour une même panne : « Réessayer » qui retombe ne la recompte pas (`trierLesPannes`). Ce
+  // qui reste hors d'atteinte — la panne de configuration, et celle où notre code ne tourne plus — est
+  // dit dans `docs/exploitation/remontee-erreurs.md` §3 bis.
+  const signalee = useRef(false);
+  useEffect(() => {
+    if (signalee.current) return;
+    signalee.current = true;
+    signalerUnePanne(error, 'rendu', route);
+  }, [error, route]);
 
   // `retry` rend une promesse qu'un bouton n'attend pas.
   return <ErreurInattendue erreur={error} reessayer={() => void retry()} />;

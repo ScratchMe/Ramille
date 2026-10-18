@@ -201,7 +201,12 @@ export type UsageEventPropsByName = {
    *  invérifiable le second (« ouvrir un rappel doit écrire une ouverture ») et
    *  incomparables les séries d'avant et d'après le 11/09/2026. `'retour'` n'existe que sur
    *  natif : voir le commentaire de l'écoute `AppState` dans `src/app/_layout.tsx`. */
-  app_open: { origine: 'demarrage' | 'retour' };
+  app_open: {
+    origine: 'demarrage' | 'retour';
+    /** La version de l'app qui s'ouvre (`versionDeLApp`, `src/types/remontee-des-pannes.ts`) : ce qui dit
+     *  quelle version tourne encore chez qui. Absente quand l'app ne sait pas la lire. */
+    version?: string;
+  };
   onboarding_step_view: { step: string };
   onboarding_complete: never;
   bilan_step_view: { step: string };
@@ -271,15 +276,22 @@ export type UsageEventPropsByName = {
   /** La feuille des rappels s'est affichée. Elle ne s'ouvre que depuis un engagement,
    *  donc elle n'a pas de propriété de provenance : il n'y en a qu'une. */
   rappels_view: never;
-  /** Une exception de rendu a remonté jusqu'à l'`ErrorBoundary` du layout racine (C0.4).
-   *  **Ce qui décrit la panne tient en deux propriétés, et jamais une troisième** : la catégorie
-   *  et la route. Pas de message d'exception, pas de pile — un message d'erreur est du texte libre,
-   *  et du texte libre dans `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la
-   *  migration). Les deux de la file d'attente, en dessous, disent seulement **quand** elle est
-   *  partie : un drapeau et un nombre, posés par le code. */
+  /** Une panne de l'app : une exception de rendu arrivée à l'`ErrorBoundary` du layout racine (C0.4),
+   *  ou, depuis le 18/10/2026, une exception que personne n'a rattrapée et une promesse rejetée sans
+   *  personne pour l'attendre (`src/lib/remontee-des-pannes.ts`).
+   *  **Ce qui décrit la panne tient en deux propriétés** : la catégorie et la route. Pas de message
+   *  d'exception, pas de pile — un message d'erreur est du texte libre, et du texte libre dans
+   *  `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la migration). Les autres sont
+   *  posées par le code : d'où elle vient, la version qui l'a eue, et, pour la file d'attente,
+   *  **quand** elle est partie. */
   app_error: {
     category: AppErrorCategory;
     route: string;
+    /** D'où la panne est arrivée (`ORIGINES_DES_PANNES`). Absente sur une ligne d'avant le 18/10/2026,
+     *  qui vient alors du rendu, seul chemin d'alors. */
+    origine?: OrigineDUnePanne;
+    /** La version de l'app qui l'a eue — celle du moment de la panne, pas de l'envoi. */
+    version?: string;
     /** **Envoyée plus tard** (02/10/2026, la file d'attente locale, `src/types/erreurs-en-attente.ts`) :
      *  pas de session ou pas de réponse au moment de la panne. L'horodatage de la ligne est alors celui
      *  de l'envoi, d'où `retard_h`, l'écart en heures. Absentes sur un envoi immédiat. */
@@ -324,6 +336,20 @@ export const APP_ERROR_CATEGORIES = [
 ] as const;
 
 export type AppErrorCategory = (typeof APP_ERROR_CATEGORIES)[number];
+
+// ## `app_error` : l'origine, même règle que les provenances
+//
+// - `rendu` : l'`ErrorBoundary` du layout racine — l'écran « Quelque chose s'est mal passé » ;
+// - `globale` : une exception que personne n'a rattrapée, l'app restée ouverte (le web, ou un
+//   signalement non fatal sur natif) ;
+// - `fatale` : la même, mais elle ferme l'app (natif) — elle ne part qu'au lancement suivant ;
+// - `promesse` : une promesse rejetée sans personne pour attendre son échec.
+//
+// Une liste fermée parce que la base ne valide pas les valeurs de `props` : une origine que le code
+// inventerait se lirait zéro partout ailleurs (`MESURE.md` §1).
+export const ORIGINES_DES_PANNES = ['rendu', 'globale', 'fatale', 'promesse'] as const;
+
+export type OrigineDUnePanne = (typeof ORIGINES_DES_PANNES)[number];
 
 // `name` plutôt qu'`instanceof` : les constructeurs natifs portent leur nom dans le prototype,
 // que la minification ne touche pas, alors qu'`instanceof` se trompe dès qu'une exception

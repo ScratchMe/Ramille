@@ -127,8 +127,27 @@ function garderLErreur(props: UsageEventProps | undefined): Promise<void> {
   const category = props?.category;
   const route = props?.route;
   if (typeof category !== 'string' || typeof route !== 'string') return Promise.resolve();
-  const erreur = { category, route, noteeLe: Date.now() } as ErreurEnAttente;
+  const origine = props?.origine;
+  const version = props?.version;
+  // La file relit ce qu'elle garde (`lireLaFile`) : une valeur d'une autre forme y fait écarter l'entrée.
+  const erreur = {
+    category,
+    route,
+    noteeLe: Date.now(),
+    ...(typeof origine === 'string' ? { origine } : {}),
+    ...(typeof version === 'string' ? { version } : {}),
+  } as ErreurEnAttente;
   return enSerie(async () => ecrireLaFile(enfiler(await lireLaFileStockee(), erreur)));
+}
+
+/**
+ * Garde une panne sur l'appareil **sans tenter de l'envoyer** — la panne fatale, qui ferme l'app avant
+ * qu'un insert ait pu partir (`src/lib/remontee-des-pannes.ts`). Elle part au démarrage suivant, comme
+ * toute panne gardée. Rend la promesse de l'écriture : l'appelant la laisse finir avant que l'app ne
+ * tombe. Ne lève jamais.
+ */
+export function garderUnePanne(panne: UsageEventPropsByName['app_error']): Promise<void> {
+  return garderLErreur(panne as UsageEventProps).catch(() => undefined);
 }
 
 /**

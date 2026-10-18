@@ -41,7 +41,7 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { envoyerLesErreursEnAttente, track } = require('./analytics') as typeof import('./analytics');
+const { envoyerLesErreursEnAttente, garderUnePanne, track } = require('./analytics') as typeof import('./analytics');
 
 const FILE = 'traceverte.erreurs_en_attente.v1';
 const SESSION = { data: { session: { user: { id: 'u1' } } } };
@@ -116,6 +116,34 @@ describe('la file d’attente des erreurs', () => {
     mockInsert.mockResolvedValue({ error: { message: 'Failed to fetch' }, status: 0 });
     await envoyerLesErreursEnAttente();
     expect(await fileStockee()).toHaveLength(1);
+  });
+
+  /**
+   * **L'origine et la version voyagent avec la panne** (18/10/2026, `src/lib/remontee-des-pannes.ts`).
+   * Éprouvé le 18/10/2026 : `garderLErreur` ne recopiant plus que la catégorie et la route → ce test et
+   * « une panne fatale se garde sans partir… », seuls.
+   */
+  it('une panne gardée garde son origine et sa version, et les envoie', async () => {
+    mockSession.mockResolvedValue(SANS_SESSION);
+    track('app_error', { category: 'type', route: '/plan', origine: 'promesse', version: '1.0.0+14' });
+    await laisserSePoser();
+    mockSession.mockResolvedValue(SESSION);
+
+    await envoyerLesErreursEnAttente();
+
+    const lignes = mockInsert.mock.calls[0][0] as { props: Record<string, unknown> }[];
+    expect(lignes[0].props).toEqual(
+      expect.objectContaining({ origine: 'promesse', version: '1.0.0+14', differee: true })
+    );
+  });
+
+  it('une panne fatale se garde sans partir : l’app se ferme avant tout envoi', async () => {
+    await garderUnePanne({ category: 'reference', route: '/suivi', origine: 'fatale', version: '1.0.0+14' });
+
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(await fileStockee()).toEqual([
+      expect.objectContaining({ category: 'reference', route: '/suivi', origine: 'fatale', version: '1.0.0+14' }),
+    ]);
   });
 
   it('un second appel pendant un envoi n’envoie pas le lot une seconde fois', async () => {
