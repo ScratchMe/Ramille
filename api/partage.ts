@@ -12,88 +12,23 @@
 // côté client à partir de ce que l'utilisateur voit déjà sur son propre écran de résultat
 // (`urlDePartage`, dans `src/types/resultat.ts`) — pas de nouvelle surface d'exposition de données, pas de RLS à
 // repenser pour ce premier increment.
+//
+// Ce que l’adresse a le droit de dire, et sa forme canonique, vivent dans `_partage-commun.ts`,
+// partagé avec la carte. La page ne sert que l’adresse canonique : toute variante est redirigée (308)
+// vers elle, ou refusée (400) quand elle n’a pas de sens — le CDN ne garde ainsi qu’une réponse par
+// partage au lieu d’une par façon de l’écrire.
+import {
+  CACHE_JAMAIS,
+  CACHE_PAGE,
+  CHEMIN_CARTE,
+  CHEMIN_PAGE,
+  libelleDuTotal,
+  lireLaRequete,
+  reponseIllisible,
+  reponseRedirection,
+} from './_partage-commun.js';
+
 export const config = { runtime: 'edge' };
-
-// **Borne haute du total affichable, en tonnes.** `percent` était déjà validé (entier 0-100),
-// `total` ne l'était pas : `Number.parseFloat` accepte un négatif, un zéro ou un 1e40, et une URL
-// fabriquée par un tiers rendait une page titrée « -5,0 t CO₂e par an — mon empreinte transport »
-// avec l'image et la marque du produit, indiscernable d'un vrai partage dans un aperçu de
-// messagerie. Hors de [0 ; 200], on retombe sur le libellé sans chiffre, exactement comme sur une
-// URL sans paramètre.
-//
-// Ce n'est **pas** une garde de sécurité et il ne faut pas la lire comme telle : un total inventé
-// entre 0 et 200 t reste un aperçu plausible, et seule une query string signée fermerait la
-// fabrication des chiffres — un autre chantier. Le libellé, lui, est fermé depuis le 05/10/2026
-// (la liste ci-dessous). C'est une garde de robustesse — et la même borne est écrite dans
-// `api/share-card.ts` : les deux endpoints lisent la même URL et doivent retomber sur le même
-// repli, sinon le titre et l'image se contredisent dans le même aperçu.
-const TOTAL_TONNES_MAX = 200;
-
-function totalBorne(raw: string | null): number | null {
-  const tonnes = raw ? Number.parseFloat(raw) : NaN;
-  if (!Number.isFinite(tonnes) || tonnes < 0 || tonnes > TOTAL_TONNES_MAX) return null;
-  return tonnes;
-}
-
-// <postes-partageables>
-// **`poste` est une liste fermée** (05/10/2026, plan anti-abus) : les libellés que
-// `dominantShareLabel` (`src/types/resultat.ts`) sait produire — un poste, suivi ou non de la
-// préposition de son mode —, et rien d'autre. Il était du texte libre tronqué à 120 caractères :
-// n'importe qui fabriquait un aperçu aux couleurs du produit, portant la phrase de son choix sous
-// « Poste principal ». Un libellé inconnu est ignoré, et la page comme la carte retombent sur leur
-// forme sans poste, celle d'une URL qui n'en porte pas.
-//
-// **Ce bloc est recopié à l'identique dans `api/partage.ts` et `api/share-card.ts`** : une Function
-// qui en importe une autre ajoute un chemin de compilation que rien ne rejoue avant le déploiement,
-// et son échec y serait muet (`VERCEL.md` §1.6). `scripts/postes-partageables.test.ts` exige que
-// les deux copies soient les mêmes, et que chaque libellé que l'app produit soit accepté. L'inverse
-// n'est pas exigé, et c'est voulu : un libellé que l'app ne produit plus garde lisibles les liens
-// déjà partagés.
-const POSTES_PARTAGEABLES = [
-  'Trajet domicile-travail',
-  'Loisirs du week-end',
-  'Loisirs occasionnels',
-  'Voyages longue distance',
-];
-
-const MODES_PARTAGEABLES = [
-  'en voiture',
-  'en voiture thermique',
-  'en voiture électrique',
-  'en voiture hybride',
-  'en voiture hybride rechargeable',
-  'en deux-roues motorisé',
-  'en scooter thermique',
-  'en scooter électrique',
-  'en moto de petite cylindrée',
-  'en moto de grosse cylindrée',
-  'en train',
-  'en TER',
-  'en RER ou Transilien',
-  'en Intercités',
-  'en TGV',
-  'en bus',
-  'en métro ou tram',
-  'à vélo',
-  'à vélo électrique',
-  'à pied',
-  'en trottinette',
-  'en autocar',
-  'en avion (court/moyen-courrier)',
-  'en avion long-courrier',
-];
-
-function posteFerme(brut: string | null): string | null {
-  if (!brut) return null;
-  for (const poste of POSTES_PARTAGEABLES) {
-    if (brut === poste) return poste;
-    if (brut.startsWith(`${poste} `) && MODES_PARTAGEABLES.includes(brut.slice(poste.length + 1))) {
-      return brut;
-    }
-  }
-  return null;
-}
-// </postes-partageables>
 
 /**
  * L'origine, rendue sûre pour une **valeur d'attribut** — et elle seule.
@@ -134,21 +69,6 @@ function escapeHtml(value: string): string {
   });
 }
 
-// **La règle des kilos sous la tonne, recopiée depuis `src/lib/format.ts`.** `api/` ne peut pas
-// importer `src/` (tsconfig dédié, runtime Web Fetch API), exactement comme pour `APP_NAME` — donc
-// la règle se duplique, et il faut la tenir des deux côtés. Sans cette bascule, un bilan de 40 kg
-// partait avec un texte disant « 40 kg CO₂e » et une carte titrée « 0,0 t CO₂e » : les deux
-// chiffres du même partage se contredisaient, sur la seule surface publique du produit. C'est le
-// constat A3-1, réapparu par la porte de l'aperçu.
-//
-// Le paramètre arrive en **tonnes** (cf. `urlDePartage`), la règle raisonne en kilos : l'arrondi
-// vient avant la comparaison, donc 0,9996 t est une tonne et non « 1000 kg ».
-function libelleDuTotal(tonnes: number): string {
-  const kilos = Math.round(tonnes * 1000);
-  if (kilos < 1000) return `${kilos} kg CO₂e`;
-  return `${tonnes.toFixed(1).replace('.', ',')} t CO₂e`;
-}
-
 const TITRE_SANS_CHIFFRE = 'Mon empreinte transport';
 const DESCRIPTION_SANS_CHIFFRE = 'Calcule ton empreinte carbone transport en 5 minutes sur Ramille.';
 
@@ -156,7 +76,8 @@ const DESCRIPTION_SANS_CHIFFRE = 'Calcule ton empreinte carbone transport en 5 m
 // promet qu'une URL mal formée, y compris construite par un tiers, ne les fait jamais planter — et
 // une promesse qui ne couvre que le parsing n'en est pas une. Sans ce filet, une exception rend un
 // 500 sans détail exploitable (`FUNCTION_INVOCATION_FAILED` côté client) là où un aperçu était
-// attendu ; avec lui, on sert la page sans aucun chiffre, celle d'un lien sans paramètre.
+// attendu ; avec lui, on sert la page sans aucun chiffre, celle d'un lien sans paramètre — **sans
+// cache**, pour qu'une panne passagère ne se fige pas sur cette adresse.
 export default function handler(request: Request) {
   try {
     return pageDePartage(request);
@@ -171,16 +92,18 @@ export default function handler(request: Request) {
         imageUrl: null,
         accueilUrl: '/',
       }),
+      CACHE_JAMAIS,
     );
   }
 }
 
 function pageDePartage(request: Request): Response {
   const url = new URL(request.url);
-  const poste = posteFerme(url.searchParams.get('poste'));
-  const percentRaw = Number.parseInt(url.searchParams.get('percent') ?? '', 10);
-  const percent = Number.isFinite(percentRaw) && percentRaw >= 0 && percentRaw <= 100 ? percentRaw : null;
-  const tonnes = totalBorne(url.searchParams.get('total'));
+  const lecture = lireLaRequete(url.search);
+  if (lecture.statut === 'illisible') return reponseIllisible();
+  if (!lecture.canonique) return reponseRedirection(CHEMIN_PAGE, lecture.query);
+
+  const { total: tonnes, poste, percent } = lecture.parametres;
   const totalLabel = tonnes !== null ? libelleDuTotal(tonnes) : null;
 
   const titre = totalLabel ? `${totalLabel} par an — mon empreinte transport` : TITRE_SANS_CHIFFRE;
@@ -195,32 +118,20 @@ function pageDePartage(request: Request): Response {
       : 'Calcule la tienne en 5 minutes sur Ramille.'
     : DESCRIPTION_SANS_CHIFFRE;
 
-  // **La query de la carte est reconstruite, jamais recopiée.** `url.searchParams.toString()`
-  // reprenait la chaîne entrante *en entier* : un paramètre inconnu ajouté par un tiers
-  // survivait donc jusque dans l'`og:image`, c'est-à-dire dans l'URL que chaque lecteur
-  // d'aperçu va chercher — et, `share-card` posant un cache d'un an, chaque valeur inédite
-  // est une clé de cache neuve, donc un rendu complet (satori + resvg) qui se paie en
-  // invocations. Trois paramètres, dans un ordre fixe : c'est exactement ce que la carte lit,
-  // et deux partages identiques produisent maintenant la même clé.
-  //
-  // **Et chacun sous sa forme lue, pas sous sa forme reçue** (05/10/2026). Le total était recopié
-  // tel quel : `Number.parseFloat` ne lit que le préfixe numérique, donc `total=4.2 Achetez sur…`
-  // passait la borne et portait tout le reste jusque dans l'`og:image`. Il repart en
-  // `toFixed(3)`, la forme qu'envoie l'app (`urlDePartage`) ; le libellé est déjà celui de la liste
-  // fermée, la part un entier.
-  const queryDeLaCarte = new URLSearchParams();
-  if (tonnes !== null) queryDeLaCarte.set('total', tonnes.toFixed(3));
-  if (poste) queryDeLaCarte.set('poste', poste);
-  if (percent !== null) queryDeLaCarte.set('percent', String(percent));
-
+  // **La query de la carte est la query canonique de cette page, jamais la chaîne reçue.** L'adresse
+  // est canonique ici (sinon on a redirigé plus haut), donc c'est la même chose — mais c'est la forme
+  // reconstruite qu'on écrit dans l'`og:image`, c'est-à-dire dans l'URL que chaque lecteur d'aperçu va
+  // chercher : un paramètre ou un texte de plus qui y passerait serait une clé de cache neuve, donc un
+  // rendu complet (satori + resvg) qui se paie en invocations.
   const origine = attributSur(url.origin);
   return reponseHtml(
     htmlDePartage({
       titre,
       description,
-      imageUrl: `${origine}/api/share-card?${queryDeLaCarte.toString()}`,
+      imageUrl: `${origine}${CHEMIN_CARTE}?${lecture.query}`,
       accueilUrl: `${origine}/`,
     }),
+    CACHE_PAGE,
   );
 }
 
@@ -241,10 +152,11 @@ function pageDePartage(request: Request): Response {
 // supprimerait l'aperçu que ces balises existent pour composer — et priverait du même coup
 // tout crawler du droit de lire le `noindex` ci-dessous, seule façon de tenir une URL hors de
 // l'index une fois qu'elle a été citée quelque part.
-function reponseHtml(html: string): Response {
+function reponseHtml(html: string, cache: string): Response {
   return new Response(html, {
     headers: {
       'content-type': 'text/html; charset=utf-8',
+      'cache-control': cache,
       'x-robots-tag': 'noindex, nofollow',
     },
   });

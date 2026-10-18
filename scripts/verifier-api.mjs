@@ -82,9 +82,11 @@
 // Avec VERIFIER_API_PNG=<chemin>, la carte rendue est écrite là pour être regardée.
 
 import { Buffer } from 'node:buffer';
-import { writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { registerHooks } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 const RACINE = path.join(import.meta.dirname, '..');
 // share-card lit ses polices et le wasm depuis `process.cwd()`, comme sur Vercel.
@@ -104,11 +106,53 @@ function verifier(condition, message) {
   if (!condition) ecarts.push(message);
 }
 
+// ── 0. La disposition d'api/, jugée sur les sources ───────────────────────────────────────
+//
+// Deux règles que Vercel applique au déploiement et que Node ne rejoue pas ici :
+//  - **un fichier de `api/` qui n'est pas une des deux fonctions commence par `_`**, sinon Vercel en
+//    fait une route publique et un troisième déploiement ;
+//  - **un import relatif se termine par `.js`**, et vise un `.ts` qui existe. Vercel compile sans
+//    réécrire les spécificateurs : `./x.ts` partirait tel quel dans un déploiement où seul `x.js`
+//    existe (`ERR_MODULE_NOT_FOUND`, muet côté client), et `./x` n'est pas résolu par Node en ESM.
+//    Node, lui, exécute un `.ts` sous son vrai nom : c'est pourquoi ce contrôle porte sur le texte.
+const DOSSIER_API = path.join(RACINE, 'api');
+const FONCTIONS = ['partage.ts', 'share-card.ts'];
+for (const nom of readdirSync(DOSSIER_API).filter((n) => n.endsWith('.ts') && !n.endsWith('.d.ts'))) {
+  if (!FONCTIONS.includes(nom) && !nom.startsWith('_')) {
+    verifier(
+      false,
+      `api/${nom} : ni une des deux fonctions ni préfixé par « _ » — Vercel en ferait une route publique`
+    );
+  }
+  const source = readFileSync(path.join(DOSSIER_API, nom), 'utf8');
+  for (const [, specificateur] of source.matchAll(/^(?:import|export)\b[^;]*?\bfrom\s*['"](\.{1,2}\/[^'"]+)['"]/gm)) {
+    verifier(
+      specificateur.endsWith('.js') && existsSync(path.join(DOSSIER_API, specificateur.replace(/\.js$/, '.ts'))),
+      `api/${nom} : l'import « ${specificateur} » ne se termine pas par .js, ou ne vise aucun .ts — ` +
+        `Vercel le déploierait tel quel et le module serait introuvable`
+    );
+  }
+}
+
+// Node ne sait pas qu'un `./x.js` d'api/ est un `x.ts` (TypeScript le sait, et Vercel compile en `.js`) :
+// on lui apprend cette correspondance, et seulement quand le `.js` n'existe pas.
+registerHooks({
+  resolve(specificateur, contexte, suivant) {
+    if (/^\.{1,2}\//.test(specificateur) && specificateur.endsWith('.js') && contexte.parentURL) {
+      const vise = fileURLToPath(new URL(specificateur, contexte.parentURL));
+      if (!existsSync(vise)) return suivant(specificateur.replace(/\.js$/, '.ts'), contexte);
+    }
+    return suivant(specificateur, contexte);
+  },
+});
+
 let GET;
 let partage;
+let commun;
 try {
   ({ GET } = await import('../api/share-card.ts'));
   ({ default: partage } = await import('../api/partage.ts'));
+  commun = await import('../api/_partage-commun.ts');
 } catch (erreur) {
   console.error(
     `Une des deux fonctions d'api/ ne se charge pas — c'est ce que Vercel verrait au premier appel.\n` +
@@ -251,21 +295,47 @@ verifier(
   'page : og:image:width/height n’annoncent pas 1200 × 630'
 );
 
+
+// ── Aides : jouer une adresse sur l'une ou l'autre fonction ───────────────────────────────
+//
+// La page reçoit une URL absolue (runtime Edge), la carte un chemin (runtime Node.js) : chacune sous
+// la forme que Vercel lui donne. Une redirection se suit **une fois** — une seconde serait une
+// boucle, et une boucle sur une adresse que l'app produit tuerait le partage.
+const appelPage = (adresse) => partage(new Request(new URL(adresse, ORIGINE)));
+const appelCarte = (adresse) => GET({ url: adresse });
+
+async function jouer(appel, adresse) {
+  const premiere = await appel(adresse);
+  if (premiere.status !== 308) return { reponse: premiere, location: null, boucle: false };
+  const location = premiere.headers.get('location');
+  const seconde = await appel(location);
+  return { reponse: seconde, location, boucle: seconde.status === 308 };
+}
+
+/** `public, max-age=0, s-maxage=86400` → { public: true, 'max-age': 0, 's-maxage': 86400 } */
+function directives(entete) {
+  const lues = {};
+  for (const morceau of (entete ?? '').split(',').map((m) => m.trim()).filter(Boolean)) {
+    const [nom, valeur] = morceau.split('=');
+    lues[nom] = valeur === undefined ? true : Number(valeur);
+  }
+  return lues;
+}
+
 // ── 2 bis. Ce que la page NE reflète PAS ──────────────────────────────────────────────────
 //
 // La boucle ci-dessus dit que les trois paramètres attendus survivent ; elle ne dit rien de ce
-// qui arriverait en plus. Or la query de l'`og:image` était **recopiée entière** : un paramètre
-// inconnu ajouté par un tiers voyageait jusque dans l'URL que chaque lecteur d'aperçu va
-// chercher, et `share-card` posant un cache d'un an, chaque valeur inédite était une clé de
-// cache neuve — donc un rendu satori + resvg complet, facturé, à volonté. Depuis le 20/09/2026
-// la query est **reconstruite** à partir des trois valeurs lues.
-//
-// L'assertion porte sur le HTML entier et pas seulement sur l'`og:image` : le même paramètre
-// serait tout aussi faux dans le `twitter:image`, qui est écrit à un autre endroit du gabarit.
+// qui arriverait en plus. Un paramètre inconnu — `fbclid` et `utm_*` que les réseaux ajoutent aux
+// liens, ou une valeur inédite fabriquée à volonté — est une adresse de plus pour le CDN, donc une
+// réponse de plus à calculer (et, pour la carte, un rendu satori + resvg complet). La page ne le
+// sert pas : elle redirige vers la forme canonique, qui ne le porte plus.
 const PARASITE = 'zzparasite';
-const pageParasitee = await (
-  await partage(new Request(`${ORIGINE}/api/partage?${PARAMS}&${PARASITE}=1`))
-).text();
+const parasitee = await jouer(appelPage, `/api/partage?${PARAMS}&${PARASITE}=1`);
+verifier(
+  parasitee.location === `/api/partage?${PARAMS}`,
+  `page : un paramètre inconnu (« ${PARASITE} ») n'est pas redirigé vers la forme canonique (cible « ${parasitee.location} »)`
+);
+const pageParasitee = await parasitee.reponse.text();
 verifier(
   !pageParasitee.includes(PARASITE),
   `page : un paramètre inconnu (« ${PARASITE} ») se retrouve dans le HTML rendu — la query de la carte est recopiée au lieu d'être reconstruite`
@@ -277,41 +347,46 @@ verifier(
 
 // ── 2 ter. Un libellé forgé ne passe ni sur la page ni sur la carte ───────────────────────
 //
-// `poste` est une liste fermée depuis le 05/10/2026 (le bloc `<postes-partageables>` des deux
-// fonctions) : c'était la seule partie de l'aperçu qu'un tiers pouvait écrire à sa guise, sous la
-// marque du produit. Que chaque libellé de l'app passe, `scripts/postes-partageables.test.ts` le
-// prouve sur la page ; ici, ce que la carte fait d'un libellé refusé — le **rendu**, que Jest ne
-// charge pas.
+// `poste` est une liste fermée (`_partage-commun.ts`) : c'était la seule partie de l'aperçu qu'un
+// tiers pouvait écrire à sa guise, sous la marque du produit. Que chaque libellé de l'app passe,
+// `scripts/postes-partageables.test.ts` le prouve ; ici, ce que la page et la carte font d'un
+// libellé refusé — le **rendu**, que Jest ne charge pas. Un libellé inconnu est ignoré, donc redirigé
+// vers l'adresse sans lui ; un total qui n'est pas un nombre est illisible, donc refusé.
 const FORGE = 'Achetez sur un-site-quelconque.example';
-const pageForgee = await (
-  await partage(new Request(`${ORIGINE}/api/partage?total=2.4&percent=58&poste=${encodeURIComponent(FORGE)}`))
-).text();
-verifier(!pageForgee.includes('un-site-quelconque'), 'page : un libellé forgé se retrouve dans le HTML rendu');
-// Et le total : `parseFloat` n'en lit que le préfixe, donc la suite passait la borne et voyageait
-// jusque dans l'`og:image` tant que la page le recopiait au lieu de le réécrire.
-const pageTotalForge = await (
-  await partage(new Request(`${ORIGINE}/api/partage?total=${encodeURIComponent(`2.4 ${FORGE}`)}&percent=58`))
-).text();
+const forgee = await jouer(appelPage, `/api/partage?total=2.400&poste=${encodeURIComponent(FORGE)}&percent=58`);
+const pageForgee = await forgee.reponse.text();
 verifier(
-  !pageTotalForge.includes('un-site-quelconque') &&
-    pageTotalForge.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
-  'page : le texte qui suit le chiffre du total se retrouve dans le HTML rendu — la carte reçoit le total reçu, pas le total lu'
+  forgee.location === '/api/partage?total=2.400&percent=58',
+  `page : un libellé forgé n'est pas redirigé vers l'adresse sans poste (cible « ${forgee.location} »)`
 );
+verifier(!pageForgee.includes('un-site-quelconque'), 'page : un libellé forgé se retrouve dans le HTML rendu');
 verifier(
   pageForgee.includes('<title>2,4 t CO₂e par an — mon empreinte transport</title>'),
   'page : le libellé forgé a emporté le titre avec lui'
 );
-// Les trois rendus comparés ici — les deux suivants et celui de la section 1 — ne se comparent
-// **que s'ils ont eu lieu** : sur le repli, ils seraient le même pixel, et l'égalité passerait sans
-// rien dire du libellé (même raison qu'en 1 bis).
-const carteForgee = await GET({ url: `/api/share-card?total=2.4&percent=58&poste=${encodeURIComponent(FORGE)}` });
-const carteSansPoste = await GET({ url: '/api/share-card?total=2.4&percent=58' });
-const rendus = [carte, carteForgee, carteSansPoste].every((r) =>
+// Le total : `parseFloat` n'en lisait que le préfixe, donc la suite passait la borne et voyageait
+// jusque dans l'`og:image`. Un total qui n'est pas un nombre n'est plus deviné : 400, et le texte
+// forgé ne revient pas dans le corps de la réponse.
+const totalForge = await appelPage(`/api/partage?total=${encodeURIComponent(`2.4 ${FORGE}`)}&percent=58`);
+verifier(
+  totalForge.status === 400 && !(await totalForge.text()).includes('un-site-quelconque'),
+  `page : le texte qui suit le chiffre du total n'est pas refusé en 400 (statut ${totalForge.status})`
+);
+// Les rendus comparés ici — les deux suivants et celui de la section 1 — ne se comparent **que
+// s'ils ont eu lieu** : sur le repli, ils seraient le même pixel, et l'égalité passerait sans rien
+// dire du libellé (même raison qu'en 1 bis).
+const carteForgee = await jouer(appelCarte, `/api/share-card?total=2.400&percent=58&poste=${encodeURIComponent(FORGE)}`);
+const carteSansPoste = await appelCarte('/api/share-card?total=2.400&percent=58');
+verifier(
+  carteForgee.location === '/api/share-card?total=2.400&percent=58',
+  `carte : un libellé forgé n'est pas redirigé vers l'adresse sans poste (cible « ${carteForgee.location} »)`
+);
+const rendus = [carte, carteForgee.reponse, carteSansPoste].every((r) =>
   (r.headers.get('cache-control') ?? '').startsWith('public')
 );
 verifier(rendus, 'carte : un libellé forgé ou absent part par le repli statique au lieu du vrai rendu');
 if (rendus) {
-  const pngForge = Buffer.from(await carteForgee.arrayBuffer());
+  const pngForge = Buffer.from(await carteForgee.reponse.arrayBuffer());
   const pngSansPoste = Buffer.from(await carteSansPoste.arrayBuffer());
   // L'égalité octet à octet : un libellé refusé doit donner **exactement** la carte sans poste —
   // ni la ligne « Poste principal », ni le texte. Le témoin inverse (un libellé de l'app change
@@ -328,22 +403,256 @@ if (rendus) {
 }
 
 // ── 3. Hors borne, les deux côtés retombent ensemble ──────────────────────────────────────
-const pageHorsBorne = await (await partage(new Request(`${ORIGINE}/api/partage?total=201`))).text();
-verifier(pageHorsBorne.includes(TITRE_SANS_CHIFFRE), 'page : 201 t devrait rendre le titre sans chiffre');
-const carteHorsBorne = await GET(new Request(`${ORIGINE}/api/share-card?total=201`));
+//
+// Un total au-delà de 200 t est bien formé mais n'est pas un partage de l'app : il est ignoré, et
+// l'adresse redirigée vers celle qui n'en a pas — la page titre sans chiffre, la carte rend sans
+// chiffre par le vrai chemin. Ce serait un titre et une image qui se contredisent si un seul des
+// deux côtés le bornait.
+const pageHorsBorne = await jouer(appelPage, '/api/partage?total=201');
+verifier(pageHorsBorne.location === '/api/partage', `page : 201 t devrait être redirigé vers /api/partage (cible « ${pageHorsBorne.location} »)`);
 verifier(
-  (carteHorsBorne.headers.get('cache-control') ?? '').startsWith('public'),
+  (await pageHorsBorne.reponse.text()).includes(TITRE_SANS_CHIFFRE),
+  'page : 201 t devrait rendre le titre sans chiffre'
+);
+const carteHorsBorne = await jouer(appelCarte, '/api/share-card?total=201');
+verifier(
+  carteHorsBorne.location === '/api/share-card',
+  `carte : 201 t devrait être redirigé vers /api/share-card (cible « ${carteHorsBorne.location} »)`
+);
+verifier(
+  (carteHorsBorne.reponse.headers.get('cache-control') ?? '').startsWith('public'),
   'carte : 201 t doit rendre la carte sans chiffre par le vrai chemin, pas par le repli'
 );
 
 // ── 4. Les kilos sous la tonne, et l’URL sans paramètre ───────────────────────────────────
-const pageKilos = await (await partage(new Request(`${ORIGINE}/api/partage?total=0.04`))).text();
+const pageKilos = await (await appelPage('/api/partage?total=0.040')).text();
 verifier(
   pageKilos.includes('<title>40 kg CO₂e par an — mon empreinte transport</title>'),
   'page : 0,04 t doit se dire « 40 kg CO₂e », pas « 0,0 t »'
 );
-const pageNue = await (await partage(new Request(`${ORIGINE}/api/partage`))).text();
-verifier(pageNue.includes(TITRE_SANS_CHIFFRE), 'page : sans paramètre, le titre doit être sans chiffre');
+const pageNue = await appelPage('/api/partage');
+verifier(
+  pageNue.status === 200 && (await pageNue.text()).includes(TITRE_SANS_CHIFFRE),
+  'page : sans paramètre, le titre doit être sans chiffre, en 200'
+);
+
+// ── 5. Une forme, et une seule ────────────────────────────────────────────────────────────
+//
+// Le CDN de Vercel garde une réponse par adresse complète. Tout ce qui change l'adresse sans changer
+// l'image — un paramètre en plus, l'ordre, `%20` pour `+`, un zéro de tête, un texte derrière le
+// nombre que `parseFloat` lisait quand même — était une entrée de cache neuve, donc un rendu complet
+// payé en invocations, et le pare-feu compte des requêtes, pas des clés de cache. Désormais :
+// l'adresse que l'app produit est servie et gardée, une variante lisible est redirigée (308) vers
+// elle, une adresse qui n'a pas de sens est refusée (400).
+const POSTE_APP = 'Trajet domicile-travail en voiture thermique';
+const POSTE_PLUS = 'Trajet+domicile-travail+en+voiture+thermique';
+const POSTE_20 = 'Trajet%20domicile-travail%20en%20voiture%20thermique';
+const Q_COMPLETE = `total=2.400&poste=${POSTE_PLUS}&percent=58`;
+verifier(
+  Q_COMPLETE === PARAMS.toString(),
+  'harnais : la query de référence n’est plus celle que sérialise URLSearchParams (la forme de l’app)'
+);
+
+// 5a. La forme canonique est servie telle quelle, avec un cache que le CDN garde.
+const cachePage = directives(page.headers.get('cache-control'));
+verifier(
+  page.status === 200 &&
+    cachePage.public === true &&
+    cachePage['s-maxage'] >= 3600 &&
+    cachePage['stale-while-revalidate'] > 0,
+  `page canonique : servie « ${page.headers.get('cache-control')} » en ${page.status} — sans s-maxage et ` +
+    `stale-while-revalidate le CDN de Vercel ne la garde pas (max-age ne parle qu'au navigateur)`
+);
+const cacheCarte = directives(carte.headers.get('cache-control'));
+verifier(
+  cacheCarte.public === true &&
+    cacheCarte['s-maxage'] >= 3600 &&
+    cacheCarte['stale-while-revalidate'] > 0 &&
+    cacheCarte['max-age'] === 31536000 &&
+    cacheCarte.immutable === true &&
+    cacheCarte['no-transform'] === true,
+  `carte canonique : servie « ${carte.headers.get('cache-control')} » — il lui faut s-maxage et ` +
+    `stale-while-revalidate pour le CDN, et max-age d'un an, immutable, no-transform pour le navigateur`
+);
+
+// 5b. Une variante lisible → 308 vers sa forme canonique, la même pour la page et la carte.
+const VARIANTES = [
+  ['total à une décimale (les liens d’avant les trois décimales)', `total=2.4&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
+  ['ordre des paramètres', `percent=58&poste=${POSTE_PLUS}&total=2.400`, Q_COMPLETE],
+  ['espaces en %20', `total=2.400&poste=${POSTE_20}&percent=58`, Q_COMPLETE],
+  ['paramètre inconnu à la fin (fbclid)', `${Q_COMPLETE}&fbclid=IwAR0abc`, Q_COMPLETE],
+  ['paramètre inconnu au milieu', `total=2.400&utm_source=x&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
+  ['zéros de tête', `total=02.400&poste=${POSTE_PLUS}&percent=058`, Q_COMPLETE],
+  ['décimales en trop', `total=2.4000000&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
+  ['chiffre encodé en %30', `total=2.40%30&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
+  ['libellé vide', `total=2.400&poste=&percent=58`, 'total=2.400&percent=58'],
+  ['total vide', `total=&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
+  ['total hors borne', `total=200.001&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
+  ['part hors borne', `total=2.400&poste=${POSTE_PLUS}&percent=101`, `total=2.400&poste=${POSTE_PLUS}`],
+  ['libellé hors de la liste', `total=2.400&poste=Trajet+en+jet+prive&percent=58`, 'total=2.400&percent=58'],
+  ['rien d’autre qu’un paramètre inconnu', 'utm_source=x', ''],
+];
+for (const [nom, entree, attendue] of VARIANTES) {
+  for (const [fonction, chemin, appel] of [
+    ['page', '/api/partage', appelPage],
+    ['carte', '/api/share-card', appelCarte],
+  ]) {
+    const cible = attendue === '' ? chemin : `${chemin}?${attendue}`;
+    const premiere = await appel(`${chemin}?${entree}`);
+    verifier(
+      premiere.status === 308 && premiere.headers.get('location') === cible,
+      `${fonction} : « ${nom} » n'est pas redirigé (308) vers « ${cible} » — statut ${premiere.status}, cible « ${premiere.headers.get('location')} »`
+    );
+    if (premiere.status !== 308) continue;
+    const cacheRedirection = directives(premiere.headers.get('cache-control'));
+    verifier(
+      cacheRedirection.public === true && cacheRedirection['s-maxage'] > 0,
+      `${fonction} : la redirection de « ${nom} » est servie « ${premiere.headers.get('cache-control')} » — le CDN ne la garde pas`
+    );
+    verifier(
+      (premiere.headers.get('x-robots-tag') ?? '').includes('noindex'),
+      `${fonction} : la redirection de « ${nom} » ne porte pas x-robots-tag noindex`
+    );
+    // Et sa cible est **servie**, pas redirigée à son tour. La carte n'est rendue qu'une fois par
+    // forme canonique distincte : c'est le cas de la section 1 ; ici on ne regarde que le statut,
+    // et une cible qui part par le repli statique (`no-store`) serait vue par les sections 1 et 2.
+    if (fonction === 'page') {
+      const suite = await appel(cible);
+      verifier(suite.status === 200, `page : la cible de « ${nom} » répond ${suite.status} — redirection en boucle`);
+    }
+  }
+}
+
+// 5c. Une adresse qui n'a pas de sens → 400, jamais une page, jamais un rendu, jamais gardée.
+const ILLISIBLES = [
+  ['texte derrière le total', `total=${encodeURIComponent('2.4 Achetez')}`],
+  ['lettres derrière le total', 'total=2.4abc'],
+  ['total qui n’est pas un nombre', 'total=abc'],
+  ['total négatif', 'total=-5'],
+  ['total en notation exponentielle', 'total=1e3'],
+  ['total à virgule', 'total=2,4'],
+  ['total précédé d’une espace', 'total=%202.4'],
+  ['total hexadécimal', 'total=0x10'],
+  ['total infini', 'total=Infinity'],
+  ['total de treize chiffres', 'total=1234567890123'],
+  ['part suivie de lettres', 'percent=58abc'],
+  ['part décimale', 'percent=5.8'],
+  ['part négative', 'percent=-1'],
+  ['part en notation exponentielle', 'percent=1e2'],
+  ['part qui n’est pas un nombre', 'percent=abc'],
+  ['total répété', 'total=1&total=2'],
+  ['libellé répété', `poste=${POSTE_PLUS}&poste=${POSTE_PLUS}`],
+  ['part répétée', 'percent=1&percent=2'],
+];
+for (const [nom, entree] of ILLISIBLES) {
+  for (const [fonction, chemin, appel] of [
+    ['page', '/api/partage', appelPage],
+    ['carte', '/api/share-card', appelCarte],
+  ]) {
+    const reponse = await appel(`${chemin}?${entree}`);
+    const corps = await reponse.text();
+    verifier(reponse.status === 400, `${fonction} : « ${nom} » répond ${reponse.status}, attendu 400`);
+    if (reponse.status !== 400) continue;
+    verifier(
+      reponse.headers.get('cache-control') === 'no-store',
+      `${fonction} : le 400 de « ${nom} » est servi « ${reponse.headers.get('cache-control')} », attendu no-store`
+    );
+    verifier(
+      (reponse.headers.get('content-type') ?? '').startsWith('text/plain') && !corps.includes('<') && corps.length < 100,
+      `${fonction} : le 400 de « ${nom} » n'est pas une courte réponse en texte brut`
+    );
+    verifier(
+      (reponse.headers.get('x-robots-tag') ?? '').includes('noindex'),
+      `${fonction} : le 400 de « ${nom} » ne porte pas x-robots-tag noindex`
+    );
+  }
+}
+
+// 5d. **La forme canonique est un point fixe**, sur un balayage de combinaisons. Une adresse
+// redirigée vers une cible qui se redirige à son tour est une boucle : la page ne s'ouvre plus et
+// l'aperçu disparaît, sur l'adresse même que l'app produit. Le balayage mêle des valeurs
+// canoniques, des variantes, des valeurs hors de la liste ou de la borne et des valeurs illisibles.
+{
+  const totaux = [null, '', '0', '0.04', '2.4', '2.400', '200', '200.0004', '200.001', '201', '2.4abc', '-1'];
+  const postes = [null, '', POSTE_APP, 'Trajet domicile-travail', 'Voyages longue distance en avion long-courrier', 'inconnu'];
+  const parts = [null, '', '0', '058', '100', '101', '5.8'];
+  let lisibles = 0;
+  let illisibles = 0;
+  let canoniques = 0;
+  let mal = null;
+  for (const total of totaux) {
+    for (const poste of postes) {
+      for (const part of parts) {
+        const p = new URLSearchParams();
+        if (total !== null) p.set('total', total);
+        if (poste !== null) p.set('poste', poste);
+        if (part !== null) p.set('percent', part);
+        const lecture = commun.lireLaRequete(`?${p}`);
+        if (lecture.statut === 'illisible') {
+          illisibles += 1;
+          continue;
+        }
+        lisibles += 1;
+        if (lecture.canonique) canoniques += 1;
+        const encore = commun.lireLaRequete(`?${lecture.query}`);
+        if (encore.statut !== 'lisible' || !encore.canonique || encore.query !== lecture.query) {
+          mal ??= `« ${p} » → « ${lecture.query} » → ${JSON.stringify(encore)}`;
+        }
+      }
+    }
+  }
+  verifier(mal === null, `la forme canonique n'est pas un point fixe : ${mal}`);
+  verifier(
+    lisibles > 100 && illisibles > 100 && canoniques > 10,
+    `le balayage ne couvre pas les trois issues (${lisibles} lisibles dont ${canoniques} canoniques, ${illisibles} illisibles)`
+  );
+}
+
+// 5e. **L'adresse que la page écrit dans son `og:image` est celle que la carte sert**, pas une
+// variante qu'elle redirigerait : le lecteur d'aperçu irait chercher l'image par un détour, ou
+// n'irait pas. Rejoué sur quatre formes de page — le partage complet, un total seul, un poste sans
+// total, rien.
+for (const query of [Q_COMPLETE, 'total=0.040', `poste=${POSTE_PLUS}&percent=58`, '']) {
+  const adresse = query === '' ? '/api/partage' : `/api/partage?${query}`;
+  const rendue = await (await appelPage(adresse)).text();
+  const balise = rendue.match(/property="og:image" content="([^"]+)"/);
+  if (!balise) {
+    verifier(false, `page « ${adresse} » : pas de balise og:image`);
+    continue;
+  }
+  const image = new URL(balise[1]);
+  const reponse = await appelCarte(`${image.pathname}${image.search}`);
+  verifier(
+    reponse.status === 200 && (reponse.headers.get('cache-control') ?? '').startsWith('public'),
+    `page « ${adresse} » : son og:image « ${image.pathname}${image.search} » est ${reponse.status === 200 ? 'rendue par le repli' : `redirigée ou refusée (${reponse.status})`} par la carte`
+  );
+}
+
+// 5f. **Un repli ne se garde jamais.** Une panne passagère (satori, une police, une exception)
+// sert une réponse neutre : si le CDN ou le navigateur la gardaient un an, la panne se figerait sur
+// cette adresse après avoir cessé. L'exception est jetée par `request.url`, que les deux fonctions
+// lisent à l'intérieur de leur `try`.
+{
+  const erreurOrigine = console.error;
+  console.error = () => {};
+  let repliPage;
+  let repliCarte;
+  try {
+    const piege = { get url() { throw new Error('essai : repli'); } };
+    repliPage = await partage(piege);
+    repliCarte = await GET(piege);
+  } finally {
+    console.error = erreurOrigine;
+  }
+  verifier(
+    repliPage.headers.get('cache-control') === 'no-store',
+    `page : le repli est servi « ${repliPage.headers.get('cache-control')} », attendu no-store`
+  );
+  verifier(
+    repliCarte.headers.get('cache-control') === 'no-store',
+    `carte : le repli est servi « ${repliCarte.headers.get('cache-control')} », attendu no-store`
+  );
+}
 
 // ── Verdict ───────────────────────────────────────────────────────────────────────────────
 if (ecarts.length > 0) {
@@ -356,5 +665,7 @@ if (ecarts.length > 0) {
 
 console.log(
   `api/ : carte de partage rendue (${png.length} octets, 1200 × 630, cache public) et page d'aperçu ` +
-    `conforme — carte rejouée sur un chemin relatif, comme Vercel l'envoie, et libellé forgé refusé des deux côtés.`
+    `conforme — carte rejouée sur un chemin relatif, comme Vercel l'envoie, libellé forgé refusé des deux ` +
+    `côtés, ${VARIANTES.length} variantes redirigées vers leur forme canonique, ${ILLISIBLES.length} adresses ` +
+    `illisibles refusées, et les réponses que le CDN peut garder portent s-maxage.`
 );
