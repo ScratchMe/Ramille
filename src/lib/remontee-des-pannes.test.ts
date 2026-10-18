@@ -10,14 +10,15 @@
  * panne part au lancement suivant (feuille de recette).
  *
  * Éprouvé en le cassant le 18/10/2026 (`TESTING.md` §1.1), une mutation à la fois :
- *   - le gestionnaire d'avant n'est plus appelé (`precedent(...)` retiré du chemin non fatal) → « chaîne le
- *     gestionnaire d'avant… », seul ;
+ *   - le gestionnaire d'avant n'est plus appelé (`precedent(...)` retiré du chemin sans attente) →
+ *     « chaîne le gestionnaire d'avant… », « une même panne ne se signale qu'une fois… » et « une mesure
+ *     qui lève… » ;
  *   - la panne fatale passe au gestionnaire d'avant sans attendre son écriture → « une panne fatale attend
- *     d'être écrite… », seul ;
- *   - le plafond d'attente retiré (`setTimeout(rendre, …)` ôté) → « … au plus une seconde », seul ;
+ *     d'être écrite… » et « … au plus une seconde après » ;
+ *   - le plafond d'attente retiré (`setTimeout(rendre, …)` ôté) → « … au plus une seconde après », seul ;
  *   - la panne fatale envoyée au lieu d'être gardée (`track` à la place de `garderUnePanne`) → « une panne
- *     fatale attend… » ;
- *   - le suivi des rejets posé en développement aussi (la garde `enDeveloppement` retirée) → « rien en
+ *     fatale attend… », seul ;
+ *   - l'installation en développement aussi (la garde `enDeveloppement` retirée) → « rien en
  *     développement », seul ;
  *   - l'écoute `error` sans filtre d'origine → « une erreur d'un autre script… », seul.
  */

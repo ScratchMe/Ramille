@@ -117,8 +117,8 @@ describe('lEcranDeReconnexionSePose', () => {
  * Où le montage ouvre une session, et où il ne fait que restaurer (18/10/2026). La même liste que
  * l'écran de reconnexion : une page publique pour l'une et pas pour l'autre serait un oubli. Éprouvé le
  * 18/10/2026 : `laSessionSOuvreSur` réduite à `return true` → « ne crée rien sur les surfaces sans
- * compte » et « suit la même liste… » ; la barre finale plus retirée → « … avec ou sans barre finale »,
- * seul.
+ * compte », « … avec ou sans barre finale » et « suit la même liste… » ; la barre finale plus retirée
+ * → « … avec ou sans barre finale », seul.
  */
 describe('laSessionSOuvreSur', () => {
   it('ouvre la session partout où l’app peut écrire, et sur une route neuve', () => {
@@ -171,13 +171,15 @@ describe('suiteDuDemarrage', () => {
  * La garde de l'enregistrement du jeton (`src/app/_layout.tsx`). Éprouvé le 18/10/2026, une mutation à
  * la fois :
  *   - un échec retenu comme fait (`aRetenter` jamais posé) → « un enregistrement qui n'a rien inscrit se
- *     retente au retour… » et « une exception compte comme un échec… » ;
+ *     retente au retour… », « une exception compte comme un échec… » et « seul le dernier lancé
+ *     conclut » ;
  *   - un échec retenté à chaque émission de session (le moment ignoré) → « … et pas à chaque émission de
  *     session », seul ;
  *   - deux appels rapprochés lancés tous deux (`enCours` ignoré) → « un enregistrement en cours ne se
- *     double pas », seul ;
- *   - la conclusion d'un appel dépassé gardée (la génération ignorée) → « seul le dernier lancé
- *     conclut », seul.
+ *     double pas » et « seul le dernier lancé conclut » ;
+ *   - la conclusion d'un appel dépassé gardée (la génération ignorée, sauf changement d'utilisateur) →
+ *     « seul le dernier lancé conclut », seul — et seulement depuis que le premier appel d'A y échoue :
+ *     réussi, il concluait comme le troisième, et la mutation passait.
  */
 describe('gardeDuJeton', () => {
   /** Un enregistrement doublé, dont chaque appel se règle à la main. */

@@ -4,8 +4,8 @@
  *
  * Éprouvé en le cassant le 18/10/2026 (`TESTING.md` §1.1), une mutation à la fois, le module restauré entre
  * deux :
- *   - la route rendue telle quelle (`routeDeLaPanne` réduite à `return chemin`) → « ne rend jamais
- *     l'adresse tapée » et « retire la requête », seuls ;
+ *   - la route rendue telle quelle (`routeDeLaPanne` qui rend tout chemin non vide) → « ne rend jamais
+ *     l'adresse tapée », « retire la requête… » et « retombe sur la racine sans chemin… » (`?x=1`) ;
  *   - le build ignoré (`versionDeLApp` rend la version seule) → « joint le numéro de build », seul ;
  *   - une version d'une autre forme acceptée (le motif retiré) → « ignore une version… », seul ;
  *   - le plafond du lancement retiré (`vues.size >= plafond` ôté) → « pas plus de dix par lancement », seul ;

@@ -113,7 +113,8 @@ describe('propsDifferees', () => {
    * **La panne différée la plus large remplit les six clés que la base accepte, et pas une de plus.** Une
    * septième — une propriété ajoutée à `app_error` sans y penser — ferait perdre `retard_h`, la dernière,
    * à l'écrêtage (`sanitizeEventProps`), sans que rien ne le dise. Éprouvé le 18/10/2026 : une clé de plus
-   * dans `propsDifferees` → ce test, seul.
+   * dans `propsDifferees` → ce test, et les deux qui comparent l'objet entier — celui-ci est le seul qui
+   * tomberait encore si l'on corrigeait les deux autres en y ajoutant la clé.
    */
   it('tient dans la borne de la base, sans rien perdre à l’écrêtage', () => {
     const panne: ErreurEnAttente = { ...erreur(0), origine: 'promesse', version: '1.0.0+14' };
