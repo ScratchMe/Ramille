@@ -1363,6 +1363,12 @@ try {
   // serveur dit qu'aucun compte n'est né. Puis « Retour » mène à l'app, où la session s'ouvre : la
   // seconde moitié de la règle. Le captcha n'est pas mesurable ici — la stack n'en a pas, l'export pas
   // de clé — : `verifier-etats-export.mjs` (section M) le mesure quand l'export en porte une.
+  //
+  // Éprouvé en le cassant le 18/10/2026, par `node scripts/rejouer-la-ci.mjs base parcours` sur la source
+  // mutée : le layout qui ouvre la session sur toute route (l'appel d'avant) → le parcours s'arrête ici,
+  // « /confidentialite, ouverte à froid, a rangé une session dans le navigateur » ; et le layout qui ne
+  // fait rien sur une surface sans compte (la restauration jamais rendue) passe cette étape et s'arrête
+  // à la 8 ter, « l'ouverture de /confidentialite avec une session ne s'est pas comptée (0) ».
   etape('surfaces sans compte — ouvertes à froid, aucun compte ne naît');
   {
     const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/compte/suppression', '/rappels/stop', '/status'];

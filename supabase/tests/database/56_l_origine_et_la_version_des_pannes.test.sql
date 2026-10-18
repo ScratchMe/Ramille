@@ -58,10 +58,14 @@ select ok(
 select * from finish();
 rollback;
 
--- Éprouvé en le cassant le 18/10/2026 (`TESTING.md` §1.1), une mutation à la fois sur la base locale :
+-- Éprouvé en le cassant le 18/10/2026 (`TESTING.md` §1.1) : une migration temporaire qui réécrit la
+-- borne (`create or replace`, ses privilèges gardés), jouée par `node scripts/rejouer-la-ci.mjs base`
+-- sur une stack neuve, puis retirée :
 --
---   | Ce qu'on casse | Ce qui tombe |
+--   | Ce qu'on casse | Ce qui tombe dans la suite entière |
 --   |---|---|
 --   | la borne des clés de `check_usage_event_props` ramenée à 5 | 1, seul |
---   | la borne des clés portée à 7 | 3, seul |
---   | la description d'`app_error` d'avant (`20261002203259`) | 4, seul |
+--   | la borne des clés portée à 7 | 3, et la 5 de `12_usage_events` (« au-delà de six propriétés »), qui garde la même borne par l'autre bout |
+--
+-- La 4 et la 5 n'ont pas été cassées : elles lisent une description que cette migration écrit, et rien
+-- d'autre ne l'écrit.

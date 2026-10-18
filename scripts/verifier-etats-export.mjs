@@ -2678,7 +2678,16 @@ async function attendreLeTexte(page, texte) {
 // demander — et charger le captcha s'il y a une clé. Sans lui, une mesure qui ne verrait plus la demande
 // passerait pour une page qui ne la fait pas.
 //
-// Éprouvé en le cassant le 18/10/2026 : le relevé est dans `docs/exploitation/remontee-erreurs.md` §6.
+// Éprouvé en le cassant le 18/10/2026 : un témoin et trois exports mutés, chacun avec son cache de Metro,
+// `--clear` et son propre dossier, la source restaurée dès l'export fini ; « avec clé » est un export
+// portant la clé de test de Cloudflare (`1x00000000000000000000AA`), Cloudflare servi par le script. Le
+// témoin, avec clé, sort vert, et chaque mutation ne fait tomber que des lignes de cette section :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | le layout ouvre la session sur toute route (l'appel d'avant), avec clé | les cinq surfaces, deux fois chacune : la session demandée, le captcha chargé |
+//   | le même, sans clé (l'export de la CI) | les cinq surfaces, la session demandée — seule moitié mesurable sans clé |
+//   | le layout ne fait que restaurer, partout | le témoin `/onboarding`, deux fois : pas de session demandée, pas de captcha |
 {
   const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/compte/suppression', '/rappels/stop', '/status'];
   const cle = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null;
