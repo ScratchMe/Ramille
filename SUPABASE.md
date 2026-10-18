@@ -133,13 +133,25 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
       **PUBLIC** est le défaut global de PostgreSQL, qu'un `alter default privileges … in schema`
       ne peut pas retirer (mesuré le 02/10/2026 : `proacl` nul, `anon` exécute). La quatrième
       instruction de la parade de Supabase, qui fait ce retrait `in schema public`, est donc
-      sans effet. Le `revoke execute … from public` par fonction (plus bas) reste la seule
-      garde en place ; une entrée globale — `alter default privileges for role postgres revoke
-      execute on functions from public`, sans `in schema` — en serait une seconde, à décider à
-      part, puisqu'elle vaudrait pour tous les schémas, `analytics` compris.
+      sans effet. Seule une entrée **globale** le retire — `alter default privileges for role
+      postgres revoke execute on functions from public`, sans `in schema` —, et elle vaut pour
+      tous les schémas où ce rôle crée, `pg_temp` compris : la fonction auxiliaire d'un test,
+      appelée après un changement de rôle, demande alors son `grant`. Ramille la pose (§2.2).
 - **`revoke execute … from anon, authenticated` ne révoque rien** : PostgreSQL accorde `EXECUTE`
   à **PUBLIC** à la création, et les deux rôles en héritent. Il faut `from public, anon,
-  authenticated`. Un `create or replace` ne préserve pas non plus l'ACL qu'on croit.
+  authenticated`. Un `create or replace` garde l'ACL de la fonction qu'il remplace, celle qu'elle
+  avait et non celle qu'on croit ; un `drop` suivi d'un `create` la refait au défaut.
+- **Un `pg_dump --no-privileges` restaure une base sans ses révocations** : chaque fonction recréée
+  rend `EXECUTE` à PUBLIC, et une fonction `security definer` qui ne tenait que par son `revoke`
+  devient appelable par `anon`, sans que rien ne casse. Avec les privilèges, trois pièges, tous
+  mesurés : `pg_dump` écrit ses `grant` et ses `revoke` à partir du défaut intégré de PostgreSQL,
+  donc une cible dont les privilèges par défaut accordent davantage — un projet Supabase neuf
+  accorde tout à `anon`, `authenticated` et `service_role` dans `public` — garde ce surplus, et on
+  les neutralise **avant** de charger ; `--schema=public` écrit `CREATE SCHEMA "public"`, qui échoue
+  sur une cible où il existe ; le dump reprend les privilèges par défaut de `supabase_admin`, que
+  `postgres` n'a pas le droit de rejouer. L'entrée globale, elle, n'y est pas (`--schema` ne porte
+  que celles d'un schéma) et se repose à part. La procédure de Ramille :
+  `docs/exploitation/sauvegarde.md` §4.
 - **La RLS filtre des lignes, jamais des colonnes.** Une policy UPDATE owner-scoped sur une table
   qui porte des valeurs figées (des chiffres calculés, des libellés instantanés, une clé
   d'idempotence, un statut) ouvre **toutes** les colonnes. Une écriture qui ne doit toucher qu'à
@@ -386,13 +398,15 @@ neuf, et la stack locale le rejouait par ce drapeau. Une base reconstruite depui
 `supabase/migrations/` n'accordait donc rien à personne — l'app répond « permission denied for
 table … » **avant** d'atteindre la RLS — et rien dans le dépôt ne le disait. Le CLI n'expose plus
 par défaut depuis le 30/05/2026 (absent et `false` suivent le même chemin de code) et supprime le
-champ le 30/10/2026 : l'écrire programmerait la panne. Tout vit dans
-`20260910110000_grants_explicites.sql`, qui ne contient que des `grant`/`revoke` — donc rejouable
-tel quel après une restauration — et `18_grants_explicites.test.sql` épingle la matrice entière.
-**Ajouter une table impose donc un geste explicite** : un `grant` dans ce fichier si l'app y
-touche, ou un `revoke all privileges … from anon, authenticated` dans sa propre migration si elle
-est serveur-only. Ne rien écrire la rend invisible pour l'app, en silence — même mécanique que
-`emission_factor_sources` et `usage_event_types`.
+champ le 30/10/2026 : l'écrire programmerait la panne. La matrice est partie de
+`20260910110000_grants_explicites.sql`, et des migrations plus récentes l'ont resserrée (privilèges
+de colonne, `delete` retiré) : ce fichier ne se rejoue donc **pas** seul après une restauration, il
+rouvrirait ce qu'elles ont fermé — les privilèges reviennent avec le dump
+(`docs/exploitation/sauvegarde.md` §4). `18_grants_explicites.test.sql` épingle la matrice entière.
+**Ajouter une table impose donc un geste explicite** : un `grant` dans sa migration si l'app y
+touche, ou un `revoke all privileges … from anon, authenticated` si elle est serveur-only. Ne rien
+écrire la rend invisible pour l'app, en silence — même mécanique que `emission_factor_sources` et
+`usage_event_types`.
 
 **Et « invisible » était faux jusqu'au 20/09/2026 : c'était « ouverte à tous ».** Le raisonnement
 ci-dessus ne regardait que les `grant` écrits dans les migrations, et oubliait
@@ -474,6 +488,16 @@ colonnes homonymes de `profiles`, est resté dans `CLAUDE.md`, section « Base d
   `EXECUTE` à **PUBLIC** à la création, et les deux rôles en héritent. Il faut
   `from public, anon, authenticated` — sans quoi n'importe quel visiteur appelait
   `/rest/v1/rpc/purge_usage_events`.
+
+**Les fonctions naissent fermées depuis `20261018100000`** : celles que `postgres` crée n'ont plus
+d'`EXECUTE` pour PUBLIC, `anon` ni `authenticated`, dans aucun schéma. Une fonction que le client
+appelle — un RPC, ou une fonction qu'une policy ou un `check` évalue pendant une écriture du client
+— porte son `grant execute` dans sa migration, et sa ligne dans la liste blanche de
+`54_les_fonctions_que_le_client_peut_appeler.test.sql`, qui compare à cette liste tout ce
+qu'`anon` et `authenticated` exécutent dans les schémas exposés et épingle le défaut. Rien de ce qui
+existait n'a changé : une fonction garde son ACL à travers un `create or replace` ; recréée après
+un `drop`, elle naît au défaut, donc fermée. Le `revoke … from public, anon, authenticated` reste de mise
+sur une fonction interne : il ne coûte rien, et il tient sur une base où le défaut manquerait.
 
 ### 2.3 Rejouer, réécrire, désigner : ce que le distant a appris
 
