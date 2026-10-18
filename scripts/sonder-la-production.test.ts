@@ -17,22 +17,22 @@
  *   - le **vrai `public/.well-known/assetlinks.json`** passe la vérification, et le début de chaque
  *     `<h1>` attendu est un début du titre de `page-titles.ts`.
  *
- * Éprouvé en le cassant, le 18/10/2026 (quinze mutations sur le module, chacune défaite en réécrivant
- * l'état d'avant ; le compte cite les tests qui tombent) :
- * - statut ignoré dans `verifierLeTransport` → 4 tombent (pages, liens Android, santé, le faux site en 503) ;
- * - type de contenu ignoré → 2 tombent ;
- * - paquet d'`assetlinks.json` non comparé → 1 tombe ; empreintes non vérifiées → 2 tombent ;
- * - le repli `no-store` de la carte non lu → 2 tombent (le repli, et le faux site en panne de rendu) ;
- * - les dimensions de la carte non lues → 1 tombe ; sa taille minimale non lue → 1 tombe ;
- * - le titre de la page de partage non lu → 2 tombent (la page sans chiffre, et la vraie fonction
- *   dont on a abîmé le titre) ;
- * - l'en-tête `x-robots-tag` non lu → 1 tombe ;
- * - le total de la carte constant (la minute ignorée) → 1 tombe, « une carte neuve à chaque minute » ;
- * - la clé cherchée avec un autre préfixe → 3 tombent ; le bundle sans clé lu comme sain → 2 tombent ;
- * - le nom GoTrue non vérifié → 1 tombe ; la clé refusée (401) lue comme saine → 2 tombent ;
- * - la sortie toujours 0 → 4 tombent, tous les cas de panne du faux site ;
- * - les tentatives ramenées à une → 1 tombe, « retente avant d'échouer » ;
- * - les échappements d'annotation retirés → 2 tombent.
+ * Éprouvé en le cassant, le 18/10/2026 (vingt-deux mutations sur le module, 66 tests, chacune défaite en
+ * réécrivant l'état d'avant ; aucune n'est passée). Le nombre dit combien de tests tombent :
+ * - statut ignoré dans `verifierLeTransport` → 8 ; type de contenu ignoré → 4 ;
+ * - paquet d'`assetlinks.json` non comparé → 2 ; aucune empreinte acceptée → 1 ; forme des empreintes
+ *   non vérifiée → 1 ;
+ * - repli `no-store` de la carte non lu → 2 (le repli, et le faux site en panne de rendu) ; dimensions
+ *   de la carte non lues → 1 ; sa taille minimale non lue → 1 ;
+ * - titre de la page de partage non lu → 2 ; en-tête `x-robots-tag` non lu → 1 ;
+ * - total de la carte constant (la minute ignorée) → 1, « change à chaque minute » ;
+ * - clé cherchée avec un autre préfixe → 5 ; clé toujours « trouvée » → 3 ;
+ * - nom GoTrue non vérifié → 1 ; clé refusée (401) non nommée → 2 ;
+ * - sortie toujours 0 → 7, tous les cas de panne du faux site ; un seul essai → 2 ;
+ * - échappements d'annotation retirés → 1 ;
+ * - adresse canonique non cherchée → 2 ; `<h1>` cherché dans toute la page → 1 ; taille minimale d'une
+ *   page non lue → 1 ; redirections suivies → 1 ;
+ * - santé jouée même sans clé → 2.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
