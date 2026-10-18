@@ -38,6 +38,8 @@ servir.
 
 ## Ce qu'il faut savoir avant de le lancer
 
+- **`expo-doctor` n'y bloque pas, comme sur une PR** : il rend un avertissement. `--planifie` le
+  rend bloquant, comme le passage planifié du lundi et un lancement à la main (`EXPO.md` §1.9).
 - **Le rejeu redémarre la stack à neuf** (`supabase stop --no-backup`, puis `supabase start`)
   avant pgTAP et le parcours, comme la CI. La base est alors celle des migrations de l'arbre, et
   GoTrue relit les gabarits d'e-mail et `supabase/config.toml` — il ne les lit qu'au démarrage. Les
