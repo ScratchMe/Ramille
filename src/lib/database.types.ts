@@ -656,6 +656,28 @@ export type Database = {
         }
         Relationships: []
       }
+      // Les budgets du jour (20261018110000) : le compteur des événements d'usage, serveur seulement
+      evenements_d_usage_par_heure: {
+        Row: {
+          autres_comptes: number
+          comptes_neufs: number
+          heure: string
+          pannes: number
+        }
+        Insert: {
+          autres_comptes?: number
+          comptes_neufs?: number
+          heure: string
+          pannes?: number
+        }
+        Update: {
+          autres_comptes?: number
+          comptes_neufs?: number
+          heure?: string
+          pannes?: number
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           context: string | null
@@ -996,6 +1018,9 @@ export type Database = {
       profiles: {
         Row: {
           cadence_type: string
+          // Les budgets du jour (20261018110000) : écrites par `mettre_a_jour_le_contexte` seul
+          corrections_du_contexte: number
+          corrections_du_contexte_depuis: string | null
           created_at: string
           id: string
           // C4.2 — le mot de la veille (20260928075453)
@@ -1004,6 +1029,8 @@ export type Database = {
         }
         Insert: {
           cadence_type?: string
+          corrections_du_contexte?: number
+          corrections_du_contexte_depuis?: string | null
           created_at?: string
           id: string
           // C4.2 — le mot de la veille (20260928075453)
@@ -1012,6 +1039,8 @@ export type Database = {
         }
         Update: {
           cadence_type?: string
+          corrections_du_contexte?: number
+          corrections_du_contexte_depuis?: string | null
           created_at?: string
           id?: string
           // C4.2 — le mot de la veille (20260928075453)
@@ -1314,6 +1343,11 @@ export type Database = {
       boucles_du_dernier_bilan: {
         Args: { p_user_id?: string }
         Returns: { assessment_id: string; loop_type: string; user_id: string }[]
+      }
+      // Les budgets du jour (20261018110000), serveur seulement
+      budgets_des_evenements_d_usage: {
+        Args: never
+        Returns: { budget: string; plafond: number; recus: number }[]
       }
       // C4.2 — le mot de la veille (20260928075453)
       canal_android: { Args: { p_genre: string }; Returns: string }
