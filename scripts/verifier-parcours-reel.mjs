@@ -622,10 +622,12 @@ const ATTENDU = {
   pistes: [
     ['Passer deux trajets sur cinq en train', 619],
     ['Renoncer à un vol long-courrier cette année', 1601],
+    // Un aller-retour compte pour deux vols : remplacer les deux vols courts de ce profil rapporte
+    // presque le double de renoncer à l'un d'eux (277), donc l'action passe devant.
+    ['Remplacer un aller-retour en avion par le train', 545],
     ['Faire ce trajet à deux au moins un jour sur deux', 480],
     ['Travailler depuis chez toi un jour par semaine', 384],
     ['Renoncer à un vol court ou moyen-courrier cette année', 277],
-    ['Remplacer un aller-retour en avion par le train', 273],
     // **Deux lignes de plus depuis C4.4**, et elles ne sont pas du décor : ce profil fait ses
     // sorties à 22,5 km, c'est-à-dire au-dessus de ce qu'un vélo mécanique tient (15 km) et dans
     // la fenêtre du VAE ; et il déclare deux longs trajets en voiture à deux, où l'autocar gagne
