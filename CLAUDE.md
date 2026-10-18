@@ -543,7 +543,10 @@ entrée `vercel.app` : elles valent pour qui voudrait en remettre une.
 Choix architectural clé, différent de ce que suppose le handoff design : **chaque
 visiteur reçoit une session Supabase Auth anonyme dès l'ouverture de l'app**
 (`ensureSession()` dans `src/lib/supabase.ts`, appelée en fire-and-forget dans
-`src/app/_layout.tsx`), pas un bilan stocké en local puis rattaché à la connexion. Le bilan
+`src/app/_layout.tsx`), pas un bilan stocké en local puis rattaché à la connexion — **sauf sur les
+surfaces sans compte** (`/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop`,
+`/status`), qui ne font que restaurer une session existante, et l'ouvrent dès qu'on les quitte pour
+l'app (`COMPTE.md`, depuis le 18/10/2026). Le bilan
 anonyme vit donc normalement dans `assessments`/`assessment_answers` etc., protégé par les
 mêmes policies RLS owner-scoped que n'importe quel utilisateur (`user_id not null` jamais
 assoupli).

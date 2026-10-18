@@ -2566,5 +2566,8 @@ quatre fichiers pgTAP (54 à 57).
 
 **Ce qui revient à la personne qui pilote** est dans le compte rendu de la PR : les décisions de
 produit (périmètre du bilan, progrès visible, chemin web et iPhone, purge, une action avion pour qui
-n'a déclaré qu'un vol) et ce qui vit hors du dépôt (compte Play, marque, pixel de Brevo, DNS, réglages
-d'Auth, contrats des prestataires).
+n'a déclaré qu'un vol, ce que fait une opposition à la mesure, la phrase du refus de correction du
+contexte), **la révision de sa décision D14 du 10/09/2026** (l'image EAS épinglée au lieu de `latest`,
+`v1-13` §1 — technique, mais c'était son arbitrage, donc elle se dit), et ce qui vit hors du dépôt
+(compte Play, marque, pixel de Brevo, DNS, réglages d'Auth, contrats des prestataires, la réponse
+« partage avec des tiers » de la fiche Play pour Cloudflare).
