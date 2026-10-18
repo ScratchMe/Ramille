@@ -122,8 +122,9 @@ select ok(
 );
 
 -- ── Garde-fou de volume ─────────────────────────────────────────────────────────────────
--- Un parcours complet produit une vingtaine d'événements ; le plafond laisse la place à
--- plusieurs bilans dans la journée tout en bornant ce qu'un script peut écrire.
+-- Deux cents événements par compte sur 24 h, les pannes à part (`20261018110000`, dont les
+-- budgets de tout le projet sont épinglés par `55`) : le parcours réel en émet 51 au plus pour un
+-- compte, deux bilans compris, et le plafond borne ce qu'un script peut écrire.
 --
 -- **Le remplissage doit se faire sous session CLIENTE.** La première version de ce test le
 -- faisait sous `postgres` par commodité, et passait à côté du seul défaut qui comptait :
@@ -132,21 +133,21 @@ select ok(
 -- depuis `authenticated`. Le quota était inopérant contre exactement ce qu'il devait arrêter.
 -- Remplir sous `postgres`, c'est tester le quota dans le seul rôle où il ne sert à rien.
 --
--- 498, pas 500 : deux événements existent déjà, et les lignes d'un même `insert ... select`
+-- 198, pas 200 : deux événements existent déjà, et les lignes d'un même `insert ... select`
 -- sont visibles à la requête du trigger `before insert` — un remplissage en masse déclenche
--- donc le quota en plein milieu, pas à l'insert suivant. On amène le compteur pile à 500.
+-- donc le quota en plein milieu, pas à l'insert suivant. On amène le compteur pile à 200.
 
 select set_config('role', 'authenticated', true);
 
 insert into public.usage_events (user_id, name, platform)
 select 'a1111111-1111-1111-1111-111111111111', 'app_open', 'web'
-from generate_series(1, 498);
+from generate_series(1, 198);
 
 select throws_ok(
   $stmt$ insert into public.usage_events (user_id, name, platform) values ('a1111111-1111-1111-1111-111111111111', 'app_open', 'web') $stmt$,
   '23514',
   null,
-  'la 501ᵉ tentative en 24 h est refusée'
+  'la 201ᵉ tentative en 24 h est refusée'
 );
 
 -- ── Référentiel ─────────────────────────────────────────────────────────────────────────

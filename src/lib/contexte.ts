@@ -82,6 +82,20 @@ export async function lireLeContexteCourant(): Promise<LectureDuContexte> {
 export type EcritureDuContexte = { ok: true } | { ok: false; message: string };
 
 /**
+ * **Le SQLSTATE du plafond de corrections** : vingt par compte et par fenêtre de vingt-quatre heures
+ * (`20261018110000`). Reconnu au code et jamais au message, comme `RM001` : le message est une
+ * phrase qu'une migration peut reformuler. Exporté pour que le test ne le recopie pas.
+ */
+export const CODE_TROP_DE_CORRECTIONS = 'RM002';
+
+/**
+ * Le refus dure jusqu'au lendemain : « Réessaie dans un instant », la phrase d'une panne du
+ * serveur, serait fausse.
+ */
+export const TROP_DE_CORRECTIONS =
+  'Tes réponses ne sont pas enregistrées : tu as déjà corrigé ton contexte de nombreuses fois aujourd’hui. Réessaie demain.';
+
+/**
  * Enregistrer les quatre réponses.
  *
  * **Le RPC refuse les trois premières à `null`** (`RM003`) et l'écran désactive le bouton avant
@@ -99,6 +113,10 @@ export async function enregistrerLeContexte(
     p_household_vehicles: choix.household_vehicles,
     p_teletravail: choix.teletravail,
   });
+
+  if (error?.code === CODE_TROP_DE_CORRECTIONS) {
+    return { ok: false, message: TROP_DE_CORRECTIONS };
+  }
 
   if (error) {
     // La connexion n'est nommée que hors ligne (`src/types/ecriture-en-echec.ts`).
