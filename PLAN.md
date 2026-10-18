@@ -392,6 +392,13 @@ retirées de la contrainte et le champ mis à `null` sur les trois templates con
 branchées : les faire passer par le `case` l'obligerait à lire `v_count`, une variable locale de la
 branche, et en ferait un troisième endroit où se lit la logique de segment.
 
+**Sur les voyages, `action_templates.trips` se compte dans l'unité du compteur déclaré — un vol, un long
+trajet : des allers — et l'estimateur le borne par la déclaration** (`least`). « Remplacer un
+aller-retour en avion par le train » vaut donc `trips = 2` (`20261018130000`, test `57`) : à 1, son gain
+était celui d'un aller simple, la moitié de son libellé, alors que « Renoncer à un vol … » reste à 1 (un
+vol est un trajet simple) ; les plans déjà générés gardent leur gain figé et les points déjà posés leur
+question, le nouveau gain venant à la reconstruction du plan.
+
 ## 4. L'écran du plan : la saison, le premier plan, la barre d'onglets
 
 **Une lecture que l'écran du plan ajoute se place dans `lireLePlan`** (`src/lib/lecture-du-plan.ts`,
