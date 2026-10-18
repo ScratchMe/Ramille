@@ -177,7 +177,7 @@ function htmlDePartage({
   // pourrait sortir de l'attribut, et passer ses `&` en `&amp;` modifierait une chaîne dont
   // l'aperçu a été vérifié en conditions réelles (v1-06 §2-3) — un lecteur d'aperçu qui
   // n'interprète pas les entités irait chercher une autre URL. Le titre et la description, eux,
-  // sont faits de valeurs fermées depuis le 05/10/2026 (un nombre, un entier, un libellé de la
+  // sont faits de valeurs fermées (un nombre, un entier, un libellé de la
   // liste) : ils restent échappés, pour le jour où l'une d'elles rouvrirait.
   const titreEchappe = escapeHtml(titre);
   const descriptionEchappee = escapeHtml(description);

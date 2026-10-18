@@ -27,9 +27,25 @@
 //     deux dernières se tiennent : l'égalité seule ne verrait pas une analyse qui perd la chaîne
 //     de requête, puisqu'elle la perdrait sur les deux appels à la fois ; c'est la comparaison à
 //     un rendu **sans paramètre** qui dit que la carte porte bien le chiffre de quelqu'un ;
-//   - **un libellé forgé ne passe ni sur la page ni sur la carte** (05/10/2026, `poste` en liste
-//     fermée) : la page ne le reflète pas, la carte rend octet pour octet la carte sans poste, et
-//     un libellé de l'app la change.
+//   - **un libellé forgé ne passe ni sur la page ni sur la carte** (`poste` en liste fermée) : la
+//     page ne le reflète pas, la carte rend octet pour octet la carte sans poste, et un libellé de
+//     l'app la change ;
+//   - **une adresse a une forme, et une seule** (`api/_partage-commun.ts`). Le CDN de Vercel garde
+//     une réponse par adresse complète : tout ce qui change l'adresse sans changer l'image était un
+//     rendu payé de plus. La forme canonique est servie et gardée (`s-maxage` — `max-age` seul ne
+//     parle qu'au navigateur) ; une variante lisible est redirigée en 308 vers elle, seize
+//     tournures sur la page comme sur la carte ; une adresse sans sens (un texte derrière le
+//     nombre, une valeur répétée) répond 400, jamais gardée ; la forme canonique est un point
+//     fixe sur un balayage — sinon la redirection boucle sur l'adresse que l'app produit ;
+//   - **une variante ne charge pas le wasm de resvg** : le jugement de la forme vient avant tout
+//     rendu, sinon la redirection coûterait ce qu'elle doit éviter. La lecture du wasm est notée,
+//     avec un témoin après le premier rendu ;
+//   - **l'`og:image` que la page écrit est servie telle quelle par la carte**, pas redirigée ;
+//   - **un repli n'est jamais gardé** (`no-store`), page comme carte ;
+//   - **la disposition d'`api/`** : tout fichier qui n'est pas une des deux fonctions commence par
+//     `_` (sinon Vercel le déploie), et tout import relatif se termine par `.js` et vise un `.ts`
+//     (Vercel compile sans réécrire les spécificateurs). Node, lui, apprend ici que `./x.js` est
+//     `x.ts`, via `registerHooks` — Node 22.15 ou plus, déjà exigé.
 //
 // **Éprouvé en le cassant, le 20/09/2026** (TESTING.md §1.1) — sept mutations sur l'arbre de
 // travail, chacune remise en place aussitôt par l'opération inverse :
@@ -75,6 +91,30 @@
 //   - la page recopie de nouveau le total reçu dans l'`og:image` → « le texte qui suit le chiffre
 //     du total se retrouve dans le HTML rendu », 1 écart (la section 2 envoie déjà `2.400`, la
 //     forme de l'app, donc elle ne voit pas la différence).
+//
+// **Et le 18/10/2026, pour la forme canonique et le module commun** — trente-quatre mutations, chacune
+// remise en place par réécriture de l'état d'avant, jamais par un second remplacement ; aucune ne passe,
+// et le nombre d'écarts est celui du script tel qu'il est livré :
+//   - le total relu par préfixe (`parseFloat`) → 22 ; la part relue par préfixe (`parseInt`) → 11 ;
+//   - jamais de redirection (`canonique: true`) → 38 ; la page seule, 19 ; la carte seule, 19 ;
+//   - la forme jugée après re-sérialisation (`%20` et `%30` passent pour canoniques) → 4 ;
+//   - les paramètres inconnus recopiés dans la forme canonique → 26 ; un paramètre répété accepté → 6 ;
+//   - la part sans borne haute → 4 ; le total sans borne haute → 5 ;
+//   - le total arrondi par troncature au lieu de l'arrondi au kilo → 2 (la variante « décimales qui
+//     s'arrondissent » : sans elle, cette mutation passait) ; un total de quarante chiffres accepté → 2 ;
+//     une part de quatre chiffres refusée au lieu d'ignorée → 2 ;
+//   - la carte sans `s-maxage` ni `stale-while-revalidate`, comme elle partait → 1 ; la page sans
+//     `stale-while-revalidate` → 1 ; la page en `max-age` seul → 1 ;
+//   - un 400 gardé (`public, s-maxage`) → 36 ; le repli de la page gardé → 1 ; celui de la carte → 1 ;
+//   - la redirection en 307 → 41 ; sans `s-maxage` → 32 ; le 400 en 422 → 37 ;
+//   - le 400 sans `x-robots-tag` → 36 ; la redirection sans → 32 ; le 400 servi en HTML → 36 ;
+//   - la redirection vers « rien » qui garde un `?` final → 4 ;
+//   - l'ordre canonique inversé (`percent` avant `poste`) → 45 ; le libellé canonique passé en
+//     minuscules (le point fixe casse) → 54 ; la liste fermée qui refuse tout → 52 ;
+//   - l'`og:image` écrite dans un autre ordre que la forme canonique → 2 ;
+//   - le wasm chargé avant de juger la forme → 1, seule ;
+//   - un import relatif en `.ts` → 1, seule ; sans extension → le module est introuvable au chargement
+//     (sortie 1, « ne se charge pas ») ; un fichier de `api/` sans préfixe `_` → 1, seule.
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
