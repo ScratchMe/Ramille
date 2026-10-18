@@ -438,7 +438,8 @@ export const SEJOUR_INITIAL: SejourDerriere = { depuis: null };
  * Le layout émet `app_open` (`demarrage`) après la session de son montage. Quand le montage finit
  * sans session — sa création a échoué (le refus du captcha, puis « Réessayer » sur l'écran de la
  * racine, qui ouvre la session ailleurs), ou il n'avait rien à ouvrir (un jeton expiré hors ligne, une
- * session refusée) —, l'ouverture ne partait jamais pour ce chargement, et le biais contre les nouveaux venus
+ * session refusée, une surface sans compte ouverte sans session, qu'on quitte ensuite pour l'app) —,
+ * l'ouverture ne partait jamais pour ce chargement, et le biais contre les nouveaux venus
  * que l'émission après la session avait fermé revenait par cette porte (contre-lecture de l'écran du
  * refus, 04/10/2026). Le rattrapage ne vaut que dans ce cas-là : au démarrage normal, c'est la suite de
  * la session du montage qui émet, et le faire aussi depuis l'écoute d'auth ferait partir deux fois les
