@@ -15,8 +15,10 @@
 // (`VERCEL.md` §1.6). TypeScript résout `./x.js` vers `x.ts`, Node non : `verifier-api.mjs` lui
 // apprend cette correspondance pour jouer le même code.
 //
-// Aucun import ici, et il n’en viendra pas : ce module est chargé par un runtime Edge (pas de `node:*`)
-// et par la suite Jest, qui ne résout pas les `.js` vers des `.ts`.
+// Aucun import ici. Ce module est chargé par un runtime Edge, donc rien de `node:*` ; et Jest, qui ne
+// résout pas de lui-même un `.js` vers le `.ts` voisin, ne charge les fonctions que par le
+// `moduleNameMapper` de `package.json`, qui vise ce seul fichier : un import relatif ajouté ici
+// demanderait sa propre ligne.
 
 /**
  * **Borne haute du total affichable, en tonnes.** `Number.parseFloat` acceptait un négatif, un zéro ou
@@ -109,16 +111,28 @@ export type ParametresDePartage = {
   percent: number | null;
 };
 
-export type LectureDePartage =
-  | {
-      statut: 'lisible';
-      parametres: ParametresDePartage;
-      /** La chaîne de requête canonique, sans le `?`, vide quand il n’y a rien à dire. */
-      query: string;
-      /** L’adresse reçue **est** la forme canonique : sinon, elle se redirige vers elle. */
-      canonique: boolean;
-    }
-  | { statut: 'illisible'; motif: string };
+export type LectureLisible = {
+  statut: 'lisible';
+  parametres: ParametresDePartage;
+  /** La chaîne de requête canonique, sans le `?`, vide quand il n’y a rien à dire. */
+  query: string;
+  /** L’adresse reçue **est** la forme canonique : sinon, elle se redirige vers elle. */
+  canonique: boolean;
+};
+
+export type LectureDePartage = LectureLisible | { statut: 'illisible'; motif: string };
+
+/**
+ * Ce que l’appelant fait d’un paramètre illisible. **La carte le refuse** : elle n’est lue que par les
+ * lecteurs d’aperçu, à l’adresse que la page leur donne, toujours canonique — un total illisible n’y
+ * arrive que fabriqué, et un 400 ne coûte ni rendu ni entrée de cache. **La page l’ignore**, comme un
+ * paramètre inconnu : c’est la destination d’un lien qu’une personne a reçu, et un caractère collé
+ * derrière le dernier nombre (`percent=58).`, recopié avec la ponctuation d’une phrase) ne doit pas lui
+ * fermer le chemin vers Ramille. La redirection vers la forme sans ce paramètre est aussi bornée que
+ * celle d’un `fbclid` : elle ne coûte qu’une invocation, se garde un jour au CDN, et sa cible ne porte
+ * plus rien d’illisible.
+ */
+export type DevantLIllisible = 'refuser' | 'ignorer';
 
 // Ce que l’app envoie (`urlDePartage`) : un décimal positif, un entier. Rien d’autre n’est lu — ni
 // exposant, ni signe, ni espace, ni suite après le nombre.
@@ -145,34 +159,48 @@ const FORME_DE_LA_PART = /^\d{1,12}$/;
  *    part au-delà de 100, libellé hors de la liste. Celles-là sont **ignorées**, comme elles l’ont
  *    toujours été, plutôt que refusées : le lien d’un poste renommé continue d’ouvrir son aperçu ;
  *  - **illisible** : un total ou une part qui n’est pas un nombre de la forme ci-dessus, ou un
- *    paramètre répété. On n’en devine pas le sens — deviner le préfixe d’un texte, c’est la faille —,
- *    l’appelant répond 400.
+ *    paramètre répété. On n’en devine jamais le sens — deviner le préfixe d’un texte, c’est la faille.
+ *    Selon `devantLIllisible`, la lecture le dit (`'refuser'`, l’appelant répond 400), ou le traite
+ *    comme absent (`'ignorer'`, et l’adresse n’est plus canonique : l’appelant redirige).
  */
-export function lireLaRequete(recherche: string): LectureDePartage {
+export function lireLaRequete(recherche: string, devantLIllisible: 'ignorer'): LectureLisible;
+export function lireLaRequete(recherche: string, devantLIllisible: DevantLIllisible): LectureDePartage;
+export function lireLaRequete(recherche: string, devantLIllisible: DevantLIllisible): LectureDePartage {
   const params = new URLSearchParams(recherche.startsWith('?') ? recherche.slice(1) : recherche);
+  const ignorer = devantLIllisible === 'ignorer';
 
-  for (const nom of ['total', 'poste', 'percent']) {
-    if (params.getAll(nom).length > 1) return { statut: 'illisible', motif: `${nom} répété` };
-  }
+  const repete = (['total', 'poste', 'percent'] as const).find((nom) => params.getAll(nom).length > 1);
+  if (repete && !ignorer) return { statut: 'illisible', motif: `${repete} répété` };
+  /** La valeur d’un paramètre, ou `null` s’il est absent — ou répété, quand on ignore l’illisible. */
+  const unique = (nom: string): string | null => (params.getAll(nom).length > 1 ? null : params.get(nom));
+
+  const brutTotal = unique('total');
+  const brutPoste = unique('poste');
+  const brutPart = unique('percent');
 
   let total: number | null = null;
-  const brutTotal = params.get('total');
   if (brutTotal) {
-    if (!FORME_DU_TOTAL.test(brutTotal)) return { statut: 'illisible', motif: 'total illisible' };
-    const lu = Number(brutTotal);
-    // La borne se juge sur la valeur reçue, l’arrondi vient après : 200,0004 t reste 200 t.
-    if (lu <= TOTAL_TONNES_MAX) total = Number(lu.toFixed(3));
+    if (FORME_DU_TOTAL.test(brutTotal)) {
+      const lu = Number(brutTotal);
+      // La borne se juge sur la valeur reçue, avant l’arrondi : 200,0004 t est au-delà, donc ignoré,
+      // même si l’arrondi au kilo en ferait 200,000 t.
+      if (lu <= TOTAL_TONNES_MAX) total = Number(lu.toFixed(3));
+    } else if (!ignorer) {
+      return { statut: 'illisible', motif: 'total illisible' };
+    }
   }
 
   let percent: number | null = null;
-  const brutPart = params.get('percent');
   if (brutPart) {
-    if (!FORME_DE_LA_PART.test(brutPart)) return { statut: 'illisible', motif: 'percent illisible' };
-    const lu = Number(brutPart);
-    if (lu <= 100) percent = lu;
+    if (FORME_DE_LA_PART.test(brutPart)) {
+      const lu = Number(brutPart);
+      if (lu <= 100) percent = lu;
+    } else if (!ignorer) {
+      return { statut: 'illisible', motif: 'percent illisible' };
+    }
   }
 
-  const poste = posteFerme(params.get('poste'));
+  const poste = posteFerme(brutPoste);
 
   const canonique = new URLSearchParams();
   if (total !== null) canonique.set('total', total.toFixed(3));
@@ -198,8 +226,8 @@ export function lireLaRequete(recherche: string): LectureDePartage {
 //  - la carte aussi, et le navigateur la garde un an (`immutable`) ;
 //  - une redirection est une réponse déterministe elle aussi, mais courte : sa cible est une règle de
 //    lecture, qu’une version suivante peut resserrer ;
-//  - **un 400 et un repli ne se gardent jamais** : le CDN ne cache de toute façon pas un 400, et le
-//    repli d’une panne passagère ne doit pas se figer sur cette adresse.
+//  - **un 400 et un repli ne se gardent jamais** : le CDN ne cache de toute façon pas un 400 — seule la
+//    carte en rend un —, et le repli d’une panne passagère ne doit pas se figer sur cette adresse.
 export const CACHE_PAGE = 'public, max-age=0, s-maxage=31536000, stale-while-revalidate=86400';
 export const CACHE_CARTE =
   'public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400, immutable, no-transform';
@@ -225,7 +253,10 @@ export function reponseRedirection(chemin: string, query: string): Response {
   });
 }
 
-/** 400 : l’adresse n’a pas de sens qu’on puisse lui donner. Le corps ne dit pas quel paramètre. */
+/**
+ * 400 : l’adresse n’a pas de sens qu’on puisse lui donner. Le corps ne dit pas quel paramètre. La carte
+ * seule le rend ; la page ignore ce qu’elle ne lit pas (`DevantLIllisible`).
+ */
 export function reponseIllisible(): Response {
   return new Response('Adresse de partage illisible.\n', {
     status: 400,

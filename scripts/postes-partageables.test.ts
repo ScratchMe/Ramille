@@ -107,31 +107,35 @@ describe('l’adresse de partage que l’app produit', () => {
   // un total qui ne tombe pas rond sur trois décimales, le haut de la plage.
   const TOTAUX_KG = [0, 40, 499, 999, 1000, 1049, 4213.7, 15820, 199999];
 
-  it('est canonique pour chaque libellé et chaque total : lue sans rien perdre, ni redirigée ni refusée', () => {
-    const refusees: string[] = [];
-    for (const kg of TOTAUX_KG) {
-      for (const bilan of bilansDeLApp(kg)) {
-        const adresse = urlDePartage(bilan, 'https://www.ramille.fr');
-        const lecture = lireLaRequete(new URL(adresse).search);
-        const attendu = {
-          total: Number((kg / 1000).toFixed(3)),
-          poste: dominantShareLabel(bilan),
-          percent: pourcentageDominant(bilan),
-        };
-        if (
-          lecture.statut !== 'lisible' ||
-          !lecture.canonique ||
-          JSON.stringify(lecture.parametres) !== JSON.stringify(attendu)
-        ) {
-          refusees.push(`${adresse} → ${JSON.stringify(lecture)}`);
+  // Les deux lectures : celle de la carte, qui refuse l'illisible, et celle de la page, qui l'ignore.
+  it.each(['refuser', 'ignorer'] as const)(
+    'est canonique pour chaque libellé et chaque total : lue sans rien perdre, ni redirigée ni refusée (%s l’illisible)',
+    (devant) => {
+      const refusees: string[] = [];
+      for (const kg of TOTAUX_KG) {
+        for (const bilan of bilansDeLApp(kg)) {
+          const adresse = urlDePartage(bilan, 'https://www.ramille.fr');
+          const lecture = lireLaRequete(new URL(adresse).search, devant);
+          const attendu = {
+            total: Number((kg / 1000).toFixed(3)),
+            poste: dominantShareLabel(bilan),
+            percent: pourcentageDominant(bilan),
+          };
+          if (
+            lecture.statut !== 'lisible' ||
+            !lecture.canonique ||
+            JSON.stringify(lecture.parametres) !== JSON.stringify(attendu)
+          ) {
+            refusees.push(`${adresse} → ${JSON.stringify(lecture)}`);
+          }
         }
       }
+      expect(refusees).toEqual([]);
     }
-    expect(refusees).toEqual([]);
-  });
+  );
 
   it('reste canonique sans poste : le total et la part suffisent à une adresse', () => {
-    const lecture = lireLaRequete('?total=4.200&percent=50');
+    const lecture = lireLaRequete('?total=4.200&percent=50', 'refuser');
     expect(lecture).toMatchObject({ statut: 'lisible', canonique: true, query: 'total=4.200&percent=50' });
   });
 });
@@ -144,7 +148,7 @@ describe('le total, dit comme dans l’app', () => {
     for (let kg = 3000; kg <= 200_000; kg += 7) kilos.add(kg);
     for (const kg of kilos) {
       const [bilan] = bilansDeLApp(kg);
-      const lecture = lireLaRequete(new URL(urlDePartage(bilan, 'https://www.ramille.fr')).search);
+      const lecture = lireLaRequete(new URL(urlDePartage(bilan, 'https://www.ramille.fr')).search, 'refuser');
       if (lecture.statut !== 'lisible' || lecture.parametres.total === null) {
         differences.push(`${kg} kg : total illisible`);
         continue;

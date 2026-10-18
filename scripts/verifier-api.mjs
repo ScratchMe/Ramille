@@ -34,9 +34,11 @@
 //     une réponse par adresse complète : tout ce qui change l'adresse sans changer l'image était un
 //     rendu payé de plus. La forme canonique est servie et gardée (`s-maxage` — `max-age` seul ne
 //     parle qu'au navigateur) ; une variante lisible est redirigée en 308 vers elle, seize
-//     tournures sur la page comme sur la carte ; une adresse sans sens (un texte derrière le
-//     nombre, une valeur répétée) répond 400, jamais gardée ; la forme canonique est un point
-//     fixe sur un balayage — sinon la redirection boucle sur l'adresse que l'app produit ;
+//     tournures sur la page comme sur la carte ; un paramètre sans sens (un texte derrière le
+//     nombre, une valeur répétée) fait répondre 400 à la carte, jamais gardé, et la page l'ignore
+//     — 308 vers la forme sans lui, servie : c'est la destination du lien qu'une personne a reçu ;
+//     la forme canonique est un point fixe sur un balayage, pour les deux lectures — sinon la
+//     redirection boucle sur l'adresse que l'app produit ;
 //   - **une variante ne charge pas le wasm de resvg** : le jugement de la forme vient avant tout
 //     rendu, sinon la redirection coûterait ce qu'elle doit éviter. La lecture du wasm est notée,
 //     avec un témoin après le premier rendu ;
@@ -419,7 +421,7 @@ verifier(
 // tiers pouvait écrire à sa guise, sous la marque du produit. Que chaque libellé de l'app passe,
 // `scripts/postes-partageables.test.ts` le prouve ; ici, ce que la page et la carte font d'un
 // libellé refusé — le **rendu**, que Jest ne charge pas. Un libellé inconnu est ignoré, donc redirigé
-// vers l'adresse sans lui ; un total qui n'est pas un nombre est illisible, donc refusé.
+// vers l'adresse sans lui ; un total qui n'est pas un nombre est illisible, que la page ignore de même.
 const FORGE = 'Achetez sur un-site-quelconque.example';
 const forgee = await jouer(appelPage, `/api/partage?total=2.400&poste=${encodeURIComponent(FORGE)}&percent=58`);
 const pageForgee = await forgee.reponse.text();
@@ -433,12 +435,19 @@ verifier(
   'page : le libellé forgé a emporté le titre avec lui'
 );
 // Le total : `parseFloat` n'en lisait que le préfixe, donc la suite passait la borne et voyageait
-// jusque dans l'`og:image`. Un total qui n'est pas un nombre n'est plus deviné : 400, et le texte
-// forgé ne revient pas dans le corps de la réponse.
-const totalForge = await appelPage(`/api/partage?total=${encodeURIComponent(`2.4 ${FORGE}`)}&percent=58`);
+// jusque dans l'`og:image`. Un total qui n'est pas un nombre n'est plus deviné : la page l'ignore —
+// redirigée vers l'adresse sans lui, titrée sans chiffre —, et le texte forgé ne revient ni dans la
+// cible ni dans le HTML rendu.
+const totalForge = await jouer(appelPage, `/api/partage?total=${encodeURIComponent(`2.4 ${FORGE}`)}&percent=58`);
+const pageTotalForge = await totalForge.reponse.text();
 verifier(
-  totalForge.status === 400 && !(await totalForge.text()).includes('un-site-quelconque'),
-  `page : le texte qui suit le chiffre du total n'est pas refusé en 400 (statut ${totalForge.status})`
+  totalForge.location === '/api/partage?percent=58' && totalForge.reponse.status === 200,
+  `page : un total suivi d'un texte n'est pas redirigé vers l'adresse sans lui (cible « ${totalForge.location} », ` +
+    `statut ${totalForge.reponse.status})`
+);
+verifier(
+  !pageTotalForge.includes('un-site-quelconque') && pageTotalForge.includes(TITRE_SANS_CHIFFRE),
+  'page : le texte qui suit le chiffre du total se retrouve dans le HTML rendu, ou le chiffre est deviné'
 );
 // Les rendus comparés ici — les deux suivants et celui de la section 1 — ne se comparent **que
 // s'ils ont eu lieu** : sur le repli, ils seraient le même pixel, et l'égalité passerait sans rien
@@ -593,49 +602,73 @@ for (const [nom, entree, attendue] of VARIANTES) {
   }
 }
 
-// 5c. Une adresse qui n'a pas de sens → 400, jamais une page, jamais un rendu, jamais gardée.
+// 5c. Un paramètre qui n'a pas de sens : **la carte refuse l'adresse** — 400, jamais un rendu, jamais
+// gardée —, **la page l'ignore** et redirige vers la forme sans lui, comme un paramètre inconnu. La carte
+// n'est lue qu'à l'adresse que la page écrit, toujours canonique ; la page est la destination du lien
+// qu'une personne a reçu, et un caractère recopié derrière le dernier nombre ne doit pas lui fermer le
+// chemin vers Ramille. La troisième colonne est la forme canonique où la page redirige.
 const ILLISIBLES = [
-  ['texte derrière le total', `total=${encodeURIComponent('2.4 Achetez')}`],
-  ['lettres derrière le total', 'total=2.4abc'],
-  ['total qui n’est pas un nombre', 'total=abc'],
-  ['total négatif', 'total=-5'],
-  ['total en notation exponentielle', 'total=1e3'],
-  ['total à virgule', 'total=2,4'],
-  ['total précédé d’une espace', 'total=%202.4'],
-  ['total hexadécimal', 'total=0x10'],
-  ['total infini', 'total=Infinity'],
-  ['total de treize chiffres', 'total=1234567890123'],
-  ['part suivie de lettres', 'percent=58abc'],
-  ['part décimale', 'percent=5.8'],
-  ['part négative', 'percent=-1'],
-  ['part en notation exponentielle', 'percent=1e2'],
-  ['part qui n’est pas un nombre', 'percent=abc'],
-  ['total répété', 'total=1&total=2'],
-  ['libellé répété', `poste=${POSTE_PLUS}&poste=${POSTE_PLUS}`],
-  ['part répétée', 'percent=1&percent=2'],
+  ['texte derrière le total', `total=${encodeURIComponent('2.4 Achetez')}`, ''],
+  ['lettres derrière le total', 'total=2.4abc', ''],
+  ['total qui n’est pas un nombre', 'total=abc', ''],
+  ['total négatif', 'total=-5', ''],
+  ['total en notation exponentielle', 'total=1e3', ''],
+  ['total à virgule', 'total=2,4', ''],
+  ['total précédé d’une espace', 'total=%202.4', ''],
+  ['total hexadécimal', 'total=0x10', ''],
+  ['total infini', 'total=Infinity', ''],
+  ['total de treize chiffres', 'total=1234567890123', ''],
+  ['part suivie de lettres', 'percent=58abc', ''],
+  ['part décimale', 'percent=5.8', ''],
+  ['part négative', 'percent=-1', ''],
+  ['part en notation exponentielle', 'percent=1e2', ''],
+  ['part qui n’est pas un nombre', 'percent=abc', ''],
+  ['total répété', 'total=1&total=2', ''],
+  ['libellé répété', `poste=${POSTE_PLUS}&poste=${POSTE_PLUS}`, ''],
+  ['part répétée', 'percent=1&percent=2', ''],
+  // Un partage complet dont un seul paramètre est abîmé : la page garde les deux autres.
+  ['ponctuation recopiée derrière la part', `total=2.400&poste=${POSTE_PLUS}&percent=58).`, `total=2.400&poste=${POSTE_PLUS}`],
+  ['lettres derrière le total d’un partage complet', `total=2.4abc&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
+  ['total répété d’un partage complet', `total=1&total=2&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
 ];
-for (const [nom, entree] of ILLISIBLES) {
-  for (const [fonction, chemin, appel] of [
-    ['page', '/api/partage', appelPage],
-    ['carte', '/api/share-card', appelCarte],
-  ]) {
-    const reponse = await appel(`${chemin}?${entree}`);
-    const corps = await reponse.text();
-    verifier(reponse.status === 400, `${fonction} : « ${nom} » répond ${reponse.status}, attendu 400`);
-    if (reponse.status !== 400) continue;
+for (const [nom, entree, attendueDeLaPage] of ILLISIBLES) {
+  const reponse = await appelCarte(`/api/share-card?${entree}`);
+  const corps = await reponse.text();
+  verifier(reponse.status === 400, `carte : « ${nom} » répond ${reponse.status}, attendu 400`);
+  if (reponse.status === 400) {
     verifier(
       reponse.headers.get('cache-control') === 'no-store',
-      `${fonction} : le 400 de « ${nom} » est servi « ${reponse.headers.get('cache-control')} », attendu no-store`
+      `carte : le 400 de « ${nom} » est servi « ${reponse.headers.get('cache-control')} », attendu no-store`
     );
     verifier(
       (reponse.headers.get('content-type') ?? '').startsWith('text/plain') && !corps.includes('<') && corps.length < 100,
-      `${fonction} : le 400 de « ${nom} » n'est pas une courte réponse en texte brut`
+      `carte : le 400 de « ${nom} » n'est pas une courte réponse en texte brut`
     );
     verifier(
       (reponse.headers.get('x-robots-tag') ?? '').includes('noindex'),
-      `${fonction} : le 400 de « ${nom} » ne porte pas x-robots-tag noindex`
+      `carte : le 400 de « ${nom} » ne porte pas x-robots-tag noindex`
     );
   }
+
+  const cible = attendueDeLaPage === '' ? '/api/partage' : `/api/partage?${attendueDeLaPage}`;
+  const premiere = await appelPage(`/api/partage?${entree}`);
+  verifier(
+    premiere.status === 308 && premiere.headers.get('location') === cible,
+    `page : « ${nom} » n'est pas redirigé (308) vers « ${cible} » — statut ${premiere.status}, cible « ${premiere.headers.get('location')} »`
+  );
+  if (premiere.status !== 308) continue;
+  const cacheRedirection = directives(premiere.headers.get('cache-control'));
+  verifier(
+    cacheRedirection.public === true && cacheRedirection['s-maxage'] > 0 &&
+      (premiere.headers.get('x-robots-tag') ?? '').includes('noindex'),
+    `page : la redirection de « ${nom} » est servie « ${premiere.headers.get('cache-control')} », sans s-maxage ou sans noindex`
+  );
+  const suite = await appelPage(cible);
+  const pageSuivie = await suite.text();
+  verifier(
+    suite.status === 200 && !pageSuivie.includes('Achetez'),
+    `page : la cible de « ${nom} » répond ${suite.status}, ou porte le texte de l'adresse reçue`
+  );
 }
 
 // 5d. **La forme canonique est un point fixe**, sur un balayage de combinaisons. Une adresse
@@ -649,6 +682,7 @@ for (const [nom, entree] of ILLISIBLES) {
   let lisibles = 0;
   let illisibles = 0;
   let canoniques = 0;
+  let canoniquesDeLaPage = 0;
   let mal = null;
   for (const total of totaux) {
     for (const poste of postes) {
@@ -657,24 +691,44 @@ for (const [nom, entree] of ILLISIBLES) {
         if (total !== null) p.set('total', total);
         if (poste !== null) p.set('poste', poste);
         if (part !== null) p.set('percent', part);
-        const lecture = commun.lireLaRequete(`?${p}`);
+        // La lecture de la carte, qui refuse l'illisible.
+        const lecture = commun.lireLaRequete(`?${p}`, 'refuser');
         if (lecture.statut === 'illisible') {
           illisibles += 1;
+        } else {
+          lisibles += 1;
+          if (lecture.canonique) canoniques += 1;
+          const encore = commun.lireLaRequete(`?${lecture.query}`, 'refuser');
+          if (encore.statut !== 'lisible' || !encore.canonique || encore.query !== lecture.query) {
+            mal ??= `carte : « ${p} » → « ${lecture.query} » → ${JSON.stringify(encore)}`;
+          }
+        }
+        // Celle de la page, qui l'ignore : sa cible est servie par la page, et la carte sert la même
+        // chaîne — c'est celle que la page écrit dans son `og:image`.
+        const page = commun.lireLaRequete(`?${p}`, 'ignorer');
+        if (page.statut !== 'lisible') {
+          mal ??= `page : « ${p} » → ${JSON.stringify(page)}`;
           continue;
         }
-        lisibles += 1;
-        if (lecture.canonique) canoniques += 1;
-        const encore = commun.lireLaRequete(`?${lecture.query}`);
-        if (encore.statut !== 'lisible' || !encore.canonique || encore.query !== lecture.query) {
-          mal ??= `« ${p} » → « ${lecture.query} » → ${JSON.stringify(encore)}`;
+        if (page.canonique) canoniquesDeLaPage += 1;
+        const pageEncore = commun.lireLaRequete(`?${page.query}`, 'ignorer');
+        const carteDeLaPage = commun.lireLaRequete(`?${page.query}`, 'refuser');
+        if (
+          !pageEncore.canonique ||
+          pageEncore.query !== page.query ||
+          carteDeLaPage.statut !== 'lisible' ||
+          !carteDeLaPage.canonique
+        ) {
+          mal ??= `page : « ${p} » → « ${page.query} » → ${JSON.stringify(pageEncore)} / ${JSON.stringify(carteDeLaPage)}`;
         }
       }
     }
   }
   verifier(mal === null, `la forme canonique n'est pas un point fixe : ${mal}`);
   verifier(
-    lisibles > 100 && illisibles > 100 && canoniques > 10,
-    `le balayage ne couvre pas les trois issues (${lisibles} lisibles dont ${canoniques} canoniques, ${illisibles} illisibles)`
+    lisibles > 100 && illisibles > 100 && canoniques > 10 && canoniquesDeLaPage === canoniques,
+    `le balayage ne couvre pas les trois issues (${lisibles} lisibles dont ${canoniques} canoniques, ${illisibles} ` +
+      `illisibles), ou la page tient pour canonique une adresse que la carte ne sert pas (${canoniquesDeLaPage})`
   );
 }
 
@@ -737,5 +791,6 @@ console.log(
   `api/ : carte de partage rendue (${png.length} octets, 1200 × 630, cache public) et page d'aperçu ` +
     `conforme — carte rejouée sur un chemin relatif, comme Vercel l'envoie, libellé forgé refusé des deux ` +
     `côtés, ${VARIANTES.length} variantes redirigées vers leur forme canonique, ${ILLISIBLES.length} adresses ` +
-    `illisibles refusées, et les réponses que le CDN peut garder portent s-maxage.`
+    `illisibles refusées par la carte et ramenées par la page à leur forme lisible, et les réponses que le CDN ` +
+    `peut garder portent s-maxage.`
 );

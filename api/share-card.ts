@@ -50,7 +50,9 @@
 // lien (retour utilisateur du 04/09/2026) — `percent` lui donne un sens réel. Tous optionnels
 // côté rendu (valeurs de repli) : ce endpoint ne doit jamais planter sur une URL mal formée, y
 // compris construite par un tiers. Il ne rend que l'adresse canonique que `_partage-commun.ts`
-// définit : toute variante est redirigée (308) vers elle, ou refusée (400).
+// définit : toute variante est redirigée (308) vers elle, ou refusée (400) quand un paramètre est
+// illisible — la page, elle, l’ignore (`DevantLIllisible`), donc l’`og:image` qu’elle écrit ne l’est
+// jamais.
 import fs from 'node:fs';
 import path from 'node:path';
 import { createElement as h } from 'react';
@@ -132,7 +134,7 @@ export async function GET(request: Request): Promise<Response> {
     // **La forme canonique se juge avant le moindre rendu**, donc avant le wasm : une variante
     // redirigée ou refusée ne coûte qu'une invocation, jamais satori ni resvg. `request.url` est un
     // chemin en Node.js, d'où la base factice — seule la chaîne de requête compte.
-    const lecture = lireLaRequete(new URL(request.url, 'http://localhost').search);
+    const lecture = lireLaRequete(new URL(request.url, 'http://localhost').search, 'refuser');
     if (lecture.statut === 'illisible') return reponseIllisible();
     if (!lecture.canonique) return reponseRedirection(CHEMIN_CARTE, lecture.query);
     return reponsePng(await carte(lecture.parametres), true);
