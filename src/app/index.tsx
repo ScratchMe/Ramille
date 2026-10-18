@@ -22,6 +22,7 @@ import {
   type LectureDuBilan,
 } from '@/types/demarrage';
 import { decrireErreur } from '@/types/erreur';
+import { suiteDuDemarrage } from '@/types/session';
 
 // Racine de l'app — jamais un écran visible en pratique (redirection immédiate dès que la
 // session est prête) : remplace l'ancien smoke-test Supabase qui vivait ici (déplacé vers
@@ -80,13 +81,22 @@ export default function Index() {
             }
           }
         }
+        // **Ce que la racine fait de la session dépend de son état** (`suiteDuDemarrage`, testée).
+        //
         // **Un refus ne lit rien et ne route nulle part** (02/10/2026, `v1-27` §12.27) : sans session,
         // la lecture partirait en `anon`, qui n'a aucun privilège, et l'écran technique d'une « erreur
         // serveur » se poserait sous l'écran de reconnexion — le piège décrit ci-dessus, par un autre
         // chemin. La racine attend : c'est l'écran de reconnexion, posé par le layout, qui décide — et
         // si le refus se lève sans qu'elle soit quittée (une session rouverte dans un autre onglet),
         // l'écoute ci-dessous la relance.
-        if (etatDeLaSession() === 'refusee') return;
+        //
+        // **Un rafraîchissement en panne se replie comme une coupure** (`v1-27` §12.35) : `ensureSession()`
+        // rend `null` sans lever, la session est `indisponible` — réseau coupé pendant le seul
+        // rafraîchissement, ou serveur d'authentification en 5xx pendant que la base répond. La lecture
+        // partait quand même, en `anon`, et le `42501` faisait dire « Le démarrage a échoué ».
+        const suite = suiteDuDemarrage(etatDeLaSession());
+        if (suite === 'attendre') return;
+        if (suite === 'repli') coupureALaSession = true;
 
         // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-10). Quelqu'un qui a
         // interrompu son questionnaire repartait de la racine, donc de l'onboarding : quatre

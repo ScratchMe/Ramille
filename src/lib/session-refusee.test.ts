@@ -470,6 +470,52 @@ describe('une session refusée', () => {
     expect(creations).toHaveLength(0);
     expect(session?.user.id).toBe('compte-reel');
   });
+
+  // **Une surface sans compte restaure, elle ne crée pas** (18/10/2026, `laSessionSOuvreSur`) : la
+  // politique de confidentialité ouverte dans un navigateur neuf n'ouvre ni compte anonyme ni captcha.
+  it('restaurer, à froid, ne crée rien et ne demande pas de captcha', async () => {
+    const { restaurerLaSession, etatDeLaSession } = await nouveauLancement();
+    mockJetonDuCaptcha.mockClear();
+
+    const session = await restaurerLaSession();
+
+    expect(session).toBeNull();
+    expect(etatDeLaSession()).toBe('absente');
+    expect(creations).toHaveLength(0);
+    expect(mockJetonDuCaptcha).not.toHaveBeenCalled();
+  });
+
+  it('restaurer rend la session qui est là, et l’accueille comme au démarrage', async () => {
+    const { restaurerLaSession, etatDeLaSession } = await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+    ]);
+
+    const session = await restaurerLaSession();
+    await laisserSePoser();
+
+    expect(session?.user.id).toBe('compte-reel');
+    expect(etatDeLaSession()).toBe('presente');
+    expect(await AsyncStorage.getItem(MARQUE_DU_COMPTE)).toBe('1');
+    expect(creations).toHaveLength(0);
+  });
+
+  it('restaurer dit un refus, sans rien ouvrir à sa place', async () => {
+    const { restaurerLaSession, etatDeLaSession } = await relancerAvecUnJetonRefuse(await unCompteDejaVu());
+
+    expect(await restaurerLaSession()).toBeNull();
+    expect(etatDeLaSession()).toBe('refusee');
+    expect(creations).toHaveLength(0);
+  });
+
+  it('après une restauration à froid, la session s’ouvre dès que l’app la demande', async () => {
+    const { restaurerLaSession, ensureSession } = await nouveauLancement();
+    await restaurerLaSession();
+
+    const session = await ensureSession();
+
+    expect(session?.user.id).toBe('anonyme-neuf');
+    expect(creations).toHaveLength(1);
+  });
 });
 
 /*
@@ -516,4 +562,11 @@ describe('une session refusée', () => {
  *   | la reconnexion sans session relue qui balaie tout | « la file des erreurs survit à une reconnexion… », seul |
  *   | la déconnexion qui garde la file (`effacerLesMarquesDuCompte`) | « une déconnexion voulue emporte la file… », seul |
  *   | la session non relue après l'attente du captcha (04/10/2026) | « une session ouverte pendant l'attente du captcha… », seul |
+ *
+ * **Et deux pour la restauration des surfaces sans compte** (18/10/2026), jouées sur `src/lib/supabase.ts` :
+ *
+ *   | Ce qu'on casse | Ce qui tombe |
+ *   |---|---|
+ *   | `restaurerLaSession` qui crée comme `ensureSession` | « restaurer, à froid, ne crée rien… », seul |
+ *   | `restaurerLaSession` qui n'accueille pas la session trouvée (`accueillirLaSession` sauté) | « restaurer rend la session qui est là… », seul |
  */

@@ -14,6 +14,7 @@
  *     serveur », seul ; de même `429` retiré (contre-lecture du 02/10/2026 : la première version vidait
  *     la file sur tout statut autre que 0).
  */
+import { MAX_PROP_KEYS, MAX_PROP_VALUE_LENGTH, sanitizeEventProps } from '@/types/analytics';
 import {
   AGE_MAXIMAL_MS,
   enfiler,
@@ -64,6 +65,28 @@ describe('lireLaFile', () => {
   });
 });
 
+describe('l’origine et la version d’une panne gardée (18/10/2026)', () => {
+  const avecOrigine: ErreurEnAttente = { ...erreur(1), origine: 'fatale', version: '1.0.0+14' };
+
+  it('se gardent, et se relisent', () => {
+    expect(lireLaFile(JSON.stringify([avecOrigine]), MAINTENANT)).toEqual([avecOrigine]);
+  });
+
+  it('une entrée d’une version d’avant, sans elles, se relit telle quelle', () => {
+    expect(lireLaFile(JSON.stringify([erreur(1)]), MAINTENANT)).toEqual([erreur(1)]);
+  });
+
+  it('une origine inconnue, ou une version d’une autre forme, écarte l’entrée', () => {
+    const brut = JSON.stringify([
+      { ...erreur(1), origine: 'inventee' },
+      { ...erreur(2), version: 14 },
+      { ...erreur(3), version: 'x'.repeat(MAX_PROP_VALUE_LENGTH + 1) },
+      avecOrigine,
+    ]);
+    expect(lireLaFile(brut, MAINTENANT)).toEqual([avecOrigine]);
+  });
+});
+
 describe('propsDifferees', () => {
   it('dit que l’envoi est différé, et de combien d’heures', () => {
     expect(propsDifferees(erreur(0, MAINTENANT - 3.4 * 3_600_000), MAINTENANT)).toEqual({
@@ -72,6 +95,32 @@ describe('propsDifferees', () => {
       differee: true,
       retard_h: 3,
     });
+  });
+
+  it('porte l’origine et la version de la panne, celles du moment où elle est arrivée', () => {
+    const panne: ErreurEnAttente = { ...erreur(0, MAINTENANT - 7_200_000), origine: 'fatale', version: '1.0.0+14' };
+    expect(propsDifferees(panne, MAINTENANT)).toEqual({
+      category: 'type',
+      route: '/plan?n=0',
+      origine: 'fatale',
+      version: '1.0.0+14',
+      differee: true,
+      retard_h: 2,
+    });
+  });
+
+  /**
+   * **La panne différée la plus large remplit les six clés que la base accepte, et pas une de plus.** Une
+   * septième — une propriété ajoutée à `app_error` sans y penser — ferait perdre `retard_h`, la dernière,
+   * à l'écrêtage (`sanitizeEventProps`), sans que rien ne le dise. Éprouvé le 18/10/2026 : une clé de plus
+   * dans `propsDifferees` → ce test, et les deux qui comparent l'objet entier — celui-ci est le seul qui
+   * tomberait encore si l'on corrigeait les deux autres en y ajoutant la clé.
+   */
+  it('tient dans la borne de la base, sans rien perdre à l’écrêtage', () => {
+    const panne: ErreurEnAttente = { ...erreur(0), origine: 'promesse', version: '1.0.0+14' };
+    const props = propsDifferees(panne, MAINTENANT);
+    expect(Object.keys(props).length).toBeLessThanOrEqual(MAX_PROP_KEYS);
+    expect(sanitizeEventProps(props)).toEqual(props);
   });
 });
 

@@ -179,7 +179,7 @@
 // Leurs mutations sont écrites en tête de chaque section, à côté de ce qu'elles gardent.
 //
 // Lancé en CI après `expo export`, à côté des quatre autres gardes, cf. .github/workflows/ci.yml.
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { chromium } from 'playwright';
@@ -250,6 +250,7 @@ async function ouvrir(
     hauteur = 844,
     largeur = 390,
     sansStockageDOnglet = false,
+    intercepter = null,
   } = {}
 ) {
   // 390 de large par défaut ; 360 pour les cas que les planches mettent à 360 × 800 (section K).
@@ -289,6 +290,8 @@ async function ouvrir(
   await page.addInitScript((entrees) => {
     for (const [cle, valeur] of Object.entries(entrees)) window.localStorage.setItem(cle, valeur);
   }, marques);
+  // Une route servie par le script plutôt que par le réseau — le captcha de Cloudflare (section M).
+  if (intercepter) await intercepter(page);
   await page.goto(base + chemin, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   // On attend que React ait pris la main — l'export **pré-rend** le corps, donc lire trop tôt
   // revient à relire le HTML statique, où aucune marque locale n'a encore été consultée.
@@ -2656,6 +2659,109 @@ async function attendreLeTexte(page, texte) {
   }
 }
 
+// ── M. Les surfaces sans compte, ouvertes à froid : ni session, ni captcha (18/10/2026) ───────────
+//
+// Un navigateur neuf qui lit la politique de confidentialité — l'examinateur de Play, quelqu'un qui a
+// désinstallé l'app — recevait une session anonyme, donc un compte, et le captcha qui la précède : le
+// layout racine l'ouvrait au montage, sur toute route (`laSessionSOuvreSur`, `src/types/session.ts`). Ce
+// qui se mesure ici est la **demande** : la configuration factice de la CI ne laisse aucune session
+// s'ouvrir, mais l'appel `POST /auth/v1/signup` part quand même, et c'est lui que la page ne doit pas
+// faire. Le parcours réel compte, lui, les comptes de la base (`verifier-parcours-reel.mjs`).
+//
+// **Le captcha ne se mesure que si l'export porte une clé de site** (`EXPO_PUBLIC_TURNSTILE_SITE_KEY`,
+// retrouvée dans le bundle) : sans elle, `jetonDuCaptcha` ne charge rien, page publique ou non. La CI
+// n'en a pas, exprès (`src/lib/captcha.ts`) — la moitié du captcha s'y lit donc par l'absence de demande
+// de session, le seul appel qui le charge à l'ouverture, et la sortie le dit. Avec une clé (la clé de
+// test de Cloudflare suffit), Cloudflare est servi par le script, jamais par le réseau.
+//
+// **Un témoin d'abord** : `/onboarding`, une page de l'app qui n'ouvre pas la session elle-même, doit la
+// demander — et charger le captcha s'il y a une clé. Sans lui, une mesure qui ne verrait plus la demande
+// passerait pour une page qui ne la fait pas.
+//
+// Éprouvé en le cassant le 18/10/2026 : un témoin et trois exports mutés, chacun avec son cache de Metro,
+// `--clear` et son propre dossier, la source restaurée dès l'export fini ; « avec clé » est un export
+// portant la clé de test de Cloudflare (`1x00000000000000000000AA`), Cloudflare servi par le script. Le
+// témoin, avec clé, sort vert, et chaque mutation ne fait tomber que des lignes de cette section :
+//
+//   | Ce qu'on casse | Ce qui tombe |
+//   |---|---|
+//   | le layout ouvre la session sur toute route (l'appel d'avant), avec clé | les cinq surfaces, deux fois chacune : la session demandée, le captcha chargé |
+//   | le même, sans clé (l'export de la CI) | les cinq surfaces, la session demandée — seule moitié mesurable sans clé |
+//   | le layout ne fait que restaurer, partout | le témoin `/onboarding`, deux fois : pas de session demandée, pas de captcha |
+{
+  const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/compte/suppression', '/rappels/stop', '/status'];
+  const cle = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null;
+  const dossierDuBundle = join(DIST, '_expo', 'static', 'js', 'web');
+  let cleDansLeBundle = false;
+  if (cle) {
+    try {
+      cleDansLeBundle = readdirSync(dossierDuBundle)
+        .filter((nom) => nom.endsWith('.js'))
+        .some((nom) => readFileSync(join(dossierDuBundle, nom), 'utf8').includes(cle));
+    } catch {
+      cleDansLeBundle = false;
+    }
+    if (!cleDansLeBundle) echecs.push(`M : EXPO_PUBLIC_TURNSTILE_SITE_KEY est posée, mais le bundle de « ${DIST} » ne la porte pas.`);
+  }
+  // Un Turnstile qui rend un jeton factice : le témoin va jusqu'à sa demande de session.
+  const TURNSTILE_FACTICE =
+    'window.turnstile = { render: function (hote, options) { setTimeout(function () { options.callback("jeton-factice"); }, 0); return "w"; }, remove: function () {} };';
+  const intercepter = async (page) => {
+    await page.route('https://challenges.cloudflare.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/javascript', body: TURNSTILE_FACTICE })
+    );
+  };
+  const demandeUneSession = ({ url, methode }) => methode === 'POST' && url.includes('/auth/v1/signup');
+  const versCloudflare = ({ url }) => url.startsWith('https://challenges.cloudflare.com/');
+
+  async function ouvrirAFroid(chemin) {
+    const requetes = [];
+    const page = await ouvrir(chemin, {}, { requetes, intercepter });
+    try {
+      // Une seconde de plus que le repos : la session du montage part après l'hydratation, et le captcha
+      // avant elle.
+      await page.waitForTimeout(1_000);
+      const voile = await page.evaluate(() => document.querySelector('[data-captcha]') !== null);
+      return { requetes, voile };
+    } finally {
+      await page.close();
+    }
+  }
+
+  try {
+    const temoin = await ouvrirAFroid('/onboarding');
+    if (!temoin.requetes.some(demandeUneSession)) {
+      echecs.push(
+        'M : le témoin `/onboarding`, ouvert à froid, n’a demandé aucune session — la mesure ne voit plus la' +
+          ' demande, ou l’app ne l’ouvre plus sur ses propres pages (`laSessionSOuvreSur`).'
+      );
+    }
+    if (cleDansLeBundle && !temoin.requetes.some(versCloudflare)) {
+      echecs.push('M : le témoin `/onboarding` n’a pas chargé le captcha, alors que l’export porte une clé de site.');
+    }
+    for (const chemin of SURFACES_SANS_COMPTE) {
+      const { requetes, voile } = await ouvrirAFroid(chemin);
+      if (requetes.some(demandeUneSession)) {
+        echecs.push(
+          `M : ${chemin}, ouverte à froid, a demandé une session anonyme — un compte créé pour qui ne fait que` +
+            ' lire (`laSessionSOuvreSur`, `src/types/session.ts`).'
+        );
+      }
+      if (requetes.some(versCloudflare) || voile) {
+        echecs.push(`M : ${chemin}, ouverte à froid, a chargé le captcha de Cloudflare.`);
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`M : ${String(erreur).slice(0, 180)}`);
+  }
+  console.log(
+    cleDansLeBundle
+      ? `M : ${SURFACES_SANS_COMPTE.length} surfaces sans compte mesurées à froid, session et captcha.`
+      : `M : ${SURFACES_SANS_COMPTE.length} surfaces sans compte mesurées à froid ; l’export ne porte pas de clé` +
+          ' de site, donc le captcha s’y lit par l’absence de demande de session, seul appel qui le charge.'
+  );
+}
+
 await navigateur.close();
 fermer();
 
@@ -2690,5 +2796,6 @@ console.log(
     ' y cochent sans en sortir ; la barre posée au démarrage, l’étape, son rail, une précision et les' +
     ' onglets en mouvement — et posés sous « réduire les animations » ; au « Suivant » en attente, ce' +
     ' qui manque se dit, y mène et y fait défiler, une ouverture remonte l’écran, et le filet dit la suite ;' +
-    ' sur les écrans de compte, le focus suit le geste qui change la phase, et seulement lui.'
+    ' sur les écrans de compte, le focus suit le geste qui change la phase, et seulement lui ; les' +
+    ' surfaces sans compte, ouvertes à froid, ne demandent pas de session.'
 );
