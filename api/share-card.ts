@@ -42,19 +42,30 @@
 // de l'app (`@expo-google-fonts/spline-sans`) — copiée dans api/fonts/ plutôt qu'importée depuis
 // node_modules, pour ne pas dépendre de la structure interne du paquet.
 //
-// Paramètres (query string) : `total` (tonnes CO2e/an, ex. "4.2"), `poste` (libellé du poste
+// Paramètres (query string) : `total` (tonnes CO2e/an, ex. "4.200"), `poste` (libellé du poste
 // dominant, déjà en français et sans pronom, pris dans une liste fermée — cf. `dominantShareLabel`
-// dans `src/types/resultat.ts`, et le bloc `<postes-partageables>` plus bas),
+// dans `src/types/resultat.ts`, et `_partage-commun.ts`),
 // `percent` (part du poste dominant dans l'empreinte totale, entier 0-100). `poste` seul, sans
 // préciser qu'il s'agit du poste dominant ni sa part, ne voulait rien dire pour qui reçoit le
 // lien (retour utilisateur du 04/09/2026) — `percent` lui donne un sens réel. Tous optionnels
 // côté rendu (valeurs de repli) : ce endpoint ne doit jamais planter sur une URL mal formée, y
-// compris construite par un tiers.
+// compris construite par un tiers. Il ne rend que l'adresse canonique que `_partage-commun.ts`
+// définit : toute variante est redirigée (308) vers elle, ou refusée (400).
 import fs from 'node:fs';
 import path from 'node:path';
 import { createElement as h } from 'react';
 import satori from 'satori';
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import {
+  CACHE_CARTE,
+  CACHE_JAMAIS,
+  CHEMIN_CARTE,
+  libelleDuTotal,
+  lireLaRequete,
+  reponseIllisible,
+  reponseRedirection,
+  type ParametresDePartage,
+} from './_partage-commun.js';
 
 const ACCENT = '#1F6F4A';
 const ACCENT_TEXT = '#14563A';
@@ -109,100 +120,6 @@ function mascot() {
   );
 }
 
-// Même borne, même repli et même raison que dans `api/partage.ts` : les deux endpoints lisent la
-// même URL, et un total accepté d'un côté mais refusé de l'autre afficherait un titre et une image
-// qui se contredisent dans le même aperçu. Sans borne, `Number.parseFloat` acceptait un négatif ou
-// un 1e40 — une carte aux couleurs et à la mascotte du produit annonçant « -5,0 t », et un nombre
-// à quarante chiffres qui débordait les 1200 px en `fontSize: 104` sans que rien ne l'arrête.
-// Garde de robustesse, pas de sécurité : un total inventé dans la borne reste plausible (cf.
-// `api/partage.ts`). Le libellé, lui, est une liste fermée (le bloc ci-dessous).
-const TOTAL_TONNES_MAX = 200;
-
-// **La règle des kilos sous la tonne, recopiée depuis `src/lib/format.ts`.** `api/` ne peut pas
-// importer `src/` (tsconfig dédié, runtime Web Fetch API), exactement comme pour `APP_NAME` — donc
-// la règle se duplique, et il faut la tenir des deux côtés. Sans cette bascule, un bilan de 40 kg
-// partait avec un texte disant « 40 kg CO₂e » et une carte titrée « 0,0 t CO₂e » : les deux
-// chiffres du même partage se contredisaient, sur la seule surface publique du produit. C'est le
-// constat A3-1, réapparu par la porte de l'aperçu.
-//
-// Le paramètre arrive en **tonnes** (cf. `urlDePartage`), la règle raisonne en kilos : l'arrondi
-// vient avant la comparaison, donc 0,9996 t est une tonne et non « 1000 kg ».
-//
-// Rend le libellé **entier**, unité comprise, et non plus le seul nombre : l'unité dépend de la
-// valeur, donc la concaténer à l'appel rendrait « 40 kg CO₂e t CO₂e ».
-function formatTonnes(raw: string | null): string {
-  const n = raw ? Number.parseFloat(raw) : NaN;
-  if (!Number.isFinite(n) || n < 0 || n > TOTAL_TONNES_MAX) return '—';
-  const kilos = Math.round(n * 1000);
-  if (kilos < 1000) return `${kilos} kg CO₂e`;
-  return `${n.toFixed(1).replace('.', ',')} t CO₂e`;
-}
-
-function formatPercent(raw: string | null): number | null {
-  const n = raw ? Number.parseInt(raw, 10) : NaN;
-  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
-}
-
-// <postes-partageables>
-// **`poste` est une liste fermée** (05/10/2026, plan anti-abus) : les libellés que
-// `dominantShareLabel` (`src/types/resultat.ts`) sait produire — un poste, suivi ou non de la
-// préposition de son mode —, et rien d'autre. Il était du texte libre tronqué à 120 caractères :
-// n'importe qui fabriquait un aperçu aux couleurs du produit, portant la phrase de son choix sous
-// « Poste principal ». Un libellé inconnu est ignoré, et la page comme la carte retombent sur leur
-// forme sans poste, celle d'une URL qui n'en porte pas.
-//
-// **Ce bloc est recopié à l'identique dans `api/partage.ts` et `api/share-card.ts`** : une Function
-// qui en importe une autre ajoute un chemin de compilation que rien ne rejoue avant le déploiement,
-// et son échec y serait muet (`VERCEL.md` §1.6). `scripts/postes-partageables.test.ts` exige que
-// les deux copies soient les mêmes, et que chaque libellé que l'app produit soit accepté. L'inverse
-// n'est pas exigé, et c'est voulu : un libellé que l'app ne produit plus garde lisibles les liens
-// déjà partagés.
-const POSTES_PARTAGEABLES = [
-  'Trajet domicile-travail',
-  'Loisirs du week-end',
-  'Loisirs occasionnels',
-  'Voyages longue distance',
-];
-
-const MODES_PARTAGEABLES = [
-  'en voiture',
-  'en voiture thermique',
-  'en voiture électrique',
-  'en voiture hybride',
-  'en voiture hybride rechargeable',
-  'en deux-roues motorisé',
-  'en scooter thermique',
-  'en scooter électrique',
-  'en moto de petite cylindrée',
-  'en moto de grosse cylindrée',
-  'en train',
-  'en TER',
-  'en RER ou Transilien',
-  'en Intercités',
-  'en TGV',
-  'en bus',
-  'en métro ou tram',
-  'à vélo',
-  'à vélo électrique',
-  'à pied',
-  'en trottinette',
-  'en autocar',
-  'en avion (court/moyen-courrier)',
-  'en avion long-courrier',
-];
-
-function posteFerme(brut: string | null): string | null {
-  if (!brut) return null;
-  for (const poste of POSTES_PARTAGEABLES) {
-    if (brut === poste) return poste;
-    if (brut.startsWith(`${poste} `) && MODES_PARTAGEABLES.includes(brut.slice(poste.length + 1))) {
-      return brut;
-    }
-  }
-  return null;
-}
-// </postes-partageables>
-
 // `export function GET` plutôt qu'un export par défaut : en runtime Node.js (contrairement à
 // Edge, toujours fetch-style), un export par défaut est traité par Vercel comme l'ancienne
 // signature `(req, res) => void` — notre valeur de retour (`Response`) était silencieusement
@@ -212,7 +129,13 @@ function posteFerme(brut: string | null): string | null {
 // explicitement comme fetch-style, quel que soit le runtime.
 export async function GET(request: Request): Promise<Response> {
   try {
-    return reponsePng(await carte(request), true);
+    // **La forme canonique se juge avant le moindre rendu**, donc avant le wasm : une variante
+    // redirigée ou refusée ne coûte qu'une invocation, jamais satori ni resvg. `request.url` est un
+    // chemin en Node.js, d'où la base factice — seule la chaîne de requête compte.
+    const lecture = lireLaRequete(new URL(request.url, 'http://localhost').search);
+    if (lecture.statut === 'illisible') return reponseIllisible();
+    if (!lecture.canonique) return reponseRedirection(CHEMIN_CARTE, lecture.query);
+    return reponsePng(await carte(lecture.parametres), true);
   } catch (erreur) {
     // **Jamais de 500 ici.** Ce endpoint est lu par des aperçus de lien, pas par du code qui sait
     // réessayer : un 500 laisse un cadre vide dans une conversation, et côté client il n'apparaît
@@ -245,22 +168,17 @@ function reponsePng(png: Uint8Array, cachable: boolean): Response {
   return new Response(Buffer.from(png), {
     headers: {
       'content-type': 'image/png',
-      'cache-control': cachable ? 'public, immutable, no-transform, max-age=31536000' : 'no-store',
+      'cache-control': cachable ? CACHE_CARTE : CACHE_JAMAIS,
       'x-robots-tag': 'noindex, nofollow',
     },
   });
 }
 
-async function carte(request: Request): Promise<Uint8Array> {
+async function carte(parametres: ParametresDePartage): Promise<Uint8Array> {
   await ensureWasm();
 
-  // Base factice : contrairement au runtime Edge, `request.url` en Function Node.js est un
-  // chemin relatif (path + query, sans protocole/host) — seuls les searchParams nous
-  // intéressent ici, la base n'est jamais utilisée pour construire une URL de sortie.
-  const { searchParams } = new URL(request.url, 'http://localhost');
-  const total = formatTonnes(searchParams.get('total'));
-  const poste = posteFerme(searchParams.get('poste'));
-  const percent = formatPercent(searchParams.get('percent'));
+  const { poste, percent } = parametres;
+  const total = parametres.total !== null ? libelleDuTotal(parametres.total) : '—';
 
   const element = h(
     'div',

@@ -5,9 +5,10 @@
 // `cleanUrls`, et deux copies qui divergent feraient qu'un garde-fou sert la production et
 // l'autre non — sans que rien ne dise lequel a raison. La règle du dépôt vaut ici comme
 // ailleurs : ce qui doit rester d'accord s'écrit une fois.
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, relative, sep } from 'node:path';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -46,8 +47,9 @@ function resoudre(dist, url) {
 }
 
 /**
- * Les en-têtes que `vercel.json` pose sur toutes les routes, **Content-Security-Policy comprise**,
- * servis tels quels — à un détail près, dit plus bas.
+ * Les en-têtes que `vercel.json` pose, route par route, **Content-Security-Policy comprise**, servis
+ * tels quels — à un détail près, dit plus bas. Rend une fonction du chemin demandé : la CSP vise toutes
+ * les routes, le cache immuable seulement les fichiers hachés de l'export.
  *
  * **Pourquoi ce serveur les sert** (02/10/2026). La CSP du site est appliquée, et une politique
  * appliquée qui interdit quelque chose dont l'app a besoin ne casse pas une page : elle casse l'app
@@ -64,21 +66,122 @@ function resoudre(dist, url) {
  * ce qu'on éprouve.
  */
 export function enTetesDeProduction(config, origineSupabase) {
-  const regles = config.headers ?? [];
-  for (const regle of regles) {
-    if (regle.source !== '/(.*)') {
+  const regles = (config.headers ?? []).map((regle) => ({
+    motif: expressionDeLaSource(regle.source),
+    enTetes: Object.fromEntries(
+      regle.headers.map(({ key, value }) => [
+        key.toLowerCase(),
+        /^content-security-policy/i.test(key) ? politiqueServie(value, origineSupabase) : value,
+      ]),
+    ),
+  }));
+  /** Les en-têtes d'un chemin : toutes les règles qui le visent, dans l'ordre, la dernière l'emportant. */
+  return (chemin) => Object.assign({}, ...regles.filter(({ motif }) => motif.test(chemin)).map((r) => r.enTetes));
+}
+
+/**
+ * Lit une `source` de `vercel.json` (la syntaxe de path-to-regexp) comme Vercel la compile, pour la
+ * grammaire que ce dépôt emploie : des segments littéraux et des groupes `( … )` qui sont des
+ * expressions régulières telles quelles — `/(.*)`, `/_expo/static/(.+-[0-9a-f]{32}\.js)`.
+ *
+ * **Tout le reste est refusé**, paramètres nommés (`:nom`), jokers (`*`), modificateurs (`?`, `+`) et
+ * accolades hors d'un groupe : un garde-fou qui lirait une règle autrement que Vercel servirait autre
+ * chose que la production sans le dire. Vérifié contre la compilation de Vercel le 18/10/2026
+ * (`npx vercel build`, `.vercel/output/config.json` : `/assets/(X)` devient `^/assets(?:/(X))$`) — le
+ * `/` qui précède un groupe en fait une partie, ce qui ne change rien pour un groupe jamais optionnel.
+ */
+export function expressionDeLaSource(source) {
+  let motif = '';
+  let i = 0;
+  while (i < source.length) {
+    const c = source[i];
+    if (c === '(') {
+      let profondeur = 0;
+      let j = i;
+      for (; j < source.length; j += 1) {
+        if (source[j] === '\\') j += 1;
+        else if (source[j] === '(') profondeur += 1;
+        else if (source[j] === ')' && --profondeur === 0) break;
+      }
+      if (profondeur !== 0) throw new Error(`vercel.json : la source « ${source} » a une parenthèse qui ne se ferme pas.`);
+      motif += source.slice(i, j + 1);
+      i = j + 1;
+    } else if (/[:*+?{}]/.test(c)) {
       throw new Error(
-        `vercel.json pose des en-têtes sur « ${regle.source} » : servir-export.mjs ne sait reproduire` +
-          ' que la règle « /(.*) ». Étendre enTetesDeProduction() avant d’ajouter une règle, sinon les gardes' +
-          ' serviraient autre chose que la production.',
+        `vercel.json pose des en-têtes sur « ${source} » : servir-export.mjs ne sait lire que des segments` +
+          ' littéraux et des groupes ( … ). Étendre expressionDeLaSource() avant d’ajouter une telle règle,' +
+          ' sinon les gardes serviraient autre chose que la production.',
       );
+    } else {
+      motif += c.replace(/[.\\^$|[\]]/g, '\\$&');
+      i += 1;
     }
   }
-  const enTetes = {};
-  for (const { key, value } of regles.flatMap((regle) => regle.headers)) {
-    enTetes[key.toLowerCase()] = /^content-security-policy/i.test(key) ? politiqueServie(value, origineSupabase) : value;
+  return new RegExp(`^${motif}$`);
+}
+
+// Le hachage d'un nom de fichier d'export : 32 hexadécimaux entre deux séparateurs (`entry-<md5>.js`,
+// `Police.<md5>.ttf`, `icone.<md5>@2x.png`).
+const HACHAGE_DANS_LE_NOM = /[-.]([0-9a-f]{32})(?:@\d+x)?(?:\.[A-Za-z0-9]+)+$/;
+
+/**
+ * **Le cache immuable de `vercel.json` ne vise que des fichiers dont le nom dit le contenu, et tous
+ * ceux-là.** `Cache-Control: public, max-age=31536000, immutable` sur un nom qui ne change pas quand le
+ * fichier change, c'est une app dont les visiteurs gardent un an l'ancien code après un déploiement.
+ * Le nom ne se juge pas sur le papier : l'export le dit.
+ *
+ * Rend la liste des écarts, vide quand tout s'accorde :
+ *  - pas une seule règle de cache immuable dans `vercel.json` ;
+ *  - un fichier visé par la règle dont le nom ne porte pas de hachage, ou dont le hachage n'est pas le
+ *    md5 de son contenu. Metro hache ensemble les ressources à plusieurs échelles (`icone.<h>.png`,
+ *    `icone.<h>@2x.png`) : le hachage est celui du jeu, partagé par ses fichiers, et on y exige
+ *    seulement qu'il soit là ;
+ *  - un fichier qui porte un hachage dans son nom et que la règle ne vise pas — le signe d'un export
+ *    qui a changé de convention de nommage, et un cache perdu en silence ;
+ *  - un fichier sous `_expo/static/` ou `assets/` que la règle ne vise pas : ces deux dossiers sont
+ *    ceux de la règle, tout fichier qui y entre sans hachage est un fichier qui se périmerait.
+ */
+export function controlerLeCacheImmuable(dist, config) {
+  const ecarts = [];
+  const regles = (config.headers ?? []).filter((regle) =>
+    regle.headers.some(({ key, value }) => key.toLowerCase() === 'cache-control' && /\bimmutable\b/.test(value)),
+  );
+  if (regles.length === 0) {
+    return ['vercel.json ne pose plus de Cache-Control immutable : les fichiers hachés de l’export seraient revalidés à chaque visite.'];
   }
-  return enTetes;
+  const motifs = regles.map((regle) => expressionDeLaSource(regle.source));
+
+  const fichiers = readdirSync(dist, { recursive: true, withFileTypes: true })
+    .filter((entree) => entree.isFile())
+    .map((entree) => `/${relative(dist, join(entree.parentPath, entree.name)).split(sep).join('/')}`);
+
+  const parHachage = new Map();
+  for (const fichier of fichiers) {
+    const hachage = fichier.match(HACHAGE_DANS_LE_NOM)?.[1];
+    if (hachage) parHachage.set(hachage, (parHachage.get(hachage) ?? 0) + 1);
+  }
+
+  for (const fichier of fichiers) {
+    const vise = motifs.some((motif) => motif.test(fichier));
+    const hachage = fichier.match(HACHAGE_DANS_LE_NOM)?.[1];
+    if (vise) {
+      if (!hachage) {
+        ecarts.push(`${fichier} : cache immuable, mais son nom ne porte aucun hachage`);
+        continue;
+      }
+      if (parHachage.get(hachage) === 1) {
+        const contenu = createHash('md5').update(readFileSync(join(dist, fichier))).digest('hex');
+        if (contenu !== hachage) {
+          ecarts.push(`${fichier} : cache immuable, mais le hachage du nom (${hachage}) n’est pas le md5 du contenu (${contenu})`);
+        }
+      }
+    } else if (hachage) {
+      ecarts.push(`${fichier} : son nom porte un hachage, mais le cache immuable de vercel.json ne le vise pas`);
+    } else if (/^\/(?:_expo\/static|assets)\//.test(fichier)) {
+      ecarts.push(`${fichier} : sous un dossier de fichiers hachés, sans hachage dans son nom — le cache immuable ne le vise pas`);
+    }
+  }
+  return ecarts;
 }
 
 /** La politique de `vercel.json`, l'origine Supabase de production remplacée par celle de l'export. */
@@ -157,6 +260,7 @@ export async function servirExport(dist, port = 0) {
   );
   const serveur = createServer((requete, reponse) => {
     const fichier = resoudre(dist, requete.url ?? '/');
+    const enTetesDeLaRoute = enTetes(new URL(requete.url ?? '/', 'http://localhost').pathname);
     if (!fichier) {
       // **Comme Vercel : `404.html`, en statut 404, sur l'adresse demandée** (04/10/2026, seconde
       // passe de la revue finale). Sans elle, aucune garde n'ouvrait la page introuvable — sa pose
@@ -165,7 +269,7 @@ export async function servirExport(dist, port = 0) {
       // `poser-la-page-introuvable.mjs`) répond comme avant.
       const introuvable = join(dist, '404.html');
       if (existsSync(introuvable)) {
-        reponse.writeHead(404, { ...enTetes, 'content-type': TYPES['.html'] });
+        reponse.writeHead(404, { ...enTetesDeLaRoute, 'content-type': TYPES['.html'] });
         createReadStream(introuvable).pipe(reponse);
         return;
       }
@@ -173,7 +277,7 @@ export async function servirExport(dist, port = 0) {
       return;
     }
     reponse.writeHead(200, {
-      ...enTetes,
+      ...enTetesDeLaRoute,
       'content-type': TYPES[extname(fichier)] ?? 'application/octet-stream',
     });
     createReadStream(fichier).pipe(reponse);

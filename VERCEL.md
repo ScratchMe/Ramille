@@ -11,7 +11,8 @@ elle vient ; l'histoire complète est dans `CLAUDE.md` (mécaniques) et dans les
 > sautée, §1.3) · avant de toucher `vercel.json`, `api/`, le script
 > `vercel-build` ou `scripts/vercel-ignorer-le-build.sh` · avant d'ajouter une route à l'app ·
 > avant d'affirmer quoi que ce soit sur un compteur ou une facture Vercel · pour mesurer le
-> poids d'un déploiement.
+> poids d'un déploiement · avant de poser un `Cache-Control` sur une réponse de fonction ou sur
+> un fichier statique · avant d'ajouter un fichier à `api/`.
 
 ---
 
@@ -100,10 +101,22 @@ poids facturé, multiplier ensuite chaque bundle par le nombre de routes qui poi
 **Et la mesure dépend de l'endroit d'où on la lance, de quelques octets** (relevé le 02/10/2026). Les
 sourcemaps du build portent le **chemin absolu** de leur source : mesurer depuis une copie de travail
 (`.claude/worktrees/<nom>/`) au lieu de la racine du dépôt ajoute la longueur de ce préfixe une fois
-par fichier qui le porte — deux aujourd'hui, la carte de `share-card` et le bundle de `partage`. Ce
-jour-là, +52 octets depuis `.claude/worktrees/erreurs/` (26 caractères, deux fois), et `main` mesuré
-au même endroit donnait le même contenu. Un écart de quelques dizaines d'octets se compare donc à
-`main` mesuré **au même endroit**, avant de chercher une cause dans le code.
+par fichier qui le porte — quatre aujourd'hui : la carte de chaque fonction, et celle du module
+commun copié dans chacune. Ce jour-là, +52 octets depuis `.claude/worktrees/erreurs/` (26 caractères,
+deux fois), et `main` mesuré au même endroit donnait le même contenu. Un écart de quelques dizaines
+d'octets se compare donc à `main` mesuré **au même endroit** — ou se ramène à une racine de référence
+(`/home/user/Ramille`, 18 caractères) en retirant, par occurrence du chemin dans les fichiers du
+`.func`, l'excédent de longueur —, avant de chercher une cause dans le code.
+
+**Et depuis une copie de travail, `node_modules` ne doit pas être un lien symbolique.** Celle d'un
+sous-agent en porte un (`scripts/preparer-un-worktree.mjs`) : `vercel build` écrit alors
+`"node_modules": "node_modules"` dans le `filePathMap` de `share-card` au lieu de copier les fichiers
+tracés dans le `.func`, et la somme ne dit plus rien. On mesure dans un projet minimal — `api/`,
+`vercel.json` dont la `buildCommand` est un `echo`, `.vercel/project.json` avec
+`"installCommand":"true"` pour que rien ne touche à `node_modules`, et les seules dépendances d'`api/`
+(`react`, `satori`, `@resvg/resvg-wasm`, `harfbuzzjs`, leurs dépendances) copiées en vrais dossiers.
+Relevé le 18/10/2026 : sur l'arbre d'avant le module commun, cette méthode rend les 4 378 974 octets du
+06/10/2026 **à l'octet**, une fois ramenée à la racine de référence.
 
 **Et le tableau de bord compte l'archive, pas le disque.** L'export d'un déploiement (*Deployment
 → Source/Output*, ou l'export CSV) donne par fonction la taille que Vercel retient ; chez Ramille
@@ -228,7 +241,14 @@ détail côté client : le seul endroit qui dit pourquoi est *Project → Logs*.
 - `request.url` est **relatif** : le parser avec une base factice (`new URL(url, 'http://x')`) ;
 - l'export est **nommé** (`GET`, `POST`…), jamais `export default` ;
 - `maxDuration` se surveille si le démarrage à froid est lourd (un rendu d'image à partir de
-  WASM l'est).
+  WASM l'est) ;
+- **un module commun à deux fonctions** porte un `_` en tête de son nom — Vercel fait une fonction de
+  chaque autre fichier de `api/`, donc une route publique et un déploiement de plus —, et **chaque
+  import relatif se termine par `.js`** : le compilateur de Vercel ne réécrit pas les spécificateurs, un
+  import en `.ts` partirait tel quel dans un déploiement où seul le `.js` compilé existe, et un import
+  sans extension n'est pas résolu par Node en ESM. TypeScript, lui, résout un import en `.js` vers le
+  `.ts` voisin. Les deux se jugent sur les sources (`scripts/verifier-api.mjs`), parce que Node exécute
+  un `.ts` sous son vrai nom et ne verrait ni l'un ni l'autre.
 
 **Et depuis le 20/09/2026, les points 1, 3 et 4 s'éprouvent avant de déployer** :
 `scripts/verifier-api.mjs` importe les deux fonctions sous Node 22 (type stripping natif, le même
@@ -252,7 +272,16 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
   dépendance nouvelle qui charge un asset se vérifie encore au premier déploiement, dans
   *Project → Logs* ;
 - `maxDuration` : le script rend, mesure l'image et s'arrête — il ne chronomètre rien. Un démarrage
-  à froid qui passerait la limite de la fonction laisserait cette CI entièrement verte.
+  à froid qui passerait la limite de la fonction laisserait cette CI entièrement verte ;
+- **le module commun, côté Edge** : `vercel build` copie bien la version compilée du module à côté de
+  celle de la page dans le `.func`, et la documentation dit que l'Edge regroupe en un seul fichier ce que
+  l'entrée importe (`.js`, `.json`, `.wasm`) ; mais ce regroupement se fait au déploiement. Le côté
+  Node, lui, a été joué : le `.func` construit, importé sous Node dans le même répertoire que Lambda
+  (cwd = le `.func`, `hb.wasm` posé comme `filePathMap` le demande), rend la carte (18/10/2026) ;
+- **la chaîne de requête, de bout en bout** : la forme canonique d'une adresse se juge sur la
+  chaîne **brute** que la fonction reçoit (§2.2). Si la plateforme la ré-encodait entre le CDN et la
+  fonction, l'adresse que l'app produit serait redirigée vers elle-même, en boucle. Rien ne le montre
+  hors d'un déploiement : un `curl -I` sur l'adresse canonique doit répondre 200, pas 308.
 
 ### 1.7 Ce qui pèse dans une fonction
 
@@ -301,6 +330,50 @@ en prévisualisations bloque la production des autres. La parade est celle du §
 **Ce qu'il faut regarder après une fusion qui doit partir** : le statut `Vercel` du commit sur
 GitHub, et l'en-tête ou le contenu servi — pas la CI, qui est verte quoi qu'il arrive.
 
+### 1.10 Ce que le CDN garde d'une réponse de fonction
+
+**Une réponse de fonction n'entre dans le cache du CDN que si son `Cache-Control` porte `s-maxage`**
+(seul, ou avec `stale-while-revalidate` et `stale-if-error`). `max-age` seul ne parle qu'au
+navigateur : une fonction qui n'écrit que `public, max-age=31536000` recalcule chaque requête de
+chaque visiteur, et une fonction qui n'écrit rien sort `public, max-age=0, must-revalidate` — ce que le
+CDN lit comme « ne pas garder ». Quand `Cache-Control` est le seul en-tête de cache, le CDN consomme
+`s-maxage` et `stale-while-revalidate` et ne les transmet pas au navigateur ; `CDN-Cache-Control` et
+`Vercel-CDN-Cache-Control` règlent le CDN seul.
+
+- **La clé est la méthode, l'URL complète (chaîne de requête comprise), l'hôte, le schéma et le
+  déploiement.** Un déploiement neuf repart d'un cache vide : une durée longue ne fige donc rien d'une
+  version à l'autre, et un cache ne soulage un déploiement qu'après la première requête de chaque
+  adresse. Le cache est aussi segmenté par région.
+- **Seuls 200, 404, 410, 301, 302, 307 et 308 se gardent** — jamais un 400 —, et jamais une réponse
+  `private`, `no-cache`, `no-store`, avec `Set-Cookie` ou `Vary: Cookie`.
+- **Un repli ne se garde jamais** : la réponse neutre servie à la place d'une panne passagère part en
+  `no-store`, sans quoi la panne se figerait sur son adresse après avoir cessé.
+- **Toute forme équivalente d'une adresse est une entrée de cache neuve**, et c'est une faille de
+  coût quand la réponse se paie : un paramètre en plus, l'ordre, `%20` pour `+`, un zéro de tête, un
+  texte derrière un nombre que `parseFloat` lit quand même. Le pare-feu de la plateforme compte des
+  requêtes, pas des clés de cache. Le cache seul n'y répond pas ; ce qui y répond est une **forme
+  canonique** jugée avant tout travail coûteux : l'adresse canonique est servie, une variante lisible
+  est redirigée (308, cacheable) vers elle, une adresse sans sens répond 400.
+
+### 1.11 Les fichiers hachés d'un export statique
+
+Vercel sert un fichier statique en `public, max-age=0, must-revalidate` : le navigateur le revalide à
+chaque visite. Un nom qui porte le hachage du contenu autorise `public, max-age=31536000, immutable`,
+et **seulement lui** — sur un nom qui ne change pas avec le fichier, les visiteurs garderaient un an
+l'ancien code après un déploiement.
+
+- **Une règle `headers` par famille de noms, dont la `source` exige le hachage dans le nom**, plutôt
+  qu'un dossier entier : `/assets/(.*)` rendrait immuable le premier fichier sans hachage qui y
+  entrerait. Dans une `source` (path-to-regexp), un groupe `( … )` est une expression régulière, et
+  Vercel le compile en `^/assets(?:/(…))$` — lu dans la configuration que `vercel build` écrit sous `.vercel/output`, d'un build
+  hors ligne.
+- **Le hachage se vérifie sur l'export, pas sur la foi du nom.** Chez Expo/Metro, le bundle et la
+  feuille de style portent le md5 de leur contenu ; une ressource à une échelle aussi ; les ressources
+  à plusieurs échelles (`icone.<h>.png`, `icone.<h>@2x.png`) partagent le hachage du **jeu**, qui n'est
+  le md5 d'aucun des fichiers.
+- **Une règle de plus dans `vercel.json` est une règle de plus à reproduire** pour tout script qui sert
+  l'export comme Vercel : ici `scripts/servir-export.mjs` (§2.2).
+
 ---
 
 ## 2. Propre à Ramille
@@ -316,7 +389,7 @@ GitHub, et l'en-tête ou le contenu servi — pas la CI, qui est verte quoi qu'i
 | Poids de `share-card` **retenu par Vercel** | **1 595 453 octets ≈ 1,6 Mo** (export du tableau de bord, 15/09/2026 — l'archive compressée, 37 % du disque) |
 | Poids de `partage` | 0,03 Mo sur disque ; l'export du tableau de bord ne lui donne aucune taille (Edge) |
 | **Coût d'un déploiement sur le compteur** | **1,76 Mo**, mesuré deux fois le 16/09/2026 sur des intervalles qui n'en contenaient qu'un (PR #191 et #201) — et c'est un **plancher** (§1.1). Deux fusions « doc seule » entre les deux n'ont **rien** ajouté : l'Ignored Build Step mesuré sur le compteur lui-même |
-| **Mesure hors ligne de référence** (§1.2, §2.3 règle de mesure) | **4 378 974 octets (4,18 Mio)** le 06/10/2026 : +12 549 sur les 4 366 425 du 29/09, déjà dans `main` et identiques fichier à fichier sur la branche des points d'écran de la seconde passe de sécurité ; l'écart tient au code entré dans `api/` entre-temps — la liste fermée de `poste` (PR #367) y ajoute 145 lignes de source, et les textes du 02/10 (PR #316) y touchent aussi, sans mesure possible sur un clone superficiel —, sans dépendance nouvelle |
+| **Mesure hors ligne de référence** (§1.2, §2.3 règle de mesure) | **4 412 296 octets (4,21 Mio)** le 18/10/2026, ramenée à la racine de référence : **+33 322** sur les 4 378 974 du 06/10/2026, et rien d'autre que le module commun d'`api/` — le module commun compilé et sa carte (≈ 27,3 Ko) copiés dans chacune des deux fonctions, moins ≈ 21,2 Ko que `partage` et `share-card` perdent en retirant leurs copies de la liste des postes, de la règle des kilos et de la lecture des paramètres. Les fichiers tracés dans `node_modules` sont les mêmes, aucune dépendance nouvelle, toujours deux fonctions |
 
 **L'écart entre l'export (1,6 Mo) et le compteur (1,76 Mo) n'est pas expliqué, et on ne l'explique
 pas à la place de la mesure** : ni 1,5955 Mo décimaux ni 1,5216 Mio ne font 1,76, et `partage`
@@ -361,6 +434,57 @@ retarde d'une nuit — est en §1.1.
   déploiements.
 - **`maxDuration: 30` sur `share-card`** — un rendu d'image WASM au démarrage à froid dépasse
   les 10 s par défaut (`v1-06` §3).
+- **`api/_partage-commun.ts` porte ce que la page et la carte lisent d'une adresse** : la liste fermée
+  de `poste`, la borne du total, la règle des kilos sous la tonne, la lecture des paramètres. Il était
+  recopié dans chaque fonction, avec un test qui exigeait les deux copies identiques, par crainte du
+  « chemin de compilation que rien ne rejoue » (§1.6). La crainte est levée pour ce qu'on peut jouer :
+  sous `_`, `vercel build` (CLI 59.26.0) n'en fait pas une fonction et le copie dans les deux `.func` ;
+  les imports en `.js` y restent `.js` ; et le `.func` Node construit, importé sous Node dans son
+  répertoire, rend la carte. Ce que seul un déploiement montre est en §1.6 et §2.4. La règle du
+  préfixe `_` n'est pas dans la documentation actuelle de Vercel, qui conseille de ranger les modules
+  partagés **hors** d'`api/` : on la tient de l'observation, et `scripts/verifier-api.mjs` refuse tout
+  fichier d'`api/` qui n'est ni une des deux fonctions ni préfixé — un module sans préfixe serait une
+  route publique. Il reste dans `api/` pour le `tsconfig` des fonctions, les règles de lint d'`api/` et
+  cette garde.
+- **Une adresse de partage a une forme canonique, et la page comme la carte ne servent qu'elle.** La
+  forme est celle que l'app produit (`urlDePartage`, `src/types/resultat.ts`) : `total` en tonnes à
+  trois décimales (`4.200`), `poste` pris dans la liste fermée, `percent` entier, dans cet ordre,
+  sérialisés par `URLSearchParams` (le `+` pour l'espace). Un test exige que chaque adresse que l'app
+  produit soit déjà canonique (`scripts/postes-partageables.test.ts`) — sinon la page redirigerait
+  chaque vrai partage. Trois issues, jugées avant tout rendu (le wasm de resvg n'est même pas lu) :
+  - **canonique** : 200, avec un `Cache-Control` que le CDN garde (§1.10) — la page
+    `public, max-age=0, s-maxage=un an, stale-while-revalidate=un jour`, la carte la même durée côté CDN
+    et un an `immutable` côté navigateur, comme avant ;
+  - **lisible, pas canonique** : 308 vers la forme canonique, par un chemin relatif, cacheable un jour.
+    C'est un paramètre inconnu (`fbclid`, `utm_*` que les réseaux ajoutent aux liens), l'ordre,
+    `%20` pour `+`, un zéro de tête, un total à une décimale (les liens d'avant les trois décimales), une
+    valeur vide — et une valeur bien formée que l'app ne produit pas : total au-delà de 200 t, part
+    au-delà de 100, libellé hors de la liste. Celles-là sont **ignorées**, comme elles l'ont toujours
+    été : un lien dont le poste a été renommé continue d'ouvrir son aperçu ;
+  - **illisible** : 400, `no-store`, en texte brut. Un total ou une part qui n'est pas un nombre
+    positif (`2.4abc`, `-5`, `1e3`, `2,4`), un paramètre répété. On ne devine pas le préfixe d'un texte,
+    c'est la faille que cette forme ferme. **Conséquence à connaître** : un lien recopié avec un
+    caractère collé derrière le dernier nombre (`percent=58).`) répond désormais 400 là où il ouvrait
+    l'aperçu.
+
+  **Ce que la forme canonique ne ferme pas.** L'espace des adresses canoniques reste de l'ordre de
+  2·10⁹ (200 001 totaux × une centaine de libellés × 101 parts) : une attaque répartie qui fait varier
+  le total obtient toujours un rendu par requête — environ 430 000 par jour avec 500 adresses IP et la
+  règle de pare-feu de 60 requêtes par 10 minutes. La forme canonique retire les variantes gratuites ;
+  ce qui borne le nombre de cartes est une signature des paramètres posée par l'app, ou un total arrondi
+  dans l'adresse — ce qui change le format que l'app produit —, et c'est une décision à part. Le plafond
+  du pare-feu reste la seule borne.
+- **Les fichiers hachés de l'export sont immuables** (`public, max-age=31536000, immutable`) :
+  `/_expo/static/*-<md5>.js|css` et `/assets/*.<md5>[@Nx].<ext>`, deux règles de `vercel.json` dont la
+  `source` exige le hachage dans le nom (§1.11). Mesuré sur l'export du 18/10/2026 : le bundle, la
+  feuille de style, les cinq polices et les dix-huit images portent un hachage ; les ressources à
+  plusieurs échelles portent celui du jeu. Rien d'autre n'est immuable : pages HTML, `favicon.ico`,
+  `robots.txt`, `sitemap.xml`, `.well-known/assetlinks.json`, le manifeste de routes d'Expo. Trois endroits le
+  tiennent : `scripts/servir-export.mjs` lit désormais ces règles route par route (il refusait toute
+  règle autre que `/(.*)`, et les gardes qui ouvrent l'export auraient toutes échoué),
+  `controlerLeCacheImmuable` juge l'export réel à chaque PR (`verifier-rendu-export.mjs` : chaque fichier
+  visé porte le md5 de son contenu, aucun fichier haché n'échappe à la règle, rien sans hachage sous
+  `_expo/static` ou `assets`), et `scripts/vercel-cache-immuable.test.ts` garde la forme.
 - **`framework: null`** — l'export d'Expo est statique, la commande de build est
   `npm run vercel-build` et la sortie `dist/`.
 - **La `Content-Security-Policy` est appliquée** — fusionnée le 02/10/2026, en production depuis le
@@ -432,6 +556,16 @@ jour ; les deux sont tombées le 25/09/2026.
 
 ### 2.4 Ce qu'il reste à vérifier sur le tableau de bord
 
+- **Le premier déploiement de la forme canonique et du module commun se lit en production**, avec un
+  `curl -I` sans JavaScript, pour ce que `vercel build` et Node ne montrent pas (§1.6, §2.2) :
+  - `/api/partage?total=4.200&poste=…&percent=50` répond **200**, pas 308 vers elle-même (la plateforme
+    ne ré-encode pas la chaîne de requête), et un second appel porte `x-vercel-cache: HIT` ;
+  - l'image de l'`og:image` de cette page répond de même 200 puis `HIT` — `curl -I` y répond 405 tant
+    que seul `GET` est exporté, donc un `GET` dont on jette le corps ;
+  - `/api/partage?total=4.2abc` répond 400, et `/api/partage?fbclid=x` un 308 vers `/api/partage` ;
+  - un bundle de `/_expo/static/js/web/` répond `cache-control: public, max-age=31536000, immutable`,
+    et `/plan` reste `max-age=0, must-revalidate` ;
+  - ni `FUNCTION_INVOCATION_FAILED` ni 404 sur `/api/partage` : l'Edge a regroupé le module commun.
 - **`VERCEL_GIT_PREVIOUS_SHA` est-il exposé ?** Le script écrit « repli sur HEAD^ » quand il ne
   l'est pas. Si cette ligne apparaît à chaque fois, le trou du build échoué (§1.3) est ouvert et
   il faut le savoir. (L'autre vérification de cette liste — qu'une fusion « doc seule » soit

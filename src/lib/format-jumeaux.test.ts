@@ -56,14 +56,15 @@ describe('la règle des kilos sous la tonne, des deux côtés de la frontière',
     expect(formatTonnes(999.6)).toBe('1,0 t CO₂e');
   });
 
-  // **Le relevé, pas une supposition.** Deux fichiers portent la règle aujourd'hui, `partage.ts`
-  // (l'aperçu du lien) et `share-card.ts` (l'image). Le jour où une troisième surface publique
-  // affiche un total, cette assertion la fait entrer dans la liste plutôt que de la laisser
-  // diverger en silence — c'est le seul endroit du dépôt qui compte ces copies.
+  // **Le relevé, pas une supposition.** Un seul fichier porte la règle aujourd'hui, `_partage-commun.ts`,
+  // que `partage.ts` (l'aperçu du lien) et `share-card.ts` (l'image) importent. Le jour où une autre
+  // surface publique affiche un total — ou qu'une des deux fonctions en recopie la règle —, cette
+  // assertion la fait entrer dans la liste plutôt que de la laisser diverger en silence : c'est le seul
+  // endroit du dépôt qui compte ces copies.
   const porteuses = FICHIERS.filter(({ source }) => source.includes('kg CO₂e'));
 
-  it('deux fichiers de `api/` affichent un total, et ce sont ceux qu’on croit', () => {
-    expect(porteuses.map(({ nom }) => nom).sort()).toEqual(['partage.ts', 'share-card.ts']);
+  it('un seul fichier de `api/` écrit la règle d’un total, et c’est celui qu’on croit', () => {
+    expect(porteuses.map(({ nom }) => nom).sort()).toEqual(['_partage-commun.ts']);
   });
 
   it.each(porteuses.map(({ nom }) => nom))(
