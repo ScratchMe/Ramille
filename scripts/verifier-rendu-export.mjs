@@ -78,7 +78,9 @@
 // sur l'export, avant tout rendu. Chaque fichier que la règle vise porte dans son nom le md5 de son
 // contenu, aucun fichier haché ne lui échappe, et rien sans hachage n'entre sous `_expo/static` ni
 // `assets`. Ses mutations sont consignées dans `scripts/vercel-cache-immuable.test.ts`, qui le joue sur
-// des exports fabriqués ; ici il est branché sur l'export réel.
+// des exports fabriqués ; ici il est branché sur l'export réel, et éprouvé le 18/10/2026 sur une copie
+// de `dist/` : un `assets/logo.png` ajouté sans hachage, et un octet ajouté au bundle sans le renommer,
+// font échouer le script avec ces deux lignes-là et aucune autre ; la copie intacte passe.
 //
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
 import { createHash } from 'node:crypto';
@@ -459,6 +461,7 @@ if (echecs.length > 0 || choixSansEtat.length > 0) process.exit(1);
 console.log(
   `${ROUTES.length} routes rendues, aucun écran de panne, aucune exception bloquante,` +
     ` ${choixInspectes} choix annonçant leur état.` +
-    ' vercel.json : cleanUrls en place, assets des Functions présents, CSP appliquée sans infraction' +
-    ' et scripts écrits en dur couverts par leur empreinte.'
+    ' vercel.json : cleanUrls en place, assets des Functions présents, cache immuable limité aux' +
+    ' fichiers hachés (tous), CSP appliquée sans infraction et scripts écrits en dur couverts par' +
+    ' leur empreinte.'
 );
