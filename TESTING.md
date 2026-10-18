@@ -375,7 +375,10 @@ porte, et il lit chaque code de sortie sur le processus lui-même, jamais à tra
 
 **Sa sortie vaut 0 si, et seulement si, chaque pas choisi a été joué ET a réussi.** Un pas « non
 joué » — Docker éteint, export raté, stack prise — n'a rien vérifié, et c'est la règle de ce
-fichier : on n'annonce pas « vérifié » pour ce qui n'a pas tourné. La première ligne nomme le commit
+fichier : on n'annonce pas « vérifié » pour ce qui n'a pas tourné. **Une seule exception, qui est
+celle de la CI : `expo-doctor` est non bloquant** (`!` dans le journal, un avertissement dans le
+bilan, sortie inchangée), parce que sa dérive vient d'Expo et non de l'arbre (`EXPO.md` §1.9) ;
+`--planifie` le rend bloquant, comme le passage du lundi et un lancement à la main. La première ligne nomme le commit
 rejoué et prévient quand l'arbre porte des modifications ou des fichiers non suivis que la CI ne
 verra pas.
 
@@ -411,7 +414,12 @@ lit `ci.yml` **par blocs d'étapes**, quelle que soit la clé qui ouvre une éta
 - que la version du CLI et la configuration factice soient celles de la CI, et que chaque export
   porte `--clear` et son propre cache ;
 - que toute variable lue par un script de `scripts/` soit écartée par le rejeu, ou déclarée
-  inoffensive avec sa raison.
+  inoffensive avec sa raison ;
+- que le pas que la CI laisse passer rouge (`continue-on-error`) soit le pas non bloquant du rejeu,
+  et lui seul, et que l'expression se comporte comme annoncée — tolérée sur une PR et un push,
+  jamais sur le passage du lundi ni à la main — en l'évaluant au lieu de la recopier ;
+- que le passage du lundi ne joue que « Typecheck & lint », et que la concurrence annule une PR
+  sans jamais annuler ni mettre en file un push sur `main`.
 
 La première version lisait les seules étapes écrites `- run:`, ne comparait pas les commandes et
 consignait une mutation qui ne faisait pas ce qu'elle disait ; la contre-lecture du 27/09/2026 a

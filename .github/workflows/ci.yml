@@ -4,6 +4,18 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Le lundi, sur le seul travail « Typecheck & lint » : expo-doctor y compare nos paquets à ce
+  # qu'Expo recommande ce jour-là, et cette dérive vient d'Expo, pas d'un commit. Ce passage-là bloque.
+  schedule:
+    - cron: '37 5 * * 1'
+  workflow_dispatch:
+
+# Un nouveau passage d'une PR annule le précédent, devenu périmé. Les autres événements ont chacun
+# leur groupe (l'identifiant d'exécution) : un push sur `main` ni une exécution planifiée ne sont
+# jamais annulés ni mis en file derrière une autre.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Le jeton de ces travaux ne sert qu'au `checkout` : aucune étape n'écrit dans le dépôt ni ne commente
 # une PR, et **une seule publie quelque chose** — la capture d'un échec du parcours réel, gardée sept
@@ -18,17 +30,14 @@ on:
 permissions:
   contents: read
 
-# **L'image du runner est épinglée, et pas `ubuntu-latest`** — même raisonnement que le CLI Supabase
-# et expo-doctor plus bas : un `latest` change sous nos pieds, un numéro se change dans un diff que
-# la CI de la PR prouve. Déclencheur : l'annotation « The ubuntu-latest label will migrate to
-# Ubuntu 26 beginning October 19, 2026 » (actions/runner-images#14748), lue sur le passage du
-# 20/09/2026. Ce jour-là `ubuntu-latest` valait l'image `ubuntu-24.04` (`20260907.300.1`, relevé
-# dans le journal du travail Jest), donc écrire `ubuntu-24.04` ne change rien au passage courant.
+# **L'image du runner est épinglée, et pas `ubuntu-latest`** : un `latest` change sous nos pieds, un
+# numéro se change dans un diff que la CI de la PR prouve. `ubuntu-latest` migre vers Ubuntu 26 à
+# partir du 19/10/2026 (actions/runner-images#14748) ; `ubuntu-24.04` n'est pas touché.
 #
-# Pour monter : passer les cinq `runs-on` ci-dessous en `ubuntu-26.04`, et laisser la CI de la PR
-# le prouver — Playwright (`install --with-deps`) et Docker sont les deux étapes qui dépendent de
-# l'image. Puis `sauvegarde.yml`, qui porte le sixième et dépend du dépôt pgdg : voir son propre
-# commentaire. Registre : docs/exploitation/README.md §8.9.
+# Pour monter : passer en `ubuntu-26.04` tous les `runs-on` de `.github/workflows/` (`grep -rn runs-on`),
+# et laisser la CI de la PR le prouver — Playwright (`install --with-deps`), Docker et le SDK Android
+# des runners sont les étapes qui dépendent de l'image. `sauvegarde.yml` dépend en plus du dépôt pgdg :
+# voir son commentaire. Registre : docs/exploitation/README.md §8.9.
 jobs:
   # **Chaque travail porte un plafond, et il a été payé le 21/09/2026.** Deux travaux de la même
   # exécution ont cessé d'avancer à la même seconde, sur deux machines différentes et deux
@@ -64,19 +73,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # expo-env.d.ts est volontairement absent du repo (généré par `expo start`/`expo
-      # run:*` — cf. son propre commentaire "should be in your git ignore") : sur un
-      # checkout propre, sans dev server jamais lancé, `tsc` échoue sinon sur l'import
-      # side-effect de global.css (types fournis via `/// <reference types="expo/types" />`).
-      # Contenu statique, identique à celui qu'Expo génère lui-même.
-      #
-      # **Redondant depuis le `postinstall` de package.json, et gardé exprès.** Ce `printf`
-      # était la seule chose qui faisait passer `tsc` sur un checkout propre — explication qui
-      # ne vivait qu'ici, donc invisible pour qui clone le dépôt et suit le README. Le
-      # `postinstall` règle le cas partout (poste, CI, agent) ; retirer cette étape dans le même
-      # mouvement ferait qu'un `postinstall` silencieusement cassé rendrait la CI rouge sans
-      # indice. Les deux cohabitent un cycle, et l'étape part ensuite.
-      - run: printf '/// <reference types="expo/types" />\n' > expo-env.d.ts
+      # `expo-env.d.ts` n'est pas dans le dépôt : le `postinstall` de package.json l'écrit pendant
+      # `npm ci`, et `tsc` en a besoin pour l'import de `global.css`.
       - run: npx tsc --noEmit
       # `api/` est le seul code du dépôt dont la boucle de retour est un déploiement en
       # production, et c'était le seul que rien ne typecheckait : le tsconfig racine l'exclut
@@ -134,33 +132,27 @@ jobs:
       # correctif de sécurité du 20/09 — et tombe ici en une seconde, là où la garde de bout en bout
       # demande Docker. Ni npm ci ni export requis.
       - run: node scripts/verifier-gabarits-email.mjs
-      # Les dépendances n'étaient regardées par aucune des trois étapes. expo-doctor est la
-      # garde la moins chère : versions incohérentes avec le SDK, modules natifs mal déclarés,
-      # configuration d'app qui ne correspond plus aux paquets installés — tout ce qui ne se
-      # voit ni au typecheck, ni aux tests, ni à l'export, et qui se paie à la prochaine
-      # construction d'AAB.
+      # expo-doctor est la garde la moins chère sur les dépendances : versions incohérentes avec le SDK,
+      # modules natifs mal déclarés, configuration d'app qui ne correspond plus aux paquets. Ce qu'aucun
+      # autre contrôle ne voit se paie à la prochaine construction d'AAB.
       #
-      # Version épinglée, pour la même raison que le CLI Supabase plus bas : `npx expo-doctor`
-      # sans numéro télécharge la dernière version publiée à chaque passage. 1.20.4 relevé le
-      # 10/09/2026 sur le registre npm : publiée le 26/08/2026 et toujours le `dist-tag` latest
-      # ce jour-là. Pour la faire évoluer : changer le numéro ici et reporter sa date.
+      # Il compare nos versions à celles qu'Expo recommande **au moment du passage** : il rougit donc sans
+      # qu'une ligne du dépôt ait bougé, dès qu'Expo publie un patch. Sur une PR ou un push il avertit
+      # sans bloquer (une annotation sur le passage) ; le passage du lundi et un lancement à la main
+      # bloquent, pour que la dérive se lise avant la construction et pas en travers d'une PR qui n'y est
+      # pour rien. Conduite : `npx expo install --fix`, puis typecheck, lint, tests et export.
       #
-      # **Mais épingler l'outil n'épingle pas ce qu'il attend, et cette étape peut donc rougir
-      # sans qu'une ligne du dépôt ait bougé.** Le contrôle « packages match versions required by
-      # installed Expo SDK » compare nos versions à celles qu'Expo recommande **au moment du
-      # passage**, et ce jeu-là vit chez Expo, pas ici : le 11/09/2026 la CI est tombée sur onze
-      # paquets « en retard » d'un patch, sur un arbre qui passait 21/21 quelques heures plus tôt.
-      # Le commentaire d'origine promettait le contraire — il est corrigé plutôt que retiré, parce
-      # que c'est la surprise qui coûte, pas l'étape.
-      #
-      # L'étape reste **bloquante**, et c'est délibéré : cette dérive est exactement ce qu'on veut
-      # savoir avant une construction d'AAB, où elle se paierait bien plus cher. La conduite à
-      # tenir quand elle rougit sur un arbre qu'on n'a pas touché : `npx expo install --fix`, puis
-      # rejouer typecheck, lint, tests et export — ce n'est pas une panne, c'est Expo qui a publié.
-      - run: npx expo-doctor@1.20.4
+      # Version de l'outil épinglée (1.20.4, publiée le 26/08/2026), sinon `npx expo-doctor` prend la
+      # dernière à chaque passage. Pour la changer : le numéro ici, et sa date de publication ci-dessus.
+      - id: doctor
+        continue-on-error: ${{ github.event_name != 'schedule' && github.event_name != 'workflow_dispatch' }}
+        run: npx expo-doctor@1.20.4
+      - if: steps.doctor.outcome == 'failure'
+        run: echo "::warning title=expo-doctor rouge (non bloquant)::Les paquets Expo ont du retard sur le SDK. Détail dans le journal de l'étape précédente ; correction par npx expo install --fix. Le passage du lundi, lui, bloquera."
 
   unit-tests:
     name: Tests unitaires (Jest)
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -185,6 +177,7 @@ jobs:
 
   web-export:
     name: Export web
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -239,6 +232,7 @@ jobs:
 
   db-tests:
     name: Tests base de données (pgTAP)
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -300,6 +294,7 @@ jobs:
 
   parcours-reel:
     name: Parcours réel (stack locale)
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

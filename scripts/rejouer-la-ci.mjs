@@ -4,6 +4,7 @@
 //   node scripts/rejouer-la-ci.mjs                     # toutes les étapes, dans l'ordre
 //   node scripts/rejouer-la-ci.mjs verifications jest  # celles qu'on nomme
 //   node scripts/rejouer-la-ci.mjs --a-blanc           # le plan en JSON, sans rien lancer
+//   node scripts/rejouer-la-ci.mjs --planifie          # comme le passage du lundi : expo-doctor bloque
 //
 // Une étape par travail de la CI : `verifications` (« Typecheck & lint »), `jest`, `export`
 // (l'export à configuration factice et ses contrôles), `base` (pgTAP et les deux comparaisons à la
@@ -49,10 +50,15 @@
 //   soit ici, écartée ou déclarée inoffensive.
 // - Dans une étape, un pas qui échoue n'arrête que ceux qui dépendent de lui, là où la CI s'arrête
 //   au premier rouge de chaque travail : un passage local doit montrer tous ses rouges d'un coup.
+// - **expo-doctor n'est pas bloquant**, comme sur une PR de la CI : rouge, il s'affiche en
+//   avertissement (`!`) et ne change pas la sortie, parce que sa dérive vient d'Expo et pas de l'arbre.
+//   `--planifie` le rend bloquant, comme le passage du lundi et un lancement à la main.
+// - `expo-env.d.ts` est écrit ici par le script, là où la CI le laisse au `postinstall` de `npm ci` :
+//   `npm ci` n'est pas rejoué.
 //
-// **La sortie est 0 si et seulement si chaque pas choisi a été joué ET a réussi.** Un pas « non
-// joué » — Docker éteint, export raté, stack prise — n'a rien vérifié, donc il ne compte pas comme
-// un succès.
+// **La sortie est 0 si et seulement si chaque pas choisi a été joué ET a réussi** (un pas non bloquant
+// qui a tourné rouge compte, mais le bilan l'écrit en toutes lettres). Un pas « non joué » — Docker
+// éteint, export raté, stack prise — n'a rien vérifié, donc il ne compte pas comme un succès.
 //
 // Le plan est comparé à `ci.yml` par `scripts/rejouer-la-ci.test.ts` : une étape ajoutée à la CI
 // sans son pendant ici, ou sans raison écrite de ne pas la rejouer, fait tomber le test.
@@ -115,6 +121,10 @@ const NON_REJOUEES = [
     raison: 'les dépendances sont celles de l’arbre : un package-lock.json changé sans `npm install` se voit en CI, pas ici',
   },
   {
+    ci: `echo "::warning title=expo-doctor rouge (non bloquant)::Les paquets Expo ont du retard sur le SDK. Détail dans le journal de l'étape précédente ; correction par npx expo install --fix. Le passage du lundi, lui, bloquera."`,
+    raison: 'annotation GitHub : le rejeu affiche lui-même l’avertissement (`!`) et le détail du journal d’expo-doctor',
+  },
+  {
     ci: 'npx playwright install --with-deps chromium',
     raison: 'Chromium est déjà là (CHROMIUM_PATH, ou /opt/pw-browsers/chromium dans l’environnement d’agent) ; l’installer télécharge, et --with-deps passe par apt',
   },
@@ -123,8 +133,8 @@ const NON_REJOUEES = [
 // ─── Les pas qui ne sont pas une commande ────────────────────────────────────────────────────
 
 function creerExpoEnv(ctx, journal) {
-  // Écrit comme la CI l'écrit, même quand le fichier existe : c'est un fichier généré, et un contenu
-  // local différent ferait typer autre chose qu'en CI.
+  // Écrit comme le `postinstall` de package.json l'écrit en CI, même quand le fichier existe : c'est
+  // un fichier généré, et un contenu local différent ferait typer autre chose qu'en CI.
   fs.writeFileSync(path.join(racine, 'expo-env.d.ts'), '/// <reference types="expo/types" />\n');
   fs.writeFileSync(journal, 'expo-env.d.ts écrit.\n');
   return { code: 0 };
@@ -206,7 +216,8 @@ function plan(ctx) {
       pas: [
         {
           nom: 'expo-env.d.ts',
-          ci: `printf '/// <reference types="expo/types" />\\n' > expo-env.d.ts`,
+          ci: null,
+          raison: 'la CI le laisse au `postinstall` de `npm ci` (package.json), que ce rejeu ne rejoue pas',
           lancer: creerExpoEnv,
         },
         { nom: 'tsc', ci: 'npx tsc --noEmit', commande: ['npx', 'tsc', '--noEmit'] },
@@ -225,7 +236,12 @@ function plan(ctx) {
           'verifier-gabarits-email',
         ].map((s) => ({ nom: s, ci: `node scripts/${s}.mjs`, commande: ['node', `scripts/${s}.mjs`] })),
         // `--yes` : sans terminal, npx refuserait d'installer la version épinglée.
-        { nom: 'expo-doctor', ci: 'npx expo-doctor@1.20.4', commande: ['npx', '--yes', 'expo-doctor@1.20.4'] },
+        {
+          nom: 'expo-doctor',
+          ci: 'npx expo-doctor@1.20.4',
+          commande: ['npx', '--yes', 'expo-doctor@1.20.4'],
+          nonBloquant: true,
+        },
       ],
     },
     {
@@ -333,6 +349,9 @@ function plan(ctx) {
 
 // ─── L'exécution ─────────────────────────────────────────────────────────────────────────────
 
+/** Un pas `nonBloquant` (expo-doctor) ne fait échouer le rejeu que sous `--planifie`, comme en CI. */
+const estBloquant = (pas, ctx) => !pas.nonBloquant || ctx.planifie;
+
 const HERITE = Object.fromEntries(Object.entries(process.env).filter(([nom]) => !estEcartee(nom)));
 
 /**
@@ -381,10 +400,10 @@ function jouer(etapes, ctx) {
       const noter = (statut, detail = '') => {
         statuts.set(pas.nom, statut);
         resultats.push({ etape: etape.nom, pas: pas.nom, statut });
-        const marque = { ok: '✓', echec: '✗', 'non joué': '–' }[statut];
+        const marque = { ok: '✓', echec: '✗', avert: '!', 'non joué': '–' }[statut];
         console.log(`  ${marque} ${pas.nom}${detail ? ` — ${detail}` : ''}`);
       };
-      const manque = (pas.dependDe ?? []).find((d) => statuts.get(d) !== 'ok');
+      const manque = (pas.dependDe ?? []).find((d) => !['ok', 'avert'].includes(statuts.get(d)));
       if (manque) {
         noter('non joué', `« ${manque} » n’a pas réussi`);
         continue;
@@ -401,13 +420,14 @@ function jouer(etapes, ctx) {
         console.log(`\nInterrompu pendant « ${pas.nom} ». Journaux : ${ctx.journal}`);
         process.exit(130);
       }
-      const statut = r.code === 0 ? 'ok' : 'echec';
+      const statut = r.code === 0 ? 'ok' : estBloquant(pas, ctx) ? 'echec' : 'avert';
       if (pas.cle) parCle.set(pas.cle, statut);
       if (statut === 'ok') {
         noter('ok', duree(Date.now() - debut));
       } else {
         const pourquoi = r.expire ? `délai de ${DELAI_MS / 60000} min dépassé` : `sortie ${r.code}`;
-        noter('echec', `${pourquoi}, ${duree(Date.now() - debut)} · ${journal}`);
+        const suite = statut === 'avert' ? ' — non bloquant, comme sur une PR (--planifie le bloque)' : '';
+        noter(statut, `${pourquoi}, ${duree(Date.now() - debut)} · ${journal}${suite}`);
         if (pas.conseil) console.log(`      ${pas.conseil}`);
         console.log(finDuJournal(journal));
       }
@@ -418,7 +438,8 @@ function jouer(etapes, ctx) {
 
 // ─── L'entrée ────────────────────────────────────────────────────────────────────────────────
 
-const USAGE = 'Usage : node scripts/rejouer-la-ci.mjs [verifications] [jest] [export] [base] [parcours] [--a-blanc]';
+const USAGE =
+  'Usage : node scripts/rejouer-la-ci.mjs [verifications] [jest] [export] [base] [parcours] [--a-blanc] [--planifie]';
 
 function repertoireDuVerrou() {
   const r = spawnSync('git', ['rev-parse', '--git-common-dir'], { cwd: racine, encoding: 'utf8' });
@@ -436,6 +457,7 @@ function etatDeLArbre() {
 
 const args = process.argv.slice(2);
 const aBlanc = args.includes('--a-blanc');
+const planifie = args.includes('--planifie');
 if (args.includes('--aide') || args.includes('-h')) {
   console.log(USAGE);
   process.exit(0);
@@ -443,6 +465,7 @@ if (args.includes('--aide') || args.includes('-h')) {
 const choisies = args.filter((a) => !a.startsWith('--'));
 
 const ctx = {
+  planifie,
   journal: aBlanc ? '<journal>' : fs.mkdtempSync(path.join(os.tmpdir(), 'rejouer-la-ci-')),
   verrou: repertoireDuVerrou(),
   stack: {},
@@ -467,6 +490,7 @@ if (aBlanc) {
     ...(pas.raison ? { raison: pas.raison } : {}),
     commande: pas.commande ? pas.commande.join(' ') : `(${pas.lancer.name})`,
     ...(pas.sortie ? { sortie: pas.sortie } : {}),
+    bloquant: estBloquant(pas, ctx),
     env: typeof pas.env === 'function' ? '(clés de la stack)' : (pas.env ?? {}),
     dependDe: pas.dependDe ?? [],
   });
@@ -493,8 +517,11 @@ console.log(`Journaux : ${ctx.journal}`);
 const resultats = jouer(etapes, ctx);
 
 const compte = (s) => resultats.filter((r) => r.statut === s).length;
-const [reussis, echoues, nonJoues] = [compte('ok'), compte('echec'), compte('non joué')];
-console.log(`\nBilan : ${reussis} réussi(s), ${echoues} échoué(s), ${nonJoues} non joué(s), sur ${resultats.length} pas.`);
+const [reussis, echoues, nonJoues, avertis] = [compte('ok'), compte('echec'), compte('non joué'), compte('avert')];
+console.log(
+  `\nBilan : ${reussis} réussi(s), ${echoues} échoué(s), ${nonJoues} non joué(s)` +
+    `${avertis > 0 ? `, ${avertis} avertissement(s) non bloquant(s)` : ''}, sur ${resultats.length} pas.`,
+);
 for (const r of resultats.filter((x) => x.statut !== 'ok')) console.log(`  ${r.statut} : ${r.etape} · ${r.pas}`);
 if (resultats.some((r) => r.pas === 'export branché sur la stack' && r.statut === 'ok')) {
   console.log('dist/ porte désormais l’export branché sur la stack locale, pas l’export factice.');
