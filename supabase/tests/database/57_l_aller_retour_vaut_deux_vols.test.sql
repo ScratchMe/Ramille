@@ -157,4 +157,17 @@ rollback;
 
 -- ── Relevé des mutations, 18/10/2026 ─────────────────────────────────────────────────────────
 --
--- (à remplir après les mutations)
+-- Jouées sur la base locale, la migration appliquée : la mutation puis ce fichier dans une même
+-- transaction, annulée par le `rollback` du fichier. Les numéros sont ceux des assertions.
+--
+--   - `trips` remis à 1 sur le gabarit de l'aller-retour (le défaut d'origine) → 2, 3, 5, 6 et 8 ;
+--     la 4 reste verte, et c'est juste : un seul vol déclaré est crédité d'un vol, quelle que soit la
+--     quantité du gabarit. Le fichier `10` tombe aussi, sur sa seule assertion de l'aller-retour
+--     (« have 277, want 545 ») ;
+--   - le `least(t.trips, v_count)` de l'estimateur remplacé par `t.trips` (la déclaration ne plafonne
+--     plus) → 4 et 6 : un seul vol déclaré serait crédité de deux ;
+--   - la question du point remise à « … remplacé un vol par le train ? » → 8 et 9 ;
+--   - les deux gabarits « Renoncer à un vol … » passés à 2 par symétrie → 10, seule ;
+--   - le libellé renommé sans « aller-retour » → 2 à 7 et 9, dont le témoin (7) : sans lui, le balayage
+--     (8) passerait à vide sur un référentiel qui n'a plus d'aller-retour ;
+--   - un gabarit « Faire un aller-retour … » ajouté et compté pour un seul trajet → 8, seule.
