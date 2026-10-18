@@ -71,15 +71,18 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     lien comme à chaque ouverture par un destinataire. Que le serveur ne lise **rien** dans
 //     la base (v1-06 §2) ne veut pas dire qu'il ne reçoive rien.
 //
-// Sur les transferts hors UE, cette page **s'en tient au fait** (« société américaine »,
-// « serveurs situés aux États-Unis ») et ne qualifie pas le mécanisme juridique : tant que la
-// référence exacte du contrat de sous-traitance de chaque prestataire n'a pas été relevée et
-// consignée (v1-12 §6.5 le demandait pour Expo), écrire « clauses contractuelles types » serait
-// plus précis que ce que nous avons lu. C'est le défaut A11-12, et il se répare en lisant les
-// contrats, pas en reformulant cette page. **Même règle dans l'autre sens** : la localisation de
-// Resend n'a pas été relevée pièce en main, donc la page ne la qualifie pas — ni « américaine »,
-// ni « européenne ». Déclarer un transfert hors UE de l'adresse email sur une impression serait
-// exactement le même défaut.
+// Sur les transferts hors UE, cette page nomme **depuis le 18/10/2026 l'entité, le pays et le
+// mécanisme** de chaque prestataire, relevés pièce en main : `docs/exploitation/sous-traitants.md`
+// dit, pour chacun, l'adresse lue et sa version. Avant, elle s'en tenait au fait (« société
+// américaine ») faute d'avoir lu les contrats — c'était le défaut A11-12, et il se réparait en les
+// lisant, pas en reformulant la page. **La règle reste, dans les deux sens** : un mécanisme ne
+// s'écrit que s'il a été lu. « Inscrite au Data Privacy Framework » vaut pour une inscription
+// *Active* sur la liste officielle (l'interface publique du site dataprivacyframework.gov, lue le
+// 18/10/2026 ; la liste bouge, et trois inscriptions portaient la mention « re-certification under
+// review ») ; « clauses contractuelles types » pour un contrat qui les incorpore (Supabase, Resend,
+// Cloudflare, Google/Firebase). Là où le contrat n'a pas été lu — Expo n'en publie pas, GitHub refuse
+// la lecture de sa page, et l'avenant de Vercel vise les plans Pro et Entreprise alors que le projet
+// est en Hobby —, la page ne dit que la certification, jamais un contrat qu'on n'a pas.
 //
 // Les renvois qui nomment un écran sont ce qui vieillit le plus vite ici : « Mes données » vit
 // dans `src/app/compte/index.tsx` (écran « Toi »), atteignable par `CompteBouton` en haut à
@@ -193,7 +196,26 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // voulue par la personne qui pilote le même jour (« faisons les modifs maintenant »). Pas d'annonce dans
 // l'application : **tant que Ramille n'est pas lancé, la date de mise à jour en tient lieu**, et ce n'est
 // plus une exception (la règle du 04/10/2026 ci-dessus vaut jusqu'au lancement, fiche Play §1.7).
-const UPDATED_AT = '6 octobre 2026';
+//
+// **18/10/2026 : l'audit juridique du jour** (`docs/exploitation/registre-des-traitements.md`,
+// `sous-traitants.md`, `violations.md`). Trois choses changent ici, aucune ne change ce que le produit
+// fait — donc, comme toujours avant le lancement, la date en tient lieu d'annonce. (1) « Où sont tes
+// données » nomme l'entité, le pays et le mécanisme de transfert de chaque prestataire (art. 13, 1, f
+// du RGPD), le moyen d'en obtenir copie, et la réutilisation propre de Cloudflare pour Turnstile (il
+// est responsable de traitement de ce qu'il en tire pour améliorer sa détection, d'après son avenant
+// Turnstile du 18/06/2025). (2) Les repères de parcours gagnent ce que l'app enregistre et que la page
+// ne disait pas : la plateforme, la version de l'app (à l'ouverture et dans chaque panne) et d'où la
+// panne a été captée — l'ajout de la version et de l'origine est celui du chantier C de la même vague.
+// (3) La phrase « il n'y a rien à consentir » est partie : elle affirmait une absence de consentement
+// que ni la CNIL ni le code ne garantissent — les repères sont rattachés à une session et servent aussi
+// aux rappels et à la purge, donc ce ne sont pas les « statistiques anonymes » que l'exemption de la CNIL
+// exige (« Cookies : solutions pour les outils de mesure d'audience », 04/07/2025). La page dit
+// maintenant ce qui est mesuré, sur quelle base, et comment s'y opposer **aujourd'hui** : par e-mail
+// (art. 21 du RGPD), car l'app n'a aucun réglage pour les couper — **une phrase qui en promettrait un
+// serait pire que pas de phrase**. Ce qu'une opposition fait vraiment (supprimer les repères déjà
+// enregistrés ; en enregistrer moins à l'avenir exige un réglage) est une décision de produit, laissée
+// à la personne qui pilote. Textes à valider par elle, comme chaque phrase de cette page.
+const UPDATED_AT = '18 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -289,14 +311,17 @@ const SECTIONS: LegalSection[] = [
           'Nous enregistrons aussi quelques repères de parcours dans l’application : quels écrans tu as ouverts et ' +
           'd’où tu y arrivais, à quelle étape du questionnaire tu en es, si tu as partagé ton bilan, demandé un code ' +
           'de connexion ou rattaché un compte — et, quand tu cherches un compte existant, si cet appareil portait déjà ' +
-          'un bilan —, et le fait qu’un écran n’a pas réussi à ' +
-          's’afficher, qu’un envoi de ton bilan a échoué ou qu’un code de connexion n’a pas pu partir (le type de ' +
-          'l’erreur et l’endroit, jamais son message). Ces ' +
+          'un bilan —, et le fait qu’une erreur est survenue (un écran qui n’a pas réussi à s’afficher, une erreur ' +
+          'imprévue, une opération qui a échoué), qu’un envoi de ton bilan a échoué ou qu’un code de connexion n’a pas ' +
+          'pu partir (le type de l’erreur, l’endroit et ce qui l’a révélée, jamais son message). Chaque repère porte aussi ' +
+          'la plateforme (web ou Android), et ceux de l’ouverture de l’application et des erreurs la version de ' +
+          'l’application que tu utilises, pour savoir si un défaut vient d’une version précise. Ces ' +
           'repères ne portent rien d’autre : ni texte que tu aurais saisi, ni adresse IP, ni identifiant d’appareil, et ' +
           'aucun suivi de ce que tu fais ailleurs. Ils servent à voir où le produit décroche pour le réparer. ' +
           'L’ouverture de l’application sert aussi à savoir que tu es toujours là : elle remet tes rappels à leur ' +
           'rythme normal et repousse la suppression automatique d’une session anonyme (le détail plus bas). Ces ' +
-          'repères restent chez notre hébergeur, aucun outil d’analyse tiers ne les reçoit.',
+          'repères sont enregistrés chez notre hébergeur et aucun outil d’analyse tiers ne les reçoit ; la sauvegarde ' +
+          'chiffrée de la base en garde une copie, comme du reste.',
       },
       {
         kind: 'paragraph',
@@ -347,7 +372,7 @@ const SECTIONS: LegalSection[] = [
         items: [
           'Aucune géolocalisation, aucun suivi automatique de tes déplacements. Le produit repose sur ce que tu déclares, parce que la prise de conscience passe par le moment où tu choisis, pas par une mesure passive.',
           'Aucun traceur publicitaire, aucun cookie de mesure d’audience tierce. Les repères de parcours décrits plus ' +
-            'haut ne quittent pas notre hébergeur et ne permettent de te suivre sur aucun autre site.',
+            'haut ne sont confiés à aucun outil d’analyse et ne permettent de te suivre sur aucun autre site.',
           'Aucune revente, location ou cession de tes données à qui que ce soit.',
           'Aucune comparaison entre utilisateurs. Ton bilan n’est jamais rapproché de celui de quelqu’un d’autre, ni classé.',
         ],
@@ -393,7 +418,10 @@ const SECTIONS: LegalSection[] = [
             term: 'Supabase',
             text:
               'Base de données, authentification et hébergement des données applicatives — donc l’intégralité de tes ' +
-              'réponses, de tes résultats et de ton compte. Serveurs situés à Paris (région eu-west-3).',
+              'réponses, de tes résultats et de ton compte. Serveurs situés à Paris (région eu-west-3), chez Amazon Web ' +
+              'Services. Le contrat est conclu avec Supabase Pte. Ltd., société singapourienne : il l’autorise à traiter ' +
+              'ces données hors de la région choisie si le service l’exige, et il incorpore à ce titre les clauses ' +
+              'contractuelles types de la Commission européenne.',
           },
           {
             term: 'Vercel',
@@ -401,19 +429,22 @@ const SECTIONS: LegalSection[] = [
               'Hébergement de la version web de l’application. Vercel sert les pages, sans rien lire dans la base. ' +
               'Si tu utilises « Partager mon bilan », c’est aussi Vercel qui fabrique la carte d’aperçu à partir du ' +
               'lien que tu génères : ce lien porte ton total annuel, ton poste principal et sa part — rien d’autre. ' +
-              'Société américaine.',
+              'Vercel Inc., société américaine (Californie), inscrite au Data Privacy Framework.',
           },
           {
             term: 'Resend',
             text:
               'Envoi des rappels par email, si tu as choisi ce canal : reçoit alors ton adresse email et le texte du ' +
-              'rappel, c’est-à-dire la question de ton point (le détail plus bas).',
+              'rappel, c’est-à-dire la question de ton point (le détail plus bas). Plus Five Five, Inc. (Resend), ' +
+              'société américaine (Californie), inscrite au Data Privacy Framework ; son contrat de sous-traitance ' +
+              'incorpore aussi les clauses contractuelles types.',
           },
           {
             term: 'Brevo',
             text:
               'Envoi des codes de connexion par email : reçoit alors ton adresse email et le code. Brevo mesure ' +
-              'l’ouverture de ces emails de façon anonymisée ; nous ne lisons pas cette mesure. Société française.',
+              'l’ouverture de ces emails de façon anonymisée ; nous ne lisons pas cette mesure. Sendinblue SAS (Brevo), ' +
+              'société française, à Paris ; d’après son contrat, les données sont hébergées en France et en Belgique.',
           },
           {
             term: 'Expo',
@@ -422,50 +453,60 @@ const SECTIONS: LegalSection[] = [
               'que soit le canal choisi, Expo reçoit l’identifiant que Google attribue à l’application sur ton téléphone ' +
               'et un identifiant d’installation, et nous rend l’identifiant de notification. Il ne reçoit ' +
               'le texte d’un message que si tu as choisi les notifications comme canal de rappel, ou demandé le mot ' +
-              'de la veille : la question de ton point, ou ce mot (le détail plus bas). Société américaine, serveurs ' +
-              'situés aux États-Unis.',
+              'de la veille : la question de ton point, ou ce mot (le détail plus bas). 650 Industries, Inc. (Expo), ' +
+              'société américaine, serveurs situés aux États-Unis, inscrite au Data Privacy Framework.',
           },
           {
             term: 'Google (Firebase Cloud Messaging)',
             text:
               'La couche du système Android qui remet les notifications à ton téléphone. Elle attribue un identifiant à ' +
               'l’application sur ton téléphone, dès son premier lancement, que tu acceptes les notifications ou non, et ' +
-              'ne remet un message que dans les cas décrits juste au-dessus. Société américaine.',
+              'ne remet un message que dans les cas décrits juste au-dessus. Google LLC, société américaine, inscrite au ' +
+              'Data Privacy Framework ; les conditions de traitement des données de Firebase incorporent aussi les ' +
+              'clauses contractuelles types.',
           },
           {
             term: 'Google (connexion avec un compte Google)',
             text:
               'Vérification de ton identité, uniquement si tu choisis de te connecter avec un compte Google. Google ' +
               'nous transmet alors ton adresse email, l’identifiant de ton compte Google, ton nom et l’adresse de ta ' +
-              'photo de profil. Société américaine.',
+              'photo de profil. Google LLC, société américaine, inscrite au Data Privacy Framework. Ce que Google fait ' +
+              'de ta connexion relève de ses propres règles de confidentialité, pas des nôtres.',
           },
           {
             term: 'GitHub',
             text:
               'Fabrication de la sauvegarde hebdomadaire de la base : une machine de GitHub Actions en fait une copie, ' +
-              'sessions exceptées, et la chiffre, puis la machine est effacée à la fin de l’opération. Société ' +
-              'américaine.',
+              'sessions exceptées, et la chiffre, puis la machine est effacée à la fin de l’opération. GitHub, Inc., ' +
+              'société américaine, inscrite au Data Privacy Framework.',
           },
           {
             term: 'Cloudflare',
             text:
               'Vérification que c’est bien une personne, et non un robot, qui ouvre une session ou demande un code de ' +
               'connexion : Cloudflare reçoit alors ton adresse IP et des informations techniques sur ton navigateur ou ' +
-              'ton téléphone, rien de ce que tu déclares. Stockage des sauvegardes, déjà chiffrées, dans un espace situé ' +
-              'dans l’Union européenne. Elles s’effacent d’elles-mêmes au bout de 90 jours. Société américaine.',
+              'ton téléphone, rien de ce que tu déclares. Il agit pour notre compte, mais il réutilise aussi ces ' +
+              'informations pour son propre compte, afin d’améliorer sa détection des robots : pour cet usage, c’est lui ' +
+              'le responsable de traitement, d’après sa politique de confidentialité de Turnstile. Stockage des ' +
+              'sauvegardes, déjà chiffrées, dans un espace situé dans l’Union européenne. Elles s’effacent d’elles-mêmes ' +
+              'au bout de 90 jours. Cloudflare, Inc., société américaine, inscrite au Data Privacy Framework ; son ' +
+              'avenant de sous-traitance incorpore aussi les clauses contractuelles types.',
           },
         ],
       },
       {
         kind: 'paragraph',
         text:
-          'Tes réponses, tes résultats et ton compte sont hébergés dans l’Union européenne, chez Supabase. Plusieurs des ' +
-          'fonctions ci-dessus passent par des sociétés américaines, et ce qui leur parvient sort donc de l’Union ' +
-          'européenne : l’acheminement des notifications (Expo, puis Google pour Android), la connexion avec un compte ' +
-          'Google, l’hébergement de la version web (Vercel), la vérification anti-robot (Cloudflare) et la fabrication ' +
-          'des sauvegardes (GitHub). Cloudflare garde par ailleurs les sauvegardes chiffrées dans l’Union européenne. Pour Resend, nous ' +
-          'n’avons pas relevé l’entité ni la région d’envoi : nous préférons ne rien affirmer plutôt qu’écrire plus ' +
-          'précis que ce que nous avons lu.',
+          'Tes réponses, tes résultats et ton compte sont stockés dans l’Union européenne, chez Supabase. Plusieurs des ' +
+          'fonctions ci-dessus passent en revanche par des sociétés américaines, et ce qui leur parvient sort donc de ' +
+          'l’Union européenne : l’acheminement des notifications (Expo, puis Google pour Android), la connexion avec un ' +
+          'compte Google, l’hébergement de la version web (Vercel), les rappels par email (Resend), la vérification ' +
+          'anti-robot (Cloudflare) et la fabrication des sauvegardes (GitHub). À la date de mise à jour de cette page, ' +
+          'ces sociétés sont inscrites sur la liste officielle du Data Privacy Framework (dataprivacyframework.gov/list), ' +
+          'par lequel la Commission européenne reconnaît un niveau de protection adéquat aux entreprises américaines qui ' +
+          's’y certifient. Là où un contrat de sous-traitance incorpore aussi les clauses contractuelles types de la ' +
+          'Commission européenne, c’est écrit ci-dessus. Cloudflare garde par ailleurs les sauvegardes chiffrées dans ' +
+          `l’Union européenne. Pour obtenir copie de ces garanties, ou savoir où les lire, écris à ${CONTACT_EMAIL}.`,
       },
       {
         kind: 'paragraph',
@@ -501,7 +542,9 @@ const SECTIONS: LegalSection[] = [
         items: [
           'Session anonyme jamais rattachée à un compte : supprimée automatiquement après 90 jours sans utilisation ' +
             'de l’application. Tant que tu reviens, rien n’est effacé — ouvrir l’application, commencer un bilan, ' +
-            'répondre à un point de suivi ou nous envoyer un retour remet le compteur à zéro.',
+            'répondre à un point de suivi ou nous envoyer un retour remet le compteur à zéro. La suppression a lieu ' +
+            'la nuit, et une garde de sécurité peut l’étaler sur plusieurs nuits si beaucoup de sessions arrivent à ' +
+            'échéance en même temps.',
           'Compte rattaché : tes données sont conservées tant que ton compte existe, puisque leur intérêt est précisément de te montrer une évolution dans la durée.',
           'Bilan retiré : un bilan que tu retires n’apparaît plus dans ton suivi, mais il reste conservé — et ' +
             'dans l’export de tes données — jusqu’à la suppression de ton compte, ou de ta session anonyme si ' +
@@ -550,7 +593,29 @@ const SECTIONS: LegalSection[] = [
           'rattachés à la session que le produit a déjà besoin de conserver, à une exception près : quand un écran n’a ' +
           'pas réussi à s’afficher et que ce repère n’a pas pu partir tout de suite — hors connexion, par exemple —, le ' +
           'type de l’erreur et l’écran concerné attendent sur ton appareil, trente jours au plus, de pouvoir partir. ' +
-          'C’est la raison pour laquelle aucune bannière de consentement ne t’est présentée : il n’y a rien à consentir.',
+          'La vérification anti-robot de Cloudflare peut aussi enregistrer des informations sur ton appareil ; selon ' +
+          'Cloudflare, elles sont strictement nécessaires à la détection des robots.',
+      },
+      {
+        kind: 'paragraph',
+        // **Cette phrase remplace « il n'y a rien à consentir »** (audit du 18/10/2026), qui affirmait une absence
+        // de consentement qu'aucune source lue ne garantit. Elle dit trois choses vérifiables : ce qui est
+        // mesuré (la liste de la section « Ce que nous collectons »), sur quelle base (l'intérêt légitime,
+        // dite plus haut), et le seul chemin d'opposition qui existe : un e-mail. **Elle ne promet pas de
+        // réglage, parce que l'app n'en a aucun**, et ne dit pas non plus que l'enregistrement s'arrêterait :
+        // rien dans le produit ne sait le faire pour une session (décision de produit, laissée à la personne
+        // qui pilote). L'identifiant demandé est celui que l'export rend (`export_my_data`, clé
+        // `compte.identifiant`) : sans lui, une session anonyme n'a aucun nom qui permette de retrouver ses
+        // repères. Vaut aussi pour la question de l'article 82 de la loi Informatique et Libertés, à trancher
+        // par un juriste : la CNIL n'exempte la mesure d'audience que pour des statistiques anonymes, et ces
+        // repères sont rattachés à une session.
+        text:
+          'Nous ne te présentons aucune bannière de consentement : ce que ton appareil conserve se limite à ce qui est ' +
+          'nécessaire au fonctionnement, et les repères de parcours reposent sur notre intérêt légitime, non sur ton ' +
+          'consentement. Tu peux t’opposer à ces repères à tout moment (droit d’opposition, article 21 du RGPD) en ' +
+          `écrivant à ${CONTACT_EMAIL}, en joignant l’identifiant de ton compte, qui figure dans l’export de tes données. ` +
+          'Nous répondons dans le délai d’un mois indiqué plus bas et, si ta demande est fondée, nous supprimons les ' +
+          'repères déjà enregistrés pour ta session. L’application n’a aujourd’hui aucun réglage pour les désactiver.',
       },
     ],
   },
