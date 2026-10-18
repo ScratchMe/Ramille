@@ -26,8 +26,9 @@
  *
  * Le rendu (la page et la carte appelées pour de vrai, la redirection, le 400, le cache) est joué par
  * `scripts/verifier-api.mjs`, que Jest ne peut pas faire : la carte ne se charge pas ici (satori,
- * resvg, un binaire wasm), et les fonctions importent `./_partage-commun.js`, que Jest ne résout pas
- * vers `.ts`.
+ * resvg, un binaire wasm). L'import en `./_partage-commun.js` des fonctions, Jest le résout par le
+ * `moduleNameMapper` de `package.json`, qui le renvoie au `.ts` : c'est ce qui permet à la sonde
+ * (`sonder-la-production.test.ts`) de charger la vraie page.
  *
  * Éprouvé en le cassant le 18/10/2026 (chaque mutation remise en place avant la suivante) :
  * retirer « en TGV » de la liste fait tomber 2 tests (4 libellés refusés, et les adresses de l'app

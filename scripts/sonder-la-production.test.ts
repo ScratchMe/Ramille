@@ -39,6 +39,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import partage from '../api/partage';
+import { posteFerme } from '../api/_partage-commun';
 import { PAGE_TITLES } from '../src/constants/page-titles';
 import { urlDePartage, type ResultatBilan } from '../src/types/resultat';
 
@@ -307,12 +308,9 @@ describe('parametresDePartage', () => {
     expect(sonde.get('poste')).toBe(deLApp.get('poste'));
   });
 
-  test('le poste est dans la liste fermée de api/partage.ts : un libellé forgé serait ignoré', () => {
-    const source = fs.readFileSync(path.join(racine, 'api', 'partage.ts'), 'utf8');
+  test('le poste est dans la liste fermée des fonctions : un libellé forgé serait ignoré', () => {
     const poste = pourUnInstant('2026-10-18T22:30:00Z').get('poste') as string;
-    const [nom, ...mode] = poste.split(' en ');
-    expect(source).toContain(`'${nom}'`);
-    expect(source).toContain(`'en ${mode.join(' en ')}'`);
+    expect(posteFerme(poste)).toBe(poste);
   });
 
   test('change à chaque minute, pour que la carte soit rendue et non servie par le cache', () => {
