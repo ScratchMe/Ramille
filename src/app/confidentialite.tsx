@@ -18,7 +18,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //
 // Règle de rédaction : **ne décrire que ce que le produit fait réellement**. Chaque
 // affirmation ci-dessous est vérifiable dans le code ou le schéma :
-//   - session anonyme dès l'ouverture -> `ensureSession()` (src/lib/supabase.ts), v1-04 §1 ;
+//   - session anonyme dès l'ouverture -> `ensureSession()` (src/lib/supabase.ts), v1-04 §1, sauf sur
+//     les surfaces sans compte, qui ne font que restaurer une session existante (`restaurerLaSession`,
+//     `COMPTE.md`) ;
 //   - champs collectés -> colonnes de `assessment_answers` (v1-05 §3) ;
 //   - réponses aux points de suivi, oui, non ou sans objet -> `engagement_checkins.response_kind`
 //     et `responded_at` (C2.4) ;
@@ -315,9 +317,10 @@ const SECTIONS: LegalSection[] = [
           'Nous enregistrons aussi quelques repères de parcours dans l’application : quels écrans tu as ouverts et ' +
           'd’où tu y arrivais, à quelle étape du questionnaire tu en es, si tu as partagé ton bilan, demandé un code ' +
           'de connexion ou rattaché un compte — et, quand tu cherches un compte existant, si cet appareil portait déjà ' +
-          'un bilan —, et le fait qu’une erreur est survenue (un écran qui n’a pas réussi à s’afficher, une erreur ' +
-          'imprévue, une opération qui a échoué), qu’un envoi de ton bilan a échoué ou qu’un code de connexion n’a pas ' +
-          'pu partir (le type de l’erreur, l’endroit et ce qui l’a révélée, jamais son message). Chaque repère porte aussi ' +
+          'un bilan —, et le fait qu’une erreur inattendue s’est produite (un écran qui n’a pas réussi à s’afficher, ' +
+          'une opération restée sans réponse, une erreur qui a fermé l’application), qu’un envoi de ton bilan a échoué ' +
+          'ou qu’un code de connexion n’a pas pu partir (le type de l’erreur, l’endroit et d’où elle vient, jamais son ' +
+          'message). Chaque repère porte aussi ' +
           'la plateforme (web ou Android), et ceux de l’ouverture de l’application et des erreurs la version de ' +
           'l’application que tu utilises, pour savoir si un défaut vient d’une version précise. Ces ' +
           'repères ne portent rien d’autre : ni texte que tu aurais saisi, ni adresse IP, ni identifiant d’appareil, et ' +
@@ -390,7 +393,8 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Dès l’ouverture de l’application, une session anonyme est créée pour que ton bilan puisse être enregistré et te ' +
-          'revenir si tu fermes puis rouvres l’app. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
+          'revenir si tu fermes puis rouvres l’app. Lire cette page, les conditions d’utilisation, la page de ' +
+          'suppression de compte ou celle qui coupe les rappels n’en crée pas. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
           'numéro de téléphone — sauf l’adresse que tu saisis pour recevoir un code, gardée même si tu ne vas pas au ' +
           'bout, jusqu’à ce que tu la confirmes, en saisisses une autre ou que la session soit supprimée. Comme toute ' +
           'session, elle garde l’adresse IP et l’appareil de sa dernière utilisation, et l’identifiant de ' +
@@ -594,9 +598,10 @@ const SECTIONS: LegalSection[] = [
           'questionnaire en cours, l’adresse email de ta dernière demande de code — pour ne pas te la faire retaper ' +
           'si tu reviens saisir ce code plus tard — et quelques préférences d’affichage. Tout cela reste sur cet appareil, et part avec ' +
           'la suppression de ton compte. Les repères de parcours décrits plus haut sont enregistrés côté serveur, ' +
-          'rattachés à la session que le produit a déjà besoin de conserver, à une exception près : quand un écran n’a ' +
-          'pas réussi à s’afficher et que ce repère n’a pas pu partir tout de suite — hors connexion, par exemple —, le ' +
-          'type de l’erreur et l’écran concerné attendent sur ton appareil, trente jours au plus, de pouvoir partir. ' +
+          'rattachés à la session que le produit a déjà besoin de conserver, à une exception près : quand une erreur ' +
+          'n’a pas pu partir tout de suite — hors connexion, ou parce qu’elle a fermé l’application —, le type de ' +
+          'l’erreur, l’écran concerné, son origine et la version de l’application attendent sur ton appareil, trente ' +
+          'jours au plus, de pouvoir partir. ' +
           'La vérification anti-robot de Cloudflare peut aussi enregistrer des informations sur ton appareil ; selon ' +
           'Cloudflare, elles sont strictement nécessaires à la détection des robots.',
       },
