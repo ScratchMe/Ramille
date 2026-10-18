@@ -21,9 +21,18 @@
  * inconnu, 5 ; retirer la vérification du schéma, 1 ; retirer le refus des espaces, 2 ; nommer le
  * paramètre inconnu dans le message, 1 ; couper la requête au dernier « ? » plutôt qu'au premier,
  * 1 ; retirer `PGSSLMODE` de l'environnement du job, 1. Aucune mutation ne passe.
+ *
+ * **Et ce que le dump doit porter** (fin de fichier) : les privilèges de `public` — sans eux, une
+ * restauration rend les fonctions internes appelables par `anon` (`docs/exploitation/sauvegarde.md`
+ * §5 ter) — et les compléments, que le contrôle exige. Le contrôle est joué sous `bash` sur un dump
+ * fabriqué, abîmé d'une seule façon par cas. Mesuré le 18/10/2026 en mutant le workflow huit fois,
+ * l'état d'avant réécrit après chacune : `--no-privileges` remis, 1 test ; `analytics` retiré du dump,
+ * 1 ; le plancher des privilèges à 0, 2 ; le contrôle du trigger retiré, 1 ; celui des planifications,
+ * 1 ; l'avertissement du concédant, 1 ; les compléments hors de l'archive, 1 ; hors de la relecture, 1.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const workflow = fs.readFileSync(
@@ -38,12 +47,12 @@ const NOM_DE_L_ETAPE = 'Vérifier les secrets et le chiffrement exigé';
  * aucun n'est une dépendance directe du dépôt, et la forme `- name:` puis `run: |` est celle de
  * toutes les étapes de ce fichier. Si elle change, l'extraction échoue bruyamment.
  */
-function scriptDeLEtape(): string {
+function scriptDeLEtape(nom: string = NOM_DE_L_ETAPE): string {
   const lignes = workflow.split('\n');
-  const i = lignes.findIndex((l) => l.trim() === `- name: ${NOM_DE_L_ETAPE}`);
-  if (i < 0) throw new Error(`Étape « ${NOM_DE_L_ETAPE} » introuvable dans sauvegarde.yml`);
+  const i = lignes.findIndex((l) => l.trim() === `- name: ${nom}`);
+  if (i < 0) throw new Error(`Étape « ${nom} » introuvable dans sauvegarde.yml`);
   const run = lignes[i + 1];
-  if (run.trim() !== 'run: |') throw new Error(`L'étape « ${NOM_DE_L_ETAPE} » n'est pas suivie de « run: | »`);
+  if (run.trim() !== 'run: |') throw new Error(`L'étape « ${nom} » n'est pas suivie de « run: | »`);
   const retrait = run.length - run.trimStart().length;
   const bloc: string[] = [];
   for (const l of lignes.slice(i + 2)) {
@@ -147,5 +156,102 @@ describe('sauvegarde.yml — la chaîne de connexion ne défait pas PGSSLMODE', 
     const r = jouer(undefined);
     expect(r.code).toBe(1);
     expect(r.sortie).toContain('Secrets de dépôt manquants : SUPABASE_DB_URL');
+  });
+});
+
+// ── Les privilèges et les compléments ────────────────────────────────────────────────────────
+
+const dump = scriptDeLEtape('Dumper la base');
+const controle = scriptDeLEtape('Vérifier que le dump a du contenu');
+
+/** La commande `pg_dump` ou `psql` qui écrit `fichier`, continuations comprises. */
+function commandeQuiEcrit(fichier: string): string {
+  const trouvee = dump
+    .split(/\n(?=pg_dump |psql )/)
+    .find((c) => c.includes(`--file=sauvegarde/${fichier}`) || c.includes(`--output=sauvegarde/${fichier}`));
+  if (!trouvee) throw new Error(`Aucune commande n'écrit ${fichier} dans « Dumper la base »`);
+  return trouvee;
+}
+
+describe('sauvegarde.yml — le dump porte les privilèges', () => {
+  test('public.sql : sans --no-privileges, propriétaires écartés, analytics compris', () => {
+    const commande = commandeQuiEcrit('public.sql');
+    expect(commande).not.toContain('--no-privileges');
+    expect(commande).toContain('--no-owner');
+    expect(commande).toContain('--schema=analytics');
+  });
+
+  test('les compléments sont écrits, archivés et relus', () => {
+    expect(commandeQuiEcrit('complements.sql')).toContain('cron.schedule');
+    expect(workflow).toMatch(/tar -czf .* public\.sql auth\.sql complements\.sql$/m);
+    expect(scriptDeLEtape("Vérifier que l'archive s'ouvre")).toContain(
+      'for attendu in public.sql auth.sql complements.sql; do',
+    );
+  });
+});
+
+/** Un dump plausible, que chaque cas abîme d'une seule façon. */
+function fichiersDuDump({ fermees = 25, trigger = true, planification = true, autreConcedant = false } = {}) {
+  const remplissage = `-- ${'x'.repeat(1100)}\n`;
+  const publicSql = [
+    remplissage,
+    ...['assessments', 'assessment_answers', 'plan_actions', 'engagement_checkins'].map(
+      (t) => `CREATE TABLE "public"."${t}" (id uuid);`,
+    ),
+    'CREATE TABLE "supabase_migrations"."schema_migrations" (version text);',
+    'COPY "public"."transport_modes" ("id") FROM stdin;',
+    ...Array.from({ length: 12 }, (_, i) => `mode_${i}`),
+    '\\.',
+    ...Array.from({ length: fermees }, (_, i) => `REVOKE ALL ON FUNCTION "public"."f${i}"() FROM PUBLIC;`),
+    ...(autreConcedant ? ['SET SESSION AUTHORIZATION "supabase_admin";'] : []),
+  ].join('\n');
+  const authSql = `${remplissage}COPY "auth"."users" ("id") FROM stdin;\n\\.\n`;
+  const complements = [
+    '-- Triggers sur auth.* et planifications pg_cron, exportés à la sauvegarde.',
+    ...(trigger
+      ? ['CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();']
+      : []),
+    ...(planification ? ["select cron.schedule('purge-usage-events', '30 3 * * *', 'select public.purge_usage_events();');"] : []),
+  ].join('\n');
+  return { 'public.sql': publicSql, 'auth.sql': authSql, 'complements.sql': complements };
+}
+
+function controler(fichiers: Record<string, string>): { code: number | null; sortie: string } {
+  const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'sauvegarde-controle-'));
+  try {
+    fs.mkdirSync(path.join(dossier, 'sauvegarde'));
+    for (const [nom, contenu] of Object.entries(fichiers)) {
+      fs.writeFileSync(path.join(dossier, 'sauvegarde', nom), contenu);
+    }
+    const r = spawnSync('bash', ['-c', controle], { encoding: 'utf8', cwd: dossier });
+    return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
+  } finally {
+    fs.rmSync(dossier, { recursive: true, force: true });
+  }
+}
+
+describe('sauvegarde.yml — le contrôle refuse un dump sans privilèges ni compléments', () => {
+  test('un dump complet passe', () => {
+    const r = controler(fichiersDuDump());
+    expect(r.code).toBe(0);
+    expect(r.sortie).toContain('fonctions fermées à PUBLIC : 25');
+    expect(r.sortie).not.toContain('::warning::');
+  });
+
+  test.each([
+    ['aucun REVOKE (un --no-privileges remis)', { fermees: 0 }, 'ne ferme que 0 fonctions à PUBLIC'],
+    ['sous le plancher', { fermees: 19 }, 'ne ferme que 19 fonctions à PUBLIC'],
+    ['le trigger des profils manquant', { trigger: false }, 'Le trigger on_auth_user_created manque aux compléments'],
+    ['aucune planification', { planification: false }, 'Aucune planification pg_cron dans les compléments'],
+  ])('%s : refusé', (_nom, abime, message) => {
+    const r = controler(fichiersDuDump(abime));
+    expect(r.code).toBe(1);
+    expect(r.sortie).toContain(message);
+  });
+
+  test('un concédant autre que postgres avertit sans refuser : la sauvegarde reste bonne', () => {
+    const r = controler(fichiersDuDump({ autreConcedant: true }));
+    expect(r.code).toBe(0);
+    expect(r.sortie).toContain('::warning::Le dump porte un SET SESSION AUTHORIZATION');
   });
 });

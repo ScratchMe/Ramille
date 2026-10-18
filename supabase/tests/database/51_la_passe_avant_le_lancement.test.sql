@@ -24,6 +24,9 @@ create function pg_temp.en_tant_que(p_user uuid) returns void language sql as $$
   select set_config('role', 'authenticated', true),
          set_config('request.jwt.claims', json_build_object('sub', p_user, 'role', 'authenticated')::text, true);
 $$;
+-- Une fonction neuve naît sans EXECUTE pour PUBLIC (`20261018100000`), et celle-ci est rappelée une
+-- fois le rôle passé à `authenticated`.
+grant execute on function pg_temp.en_tant_que(uuid) to authenticated;
 
 -- ── 1. Les événements d'usage : des nombres bornés ──────────────────────────────────────────
 

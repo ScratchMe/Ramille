@@ -190,19 +190,24 @@ jobs:
             exit 1
           fi
 
-      # Deux fichiers et non un, parce qu'ils ne se restaurent pas de la même façon (détail
-      # dans docs/exploitation/sauvegarde.md) :
-      #   - `public` part avec son schéma : dans un projet neuf, ces tables n'existent pas.
-      #     `supabase_migrations` l'accompagne pour que l'historique des migrations voyage avec
-      #     la sauvegarde : sans lui, une base restaurée ne sait plus où elle en est, et on ne
-      #     peut plus dire quelle migration le dump reflète.
+      # Trois fichiers, parce qu'ils ne se restaurent pas de la même façon (procédure dans
+      # docs/exploitation/sauvegarde.md §4) :
+      #   - `public` et `analytics` partent avec leur schéma : dans un projet neuf, ces objets
+      #     n'existent pas. `supabase_migrations` les accompagne pour que l'historique des
+      #     migrations dise quelle migration le dump reflète.
       #   - `auth` part en données seules, et seulement auth.users / auth.identities : les
       #     tables du schéma auth sont créées par la plateforme dans tout projet Supabase, et
       #     tenter de les recréer échouerait. auth.users est la racine de toutes les cascades,
       #     auth.identities porte le rattachement Google/email.
-      # `--no-owner` / `--no-privileges` : les rôles d'un autre projet ne sont pas les mêmes.
-      # Les GRANTs ne reviennent donc pas avec le dump, et aucune migration n'est rejouée à la
-      # restauration : on rejoue le seul fichier de grants, cf. sauvegarde.md §4 étape 6.
+      #   - les compléments : ce qui vit hors des schémas dumpés et que la procédure reposait
+      #     de mémoire — les triggers que nos migrations posent sur `auth.*` et les planifications
+      #     `pg_cron`, exportés tels que la base les porte.
+      # **Les privilèges partent avec le schéma** (`--no-owner` seul) : sans eux, chaque fonction
+      # recréée rend EXECUTE à PUBLIC, et les fonctions `security definer` internes, qui ne
+      # tiennent que par leur `revoke`, deviennent appelables par `anon` sur `/rest/v1/rpc`. Les
+      # ordres qu'un projet neuf refuse à `postgres` sont écartés à la restauration, pas ici :
+      # l'archive reste la sortie de pg_dump. Les propriétaires, eux, ne voyagent pas — tout ce
+      # que ces schémas portent appartient à `postgres`, et c'est `postgres` qui restaure.
       # La chaîne de connexion n'est jamais affichée : pas de `set -x` ici, et aucun `echo`
       # de la variable.
       - name: Dumper la base
@@ -213,11 +218,13 @@ jobs:
           mkdir -p sauvegarde
           pg_dump "$SUPABASE_DB_URL" \
             --schema=public \
+            --schema=analytics \
             --schema=supabase_migrations \
-            --no-owner --no-privileges \
+            --no-owner \
             --quote-all-identifiers \
             --format=plain \
             --file=sauvegarde/public.sql
+          # Des données seules : aucun privilège n'y figurerait de toute façon.
           pg_dump "$SUPABASE_DB_URL" \
             --data-only \
             --table=auth.users \
@@ -226,6 +233,27 @@ jobs:
             --quote-all-identifiers \
             --format=plain \
             --file=sauvegarde/auth.sql
+          # Un script rejouable tel quel : chaque trigger est précédé de son `drop … if exists`,
+          # et `cron.schedule` remplace un job de même nom. Le `search_path` vide fait écrire à
+          # `pg_get_triggerdef` des noms qualifiés.
+          psql "$SUPABASE_DB_URL" -X -q -A -t -v ON_ERROR_STOP=1 \
+            --file=- --output=sauvegarde/complements.sql <<'SQL'
+          set search_path = '';
+          select '-- Triggers sur auth.* et planifications pg_cron, exportés à la sauvegarde.';
+          select format('drop trigger if exists %I on %s;', t.tgname, t.tgrelid::regclass)
+                 || chr(10) || pg_get_triggerdef(t.oid) || ';'
+            from pg_catalog.pg_trigger t
+            join pg_catalog.pg_class c on c.oid = t.tgrelid
+           where c.relnamespace = 'auth'::regnamespace and not t.tgisinternal
+           order by c.relname, t.tgname;
+          select format('select cron.schedule(%L, %L, %L);', j.jobname, j.schedule, j.command)
+            from cron.job j
+           order by j.jobname;
+          select format('select cron.alter_job((select jobid from cron.job where jobname = %L), active := false);', j.jobname)
+            from cron.job j
+           where not j.active
+           order by j.jobname;
+          SQL
 
       # Un dump techniquement réussi mais vide (connexion sur la mauvaise base, schéma
       # inaccessible au rôle) pèse quelques centaines d'octets et ne dit rien de lui-même.
@@ -268,6 +296,30 @@ jobs:
             echo "::error::Le dump ne contient pas de données (transport_modes : $lignes lignes). Un dump schéma-seul n'est pas une sauvegarde."
             exit 1
           fi
+          # Les privilèges. Un `--no-privileges` remis un jour ne laisserait aucun `REVOKE`, et la
+          # restauration rouvrirait les fonctions internes à `anon`. Le plancher est loin sous le
+          # compte réel, pour qu'une fonction retirée ne fasse pas rougir la sauvegarde.
+          fermees=$(grep -c '^REVOKE ALL ON FUNCTION .* FROM PUBLIC;$' sauvegarde/public.sql || true)
+          echo "fonctions fermées à PUBLIC : $fermees"
+          if [ "$fermees" -lt 20 ]; then
+            echo "::error::Le dump ne ferme que $fermees fonctions à PUBLIC : il a perdu ses privilèges, et une restauration rendrait les fonctions internes appelables par anon."
+            exit 1
+          fi
+          # Un privilège accordé par un autre rôle que `postgres` fait écrire au dump un
+          # `SET SESSION AUTHORIZATION`, que `postgres` ne peut pas rejouer : la sauvegarde reste
+          # bonne, la restauration bute dessus (sauvegarde.md §5 bis).
+          if grep -q 'SESSION AUTHORIZATION' sauvegarde/public.sql; then
+            echo "::warning::Le dump porte un SET SESSION AUTHORIZATION : un privilège accordé par un autre rôle que postgres, qu'une restauration en postgres ne pourra pas rejouer tel quel."
+          fi
+          # Les compléments : le trigger qui crée les profils, et au moins une planification.
+          if ! grep -q '^CREATE TRIGGER on_auth_user_created ' sauvegarde/complements.sql; then
+            echo "::error::Le trigger on_auth_user_created manque aux compléments : un projet restauré ne créerait plus de profil aux nouveaux venus."
+            exit 1
+          fi
+          if ! grep -q '^select cron\.schedule(' sauvegarde/complements.sql; then
+            echo "::error::Aucune planification pg_cron dans les compléments : un projet restauré ne lancerait plus ni rappel, ni plan, ni purge."
+            exit 1
+          fi
           # L'historique des migrations est un confort de lecture, pas une condition de
           # restauration (la procédure ne rejoue aucune migration) : son absence avertit, elle
           # ne fait pas échouer la sauvegarde.
@@ -291,7 +343,7 @@ jobs:
       - name: Chiffrer l'archive
         run: |
           set -euo pipefail
-          tar -czf "sauvegarde-$horodatage.tar.gz" -C sauvegarde public.sql auth.sql
+          tar -czf "sauvegarde-$horodatage.tar.gz" -C sauvegarde public.sql auth.sql complements.sql
           printf '%s' "$SAUVEGARDE_PASSPHRASE" | gpg --batch --yes \
             --pinentry-mode loopback \
             --passphrase-fd 0 \
@@ -354,7 +406,7 @@ jobs:
       #
       # On relit donc l'objet **depuis le bucket** (et non le fichier local, qui prouverait
       # seulement que gpg sait défaire ce que gpg vient de faire), on le déchiffre, et on exige d'y
-      # trouver les deux fichiers attendus.
+      # trouver les trois fichiers attendus.
       #
       # **Ce que ce contrôle ne dit PAS, et qu'il ne faut pas lui faire dire** : il déchiffre avec
       # le secret de dépôt. Il prouve que l'archive s'ouvre avec *cette* valeur-là — pas que la
@@ -379,7 +431,7 @@ jobs:
           contenu=$(tar -tzf controle/archive.tar.gz)
           echo "contenu de l'archive relue :"
           printf '  %s\n' $contenu
-          for attendu in public.sql auth.sql; do
+          for attendu in public.sql auth.sql complements.sql; do
             if ! printf '%s\n' $contenu | grep -qx "$attendu"; then
               echo "::error::$attendu est absent de l'archive relue : elle s'ouvre mais ne porte pas ce qu'il faut."
               exit 1
