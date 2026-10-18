@@ -147,11 +147,9 @@ libre. Comme chaque visiteur reçoit une session anonyme dès l'ouverture, ouvri
 **Et soixante par heure pour tout le projet, depuis le 04/10/2026** (`20261004201217`, plan
 anti-abus) : une session neuve repartait à zéro, et des comptes en masse écrivaient sans fin. Le
 trigger est `security definer` pour compter les retours des autres, et répond `RM002` avec une
-phrase pour la personne (« Réessaie un peu plus tard. », choisie par la personne qui pilote). Les
-événements d'usage ont le même étage : 6 000 par heure pour tout le projet, dont 300 pannes
-(`app_error`), en plus des 500 par jour et par compte. **Ces plafonds ne refusent que les comptes nés
-depuis moins de vingt-quatre heures** : un `app_open` refusé serait un signe de vie perdu, que
-lisent le régime des rappels et la purge, et le flot vient de sessions neuves.
+phrase pour la personne (« Réessaie un peu plus tard. », choisie par la personne qui pilote). **Ce
+plafond-là ne refuse que les comptes nés depuis moins de vingt-quatre heures.** Les événements
+d'usage ont leurs budgets du jour, §4.
 **Et la table est insert-only côté client, ce que le schéma ne disait pas encore le 20/09/2026** :
 une policy `DELETE` owner-scoped traînait, sans justification dans sa migration et sans qu'aucun
 écran l'emprunte, alors que le trigger compte les lignes **vivantes** — dix retours, on efface, on
@@ -160,3 +158,38 @@ suppression de compte et par la purge à 90 jours.
 **Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
 passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING-PGTAP.md` §2.5,
 qui dit aussi pourquoi un fichier pgTAP se rejoue en séquence entière.
+
+## 4. Les plafonds des événements d'usage
+
+Un événement s'écrit depuis n'importe quelle session anonyme, et le plan gratuit passe la base en
+lecture seule pour tout le monde à 500 Mo : ce qui borne l'écriture borne la base
+(`enforce_usage_events_rate_limit`, `20261018110000`, test `55`). Deux étages, et un refus
+`check_violation` que le client abandonne sans garder la panne :
+
+- **par compte, sur vingt-quatre heures glissantes** : 200 événements, et 50 pannes (`app_error`) à
+  part. Le parcours réel en émet 51 au plus pour un compte, deux bilans, un re-bilan et un retrait
+  compris ; la file d'attente des pannes de l'app en garde vingt (`TAILLE_DE_LA_FILE`) ;
+- **pour tout le projet, sur les vingt-quatre dernières heures, quel que soit l'âge du compte** : trois
+  budgets, 50 000 événements des comptes nés depuis moins de vingt-quatre heures, 25 000 des autres
+  comptes, 2 500 pannes. Un flot de sessions neuves ne prend rien aux comptes qui reviennent, des
+  comptes vieillis exprès rien à l'entonnoir d'un lancement, et un flot d'autres événements n'étouffe
+  pas les pannes — ni l'inverse. Au pire, 77 500 événements de 675 octets (le maximum de
+  `check_usage_event_props`, index compris ; 173 octets avec ce que l'app envoie) : 52 Mo par jour.
+
+Quatre choses à ne pas défaire :
+
+- **le premier `app_open` d'un compte en vingt-quatre heures passe toujours les budgets du projet** :
+  c'est le signe de vie que lisent `dernier_signe_de_vie` et la purge, et l'ouverture que compte
+  l'entonnoir d'une cohorte. Un flot ne doit coûter ni l'un ni l'autre aux vrais comptes. Le
+  plafond par compte n'a pas besoin de l'exception : un compte qui l'atteint a déjà donné signe de
+  vie dans la journée — chaque lancement de l'app émet son `app_open` ;
+- **il n'y a pas de plafond horaire** : il coupait l'entonnoir d'un lancement dès 120 arrivées dans
+  l'heure, et ne protégeait rien que le budget du jour ne protège ;
+- **les budgets se comptent dans `evenements_d_usage_par_heure`**, une ligne par heure, trois nombres,
+  sans identifiant : relire les événements coûterait 14 ms par insertion à cent mille lignes, et le
+  plafond deviendrait lui-même la façon d'occuper la base. Les plafonds et la fenêtre n'ont qu'une
+  définition, `budgets_des_evenements_d_usage()`, que lisent le déclencheur et l'alerte ;
+- **un refus ne laisse aucune trace**, donc l'alerte d'exploitation lit le compteur et dit un budget
+  entamé à 80 % (`budgets_des_evenements_entames`), avant que rien ne se perde. Un budget atteint pour
+  de vrais usages — plus d'un millier d'arrivées par jour, plus de deux mille personnes qui
+  reviennent — se relève dans la fonction, par une migration.

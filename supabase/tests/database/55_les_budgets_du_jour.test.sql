@@ -8,15 +8,40 @@
 -- a émis, et une assertion ne doit pas rougir pour ça (TESTING-PGTAP.md §2.3). Une tranche posée à la
 -- main est un état que la production produit : un compteur à 25 000, c'est une journée chargée.
 --
--- **Éprouvé en le cassant** (TESTING.md §1.1) : chaque mutation appliquée à la base locale dans une
--- transaction annulée, ce fichier rejoué dedans, puis la suite entière ; ce que chacune fait tomber
--- (les numéros sont ceux des libellés) :
+-- **Éprouvé en le cassant, le 18/10/2026** (TESTING.md §1.1) : chaque mutation appliquée à la base
+-- locale dans une transaction annulée, et chacun des fichiers de la suite rejoué dedans ; ce que
+-- chacune fait tomber dans toute la suite (les numéros sont ceux des libellés de ce fichier) :
 --
 --   | Ce qu'on casse | Ce qui tombe |
 --   |---|---|
---   MUTATIONS
+--   | le compteur n'est plus incrémenté | 1 |
+--   | le plafond des pannes par compte retiré | 2 |
+--   | les autres événements d'un compte comptent ses pannes | 3 |
+--   | le plafond des pannes d'un compte compte tous ses événements | 4 |
+--   | les comptes de plus de vingt-quatre heures dispensés des budgets du projet (l'état d'avant) | 5 |
+--   | la première ouverture du jour ne passe plus | 8 |
+--   | toute ouverture passe, pas seulement la première | 9 |
+--   | les comptes neufs comptés dans le budget des autres | 1, 6, 7 et 9 — un seul budget pour tous |
+--   | le budget des comptes neufs retiré | 7 et 9 — la seconde ouverture n'est refusée que par lui |
+--   | la fenêtre de vingt-quatre heures retirée | 10 |
+--   | le plafond de 6 000 par heure remis pour les comptes neufs | 11 |
+--   | le budget des pannes retiré | 12 |
+--   | les autres événements comptés aussi au budget des pannes | 13 |
+--   | les pannes comptées aussi au budget des comptes | 14 |
+--   | le plafond des corrections du contexte retiré | 16 |
+--   | la correction comptée avant la comparaison « rien n'a bougé » | 17 |
+--   | la fenêtre des corrections qui ne se rouvre jamais | 18 |
+--   | l'export sans les deux colonnes | 19 |
+--   | le verrou retiré, d'une clé commune à tous, ou pris après la comparaison | 20, chacune |
+--   | le seuil de l'alerte à 100 % | 21 |
+--   | `alerte_a_dire` sans les budgets | 22 |
+--   | le texte de l'alerte sans leur ligne | 23 |
+--   | le plafond des autres événements par compte remis à 500 | « la 201ᵉ tentative » de `12`, seule |
 --
--- Témoin sans mutation : aucun écart.
+-- Témoin sans mutation : aucun écart dans ce fichier. Sur une base qui a déjà servi, le témoin du plan
+-- de `22` (son assertion 34) tombe par intermittence — cinq passages sur vingt-six, témoin compris —,
+-- mutation ou pas : son plan dépend de `reltuples`, que ses passages précédents ont gonflé
+-- (TESTING-PGTAP.md §2.3). Sur une stack neuve, il passe.
 begin;
 create extension if not exists pgtap with schema extensions;
 

@@ -302,7 +302,7 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
 **Le contexte se corrige sans resoumettre de bilan, et `p_cause` est ce qui le rend possible**
 (C6.4, `20260919230000_le_contexte_sort_du_questionnaire.sql`). « Modifier ces réponses » rouvrait
 le questionnaire à l'étape « Contexte », et en sortir soumettait un bilan entier — alors que
-corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses trajets. Six points :
+corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses trajets. Sept points :
 
 - **`mettre_a_jour_le_contexte(zone, tc, vehicules, teletravail)` est le seul écrivain de ces
   quatre colonnes hors questionnaire**, et ce n'est **pas** une question de permission :
@@ -347,6 +347,16 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   le 01/10/2026 par la personne qui pilote : l'encart a déjà parlé sur l'appareil du changement, et
   sans borne il annonçait une perte de n'importe quelle date, un encart tu reparaissant d'une saison
   à l'autre avec son ancienne cause. Le reste, dans une même saison, est nommé dans la dérivation.
+- **Vingt corrections par compte et par fenêtre de vingt-quatre heures, un appel à la fois**
+  (`20261018110000`, test `55`). Chaque correction qui change quelque chose recalcule le bilan et
+  reconstruit le plan, et une boucle qui alterne deux valeurs occupait le processeur de la petite
+  instance. Le compte vit sur `profiles` (`corrections_du_contexte`, `…_depuis`, écrites par le RPC
+  seul, rendues par l'export) et se prend **après** la comparaison « rien n'a bougé », qui ne coûte
+  rien et ne compte pas ; la fenêtre s'ouvre à la première correction. Au-delà, `RM002`, et l'écran le
+  dit (`TROP_DE_CORRECTIONS`, `src/lib/contexte.ts`) plutôt que « Réessaie dans un instant », faux
+  jusqu'au lendemain. Le verrou consultatif (`pg_advisory_xact_lock`, une clé par compte) se prend
+  **avant** de lire les réponses : deux appels du même compte lisent, comparent et reconstruisent l'un
+  après l'autre, deux comptes ne s'attendent jamais.
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
   n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle
