@@ -254,10 +254,10 @@ describe('gardeDuJeton', () => {
     const pourA = demander('a', 'session');
     const pourB = demander('b', 'session');
     const pourAEncore = demander('a', 'session');
-    // Le premier enregistrement d'A finit en dernier : il ne doit pas conclure pour le troisième, encore
-    // en vol — un retour pendant ce vol n'en lance pas un quatrième.
+    // Le premier enregistrement d'A finit en dernier, sur un échec : il ne doit pas conclure pour le
+    // troisième, encore en vol — un retour pendant ce vol n'en lance pas un quatrième.
     regler(1, true);
-    regler(0, true);
+    regler(0, false);
     await Promise.all([pourA, pourB]);
     await demander('a', 'retour');
     expect(enregistrer).toHaveBeenCalledTimes(3);
