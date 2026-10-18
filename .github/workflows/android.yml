@@ -1,0 +1,101 @@
+name: Android
+
+# Android est la seule plateforme de la V1 et rien d'autre dans la CI ne construit du natif : un
+# `npm install` qui casse l'autolinking, un plugin de config qui n'écrit plus un manifeste ou une
+# version de Gradle refusée se découvraient au build EAS, dont le quota est rationné. Ce workflow
+# fait le même chemin sans signature ni secret : `expo prebuild` puis `assembleDebug`.
+#
+# Il tourne sur les PR qui changent ce qui produit le projet natif, chaque semaine (une dérive des
+# outils du runner ou des dépendances Maven ne vient pas d'un commit) et à la demande. Il n'est
+# volontairement PAS dans les contrôles exigés de `main` : un contrôle exigé que `paths` empêche de
+# partir bloquerait toute PR qui ne touche pas ces fichiers.
+on:
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+      - app.json
+      - app.config.js
+      - eas.json
+      - assets/images/icon.png
+      - assets/images/splash-icon.png
+      - assets/images/notification-icon.png
+      - assets/images/android-icon-*.png
+      - .github/workflows/android.yml
+  schedule:
+    - cron: '47 3 * * 3'
+  workflow_dispatch:
+
+# Même règle que `ci.yml` : une PR annule son passage périmé, rien d'autre n'est annulé.
+concurrency:
+  group: android-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  assemble-debug:
+    name: Android (prebuild et assembleDebug)
+    runs-on: ubuntu-24.04
+    # Un build à froid dure une vingtaine de minutes ; le plafond est là pour un blocage, pas pour la
+    # lenteur (voir `ci.yml`).
+    timeout-minutes: 60
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      # JDK 17, celui des images EAS (`eas.json`) et de React Native ; la version par défaut du runner
+      # n'est pas une promesse.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci
+      # Le SDK Android est celui du runner. Si Gradle doit y ajouter un composant (NDK, CMake), c'est
+      # ici qu'on voit ce qui y était déjà.
+      - run: ls -d "$ANDROID_HOME"/platforms/* "$ANDROID_HOME"/build-tools/* "$ANDROID_HOME"/ndk/* "$ANDROID_HOME"/cmake/* || true
+      # `app.config.js` n'exige `google-services.json` que sur le builder d'EAS (`EAS_BUILD`) ; ici il
+      # est absent par défaut, et le plugin Google Services de Gradle, que les builds de production
+      # appliquent, ne serait pas éprouvé. Ce fichier factice ne désigne aucun projet Firebase : il a
+      # la forme que le plugin lit, avec le paquet de l'app. Il vit hors du dépôt, le temps du travail.
+      - name: Poser un google-services.json factice
+        run: |
+          cat > "$RUNNER_TEMP/google-services.json" <<'JSON'
+          {
+            "project_info": { "project_number": "000000000000", "project_id": "ramille-ci-factice" },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": { "package_name": "fr.ramille.app" }
+                },
+                "api_key": [ { "current_key": "FACTICE-CI-NE-DESIGNE-AUCUN-PROJET" } ]
+              }
+            ],
+            "configuration_version": "1"
+          }
+          JSON
+          echo "GOOGLE_SERVICES_JSON=$RUNNER_TEMP/google-services.json" >> "$GITHUB_ENV"
+      # `--no-install` : les dépendances sont celles de `npm ci`, le lockfile ne doit pas bouger.
+      - run: npx expo prebuild --platform android --no-install
+      # Les caches Gradle suivent le lockfile (qui fixe la version de Gradle via `expo`) ; à défaut de
+      # correspondance exacte, le plus récent sert de base. Le passage du mercredi, sur `main`, remplit
+      # celui que les PR relisent.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: gradle-${{ runner.os }}-
+      # Une seule architecture, `arm64-v8a` : celle de tous les téléphones courants, et la compilation
+      # C++ pèse presque tout le temps du build. Les trois autres ne sont donc pas éprouvées ici. Le
+      # tas Gradle suit celui qu'EAS donne à une machine « medium » (4 Go).
+      - name: assembleDebug
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
