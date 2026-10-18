@@ -81,7 +81,7 @@ import { join } from 'node:path';
 
 import { chromium } from 'playwright';
 
-import { decrireInfractions, releverLaCsp, servirExport } from './servir-export.mjs';
+import { controlerLeCacheImmuable, decrireInfractions, releverLaCsp, servirExport } from './servir-export.mjs';
 
 const DIST = process.argv[2] ?? 'dist';
 
@@ -208,6 +208,12 @@ for (const [fonction, options] of Object.entries(configVercel.functions ?? {})) 
     }
   }
 }
+
+// Puis le cache immuable des fichiers hachés : `Cache-Control: immutable` sur un nom qui ne change pas
+// avec le contenu, c'est un visiteur qui garde un an l'ancien code après un déploiement. Le nom se
+// juge ici, sur l'export : chaque fichier que la règle vise porte le md5 de son contenu, et aucun
+// fichier haché n'échappe à la règle (`controlerLeCacheImmuable`, dans `servir-export.mjs`).
+echecs.push(...controlerLeCacheImmuable(DIST, configVercel).map((ecart) => `cache immuable : ${ecart}`));
 
 // Puis la CSP : les scripts écrits en dur dans les pages, contre les empreintes de `script-src`.
 // Un `<script src>` se charge depuis le site, donc `'self'` le couvre. Seuls les blocs de données

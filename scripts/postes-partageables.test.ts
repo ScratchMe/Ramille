@@ -125,8 +125,7 @@ describe('l’adresse de partage que l’app produit', () => {
     expect(refusees).toEqual([]);
   });
 
-  it('est canonique aussi sans poste (un bilan dont le poste dominant n’a pas de libellé)', () => {
-    // `dominantShareLabel` rend toujours un texte ; ce cas est celui d'un lien d'avant la liste.
+  it('reste canonique sans poste : le total et la part suffisent à une adresse', () => {
     const lecture = lireLaRequete('?total=4.200&percent=50');
     expect(lecture).toMatchObject({ statut: 'lisible', canonique: true, query: 'total=4.200&percent=50' });
   });
@@ -148,7 +147,14 @@ describe('le total, dit comme dans l’app', () => {
       const dit = libelleDuTotal(lecture.parametres.total);
       if (dit !== formatTonnes(kg)) differences.push(`${kg} kg : « ${dit} » au lieu de « ${formatTonnes(kg)} »`);
     }
-    expect(differences).toEqual([]);
+    // Le nombre d'abord, et dix exemples : une règle cassée diffère sur des milliers de totaux.
+    expect({ ecarts: differences.length, premiers: differences.slice(0, 10) }).toEqual({ ecarts: 0, premiers: [] });
+  });
+
+  it('arrondit au kilo avant de comparer à la tonne : 0,9996 t est une tonne, 0,9994 t non', () => {
+    expect(libelleDuTotal(0.9996)).toBe('1,0 t CO₂e');
+    expect(libelleDuTotal(0.9994)).toBe('999 kg CO₂e');
+    expect(libelleDuTotal(0)).toBe('0 kg CO₂e');
   });
 });
 
