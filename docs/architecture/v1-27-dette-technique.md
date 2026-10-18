@@ -2515,3 +2515,56 @@ rencontre jamais la limite. Remonter le plafond horaire de Supabase (30 par heur
 qui se prend au vu des premiers `connexion_limite` — le relever rend le blocage plus cher, mais laisse un
 tiers faire partir plus de messages depuis notre domaine ; la fermeture des sessions inactives, ci-dessus.
 
+
+### 12.41 L'audit du 18/10/2026 : ce que la vague corrige, et ce qu'elle laisse
+
+Audit sur six axes (technique, base et sécurité, produit, juridique, commercial, méthode), demandé
+par la personne qui pilote, puis « tout ce que tu peux faire de ton côté ». Sept chantiers en copies
+de travail, intégrés sur une branche, quatre migrations (`20261018100000` à `20261018130000`) et
+quatre fichiers pgTAP (54 à 57).
+
+**Ce qui est corrigé** :
+
+- **La sauvegarde ne se restaurait pas, et l'aurait fait ouverte** : le dump partait sans privilèges,
+  donc une restauration rendait toute fonction `security definer` exécutable par `anon`, et la
+  procédure butait avant même d'y arriver. Le dump porte les privilèges, `analytics` et un fichier de
+  compléments (triggers sur `auth.*`, planifications) ; la procédure neutralise les privilèges par défaut
+  de la cible ; une restauration à blanc l'a jouée (`sauvegarde.md` §5 ter). Et **les fonctions naissent
+  fermées** : `20261018100000`, avec la liste blanche de ce que le client exécute (test 54).
+- **Un compte vieux de deux jours pouvait remplir la base** (500 Mo, lecture seule) : budgets du jour
+  pour tout le projet quel que soit l'âge du compte, par compte, et à part pour `app_error` ; plus de
+  plafond horaire, qui coupait l'entonnoir d'un lancement ; vingt corrections du contexte par jour, sous
+  verrou par compte (`MESURE.md` §4, `PLAN.md`, test 55).
+- **Les pannes hors du rendu ne remontaient pas** : gestionnaire global, promesses rejetées, panne fatale
+  envoyée au lancement suivant, `origine` et `version` (test 56, `remontee-erreurs.md`). Le démarrage ne
+  dit plus « Le démarrage a échoué » quand le rafraîchissement est en panne (§12.35) ; un jeton d'appareil
+  qui n'a pas pu s'inscrire se retente ; les surfaces sans compte n'ouvrent plus de session ni de captcha.
+- **« Remplacer un aller-retour en avion par le train » valait un aller** : deux vols désormais, bornés
+  par la déclaration (test 57).
+- **La carte de partage se contournait du cache** : forme canonique (308, 400), `s-maxage`, module
+  commun dans `api/`, fichiers hachés en cache immuable (`VERCEL.md` §2.2 et §2.4).
+- **La CI rougissait sans changement** : `expo-doctor` avertit sur une PR et bloque le lundi ; un build
+  Android de débogage tourne en CI (`android.yml`) ; l'image EAS est épinglée (D14 révisée) ; une sonde
+  horaire de la production (`sonde.yml`, registre §8.13).
+- **Le RGPD n'avait ni registre ni inventaire** : `registre-des-traitements.md`, `sous-traitants.md`,
+  `violations.md` ; la page de confidentialité nomme entités, pays et garanties, et ne dit plus « il n'y
+  a rien à consentir » ; les conditions ne réservent plus que le nom, le logo et la mascotte.
+
+**Ce qui reste, technique, et pourquoi pas maintenant** :
+
+- les six correctifs d'Expo (`npx expo install --fix`, `EXPO.md` §1.9) : leur propre PR, le passage du
+  lundi rougira d'ici là ;
+- le bundle web d'un seul fichier (2,96 Mo, dont 27 % de Reanimated) et l'écran du plan (2 134 lignes,
+  environ neuf requêtes à chaque focus) : des refontes, pas des correctifs ;
+- les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
+  « Réessaie dans un instant » ;
+- l'empreinte de signature Play dans `assetlinks.json`, qui attend le compte Play ;
+- les quatre migrations de sécurité du 06/10/2026 appliquées hors de `schema_migrations`, et pgTAP
+  installé sur la production : un relevé d'empreintes sur le distant, avec confirmation ;
+- l'espace des cartes canoniques (de l'ordre de 2·10⁹) : seule une signature ou un arrondi du total le
+  borne, et le second change ce que l'app produit.
+
+**Ce qui revient à la personne qui pilote** est dans le compte rendu de la PR : les décisions de
+produit (périmètre du bilan, progrès visible, chemin web et iPhone, purge, une action avion pour qui
+n'a déclaré qu'un vol) et ce qui vit hors du dépôt (compte Play, marque, pixel de Brevo, DNS, réglages
+d'Auth, contrats des prestataires).
