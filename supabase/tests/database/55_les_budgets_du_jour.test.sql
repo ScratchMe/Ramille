@@ -23,7 +23,7 @@
 --   | toute ouverture passe, pas seulement la première | 9 |
 --   | les comptes neufs comptés dans le budget des autres | 1, 6, 7 et 9 — un seul budget pour tous |
 --   | le budget des comptes neufs retiré | 7 et 9 — la seconde ouverture n'est refusée que par lui |
---   | les comptes de deux jours comptés dans le budget des comptes neufs | 1 et 7 bis — le compteur le dit aussi |
+--   | les comptes de deux jours comptés dans le budget des comptes neufs | 1, 5 et 7 bis — un seul budget pour tous, dans l'autre sens |
 --   | la fenêtre de vingt-quatre heures retirée | 10 |
 --   | le plafond de 6 000 par heure remis pour les comptes neufs | 11 |
 --   | le budget des pannes retiré | 12 |
@@ -40,7 +40,7 @@
 --   | le plafond des autres événements par compte remis à 500 | « la 201ᵉ tentative » de `12`, seule |
 --
 -- Témoin sans mutation : aucun écart dans ce fichier. Sur une base qui a déjà servi, le témoin du plan
--- de `22` (son assertion 34) tombe par intermittence — cinq passages sur vingt-six, témoin compris —,
+-- de `22` (son assertion 34) tombe par intermittence — six passages sur trente, deux témoins compris —,
 -- mutation ou pas : son plan dépend de `reltuples`, que ses passages précédents ont gonflé
 -- (TESTING-PGTAP.md §2.3). Sur une stack neuve, il passe.
 begin;
