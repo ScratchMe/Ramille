@@ -42,10 +42,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // des deux e-mails »). Relevé en contre-lisant `v1-29`. La date est celle de la mise en ligne,
 // pour la raison écrite dans `/confidentialite`.
 //
-// **18/10/2026 : quatre clauses, relevées par l'audit juridique du jour** (`docs/exploitation/
-// sous-traitants.md`, « Ce qui reste à faire »). (1) La propriété intellectuelle disait « ses textes et son
-// interface sont protégés » et interdisait de « réutiliser le contenu du service à des fins commerciales
-// sans autorisation » : c'est le contraire de la licence sous laquelle le dépôt est public (AGPL-3.0 ou
+// **18/10/2026 : quatre clauses, relevées par l'audit juridique du jour**
+// (`docs/exploitation/sous-traitants.md`, « Ce qui reste à faire »). (1) La propriété intellectuelle disait
+// « ses textes et son interface sont protégés » et interdisait de « réutiliser le contenu du service à des
+// fins commerciales sans autorisation » : c'est le contraire de la licence sous laquelle le dépôt est public (AGPL-3.0 ou
 // ultérieure, `LICENSE`, `NOTICE`, `README.md`), qui autorise l'usage commercial du code. Seuls le nom,
 // le logo, la mascotte et l'identité visuelle sont réservés (`NOTICE`) ; la clause le dit, avec l'adresse
 // du dépôt (`docs/exploitation/depot-public.md` §4 : le §13 de l'AGPL ne crée aucune obligation sur

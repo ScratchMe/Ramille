@@ -214,7 +214,11 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // (art. 21 du RGPD), car l'app n'a aucun réglage pour les couper — **une phrase qui en promettrait un
 // serait pire que pas de phrase**. Ce qu'une opposition fait vraiment (supprimer les repères déjà
 // enregistrés ; en enregistrer moins à l'avenir exige un réglage) est une décision de produit, laissée
-// à la personne qui pilote. Textes à valider par elle, comme chaque phrase de cette page.
+// à la personne qui pilote. (4) Trois exactitudes que le code imposait : la suppression des sessions
+// anonymes peut s'étaler sur plusieurs nuits (garde de volume de la purge, `20261006130000`), la sauvegarde
+// garde une copie chiffrée des repères (ils ne « quittaient pas l'hébergeur » que sans elle), et la plateforme
+// est enregistrée avec chaque repère. Textes à valider par la personne qui pilote, comme chaque phrase de
+// cette page.
 const UPDATED_AT = '18 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -420,7 +424,7 @@ const SECTIONS: LegalSection[] = [
               'Base de données, authentification et hébergement des données applicatives — donc l’intégralité de tes ' +
               'réponses, de tes résultats et de ton compte. Serveurs situés à Paris (région eu-west-3), chez Amazon Web ' +
               'Services. Le contrat est conclu avec Supabase Pte. Ltd., société singapourienne : il l’autorise à traiter ' +
-              'ces données hors de la région choisie si le service l’exige, et il incorpore à ce titre les clauses ' +
+              'ces données hors de la région choisie si le service ou la loi l’exige, et il incorpore à ce titre les clauses ' +
               'contractuelles types de la Commission européenne.',
           },
           {
@@ -606,9 +610,9 @@ const SECTIONS: LegalSection[] = [
         // rien dans le produit ne sait le faire pour une session (décision de produit, laissée à la personne
         // qui pilote). L'identifiant demandé est celui que l'export rend (`export_my_data`, clé
         // `compte.identifiant`) : sans lui, une session anonyme n'a aucun nom qui permette de retrouver ses
-        // repères. Vaut aussi pour la question de l'article 82 de la loi Informatique et Libertés, à trancher
-        // par un juriste : la CNIL n'exempte la mesure d'audience que pour des statistiques anonymes, et ces
-        // repères sont rattachés à une session.
+        // repères. Reste la question de l'article 82 de la loi Informatique et Libertés, à trancher par un
+        // juriste : la CNIL n'exempte la mesure d'audience que pour des statistiques anonymes, et ces repères
+        // sont rattachés à une session (`registre-des-traitements.md` §8).
         text:
           'Nous ne te présentons aucune bannière de consentement : ce que ton appareil conserve se limite à ce qui est ' +
           'nécessaire au fonctionnement, et les repères de parcours reposent sur notre intérêt légitime, non sur ton ' +
