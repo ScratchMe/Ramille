@@ -266,8 +266,9 @@ select results_eq(
   $$ values (545::numeric), (277::numeric) $$,
   -- 2 vols courts déclarés, donc 1 500 km chacun : renoncer à un vol retire 1 500 × 0,184661 = 277 ;
   -- remplacer l'aller-retour, c'est-à-dire les deux, par le train en retire ce que le TGV ne consomme
-  -- pas : 3 000 × (0,184661 − 0,002930) = 545 (et non 2 × 273 = 546 : l'arrondi se fait une fois, sur
-  -- le total). Les deux valeurs ont été recalculées par une requête sur la base, pas à la main.
+  -- pas : 3 000 × (0,184661 − 0,002930) = 545,19 → 545. L'arrondi se fait une fois, sur le total :
+  -- doubler le gain arrondi d'un seul vol (273) donnerait 546. Les deux valeurs ont été recalculées
+  -- par une requête sur la base, pas à la main.
   -- Éprouvée le 18/10/2026 : `trips` remis à 1 sur le gabarit fait tomber cette assertion, seule du
   -- fichier (« have 277, want 545 »).
   'branche voyages : remplacer un aller-retour (deux vols) rapporte plus que renoncer à un seul vol'
