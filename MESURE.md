@@ -58,6 +58,26 @@ réseau ou pendant une panne passagère du serveur attend sur l'appareil et part
 (`docs/exploitation/remontee-erreurs.md` §3 bis). C'est le seul événement qui attend : les autres
 s'émettent après la session, la règle ci-dessous.
 
+**`app_error` dit d'où vient la panne, et `app_error` comme `app_open` disent quelle version tourne**
+(18/10/2026, `remontee-erreurs.md` §3 ter). `origine` vaut `rendu`, `globale`, `fatale` ou `promesse`
+(`ORIGINES_DES_PANNES`, une liste fermée comme les provenances) ; une ligne sans origine est d'avant, et
+vient du rendu. `version` vaut `1.0.0+14` sur natif — la version et le numéro de build **en une seule
+valeur** — et `1.0.0` sur le web : une panne différée remplit déjà les six clés de
+`check_usage_event_props` (catégorie, route, origine, version, `differee`, `retard_h`), et une septième
+ferait tomber la dernière à l'écrêtage, sans bruit. **Ajouter une propriété à `app_error` demande donc
+d'en retirer une, ou d'élargir la borne pour tous les événements** — un test Jest et le pgTAP `56` le
+rappellent. La version d'une panne est celle **du moment de la panne** : une `fatale` part au
+lancement suivant, qui peut être celui d'une mise à jour. Et une même panne ne part qu'une fois par
+lancement, dix au plus (`trierLesPannes`) : `count(*)` compte des lancements touchés, pas des
+occurrences.
+
+**Une surface sans compte ouverte sans session ne compte pas d'ouverture** (18/10/2026, `COMPTE.md` §1) :
+`/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'en créent plus,
+donc `app_open` n'a personne à qui s'attribuer tant qu'on n'en sort pas pour l'app — l'ouverture se
+rattrape alors (`rattraperLOuverture`). Ce que ça coûte : un `connexion_limite` levé sur
+`/compte/suppression` dans un navigateur neuf ne se compte plus — il se comptait sous la session
+anonyme que la page ouvrait pour rien.
+
 **Deux mesures valent d'être connues, parce qu'elles étaient fausses d'une façon qui ne se voit
 pas dans un chiffre** (11/09/2026) :
 - **`app_open` part après la résolution d'`ensureSession()`, jamais au montage du layout**, et
