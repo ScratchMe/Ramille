@@ -353,7 +353,10 @@ CDN lit comme « ne pas garder ». Quand `Cache-Control` est le seul en-tête de
   texte derrière un nombre que `parseFloat` lit quand même. Le pare-feu de la plateforme compte des
   requêtes, pas des clés de cache. Le cache seul n'y répond pas ; ce qui y répond est une **forme
   canonique** jugée avant tout travail coûteux : l'adresse canonique est servie, une variante lisible
-  est redirigée (308, cacheable) vers elle, une adresse sans sens répond 400.
+  est redirigée (308, cacheable) vers elle, une adresse sans sens répond 400 — **sauf sur une page
+  qu'une personne ouvre depuis un lien**, où le paramètre sans sens s'ignore comme un paramètre
+  inconnu : un 400 ne se garde pas au CDN, donc il ne protège pas mieux qu'un 308, et il ferme le
+  chemin à qui a reçu un lien abîmé.
 
 ### 1.11 Les fichiers hachés d'un export statique
 
@@ -461,11 +464,14 @@ retarde d'une nuit — est en §1.1.
     valeur vide — et une valeur bien formée que l'app ne produit pas : total au-delà de 200 t, part
     au-delà de 100, libellé hors de la liste. Celles-là sont **ignorées**, comme elles l'ont toujours
     été : un lien dont le poste a été renommé continue d'ouvrir son aperçu ;
-  - **illisible** : 400, `no-store`, en texte brut. Un total ou une part qui n'est pas un nombre
-    positif (`2.4abc`, `-5`, `1e3`, `2,4`), un paramètre répété. On ne devine pas le préfixe d'un texte,
-    c'est la faille que cette forme ferme. **Conséquence à connaître** : un lien recopié avec un
-    caractère collé derrière le dernier nombre (`percent=58).`) répond désormais 400 là où il ouvrait
-    l'aperçu.
+  - **illisible** : un total ou une part qui n'est pas un nombre positif (`2.4abc`, `-5`, `1e3`, `2,4`),
+    un paramètre répété. On ne devine jamais le préfixe d'un texte, c'est la faille que cette forme
+    ferme ; ce qu'on en fait dépend de qui lit l'adresse (`DevantLIllisible`). **La page l'ignore** :
+    308 vers la forme canonique sans ce paramètre, comme un paramètre inconnu — c'est la destination du
+    lien qu'une personne a reçu, et un lien recopié avec un caractère collé derrière le dernier nombre
+    (`percent=58).`) ouvre encore la page, sans la part. **La carte le refuse** : 400, `no-store`, en
+    texte brut — elle n'est lue qu'à l'adresse que la page écrit dans son `og:image`, toujours
+    canonique, donc un illisible n'y arrive que fabriqué.
 
   **Ce que la forme canonique ne ferme pas.** L'espace des adresses canoniques reste de l'ordre de
   2·10⁹ (200 001 totaux × une centaine de libellés × 101 parts) : une attaque répartie qui fait varier
@@ -562,7 +568,8 @@ jour ; les deux sont tombées le 25/09/2026.
     ne ré-encode pas la chaîne de requête), et un second appel porte `x-vercel-cache: HIT` ;
   - l'image de l'`og:image` de cette page répond de même 200 puis `HIT` — `curl -I` y répond 405 tant
     que seul `GET` est exporté, donc un `GET` dont on jette le corps ;
-  - `/api/partage?total=4.2abc` répond 400, et `/api/partage?fbclid=x` un 308 vers `/api/partage` ;
+  - `/api/partage?total=4.2abc` et `/api/partage?fbclid=x` répondent un 308 vers `/api/partage`, et
+    `/api/share-card?total=4.2abc` un 400 (un `GET`, comme plus haut) ;
   - un bundle de `/_expo/static/js/web/` répond `cache-control: public, max-age=31536000, immutable`,
     et `/plan` reste `max-age=0, must-revalidate` ;
   - ni `FUNCTION_INVOCATION_FAILED` ni 404 sur `/api/partage` : l'Edge a regroupé le module commun.

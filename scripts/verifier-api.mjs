@@ -118,6 +118,14 @@
 //   - un import relatif en `.ts` → 1, seule ; sans extension → le module est introuvable au chargement
 //     (sortie 1, « ne se charge pas ») ; un fichier de `api/` sans préfixe `_` → 1, seule.
 //
+// **Et le même jour, après la contre-lecture, pour la page qui ignore l'illisible** — cinq mutations,
+// chacune remise en place par réécriture de l'état d'avant :
+//   - la page qui refuse de nouveau en 400 (l'état d'avant) → 23 ; la carte qui ignore au lieu de
+//     refuser → 21 ;
+//   - en ignorant, un paramètre répété qui garde sa première valeur → 4 ; un total illisible relu par
+//     préfixe (`parseFloat`) → 12 ; une part relue par préfixe (`parseInt`) → 5, dont « part négative »
+//     servie en 200 comme canonique (`percent=-1`).
+//
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
 //   retirer garde le journal lisible, le laisser ne change rien au résultat).
