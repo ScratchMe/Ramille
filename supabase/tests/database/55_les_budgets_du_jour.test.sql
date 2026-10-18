@@ -23,6 +23,7 @@
 --   | toute ouverture passe, pas seulement la première | 9 |
 --   | les comptes neufs comptés dans le budget des autres | 1, 6, 7 et 9 — un seul budget pour tous |
 --   | le budget des comptes neufs retiré | 7 et 9 — la seconde ouverture n'est refusée que par lui |
+--   | les comptes de deux jours comptés dans le budget des comptes neufs | 1 et 7 bis — le compteur le dit aussi |
 --   | la fenêtre de vingt-quatre heures retirée | 10 |
 --   | le plafond de 6 000 par heure remis pour les comptes neufs | 11 |
 --   | le budget des pannes retiré | 12 |
@@ -45,7 +46,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(24);
 
 -- ── Fixtures ─────────────────────────────────────────────────────────────────────────────────
 
@@ -163,6 +164,15 @@ select throws_ok(
      values ('55000000-0000-0000-0000-000000000001', 'bilan_step_view', '{"step":"flights"}', 'web') $$,
   '23514', 'Budget du jour des événements d''usage atteint pour tout le projet : comptes_neufs.',
   '7. au-delà du budget du jour des comptes neufs, un compte neuf est refusé'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', '55000000-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
+
+select lives_ok(
+  $$ insert into public.usage_events (user_id, name, props, platform)
+     values ('55000000-0000-0000-0000-000000000002', 'suivi_view', '{}', 'web') $$,
+  '7 bis. et un compte de deux jours passe : un flot de sessions neuves ne prend rien aux comptes qui reviennent'
 );
 
 -- Le premier `app_open` du compte en vingt-quatre heures passe un budget atteint : son signe de vie,
