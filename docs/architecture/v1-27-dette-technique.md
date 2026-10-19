@@ -2554,7 +2554,7 @@ quatre fichiers pgTAP (54 à 57).
   qui n'a pas pu s'inscrire se retente ; les surfaces sans compte n'ouvrent plus de session ni de captcha.
 - **« Remplacer un aller-retour en avion par le train » valait un aller** : deux vols désormais, bornés
   par la déclaration (test 57).
-- **La carte de partage se contournait du cache** : forme canonique (308, 400), `s-maxage`, module
+- **La carte de partage se contournait du cache** : forme canonique (308 ; 400 pour la seule carte), `s-maxage`, module
   commun dans `api/`, fichiers hachés en cache immuable (`VERCEL.md` §2.2 et §2.4).
 - **La CI rougissait sans changement** : `expo-doctor` avertit sur une PR et bloque le lundi ; un build
   Android de débogage tourne en CI (`android.yml`) ; l'image EAS est épinglée (D14 révisée) ; une sonde

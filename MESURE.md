@@ -161,6 +161,12 @@ d'arrivée, purgés compris (sans eux, la purge fait paraître une cohorte plus 
 et ni l'activation ni un taux de churn ne sont calculés — la première est une décision de produit,
 le second demanderait un effectif passé que le régime ne sait pas reconstruire.
 
+**Une rupture de série, au déploiement des surfaces sans compte** (18/10/2026) : `/confidentialite`,
+`/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'ouvrent plus de session, donc
+l'entonnoir, la rétention et `purges_par_cohorte` perdent les arrivées qu'une lecture de ces pages
+créait. Un saut de ces chiffres à cette date n'est pas un signe, et une cohorte d'avant ne se compare
+pas à une cohorte d'après (`docs/exploitation/README.md` §8.5 ter).
+
 ## 3. Le canal de retour
 
 **Canal de retour** (`feedback`, issue #29) : la seule table où un client écrit du texte
