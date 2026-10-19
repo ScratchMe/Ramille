@@ -39,6 +39,9 @@ import type { EtapeSoumission, GenreErreurSoumission } from '@/types/soumission'
 // Et le flux du code (`v1-27` §12.28) : `src/types/connexion.ts` est la source des deux valeurs, et
 // c'est lui qui décide du `type` envoyé à l'API — la mesure ne peut pas en connaître un troisième.
 import type { ContexteDuCode } from '@/types/connexion';
+// La règle qui dit sur quelle route la session s'ouvre, pure elle aussi : le rattrapage de l'ouverture
+// la relit au lieu d'en tenir une seconde liste des surfaces sans compte.
+import { laSessionSOuvreSur } from '@/types/session';
 
 export const USAGE_EVENT_NAMES = [
   'app_open',
@@ -444,13 +447,20 @@ export const SEJOUR_INITIAL: SejourDerriere = { depuis: null };
  * refus, 04/10/2026). Le rattrapage ne vaut que dans ce cas-là : au démarrage normal, c'est la suite de
  * la session du montage qui émet, et le faire aussi depuis l'écoute d'auth ferait partir deux fois les
  * pannes en attente.
+ *
+ * **Et seulement sur une route où la session s'ouvre** (`laSessionSOuvreSur`). Sur `/compte/suppression`,
+ * le code reçu ouvre la session du compte qu'on vient supprimer : la rattraper là comptait une ouverture
+ * de l'app — et un signe de vie — à son nom, sans qu'on soit sorti de la page. Une surface sans compte
+ * ne compte d'ouverture que quand on la quitte pour l'app, où le layout ouvre la session et l'émet.
  */
 export function rattraperLOuverture(etat: {
   session: boolean;
   montageSansSession: boolean;
   dejaComptee: boolean;
+  /** La route affichée quand la session arrive. */
+  chemin: string;
 }): boolean {
-  return etat.session && etat.montageSansSession && !etat.dejaComptee;
+  return etat.session && etat.montageSansSession && !etat.dejaComptee && laSessionSOuvreSur(etat.chemin);
 }
 
 /**

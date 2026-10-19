@@ -7,11 +7,15 @@
 -- clés ; ici, que la base les accepte. Une borne resserrée en base, ou une clé de plus côté app, ferait
 -- refuser chaque panne différée — et la file les vide sur un refus : perdues sans bruit.
 --
+-- **Et la route que l'app écrit pour la page introuvable**, `/+not-found` (`routeDeLaPanne`), doit se
+-- lire dans l'alerte (`releve_des_alertes`, réécrite par `20261018110000`) : la forme des routes y
+-- refusait le `+`, et toute panne de cette page arrivait « route hors forme ».
+--
 -- **Éprouvé en le cassant** : relevé en pied de fichier.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(5);
+select plan(6);
 
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at) values
   ('56000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '3 days', now());
@@ -42,6 +46,17 @@ select throws_ok(
   '3. et pas une clé de plus : la version porte le build, faute de place pour une septième'
 );
 
+-- La page introuvable : `routeDeLaPanne` écrit `/+not-found` pour toute adresse hors du produit, et
+-- l'alerte doit la nommer — seule route du produit qui porte un `+`, sans que le `+` s'ouvre aux autres.
+insert into public.usage_events (user_id, name, props, platform)
+select '56000000-0000-0000-0000-00000000000a', 'app_error', v.props::jsonb, 'web'
+from (values
+  ('{"category":"type","route":"/+not-found","origine":"globale"}'),
+  ('{"category":"type","route":"/+not-found","origine":"rendu"}'),
+  ('{"category":"syntax","route":"/+autre"}'),
+  ('{"category":"syntax","route":"/plan+bis"}')
+) as v(props);
+
 select set_config('role', 'postgres', true);
 
 select ok(
@@ -53,6 +68,15 @@ select ok(
 select ok(
   (select description like '%props.version%' from public.usage_event_types where name = 'app_open'),
   '5. et la version d''une ouverture'
+);
+
+select ok(
+  (select r -> 'pannes_detail' @> '[{"route":"/+not-found","categorie":"type"}]'::jsonb
+      and r -> 'pannes_detail' @> '[{"route":"route hors forme","categorie":"syntax"}]'::jsonb
+      and (r -> 'pannes_detail')::text not like '%+autre%'
+      and (r -> 'pannes_detail')::text not like '%plan+bis%'
+   from (select public.releve_des_alertes(now() - interval '1 minute') as r) x),
+  '6. l''alerte nomme la page introuvable, et elle seule parmi les routes qui portent un « + »'
 );
 
 select * from finish();
@@ -69,3 +93,11 @@ rollback;
 --
 -- La 4 et la 5 n'ont pas été cassées : elles lisent une description que cette migration écrit, et rien
 -- d'autre ne l'écrit.
+--
+-- La 6, le même jour et de la même façon — une migration temporaire qui réécrit `releve_des_alertes`
+-- depuis `pg_get_functiondef` :
+--
+--   | Ce qu'on casse | Ce qui tombe dans la suite entière |
+--   |---|---|
+--   | `/+not-found` plus admise (la forme d'avant) | 6, seule |
+--   | le `+` admis dans toute route, au lieu de la seule page introuvable | 6, seule |

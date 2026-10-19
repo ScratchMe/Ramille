@@ -15,8 +15,9 @@
 //
 // Ce que l’adresse a le droit de dire, et sa forme canonique, vivent dans `_partage-commun.ts`,
 // partagé avec la carte. La page ne sert que l’adresse canonique : toute variante est redirigée (308)
-// vers elle, ou refusée (400) quand elle n’a pas de sens — le CDN ne garde ainsi qu’une réponse par
-// partage au lieu d’une par façon de l’écrire.
+// vers elle — le CDN ne garde ainsi qu’une réponse par partage au lieu d’une par façon de l’écrire.
+// **Un paramètre illisible y est ignoré, jamais refusé** : c’est la destination du lien qu’une personne
+// a reçu, et elle garde son chemin vers Ramille même quand le lien est abîmé (`DevantLIllisible`).
 import {
   CACHE_JAMAIS,
   CACHE_PAGE,
@@ -24,7 +25,6 @@ import {
   CHEMIN_PAGE,
   libelleDuTotal,
   lireLaRequete,
-  reponseIllisible,
   reponseRedirection,
 } from './_partage-commun.js';
 
@@ -99,8 +99,7 @@ export default function handler(request: Request) {
 
 function pageDePartage(request: Request): Response {
   const url = new URL(request.url);
-  const lecture = lireLaRequete(url.search);
-  if (lecture.statut === 'illisible') return reponseIllisible();
+  const lecture = lireLaRequete(url.search, 'ignorer');
   if (!lecture.canonique) return reponseRedirection(CHEMIN_PAGE, lecture.query);
 
   const { total: tonnes, poste, percent } = lecture.parametres;

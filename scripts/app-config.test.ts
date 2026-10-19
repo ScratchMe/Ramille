@@ -14,6 +14,9 @@
  *
  * Et depuis le 05/10/2026 (v1-27 §12.39), la garde de la clé legacy : retirer le refus de la clé
  * `eyJ…` fait tomber 1 test ; l'étendre à un build local (sans `EAS_BUILD`) en fait tomber 1.
+ *
+ * Le 19/10/2026, le cas du profil non distribué renommé (le profil `development` a quitté `eas.json`) :
+ * refuser tout build du builder, quel que soit son profil, fait tomber ce cas, seul.
  */
 
 type Configuration = { android?: Record<string, unknown>; name?: string };
@@ -123,8 +126,10 @@ describe('app.config.js — un build distribué refuse ce qui lui manque', () =>
     expect(config.android).toEqual({ package: 'fr.ramille.app' });
   });
 
-  it('laisse passer un build development, qui n’est pas distribué', () => {
-    const config = evaluer({ EAS_BUILD: 'true', EAS_BUILD_PROFILE: 'development' });
+  // `eas.json` n'a plus que des profils distribués (le profil `development` est parti le 18/10/2026) :
+  // ce cas garde que le refus vise la liste des profils distribués, et non tout build du builder.
+  it('laisse passer un profil qui n’est pas distribué', () => {
+    const config = evaluer({ EAS_BUILD: 'true', EAS_BUILD_PROFILE: 'essai-local' });
     expect(config.android).toEqual({ package: 'fr.ramille.app' });
   });
 

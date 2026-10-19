@@ -17,8 +17,8 @@
 // Un AAB sans Firebase passe l'examen de Play et n'enregistre aucun jeton de notification ; un
 // build sans `EXPO_PUBLIC_SUPABASE_*` affiche « Configuration manquante » à tout le monde, et
 // ses valeurs sont figées au build. Les deux se découvraient chez la personne. Le refus ne vaut
-// que sur le builder d'EAS (`EAS_BUILD`) et pour les profils distribués : un `expo start` local n'en a
-// pas besoin (et `eas.json` n'a plus de profil `development`, retiré le 18/10/2026).
+// que sur le builder d'EAS (`EAS_BUILD`) et pour les profils distribués : un `expo start` local, ou
+// un profil qui ne serait pas distribué (`eas.json` n'en porte plus), n'en a pas besoin.
 const PROFILS_DISTRIBUES = ['preview', 'production'];
 const VARIABLES_EXIGEES = ['GOOGLE_SERVICES_JSON', 'EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'];
 

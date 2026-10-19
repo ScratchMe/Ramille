@@ -56,7 +56,8 @@ async function send(name: UsageEventName, props: UsageEventProps | undefined): P
     // fait encore son aller-retour de création de compte. C'est ce qui avait vidé `app_open`,
     // dénominateur de tous les entonnoirs : **une seule ligne en base pour six vues d'étape
     // d'onboarding** (v1-13, préambule ; la contre-vérification d'A1-3 du 09/09 comptait zéro).
-    // Le layout racine l'émet désormais dans le `.then(ensureSession)`. La règle qui en découle,
+    // Le layout racine l'émet désormais après la session de son montage (`ensureSession`, ou
+    // `restaurerLaSession` sur une surface sans compte). La règle qui en découle,
     // et qui est la responsabilité de l'appelant : **un événement qui peut partir avant la
     // première session s'émet après elle**, jamais au montage.
     //
@@ -155,9 +156,14 @@ export function garderUnePanne(panne: UsageEventPropsByName['app_error']): Promi
  * retour au premier plan compté comme une ouverture (`src/app/_layout.tsx`). Comme `track()`, **ne lève
  * jamais**, et ne s'attend pas.
  *
- * Elles partent en **un seul insert** : un lot qui passe ou ne passe pas, donc une file qui ne se vide
- * jamais à moitié. Ne sont retirées de la file que celles qui viennent de partir — une panne survenue
- * pendant l'envoi reste pour le suivant.
+ * Elles partent **une par une, dans l'ordre de la file, et l'envoi s'arrête au premier échec**. Un lot
+ * en un seul insert passait ou ne passait pas : le budget du jour se compte ligne à ligne
+ * (`enforce_usage_events_rate_limit` — cinquante pannes par compte, 2 500 pour tout le projet), donc un
+ * lot qui le franchissait était refusé en entier, et la file se vidait des pannes qui tenaient encore
+ * dessous. Désormais celles d'avant le refus sont parties. Après l'échec, la règle de la file
+ * s'applique au reste (`suiteDeLEnvoi`) : une panne passagère du serveur garde la panne refusée et les
+ * suivantes ; un refus les vide, puisqu'elles buteraient sur le même budget. Ne sont retirées de la file
+ * que celles de ce lot — une panne survenue pendant l'envoi reste pour le suivant.
  *
  * **Un seul envoi à la fois** : le client Supabase ne pose aucun délai à ses requêtes, donc un envoi du
  * démarrage resté suspendu pouvait croiser celui d'un retour au premier plan, qui relisait la même file
@@ -185,20 +191,35 @@ async function envoyerLaFile(): Promise<void> {
     if (!session) return;
 
     const maintenant = Date.now();
-    const { error, status } = await supabase.from('usage_events').insert(
-      file.map((erreur) => ({
-        user_id: session.user.id,
-        name: 'app_error',
-        props: sanitizeEventProps(propsDifferees(erreur, maintenant)),
-        platform: currentPlatform(),
-      }))
-    );
-    if (suiteDeLEnvoi(status, error) === 'garder') return;
+    // Ce qui sort de la file : les pannes parties, puis, sur un refus, tout le reste du lot.
+    let sorties = file.length;
+    for (const [rang, erreur] of file.entries()) {
+      let reponse: { error: { message: string } | null; status: number };
+      try {
+        reponse = await supabase.from('usage_events').insert({
+          user_id: session.user.id,
+          name: 'app_error',
+          props: sanitizeEventProps(propsDifferees(erreur, maintenant)),
+          platform: currentPlatform(),
+        });
+      } catch {
+        // Un envoi qui lève n'a pas eu de réponse : celles d'avant sont parties, celle-ci et les suivantes
+        // restent — sans quoi le prochain envoi referait partir celles qui sont déjà en base.
+        sorties = rang;
+        break;
+      }
+      const { error, status } = reponse;
+      if (!error) continue;
+      if (suiteDeLEnvoi(status, error) === 'garder') sorties = rang;
+      else if (__DEV__) console.warn('[analytics] erreurs en attente refusées :', error.message);
+      break;
+    }
+    if (sorties === 0) return;
 
+    const parties = file.slice(0, sorties);
     await enSerie(async () =>
-      ecrireLaFile((await lireLaFileStockee()).filter((e) => !file.some((partie) => memeErreur(e, partie))))
+      ecrireLaFile((await lireLaFileStockee()).filter((e) => !parties.some((partie) => memeErreur(e, partie))))
     );
-    if (error && __DEV__) console.warn('[analytics] erreurs en attente refusées :', error.message);
   } catch (err) {
     if (__DEV__) console.warn('[analytics] erreurs en attente non envoyées :', err);
   }

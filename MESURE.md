@@ -73,8 +73,11 @@ occurrences.
 
 **Une surface sans compte ouverte sans session ne compte pas d'ouverture** (18/10/2026, `COMPTE.md` §1) :
 `/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'en créent plus,
-donc `app_open` n'a personne à qui s'attribuer tant qu'on n'en sort pas pour l'app — l'ouverture se
-rattrape alors (`rattraperLOuverture`). Ce que ça coûte : un `connexion_limite` levé sur
+donc `app_open` n'a personne à qui s'attribuer tant qu'on n'en sort pas pour l'app — l'ouverture part
+alors, avec la session que le layout ouvre en quittant la page. **Une session qui s'ouvre sur la page
+même ne la rattrape pas** : le code reçu sur `/compte/suppression` ouvre celle du compte qu'on vient
+supprimer, et `rattraperLOuverture` lit la route (`laSessionSOuvreSur`) pour ne compter à son nom ni
+une ouverture ni un signe de vie. Ce que ça coûte : un `connexion_limite` levé sur
 `/compte/suppression` dans un navigateur neuf ne se compte plus — il se comptait sous la session
 anonyme que la page ouvrait pour rien.
 
@@ -208,7 +211,9 @@ Quatre choses à ne pas défaire :
 - **les budgets se comptent dans `evenements_d_usage_par_heure`**, une ligne par heure, trois nombres,
   sans identifiant : relire les événements coûterait 14 ms par insertion à cent mille lignes, et le
   plafond deviendrait lui-même la façon d'occuper la base. Les plafonds et la fenêtre n'ont qu'une
-  définition, `budgets_des_evenements_d_usage()`, que lisent le déclencheur et l'alerte ;
+  définition, `budgets_des_evenements_d_usage()`, que lisent le déclencheur et l'alerte. Le compteur ne
+  garde que deux jours : la purge quotidienne des événements (`purge_usage_events`) retire ses tranches
+  plus anciennes, que rien ne lit ;
 - **un refus ne laisse aucune trace**, donc l'alerte d'exploitation lit le compteur et dit un budget
   entamé à 80 % (`budgets_des_evenements_entames`), avant que rien ne se perde. Un budget atteint pour
   de vrais usages — plus d'un millier d'arrivées par jour, plus de deux mille personnes qui

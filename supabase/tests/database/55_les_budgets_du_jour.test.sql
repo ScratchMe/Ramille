@@ -1,7 +1,7 @@
 -- Tests pgTAP des budgets du jour (migration `20261018110000_les_budgets_du_jour.sql`) : les
 -- événements d'usage par compte et pour tout le projet, le pic d'un lancement, et la correction du
 -- contexte. Le plafond des autres événements par compte (200) est épinglé par `12` ; les retours et
--- la purge, par `49`.
+-- la purge des sessions anonymes, par `49`. La purge du compteur lui-même, ici (section 8).
 --
 -- **Le compteur part vide** : chaque section pose elle-même les tranches qu'elle lit, après avoir
 -- effacé celles des vingt-cinq dernières heures — sur une stack qui a servi, il porte ce qu'un parcours
@@ -39,6 +39,14 @@
 --   | le texte de l'alerte sans leur ligne | 23 |
 --   | le plafond des autres événements par compte remis à 500 | « la 201ᵉ tentative » de `12`, seule |
 --
+-- Et le 19/10/2026, pour la purge du compteur, par une migration temporaire qui réécrit
+-- `purge_usage_events`, jouée par `node scripts/rejouer-la-ci.mjs base` sur une stack neuve :
+--
+--   | Ce qu'on casse | Ce qui tombe |
+--   |---|---|
+--   | la purge sans le compteur (le corps d'avant) | 24, seule |
+--   | la purge qui retire tout ce qui a plus d'un jour, fenêtre des budgets comprise | 24, seule |
+--
 -- Témoin sans mutation : aucun écart dans ce fichier. Sur une base qui a déjà servi, le témoin du plan
 -- de `22` (son assertion 34) tombe par intermittence — six passages sur trente, deux témoins compris —,
 -- mutation ou pas : son plan dépend de `reltuples`, que ses passages précédents ont gonflé
@@ -46,7 +54,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(25);
 
 -- ── Fixtures ─────────────────────────────────────────────────────────────────────────────────
 
@@ -392,6 +400,21 @@ select ok(
            r || '{"budgets_des_evenements_entames": [{"budget": "pannes", "recus": 2000, "plafond": 2500}]}',
            now(), 0) as t from calme) x),
   '23. et son texte nomme le budget, ce qui en est reçu et le plafond'
+);
+
+-- ── 8. Le compteur ne garde que deux jours ───────────────────────────────────────────────────
+
+insert into public.evenements_d_usage_par_heure (heure, pannes) values
+  (date_trunc('hour', now()) - interval '3 days', 1),
+  (date_trunc('hour', now()) - interval '47 hours', 1)
+on conflict (heure) do nothing;
+select public.purge_usage_events();
+
+select ok(
+  not exists (select 1 from public.evenements_d_usage_par_heure where heure < now() - interval '2 days')
+  and exists (select 1 from public.evenements_d_usage_par_heure where heure = date_trunc('hour', now()) - interval '47 hours')
+  and exists (select 1 from public.evenements_d_usage_par_heure where heure = date_trunc('hour', now())),
+  '24. la purge quotidienne retire du compteur les tranches de plus de deux jours, et garde les autres'
 );
 
 select * from finish();
