@@ -20,7 +20,7 @@
 > trois cartes sont du rendu.
 
 > **Depuis le 20/09/2026, la CI joue ce profil à chaque PR** (`scripts/verifier-parcours-reel.mjs`,
-> `TESTING-GARDES.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les dix pistes dans cet ordre,
+> `TESTING-GARDES.md` §2.6) : les mêmes réponses, les mêmes 4 231 kg, les neuf pistes dans cet ordre,
 > l'engagement, un point répondu, le suivi — la base relue derrière chaque écran. **Et le bloc 09
 > aussi**, depuis le même jour : un second profil, le cycliste, y joue le plan à zéro action, la
 > barre d'onglets qui arrive sans « Compris », et le cap qui ne chiffre pas.
@@ -98,7 +98,7 @@ Ce que ce profil rend, mesuré :
 - un bilan de **4 231 kg/an**, poste dominant **trajet domicile-travail** (**1 920 kg**) ;
 - un cycle **« Automne 2026 »**, du 1er septembre au **30 novembre** ;
 - un cap de **− 384 kg** (− 20 % du poste dominant) ;
-- **dix** pistes, dans cet ordre :
+- **neuf** pistes, dans cet ordre :
 
 | Rang | Poste | Action | Gain |
 |---|---|---|---|
@@ -107,13 +107,16 @@ Ce que ce profil rend, mesuré :
 | 3 | Trajet domicile-travail | Faire ce trajet à deux au moins un jour sur deux | 480 kg |
 | 4 | Trajet domicile-travail | Travailler depuis chez toi un jour par semaine | 384 kg |
 | 5 | Voyages longue distance | Renoncer à un vol court ou moyen-courrier cette année | 277 kg |
-| 6 | Voyages longue distance | Remplacer un aller-retour en avion par le train | 273 kg |
-| 7 | Loisirs du week-end | Faire une sortie sur trois à vélo à assistance électrique | 101 kg |
-| 8 | Loisirs du week-end | Regrouper deux sorties en une seule, une fois sur cinq | 67 kg |
-| 9 | Voyages longue distance | Faire un de tes longs trajets en train plutôt qu'en voiture | 48 kg |
-| 10 | Voyages longue distance | Faire un de tes longs trajets en autocar plutôt qu'en voiture | 23 kg |
+| 6 | Loisirs du week-end | Faire une sortie sur trois à vélo à assistance électrique | 101 kg |
+| 7 | Loisirs du week-end | Regrouper deux sorties en une seule, une fois sur cinq | 67 kg |
+| 8 | Voyages longue distance | Faire un de tes longs trajets en train plutôt qu'en voiture | 48 kg |
+| 9 | Voyages longue distance | Faire un de tes longs trajets en autocar plutôt qu'en voiture | 23 kg |
 
-**Les rangs 7 et 10 sont nés de C4.4** (21/09/2026), et ils disent ce que le chantier a ouvert :
+**« Remplacer un aller-retour en avion par le train » (273 kg) n'y est plus depuis le 19/10/2026** :
+ce profil ne déclare qu'un vol court, et le plan ne promet plus deux vols à qui n'en a déclaré qu'un
+(`20261019140000`). Il lui reste « Renoncer à un vol court ou moyen-courrier cette année », au rang 5.
+
+**Les rangs 6 et 9 sont nés de C4.4** (21/09/2026), et ils disent ce que le chantier a ouvert :
 les sorties de ce profil font 22,5 km, au-dessus de ce qu'un vélo mécanique tient (15 km) et dans
 la fenêtre du vélo à assistance ; et ses deux longs trajets en voiture à deux laissent encore 47 %
 à gagner en autocar. Le rang 1 a perdu « ou en RER » de son libellé : le gain est chiffré au tarif
@@ -125,7 +128,7 @@ chantier, tout le poste dominant passait devant, et le vol à 1 601 kg serait to
 
 **Si les chiffres ne tombent pas juste**, ce n'est pas forcément un écart : les facteurs d'émission
 se resynchronisent chaque trimestre, et une nouvelle version ADEME les déplace tous. Ce qui doit
-tenir quoi qu'il arrive, c'est la **forme** — l'ordre des dix lignes, le rang 2 plus lourd que le
+tenir quoi qu'il arrive, c'est la **forme** — l'ordre des neuf lignes, le rang 2 plus lourd que le
 rang 1, et le fait qu'un nombre dépasse le millier. Un écart de forme est un vrai constat ; un
 écart de décimale se vérifie contre `emission_factor_sync_runs` avant d'être consigné.
 
@@ -226,7 +229,7 @@ bloc 08, donc sans action engagée ; ce que l'écran fait une fois une action en
 
 | | Ce qu'on fait | Ce qu'on attend | Vu |
 |---|---|---|---|
-| 06.1 | Sous les deux cartes | Un lien **« Voir toutes les pistes · 10 »** — le compte est le **total** des pistes, pas celles qui restent à voir. (Dix et non huit depuis les modes ajoutés le 21/09/2026 : les sorties à vélo à assistance et les longs trajets en autocar) | |
+| 06.1 | Sous les deux cartes | Un lien **« Voir toutes les pistes · 9 »** — le compte est le **total** des pistes, pas celles qui restent à voir. (Dix et non huit depuis les modes ajoutés le 21/09/2026 : les sorties à vélo à assistance et les longs trajets en autocar) | |
 | 06.2 | L'ouvrir | Titre « Toutes les pistes », la phrase « Par poste, du plus gros gain au plus petit. Une seule action engagée à la fois : en choisir une ici la met en tête de ton plan. », **la barre d'onglets reste visible**, et un lien « Retour au plan » en haut | |
 | 06.3 | L'ordre des groupes, et une ligne | **TRAJET DOMICILE-TRAVAIL** (3 pistes), puis **VOYAGES LONGUE DISTANCE** (5), puis **LOISIRS DU WEEK-END** (2) — des têtes en capitales grises, plus petites que les titres des pistes. Les groupes sortent dans l'ordre où leur poste apparaît au classement, et chaque groupe va du plus gros gain au plus petit. **Chaque ligne** porte son titre en noir, à la taille du texte courant, puis dessous son gain en gras — « **− 619 kg** par an » — et à droite une **pastille bordée « Choisir »**. Les gains se lisent en colonne, d'une ligne à l'autre, sans rien ouvrir | |
 | 06.4 | Toucher **« Choisir »** sur « Renoncer à un vol long-courrier cette année » | La ligne devient une carte **ouverte directement sur « Quand ? »** — « À mon prochain projet de voyage », « Avant mon prochain bilan » —, **rien de coché**, et **« C'est noté » gris mais actif** : le toucher fait apparaître **« Choisis une échéance. »** sous les choix, le focus va sur la première, et rien ne part. La ligne retombe dès qu'une échéance est choisie. *(Réécrite le 01/10/2026, `v1-33` D13 : « C'est noté » était inactif)*. **Pas de bouton « Je m'y engage »** à toucher d'abord : « Choisir » l'a dit. Ne rien valider ici — l'engagement est le bloc 08 | |
@@ -265,7 +268,7 @@ plus la même chose — c'est la porte elle-même qui est en recette.
 | 08.3 | **Le premier pas** | Une ligne pratique apparaît **sous** l'action engagée, et seulement maintenant — pas avant le choix. Pour cette action : « Vérifie l'horaire qui te convient, puis essaie-le une fois. » Elle ne contient aucun chiffre | |
 | 08.4 | **La carte du cap** | Le **trait de temps** est apparu, avec « La saison avance ; le trait mesure le temps, pas toi. » C'est ce que 03.5 attendait. Il est **court** — il mesure le temps écoulé depuis le 1er septembre sur les 91 jours de la saison, et non ce qu'on vient de faire : s'engager ne le fait pas avancer d'un pixel. Et la phrase « Chacune des deux pistes proposées suffit à le franchir. » **a disparu** : elle aide à choisir, et le choix est fait (`v1-29`) | |
 | 08.5 | La feuille des rappels | Sur le web et sans compte rattaché, **elle ne s'ouvre pas** : c'est normal, et non un écart. Elle demande une adresse confirmée ou un appareil | |
-| 08.6 | Rouvrir **« Voir toutes les pistes · 10 »**, puis revenir **sans rien choisir** | La phrase finit désormais par « … en choisir une ici **remplace la tienne**. » La ligne de l'action engagée garde sa place — ici la toute première, puisque ce profil s'engage sur le rang 1 — avec une **coche verte** et « **Engagée** » à la place de la pastille, et elle ne s'ouvre pas au toucher. **Toutes les autres pastilles disent « Choisir à la place »**. (L'ordre qui ne bouge plus, lui, ne se voit pas avec ce profil : une action engagée au rang 1 est en tête dans les deux ordres. Ce sont le parcours réel et les tests de `pistesParPoste` qui le gardent) | |
+| 08.6 | Rouvrir **« Voir toutes les pistes · 9 »**, puis revenir **sans rien choisir** | La phrase finit désormais par « … en choisir une ici **remplace la tienne**. » La ligne de l'action engagée garde sa place — ici la toute première, puisque ce profil s'engage sur le rang 1 — avec une **coche verte** et « **Engagée** » à la place de la pastille, et elle ne s'ouvre pas au toucher. **Toutes les autres pastilles disent « Choisir à la place »**. (L'ordre qui ne bouge plus, lui, ne se voit pas avec ce profil : une action engagée au rang 1 est en tête dans les deux ordres. Ce sont le parcours réel et les tests de `pistesParPoste` qui le gardent) | |
 
 ---
 

@@ -1023,6 +1023,8 @@ export type Database = {
           corrections_du_contexte_depuis: string | null
           created_at: string
           id: string
+          // L'opposition à la mesure (20261019150000) : posée par `refuser_la_mesure` seul
+          mesure_refusee_le: string | null
           // C4.2 — le mot de la veille (20260928075453)
           mot_de_la_veille: string
           reminder_channel: string
@@ -1033,6 +1035,7 @@ export type Database = {
           corrections_du_contexte_depuis?: string | null
           created_at?: string
           id: string
+          mesure_refusee_le?: string | null
           // C4.2 — le mot de la veille (20260928075453)
           mot_de_la_veille?: string
           reminder_channel?: string
@@ -1043,6 +1046,7 @@ export type Database = {
           corrections_du_contexte_depuis?: string | null
           created_at?: string
           id?: string
+          mesure_refusee_le?: string | null
           // C4.2 — le mot de la veille (20260928075453)
           mot_de_la_veille?: string
           reminder_channel?: string
@@ -1508,6 +1512,8 @@ export type Database = {
       }
       // L'alerte d'exploitation (20261002203259)
       releve_des_alertes: { Args: { p_depuis: string }; Returns: Json }
+      // L'opposition à la mesure (20261019150000), serveur seulement
+      refuser_la_mesure: { Args: { p_user_id: string }; Returns: Json }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
         Returns: undefined

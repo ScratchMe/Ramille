@@ -7,8 +7,10 @@
 --
 -- Trois profils, qui ne diffèrent que par le nombre de vols courts déclarés — un, deux, quatre —,
 -- parce que c'est la borne qui distingue les deux défauts possibles : la quantité du gabarit (deux, et
--- non un) et le `least` de l'estimateur (la déclaration plafonne, et le gabarit aussi). Un seul vol
--- déclaré n'est pas crédité de deux ; quatre vols déclarés ne le sont que de deux.
+-- non un) et le `least` de l'estimateur (la déclaration plafonne, et le gabarit aussi). Quatre vols
+-- déclarés ne sont crédités que de deux. **Et depuis le 19/10/2026, un seul vol déclaré ne se voit plus
+-- proposer l'aller-retour** (`20261019140000`, décision de la personne qui pilote) : le plan ne promet
+-- pas plus de trajets que la personne n'en a déclaré, et il lui reste « Renoncer à un vol … ».
 --
 -- Les valeurs attendues se **dérivent** du facteur et de l'instantané du bilan au lieu de se figer :
 -- une resynchronisation ADEME ne périme donc pas ce fichier, et aucun « 1 500 km » n'y est recopié.
@@ -18,7 +20,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
 select ('a5700000-0000-0000-0000-00000000000' || n)::uuid, '00000000-0000-0000-0000-000000000000',
@@ -81,13 +83,12 @@ select is(
   'deux vols déclarés : l''aller-retour rapporte les deux, soit tout le CO2 des vols courts moins celui du train'
 );
 
--- La déclaration plafonne : un seul vol déclaré ne peut pas être crédité de deux.
-select is(
-  (select saving_kg_year from public.estimate_action_savings('b5700000-0000-0000-0000-000000000001')
-   where action_text = 'Remplacer un aller-retour en avion par le train'),
-  (select round(ar.travel_flight_short_co2_kg_year * current_setting('ramille.part_evitee')::numeric)
-   from public.assessment_results ar where ar.assessment_id = 'b5700000-0000-0000-0000-000000000001'),
-  'un seul vol déclaré : crédité de ce vol, pas de deux'
+-- Un seul vol déclaré : l'aller-retour n'est pas proposé (19/10/2026). Il était proposé avec le gain
+-- d'un vol sous un libellé qui en promet deux.
+select is_empty(
+  $$ select action_text from public.estimate_action_savings('b5700000-0000-0000-0000-000000000001')
+     where action_text = 'Remplacer un aller-retour en avion par le train' $$,
+  'un seul vol déclaré : l''aller-retour n''est pas proposé, le plan ne promet pas deux vols'
 );
 
 -- Et le gabarit plafonne aussi : quatre vols déclarés, deux remplacés — la moitié de leur CO2.
@@ -99,16 +100,25 @@ select is(
   'quatre vols déclarés : l''aller-retour en remplace deux, pas un ni quatre'
 );
 
--- La même chose sans aucun facteur : deux vols rapportent le double d'un seul, à l'arrondi près
--- (chaque gain est arrondi une fois, sur son total).
-select ok(
-  abs(
-    (select saving_kg_year from public.estimate_action_savings('b5700000-0000-0000-0000-000000000002')
-     where action_text = 'Remplacer un aller-retour en avion par le train')
-    - 2 * (select saving_kg_year from public.estimate_action_savings('b5700000-0000-0000-0000-000000000001')
-           where action_text = 'Remplacer un aller-retour en avion par le train')
-  ) <= 1,
-  'l''aller-retour de deux vols rapporte le double du vol seul, à l''arrondi près'
+-- Et ce qui lui reste : renoncer à son vol, dont le libellé et le gain s'accordent. Sans ce témoin, la
+-- garde pourrait écarter tous les voyages de qui n'a qu'un vol, et l'assertion d'au-dessus passerait.
+select is(
+  (select saving_kg_year from public.estimate_action_savings('b5700000-0000-0000-0000-000000000001')
+   where action_text = 'Renoncer à un vol court ou moyen-courrier cette année'),
+  (select round(ar.travel_flight_short_co2_kg_year)
+   from public.assessment_results ar where ar.assessment_id = 'b5700000-0000-0000-0000-000000000001'),
+  'un seul vol déclaré : « Renoncer à un vol … » reste proposé, avec tout le CO2 de ce vol'
+);
+
+-- La règle est générale, et ce balayage la lit sur les vols courts, seuls déclarés ici : aucun gabarit
+-- n'est proposé à qui a déclaré moins de vols qu'il n'en remplace — celui qu'on ajoutera demain compris.
+select is_empty(
+  $$ select p.n, t.action_text
+     from (values (1, 1), (2, 2), (3, 4)) as p(n, vols)
+     cross join lateral public.estimate_action_savings(('b5700000-0000-0000-0000-00000000000' || p.n)::uuid) e
+     join public.action_templates t on t.action_text = e.action_text
+     where t.poste = 'travel' and t.segment = 'flight_short' and t.trips > p.vols $$,
+  'aucun gabarit des vols courts n''est proposé à qui en a déclaré moins qu''il n''en remplace'
 );
 
 -- ── 2. Le libellé, la quantité et la question disent la même chose ─────────────────────────
@@ -155,7 +165,21 @@ select is(
 select * from finish();
 rollback;
 
--- ── Relevé des mutations, 18/10/2026 ─────────────────────────────────────────────────────────
+-- ── Relevé des mutations, 19/10/2026 ─────────────────────────────────────────────────────────
+--
+-- Jouées sur la stack locale, `20261019140000` appliquée : la mutation (une substitution sur le corps de
+-- l'estimateur) puis ce fichier dans une même transaction, annulée par son `rollback`.
+--
+--   - la garde d'avant, « au moins un trajet déclaré » (`v_count < 1`) → 4 et 7 : l'aller-retour revient
+--     au profil à un seul vol, et le balayage le voit ;
+--   - une garde trop stricte (`v_count <= greatest(t.trips, 1)`) → 3 et 6 : l'aller-retour quitte le
+--     profil à deux vols, et « Renoncer à un vol … » celui à un seul — le témoin 6 est là pour ça ;
+--   - le `least(t.trips, v_count)` remplacé par `t.trips` → passe, et c'est juste : la garde écarte
+--     déjà tout gabarit qui remplace plus de trajets qu'il n'en est déclaré, donc le `least` ne borne plus
+--     rien. La mutation du 18/10 qui le visait (plus bas) ne tombe plus.
+--
+-- ── Relevé des mutations, 18/10/2026 (sur le fichier d'avant la garde du 19/10 : ses numéros sont ceux
+-- de ce fichier-là, dont la 4 et la 6 ont changé de sens) ────────────────────────────────────────
 --
 -- Jouées sur la base locale, la migration appliquée : la mutation puis ce fichier dans une même
 -- transaction, annulée par le `rollback` du fichier. Les numéros sont ceux des assertions.

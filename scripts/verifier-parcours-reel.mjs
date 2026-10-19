@@ -625,7 +625,9 @@ const ATTENDU = {
     ['Faire ce trajet à deux au moins un jour sur deux', 480],
     ['Travailler depuis chez toi un jour par semaine', 384],
     ['Renoncer à un vol court ou moyen-courrier cette année', 277],
-    ['Remplacer un aller-retour en avion par le train', 273],
+    // « Remplacer un aller-retour en avion par le train » (273 kg) est sortie le 19/10/2026 : ce profil
+    // ne déclare qu'un vol court, et le plan ne promet plus deux vols à qui n'en a déclaré qu'un
+    // (`20261019140000`).
     // **Deux lignes de plus depuis C4.4**, et elles ne sont pas du décor : ce profil fait ses
     // sorties à 22,5 km, c'est-à-dire au-dessus de ce qu'un vélo mécanique tient (15 km) et dans
     // la fenêtre du VAE ; et il déclare deux longs trajets en voiture à deux, où l'autocar gagne
@@ -1564,7 +1566,7 @@ try {
   );
   assurer(/\/plan/.test(page.url()), `« Voir ce que je peux faire » n'a pas mené au plan : ${page.url()}`);
 
-  // ── 5. Le plan : les dix pistes, le cap, la carte du premier plan ───────────────────────────
+  // ── 5. Le plan : les neuf pistes, le cap, la carte du premier plan ───────────────────────────
   etape('plan');
   await page.waitForURL(/\/plan/, { timeout: ATTENTE });
   await attendreTexte(ATTENDU.pistes[0][0]);

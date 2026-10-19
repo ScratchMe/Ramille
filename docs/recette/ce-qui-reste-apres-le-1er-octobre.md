@@ -140,7 +140,7 @@ les mêmes chiffres au dixième. À saisir **à la lettre** :
 |---|---|---|---|
 | **Voyages longue distance** | **Renoncer à un vol long-courrier cette année** | **1 601 kg** | 1 |
 | | Renoncer à un vol court ou moyen-courrier cette année | 277 kg | 2 |
-| | Remplacer un aller-retour en avion par le train | 273 kg | 3 |
+| | ~~Remplacer un aller-retour en avion par le train~~ — **n'apparaît plus depuis le 19/10/2026** : ce profil ne déclare qu'un vol court (`20261019140000`) | ~~273 kg~~ | 3 |
 | | Faire un de tes longs trajets en train plutôt qu'en voiture | 48 kg | 6 |
 | | Remplacer un de tes longs trajets en autocar par le train | 24 kg | 8 |
 | | Faire un de tes longs trajets en autocar plutôt qu'en voiture | 23 kg | 9 |

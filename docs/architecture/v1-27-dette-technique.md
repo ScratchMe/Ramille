@@ -2600,12 +2600,12 @@ contexte), **la révision de sa décision D14 du 10/09/2026** (l'image EAS épin
   23 h peut encore être refusé le lendemain matin, un cas jugé trop rare pour une phrase plus froide ;
 - **une opposition à la mesure arrête l'enregistrement** : un indicateur par compte, posé par l'agent
   quand une demande fondée arrive, fait cesser tous les repères sauf la date de dernière ouverture, que
-  lisent les rappels et la purge ; pas d'écran neuf, et la page de confidentialité le dira. **À
-  construire** (registre des traitements, fiche de la mesure) ;
+  lisent les rappels et la purge ; pas d'écran neuf, et la page de confidentialité le dit. **Construit
+  le 19/10/2026** (`refuser_la_mesure`, test `58`, `MESURE.md` §5) ;
 - **la fiche Google Play déclare un partage, avec Cloudflare** : Play ne range hors du partage qu'un
   fournisseur qui traite « au nom du développeur et selon ses instructions », et Cloudflare réutilise
   les signaux de Turnstile pour son compte (`fiche-google-play.md` §3.1 et §3.2) ;
 - **« Remplacer un aller-retour en avion par le train » n'est plus proposée à qui n'a déclaré qu'un vol
   court** : le plan ne promet pas plus de trajets que la personne n'en a déclaré, et il lui reste
-  « Renoncer à un vol court ou moyen-courrier », dont le libellé et le gain s'accordent. **À
-  construire** (`PLAN.md`, les filtres de contexte).
+  « Renoncer à un vol court ou moyen-courrier », dont le libellé et le gain s'accordent. **Construit
+  le 19/10/2026** (`20261019140000`, test `57`, `PLAN.md` §1).

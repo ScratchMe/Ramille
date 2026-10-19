@@ -627,11 +627,11 @@ const SECTIONS: LegalSection[] = [
         // de consentement qu'aucune source lue ne garantit. Elle dit trois choses vérifiables : ce qui est
         // mesuré (la liste de la section « Ce que nous collectons »), sur quelle base (l'intérêt légitime,
         // dite plus haut), et le seul chemin d'opposition qui existe : un e-mail. **Elle ne promet pas de
-        // réglage, parce que l'app n'en a aucun**, et ne dit pas non plus que l'enregistrement s'arrêterait :
-        // rien dans le produit ne sait le faire pour une session (décision de produit, laissée à la personne
-        // qui pilote). L'identifiant demandé est celui que l'export rend (`export_my_data`, clé
-        // `compte.identifiant`) : sans lui, une session anonyme n'a aucun nom qui permette de retrouver ses
-        // repères. Reste la question de l'article 82 de la loi Informatique et Libertés, à trancher par un
+        // réglage, parce que l'app n'en a aucun.** Depuis le 19/10/2026, elle dit que l'enregistrement
+        // s'arrête, sauf la date de dernière ouverture (`refuser_la_mesure`, `MESURE.md` §5, décision de la
+        // personne qui pilote), et pourquoi cette date reste. L'identifiant demandé est celui que l'export
+        // rend (`export_my_data`, clé `compte.identifiant`) : sans lui, une session anonyme n'a aucun nom
+        // qui permette de retrouver ses repères. Reste la question de l'article 82 de la loi Informatique et Libertés, à trancher par un
         // juriste : la CNIL n'exempte la mesure d'audience que pour des statistiques anonymes, et ces repères
         // sont rattachés à une session (`registre-des-traitements.md` §8).
         text:
@@ -640,7 +640,10 @@ const SECTIONS: LegalSection[] = [
           'consentement. Tu peux t’opposer à ces repères à tout moment (droit d’opposition, article 21 du RGPD) en ' +
           `écrivant à ${CONTACT_EMAIL}, en joignant l’identifiant de ton compte, qui figure dans l’export de tes données. ` +
           'Nous répondons dans le délai d’un mois indiqué plus bas et, si ta demande est fondée, nous supprimons les ' +
-          'repères déjà enregistrés pour ta session. L’application n’a aujourd’hui aucun réglage pour les désactiver.',
+          'repères déjà enregistrés pour ta session et nous cessons d’en enregistrer. Seule reste la date de ta ' +
+          'dernière ouverture de l’application : elle règle le rythme de tes rappels et repousse la suppression ' +
+          'automatique d’une session inutilisée. L’application n’a pas de réglage pour le faire toi-même : nous le ' +
+          'faisons à ta demande.',
       },
     ],
   },

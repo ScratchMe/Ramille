@@ -154,7 +154,7 @@ Le poste dominant est **les voyages** (2 030,2 kg), donc **le cap de la saison v
 |---|---|---|
 | 1 | Renoncer à un vol long-courrier cette année | **1 601 kg** |
 | 2 | Renoncer à un vol court ou moyen-courrier cette année | 277 kg |
-| 3 | Remplacer un aller-retour en avion par le train | 273 kg |
+| 3 | ~~Remplacer un aller-retour en avion par le train~~ — **n'apparaît plus depuis le 19/10/2026** : ce profil ne déclare qu'un vol court (`20261019140000`) | ~~273 kg~~ |
 | 4 | **Faire une sortie sur trois à vélo à assistance électrique** | **101 kg** |
 | 5 | Regrouper deux sorties en une seule, une fois sur cinq | 67 kg |
 | 6 | Faire un de tes longs trajets en train plutôt qu'en voiture | 48 kg |
