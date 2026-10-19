@@ -2590,3 +2590,22 @@ contexte), **la révision de sa décision D14 du 10/09/2026** (l'image EAS épin
 `v1-13` §1 — technique, mais c'était son arbitrage, donc elle se dit), et ce qui vit hors du dépôt
 (compte Play, marque, pixel de Brevo, DNS, réglages d'Auth, contrats des prestataires, la réponse
 « partage avec des tiers » de la fiche Play pour Cloudflare).
+
+**Tranché par la personne qui pilote le 19/10/2026**, une question à la fois :
+
+- **l'image EAS reste épinglée** : la révision de D14 est confirmée, et l'agent change l'image à
+  chaque montée de SDK d'Expo (`v1-13` §1, registre §3.3) ;
+- **la phrase du refus de correction du contexte reste** « … Réessaie demain. » : le compteur repart
+  vingt-quatre heures après la première correction et non à minuit, donc quelqu'un qui commence à
+  23 h peut encore être refusé le lendemain matin, un cas jugé trop rare pour une phrase plus froide ;
+- **une opposition à la mesure arrête l'enregistrement** : un indicateur par compte, posé par l'agent
+  quand une demande fondée arrive, fait cesser tous les repères sauf la date de dernière ouverture, que
+  lisent les rappels et la purge ; pas d'écran neuf, et la page de confidentialité le dira. **À
+  construire** (registre des traitements, fiche de la mesure) ;
+- **la fiche Google Play déclare un partage, avec Cloudflare** : Play ne range hors du partage qu'un
+  fournisseur qui traite « au nom du développeur et selon ses instructions », et Cloudflare réutilise
+  les signaux de Turnstile pour son compte (`fiche-google-play.md` §3.1 et §3.2) ;
+- **« Remplacer un aller-retour en avion par le train » n'est plus proposée à qui n'a déclaré qu'un vol
+  court** : le plan ne promet pas plus de trajets que la personne n'en a déclaré, et il lui reste
+  « Renoncer à un vol court ou moyen-courrier », dont le libellé et le gain s'accordent. **À
+  construire** (`PLAN.md`, les filtres de contexte).
