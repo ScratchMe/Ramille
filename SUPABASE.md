@@ -239,6 +239,16 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   pousser. Ce n'est pas réécrire un historique — rien d'appliqué ne change, aucun ordre ne bouge :
   c'est donner au fichier le nom de son enregistrement, pour qu'on puisse, en partant d'un
   enregistrement, retrouver le fichier qui l'a produit.
+- **Le serveur MCP de Supabase demande sa propre confirmation avant tout SQL qu'il juge destructif,
+  et un client qui ne sait pas l'afficher la perd en silence.** `apply_migration` et `execute_sql`
+  ouvrent un formulaire (une « élicitation » MCP) dès qu'ils voient un `delete` ou un `update`,
+  même dans le corps d'une fonction qu'on ne fait que définir. Sans formulaire à l'écran, l'appel
+  rend `{"status":"cancelled"}`, ou expire au bout de 60 s ; rien n'est appliqué, et autoriser
+  l'outil d'office côté client n'y change rien, puisque ce n'est pas la même confirmation. Une
+  requête qui ne fait que lire passe. Le contourner en déguisant l'instruction serait tromper le
+  garde-fou ; la voie propre est l'éditeur SQL du tableau de bord, le fichier collé tel quel, puis
+  une relecture par empreintes. Le paramètre `skip_elicitations` de l'URL du serveur retire la
+  fenêtre, et avec elle le garde-fou.
 - **Une sous-requête latérale qui ne nomme pas la ligne n'est évaluée qu'au gré du plan.**
   `cross join lateral (select gen_random_uuid() as jeton) o` ne dépend d'aucune colonne : rien
   n'oblige Postgres à la refaire pour chaque ligne, et selon les statistiques il la sort de la
@@ -509,6 +519,15 @@ connaît pas, et les deux divergent en silence. La CI n'en voit rien — le job 
 depuis les fichiers, jamais depuis le distant — mais un `db push` ultérieur tente de rejouer une
 migration déjà appliquée. Relevé le 17/09/2026 : fichier `20260917230000`, distant `20260917231133`.
 La parade tient en un geste : appliquer, **relire `max(version)`**, et renommer le fichier dessus.
+
+**Et une migration qui porte un `delete` ou un `update` ne passe pas par `apply_migration` depuis
+l'app** (§1.5) : relevé le 19/10/2026, deux annulations et une expiration sur `20261018110000`,
+puis une annulation sur `20261018120000`, qui n'a que deux `update` de descriptions. Le 05/10/2026,
+`20261005170000` s'était annulée deux fois de la même façon, et le journal l'attribuait alors à sa
+taille. Ces migrations-là passent par la personne qui pilote, dans le SQL Editor, le fichier collé
+tel quel : aucune version n'est enregistrée, le fichier **garde son nom**, et le journal
+(`docs/exploitation/README.md` §7 bis) dit qu'elle n'est pas dans `schema_migrations`. L'agent
+relit ensuite par empreintes, ce qu'`execute_sql` permet, puisqu'une lecture ne demande rien.
 
 **Une migration livrée ne se modifie pas, et un hook le rappelle depuis le 27/09/2026**
 (`scripts/proteger-les-migrations-livrees.mjs`, déclaré dans `.claude/settings.json`). Il refuse à
