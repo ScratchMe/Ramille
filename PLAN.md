@@ -399,7 +399,7 @@ aller-retour en avion par le train » vaut donc `trips = 2` (`20261018130000`, t
 vol est un trajet simple) ; les plans déjà générés gardent leur gain figé et les points déjà posés leur
 question, le nouveau gain venant à la reconstruction du plan. **Et depuis le 19/10/2026, un gabarit de
 voyage ne se propose qu'à qui a déclaré au moins autant de trajets qu'il en remplace**
-(`20261019140000`, test `57`, décision de la personne qui pilote) : à un seul vol déclaré,
+(`20261019134858`, test `57`, décision de la personne qui pilote) : à un seul vol déclaré,
 l'aller-retour promettait deux vols pour en chiffrer un. La garde est celle de l'estimateur
 (`v_count < greatest(t.trips, 1)`), générale, et ne touche aujourd'hui que ce gabarit, le seul des
 voyages dont `trips` dépasse 1 ; un gabarit qu'on écrira avec `trips` à 2 en héritera sans rien dire.

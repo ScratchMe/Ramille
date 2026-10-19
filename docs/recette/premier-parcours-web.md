@@ -114,7 +114,7 @@ Ce que ce profil rend, mesuré :
 
 **« Remplacer un aller-retour en avion par le train » (273 kg) n'y est plus depuis le 19/10/2026** :
 ce profil ne déclare qu'un vol court, et le plan ne promet plus deux vols à qui n'en a déclaré qu'un
-(`20261019140000`). Il lui reste « Renoncer à un vol court ou moyen-courrier cette année », au rang 5.
+(`20261019134858`). Il lui reste « Renoncer à un vol court ou moyen-courrier cette année », au rang 5.
 
 **Les rangs 6 et 9 sont nés de C4.4** (21/09/2026), et ils disent ce que le chantier a ouvert :
 les sorties de ce profil font 22,5 km, au-dessus de ce qu'un vélo mécanique tient (15 km) et dans

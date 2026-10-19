@@ -9,7 +9,7 @@
 -- parce que c'est la borne qui distingue les deux défauts possibles : la quantité du gabarit (deux, et
 -- non un) et le `least` de l'estimateur (la déclaration plafonne, et le gabarit aussi). Quatre vols
 -- déclarés ne sont crédités que de deux. **Et depuis le 19/10/2026, un seul vol déclaré ne se voit plus
--- proposer l'aller-retour** (`20261019140000`, décision de la personne qui pilote) : le plan ne promet
+-- proposer l'aller-retour** (`20261019134858`, décision de la personne qui pilote) : le plan ne promet
 -- pas plus de trajets que la personne n'en a déclaré, et il lui reste « Renoncer à un vol … ».
 --
 -- Les valeurs attendues se **dérivent** du facteur et de l'instantané du bilan au lieu de se figer :
@@ -167,7 +167,7 @@ rollback;
 
 -- ── Relevé des mutations, 19/10/2026 ─────────────────────────────────────────────────────────
 --
--- Jouées sur la stack locale, `20261019140000` appliquée : la mutation (une substitution sur le corps de
+-- Jouées sur la stack locale, `20261019134858` appliquée : la mutation (une substitution sur le corps de
 -- l'estimateur) puis ce fichier dans une même transaction, annulée par son `rollback`.
 --
 --   - la garde d'avant, « au moins un trajet déclaré » (`v_count < 1`) → 4 et 7 : l'aller-retour revient

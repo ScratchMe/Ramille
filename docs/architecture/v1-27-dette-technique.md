@@ -2608,7 +2608,7 @@ contexte), **la révision de sa décision D14 du 10/09/2026** (l'image EAS épin
 - **« Remplacer un aller-retour en avion par le train » n'est plus proposée à qui n'a déclaré qu'un vol
   court** : le plan ne promet pas plus de trajets que la personne n'en a déclaré, et il lui reste
   « Renoncer à un vol court ou moyen-courrier », dont le libellé et le gain s'accordent. **Construit
-  le 19/10/2026** (`20261019140000`, test `57`, `PLAN.md` §3). Reste un écart connu, sans conséquence avant
+  le 19/10/2026** (`20261019134858`, test `57`, `PLAN.md` §3). Reste un écart connu, sans conséquence avant
   le lancement : un engagement pris sur l'aller-retour avec un seul vol déclaré, avant la migration, s'archive
   au prochain plan reconstruit, et si c'est une correction du contexte qui le reconstruit, l'encart dit que le
   plan a changé « avec tes nouvelles réponses de contexte », alors que la cause est la règle neuve. Seuls des

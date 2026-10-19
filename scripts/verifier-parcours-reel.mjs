@@ -627,7 +627,7 @@ const ATTENDU = {
     ['Renoncer à un vol court ou moyen-courrier cette année', 277],
     // « Remplacer un aller-retour en avion par le train » (273 kg) est sortie le 19/10/2026 : ce profil
     // ne déclare qu'un vol court, et le plan ne promet plus deux vols à qui n'en a déclaré qu'un
-    // (`20261019140000`).
+    // (`20261019134858`).
     // **Deux lignes de plus depuis C4.4**, et elles ne sont pas du décor : ce profil fait ses
     // sorties à 22,5 km, c'est-à-dire au-dessus de ce qu'un vélo mécanique tient (15 km) et dans
     // la fenêtre du VAE ; et il déclare deux longs trajets en voiture à deux, où l'autocar gagne
