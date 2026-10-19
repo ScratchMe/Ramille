@@ -116,7 +116,7 @@ export type LectureLisible = {
   parametres: ParametresDePartage;
   /** La chaîne de requête canonique, sans le `?`, vide quand il n’y a rien à dire. */
   query: string;
-  /** L’adresse reçue **est** la forme canonique : sinon, elle se redirige vers elle. */
+  /** L’adresse reçue **est** la forme canonique, à l’encodage près : sinon, elle se redirige vers elle. */
   canonique: boolean;
 };
 
@@ -164,11 +164,12 @@ const FORME_DE_LA_PART = /^\d{1,12}$/;
  *
  * **L’encodage, lui, ne compte pas** (`memeEncodage`, plus bas) : `%20` ou `+` pour une espace,
  * `%28` ou `(`, `2` ou `%32` désignent la même adresse. Ce n’est pas une tolérance, c’est ce que fait
- * Vercel, mesuré en production le 19/10/2026 : il décode la chaîne avant d’appeler la fonction, si
- * bien qu’une espace arrive toujours en `%20`, quel que soit l’encodage du lien ; et son cache confond
- * les encodages d’une même adresse (`percent=5%30` est servi depuis l’entrée de `percent=50`, au
- * premier appel). Juger l’encodage faisait donc rediriger toute adresse qui porte un poste vers
- * elle-même, en boucle, sans rien épargner au cache.
+ * Vercel. Il décode la chaîne avant d’appeler la fonction : une espace s’y lit `%20`, qu’on l’ait
+ * envoyée en `+` ou en `%20`. Et son cache confond les encodages d’une même adresse, mesuré en
+ * production le 19/10/2026 : `+` et `%20`, `(` et `%28`, `/` et `%2F`, `0` et `%30`, l’hexadécimal en
+ * minuscules et en majuscules y tombent sur la même entrée, dès le premier appel. Juger l’encodage
+ * faisait donc rediriger toute adresse qui porte un poste vers elle-même, en boucle, sans rien épargner
+ * au cache.
  */
 export function lireLaRequete(recherche: string, devantLIllisible: 'ignorer'): LectureLisible;
 export function lireLaRequete(recherche: string, devantLIllisible: DevantLIllisible): LectureDePartage;
@@ -226,13 +227,15 @@ export function lireLaRequete(recherche: string, devantLIllisible: DevantLIllisi
 /**
  * La chaîne reçue, réécrite segment par segment dans l’encodage de `URLSearchParams`, et rien de plus :
  * l’ordre, les noms et les segments vides restent ceux de l’adresse. Une adresse qui ne diffère de la
- * forme canonique que par son encodage lui est donc égale ; un `&` de trop ne l’est pas, puisque rien
- * ne dit que le cache le confond.
+ * forme canonique que par son encodage lui est donc égale ; un `&` ou un `?` de trop ne l’est pas, et
+ * se redirige — le cache les confond aussi, mais rien ne dit ce que la fonction en reçoit. D’où le
+ * `&` posé devant chaque segment : seul, `URLSearchParams` retirerait un `?` de tête, et `??total=…`
+ * passerait pour canonique.
  */
 function memeEncodage(recherche: string): string {
   return recherche
     .split('&')
-    .map((segment) => (segment === '' ? '' : new URLSearchParams(segment).toString()))
+    .map((segment) => (segment === '' ? '' : new URLSearchParams(`&${segment}`).toString()))
     .join('&');
 }
 

@@ -278,10 +278,13 @@ laisser dans un « tout sauf » — cette phrase-là en oubliait un :
   l'entrée importe (`.js`, `.json`, `.wasm`) ; mais ce regroupement se fait au déploiement. Le côté
   Node, lui, a été joué : le `.func` construit, importé sous Node dans le même répertoire que Lambda
   (cwd = le `.func`, `hb.wasm` posé comme `filePathMap` le demande), rend la carte (18/10/2026) ;
-- **la chaîne de requête, de bout en bout** : la forme canonique d'une adresse se juge sur la
-  chaîne **brute** que la fonction reçoit (§2.2). Si la plateforme la ré-encodait entre le CDN et la
-  fonction, l'adresse que l'app produit serait redirigée vers elle-même, en boucle. Rien ne le montre
-  hors d'un déploiement : un `curl -I` sur l'adresse canonique doit répondre 200, pas 308.
+- **la chaîne de requête, de bout en bout** : la plateforme la décode entre le CDN et la fonction —
+  c'est arrivé le 19/10/2026, où la forme canonique, jugée sur la chaîne brute, a fait rediriger vers
+  elle-même toute adresse qui porte un poste (§1.10, §2.2). Elle se juge désormais sans l'encodage, et
+  `verifier-api.mjs` (5b′) comme Jest jouent les écritures que la plateforme peut passer. Ce qui reste
+  invisible hors d'un déploiement, c'est toute **autre** réécriture de la chaîne (l'ordre, un `&` ou
+  un `?` de trop) : seuls la sonde et un `curl -I` sur l'adresse canonique, qui doit répondre 200 et
+  non 308, la voient.
 
 ### 1.7 Ce qui pèse dans une fonction
 
@@ -359,8 +362,10 @@ CDN lit comme « ne pas garder ». Quand `Cache-Control` est le seul en-tête de
   chemin à qui a reçu un lien abîmé.
 - **L'encodage, lui, n'est pas une forme : la plateforme décode la chaîne de requête avant d'appeler
   la fonction, et son cache confond les encodages d'une même adresse.** Mesuré en production le
-  19/10/2026 : `percent=5%30` est servi depuis l'entrée de `percent=50` dès le premier appel, et une
-  espace se lit `%20` dans `new URL(request.url).search`, qu'on l'ait envoyée en `+` ou en `%20`. Une
+  19/10/2026, chaque fois par un premier appel en `MISS` puis l'autre écriture en `HIT` : `+` et `%20`,
+  `(` et `%28`, `/` et `%2F`, `0` et `%30`, l'hexadécimal en minuscules et en majuscules — et même `&&`
+  et `&`, `??` et `?`. Une espace, elle, se lit `%20` dans `new URL(request.url).search`, qu'on l'ait
+  envoyée en `+` ou en `%20`. Une
   forme canonique jugée au caractère près redirige donc vers elle-même toute adresse qui contient une
   espace, en boucle, sans que rien ne le montre en local : la fonction y reçoit la chaîne telle qu'on
   l'a écrite. Elle se juge sur la chaîne réécrite dans un encodage fixe, segment par segment, jamais au
@@ -461,8 +466,10 @@ retarde d'une nuit — est en §1.1.
   forme est celle que l'app produit (`urlDePartage`, `src/types/resultat.ts`) : `total` en tonnes à
   trois décimales (`4.200`), `poste` pris dans la liste fermée, `percent` entier, dans cet ordre,
   sérialisés par `URLSearchParams` (le `+` pour l'espace) — **mais l'encodage ne compte pas** : `%20`,
-  un chiffre encodé, un accent ou une parenthèse décodés désignent la même adresse, parce que Vercel
-  décode la chaîne avant la fonction et que son cache les confond (§1.10). Jugée au caractère près, la
+  un chiffre encodé, un hexadécimal en minuscules, une parenthèse ou une barre oblique en clair
+  désignent la même adresse, parce que Vercel décode la chaîne avant la fonction et que son cache les
+  confond, mesuré écriture par écriture (§1.10). Un `&` ou un `?` de trop se redirige encore : le cache
+  les confond aussi, mais rien ne dit ce que la fonction en reçoit. Jugée au caractère près, la
   forme a fait rediriger vers lui-même tout partage portant un poste, de la fusion de ScratchMe/Ramille#378
   (l'audit du 18/10/2026) au correctif du même jour. Un test exige que chaque adresse que l'app
   produit soit déjà canonique (`scripts/postes-partageables.test.ts`) — sinon la page redirigerait
@@ -576,8 +583,10 @@ jour ; les deux sont tombées le 25/09/2026.
 
 - **Le premier déploiement de la forme canonique et du module commun se lit en production**, avec un
   `curl -I` sans JavaScript, pour ce que `vercel build` et Node ne montrent pas (§1.6, §2.2) :
-  - `/api/partage?total=4.200&poste=…&percent=50` répond **200**, pas 308 vers elle-même (la plateforme
-    ne ré-encode pas la chaîne de requête), et un second appel porte `x-vercel-cache: HIT` ;
+  - `/api/partage?total=4.200&poste=…&percent=50` répond **200**, pas 308 vers elle-même, et un second
+    appel porte `x-vercel-cache: HIT`. **Joué le 19/10/2026 juste après la fusion de l'audit** : sans
+    poste, 200 puis `HIT` ; avec un poste, 308 vers elle-même — la plateforme décode la chaîne, et la
+    forme se jugeait au caractère près (§1.10). À rejouer après le déploiement du correctif ;
   - l'image de l'`og:image` de cette page répond de même 200 puis `HIT` — `curl -I` y répond 405 tant
     que seul `GET` est exporté, donc un `GET` dont on jette le corps ;
   - `/api/partage?total=4.2abc` et `/api/partage?fbclid=x` répondent un 308 vers `/api/partage`, et

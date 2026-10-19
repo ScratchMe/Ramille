@@ -33,7 +33,7 @@
 //   - **une adresse a une forme, et une seule** (`api/_partage-commun.ts`). Le CDN de Vercel garde
 //     une réponse par adresse complète : tout ce qui change l'adresse sans changer l'image était un
 //     rendu payé de plus. La forme canonique est servie et gardée (`s-maxage` — `max-age` seul ne
-//     parle qu'au navigateur) ; une variante lisible est redirigée en 308 vers elle, quinze
+//     parle qu'au navigateur) ; une variante lisible est redirigée en 308 vers elle, seize
 //     tournures sur la page comme sur la carte, et la même adresse dans un autre encodage est servie
 //     comme elle, cinq écritures (19/10/2026 : Vercel décode avant la fonction) ; un paramètre sans sens (un texte derrière le
 //     nombre, une valeur répétée) fait répondre 400 à la carte, jamais gardé, et la page l'ignore
@@ -96,12 +96,15 @@
 //     forme de l'app, donc elle ne voit pas la différence).
 //
 // **Et le 18/10/2026, pour la forme canonique et le module commun** — trente-quatre mutations, chacune
-// remise en place par réécriture de l'état d'avant, jamais par un second remplacement ; aucune ne passe,
-// et le nombre d'écarts est celui du script tel qu'il est livré :
+// remise en place par réécriture de l'état d'avant, jamais par un second remplacement ; aucune ne passe.
+// **Les nombres d'écarts sont ceux du script de ce jour-là**, avant la page qui ignore l'illisible et
+// avant 5b′ : rejouées sur le script du 19/10/2026, `canonique: true` en fait 61 et non 38, la
+// redirection en 307 64 et non 41. Les autres ne sont pas rejouées ; ce qui compte est qu'aucune ne
+// passe :
 //   - le total relu par préfixe (`parseFloat`) → 22 ; la part relue par préfixe (`parseInt`) → 11 ;
 //   - jamais de redirection (`canonique: true`) → 38 ; la page seule, 19 ; la carte seule, 19 ;
-//   - la forme jugée après re-sérialisation (`%20` et `%30` passent pour canoniques) → 4 — c'est, depuis
-//     le 19/10/2026, le comportement voulu (plus bas) ;
+//   - la forme jugée après re-sérialisation (`%20` et `%30` passent pour canoniques) → 4 au 18/10/2026 ;
+//     depuis le 19/10/2026, c'est le comportement voulu, à un `&` et un `?` de trop près (plus bas) ;
 //   - les paramètres inconnus recopiés dans la forme canonique → 26 ; un paramètre répété accepté → 6 ;
 //   - la part sans borne haute → 4 ; le total sans borne haute → 5 ;
 //   - le total arrondi par troncature au lieu de l'arrondi au kilo → 2 (la variante « décimales qui
@@ -131,11 +134,17 @@
 // **Et le 19/10/2026, l'encodage** (5b′) : la forme se jugeait au caractère près, et Vercel décode la
 // chaîne avant la fonction, si bien que tout partage qui porte un poste se redirigeait vers lui-même en
 // production. Ce script le voyait d'autant moins qu'il exigeait la redirection de `%20` et de `%30`. Deux
-// mutations, remises en place par recopie du fichier d'avant :
+// mutations, remises en place par recopie du fichier d'avant, comptées sur le script tel qu'il est
+// livré :
 //   - la comparaison au caractère près (l'état livré par ScratchMe/Ramille#378) → 10, les cinq écritures
 //     de 5b′ sur la page et sur la carte, et rien d'autre ;
-//   - la forme jugée sur `params.toString()`, qui oublie un `&` de trop → 2, la variante « un `&` de
-//     trop » sur la page et sur la carte.
+//   - la forme jugée sur `params.toString()`, qui oublie les segments vides et le `?` de tête → 4, les
+//     variantes « un `&` de trop » et « un `?` de trop », sur la page et sur la carte ;
+//   - chaque segment réécrit sans le `&` posé devant, qui laisse le constructeur retirer un `?` de tête
+//     → 2, la variante « un `?` de trop » sur la page et sur la carte ;
+//   - la carte servie par son repli quand le poste porte une parenthèse → 1, seule : c'est la garde du
+//     `Cache-Control` de 5b′, ajoutée après la contre-lecture — sans elle, le repli passait pour un
+//     rendu.
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
@@ -581,6 +590,7 @@ const VARIANTES = [
   ['décimales en trop', `total=2.4000000&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
   ['décimales qui s’arrondissent au kilo', `total=2.4006&poste=${POSTE_PLUS}&percent=58`, `total=2.401&poste=${POSTE_PLUS}&percent=58`],
   ['un `&` de trop', `total=2.400&&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
+  ['un `?` de trop', `?${Q_COMPLETE}`, Q_COMPLETE],
   ['libellé vide', `total=2.400&poste=&percent=58`, 'total=2.400&percent=58'],
   ['total vide', `total=&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
   ['total hors borne', `total=200.001&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
@@ -623,16 +633,17 @@ for (const [nom, entree, attendue] of VARIANTES) {
 // 5b′. Le même partage dans un autre encodage **est** la forme canonique : servi en 200, jamais redirigé.
 // Vercel décode la chaîne avant d'appeler la fonction — une espace y arrive en `%20`, quel que soit
 // l'encodage du lien —, et son cache confond les encodages d'une même adresse : mesuré en production
-// le 19/10/2026, où `percent=5%30` était servi depuis l'entrée de `percent=50` dès le premier appel. Juger
-// l'encodage y faisait rediriger chaque partage qui porte un poste vers lui-même, en boucle. Les deux
-// appels passent par le parseur d'URL, comme sur Vercel : une espace écrite telle quelle y devient `%20`,
-// un accent `%C3%A9`, et la parenthèse, la barre oblique restent écrites en clair.
+// le 19/10/2026, écriture par écriture (`VERCEL.md` §1.10). Juger l'encodage y faisait rediriger chaque
+// partage qui porte un poste vers lui-même, en boucle. Les cinq entrées sont cinq écritures que la
+// fonction reçoit réellement différentes de la forme de l'app une fois l'adresse passée par le parseur
+// d'URL : une espace écrite telle quelle y deviendrait `%20`, donc la même chose que la première, et un
+// accent écrit tel quel `%C3%A9`, la forme de l'app elle-même.
 const MEME_ADRESSE = [
   ['espaces en %20, comme Vercel les passe', `total=2.400&poste=${POSTE_20}&percent=58`, true],
-  ['espaces écrites telles quelles', `total=2.400&poste=${POSTE_APP}&percent=58`, true],
   ['chiffre encodé en %30', `total=2.40%30&poste=${POSTE_PLUS}&percent=58`, true],
-  ['accent écrit tel quel', 'total=2.400&poste=Trajet domicile-travail en voiture électrique&percent=58', false],
-  ['parenthèses et barre oblique en clair', 'total=2.400&poste=Voyages longue distance en avion (court/moyen-courrier)&percent=58', false],
+  ['lettre du nom encodée (%74otal)', `%74otal=2.400&poste=${POSTE_PLUS}&percent=58`, true],
+  ['accent en hexadécimal minuscule', 'total=2.400&poste=Trajet+domicile-travail+en+voiture+%c3%a9lectrique&percent=58', false],
+  ['parenthèses et barre oblique en clair', 'total=2.400&poste=Voyages+longue+distance+en+avion+(court/moyen-courrier)&percent=58', false],
 ];
 for (const [nom, entree, memeImage] of MEME_ADRESSE) {
   const pageEncodee = await appelPage(`/api/partage?${entree}`);
@@ -640,10 +651,14 @@ for (const [nom, entree, memeImage] of MEME_ADRESSE) {
     pageEncodee.status === 200,
     `page : « ${nom} » répond ${pageEncodee.status}${pageEncodee.headers.get('location') ? ` vers « ${pageEncodee.headers.get('location')} »` : ''} au lieu d'être servie — sur Vercel, ce serait une redirection en boucle`
   );
+  // Le repli sort lui aussi en 200 et en `image/png` : seul son `Cache-Control` (`no-store`) le distingue
+  // d'un rendu, comme en section 1.
   const carteEncodee = await appelCarte(`/api/share-card?${entree}`);
   verifier(
-    carteEncodee.status === 200 && (carteEncodee.headers.get('content-type') ?? '').startsWith('image/png'),
-    `carte : « ${nom} » répond ${carteEncodee.status} au lieu d'être rendue`
+    carteEncodee.status === 200 &&
+      (carteEncodee.headers.get('content-type') ?? '').startsWith('image/png') &&
+      (carteEncodee.headers.get('cache-control') ?? '').startsWith('public'),
+    `carte : « ${nom} » répond ${carteEncodee.status}, servie « ${carteEncodee.headers.get('cache-control')} », au lieu d'être rendue`
   );
   if (memeImage && carteEncodee.status === 200) {
     const pngEncode = Buffer.from(await carteEncodee.arrayBuffer());

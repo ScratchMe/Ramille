@@ -8,13 +8,16 @@
  * format de total changé : les vrais partages perdent leur ligne « Poste principal », ou sont
  * redirigés en boucle, ou refusés en 400, sans que rien ne casse d'un côté ni de l'autre.
  *
- * Quatre exigences, et pas une de plus :
+ * Cinq exigences, et pas une de plus :
  *   - **chaque libellé que `dominantShareLabel` produit est accepté** : quatre noms de poste (le
  *     résiduel des sorties rares compris) × chaque mode connu, et sans mode ;
  *   - **chaque adresse que `urlDePartage` produit est canonique** : lue sans rien perdre, et servie
  *     telle quelle — jamais redirigée, jamais refusée. C'est la contrepartie de la redirection des
  *     variantes : une forme canonique qui ne serait pas celle de l'app redirigerait chaque vrai
  *     partage ;
+ *   - **et elle le reste dans l'écriture où Vercel la passe à la fonction** (19/10/2026), alors qu'un `&`
+ *     ou un `?` de trop ne l'est plus : sinon elle se redirige vers elle-même, en boucle, en production
+ *     seulement ;
  *   - **le total se dit comme `formatTonnes`** (`src/lib/format.ts`), kilo par kilo : la règle des
  *     kilos sous la tonne est recopiée dans `api/`, et un partage dont le titre dit « 1,0 t » quand
  *     le message dit « 999 kg » se contredit lui-même ;
@@ -48,7 +51,8 @@
  * `%20`), et la forme canonique, jugée au caractère près, redirigeait chaque partage qui porte un poste
  * vers lui-même, en boucle — trouvé en production par la sonde, juste après la fusion. Éprouvé en le
  * cassant : remettre la comparaison au caractère près fait tomber les 2 tests des écritures de Vercel ;
- * juger la forme sur `params.toString()`, qui oublie un `&` de trop, fait tomber le sien, seul.
+ * juger la forme sur `params.toString()`, qui oublie un `&` et un `?` de trop, fait tomber le leur,
+ * seul ; réécrire chaque segment sans le `&` posé devant, qui laisse passer le `?`, le même, seul.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -142,9 +146,10 @@ describe('l’adresse de partage que l’app produit', () => {
     }
   );
 
-  // Vercel décode la chaîne avant la fonction (mesuré en production le 19/10/2026) : une espace y arrive
-  // en `%20`, un accent ou une parenthèse décodés puis relus par le parseur d'URL. La même adresse, dans
-  // l'une ou l'autre écriture, doit rester canonique — sinon elle se redirige vers elle-même, en boucle.
+  // Vercel décode la chaîne avant la fonction : une espace s'y lit `%20`, qu'on l'ait envoyée en `+` ou
+  // en `%20` (relevé en production le 19/10/2026) ; ce qu'il fait d'un accent ou d'une parenthèse n'est
+  // pas mesuré côté fonction, d'où la seconde écriture, tout décodé puis relu par le parseur d'URL. La
+  // même adresse, dans l'une ou l'autre, doit rester canonique — sinon elle se redirige vers elle-même.
   const commeVercel = {
     'espaces en %20': (adresse: URL) => adresse.search.replace(/\+/g, '%20'),
     'tout décodé, puis relu': (adresse: URL) =>
@@ -165,8 +170,13 @@ describe('l’adresse de partage que l’app produit', () => {
     }
   );
 
-  it('n’est plus canonique avec un `&` de trop : rien ne dit que le cache le confond', () => {
+  it('n’est plus canonique avec un `&` ou un `?` de trop : rien ne dit ce que la fonction en reçoit', () => {
     expect(lireLaRequete('?total=4.200&&percent=50', 'refuser')).toMatchObject({ statut: 'lisible', canonique: false });
+    expect(lireLaRequete('??total=4.200&percent=50', 'refuser')).toMatchObject({
+      statut: 'lisible',
+      canonique: false,
+      query: 'total=4.200&percent=50',
+    });
   });
 
   it('reste canonique sans poste : le total et la part suffisent à une adresse', () => {

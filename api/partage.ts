@@ -16,6 +16,7 @@
 // Ce que l’adresse a le droit de dire, et sa forme canonique, vivent dans `_partage-commun.ts`,
 // partagé avec la carte. La page ne sert que l’adresse canonique : toute variante est redirigée (308)
 // vers elle — le CDN ne garde ainsi qu’une réponse par partage au lieu d’une par façon de l’écrire.
+// L’encodage n’en est pas une : le CDN confond déjà `+` et `%20`, `(` et `%28` (`lireLaRequete`).
 // **Un paramètre illisible y est ignoré, jamais refusé** : c’est la destination du lien qu’une personne
 // a reçu, et elle garde son chemin vers Ramille même quand le lien est abîmé (`DevantLIllisible`).
 import {
@@ -118,10 +119,10 @@ function pageDePartage(request: Request): Response {
     : DESCRIPTION_SANS_CHIFFRE;
 
   // **La query de la carte est la query canonique de cette page, jamais la chaîne reçue.** L'adresse
-  // est canonique ici (sinon on a redirigé plus haut), donc c'est la même chose — mais c'est la forme
-  // reconstruite qu'on écrit dans l'`og:image`, c'est-à-dire dans l'URL que chaque lecteur d'aperçu va
-  // chercher : un paramètre ou un texte de plus qui y passerait serait une clé de cache neuve, donc un
-  // rendu complet (satori + resvg) qui se paie en invocations.
+  // est canonique ici (sinon on a redirigé plus haut), donc c'est la même chose à l'encodage près —
+  // mais c'est la forme reconstruite qu'on écrit dans l'`og:image`, c'est-à-dire dans l'URL que chaque
+  // lecteur d'aperçu va chercher : un paramètre ou un texte de plus qui y passerait serait une clé de
+  // cache neuve, donc un rendu complet (satori + resvg) qui se paie en invocations.
   const origine = attributSur(url.origin);
   return reponseHtml(
     htmlDePartage({
