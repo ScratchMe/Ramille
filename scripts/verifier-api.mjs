@@ -33,8 +33,9 @@
 //   - **une adresse a une forme, et une seule** (`api/_partage-commun.ts`). Le CDN de Vercel garde
 //     une réponse par adresse complète : tout ce qui change l'adresse sans changer l'image était un
 //     rendu payé de plus. La forme canonique est servie et gardée (`s-maxage` — `max-age` seul ne
-//     parle qu'au navigateur) ; une variante lisible est redirigée en 308 vers elle, seize
-//     tournures sur la page comme sur la carte ; un paramètre sans sens (un texte derrière le
+//     parle qu'au navigateur) ; une variante lisible est redirigée en 308 vers elle, quinze
+//     tournures sur la page comme sur la carte, et la même adresse dans un autre encodage est servie
+//     comme elle, cinq écritures (19/10/2026 : Vercel décode avant la fonction) ; un paramètre sans sens (un texte derrière le
 //     nombre, une valeur répétée) fait répondre 400 à la carte, jamais gardé, et la page l'ignore
 //     — 308 vers la forme sans lui, servie : c'est la destination du lien qu'une personne a reçu ;
 //     la forme canonique est un point fixe sur un balayage, pour les deux lectures — sinon la
@@ -99,7 +100,8 @@
 // et le nombre d'écarts est celui du script tel qu'il est livré :
 //   - le total relu par préfixe (`parseFloat`) → 22 ; la part relue par préfixe (`parseInt`) → 11 ;
 //   - jamais de redirection (`canonique: true`) → 38 ; la page seule, 19 ; la carte seule, 19 ;
-//   - la forme jugée après re-sérialisation (`%20` et `%30` passent pour canoniques) → 4 ;
+//   - la forme jugée après re-sérialisation (`%20` et `%30` passent pour canoniques) → 4 — c'est, depuis
+//     le 19/10/2026, le comportement voulu (plus bas) ;
 //   - les paramètres inconnus recopiés dans la forme canonique → 26 ; un paramètre répété accepté → 6 ;
 //   - la part sans borne haute → 4 ; le total sans borne haute → 5 ;
 //   - le total arrondi par troncature au lieu de l'arrondi au kilo → 2 (la variante « décimales qui
@@ -125,6 +127,15 @@
 //   - en ignorant, un paramètre répété qui garde sa première valeur → 4 ; un total illisible relu par
 //     préfixe (`parseFloat`) → 12 ; une part relue par préfixe (`parseInt`) → 5, dont « part négative »
 //     servie en 200 comme canonique (`percent=-1`).
+//
+// **Et le 19/10/2026, l'encodage** (5b′) : la forme se jugeait au caractère près, et Vercel décode la
+// chaîne avant la fonction, si bien que tout partage qui porte un poste se redirigeait vers lui-même en
+// production. Ce script le voyait d'autant moins qu'il exigeait la redirection de `%20` et de `%30`. Deux
+// mutations, remises en place par recopie du fichier d'avant :
+//   - la comparaison au caractère près (l'état livré par ScratchMe/Ramille#378) → 10, les cinq écritures
+//     de 5b′ sur la page et sur la carte, et rien d'autre ;
+//   - la forme jugée sur `params.toString()`, qui oublie un `&` de trop → 2, la variante « un `&` de
+//     trop » sur la page et sur la carte.
 //
 // Usage : node --disable-warning=ExperimentalWarning scripts/verifier-api.mjs
 //   (l'avertissement est celui du type stripping, encore marqué expérimental en 22.x ; le
@@ -523,12 +534,12 @@ verifier(
 
 // ── 5. Une forme, et une seule ────────────────────────────────────────────────────────────
 //
-// Le CDN de Vercel garde une réponse par adresse complète. Tout ce qui change l'adresse sans changer
-// l'image — un paramètre en plus, l'ordre, `%20` pour `+`, un zéro de tête, un texte derrière le
-// nombre que `parseFloat` lisait quand même — était une entrée de cache neuve, donc un rendu complet
-// payé en invocations, et le pare-feu compte des requêtes, pas des clés de cache. Désormais :
-// l'adresse que l'app produit est servie et gardée, une variante lisible est redirigée (308) vers
-// elle, une adresse qui n'a pas de sens est refusée (400).
+// Le CDN de Vercel garde une réponse par adresse. Tout ce qui change l'adresse sans changer l'image —
+// un paramètre en plus, l'ordre, un zéro de tête, un texte derrière le nombre que `parseFloat` lisait
+// quand même — était une entrée de cache neuve, donc un rendu complet payé en invocations, et le
+// pare-feu compte des requêtes, pas des clés de cache. Désormais : l'adresse que l'app produit est
+// servie et gardée, une variante lisible est redirigée (308) vers elle, une adresse qui n'a pas de
+// sens est refusée (400). **L'encodage n'est pas une variante** (5b′) : le CDN le confond déjà.
 const POSTE_APP = 'Trajet domicile-travail en voiture thermique';
 const POSTE_PLUS = 'Trajet+domicile-travail+en+voiture+thermique';
 const POSTE_20 = 'Trajet%20domicile-travail%20en%20voiture%20thermique';
@@ -564,13 +575,12 @@ verifier(
 const VARIANTES = [
   ['total à une décimale (les liens d’avant les trois décimales)', `total=2.4&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
   ['ordre des paramètres', `percent=58&poste=${POSTE_PLUS}&total=2.400`, Q_COMPLETE],
-  ['espaces en %20', `total=2.400&poste=${POSTE_20}&percent=58`, Q_COMPLETE],
   ['paramètre inconnu à la fin (fbclid)', `${Q_COMPLETE}&fbclid=IwAR0abc`, Q_COMPLETE],
   ['paramètre inconnu au milieu', `total=2.400&utm_source=x&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
   ['zéros de tête', `total=02.400&poste=${POSTE_PLUS}&percent=058`, Q_COMPLETE],
   ['décimales en trop', `total=2.4000000&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
   ['décimales qui s’arrondissent au kilo', `total=2.4006&poste=${POSTE_PLUS}&percent=58`, `total=2.401&poste=${POSTE_PLUS}&percent=58`],
-  ['chiffre encodé en %30', `total=2.40%30&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
+  ['un `&` de trop', `total=2.400&&poste=${POSTE_PLUS}&percent=58`, Q_COMPLETE],
   ['libellé vide', `total=2.400&poste=&percent=58`, 'total=2.400&percent=58'],
   ['total vide', `total=&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
   ['total hors borne', `total=200.001&poste=${POSTE_PLUS}&percent=58`, `poste=${POSTE_PLUS}&percent=58`],
@@ -607,6 +617,37 @@ for (const [nom, entree, attendue] of VARIANTES) {
       const suite = await appel(cible);
       verifier(suite.status === 200, `page : la cible de « ${nom} » répond ${suite.status} — redirection en boucle`);
     }
+  }
+}
+
+// 5b′. Le même partage dans un autre encodage **est** la forme canonique : servi en 200, jamais redirigé.
+// Vercel décode la chaîne avant d'appeler la fonction — une espace y arrive en `%20`, quel que soit
+// l'encodage du lien —, et son cache confond les encodages d'une même adresse : mesuré en production
+// le 19/10/2026, où `percent=5%30` était servi depuis l'entrée de `percent=50` dès le premier appel. Juger
+// l'encodage y faisait rediriger chaque partage qui porte un poste vers lui-même, en boucle. Les deux
+// appels passent par le parseur d'URL, comme sur Vercel : une espace écrite telle quelle y devient `%20`,
+// un accent `%C3%A9`, et la parenthèse, la barre oblique restent écrites en clair.
+const MEME_ADRESSE = [
+  ['espaces en %20, comme Vercel les passe', `total=2.400&poste=${POSTE_20}&percent=58`, true],
+  ['espaces écrites telles quelles', `total=2.400&poste=${POSTE_APP}&percent=58`, true],
+  ['chiffre encodé en %30', `total=2.40%30&poste=${POSTE_PLUS}&percent=58`, true],
+  ['accent écrit tel quel', 'total=2.400&poste=Trajet domicile-travail en voiture électrique&percent=58', false],
+  ['parenthèses et barre oblique en clair', 'total=2.400&poste=Voyages longue distance en avion (court/moyen-courrier)&percent=58', false],
+];
+for (const [nom, entree, memeImage] of MEME_ADRESSE) {
+  const pageEncodee = await appelPage(`/api/partage?${entree}`);
+  verifier(
+    pageEncodee.status === 200,
+    `page : « ${nom} » répond ${pageEncodee.status}${pageEncodee.headers.get('location') ? ` vers « ${pageEncodee.headers.get('location')} »` : ''} au lieu d'être servie — sur Vercel, ce serait une redirection en boucle`
+  );
+  const carteEncodee = await appelCarte(`/api/share-card?${entree}`);
+  verifier(
+    carteEncodee.status === 200 && (carteEncodee.headers.get('content-type') ?? '').startsWith('image/png'),
+    `carte : « ${nom} » répond ${carteEncodee.status} au lieu d'être rendue`
+  );
+  if (memeImage && carteEncodee.status === 200) {
+    const pngEncode = Buffer.from(await carteEncodee.arrayBuffer());
+    verifier(pngEncode.equals(png), `carte : « ${nom} » ne rend pas l'image de la forme de l'app`);
   }
 }
 
@@ -798,7 +839,8 @@ if (ecarts.length > 0) {
 console.log(
   `api/ : carte de partage rendue (${png.length} octets, 1200 × 630, cache public) et page d'aperçu ` +
     `conforme — carte rejouée sur un chemin relatif, comme Vercel l'envoie, libellé forgé refusé des deux ` +
-    `côtés, ${VARIANTES.length} variantes redirigées vers leur forme canonique, ${ILLISIBLES.length} adresses ` +
+    `côtés, ${VARIANTES.length} variantes redirigées vers leur forme canonique, ${MEME_ADRESSE.length} encodages ` +
+    `servis comme elle, ${ILLISIBLES.length} adresses ` +
     `illisibles refusées par la carte et ramenées par la page à leur forme lisible, et les réponses que le CDN ` +
     `peut garder portent s-maxage.`
 );

@@ -43,6 +43,12 @@
  * tonne), qui la fait tomber seule. **Ces comptes datent d'avant le 19/10/2026**, où le test des adresses
  * de l'app est devenu un `it.each` sur les deux lectures (`'refuser'`, `'ignorer'`) : une mutation qui le
  * touche y fait tomber un test de plus — non rejoué depuis.
+ *
+ * **Et le 19/10/2026, l'encodage** : Vercel passe la chaîne décodée à la fonction (une espace y arrive en
+ * `%20`), et la forme canonique, jugée au caractère près, redirigeait chaque partage qui porte un poste
+ * vers lui-même, en boucle — trouvé en production par la sonde, juste après la fusion. Éprouvé en le
+ * cassant : remettre la comparaison au caractère près fait tomber les 2 tests des écritures de Vercel ;
+ * juger la forme sur `params.toString()`, qui oublie un `&` de trop, fait tomber le sien, seul.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -135,6 +141,33 @@ describe('l’adresse de partage que l’app produit', () => {
       expect(refusees).toEqual([]);
     }
   );
+
+  // Vercel décode la chaîne avant la fonction (mesuré en production le 19/10/2026) : une espace y arrive
+  // en `%20`, un accent ou une parenthèse décodés puis relus par le parseur d'URL. La même adresse, dans
+  // l'une ou l'autre écriture, doit rester canonique — sinon elle se redirige vers elle-même, en boucle.
+  const commeVercel = {
+    'espaces en %20': (adresse: URL) => adresse.search.replace(/\+/g, '%20'),
+    'tout décodé, puis relu': (adresse: URL) =>
+      new URL(`${adresse.pathname}?${decodeURIComponent(adresse.search.slice(1).replace(/\+/g, ' '))}`, adresse.origin)
+        .search,
+  };
+  it.each(Object.keys(commeVercel) as (keyof typeof commeVercel)[])(
+    'reste canonique dans l’écriture où Vercel la passe à la fonction (%s)',
+    (ecriture) => {
+      const redirigees: string[] = [];
+      for (const bilan of bilansDeLApp(4213.7)) {
+        const adresse = new URL(urlDePartage(bilan, 'https://www.ramille.fr'));
+        const recue = commeVercel[ecriture](adresse);
+        const lecture = lireLaRequete(recue, 'refuser');
+        if (lecture.statut !== 'lisible' || !lecture.canonique) redirigees.push(`${recue} → ${JSON.stringify(lecture)}`);
+      }
+      expect(redirigees).toEqual([]);
+    }
+  );
+
+  it('n’est plus canonique avec un `&` de trop : rien ne dit que le cache le confond', () => {
+    expect(lireLaRequete('?total=4.200&&percent=50', 'refuser')).toMatchObject({ statut: 'lisible', canonique: false });
+  });
 
   it('reste canonique sans poste : le total et la part suffisent à une adresse', () => {
     const lecture = lireLaRequete('?total=4.200&percent=50', 'refuser');
