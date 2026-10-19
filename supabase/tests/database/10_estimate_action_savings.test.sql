@@ -255,8 +255,8 @@ select is_empty(
 -- remplacer un aller-retour par le train en retire **deux**, moins la part que le train consomme. Ce
 -- ne sont pas des doublons — le second suppose une ligne de train qu'aucune réponse ne nous dit
 -- exister — et depuis C4.6 le plan montre toutes les pistes, donc la personne choisit celle qui la
--- concerne. Sur un profil à deux vols, l'aller-retour passe devant ; sur un seul vol déclaré, c'est
--- l'inverse (`57` éprouve l'aller-retour et sa borne).
+-- concerne. Sur un profil à deux vols, l'aller-retour passe devant ; sur un seul vol déclaré, il n'est
+-- plus proposé depuis le 19/10/2026 (`20261019134858` ; `57` éprouve l'aller-retour et sa borne).
 select results_eq(
   $$ select round(saving_kg_year::numeric) from public.estimate_action_savings('b1111111-1111-1111-1111-111111111115')
      where action_text in (

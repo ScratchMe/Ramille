@@ -1,5 +1,13 @@
 # Recette web — ce qui est neuf depuis le 18/09/2026
 
+> **Note du 19/10/2026, à lire avant de rejouer une ligne du plan.** « Remplacer un aller-retour en avion par le
+> train » ne se propose plus à qui n'a déclaré qu'un vol court (`20261019134858`, décision de la personne qui
+> pilote) ; les profils de cette feuille n'en déclarent qu'un. Ils ont donc **une piste de moins** que ce que
+> les lignes ci-dessous comptent, et les rangs qui suivaient l'aller-retour remontent d'un cran. La ligne de
+> l'aller-retour est barrée là où elle figure ; le reste est laissé tel que la séance l'a joué. La feuille
+> vivante du parcours est [`premier-parcours-web.md`](premier-parcours-web.md).
+
+
 > **Remplacée pour ses lignes restantes le 29/09/2026** par
 > [`ce-qui-reste-apres-le-29-septembre.md`](ce-qui-reste-apres-le-29-septembre.md), alors la seule
 > feuille ouverte : 12.1 à 12.3 et 14.3 — et 02.2, 02.6, 02.10 et 03.11, réécrites le 29/09 pour des écrans
@@ -154,7 +162,7 @@ Le poste dominant est **les voyages** (2 030,2 kg), donc **le cap de la saison v
 |---|---|---|
 | 1 | Renoncer à un vol long-courrier cette année | **1 601 kg** |
 | 2 | Renoncer à un vol court ou moyen-courrier cette année | 277 kg |
-| 3 | Remplacer un aller-retour en avion par le train | 273 kg |
+| 3 | ~~Remplacer un aller-retour en avion par le train~~ — **n'apparaît plus depuis le 19/10/2026** : ce profil ne déclare qu'un vol court (`20261019134858`) | ~~273 kg~~ |
 | 4 | **Faire une sortie sur trois à vélo à assistance électrique** | **101 kg** |
 | 5 | Regrouper deux sorties en une seule, une fois sur cinq | 67 kg |
 | 6 | Faire un de tes longs trajets en train plutôt qu'en voiture | 48 kg |

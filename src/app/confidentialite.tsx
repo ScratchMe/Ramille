@@ -43,6 +43,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     (clé `compte`) ; le compteur horaire des événements, sans identifiant -> `evenements_d_usage_par_heure`,
 //     purgé chaque nuit au-delà de deux jours par `purge_usage_events()` (3 h 30 UTC), donc trois jours au
 //     plus (`20261018110000`) ;
+//   - opposition aux repères (19/10/2026) -> `profiles.mesure_refusee_le`, posée par `refuser_la_mesure`,
+//     rendue par l'export ; ensuite le déclencheur des événements ne garde que la dernière ouverture, sans
+//     propriétés, avec sa plateforme (`20261019150000`, `MESURE.md` §5) ;
 //   - sous-traitants et localisation -> les seuls tiers appelés par le produit :
 //     `api.resend.com` et `exp.host` dans `send_pending_reminders()`, `api.brevo.com` dans
 //     `requete_d_e_mail_d_auth()` pour les codes de connexion depuis le 05/10/2026 (`api.resend.com`
@@ -229,6 +232,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // l'origine d'une erreur et la version ne sont dites que des erreurs inattendues, seules à les porter ; et
 // les hébergeurs viennent de `src/constants/editeur.ts`. Textes à valider par la personne qui pilote, comme
 // chaque phrase de cette page.
+//
+// **19/10/2026 : l'opposition arrête la mesure** (décision de la personne qui pilote). La phrase de
+// l'opposition dit désormais que l'enregistrement cesse, sauf la date de dernière ouverture et la
+// plateforme, et pourquoi la date reste ; la liste des durées nomme la date de l'opposition, une donnée du
+// compte que l'export rend. Même jour que la refonte d'au-dessus, donc même date de mise à jour — à avancer
+// si la page part en production un autre jour.
 const UPDATED_AT = '19 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -587,7 +596,9 @@ const SECTIONS: LegalSection[] = [
           'Corrections de ton contexte de mobilité : pour que personne ne puisse faire recalculer son bilan et son ' +
             'plan sans fin, nous gardons le nombre de fois où tu l’as corrigé sur vingt-quatre heures (vingt au plus) ' +
             'et la date de la première de ces corrections — un nombre et une date, rien d’autre —, tant que ton compte ' +
-            'ou ta session anonyme existe, et l’export de tes données les rend. Le nombre d’événements que notre ' +
+            'ou ta session anonyme existe, et l’export de tes données les rend. Si tu t’opposes aux repères de ' +
+            'parcours, nous gardons de même la date de ton opposition, tant que ton compte ou ta session existe, et ' +
+            'l’export la rend. Le nombre d’événements que notre ' +
             'service reçoit à chaque ' +
             'heure, qui borne ce que la base accepte, ne porte aucun identifiant et s’efface au plus tard au bout de ' +
             'trois jours.',
@@ -627,11 +638,11 @@ const SECTIONS: LegalSection[] = [
         // de consentement qu'aucune source lue ne garantit. Elle dit trois choses vérifiables : ce qui est
         // mesuré (la liste de la section « Ce que nous collectons »), sur quelle base (l'intérêt légitime,
         // dite plus haut), et le seul chemin d'opposition qui existe : un e-mail. **Elle ne promet pas de
-        // réglage, parce que l'app n'en a aucun**, et ne dit pas non plus que l'enregistrement s'arrêterait :
-        // rien dans le produit ne sait le faire pour une session (décision de produit, laissée à la personne
-        // qui pilote). L'identifiant demandé est celui que l'export rend (`export_my_data`, clé
-        // `compte.identifiant`) : sans lui, une session anonyme n'a aucun nom qui permette de retrouver ses
-        // repères. Reste la question de l'article 82 de la loi Informatique et Libertés, à trancher par un
+        // réglage, parce que l'app n'en a aucun.** Depuis le 19/10/2026, elle dit que l'enregistrement
+        // s'arrête, sauf la date de dernière ouverture (`refuser_la_mesure`, `MESURE.md` §5, décision de la
+        // personne qui pilote), et pourquoi cette date reste. L'identifiant demandé est celui que l'export
+        // rend (`export_my_data`, clé `compte.identifiant`) : sans lui, une session anonyme n'a aucun nom
+        // qui permette de retrouver ses repères. Reste la question de l'article 82 de la loi Informatique et Libertés, à trancher par un
         // juriste : la CNIL n'exempte la mesure d'audience que pour des statistiques anonymes, et ces repères
         // sont rattachés à une session (`registre-des-traitements.md` §8).
         text:
@@ -640,7 +651,10 @@ const SECTIONS: LegalSection[] = [
           'consentement. Tu peux t’opposer à ces repères à tout moment (droit d’opposition, article 21 du RGPD) en ' +
           `écrivant à ${CONTACT_EMAIL}, en joignant l’identifiant de ton compte, qui figure dans l’export de tes données. ` +
           'Nous répondons dans le délai d’un mois indiqué plus bas et, si ta demande est fondée, nous supprimons les ' +
-          'repères déjà enregistrés pour ta session. L’application n’a aujourd’hui aucun réglage pour les désactiver.',
+          'repères déjà enregistrés pour ta session et nous cessons d’en enregistrer. Seules restent la date de ta ' +
+          'dernière ouverture de l’application et la plateforme (web ou Android) : cette date règle le rythme de tes ' +
+          'rappels et repousse la suppression automatique d’une session inutilisée. L’application n’a pas de réglage ' +
+          'pour le faire toi-même : nous le faisons à ta demande.',
       },
     ],
   },

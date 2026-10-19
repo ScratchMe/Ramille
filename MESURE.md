@@ -224,3 +224,27 @@ Quatre choses à ne pas défaire :
   entamé à 80 % (`budgets_des_evenements_entames`), avant que rien ne se perde. Un budget atteint pour
   de vrais usages — plus d'un millier d'arrivées par jour, plus de deux mille personnes qui
   reviennent — se relève dans la fonction, par une migration.
+
+## 5. L'opposition à la mesure
+
+**Une opposition fondée arrête l'enregistrement, sauf la date de dernière ouverture** (décision de la
+personne qui pilote, 19/10/2026 ; `20261019150000_l_opposition_arrete_la_mesure.sql`, test `58`). Le geste est
+`refuser_la_mesure(p_user_id)`, serveur seulement (`docs/exploitation/README.md` §8.15) : il pose
+`profiles.mesure_refusee_le` et efface l'historique, la dernière ouverture exceptée. Ensuite,
+`enforce_usage_events_rate_limit` écarte sans erreur tout événement de ce compte autre qu'`app_open`, et un
+`app_open` remplace le précédent, sans propriétés — **un par heure au plus**, les suivants de l'heure écartés
+comme le reste. Cette borne n'est pas un détail : remplacer efface la ligne que comptent le plafond par compte et
+l'exemption de la première ouverture du jour (§4), donc sans elle une boucle d'ouvertures passait l'un et l'autre
+à chaque fois et vidait les budgets du jour de tout le monde (contre-lecture du 19/10/2026, test `58`).
+
+**Pourquoi une ligne reste, et pourquoi c'est celle-là.** L'ouverture est le signe de vie que lisent le régime
+des rappels (`dernier_signe_de_vie`) et la purge des sessions anonymes (le plus récent des événements d'un
+compte). Garder la seule ligne la plus récente suffit à ces deux lecteurs sans en réécrire aucun, puisque tous
+deux lisent un `max(occurred_at)` ; tout couper aurait espacé les rappels de la personne, puis supprimé sa
+session anonyme quatre-vingt-dix jours après son dernier bilan.
+
+**Ce que ça coûte aux mesures** : la personne sort de la rétention de sa cohorte, puisque ses ouvertures d'avant
+sont effacées, et les vues `analytics.*` ne voient plus qu'une ouverture. C'est le sens d'une opposition.
+**Un événement ajouté au produit n'a rien à faire** pour la respecter : le déclencheur écarte tout ce qui n'est
+pas une ouverture. **Une source de signe de vie ajoutée ailleurs que dans `usage_events`**, elle, devra se
+demander si elle survit à une opposition.
