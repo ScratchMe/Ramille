@@ -587,7 +587,8 @@ const SECTIONS: LegalSection[] = [
           'Corrections de ton contexte de mobilité : pour que personne ne puisse faire recalculer son bilan et son ' +
             'plan sans fin, nous gardons le nombre de fois où tu l’as corrigé sur vingt-quatre heures (vingt au plus) ' +
             'et la date de la première de ces corrections — un nombre et une date, rien d’autre —, tant que ton compte ' +
-            'existe, et l’export de tes données les rend. Le nombre d’événements que notre service reçoit à chaque ' +
+            'ou ta session anonyme existe, et l’export de tes données les rend. Le nombre d’événements que notre ' +
+            'service reçoit à chaque ' +
             'heure, qui borne ce que la base accepte, ne porte aucun identifiant et s’efface au plus tard au bout de ' +
             'trois jours.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours, ' +

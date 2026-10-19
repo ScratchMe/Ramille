@@ -194,12 +194,21 @@ async function envoyerLaFile(): Promise<void> {
     // Ce qui sort de la file : les pannes parties, puis, sur un refus, tout le reste du lot.
     let sorties = file.length;
     for (const [rang, erreur] of file.entries()) {
-      const { error, status } = await supabase.from('usage_events').insert({
-        user_id: session.user.id,
-        name: 'app_error',
-        props: sanitizeEventProps(propsDifferees(erreur, maintenant)),
-        platform: currentPlatform(),
-      });
+      let reponse: { error: { message: string } | null; status: number };
+      try {
+        reponse = await supabase.from('usage_events').insert({
+          user_id: session.user.id,
+          name: 'app_error',
+          props: sanitizeEventProps(propsDifferees(erreur, maintenant)),
+          platform: currentPlatform(),
+        });
+      } catch {
+        // Un envoi qui lève n'a pas eu de réponse : celles d'avant sont parties, celle-ci et les suivantes
+        // restent — sans quoi le prochain envoi referait partir celles qui sont déjà en base.
+        sorties = rang;
+        break;
+      }
+      const { error, status } = reponse;
       if (!error) continue;
       if (suiteDeLEnvoi(status, error) === 'garder') sorties = rang;
       else if (__DEV__) console.warn('[analytics] erreurs en attente refusées :', error.message);

@@ -118,7 +118,9 @@ describe('la file d’attente des erreurs', () => {
    *     milieu… », deux ;
    *   - un refus qui garde le reste du lot → « un refus au milieu… », seul ;
    *   - une panne passagère qui vide tout le lot → « une panne passagère au milieu… » et « garde la file
-   *     quand le lot n'a pas eu de réponse… », deux.
+   *     quand le lot n'a pas eu de réponse… », deux ;
+   *   - et le 19/10/2026, un envoi qui lève laissé au filet extérieur, qui ne retire rien → « un envoi qui
+   *     lève au milieu du lot… », seul.
    */
   const LOT = ['/a', '/b', '/c'].map((route, i) => ({ category: 'type', route, noteeLe: Date.now() - i }));
 
@@ -148,6 +150,16 @@ describe('la file d’attente des erreurs', () => {
     mockInsert
       .mockResolvedValueOnce({ error: null, status: 201 })
       .mockResolvedValueOnce({ error: { message: 'Failed to fetch' }, status: 0 });
+
+    await envoyerLesErreursEnAttente();
+
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+    expect((await fileStockee()).map((e) => e.route)).toEqual(['/b', '/c']);
+  });
+
+  it('un envoi qui lève au milieu du lot se lit comme une panne passagère : celles d’avant ne repartiront pas', async () => {
+    await AsyncStorage.setItem(FILE, JSON.stringify(LOT));
+    mockInsert.mockResolvedValueOnce({ error: null, status: 201 }).mockRejectedValueOnce(new Error('réseau'));
 
     await envoyerLesErreursEnAttente();
 
