@@ -22,9 +22,14 @@
 --    ne l'écrit pas (privilèges de colonne de `20261004173905`) ; l'export la rend.
 -- 2. `enforce_usage_events_rate_limit`, par substitution vérifiée sur le corps installé : pour un
 --    compte opposé, tout événement autre qu'`app_open` est écarté sans erreur (le déclencheur rend
---    `null`, et le client ne voit rien d'autre qu'un envoi réussi) ; un `app_open` remplace le
---    précédent et part sans propriétés. Le reste du déclencheur — plafonds par compte, budgets du jour
---    — s'applique ensuite comme à tout le monde.
+--    `null`, et le client ne voit rien d'autre qu'un envoi réussi), **comme une ouverture qui suit la
+--    précédente de moins d'une heure** ; une ouverture plus tardive remplace la précédente et part sans
+--    propriétés. **L'heure est la borne de ce compte**, et elle est nécessaire : remplacer efface la
+--    ligne que comptent le plafond par compte et l'exemption de la première ouverture du jour, donc sans
+--    elle une boucle d'ouvertures passerait l'un et l'autre à chaque fois, et viderait les budgets du
+--    jour de tout le monde (contre-lecture du 19/10/2026). Avec elle, un compte opposé écrit vingt-quatre
+--    ouvertures par jour au plus ; les rappels et la purge, qui lisent à la journée ou à la semaine, ne
+--    voient pas la différence.
 -- 3. `refuser_la_mesure(p_user_id)`, serveur seulement : pose l'indicateur, efface les repères déjà
 --    enregistrés sauf la dernière ouverture, et vide les propriétés de celle-ci. C'est le geste de
 --    l'agent ou de la personne qui pilote quand une demande fondée arrive (`docs/exploitation/README.md`
@@ -52,16 +57,19 @@ do $l_opposition_dans_le_declencheur$
 declare
   src text;
   cible oid := 'public.enforce_usage_events_rate_limit()'::regprocedure;
-  ancre constant text := E'  if v_panne then\n';
-  remplacement constant text := E'  if exists (select 1 from public.profiles p where p.id = new.user_id and p.mesure_refusee_le is not null) then\n'
-    || E'    if new.name <> ''app_open'' then\n'
+  ancre constant text := E'  v_plafond integer;\nbegin\n';
+  remplacement constant text := E'  v_plafond integer;\nbegin\n'
+    || E'  if exists (select 1 from public.profiles p where p.id = new.user_id and p.mesure_refusee_le is not null) then\n'
+    || E'    if new.name <> ''app_open'' or exists (\n'
+    || E'      select 1 from public.usage_events e\n'
+    || E'      where e.user_id = new.user_id and e.name = ''app_open'' and e.occurred_at > now() - interval ''1 hour''\n'
+    || E'    ) then\n'
     || E'      return null;\n'
     || E'    end if;\n'
     || E'    delete from public.usage_events e where e.user_id = new.user_id and e.name = ''app_open'';\n'
     || E'    new.props := ''{}''::jsonb;\n'
     || E'  end if;\n'
-    || E'\n'
-    || E'  if v_panne then\n';
+    || E'\n';
   occurrences int;
 begin
   src := pg_get_functiondef(cible);
@@ -72,14 +80,17 @@ begin
   if position('p.mesure_refusee_le is not null' in src) > 0 then
     return;
   elsif occurrences = 0 then
-    raise exception 'enforce_usage_events_rate_limit ne porte plus « if v_panne then » : le corps a été réécrit autrement.';
+    raise exception 'enforce_usage_events_rate_limit ne porte plus le début de son corps (« v_plafond integer; begin ») : il a été réécrit autrement.';
   elsif occurrences > 1 then
-    raise exception '« if v_panne then » a été trouvé % fois dans enforce_usage_events_rate_limit (une seule attendue).', occurrences;
+    raise exception 'Le début du corps a été trouvé % fois dans enforce_usage_events_rate_limit (une seule attendue).', occurrences;
   end if;
 
   execute replace(src, ancre, remplacement);
 end
 $l_opposition_dans_le_declencheur$;
+
+comment on function public.enforce_usage_events_rate_limit() is
+  'Plafonds des événements d''usage : pour un compte opposé à la mesure (profiles.mesure_refusee_le), tout est écarté sans erreur sauf une ouverture par heure, qui remplace la précédente sans propriétés ; puis, pour tous, par compte sur 24 h glissantes (200 événements, 50 pannes à part), et les budgets du jour de tout le projet (budgets_des_evenements_d_usage), quel que soit l''âge du compte ; le premier app_open d''un compte en 24 h passe toujours. Compte ce qui entre dans evenements_d_usage_par_heure. Refuse en check_violation.';
 
 -- ── 3. Le geste de l'opposition ─────────────────────────────────────────────────────────────────
 
@@ -174,6 +185,9 @@ begin
   end if;
   if position('p.mesure_refusee_le is not null' in v_declencheur) > position('if v_panne then' in v_declencheur) then
     raise exception 'L''opposition ne se lit plus avant les plafonds du déclencheur';
+  end if;
+  if position('interval ''1 hour''' in v_declencheur) = 0 then
+    raise exception 'L''ouverture d''un compte opposé a perdu sa borne d''une heure';
   end if;
   if position('''mesure_refusee_le'', p.mesure_refusee_le' in v_export) = 0 then
     raise exception 'L''export ne rend pas la date de l''opposition';

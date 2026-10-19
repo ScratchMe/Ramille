@@ -1,5 +1,13 @@
 # Recette — ce qui reste à recetter, au 2 octobre
 
+> **Note du 19/10/2026, à lire avant de rejouer une ligne du plan.** « Remplacer un aller-retour en avion par le
+> train » ne se propose plus à qui n'a déclaré qu'un vol court (`20261019140000`, décision de la personne qui
+> pilote) ; les profils de cette feuille n'en déclarent qu'un. Ils ont donc **une piste de moins** que ce que
+> les lignes ci-dessous comptent, et les rangs qui suivaient l'aller-retour remontent d'un cran. La ligne de
+> l'aller-retour est barrée là où elle figure ; le reste est laissé tel que la séance l'a joué. La feuille
+> vivante du parcours est [`premier-parcours-web.md`](premier-parcours-web.md).
+
+
 > **Écrite le 02/10/2026**, le jour de la fusion de [#315](https://github.com/ScratchMe/Ramille/pull/315)
 > (la session refusée au démarrage), quelques heures après celle de
 > [#314](https://github.com/ScratchMe/Ramille/pull/314) (les lois de l'UX, `v1-33`, sur les décisions du 01/10). Elle a été, le

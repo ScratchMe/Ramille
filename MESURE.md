@@ -232,7 +232,10 @@ personne qui pilote, 19/10/2026 ; `20261019150000_l_opposition_arrete_la_mesure.
 `refuser_la_mesure(p_user_id)`, serveur seulement (`docs/exploitation/README.md` §8.15) : il pose
 `profiles.mesure_refusee_le` et efface l'historique, la dernière ouverture exceptée. Ensuite,
 `enforce_usage_events_rate_limit` écarte sans erreur tout événement de ce compte autre qu'`app_open`, et un
-`app_open` remplace le précédent, sans propriétés.
+`app_open` remplace le précédent, sans propriétés — **un par heure au plus**, les suivants de l'heure écartés
+comme le reste. Cette borne n'est pas un détail : remplacer efface la ligne que comptent le plafond par compte et
+l'exemption de la première ouverture du jour (§4), donc sans elle une boucle d'ouvertures passait l'un et l'autre
+à chaque fois et vidait les budgets du jour de tout le monde (contre-lecture du 19/10/2026, test `58`).
 
 **Pourquoi une ligne reste, et pourquoi c'est celle-là.** L'ouverture est le signe de vie que lisent le régime
 des rappels (`dernier_signe_de_vie`) et la purge des sessions anonymes (le plus récent des événements d'un

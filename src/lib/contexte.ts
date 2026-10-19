@@ -89,8 +89,10 @@ export type EcritureDuContexte = { ok: true } | { ok: false; message: string };
 export const CODE_TROP_DE_CORRECTIONS = 'RM002';
 
 /**
- * Le refus dure jusqu'au lendemain : « Réessaie dans un instant », la phrase d'une panne du
- * serveur, serait fausse.
+ * Le refus dure jusqu'à vingt-quatre heures après la première correction de la fenêtre (le serveur la
+ * compte ainsi, pas jusqu'à minuit) : « Réessaie dans un instant », la phrase d'une panne du serveur,
+ * serait fausse. « Réessaie demain » est l'arrondi qu'a gardé la personne qui pilote le 19/10/2026
+ * (`v1-27` §12.41).
  */
 export const TROP_DE_CORRECTIONS =
   'Tes réponses ne sont pas enregistrées : tu as déjà corrigé ton contexte de nombreuses fois aujourd’hui. Réessaie demain.';

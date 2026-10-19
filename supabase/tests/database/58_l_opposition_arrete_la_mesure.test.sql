@@ -3,7 +3,8 @@
 --
 -- Ce que ce fichier garde : après `refuser_la_mesure`, un compte n'a plus qu'**une** ligne d'usage —
 -- son `app_open` le plus récent, sans propriétés —, et ce que l'app envoie ensuite n'en ajoute
--- aucune : les autres événements sont écartés sans erreur, une ouverture remplace la précédente. Le
+-- aucune : les autres événements sont écartés sans erreur, une ouverture remplace la précédente, une
+-- seule par heure (la borne de ce compte, sans laquelle il passerait tous les plafonds). Le
 -- signe de vie que lisent les rappels et la purge survit ; un compte qui ne s'est pas opposé ne voit
 -- rien changer. Et le geste reste serveur seulement.
 --
@@ -14,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(14);
 
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select v.id::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now(), now()
@@ -66,8 +67,9 @@ select isnt(
   '1. l''opposition est datée sur le profil'
 );
 
+-- `coalesce` : si l'opposition avait tout effacé, la valeur serait vide et la 7 lèverait au lieu d'échouer.
 select set_config('ramille.ouverture_d_avant',
-  (select id::text from public.usage_events where user_id = '58000000-0000-0000-0000-00000000000a'), true);
+  coalesce((select max(id)::text from public.usage_events where user_id = '58000000-0000-0000-0000-00000000000a'), '0'), true);
 
 -- ── 2. Ce que l'app envoie ensuite ──────────────────────────────────────────────────────────
 
@@ -82,6 +84,16 @@ select lives_ok(
   '2. un repère d''un compte opposé part sans erreur : l''app ne voit qu''un envoi réussi'
 );
 
+reset role;
+
+-- La dernière ouverture date de plus d'une heure : la suivante la remplace. Dans une transaction,
+-- `now()` ne bouge pas, d'où la date reculée à la main.
+update public.usage_events set occurred_at = now() - interval '2 hours'
+where user_id = '58000000-0000-0000-0000-00000000000a';
+
+select set_config('role', 'authenticated', true);
+select set_config('request.jwt.claims',
+  json_build_object('sub', '58000000-0000-0000-0000-00000000000a', 'role', 'authenticated')::text, true);
 insert into public.usage_events (user_id, name, props, platform)
 values ('58000000-0000-0000-0000-00000000000a', 'app_open', '{"origine":"retour","version":"1.0.0+14"}', 'android');
 reset role;
@@ -98,6 +110,24 @@ select ok(
   (select min(id) from public.usage_events where user_id = '58000000-0000-0000-0000-00000000000a')
     > current_setting('ramille.ouverture_d_avant')::bigint,
   '2. la nouvelle ouverture remplace la précédente : la ligne qui reste est la plus récente'
+);
+
+-- **La borne** : une boucle d'ouvertures dans l'heure n'écrit rien. Sans elle, chaque ouverture
+-- effacerait la ligne que comptent le plafond par compte et l'exemption de la première ouverture du
+-- jour, et passerait l'un et l'autre (contre-lecture du 19/10/2026).
+select set_config('ramille.ouverture_d_apres',
+  coalesce((select max(id)::text from public.usage_events where user_id = '58000000-0000-0000-0000-00000000000a'), '0'), true);
+select set_config('role', 'authenticated', true);
+select set_config('request.jwt.claims',
+  json_build_object('sub', '58000000-0000-0000-0000-00000000000a', 'role', 'authenticated')::text, true);
+insert into public.usage_events (user_id, name, props, platform)
+select '58000000-0000-0000-0000-00000000000a', 'app_open', '{}', 'android' from generate_series(1, 5);
+reset role;
+
+select results_eq(
+  $$ select id::text from public.usage_events where user_id = '58000000-0000-0000-0000-00000000000a' $$,
+  array[current_setting('ramille.ouverture_d_apres')],
+  '2. une ouverture par heure au plus : les suivantes sont écartées, la ligne ne bouge pas'
 );
 
 -- Le signe de vie que lisent le régime des rappels et la purge (le plus récent des événements).
@@ -151,22 +181,23 @@ rollback;
 
 -- ── Relevé des mutations, 19/10/2026 ─────────────────────────────────────────────────────────
 --
--- Jouées sur la stack locale, la migration appliquée : la mutation puis ce fichier dans une même
--- transaction, annulée par son `rollback`. Les numéros sont ceux des assertions.
+-- Jouées sur la stack locale, la migration appliquée (après la contre-lecture : la borne d'une heure et
+-- l'ancre sur le début du corps) : la mutation puis ce fichier dans une même transaction, annulée par
+-- son `rollback`. Les numéros sont ceux des assertions.
 --
---   - l'opposition retirée du déclencheur (sa condition à `false`) → 6, 7 et 9 : tout s'enregistre de
---     nouveau, et la seconde opposition a de quoi effacer ;
---   - l'ouverture d'avant gardée (le `delete` du déclencheur retiré) → 6 et 7 ;
+--   - l'opposition retirée du déclencheur (sa condition à `false`) → 6, 7, 8 et 10 : tout s'enregistre
+--     de nouveau, et la seconde opposition a de quoi effacer ;
+--   - l'ouverture d'avant gardée (le `delete` du déclencheur retiré) → 6, 7, 8 et 10 ;
 --   - les propriétés de l'ouverture gardées → 6, seule ;
---   - `refuser_la_mesure` qui efface aussi la dernière ouverture → 2, 3 et 9 ;
---   - le geste ouvert à `authenticated` → 13, seule ;
---   - l'export sans la date de l'opposition → 12, seule ;
---   - un identifiant inconnu qui rend `null` au lieu de lever → 11, seule.
+--   - **la borne d'une heure retirée** → 8, seule : la boucle d'ouvertures remplace la ligne à chaque
+--     fois, donc chacune passe le plafond par compte et l'exemption de la première ouverture du jour ;
+--   - un déclencheur qui écarte aussi l'ouverture → 7, seule : la ligne qui reste est celle d'avant ;
+--   - `refuser_la_mesure` qui efface aussi la dernière ouverture → 2, 3 et 10 (sans le `coalesce` des
+--     identifiants gardés, le fichier levait à la 7 au lieu d'échouer) ;
+--   - le geste ouvert à `authenticated` → 14, seule ;
+--   - l'export sans la date de l'opposition → 13, seule ;
+--   - un identifiant inconnu qui rend `null` au lieu de lever → 12, seule.
 --
---   - un déclencheur qui écarte aussi l'ouverture (`if true then` au lieu de `if new.name <> 'app_open'`)
---     → 7, seule : la ligne qui reste est l'ouverture d'avant l'opposition, et c'est le `min(id)` qui le
---     voit.
---
--- La 8 (le signe de vie) ne tombe sous aucune : sous chacune, une ouverture reste, celle d'avant ou
+-- La 9 (le signe de vie) ne tombe sous aucune : sous chacune, une ouverture reste, celle d'avant ou
 -- celle d'après. Elle ne tomberait que si plus aucune ouverture ne restait — `refuser_la_mesure` et le
 -- déclencheur fautifs ensemble —, et c'est ce qu'elle garde.

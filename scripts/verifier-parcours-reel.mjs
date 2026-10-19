@@ -15,7 +15,7 @@
 // restitution → plan → engagement → un point généré et répondu → suivi → « Toi » → suppression du
 // compte. Le second profil finit, depuis le 27/09/2026, par le retrait de ses deux bilans (C4.7).
 // Il joue le **profil de `docs/recette/premier-parcours-web.md`**, dont les chiffres ont été mesurés
-// (4 231 kg, huit pistes dans un ordre précis, un cap de 384 kg) — sur la base construite depuis
+// (4 231 kg, des pistes dans un ordre précis — leur liste est `ATTENDU.pistes` —, un cap de 384 kg) — sur la base construite depuis
 // `supabase/migrations/`, ces chiffres ne dépendent d'aucune synchronisation de facteurs. Après
 // chaque écriture, il relit la base **comme la personne** (PostgREST, sous sa session, donc sous la
 // RLS), et une fois comme le serveur (le générateur de points, que seul le cron appelle).
