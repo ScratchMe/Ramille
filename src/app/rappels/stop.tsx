@@ -53,10 +53,9 @@ import type { GenreDEchec } from '@/types/lecture-en-echec';
 // `/bilan/resultat`. Son titre est dans `PAGE_TITLES` et `scripts/verifier-titres-export.mjs` le
 // vérifie dans `dist/`, `scripts/verifier-rendu-export.mjs` ouvre la route dans un navigateur.
 //
-// Conséquence connue et assumée : comme toute page du produit, l'ouvrir crée une session anonyme
-// (`ensureSession` dans le layout racine). Elle ne sert à rien ici — le RPC agit sur le
-// propriétaire du jeton, jamais sur l'appelant — et `purge_stale_anonymous_accounts()` la reprend
-// après quatre-vingt-dix jours d'inactivité.
+// **L'ouvrir ne crée pas de session** : c'est une surface sans compte (`laSessionSOuvreSur`,
+// `src/types/session.ts`), où le layout racine ne fait que restaurer celle qui est là. Il n'en faut
+// pas : le RPC est ouvert à `anon` et agit sur le propriétaire du jeton, jamais sur l'appelant.
 export default function StopRappels() {
   const { jeton: brut } = useLocalSearchParams<{ jeton?: string | string[] }>();
   const duLien = jetonDuLien(brut);

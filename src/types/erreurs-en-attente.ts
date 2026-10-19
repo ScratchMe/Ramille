@@ -14,7 +14,8 @@
  *
  * ## La règle
  *
- * Une erreur qui ne peut pas partir — **pas de session, ou pas de réponse** — se garde sur l'appareil, et
+ * Une erreur qui ne peut pas partir — **pas de session, pas de réponse, ou une panne fatale**, qui ferme
+ * l'app avant qu'un envoi ait pu partir (`src/lib/remontee-des-pannes.ts`) — se garde sur l'appareil, et
  * part au prochain démarrage qui a une session, ou, sur natif, au prochain retour au premier plan compté
  * comme une ouverture (cinq minutes derrière au moins, `DELAI_NOUVELLE_OUVERTURE_MS`). Elle part alors avec deux
  * propriétés de plus : `differee`, parce que l'horodatage de la ligne est celui du serveur à l'envoi
@@ -23,7 +24,8 @@
  * Trois bornes, et chacune a sa raison :
  *
  *   * **vingt erreurs au plus**, les plus récentes : une boucle de pannes ne remplit ni le stockage ni le
- *     garde-fou de volume d'`usage_events` (500 lignes par jour et par personne) ;
+ *     budget des pannes d'`usage_events` (cinquante par compte sur vingt-quatre heures,
+ *     `enforce_usage_events_rate_limit`) ;
  *   * **trente jours au plus** : une panne d'il y a un mois ne dit plus rien de la version en service ;
  *   * **un refus vide la file, une panne du serveur la garde** : rejouer une ligne que la base refuse — une
  *     propriété hors des bornes — la referait refuser à chaque démarrage, pour toujours, et le garde-fou
@@ -35,9 +37,27 @@
  * Ce qui reste hors d'atteinte : la panne de configuration (pas de client, donc pas d'envoi possible, et
  * un build qui ne se répare pas tout seul), et la panne où notre code ne tourne plus du tout.
  */
-import { APP_ERROR_CATEGORIES, type AppErrorCategory } from '@/types/analytics';
+import {
+  APP_ERROR_CATEGORIES,
+  MAX_PROP_VALUE_LENGTH,
+  ORIGINES_DES_PANNES,
+  type AppErrorCategory,
+  type OrigineDUnePanne,
+} from '@/types/analytics';
 
-export type ErreurEnAttente = { category: AppErrorCategory; route: string; noteeLe: number };
+/**
+ * Une panne gardée. `origine` et `version` depuis le 18/10/2026 (`src/lib/remontee-des-pannes.ts`) : une
+ * entrée gardée par une version d'avant ne les porte pas, et part sans elles — on n'invente ni l'une ni
+ * l'autre. La version est celle **du moment de la panne** : une panne fatale part au lancement suivant,
+ * qui peut être celui d'une mise à jour.
+ */
+export type ErreurEnAttente = {
+  category: AppErrorCategory;
+  route: string;
+  noteeLe: number;
+  origine?: OrigineDUnePanne;
+  version?: string;
+};
 
 /**
  * Où la file vit sur l'appareil. **Sous le préfixe commun** : les départs voulus — suppression du compte,
@@ -77,20 +97,44 @@ export function lireLaFile(brut: string | null, maintenant: number): ErreurEnAtt
         (APP_ERROR_CATEGORIES as readonly string[]).includes((e as ErreurEnAttente).category) &&
         typeof (e as ErreurEnAttente).route === 'string' &&
         typeof (e as ErreurEnAttente).noteeLe === 'number' &&
-        Number.isFinite((e as ErreurEnAttente).noteeLe)
+        Number.isFinite((e as ErreurEnAttente).noteeLe) &&
+        facultative((e as ErreurEnAttente).origine, (o) => (ORIGINES_DES_PANNES as readonly unknown[]).includes(o)) &&
+        facultative(
+          (e as ErreurEnAttente).version,
+          (v) => typeof v === 'string' && v.length > 0 && v.length <= MAX_PROP_VALUE_LENGTH
+        )
     )
     .filter((e) => maintenant - e.noteeLe <= AGE_MAXIMAL_MS)
     .slice(-TAILLE_DE_LA_FILE);
 }
 
-/** Les propriétés de l'événement envoyé en différé. */
+/** Une propriété absente est acceptée ; présente, elle doit être valable — sinon l'entrée entière part. */
+function facultative(valeur: unknown, valable: (v: unknown) => boolean): boolean {
+  return valeur === undefined || valable(valeur);
+}
+
+/**
+ * Les propriétés de l'événement envoyé en différé. **Six au plus, et c'est la borne de la base**
+ * (`check_usage_event_props`, `MAX_PROP_KEYS`) : la panne la plus large — origine et version comprises —
+ * les remplit toutes, et une septième ferait tomber `retard_h`, la dernière, à l'écrêtage. L'ordre des
+ * clés est celui de l'écrêtage.
+ */
 export function propsDifferees(
   erreur: ErreurEnAttente,
   maintenant: number
-): { category: AppErrorCategory; route: string; differee: true; retard_h: number } {
+): {
+  category: AppErrorCategory;
+  route: string;
+  origine?: OrigineDUnePanne;
+  version?: string;
+  differee: true;
+  retard_h: number;
+} {
   return {
     category: erreur.category,
     route: erreur.route,
+    ...(erreur.origine ? { origine: erreur.origine } : {}),
+    ...(erreur.version ? { version: erreur.version } : {}),
     differee: true,
     retard_h: Math.max(0, Math.round((maintenant - erreur.noteeLe) / 3_600_000)),
   };
@@ -107,5 +151,11 @@ export function suiteDeLEnvoi(status: number, erreur: unknown): 'vider' | 'garde
 
 /** Une erreur est-elle celle-là ? — pour retirer de la file ce qui vient de partir, et rien d'autre. */
 export function memeErreur(a: ErreurEnAttente, b: ErreurEnAttente): boolean {
-  return a.noteeLe === b.noteeLe && a.route === b.route && a.category === b.category;
+  return (
+    a.noteeLe === b.noteeLe &&
+    a.route === b.route &&
+    a.category === b.category &&
+    a.origine === b.origine &&
+    a.version === b.version
+  );
 }

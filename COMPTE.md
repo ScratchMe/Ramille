@@ -177,6 +177,25 @@ suppression du compte le font —, sans quoi elle se lirait comme un refus, et l
 s'ouvrirait sur un départ choisi. Et **« Commencer un bilan sur cet appareil » efface les marques du
 compte quitté**, comme une déconnexion : ce sont celles d'un autre propriétaire.
 
+**Les surfaces sans compte n'ouvrent pas de session : elles restaurent celle qui est là** (18/10/2026).
+`/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` — la liste de
+`src/types/session.ts`, la même que celle où l'écran de reconnexion ne se pose pas — ne demandent pas de
+compte, et le layout racine ouvrait pourtant une session anonyme au montage, sur toute route : un
+navigateur neuf qui lisait la politique de confidentialité, l'examinateur de Play le premier, recevait un
+compte et le captcha qui le précède. Le montage y appelle `restaurerLaSession()` — la session de
+l'appareil, accueillie comme par `ensureSession()` (ses marques, son état, un refus dit), et rien de
+créé sinon — et **ouvre la session dès qu'on en sort pour l'app** : le layout relit la règle à chaque
+changement de route (`laSessionSOuvreSur`), et toute écriture la garantit de toute façon. Ce dont chaque
+page a besoin, vérifié : les pages légales ne lisent rien ; `/status` lit un référentiel public, en
+`anon`, ce qui est justement ce qu'il éprouve ; `/rappels/stop` appelle `desinscrire_des_rappels`, ouvert
+à `anon` (`22` épingle le privilège), le jeton du lien autorisant ; `/compte/suppression` ouvre la
+session du compte par le code reçu (`demanderLaConnexion` ne demande pas de session), et la session
+anonyme qu'elle créait n'était pas celle de la personne. **`/feedback` n'en est pas** : il écrit. Ni la
+page introuvable, dont `usePathname()` rend l'adresse tapée. La garde est double — la section M de
+`scripts/verifier-etats-export.mjs` (aucune demande de session, et aucun captcha quand l'export porte une
+clé) et le parcours réel (aucun compte né, la base relue comme le serveur ; puis « Retour » ouvre la
+session) —, et une route neuve ouvre la session par défaut, le cas sûr.
+
 **Et depuis le 02/10/2026, les marques locales ont un propriétaire** ([#319](https://github.com/ScratchMe/Ramille/issues/319),
 `v1-27` §12.29) : `traceverte.proprietaire_des_marques.v1` retient le compte qu'elles décrivent. La
 session que rend `ensureSession()` les balaie si elle est d'un autre compte — c'est ce qui couvre le
@@ -225,7 +244,9 @@ annonce —, le texte de Supabase dessous en chasse fixe tertiaire, recopiable.
 **Deux appels seulement portent un jeton Turnstile** : `signInAnonymously` (`ensureSession`) et
 `signInWithOtp` (`demanderLaConnexion`) — ce sont les seuls du produit que Supabase protège quand le
 captcha est activé (sa documentation : inscription, session anonyme comprise, connexion,
-réinitialisation) ; `updateUser`, `verifyOtp` et `linkIdentity` n'en demandent pas, donc **le code
+réinitialisation). **Une surface sans compte ne le charge donc pas à l'ouverture** (§1, 18/10/2026) : sur
+`/compte/suppression`, il ne vient qu'au geste, « Recevoir un code ». `updateUser`, `verifyOtp` et
+`linkIdentity` n'en demandent pas, donc **le code
 de rattachement**, envoyé par `updateUser({ email })`, **ne passe pas par lui**. **Depuis le
 05/10/2026, c'est la base qui vérifie le sien** (passe avant le lancement, `v1-27` §12.38) :
 `demanderLeRattachement` obtient un jeton (`rattachement`), le passe à `autoriser_le_rattachement`,
@@ -411,6 +432,16 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
   ce chantier ferme, atteint par un autre chemin. C'est la famille d'erreurs d'`auth-js`, donc
   `estPanneDeTransport` (`src/types/connexion.ts`) et non `lireLeBilan` : les deux se côtoient dans
   la racine et les confondre ferait passer l'une pour l'autre.
+- **Un rafraîchissement en panne se replie de même, alors qu'il ne lève pas** (`v1-27` §12.35, corrigé
+  le 18/10/2026). Le jeton stocké n'a pas pu se rafraîchir — réseau coupé à ce moment-là, ou serveur
+  d'authentification en 5xx pendant que la base répond — : `ensureSession()` rend `null`, et la session
+  est `indisponible`. La racine lisait le bilan quand même, en `anon`, et le `42501` faisait dire « Le
+  démarrage a échoué ». Elle lit désormais la suite dans l'état (`suiteDuDemarrage`,
+  `src/types/session.ts`) : `indisponible` se replie comme une coupure, un refus attend l'écran de
+  reconnexion, et seule une session présente fait lire la base. **Ce qui reste, relevé sans le
+  mesurer sur appareil** : `auth-js` rejoue un rafraîchissement en panne de transport pendant près de
+  trente secondes (200 ms, 400 ms, 800 ms… tant que l'attente suivante tient dans son pas de trente
+  secondes, `_refreshAccessToken`) avant de rendre l'erreur, et l'écran de lancement attend avec lui.
 
 ## 4. Suppression de compte et export
 
@@ -423,8 +454,9 @@ Cette page a imposé la seule fonction du produit qui **connecte à un compte ex
 d'en rattacher un (`demanderLaConnexion` : un code à huit chiffres par e-mail, un lien à usage
 unique jusqu'au 20/09/2026). Tout le reste de
 `src/lib/auth.ts` lie une identité à la session anonyme courante — ce qui ne peut pas aider
-quelqu'un qui a désinstallé l'app et arrive dans un navigateur neuf, où `ensureSession` vient
-de lui créer une session anonyme **vide qui n'est pas son compte**. Deux garde-fous non
+quelqu'un qui a désinstallé l'app et arrive dans un navigateur neuf, où il n'y a pas de session du
+tout (la page ne fait que restaurer, §1) ou, s'il est déjà passé par l'app dans ce navigateur, une
+session anonyme **vide qui n'est pas son compte**. Deux garde-fous non
 négociables : `shouldCreateUser: false` (une page de suppression qui fabrique des comptes
 serait le contraire de ce qu'elle affiche), et **aucune réponse différenciée à l'écran** selon que
 l'adresse a un compte ou non — une adresse inconnue renvoie un 422 `otp_disabled` qu'il faut
@@ -436,7 +468,8 @@ Supabase ne contient pas le mot « rate ».
 
 Et le piège central, dérivé dans `src/types/compte-suppression.ts` : **une session anonyme
 vide n'est pas un compte à supprimer.** Sans le test « porte-t-elle au moins un bilan ? », la
-page effacerait la session créée par sa propre ouverture et annoncerait une suppression qui
+page effacerait une session anonyme vide — celle que sa propre ouverture créait jusqu'au 18/10/2026,
+celle qu'un passage par l'app laisse encore dans ce navigateur — et annoncerait une suppression qui
 n'a rien supprimé. Le test épingle aussi qu'une session anonyme portant déjà une adresse non
 confirmée (entre `updateUser({ email })` et la saisie du code — le clic d'un lien jusqu'au 20/09/2026) n'est **pas** un compte
 rattaché. **La suppression

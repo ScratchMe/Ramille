@@ -40,6 +40,19 @@
  * - la lecture de `ci.yml` réduite aux étapes ouvertes par `run:` ou `uses:` → 2 tombent, les deux
  *   tests de lecture sur un texte fabriqué — ceux sur `ci.yml` restent verts, ses étapes étant
  *   toutes écrites ainsi aujourd'hui : c'est pourquoi le texte fabriqué existe.
+ *
+ * **Les déclencheurs et la tolérance d'expo-doctor, éprouvés le 18/10/2026** (onze mutations, 22 tests,
+ * chacune défaite en réécrivant l'état d'avant). Les noms sont ceux des tests :
+ * - `continue-on-error` retiré d'expo-doctor → 3 tombent : « un pas que la CI tolère rouge… »,
+ *   « expo-doctor ne bloque ni une PR ni un push… » et l'annotation, qui perd son `id` ;
+ * - `continue-on-error: true` partout → 1 tombe, « expo-doctor ne bloque ni une PR… » (le lundi ne bloquerait plus) ;
+ * - le groupe de concurrence sans `|| github.run_id` → 1 tombe, « un push se rejoint seul… » ;
+ * - `cancel-in-progress: true` toujours → 1 tombe, la même ;
+ * - le `if` du parcours réel retiré → 1 tombe, « le passage du lundi ne joue que le travail… » ;
+ * - le `printf` d'`expo-env.d.ts` remis → 2 tombent, l'étape orpheline et « l'étape qui écrivait… » ;
+ * - le cron à la minute 0 → 1 tombe ; l'`id` du pas expo-doctor renommé → 1 tombe, l'annotation ;
+ * - dans le rejeu : tout pas bloquant → 2 tombent ; `--planifie` sans effet → 1 tombe, « --planifie rend
+ *   bloquant… » ; `nonBloquant` retiré d'expo-doctor → 2 tombent.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -48,13 +61,14 @@ import path from 'node:path';
 const racine = path.resolve(__dirname, '..');
 const script = path.join(racine, 'scripts', 'rejouer-la-ci.mjs');
 
-type EtapeCI = { travail: string; run: string; env: Record<string, string> };
+type EtapeCI = { travail: string; run: string; env: Record<string, string>; continueOnError: string | null };
 type Pas = {
   nom: string;
   ci: string | null;
   raison?: string;
   commande: string;
   sortie?: string;
+  bloquant: boolean;
   env: Record<string, string> | string;
 };
 type Plan = {
@@ -69,7 +83,12 @@ const vide = (ligne: string) => ligne.trim() === '' || ligne.trim().startsWith('
 
 /** Les clés d'une étape, lues au niveau `niveau` ; un bloc `|` ou un `env:` prend ce qui est plus profond. */
 function lireUneEtape(bloc: string[], niveau: number) {
-  const etape = { run: null as string | null, uses: null as string | null, env: {} as Record<string, string> };
+  const etape = {
+    run: null as string | null,
+    uses: null as string | null,
+    env: {} as Record<string, string>,
+    continueOnError: null as string | null,
+  };
   for (let j = 0; j < bloc.length; j++) {
     if (vide(bloc[j]) || indentation(bloc[j]) !== niveau) continue;
     const cle = bloc[j].trim().match(/^([\w-]+):\s*(.*)$/);
@@ -79,6 +98,7 @@ function lireUneEtape(bloc: string[], niveau: number) {
     while (j + 1 < bloc.length && (bloc[j + 1].trim() === '' || indentation(bloc[j + 1]) > niveau)) suite.push(bloc[++j]);
     if (nom === 'run') etape.run = /^[|>]-?$/.test(valeur) ? suite.join('\n') : valeur;
     if (nom === 'uses') etape.uses = valeur;
+    if (nom === 'continue-on-error') etape.continueOnError = valeur;
     if (nom === 'env') {
       for (const ligne of suite) {
         const entree = ligne.trim().match(/^(\w+): (.*)$/);
@@ -128,11 +148,45 @@ function lireLaCI(texte: string) {
       bloc.push(lignes[++i]);
     }
     const etape = lireUneEtape(bloc, niveauDesEtapes + 2);
-    if (etape.run !== null) etapes.push({ travail, run: etape.run, env: etape.env });
+    if (etape.run !== null) etapes.push({ travail, run: etape.run, env: etape.env, continueOnError: etape.continueOnError });
     else if (etape.uses === null) illisibles.push(`${travail} : ${element[2]}`);
   }
   return { etapes, illisibles, versionsSupabase };
 }
+
+/** Les lignes de chaque travail de `ci.yml`, par nom : de quoi lire ce que la lecture par étapes ignore. */
+function lireLesTravaux(texte: string) {
+  const travaux = new Map<string, string[]>();
+  let courant: string[] | null = null;
+  let dansLesTravaux = false;
+  for (const ligne of texte.split('\n')) {
+    if (/^jobs:\s*$/.test(ligne)) {
+      dansLesTravaux = true;
+      continue;
+    }
+    if (!dansLesTravaux) continue;
+    const nom = ligne.match(/^ {2}([\w-]+):\s*$/)?.[1];
+    if (nom) travaux.set(nom, (courant = []));
+    else courant?.push(ligne);
+  }
+  return travaux;
+}
+
+type Github = { event_name: string; event: { pull_request: { number: number } }; run_id: number };
+const evenement = (nom: string, run_id = 1, numero = 7): Github => ({ event_name: nom, event: { pull_request: { number: numero } }, run_id });
+
+/**
+ * Évalue une expression `${{ … }}` de la CI. Celles qu'on lit ici n'emploient que `github.…`, `==`, `!=`,
+ * `&&` et `||` : de l'ECMAScript valide, avec la même précédence. Une expression qui sortirait de ce
+ * vocabulaire lève une erreur, et le test tombe au lieu de passer sur une lecture fausse.
+ */
+function evaluer(expression: string, github: Github): unknown {
+  const interne = expression.replace(/^\s*\$\{\{|\}\}\s*$/g, '');
+  return new Function('github', `return (${interne});`)(github);
+}
+/** Une valeur de la CI, avec ses `${{ … }}` remplacés — une chaîne, comme GitHub la passe. */
+const interpoler = (valeur: string, github: Github) =>
+  valeur.replace(/\$\{\{(.+?)\}\}/g, (_, expression) => String(evaluer(expression, github)));
 
 /** Les blancs d'un bloc `run: |` ne comptent pas : seules les lignes, dans l'ordre. */
 const normaliser = (commande: string) =>
@@ -194,10 +248,10 @@ describe('la lecture de ci.yml', () => {
       ].join('\n'),
     );
     expect(r.etapes.map((e) => ({ ...e, run: normaliser(e.run) }))).toEqual([
-      { travail: 'essai', run: 'echo un', env: {} },
-      { travail: 'essai', run: 'echo deux\necho trois', env: { A: 'b' } },
-      { travail: 'essai', run: 'echo quatre', env: { C: 'd' } },
-      { travail: 'autre', run: 'echo cinq', env: {} },
+      { travail: 'essai', run: 'echo un', env: {}, continueOnError: null },
+      { travail: 'essai', run: 'echo deux\necho trois', env: { A: 'b' }, continueOnError: null },
+      { travail: 'essai', run: 'echo quatre', env: { C: 'd' }, continueOnError: null },
+      { travail: 'autre', run: 'echo cinq', env: {}, continueOnError: null },
     ]);
     expect(r.illisibles).toEqual([]);
   });
@@ -285,6 +339,21 @@ describe('le rejeu local suit ci.yml', () => {
     expect(factice.TMPDIR).toMatch(/^<journal>\//);
   });
 
+  test('un pas que la CI tolère rouge est non bloquant dans le rejeu, et lui seul', () => {
+    const toleres = ci.etapes.filter((e) => e.continueOnError !== null).map((e) => normaliser(e.run));
+    const nonBloquants = plan.etapes
+      .flatMap((e) => e.pas)
+      .filter((p) => !p.bloquant)
+      .map((p) => normaliser(p.ci as string));
+    expect(toleres).toEqual(['npx expo-doctor@1.20.4']);
+    expect(nonBloquants).toEqual(toleres);
+  });
+
+  test('--planifie rend bloquant ce que la CI ne tolère plus ce jour-là', () => {
+    expect(aBlanc('verifications').plan?.etapes[0].pas.filter((p) => !p.bloquant).map((p) => p.nom)).toEqual(['expo-doctor']);
+    expect(aBlanc('--planifie', 'verifications').plan?.etapes[0].pas.filter((p) => !p.bloquant)).toEqual([]);
+  });
+
   test('toute variable qu’un script lit est écartée par le rejeu, ou déclarée inoffensive', () => {
     const lues = new Set<string>();
     for (const fichier of fs.readdirSync(path.join(racine, 'scripts')).filter((f) => f.endsWith('.mjs'))) {
@@ -299,6 +368,63 @@ describe('le rejeu local suit ci.yml', () => {
       (nom) => !ecartees.noms.includes(nom) && !ecartees.prefixes.some((p) => nom.startsWith(p)) && !(nom in inoffensives),
     );
     expect(libres).toEqual([]);
+  });
+});
+
+describe('les déclencheurs de ci.yml', () => {
+  const texte = fs.readFileSync(path.join(racine, '.github', 'workflows', 'ci.yml'), 'utf8');
+  const travaux = lireLesTravaux(texte);
+
+  test('expo-doctor ne bloque ni une PR ni un push, mais bloque le passage du lundi et un lancement à la main', () => {
+    const doctor = ci.etapes.find((e) => e.run.includes('expo-doctor'));
+    expect(doctor?.continueOnError).toBeTruthy();
+    const tolere = (nom: string) => interpoler(doctor?.continueOnError as string, evenement(nom));
+    expect(['pull_request', 'push', 'schedule', 'workflow_dispatch'].map(tolere)).toEqual(['true', 'true', 'false', 'false']);
+  });
+
+  test('l’annotation d’expo-doctor lit le résultat du pas expo-doctor, pas celui d’un autre', () => {
+    const id = texte.match(/- id: (\S+)\n\s+continue-on-error: .*\n\s+run: npx expo-doctor@/)?.[1];
+    const lu = texte.match(/- if: steps\.(\S+)\.outcome == 'failure'\n\s+run: echo "::warning title=expo-doctor/)?.[1];
+    expect(id).toBeTruthy();
+    expect(lu).toBe(id);
+  });
+
+  test('le passage du lundi ne joue que le travail qui porte expo-doctor', () => {
+    const saute = (lignes: string[]) => lignes.some((l) => l === "    if: github.event_name != 'schedule'");
+    expect([...travaux].filter(([, lignes]) => !saute(lignes)).map(([nom]) => nom)).toEqual(['checks']);
+    expect(travaux.get('checks')?.join('\n')).toContain('npx expo-doctor@');
+    expect(texte).toMatch(/^ {2}schedule:\n {4}- cron: '(\d+) (\d+) \* \* 1'$/m);
+    expect(texte).toMatch(/^ {2}workflow_dispatch:$/m);
+  });
+
+  test('la minute du passage planifié n’est pas une heure ronde', () => {
+    const minute = Number(texte.match(/- cron: '(\d+) /)?.[1]);
+    expect([0, 30]).not.toContain(minute);
+  });
+
+  test('un push se rejoint seul, une PR annule la précédente : la concurrence', () => {
+    const bloc = texte.match(/^concurrency:\n {2}group: (.+)\n {2}cancel-in-progress: (.+)$/m);
+    expect(bloc).not.toBeNull();
+    const [, groupe, annuler] = bloc as RegExpMatchArray;
+    const g = (nom: string, run: number, numero = 7) => interpoler(groupe, evenement(nom, run, numero));
+    const a = (nom: string) => interpoler(annuler, evenement(nom));
+    // Deux passages de la même PR partagent leur groupe, une autre PR a le sien, et le premier est annulé.
+    expect(g('pull_request', 100)).toBe(g('pull_request', 101));
+    expect(g('pull_request', 100, 7)).not.toBe(g('pull_request', 100, 8));
+    expect(a('pull_request')).toBe('true');
+    // Ni `main`, ni le lundi, ni un lancement à la main ne partagent un groupe ni ne sont annulés.
+    for (const nom of ['push', 'schedule', 'workflow_dispatch']) {
+      expect(g(nom, 100)).not.toBe(g(nom, 101));
+      expect(a(nom)).toBe('false');
+    }
+    // Et une PR ne tombe jamais dans le groupe d'une exécution de `main`.
+    expect(g('pull_request', 100)).not.toBe(g('push', 100));
+  });
+
+  test('l’étape qui écrivait expo-env.d.ts n’existe plus : le postinstall s’en charge', () => {
+    expect(ci.etapes.filter((e) => e.run.includes('expo-env.d.ts'))).toEqual([]);
+    const paquet = JSON.parse(fs.readFileSync(path.join(racine, 'package.json'), 'utf8'));
+    expect(paquet.scripts.postinstall).toContain('expo-env.d.ts');
   });
 });
 

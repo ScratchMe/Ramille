@@ -3,9 +3,9 @@
 // Réf. docs/architecture/v1-12-rappels.md §5.3.
 //
 // **Le jeton suit la personne connectée sur l'appareil.** `enregistrerLeJeton()` est donc
-// appelée à chaque ouverture *et* après un rattachement réussi : le RPC reprend le jeton à
-// son propriétaire précédent, ce qu'une policy RLS ne pourrait pas faire au moment où une
-// session anonyme devient un compte.
+// appelée à chaque ouverture, à chaque changement d'utilisateur, et au retour au premier plan
+// tant qu'elle n'a rien inscrit : le RPC reprend le jeton à son propriétaire précédent, ce
+// qu'une policy RLS ne pourrait pas faire au moment où une session anonyme devient un compte.
 //
 // Rien ici ne parle à l'utilisateur, mais **tout se dit à l'appelant** : `enregistrerLeJeton()`
 // rend un booléen, et c'est ce qui empêche la feuille d'annoncer une notification qui ne
@@ -103,12 +103,11 @@ export async function demanderLaPermission(): Promise<Permission> {
  * `reminder_channel_for()` ne verrait jamais partir — la « petite trahison » que le libellé du
  * bouton s'efforce d'éviter deux écrans plus haut (A4-8).
  *
- * **Ce que le booléen ne dit pas**, et qu'il faudra lui faire dire le jour où on reprend A4-7 :
- * `false` recouvre « permission non accordée » (légitime) et « RPC en erreur / pas de réseau »
- * (un échec). Le garde d'`_layout.tsx` ne rend le jeton à son propriétaire précédent que sur
- * une exception, donc sa phrase « seul un échec le rend à son propriétaire précédent » ne
- * couvre aujourd'hui que celles-là. Un `'inscrit' | 'sans_permission' | 'echec'` fermerait
- * l'écart ; le booléen suffit à ce que la feuille a besoin de savoir.
+ * **Ce que le booléen ne distingue pas, et pourquoi il suffit** : `false` recouvre « permission non
+ * accordée » et « RPC en erreur / pas de réseau ». La garde du layout racine (`gardeDuJeton`,
+ * `src/types/session.ts`) les traite pareil, et c'est juste : dans les deux cas l'appareil n'est pas
+ * inscrit au nom de la personne, et le retour au premier plan suivant retente — la permission rouverte
+ * dans les réglages comme le réseau revenu. Une exception y est lue comme un `false`.
  */
 export function enregistrerLeJeton(): Promise<boolean> {
   // Suivi, pour qu'une lecture du jeton partie au même moment le lise après lui

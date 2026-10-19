@@ -109,9 +109,10 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   (et le drapeau `auto_expose_new_tables` de la stack locale, en voie de suppression) accorde
   tout à `anon` et `authenticated` sans qu'aucun fichier ne le dise ; une base reconstruite depuis
   les migrations n'accorde alors rien à personne — « permission denied » **avant** la RLS. Une
-  migration qui ne contient que des `grant`/`revoke` est rejouable telle quelle, et un test
-  épingle la matrice. **Ajouter une table impose un geste explicite**, et un privilège se justifie
-  par un appel réel depuis l'app, jamais par « un test en a besoin ».
+  migration qui ne contient que des `grant`/`revoke` est idempotente — mais la rejouer après une plus
+  récente qui a resserré la matrice rouvre ce que celle-ci a fermé (§2.2) —, et un test épingle la
+  matrice. **Ajouter une table impose un geste explicite**, et un privilège se justifie par un appel réel
+  depuis l'app, jamais par « un test en a besoin ».
 - **Le 30/10/2026, la plateforme cesse d'accorder d'office l'accès aux tables neuves de `public`
   sur les projets existants** (annonce reçue le 28/09/2026 ; le CLI avait basculé le
   30/05/2026, §2.2). Un dépôt qui écrit déjà ses privilèges n'a rien à changer, et trois
@@ -133,13 +134,25 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
       **PUBLIC** est le défaut global de PostgreSQL, qu'un `alter default privileges … in schema`
       ne peut pas retirer (mesuré le 02/10/2026 : `proacl` nul, `anon` exécute). La quatrième
       instruction de la parade de Supabase, qui fait ce retrait `in schema public`, est donc
-      sans effet. Le `revoke execute … from public` par fonction (plus bas) reste la seule
-      garde en place ; une entrée globale — `alter default privileges for role postgres revoke
-      execute on functions from public`, sans `in schema` — en serait une seconde, à décider à
-      part, puisqu'elle vaudrait pour tous les schémas, `analytics` compris.
+      sans effet. Seule une entrée **globale** le retire — `alter default privileges for role
+      postgres revoke execute on functions from public`, sans `in schema` —, et elle vaut pour
+      tous les schémas où ce rôle crée, `pg_temp` compris : la fonction auxiliaire d'un test,
+      appelée après un changement de rôle, demande alors son `grant`. Ramille la pose (§2.2).
 - **`revoke execute … from anon, authenticated` ne révoque rien** : PostgreSQL accorde `EXECUTE`
   à **PUBLIC** à la création, et les deux rôles en héritent. Il faut `from public, anon,
-  authenticated`. Un `create or replace` ne préserve pas non plus l'ACL qu'on croit.
+  authenticated`. Un `create or replace` garde l'ACL de la fonction qu'il remplace, celle qu'elle
+  avait et non celle qu'on croit ; un `drop` suivi d'un `create` la refait au défaut.
+- **Un `pg_dump --no-privileges` restaure une base sans ses révocations** : chaque fonction recréée
+  rend `EXECUTE` à PUBLIC, et une fonction `security definer` qui ne tenait que par son `revoke`
+  devient appelable par `anon`, sans que rien ne casse. Avec les privilèges, trois pièges, tous
+  mesurés : `pg_dump` écrit ses `grant` et ses `revoke` à partir du défaut intégré de PostgreSQL,
+  donc une cible dont les privilèges par défaut accordent davantage — un projet Supabase neuf
+  accorde tout à `anon`, `authenticated` et `service_role` dans `public` — garde ce surplus, et on
+  les neutralise **avant** de charger ; `--schema=public` écrit `CREATE SCHEMA "public"`, qui échoue
+  sur une cible où il existe ; le dump reprend les privilèges par défaut de `supabase_admin`, que
+  `postgres` n'a pas le droit de rejouer. L'entrée globale, elle, n'y est pas (`--schema` ne porte
+  que celles d'un schéma) et se repose à part. La procédure de Ramille :
+  `docs/exploitation/sauvegarde.md` §4.
 - **La RLS filtre des lignes, jamais des colonnes.** Une policy UPDATE owner-scoped sur une table
   qui porte des valeurs figées (des chiffres calculés, des libellés instantanés, une clé
   d'idempotence, un statut) ouvre **toutes** les colonnes. Une écriture qui ne doit toucher qu'à
@@ -226,6 +239,16 @@ vérifie en la lisant, entrée par entrée, et le relevé se consigne (`docs/exp
   pousser. Ce n'est pas réécrire un historique — rien d'appliqué ne change, aucun ordre ne bouge :
   c'est donner au fichier le nom de son enregistrement, pour qu'on puisse, en partant d'un
   enregistrement, retrouver le fichier qui l'a produit.
+- **Le serveur MCP de Supabase demande sa propre confirmation avant tout SQL qu'il juge destructif,
+  et un client qui ne sait pas l'afficher la perd en silence.** `apply_migration` et `execute_sql`
+  ouvrent un formulaire (une « élicitation » MCP) dès qu'ils voient un `delete` ou un `update`,
+  même dans le corps d'une fonction qu'on ne fait que définir. Sans formulaire à l'écran, l'appel
+  rend `{"status":"cancelled"}`, ou expire au bout de 60 s ; rien n'est appliqué, et autoriser
+  l'outil d'office côté client n'y change rien, puisque ce n'est pas la même confirmation. Une
+  requête qui ne fait que lire passe. Le contourner en déguisant l'instruction serait tromper le
+  garde-fou ; la voie propre est l'éditeur SQL du tableau de bord, le fichier collé tel quel, puis
+  une relecture par empreintes. Le paramètre `skip_elicitations` de l'URL du serveur retire la
+  fenêtre, et avec elle le garde-fou.
 - **Une sous-requête latérale qui ne nomme pas la ligne n'est évaluée qu'au gré du plan.**
   `cross join lateral (select gen_random_uuid() as jeton) o` ne dépend d'aucune colonne : rien
   n'oblige Postgres à la refaire pour chaque ligne, et selon les statistiques il la sort de la
@@ -386,13 +409,15 @@ neuf, et la stack locale le rejouait par ce drapeau. Une base reconstruite depui
 `supabase/migrations/` n'accordait donc rien à personne — l'app répond « permission denied for
 table … » **avant** d'atteindre la RLS — et rien dans le dépôt ne le disait. Le CLI n'expose plus
 par défaut depuis le 30/05/2026 (absent et `false` suivent le même chemin de code) et supprime le
-champ le 30/10/2026 : l'écrire programmerait la panne. Tout vit dans
-`20260910110000_grants_explicites.sql`, qui ne contient que des `grant`/`revoke` — donc rejouable
-tel quel après une restauration — et `18_grants_explicites.test.sql` épingle la matrice entière.
-**Ajouter une table impose donc un geste explicite** : un `grant` dans ce fichier si l'app y
-touche, ou un `revoke all privileges … from anon, authenticated` dans sa propre migration si elle
-est serveur-only. Ne rien écrire la rend invisible pour l'app, en silence — même mécanique que
-`emission_factor_sources` et `usage_event_types`.
+champ le 30/10/2026 : l'écrire programmerait la panne. La matrice est partie de
+`20260910110000_grants_explicites.sql`, et des migrations plus récentes l'ont resserrée (privilèges
+de colonne, `delete` retiré) : ce fichier ne se rejoue donc **pas** seul après une restauration, il
+rouvrirait ce qu'elles ont fermé — les privilèges reviennent avec le dump
+(`docs/exploitation/sauvegarde.md` §4). `18_grants_explicites.test.sql` épingle la matrice entière.
+**Ajouter une table impose donc un geste explicite** : un `grant` dans sa migration si l'app y
+touche, ou un `revoke all privileges … from anon, authenticated` si elle est serveur-only. Ne rien
+écrire la rend invisible pour l'app, en silence — même mécanique que `emission_factor_sources` et
+`usage_event_types`.
 
 **Et « invisible » était faux jusqu'au 20/09/2026 : c'était « ouverte à tous ».** Le raisonnement
 ci-dessus ne regardait que les `grant` écrits dans les migrations, et oubliait
@@ -475,6 +500,16 @@ colonnes homonymes de `profiles`, est resté dans `CLAUDE.md`, section « Base d
   `from public, anon, authenticated` — sans quoi n'importe quel visiteur appelait
   `/rest/v1/rpc/purge_usage_events`.
 
+**Les fonctions naissent fermées depuis `20261019085520`** : celles que `postgres` crée n'ont plus
+d'`EXECUTE` pour PUBLIC, `anon` ni `authenticated`, dans aucun schéma. Une fonction que le client
+appelle — un RPC, ou une fonction qu'une policy ou un `check` évalue pendant une écriture du client
+— porte son `grant execute` dans sa migration, et sa ligne dans la liste blanche de
+`54_les_fonctions_que_le_client_peut_appeler.test.sql`, qui compare à cette liste tout ce
+qu'`anon` et `authenticated` exécutent dans les schémas exposés et épingle le défaut. Rien de ce qui
+existait n'a changé : une fonction garde son ACL à travers un `create or replace` ; recréée après
+un `drop`, elle naît au défaut, donc fermée. Le `revoke … from public, anon, authenticated` reste de mise
+sur une fonction interne : il ne coûte rien, et il tient sur une base où le défaut manquerait.
+
 ### 2.3 Rejouer, réécrire, désigner : ce que le distant a appris
 
 **Le nom du fichier de migration se règle APRÈS l'application, pas avant.** `apply_migration`
@@ -484,6 +519,15 @@ connaît pas, et les deux divergent en silence. La CI n'en voit rien — le job 
 depuis les fichiers, jamais depuis le distant — mais un `db push` ultérieur tente de rejouer une
 migration déjà appliquée. Relevé le 17/09/2026 : fichier `20260917230000`, distant `20260917231133`.
 La parade tient en un geste : appliquer, **relire `max(version)`**, et renommer le fichier dessus.
+
+**Et une migration qui porte un `delete` ou un `update` ne passe pas par `apply_migration` depuis
+l'app** (§1.5) : relevé le 19/10/2026, deux annulations et une expiration sur `20261018110000`,
+puis une annulation sur `20261018120000`, qui n'a que deux `update` de descriptions. Le 05/10/2026,
+`20261005170000` s'était annulée deux fois de la même façon, et le journal l'attribuait alors à sa
+taille. Ces migrations-là passent par la personne qui pilote, dans le SQL Editor, le fichier collé
+tel quel : aucune version n'est enregistrée, le fichier **garde son nom**, et le journal
+(`docs/exploitation/README.md` §7 bis) dit qu'elle n'est pas dans `schema_migrations`. L'agent
+relit ensuite par empreintes, ce qu'`execute_sql` permet, puisqu'une lecture ne demande rien.
 
 **Une migration livrée ne se modifie pas, et un hook le rappelle depuis le 27/09/2026**
 (`scripts/proteger-les-migrations-livrees.mjs`, déclaré dans `.claude/settings.json`). Il refuse à
@@ -535,8 +579,7 @@ l'appariement par texte sûr, pas la relecture.
 du point précédent : pour corriger l'appariement il a fallu rejouer le fichier entier sur le distant, et
 il s'est arrêté sur un `42710` — une contrainte ajoutée sans `drop constraint if exists` devant. Le
 défaut ne se voit ni en CI (base neuve, un seul passage) ni au premier déploiement ; il se voit le jour
-d'une restauration, c'est-à-dire le plus mauvais. Même exigence que
-`20260910110000_grants_explicites.sql`, « rejouable tel quel après une restauration ».
+d'une restauration, c'est-à-dire le plus mauvais.
 
 **Et une substitution vérifiée est à un coup par nature, donc elle doit reconnaître « déjà
 appliquée ».** Le contrôle `if occurrences <> 1 then raise` est juste au premier passage et faux au
@@ -610,10 +653,10 @@ quelque chose la réécrit, et il vaut mieux l'apprendre là que sur un écran.
 
 ### 2.4 Sessions : pannes, refus et doublons
 
-Le modèle lui-même — session anonyme dès l'ouverture, conversion qui garde le `user_id`, pas de
-mot de passe, `/connexion/retrouver` comme seul chemin délibéré vers un compte existant — est dans
-`CLAUDE.md`, « Modèle d'authentification », pour ses deux paragraphes fondateurs, et dans
-`COMPTE.md` pour tout le reste. Ici, ce qui s'est cassé autour.
+Le modèle lui-même — session anonyme dès l'ouverture de l'app (sauf sur les surfaces sans compte,
+`COMPTE.md` §1), conversion qui garde le `user_id`, pas de mot de passe, `/connexion/retrouver` comme seul
+chemin délibéré vers un compte existant — est dans `CLAUDE.md`, « Modèle d'authentification », pour ses deux
+paragraphes fondateurs, et dans `COMPTE.md` pour tout le reste. Ici, ce qui s'est cassé autour.
 
 **La non-divulgation se tient à l'écran, jamais au réseau — et c'est une limite de GoTrue, pas un
 oubli** (relevé à la recette web du 28/09/2026, documenté le même jour par décision). Deux appels

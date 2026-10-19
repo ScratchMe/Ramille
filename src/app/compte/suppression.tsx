@@ -32,10 +32,11 @@ import {
 // a déjà désinstallé l'application. C'est ce dernier point qui commande toute la mécanique
 // ci-dessous.
 //
-// Le problème, propre au modèle d'auth de Ramille : cette personne arrive dans un navigateur
-// où `ensureSession` vient de créer une session anonyme **vide**, qui n'est pas son compte.
-// Aucune des fonctions d'auth existantes ne pouvait l'aider — elles rattachent toutes une
-// identité à la session courante. D'où `demanderLaConnexion`, premier chemin du produit
+// Le problème, propre au modèle d'auth de Ramille : cette personne arrive dans un navigateur sans
+// session — la page n'en crée pas (`laSessionSOuvreSur`, `src/types/session.ts`) — ou avec une
+// session anonyme **vide**, laissée par un passage dans l'app, qui n'est pas son compte. Aucune des
+// fonctions d'auth existantes ne pouvait l'aider — elles rattachent toutes une identité à la
+// session courante. D'où `demanderLaConnexion`, premier chemin du produit
 // vers un compte *déjà existant*, et `shouldCreateUser: false` pour qu'une page de
 // suppression ne puisse jamais fabriquer un compte.
 //

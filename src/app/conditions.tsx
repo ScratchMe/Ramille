@@ -1,5 +1,11 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
-import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
+import {
+  CONTACT_EMAIL,
+  EDITOR_NAME,
+  HEBERGEUR_DES_DONNEES,
+  HEBERGEUR_DU_SITE,
+  URL_DU_CODE,
+} from '@/constants/editeur';
 // **`ORIGINE_CANONIQUE` et non `APP_URL`, et ce n'est pas interchangeable ici.** `APP_URL`
 // vaut l'origine réelle côté client et le domaine canonique au rendu statique : écrite dans
 // un **texte**, elle produit un écart d'hydratation — le HTML exporté dit
@@ -25,7 +31,8 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // L'identité de l'éditeur vit dans `@/constants/editeur`, qui explique aussi pourquoi cette
 // page ne porte ni statut juridique, ni adresse postale, ni directeur de la publication, ni
 // médiateur de la consommation : le projet est édité à titre non professionnel, régime prévu
-// par l'article 6 III-2 de la LCEN. Ce sont des absences motivées, pas des oublis.
+// par l'article 1er-1, II, de la LCEN (ancien article 6 III-2, voir `editeur.ts`). Ce sont des absences
+// motivées, pas des oublis.
 
 // Cette page bouge moins que /confidentialite, et sa date ne suit donc pas la sienne : elle
 // n'avance que quand une clause change. Le 11/09/2026, c'est la durée de conservation d'un
@@ -34,7 +41,24 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // adresse », alors qu'un code a remplacé le lien le 20/09/2026 (`CLAUDE.md`, « le lien a disparu
 // des deux e-mails »). Relevé en contre-lisant `v1-29`. La date est celle de la mise en ligne,
 // pour la raison écrite dans `/confidentialite`.
-const UPDATED_AT = '25 septembre 2026';
+//
+// **18/10/2026 : quatre clauses, relevées par l'audit juridique du jour**
+// (`docs/exploitation/sous-traitants.md`, « Ce qui reste à faire »). (1) La propriété intellectuelle disait
+// « ses textes et son interface sont protégés » et interdisait de « réutiliser le contenu du service à des
+// fins commerciales sans autorisation » : c'est le contraire de la licence sous laquelle le dépôt est public (AGPL-3.0 ou
+// ultérieure, `LICENSE`, `NOTICE`, `README.md`), qui autorise l'usage commercial du code. Seuls le nom,
+// le logo, la mascotte et l'identité visuelle sont réservés (`NOTICE`) ; la clause le dit, avec l'adresse
+// du dépôt (`docs/exploitation/depot-public.md` §4 : le §13 de l'AGPL ne crée aucune obligation sur
+// l'éditeur lui-même, ce lien n'est donc pas une obligation, seulement l'endroit où on cherchera le code).
+// (2) « Ramille ne saurait être tenu responsable » : un nom de produit n'est pas une personne, la
+// responsabilité est celle de l'éditeur. (3) L'hébergeur des données était « Supabase, serveurs situés dans
+// l'Union européenne », sans l'entité ni l'adresse : c'est Supabase Pte. Ltd. (Singapour) selon ses conditions
+// et son avenant de sous-traitance, lus le 18/10/2026 (`HEBERGEUR_DES_DONNEES`). (4) Le renvoi à
+// l'« article 6 III-2 » de la LCEN : la loi n° 2024-449 du 21 mai 2024 a déplacé la règle (voir `editeur.ts`).
+// **Aucun âge minimal n'est ajouté**, par décision : la fiche Play déclare 18 ans et plus, les conditions
+// n'en fixent aucun (`docs/exploitation/fiche-google-play.md` §1.3), et en poser un est une décision de
+// produit.
+const UPDATED_AT = '18 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -107,7 +131,7 @@ const SECTIONS: LegalSection[] = [
         items: [
           'Tenter d’accéder aux données d’un autre utilisateur, ou de contourner les protections du service.',
           'Perturber le fonctionnement du service, notamment par des requêtes automatisées massives.',
-          'Réutiliser le contenu du service à des fins commerciales sans autorisation écrite préalable.',
+          `Présenter une autre application ou un autre service sous le nom, avec le logo ou avec la mascotte de ${APP_NAME}, sans autorisation écrite préalable.`,
         ],
       },
     ],
@@ -130,7 +154,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          `${APP_NAME} ne saurait être tenu responsable des décisions que tu prends sur la base des estimations et ` +
+          'L’éditeur ne saurait être tenu responsable des décisions que tu prends sur la base des estimations et ' +
           'suggestions affichées, ni des conséquences d’une indisponibilité du service. Aucune limitation ci-dessus ne ' +
           'vise à écarter une responsabilité qui ne peut légalement l’être.',
       },
@@ -142,8 +166,19 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          `Le nom ${APP_NAME}, son identité visuelle, ses textes et son interface sont protégés. Les facteurs d’émission ` +
-          'proviennent de la Base Empreinte de l’ADEME et restent soumis aux conditions de réutilisation de cette source.',
+          `Le nom ${APP_NAME}, son logo, sa mascotte et son identité visuelle sont réservés : les réutiliser demande ` +
+          'l’autorisation écrite de l’éditeur. Les facteurs d’émission proviennent de la Base Empreinte de l’ADEME et ' +
+          'restent soumis aux conditions de réutilisation de cette source.',
+      },
+      {
+        kind: 'paragraph',
+        text:
+          `Le code source de ${APP_NAME}, textes et interface compris, est publié sous licence libre : la GNU Affero ` +
+          'General Public License version 3 ou ultérieure (AGPL-3.0-or-later). Tu peux le lire, l’utiliser, le modifier ' +
+          'et le redistribuer dans les conditions de cette licence, y compris pour un usage commercial. Elle impose ' +
+          'notamment de conserver la mention de l’auteur et de redistribuer sous la même licence toute version modifiée, ' +
+          'en offrant son code source aux utilisateurs d’une version modifiée exploitée comme service en ligne. Le ' +
+          `code se trouve sur ${URL_DU_CODE}.`,
       },
       {
         kind: 'paragraph',
@@ -200,16 +235,18 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          'Hébergement des données applicatives : Supabase, serveurs situés dans l’Union européenne. Hébergement de la ' +
-          'version web : Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.',
+          `Hébergement des données applicatives : ${HEBERGEUR_DES_DONNEES.nom}, ${HEBERGEUR_DES_DONNEES.adresse}, avec ` +
+          `des serveurs situés à ${HEBERGEUR_DES_DONNEES.emplacementDesServeurs}. Hébergement de la version web : ` +
+          `${HEBERGEUR_DU_SITE.nom}, ${HEBERGEUR_DU_SITE.adresse}.`,
       },
       {
         kind: 'paragraph',
         text:
-          'L’article 6 III-2 de la loi du 21 juin 2004 pour la confiance dans l’économie numérique permet à une personne ' +
-          'éditant un service en ligne à titre non professionnel de ne rendre publiques que les coordonnées de son ' +
-          'hébergeur, celles-ci étant indiquées ci-dessus. Les éléments d’identification de l’éditeur ont été communiqués ' +
-          'aux hébergeurs et restent à la disposition de l’autorité judiciaire.',
+          'L’article 1er-1, II, de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique, ' +
+          'introduit par la loi n° 2024-449 du 21 mai 2024, permet à une personne éditant un service en ligne à titre ' +
+          'non professionnel de ne rendre publics que le nom et l’adresse de son hébergeur, ceux-ci étant indiqués ' +
+          'ci-dessus. Les éléments d’identification de l’éditeur ont été communiqués aux hébergeurs et restent à la ' +
+          'disposition de l’autorité judiciaire.',
       },
     ],
   },

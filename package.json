@@ -93,7 +93,8 @@
       "!src/lib/database.types.ts"
     ],
     "moduleNameMapper": {
-      "\\.(css)$": "<rootDir>/scripts/doublage-css.js"
+      "\\.(css)$": "<rootDir>/scripts/doublage-css.js",
+      "^\\./_partage-commun\\.js$": "<rootDir>/api/_partage-commun.ts"
     }
   },
   "overrides": {

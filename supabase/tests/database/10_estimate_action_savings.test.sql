@@ -251,21 +251,27 @@ select is_empty(
   'longs trajets déjà partagés à trois -> on ne propose pas de les partager'
 );
 
--- Les deux actions du vol court coexistent, et c'est voulu : renoncer retire 100 % du vol,
--- substituer en retire la part que le train ne consomme pas. Ce ne sont pas des doublons — le
--- second suppose une ligne de train qu'aucune réponse ne nous dit exister — et depuis C4.6 le plan
--- montre toutes les pistes, donc la personne choisit celle qui la concerne.
+-- Les deux actions du vol court coexistent, et c'est voulu : renoncer retire 100 % d'**un** vol,
+-- remplacer un aller-retour par le train en retire **deux**, moins la part que le train consomme. Ce
+-- ne sont pas des doublons — le second suppose une ligne de train qu'aucune réponse ne nous dit
+-- exister — et depuis C4.6 le plan montre toutes les pistes, donc la personne choisit celle qui la
+-- concerne. Sur un profil à deux vols, l'aller-retour passe devant ; sur un seul vol déclaré, c'est
+-- l'inverse (`57` éprouve l'aller-retour et sa borne).
 select results_eq(
   $$ select round(saving_kg_year::numeric) from public.estimate_action_savings('b1111111-1111-1111-1111-111111111115')
      where action_text in (
        'Renoncer à un vol court ou moyen-courrier cette année',
        'Remplacer un aller-retour en avion par le train'
      ) order by 1 desc $$,
-  $$ values (277::numeric), (273::numeric) $$,
-  -- 2 vols courts déclarés, donc 1 500 km chacun : renoncer retire 1 500 × 0,184661 = 277,
-  -- remplacer par le train en retire ce que le TGV consomme, soit 1 500 × 0,002930 de moins.
-  -- Les deux valeurs ont été recalculées par une requête sur la base, pas à la main.
-  'branche voyages : renoncer à un vol court rapporte plus que le remplacer par le train'
+  $$ values (545::numeric), (277::numeric) $$,
+  -- 2 vols courts déclarés, donc 1 500 km chacun : renoncer à un vol retire 1 500 × 0,184661 = 277 ;
+  -- remplacer l'aller-retour, c'est-à-dire les deux, par le train en retire ce que le TGV ne consomme
+  -- pas : 3 000 × (0,184661 − 0,002930) = 545,19 → 545. L'arrondi se fait une fois, sur le total :
+  -- doubler le gain arrondi d'un seul vol (273) donnerait 546. Les deux valeurs ont été recalculées
+  -- par une requête sur la base, pas à la main.
+  -- Éprouvée le 18/10/2026 : `trips` remis à 1 sur le gabarit fait tomber cette assertion, seule du
+  -- fichier (« have 277, want 545 »).
+  'branche voyages : remplacer un aller-retour (deux vols) rapporte plus que renoncer à un seul vol'
 );
 
 -- **Le facteur des voyages se ramène à la personne, comme sa base.** Défaut introduit par C3.5 et

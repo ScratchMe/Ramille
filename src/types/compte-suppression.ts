@@ -3,9 +3,9 @@
  *
  * Pure et testée à part parce que la seule erreur qui compte ici est **silencieuse** :
  * confirmer une suppression qui n'a rien supprimé. Le cas se présente vraiment — quelqu'un
- * qui ouvre la page dans un navigateur neuf reçoit une session anonyme toute fraîche
- * (`ensureSession`, cf. supabase.ts), et supprimer *ça* effacerait un compte vide en
- * annonçant à la personne que ses données sont parties.
+ * qui ouvre la page dans un navigateur où il est passé par l'app y trouve une session anonyme
+ * vide (la page elle-même n'en crée plus, `laSessionSOuvreSur`), et supprimer *ça* effacerait un
+ * compte vide en annonçant à la personne que ses données sont parties.
  *
  * D'où le troisième champ, `aDesDonnees` : une session anonyme ne vaut d'être supprimée que
  * si elle porte quelque chose.

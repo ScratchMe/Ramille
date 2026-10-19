@@ -39,6 +39,9 @@ import type { EtapeSoumission, GenreErreurSoumission } from '@/types/soumission'
 // Et le flux du code (`v1-27` §12.28) : `src/types/connexion.ts` est la source des deux valeurs, et
 // c'est lui qui décide du `type` envoyé à l'API — la mesure ne peut pas en connaître un troisième.
 import type { ContexteDuCode } from '@/types/connexion';
+// La règle qui dit sur quelle route la session s'ouvre, pure elle aussi : le rattrapage de l'ouverture
+// la relit au lieu d'en tenir une seconde liste des surfaces sans compte.
+import { laSessionSOuvreSur } from '@/types/session';
 
 export const USAGE_EVENT_NAMES = [
   'app_open',
@@ -201,7 +204,12 @@ export type UsageEventPropsByName = {
    *  invérifiable le second (« ouvrir un rappel doit écrire une ouverture ») et
    *  incomparables les séries d'avant et d'après le 11/09/2026. `'retour'` n'existe que sur
    *  natif : voir le commentaire de l'écoute `AppState` dans `src/app/_layout.tsx`. */
-  app_open: { origine: 'demarrage' | 'retour' };
+  app_open: {
+    origine: 'demarrage' | 'retour';
+    /** La version de l'app qui s'ouvre (`versionDeLApp`, `src/types/remontee-des-pannes.ts`) : ce qui dit
+     *  quelle version tourne encore chez qui. Absente quand l'app ne sait pas la lire. */
+    version?: string;
+  };
   onboarding_step_view: { step: string };
   onboarding_complete: never;
   bilan_step_view: { step: string };
@@ -271,15 +279,22 @@ export type UsageEventPropsByName = {
   /** La feuille des rappels s'est affichée. Elle ne s'ouvre que depuis un engagement,
    *  donc elle n'a pas de propriété de provenance : il n'y en a qu'une. */
   rappels_view: never;
-  /** Une exception de rendu a remonté jusqu'à l'`ErrorBoundary` du layout racine (C0.4).
-   *  **Ce qui décrit la panne tient en deux propriétés, et jamais une troisième** : la catégorie
-   *  et la route. Pas de message d'exception, pas de pile — un message d'erreur est du texte libre,
-   *  et du texte libre dans `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la
-   *  migration). Les deux de la file d'attente, en dessous, disent seulement **quand** elle est
-   *  partie : un drapeau et un nombre, posés par le code. */
+  /** Une panne de l'app : une exception de rendu arrivée à l'`ErrorBoundary` du layout racine (C0.4),
+   *  ou, depuis le 18/10/2026, une exception que personne n'a rattrapée et une promesse rejetée sans
+   *  personne pour l'attendre (`src/lib/remontee-des-pannes.ts`).
+   *  **Ce qui décrit la panne tient en deux propriétés** : la catégorie et la route. Pas de message
+   *  d'exception, pas de pile — un message d'erreur est du texte libre, et du texte libre dans
+   *  `usage_events` rendrait la table réidentifiable (cf. l'en-tête de la migration). Les autres sont
+   *  posées par le code : d'où elle vient, la version qui l'a eue, et, pour la file d'attente,
+   *  **quand** elle est partie. */
   app_error: {
     category: AppErrorCategory;
     route: string;
+    /** D'où la panne est arrivée (`ORIGINES_DES_PANNES`). Absente sur une ligne d'avant le 18/10/2026,
+     *  qui vient alors du rendu, seul chemin d'alors. */
+    origine?: OrigineDUnePanne;
+    /** La version de l'app qui l'a eue — celle du moment de la panne, pas de l'envoi. */
+    version?: string;
     /** **Envoyée plus tard** (02/10/2026, la file d'attente locale, `src/types/erreurs-en-attente.ts`) :
      *  pas de session ou pas de réponse au moment de la panne. L'horodatage de la ligne est alors celui
      *  de l'envoi, d'où `retard_h`, l'écart en heures. Absentes sur un envoi immédiat. */
@@ -324,6 +339,20 @@ export const APP_ERROR_CATEGORIES = [
 ] as const;
 
 export type AppErrorCategory = (typeof APP_ERROR_CATEGORIES)[number];
+
+// ## `app_error` : l'origine, même règle que les provenances
+//
+// - `rendu` : l'`ErrorBoundary` du layout racine — l'écran « Quelque chose s'est mal passé » ;
+// - `globale` : une exception que personne n'a rattrapée, l'app restée ouverte (le web, ou un
+//   signalement non fatal sur natif) ;
+// - `fatale` : la même, mais elle ferme l'app (natif) — elle ne part qu'au lancement suivant ;
+// - `promesse` : une promesse rejetée sans personne pour attendre son échec.
+//
+// Une liste fermée parce que la base ne valide pas les valeurs de `props` : une origine que le code
+// inventerait se lirait zéro partout ailleurs (`MESURE.md` §1).
+export const ORIGINES_DES_PANNES = ['rendu', 'globale', 'fatale', 'promesse'] as const;
+
+export type OrigineDUnePanne = (typeof ORIGINES_DES_PANNES)[number];
 
 // `name` plutôt qu'`instanceof` : les constructeurs natifs portent leur nom dans le prototype,
 // que la minification ne touche pas, alors qu'`instanceof` se trompe dès qu'une exception
@@ -412,18 +441,27 @@ export const SEJOUR_INITIAL: SejourDerriere = { depuis: null };
  * Le layout émet `app_open` (`demarrage`) après la session de son montage. Quand le montage finit
  * sans session — sa création a échoué (le refus du captcha, puis « Réessayer » sur l'écran de la
  * racine, qui ouvre la session ailleurs), ou il n'avait rien à ouvrir (un jeton expiré hors ligne, une
- * session refusée) —, l'ouverture ne partait jamais pour ce chargement, et le biais contre les nouveaux venus
+ * session refusée, une surface sans compte ouverte sans session, qu'on quitte ensuite pour l'app) —,
+ * l'ouverture ne partait jamais pour ce chargement, et le biais contre les nouveaux venus
  * que l'émission après la session avait fermé revenait par cette porte (contre-lecture de l'écran du
  * refus, 04/10/2026). Le rattrapage ne vaut que dans ce cas-là : au démarrage normal, c'est la suite de
  * la session du montage qui émet, et le faire aussi depuis l'écoute d'auth ferait partir deux fois les
  * pannes en attente.
+ *
+ * **Et seulement sur une route où la session s'ouvre** (`laSessionSOuvreSur`). Sur `/compte/suppression`,
+ * le code reçu ouvre la session du compte qu'on vient supprimer : la rattraper là comptait une ouverture
+ * de l'app — et un signe de vie — à son nom, sans qu'on soit sorti de la page. Une surface sans compte
+ * ouverte sans session ne compte d'ouverture que quand on la quitte pour l'app : le layout ouvre alors
+ * la session et l'émet, ou, si une session est arrivée pendant qu'on y était, la rattrape au retour.
  */
 export function rattraperLOuverture(etat: {
   session: boolean;
   montageSansSession: boolean;
   dejaComptee: boolean;
+  /** La route affichée quand la session arrive. */
+  chemin: string;
 }): boolean {
-  return etat.session && etat.montageSansSession && !etat.dejaComptee;
+  return etat.session && etat.montageSansSession && !etat.dejaComptee && laSessionSOuvreSur(etat.chemin);
 }
 
 /**

@@ -302,7 +302,7 @@ Deux mécanismes de génération server-side qu'il faut garder synchronisés si 
 **Le contexte se corrige sans resoumettre de bilan, et `p_cause` est ce qui le rend possible**
 (C6.4, `20260919230000_le_contexte_sort_du_questionnaire.sql`). « Modifier ces réponses » rouvrait
 le questionnaire à l'étape « Contexte », et en sortir soumettait un bilan entier — alors que
-corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses trajets. Six points :
+corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses trajets. Sept points :
 
 - **`mettre_a_jour_le_contexte(zone, tc, vehicules, teletravail)` est le seul écrivain de ces
   quatre colonnes hors questionnaire**, et ce n'est **pas** une question de permission :
@@ -347,6 +347,16 @@ corriger « j'ai déménagé » ne change rien à ce qu'on déclare de ses traje
   le 01/10/2026 par la personne qui pilote : l'encart a déjà parlé sur l'appareil du changement, et
   sans borne il annonçait une perte de n'importe quelle date, un encart tu reparaissant d'une saison
   à l'autre avec son ancienne cause. Le reste, dans une même saison, est nommé dans la dérivation.
+- **Vingt corrections par compte et par fenêtre de vingt-quatre heures, un appel à la fois**
+  (`20261018110000`, test `55`). Chaque correction qui change quelque chose recalcule le bilan et
+  reconstruit le plan, et une boucle qui alterne deux valeurs occupait le processeur de la petite
+  instance. Le compte vit sur `profiles` (`corrections_du_contexte`, `…_depuis`, écrites par le RPC
+  seul, rendues par l'export) et se prend **après** la comparaison « rien n'a bougé », qui ne coûte
+  rien et ne compte pas ; la fenêtre s'ouvre à la première correction. Au-delà, `RM002`, et l'écran le
+  dit (`TROP_DE_CORRECTIONS`, `src/lib/contexte.ts`) plutôt que « Réessaie dans un instant », faux
+  jusqu'au lendemain. Le verrou consultatif (`pg_advisory_xact_lock`, une clé par compte) se prend
+  **avant** de lire les réponses : deux appels du même compte lisent, comparent et reconstruisent l'un
+  après l'autre, deux comptes ne s'attendent jamais.
 - **Les quatre questions ne sont écrites qu'une fois** (`ChampsDeContexte`), partagées par l'étape
   du questionnaire et par `/contexte` ; ce qui diffère est l'introduction. Et la phrase « elles
   n'entrent pas dans le calcul de ton bilan » se **dérive** (`phraseDuCalculDuContexte`) : elle
@@ -381,6 +391,13 @@ avec un `detail_kind` neuf aurait reçu le détail générique du segment, en si
 retirées de la contrainte et le champ mis à `null` sur les trois templates concernés, plutôt que
 branchées : les faire passer par le `case` l'obligerait à lire `v_count`, une variable locale de la
 branche, et en ferait un troisième endroit où se lit la logique de segment.
+
+**Sur les voyages, `action_templates.trips` se compte dans l'unité du compteur déclaré — un vol, un long
+trajet : des allers — et l'estimateur le borne par la déclaration** (`least`). « Remplacer un
+aller-retour en avion par le train » vaut donc `trips = 2` (`20261018130000`, test `57`) : à 1, son gain
+était celui d'un aller simple, la moitié de son libellé, alors que « Renoncer à un vol … » reste à 1 (un
+vol est un trajet simple) ; les plans déjà générés gardent leur gain figé et les points déjà posés leur
+question, le nouveau gain venant à la reconstruction du plan.
 
 ## 4. L'écran du plan : la saison, le premier plan, la barre d'onglets
 

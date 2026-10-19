@@ -53,8 +53,11 @@ pas `db start` comme pour pgTAP, parce que la session anonyme vient de GoTrue et
 PostgREST —, un second export branché sur cette stack, Playwright, le script.
 
 **En local, et dans l'environnement d'agent aussi** — contrairement à ce que ce dépôt a cru jusqu'au
-20/09/2026, Docker y tourne : le démon ne démarre pas seul, mais `sudo dockerd > /tmp/dockerd.log
-2>&1 &` suffit (mesuré, l'agent y est `root`). Ensuite :
+20/09/2026, Docker y tourne : le démon ne démarre pas seul, et il se lance **détaché** :
+`sudo sh -c 'setsid nohup dockerd > /tmp/dockerd.log 2>&1 < /dev/null &'` (l'agent y est `root`).
+Lancé comme une tâche de fond de l'outil de commande, il meurt à la limite de cette tâche, trente
+minutes par défaut, et emporte la stack de tous ceux qui s'en servaient (18/10/2026, une vague de
+quatre sous-agents). Ensuite :
 
 ```bash
 npx supabase@2.117.0 start                      # ~3 min la première fois : les images

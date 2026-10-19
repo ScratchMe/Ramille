@@ -302,8 +302,9 @@ function sessionIntrouvable(cause?: unknown): Error {
  * C'est le seul appel du produit qui *connecte* à un compte au lieu d'en rattacher un : tout le
  * reste de ce fichier lie une identité à la session anonyme courante. Né pour la page web de
  * suppression, c'est depuis `v1-10` §2.D **le** chemin de reconnexion — sur un appareil neuf,
- * `ensureSession()` vient de créer une session anonyme vide qui n'est pas le compte de la
- * personne, et ni `linkIdentity` ni `updateUser` ne peuvent l'aider.
+ * la session est une session anonyme vide qui n'est pas le compte de la personne, ou il n'y en a
+ * pas du tout (`/compte/suppression` n'en crée pas), et ni `linkIdentity` ni `updateUser` ne
+ * peuvent l'aider. Il n'en demande aucune.
  *
  * **`shouldCreateUser: false` est la garantie centrale** : sans lui, saisir n'importe quelle
  * adresse créerait un compte — et une page de suppression qui fabrique des comptes serait

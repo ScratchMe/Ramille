@@ -22,6 +22,12 @@
 > s'appelle « Confidentialité » ; et la page publique de suppression ne s'atteint pas depuis l'app —
 > « Supprimer mon compte », dans « Toi », ouvre la confirmation —, elle s'ouvre dans Chrome. Ce
 > document reste la liste d'origine, et ce qu'un écart y déclenche (§3) vaut toujours.
+>
+> **B9 à B14, ajoutées le 18/10/2026, ne sont versées dans aucune feuille.** Elles vérifient ce que la vague
+> d'audit du jour a écrit et qu'un appareil seul peut montrer : les pannes que le rendu ne voit pas, la
+> version lue du module natif, le jeton d'appareil retenté, le démarrage quand le jeton d'accès a expiré hors
+> ligne (`remontee-erreurs.md` §3 ter, `COMPTE.md` §3, `FRONT-SESSION.md`). Elles attendent un build qui porte
+> cette vague, et se versent dans la feuille qui le jouera ; `v1-13` §11.35 à §11.38 les portent.
 
 ## 1. Ce que l'agent technique relève seul, sur l'artefact du build
 
@@ -46,6 +52,11 @@ qu'elles sont couvertes.
 - **L'agent de recette lit la base de production en lecture seule** (requêtes ci-dessous). L'identifiant du
   compte se retrouve par l'adresse du compte Google de test :
   `select id from auth.users where email = '<adresse du compte de test>';`
+- **B9 et B11 demandent une exception volontaire, et aucun geste du produit n'en provoque une** : aucun
+  déclencheur de panne n'a été trouvé dans `src/` (relevé le 18/10/2026). Le build qui les joue doit en porter
+  un, temporaire — une exception levée dans un minuteur, un rejet de promesse que personne n'attend —, retiré
+  avant la production et jamais fusionné. C'est un build de plus : un par deux jours au plus (registre
+  d'exploitation §3.3), donc **une décision de la personne qui pilote, avant le build**.
 
 | | À faire | Attendu | À relever |
 |---|---|---|---|
@@ -59,6 +70,14 @@ qu'elles sont couvertes.
 | B6 | *(Facultatif, si `adb` est branché.)* Premier lancement, **refuser** les notifications, et lire `adb logcat` filtré sur `FirebaseMessaging` et `FirebaseInstallations` | Firebase s'initialise et obtient son identifiant malgré le refus — ce que dit la page | Les lignes qui le montrent, ou leur absence. A2 couvre déjà la configuration ; ceci couvre le comportement |
 | B7 | Ouvrir les deux pages publiques dans l'app : « Politique de confidentialité » et « Supprimer mon compte » | La première porte « 2 octobre 2026 » et parle des sessions de connexion ; la seconde dit ce que les sauvegardes gardent (« sessions exceptées », 90 jours) | Que le texte long se lit en entier, sans coupure |
 | B8 | « Toi » → **« Supprimer mon compte »**, jusqu'au bout | Le compte de test disparaît, et tout ce qui s'y rattache | `select count(*) from auth.users where id = '<id>';` et la même sur `public.push_tokens where user_id = '<id>'` : **0** et **0** |
+| B9 | App ouverte au moins une seconde, réseau là : déclencher l'**exception volontaire dans un minuteur** (voir plus haut). Puis relancer l'app à froid, toujours avec le réseau. Ouvrir « Confidentialité » et lire le paragraphe des repères de parcours | L'app **se ferme** dans la seconde qui suit l'exception (elle ne se fige pas, ne reste pas sur un écran blanc). Au lancement suivant, une ligne arrive : `select occurred_at, props from public.usage_events where user_id = '<id>' and name = 'app_error' order by occurred_at desc limit 5;` porte `origine` = `fatale`, `differee` = `true`, `retard_h` (0 si le relancement suit de moins d'une demi-heure), `version` du build, `category` et `route`, **et aucun message**. La page dit « une erreur qui a fermé l'application » | Le temps entre l'exception et la fermeture ; la ligne mot pour mot (les `props` seuls) ; si elle n'arrive qu'au deuxième lancement. **Une app qui ne se ferme pas** veut dire que le gestionnaire d'avant n'a pas été rappelé : défaut, à signaler en premier |
+| B10 | Premier lancement du build, sans rien toucher. Relever le numéro de build sur la page du build (expo.dev, « Version code ») | L'app **démarre normalement**, et `select props ->> 'version' as version, platform from public.usage_events where user_id = '<id>' and name = 'app_open' order by occurred_at desc limit 3;` rend `1.0.0+N` (N le numéro relevé) et `android` | La valeur lue. `1.0.0` seule sur Android veut dire que le module natif `ExpoApplication` n'a pas été lu (repli prévu, pas un plantage) : à noter, pas à corriger en séance. Un démarrage qui plante ou reste sur l'écran de lancement est un défaut bloquant |
+| B11 | Avec le même build que B9 : déclencher le **rejet de promesse volontaire**, deux fois de suite dans le même lancement | L'app **reste ouverte**. La même requête que B9 porte **une seule** ligne `origine` = `promesse`, sans `differee` (le réseau était là) | Le nombre de lignes (une, pas deux) ; si l'app a bougé. Cette écoute ne s'installe qu'en production : sur un build de développement, rien ne part (B14) |
+| B12 | Premier lancement, réseau là, notifications **refusées** à l'invite (ou jamais accordées). Aller dans les réglages d'Android (Applications → Ramille → Notifications), les autoriser, **revenir dans Ramille sans la fermer** | Le jeton s'inscrit **au retour, sans redémarrage** : `select platform, created_at, disabled_at from public.push_tokens where user_id = '<id>';` rend une ligne `android`, `disabled_at` vide | L'heure de `created_at` rapportée à celle du retour. Une ligne qui n'apparaît qu'après un démarrage à froid veut dire que la garde du jeton ne retente pas au retour (`gardeDuJeton`). Ne pas afficher la colonne `token` |
+| B12′ | Réseau coupé (mode avion) **avant** d'accepter les notifications ; les accepter ; la même requête que B12 ; rétablir le réseau, mettre Ramille en arrière-plan puis la rouvrir | Pas de ligne tant que le réseau est coupé ; **une ligne `android` après le retour** | Les deux lectures (avant, après). La garde retente à chaque retour tant que rien n'est inscrit, sans boucle : une seule tentative par retour |
+| B12″ | Avec un compte rattaché et le jeton inscrit : se déconnecter (« Toi » → se déconnecter), puis se reconnecter **au même compte** sans fermer l'app ; la même requête que B12 | Après la déconnexion, la ligne porte `disabled_at` ; **après la reconnexion, une ligne active** pour ce compte | Les deux lectures. Une ligne restée désactivée veut dire que la garde a gardé en mémoire le compte d'avant la déconnexion (`gardeDuJeton`, remise à zéro sur une session nulle) |
+| B13 | Un compte ou une session sur le téléphone, l'app fermée **plus d'une heure** (le jeton d'accès a expiré). Couper le réseau (mode avion), puis ouvrir l'app à froid. Chronométrer jusqu'au premier écran | **Jamais « Le démarrage a échoué »** : l'app route comme hors ligne (avec un bilan soumis, le plan et son « Réessayer », comme §11.5 de `v1-13`). L'écran de lancement peut attendre longtemps : `auth-js` rejoue un rafraîchissement en panne de transport pendant près de trente secondes avant de rendre l'erreur | **Le temps d'attente, en secondes** — le code l'annonce, aucune mesure sur appareil ne l'a jamais confirmé (`COMPTE.md` §3) — et ce que l'écran montre pendant ; puis, le réseau rétabli, si « Réessayer » rouvre le plan. Trente secondes devant l'écran de lancement sont ce que le code prévoit : si cela paraît trop long, c'est une question de produit (la durée tolérée), pas seulement un défaut |
+| B14 | *(Facultatif, sur un build de **débogage** relié à Metro : `npx expo run:android` sur une machine qui a la chaîne Android — l'APK de `android.yml` n'est pas publié.)* Lever une exception non rattrapée dans un minuteur | L'**écran rouge de React Native s'affiche** comme avant : la remontée n'écoute rien en développement. Aucune ligne `app_error` d'origine `globale` ni `fatale` n'arrive pour ce compte | Si l'écran rouge manque, le gestionnaire est remplacé au lieu d'être chaîné. Le développement écrit dans la base de production : relire `usage_events` après coup |
 
 ## 3. Ce qu'il faut rendre
 
@@ -73,3 +92,10 @@ Ce que chaque écart déclenche, côté agent technique :
   la saisie du formulaire « Sécurité des données » ;
 - **A1** : une correction avant le build de production ;
 - **B5** : une vérification de `assetlinks.json` et de l'empreinte de la clé EAS.
+- **B9, B11** : la remontée des pannes (`src/lib/remontee-des-pannes.ts`), et, si l'app ne se ferme pas ou si
+  la ligne n'arrive pas, la phrase « une erreur qui a fermé l'application » de la page de confidentialité à
+  corriger avant le test fermé ;
+- **B10** : la lecture de la version, dont un plantage au démarrage est le cas bloquant ;
+- **B12, B12′, B12″** : la garde du jeton d'appareil (`gardeDuJeton`, `FRONT-SESSION.md`) ;
+- **B13** : `suiteDuDemarrage` (`COMPTE.md` §3), et la durée d'attente si elle est jugée trop longue ;
+- **B14** : `installerLaRemonteeDesPannes`, dont la garde du développement.

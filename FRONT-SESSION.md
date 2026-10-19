@@ -31,17 +31,30 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   avait aucun appel ailleurs qu'au lancement : le lien de `/connexion/retrouver` ouvre la session
   d'un utilisateur **différent** de la session anonyme qui venait d'enregistrer le jeton, si bien
   que l'appareil restait inscrit au nom de celui qu'on vient de quitter — et recevait ses rappels
-  jusqu'au prochain démarrage à froid. Le garde vit hors du composant (`onAuthStateChange` émet à
-  chaque rafraîchissement de jeton, soit toutes les heures) et **ne se valide qu'après le succès**
-  de l'appel, sinon un échec réseau le referme sur l'état qu'il devait corriger.
+  jusqu'au prochain démarrage à froid. La garde vit hors du composant (`onAuthStateChange` émet à
+  chaque rafraîchissement de jeton, soit toutes les heures) et sa règle est pure et testée
+  (`gardeDuJeton`, `src/types/session.ts`) : un même utilisateur ne relance rien — sauf après une
+  session nulle, puisque la déconnexion désinscrit le jeton et que qui revient dans le même lancement
+  doit le réinscrire —, un enregistrement en cours ne se double pas, et **un enregistrement qui n'a
+  rien inscrit se retente au retour au premier plan** et au démarrage suivant — jamais à l'émission
+  d'une session, ni de lui-même. Elle ne
+  se fondait que sur une exception, alors que l'enregistrement rend `false` sur ses échecs courants :
+  un échec réseau passait pour fait jusqu'au démarrage à froid suivant. Le retour retente à chaque
+  `active`, même court : l'aller-retour dans les réglages du téléphone, où l'on vient de rouvrir les
+  notifications, est le cas qu'il attend.
 - **`enregistrerLeJeton()` rend un booléen, et c'est la seule chose qui peut faire passer
   `jetonActif` à vrai** (`src/lib/rappels.ts`) — une permission accordée dont l'enregistrement a
   échoué (pas d'identifiants FCM, pas de réseau, simulateur) faisait promettre au plan une
   notification que le serveur ne voyait pas. Hors du chemin `push`, `jetonActif` n'est pas touché :
   la préférence et le jeton sont deux faits distincts, et la feuille rend `prefs.jetonActif`
-  inchangé quand on la referme sans rien choisir. Le booléen ne distingue pas encore « permission
-  non accordée » d'un échec réseau ; le garde d'`_layout.tsx` ne rend donc le jeton à son
-  propriétaire précédent que sur une exception.
+  inchangé quand on la referme sans rien choisir. Le booléen ne distingue pas « permission non
+  accordée » d'un échec réseau, et la garde n'en a pas besoin : dans les deux cas l'appareil n'est
+  pas inscrit au nom de la personne, et le retour suivant retente.
+- **Une surface sans compte ne crée pas de session à l'ouverture** (18/10/2026, `COMPTE.md` §1) :
+  `/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` restaurent
+  la session de l'appareil, et le layout ouvre la session dès qu'on en sort pour l'app. Un écran
+  ajouté à cette liste ne doit rien lire qui demande une session, ni rien écrire sans
+  `ensureSession()` avant ; un écran qui écrit n'y entre pas (`/feedback`).
 - **Une absence de jeton n'accuse personne : c'est la permission qui le dit.** L'absence recouvre
   quatre situations — jamais demandée, refusée, enregistrement échoué, simulateur — qui n'appellent
   pas la même phrase. `lignesDeReglage` **et** `carteAttente` (`src/types/rappels.ts`) reçoivent
@@ -241,6 +254,10 @@ périmerait en silence au prochain passage :
   300 ms, de 2,14 à 1,64 s à 100 ms, entre l'ouverture et le plan qui montre son action. **Une lecture
   que l'écran du plan ajoute se place dans `lireLePlan`**, pas dans l'effet de l'écran : sinon elle
   repart après le plancher, et le gain fond (`PLAN.md` §4).
+- **La racine lit la suite dans l'état de la session** (`suiteDuDemarrage`, `src/types/session.ts`,
+  18/10/2026) : une session présente fait lire le bilan, un refus attend l'écran de reconnexion, et une
+  session `indisponible` — le rafraîchissement en panne, sans exception — se replie comme une coupure,
+  sur la marque locale ou le brouillon, au lieu de « Le démarrage a échoué » (`COMPTE.md` §3).
 - **La lecture du jeton d'appareil attend l'enregistrement en cours** (`suivreLEnregistrementDuJeton`,
   `src/lib/notification-prefs.ts`, 03/10/2026). Le démarrage enregistre le jeton au moment où la
   lecture du plan part désormais : sans cette attente, elle pouvait lire la marque d'avant, et la carte

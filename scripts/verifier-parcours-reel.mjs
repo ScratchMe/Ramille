@@ -1337,7 +1337,78 @@ async function rpc(nom, jeton, corps = {}) {
   if (!reponse.ok) throw new Ecart(`rpc ${nom} : HTTP ${reponse.status} ${await reponse.text()}`);
 }
 
+/** Les comptes de la stack, lus comme le serveur : ce qu'aucune requête de la personne ne peut voir. */
+async function compterLesComptes() {
+  const reponse = await fetch(`${API}/auth/v1/admin/users?page=1&per_page=1000`, {
+    headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` },
+  });
+  if (!reponse.ok) throw new Ecart(`comptes : HTTP ${reponse.status} ${await reponse.text()}`);
+  const total = Number(reponse.headers.get('x-total-count'));
+  if (Number.isFinite(total) && total > 0) return total;
+  return ((await reponse.json()).users ?? []).length;
+}
+
+/** La session que le SDK a rangée dans cet onglet, ou `null` — sans l'exiger, contrairement à `session()`. */
+async function sessionRangee(onglet) {
+  return onglet.evaluate(() =>
+    Object.keys(localStorage).some((cle) => cle.startsWith('sb-') && cle.endsWith('-auth-token'))
+  );
+}
+
 try {
+  // ── 0. Les surfaces sans compte, ouvertes à froid (18/10/2026) ─────────────────────────────────
+  // Un navigateur neuf qui lit la politique de confidentialité — l'examinateur de Play — recevait un
+  // compte anonyme : le layout racine l'ouvrait au montage, sur toute route. Il ne fait plus que
+  // restaurer sur ces pages (`laSessionSOuvreSur`, `src/types/session.ts`) ; la base relue comme le
+  // serveur dit qu'aucun compte n'est né. Puis « Retour » mène à l'app, où la session s'ouvre : la
+  // seconde moitié de la règle. Le captcha n'est pas mesurable ici — la stack n'en a pas, l'export pas
+  // de clé — : `verifier-etats-export.mjs` (section M) le mesure quand l'export en porte une.
+  //
+  // Éprouvé en le cassant le 18/10/2026, par `node scripts/rejouer-la-ci.mjs base parcours` sur la source
+  // mutée : le layout qui ouvre la session sur toute route (l'appel d'avant) → le parcours s'arrête ici,
+  // « /confidentialite, ouverte à froid, a rangé une session dans le navigateur » ; et le layout qui ne
+  // fait rien sur une surface sans compte (la restauration jamais rendue) passe cette étape et s'arrête
+  // à la 8 ter, « l'ouverture de /confidentialite avec une session ne s'est pas comptée (0) ».
+  etape('surfaces sans compte — ouvertes à froid, aucun compte ne naît');
+  {
+    const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/compte/suppression', '/rappels/stop', '/status'];
+    const avant = await compterLesComptes();
+    const onglet = await nouvelOnglet();
+    const demandes = [];
+    onglet.on('request', (requete) => {
+      if (requete.method() === 'POST' && requete.url().includes('/auth/v1/signup')) demandes.push(requete.url());
+    });
+    for (const chemin of SURFACES_SANS_COMPTE) {
+      await onglet.goto(`${base}${chemin}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await onglet.waitForFunction(
+        () => {
+          const racine = document.getElementById('root');
+          return !!racine && Object.keys(racine).some((cle) => cle.startsWith('__react'));
+        },
+        null,
+        { timeout: ATTENTE }
+      );
+      // La session du montage part après l'hydratation : de quoi la laisser partir si elle devait.
+      await onglet.waitForTimeout(2_500);
+      assurer(!(await sessionRangee(onglet)), `${chemin}, ouverte à froid, a rangé une session dans le navigateur`);
+    }
+    assurer(demandes.length === 0, `les surfaces sans compte ont demandé ${demandes.length} session(s) anonyme(s)`);
+    const apres = await compterLesComptes();
+    assurer(apres === avant, `${apres - avant} compte(s) né(s) d'une visite des surfaces sans compte`);
+
+    // Puis l'app : la politique de confidentialité, ouverte à froid, rend la main par « Retour ».
+    await onglet.goto(`${base}/confidentialite`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await onglet.getByRole('link', { name: 'Retour', exact: true }).first().click({ timeout: ATTENTE });
+    await onglet.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+    await onglet.waitForFunction(
+      () => Object.keys(localStorage).some((cle) => cle.startsWith('sb-') && cle.endsWith('-auth-token')),
+      null,
+      { timeout: ATTENTE }
+    );
+    assurer((await compterLesComptes()) === avant + 1, 'quitter la page publique pour l’app n’a pas ouvert une session, et une seule');
+    await onglet.context().close();
+  }
+
   // ── 1. L'onboarding, jusqu'au questionnaire ──────────────────────────────────────────────────
   etape('onboarding');
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -1871,6 +1942,46 @@ try {
   }
   await page.waitForURL(/\/suivi$/, { timeout: ATTENTE });
   await page.getByLabel(/^Bilan du .*4,2 t CO₂e$/).first().waitFor({ state: 'visible', timeout: ATTENTE });
+
+  // ── 8 ter. Une session déjà là se restaure sur une surface sans compte (18/10/2026) ────────────
+  // Le montage n'y ouvre rien, mais il y accueille la session de l'appareil : un second onglet du même
+  // appareil sur la politique de confidentialité garde le même utilisateur, aucun compte ne naît, et
+  // l'ouverture se compte à son nom (`app_open`, sa version comprise) — la preuve que le layout a reçu la
+  // session restaurée, et pas seulement que le SDK l'a gardée dans le stockage.
+  etape('surfaces sans compte — une session déjà là se restaure');
+  {
+    const { userId } = await session();
+    const ouvertures = async () => {
+      const reponse = await fetch(
+        `${API}/rest/v1/usage_events?select=props&name=eq.app_open&user_id=eq.${userId}`,
+        { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` } }
+      );
+      if (!reponse.ok) throw new Ecart(`ouvertures : HTTP ${reponse.status} ${await reponse.text()}`);
+      return reponse.json();
+    };
+    const ouverturesAvant = (await ouvertures()).length;
+    const avant = await compterLesComptes();
+    const onglet = await nouvelOnglet({ contexte: page.context() });
+    await onglet.goto(`${base}/confidentialite`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await onglet.waitForTimeout(2_500);
+    const rangee = await onglet.evaluate(() => {
+      for (const cle of Object.keys(localStorage)) {
+        if (cle.startsWith('sb-') && cle.endsWith('-auth-token')) return JSON.parse(localStorage.getItem(cle)).user.id;
+      }
+      return null;
+    });
+    assurer(rangee === userId, `la session de l’appareil n’est plus la même sur /confidentialite (${rangee})`);
+    assurer((await compterLesComptes()) === avant, 'un compte est né en ouvrant /confidentialite avec une session');
+    const apres = await ouvertures();
+    assurer(
+      apres.length === ouverturesAvant + 1,
+      `l’ouverture de /confidentialite avec une session ne s’est pas comptée (${apres.length - ouverturesAvant})`
+    );
+    // La version part avec chaque ouverture : celle d'`app.json`, seule sur le web.
+    const sansVersion = apres.filter(({ props }) => !/^\d+\.\d+\.\d+$/.test(String(props?.version)));
+    assurer(sansVersion.length === 0, `${sansVersion.length} ouverture(s) sans version (${JSON.stringify(sansVersion[0])})`);
+    await onglet.close();
+  }
 
   // ── 8 bis. « Toi » : la ligne de canal, hors d'atteinte et au clavier ────────────────────────
   //

@@ -3,8 +3,8 @@
 //
 // La suppression est un bloqueur Google Play : depuis 2023, toute app permettant de créer un
 // compte doit offrir un chemin de suppression **dans l'app**. Ramille en crée un pour chaque
-// visiteur dès l'ouverture (session anonyme), donc la règle s'applique même à quelqu'un qui ne
-// s'est jamais inscrit.
+// visiteur dès qu'il ouvre l'app (session anonyme — les pages qui ne demandent pas de compte n'en
+// créent pas), donc la règle s'applique même à quelqu'un qui ne s'est jamais inscrit.
 import { Platform, Share } from 'react-native';
 
 import { noterUneReconnexion } from '@/lib/connexion-prefs';
@@ -109,9 +109,11 @@ export async function exportMyData(): Promise<ExportResult> {
  * Conséquence à connaître avant de la « corriger » : **l'absence totale de session tombe elle
  * aussi en `indisponible`**, parce que le SDK la signale comme une erreur
  * (`AuthSessionMissingError`) et non comme un utilisateur nul. C'est la bonne réponse ici —
- * chaque visiteur reçoit une session dès l'ouverture (`ensureSession`), donc ne pas en trouver
- * une veut dire que quelque chose a échoué, pas que la personne n'a pas de compte. Et l'ancien
- * repli offrait un bouton « Rattacher un compte » qui, sans session, ne pouvait rien rattacher.
+ * cette lecture ne se fait que sur des écrans de l'app, où chaque visiteur reçoit une session à
+ * l'ouverture (`ensureSession` ; les surfaces sans compte n'en créent pas, et ne la font pas), donc
+ * ne pas en trouver une veut dire que quelque chose a échoué, pas que la personne n'a pas de
+ * compte. Et l'ancien repli offrait un bouton « Rattacher un compte » qui, sans session, ne
+ * pouvait rien rattacher.
  */
 export async function lireEtatDuRattachement(): Promise<EtatRattachement> {
   const { data, error } = await supabase.auth.getUser();

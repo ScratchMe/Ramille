@@ -1,98 +1,42 @@
 -- Tests pgTAP des plafonds pour tout le projet et de la purge qui tient (migration
 -- `20261004201217_les_plafonds_globaux.sql`, plan anti-abus, `v1-27` §12.35). Les plafonds de chaque compte sont gardés par `11`
--- et `12` ; la garde de volume des comptes qui portent quelque chose, par `16` et `36`.
+-- et `12` ; la garde de volume des comptes qui portent quelque chose, par `16` et `36`. **Les
+-- plafonds des événements d'usage n'y sont plus** : leurs assertions 1 à 3 visaient le plafond de
+-- 6 000 par heure, que `20261018110000` remplace par des budgets du jour, épinglés par `55`.
 --
 -- **Éprouvé en le cassant, le 04/10/2026** (TESTING.md §1.1) : chaque mutation appliquée à la base
 -- locale dans une transaction annulée, ce fichier rejoué dedans, et ce qu'elle fait tomber :
 --
 --   | Ce qu'on casse | Ce qui tombe |
 --   |---|---|
---   | le plafond des événements pour tout le projet retiré | 1 |
---   | le plafond des pannes retiré | 2 |
 --   | le plafond des retours pour tout le projet retiré | 4 |
 --   | `enforce_feedback_rate_limit` sans `security definer` | 4 — le compte ne voit plus que ses propres retours |
 --   | la garde qui compte tous les candidats, vides compris | 6, 9 et 10 (la 5 passe : les vides partent quand même) |
 --   | un passage retenu qui ne supprime rien | 7, 8, 9 et 11 |
 --   | la garde qui bloque au lieu de ralentir (aucun porteur ne part) | 7, 9 et 11 (05/10/2026) |
 --   | le dénominateur de la garde compte de nouveau tous les comptes anonymes | 11 |
---   | les plafonds de tout le projet sans la borne d'âge des comptes | 1 bis et 4 bis |
+--   | le plafond des retours de tout le projet sans la borne d'âge des comptes | 4 bis |
 --
 -- (Les numéros sont ceux des libellés.) Témoin sans mutation : aucun écart.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(9);
 
--- ── 1. Les événements d'usage : 6 000 par heure pour tout le projet, dont 300 pannes ───────────
---
--- Quinze comptes à 400 événements chacun, sous leur plafond de 500 par jour : la base en reçoit
--- 6 000 dans l'heure, et le compte suivant, neuf, bute sur le plafond de tous.
+-- ── 1. Les comptes : quatre-vingts neufs, un de deux jours ───────────────────────────────────
+
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('49000000-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now(), now()
 from generate_series(1, 80) as g(i);
-
--- Ce qui est déjà en base dans l'heure compte aussi : on complète jusqu'au plafond, pas au-delà.
-insert into public.usage_events (user_id, name, props, platform)
-select ('49000000-0000-0000-0000-' || lpad(((n - 1) / 400 + 1)::text, 12, '0'))::uuid, 'app_open', '{}'::jsonb, 'web'
-from generate_series(1, 6000 - (select count(*)::int from public.usage_events where occurred_at > now() - interval '1 hour')) as g(n);
-
-select set_config('role', 'authenticated', true);
-select set_config('request.jwt.claims',
-  json_build_object('sub', '49000000-0000-0000-0000-000000000080', 'role', 'authenticated')::text, true);
-
-select throws_ok(
-  $$ insert into public.usage_events (user_id, name, props, platform)
-     values ('49000000-0000-0000-0000-000000000080', 'app_open', '{}'::jsonb, 'web') $$,
-  '23514', 'Trop d''événements d''usage pour tout le projet sur une heure.',
-  '1. au-delà de 6 000 événements dans l''heure, un compte neuf, sous son propre plafond, est refusé'
-);
-
--- Un compte né il y a deux jours, lui, écrit encore : son ouverture est un signe de vie, que lisent
--- les rappels et la purge, et le flot vient de sessions neuves (en-tête de la migration).
-reset role;
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at) values
   ('49000000-0000-0000-0000-0000000000aa', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '2 days', now());
-select set_config('request.jwt.claims',
-  json_build_object('sub', '49000000-0000-0000-0000-0000000000aa', 'role', 'authenticated')::text, true);
-select set_config('role', 'authenticated', true);
-
-select lives_ok(
-  $$ insert into public.usage_events (user_id, name, props, platform)
-     values ('49000000-0000-0000-0000-0000000000aa', 'app_open', '{}'::jsonb, 'web') $$,
-  '1 bis. et un compte né il y a deux jours passe le même plafond : il n''est pas le vecteur'
-);
 
 select set_config('request.jwt.claims',
   json_build_object('sub', '49000000-0000-0000-0000-000000000080', 'role', 'authenticated')::text, true);
-
-reset role;
-delete from public.usage_events where user_id::text like '49000000-%';
-
--- Les pannes : 300 dans l'heure, puis la suivante est refusée, alors qu'un autre événement passe.
-insert into public.usage_events (user_id, name, props, platform)
-select ('49000000-0000-0000-0000-' || lpad(((n - 1) / 100 + 1)::text, 12, '0'))::uuid, 'app_error',
-       '{"category": "rendu", "route": "/plan"}'::jsonb, 'web'
-from generate_series(1, 300 - (select count(*)::int from public.usage_events where name = 'app_error' and occurred_at > now() - interval '1 hour')) as g(n);
-
-select set_config('role', 'authenticated', true);
-
-select throws_ok(
-  $$ insert into public.usage_events (user_id, name, props, platform)
-     values ('49000000-0000-0000-0000-000000000080', 'app_error', '{"category": "rendu", "route": "/plan"}'::jsonb, 'web') $$,
-  '23514', 'Trop de pannes remontées pour tout le projet sur une heure.',
-  '2. au-delà de 300 pannes dans l''heure, la suivante est refusée'
-);
-
-select lives_ok(
-  $$ insert into public.usage_events (user_id, name, props, platform)
-     values ('49000000-0000-0000-0000-000000000080', 'app_open', '{}'::jsonb, 'web') $$,
-  '3. et un autre événement passe : le plafond des pannes n''arrête que les pannes'
-);
 
 -- ── 2. Les retours : 60 par heure pour tout le projet ────────────────────────────────────────
 
-reset role;
 insert into public.feedback (user_id, kind, message)
 select ('49000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid, 'idee', 'pgtap 49'
 from generate_series(1, 60 - (select count(*)::int from public.feedback where created_at > now() - interval '1 hour')) as g(n);

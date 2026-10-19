@@ -41,7 +41,7 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { envoyerLesErreursEnAttente, track } = require('./analytics') as typeof import('./analytics');
+const { envoyerLesErreursEnAttente, garderUnePanne, track } = require('./analytics') as typeof import('./analytics');
 
 const FILE = 'traceverte.erreurs_en_attente.v1';
 const SESSION = { data: { session: { user: { id: 'u1' } } } };
@@ -87,7 +87,7 @@ describe('la file d’attente des erreurs', () => {
     expect(await AsyncStorage.getItem(FILE)).toBeNull();
   });
 
-  it('envoie les pannes gardées en un lot, différées, et vide la file', async () => {
+  it('envoie les pannes gardées une par une, différées, et vide la file', async () => {
     mockSession.mockResolvedValue(SANS_SESSION);
     track('app_error', { category: 'type', route: '/plan' });
     track('app_error', { category: 'autre', route: '/' });
@@ -96,13 +96,76 @@ describe('la file d’attente des erreurs', () => {
 
     await envoyerLesErreursEnAttente();
 
-    expect(mockInsert).toHaveBeenCalledTimes(1);
-    const lignes = mockInsert.mock.calls[0][0] as { name: string; user_id: string; props: Record<string, unknown> }[];
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+    const lignes = mockInsert.mock.calls.map(
+      ([ligne]) => ligne as { name: string; user_id: string; props: Record<string, unknown> }
+    );
     expect(lignes.map((l) => [l.name, l.user_id, l.props.route, l.props.differee])).toEqual([
       ['app_error', 'u1', '/plan', true],
       ['app_error', 'u1', '/', true],
     ]);
     expect(await AsyncStorage.getItem(FILE)).toBeNull();
+  });
+
+  /**
+   * **Le budget du jour se compte ligne à ligne** (`enforce_usage_events_rate_limit`) : un lot en un seul
+   * insert qui le franchissait était refusé en entier, et la file se vidait des pannes qui tenaient
+   * encore dessous. Éprouvé le 18/10/2026, une mutation à la fois, l'état d'avant réécrit après chacune :
+   *   - un seul insert pour tout le lot (l'état d'avant) → quatre : « un refus au milieu… », « une
+   *     panne passagère au milieu… », « envoie les pannes gardées une par une… » et « une panne gardée
+   *     garde son origine… », qui lisent une ligne et non un tableau — compte relevé avant l'ajout du
+   *     test « un envoi qui lève… », qu'elle ferait aussi tomber (cinq depuis, non rejoué) ;
+   *   - l'envoi qui continue après un échec → « un refus au milieu… » et « une panne passagère au
+   *     milieu… », deux ;
+   *   - un refus qui garde le reste du lot → « un refus au milieu… », seul ;
+   *   - une panne passagère qui vide tout le lot → « une panne passagère au milieu… » et « garde la file
+   *     quand le lot n'a pas eu de réponse… », deux ;
+   *   - et le 19/10/2026, un envoi qui lève laissé au filet extérieur, qui ne retire rien → « un envoi qui
+   *     lève au milieu du lot… », seul.
+   */
+  const LOT = ['/a', '/b', '/c'].map((route, i) => ({ category: 'type', route, noteeLe: Date.now() - i }));
+
+  it('un refus au milieu du lot : les pannes d’avant sont parties, le reste sort de la file sans être tenté', async () => {
+    await AsyncStorage.setItem(FILE, JSON.stringify(LOT));
+    mockInsert
+      .mockResolvedValueOnce({ error: null, status: 201 })
+      .mockResolvedValueOnce({ error: { message: 'Trop de pannes remontées pour cet utilisateur sur 24 h.' }, status: 400 });
+    // Le refus se dit en développement, et ce test le provoque exprès : il ne salit pas la sortie.
+    const avertir = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      await envoyerLesErreursEnAttente();
+    } finally {
+      avertir.mockRestore();
+    }
+
+    expect(mockInsert.mock.calls.map(([ligne]) => (ligne as { props: { route: string } }).props.route)).toEqual([
+      '/a',
+      '/b',
+    ]);
+    expect(await AsyncStorage.getItem(FILE)).toBeNull();
+  });
+
+  it('une panne passagère au milieu du lot : celles d’avant sont parties, celle-là et les suivantes restent', async () => {
+    await AsyncStorage.setItem(FILE, JSON.stringify(LOT));
+    mockInsert
+      .mockResolvedValueOnce({ error: null, status: 201 })
+      .mockResolvedValueOnce({ error: { message: 'Failed to fetch' }, status: 0 });
+
+    await envoyerLesErreursEnAttente();
+
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+    expect((await fileStockee()).map((e) => e.route)).toEqual(['/b', '/c']);
+  });
+
+  it('un envoi qui lève au milieu du lot se lit comme une panne passagère : celles d’avant ne repartiront pas', async () => {
+    await AsyncStorage.setItem(FILE, JSON.stringify(LOT));
+    mockInsert.mockResolvedValueOnce({ error: null, status: 201 }).mockRejectedValueOnce(new Error('réseau'));
+
+    await envoyerLesErreursEnAttente();
+
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+    expect((await fileStockee()).map((e) => e.route)).toEqual(['/b', '/c']);
   });
 
   it('garde la file quand le lot n’a pas eu de réponse, et n’envoie rien sans session', async () => {
@@ -116,6 +179,34 @@ describe('la file d’attente des erreurs', () => {
     mockInsert.mockResolvedValue({ error: { message: 'Failed to fetch' }, status: 0 });
     await envoyerLesErreursEnAttente();
     expect(await fileStockee()).toHaveLength(1);
+  });
+
+  /**
+   * **L'origine et la version voyagent avec la panne** (18/10/2026, `src/lib/remontee-des-pannes.ts`).
+   * Éprouvé le 18/10/2026 : `garderLErreur` ne recopiant plus que la catégorie et la route → ce test et
+   * « une panne fatale se garde sans partir… », seuls.
+   */
+  it('une panne gardée garde son origine et sa version, et les envoie', async () => {
+    mockSession.mockResolvedValue(SANS_SESSION);
+    track('app_error', { category: 'type', route: '/plan', origine: 'promesse', version: '1.0.0+14' });
+    await laisserSePoser();
+    mockSession.mockResolvedValue(SESSION);
+
+    await envoyerLesErreursEnAttente();
+
+    const ligne = mockInsert.mock.calls[0][0] as { props: Record<string, unknown> };
+    expect(ligne.props).toEqual(
+      expect.objectContaining({ origine: 'promesse', version: '1.0.0+14', differee: true })
+    );
+  });
+
+  it('une panne fatale se garde sans partir : l’app se ferme avant tout envoi', async () => {
+    await garderUnePanne({ category: 'reference', route: '/suivi', origine: 'fatale', version: '1.0.0+14' });
+
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(await fileStockee()).toEqual([
+      expect.objectContaining({ category: 'reference', route: '/suivi', origine: 'fatale', version: '1.0.0+14' }),
+    ]);
   });
 
   it('un second appel pendant un envoi n’envoie pas le lot une seconde fois', async () => {

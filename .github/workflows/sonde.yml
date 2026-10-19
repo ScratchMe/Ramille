@@ -1,0 +1,33 @@
+name: Sonde de la production
+
+# La seule alerte du produit vit dans la base qu'elle surveille. Cette sonde regarde de l'extérieur,
+# toutes les heures : le site, ses pages légales, le fichier des liens Android, la page et la carte de
+# partage, et l'Auth de Supabase. Un point qui ne répond pas fait échouer le travail, et GitHub prévient
+# alors **la personne qui a modifié la ligne `cron` en dernier** (pas l'équipe, pas le dépôt) : ce qui
+# se lit dans ses réglages de notification, Actions comprises. Ce que fait chaque point, et pourquoi la
+# carte change d'adresse à chaque heure : l'en-tête de `scripts/sonder-la-production.mjs`.
+#
+# Minute 17 : GitHub retarde ou abandonne des exécutions planifiées au début de chaque heure. Seule la
+# branche par défaut est planifiée, et GitHub désactive un workflow planifié après 60 jours sans activité
+# sur le dépôt (registre d'exploitation, §3.8 et §8.13).
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sonder:
+    name: Sonder la production
+    runs-on: ubuntu-24.04
+    # Neuf points, trois essais chacun, vingt secondes par requête : le pire cas tient en quelques
+    # minutes. Le plafond est là pour que la sonde elle-même ne reste jamais suspendue.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node scripts/sonder-la-production.mjs --annotations

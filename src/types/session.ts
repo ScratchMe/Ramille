@@ -75,23 +75,29 @@ export function doitOuvrirUneSessionAnonyme(etat: EtatDeSession): boolean {
 }
 
 /**
- * Les routes où l'écran de reconnexion **ne se pose pas**, même pendant un refus (02/10/2026,
- * contre-lecture de la PR #315).
+ * **Les surfaces publiques et de service** — `/compte/suppression` (exigée par Google Play),
+ * `/rappels/stop` (le lien de désinscription d'un e-mail), `/confidentialite`, `/conditions`, `/status` :
+ * elles ne demandent pas de compte. Deux règles s'en déduisent, et une seule liste les porte, pour
+ * qu'une page ne soit jamais publique pour l'une et pas pour l'autre :
  *
- *   * **`/connexion/…`** : c'est là que la personne va se reconnecter. L'écran s'efface quand elle y
- *     part, et revient si elle en ressort sans session — sans quoi un « Retour » vers le plan la
- *     laissait devant un plan illisible, sans rien pour le dire ;
- *   * **les surfaces publiques et de service** — `/compte/suppression` (exigée par Google Play),
- *     `/rappels/stop` (le lien de désinscription d'un e-mail), `/confidentialite`, `/conditions`,
- *     `/status` : elles ne demandent pas de compte, et la surcouche cachait la confirmation d'une
- *     désinscription déjà partie. **`/feedback` n'en est pas** : il écrit un retour rattaché à la
- *     session (`sendFeedback`), et sans elle « Envoyer » répondrait sans fin « Ta session n'est pas
- *     prête » — l'écran de reconnexion y dit mieux ce qui manque.
+ *   * **l'écran de reconnexion ne s'y pose pas**, même pendant un refus (`lEcranDeReconnexionSePose`) :
+ *     la surcouche cachait la confirmation d'une désinscription déjà partie ;
+ *   * **leur ouverture ne crée pas de session** (`laSessionSOuvreSur`, 18/10/2026) : un navigateur neuf
+ *     qui lit la politique de confidentialité — l'examinateur de Play, quelqu'un qui a désinstallé l'app —
+ *     recevait un compte anonyme, et le captcha qui le précède. Aucune n'en a besoin : les pages légales
+ *     ne lisent rien, `/status` lit un référentiel public, `/rappels/stop` appelle un RPC ouvert à `anon`
+ *     (le jeton du lien autorise), et `/compte/suppression` ouvre la session du compte par le code reçu —
+ *     une session anonyme créée là n'était pas celle de la personne. Une session déjà là se restaure.
+ *
+ * **`/feedback` n'en est pas** : il écrit un retour rattaché à la session (`sendFeedback`), et sans elle
+ * « Envoyer » répondrait sans fin « Ta session n'est pas prête » — l'écran de reconnexion y dit mieux ce
+ * qui manque. Ni la page introuvable : `usePathname()` y rend l'adresse tapée, qu'aucune liste ne nomme.
  *
  * Écrit comme une liste, et non comme « les routes qui ont besoin du compte » : une route neuve se
- * couvre par défaut, et c'est le cas sûr — l'écran dit vrai partout où un compte manque.
+ * couvre par défaut, et c'est le cas sûr — l'écran dit vrai partout où un compte manque, et la session
+ * s'ouvre partout où l'app peut écrire.
  */
-const CHEMINS_SANS_ECRAN_DE_RECONNEXION = [
+const SURFACES_SANS_COMPTE = [
   '/compte/suppression',
   '/rappels/stop',
   '/confidentialite',
@@ -99,7 +105,118 @@ const CHEMINS_SANS_ECRAN_DE_RECONNEXION = [
   '/status',
 ] as const;
 
+/** Le chemin sans sa barre finale : `/confidentialite/` est la même page. */
+function cheminNu(chemin: string): string {
+  return chemin.length > 1 && chemin.endsWith('/') ? chemin.slice(0, -1) : chemin;
+}
+
+function estUneSurfaceSansCompte(chemin: string): boolean {
+  return (SURFACES_SANS_COMPTE as readonly string[]).includes(cheminNu(chemin));
+}
+
+/**
+ * L'écran de reconnexion se pose-t-il sur cette route ? Non sur les surfaces sans compte, ni sur
+ * **`/connexion/…`** : c'est là que la personne va se reconnecter. L'écran s'efface quand elle y part, et
+ * revient si elle en ressort sans session — sans quoi un « Retour » vers le plan la laissait devant un
+ * plan illisible, sans rien pour le dire (contre-lecture de la PR #315).
+ */
 export function lEcranDeReconnexionSePose(chemin: string): boolean {
   if (chemin === '/connexion' || chemin.startsWith('/connexion/')) return false;
-  return !(CHEMINS_SANS_ECRAN_DE_RECONNEXION as readonly string[]).includes(chemin);
+  return !estUneSurfaceSansCompte(chemin);
+}
+
+/**
+ * Le montage de l'app ouvre-t-il une session sur cette route, ou se contente-t-il de restaurer celle qui
+ * est là ? Il l'ouvre partout sauf sur les surfaces sans compte ; **quitter l'une d'elles pour l'app
+ * l'ouvre** — le layout racine relit cette règle à chaque changement de route —, et toute écriture la
+ * garantit de toute façon avant de partir (`ensureSession()`).
+ */
+export function laSessionSOuvreSur(chemin: string): boolean {
+  return !estUneSurfaceSansCompte(chemin);
+}
+
+/**
+ * Ce que la racine fait une fois la session demandée, selon l'état qu'elle a laissé (`v1-27` §12.35).
+ *
+ *   * **`lire`** — une session est là : la racine lit le dernier bilan ;
+ *   * **`attendre`** — un refus : sans session la lecture partirait en `anon`, et l'écran technique se
+ *     poserait sous l'écran de reconnexion, qui décide ;
+ *   * **`repli`** — la session n'a pas pu se rafraîchir (`indisponible`, réseau coupé ou serveur
+ *     d'authentification en panne) : la racine route comme hors ligne, sur ce que l'appareil sait. Elle
+ *     lisait le bilan quand même, en `anon`, recevait un `42501`, et disait « Le démarrage a échoué »
+ *     là où le repli était dû (`COMPTE.md` §3). Et `absente`, qui ne se voit pas ici — une création
+ *     réussie rend `presente`, une création ratée lève —, se replie de même : c'est le côté qui ne lit
+ *     rien sans session.
+ */
+export type SuiteDuDemarrage = 'lire' | 'attendre' | 'repli';
+
+export function suiteDuDemarrage(etat: EtatDeSession): SuiteDuDemarrage {
+  switch (etat) {
+    case 'presente':
+      return 'lire';
+    case 'refusee':
+      return 'attendre';
+    case 'indisponible':
+    case 'absente':
+      return 'repli';
+    default: {
+      const inconnu: never = etat;
+      throw new Error(`État de session inconnu : ${String(inconnu)}`);
+    }
+  }
+}
+
+/**
+ * Quand l'enregistrement du jeton d'appareil se tente — `src/app/_layout.tsx`.
+ *
+ * **Le jeton appartient à la personne connectée, pas à l'appareil** : `register_push_token` le reprend à
+ * son propriétaire précédent, et l'appareil doit se réinscrire à chaque changement d'utilisateur, sans
+ * quoi il reçoit les rappels de celui qu'on vient de quitter (A4-7). `onAuthStateChange` émet aussi à
+ * chaque rafraîchissement de jeton, une fois l'heure : la garde fait qu'un même utilisateur ne relance
+ * rien, et qu'un enregistrement en cours ne se double pas.
+ *
+ * **Un enregistrement qui n'a pas inscrit de jeton se retente au retour au premier plan** (`'retour'`), et
+ * au démarrage suivant, qui repart d'une garde neuve — jamais à l'émission d'une session, ni de lui-même :
+ * un échec n'ouvre pas de boucle. La garde ne se fondait que sur une exception, alors que
+ * l'enregistrement rend `false` sur ses échecs courants (pas de réseau, le RPC refusé), donc un échec
+ * passait pour fait jusqu'au démarrage à froid suivant. « Pas inscrit » couvre aussi la permission
+ * refusée : la retenter au retour, c'est voir celle qu'on vient de rouvrir dans les réglages.
+ *
+ * **Une session qui devient nulle efface la mémoire** : la déconnexion désinscrit le jeton de cet
+ * appareil (`seDeconnecterDeCetAppareil`), donc la personne qui se reconnecte dans le même lancement —
+ * le même utilisateur — doit le réinscrire. La garde la croyait encore inscrite, et l'appareil restait
+ * sans rappels jusqu'au démarrage à froid suivant.
+ */
+export type MomentDuJeton = 'session' | 'retour';
+
+export function gardeDuJeton(
+  enregistrer: () => Promise<boolean>
+): (utilisateur: string | null, moment: MomentDuJeton) => Promise<void> {
+  let pour: string | null = null;
+  let enCours = false;
+  let aRetenter = false;
+  // Une génération plutôt que l'utilisateur : seul le dernier enregistrement lancé conclut, même quand
+  // deux se suivent pour le même utilisateur (A, puis B, puis A de nouveau).
+  let generation = 0;
+
+  return async (utilisateur, moment) => {
+    if (utilisateur === null) {
+      pour = null;
+      aRetenter = false;
+      return;
+    }
+    if (utilisateur === pour && (enCours || !(moment === 'retour' && aRetenter))) return;
+    pour = utilisateur;
+    enCours = true;
+    const mienne = ++generation;
+    let inscrit = false;
+    try {
+      inscrit = await enregistrer();
+    } catch {
+      inscrit = false;
+    }
+    if (mienne !== generation) return;
+    enCours = false;
+    aRetenter = !inscrit;
+  };
 }
