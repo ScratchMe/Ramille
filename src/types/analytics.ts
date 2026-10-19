@@ -451,7 +451,8 @@ export const SEJOUR_INITIAL: SejourDerriere = { depuis: null };
  * **Et seulement sur une route où la session s'ouvre** (`laSessionSOuvreSur`). Sur `/compte/suppression`,
  * le code reçu ouvre la session du compte qu'on vient supprimer : la rattraper là comptait une ouverture
  * de l'app — et un signe de vie — à son nom, sans qu'on soit sorti de la page. Une surface sans compte
- * ne compte d'ouverture que quand on la quitte pour l'app, où le layout ouvre la session et l'émet.
+ * ouverte sans session ne compte d'ouverture que quand on la quitte pour l'app : le layout ouvre alors
+ * la session et l'émet, ou, si une session est arrivée pendant qu'on y était, la rattrape au retour.
  */
 export function rattraperLOuverture(etat: {
   session: boolean;

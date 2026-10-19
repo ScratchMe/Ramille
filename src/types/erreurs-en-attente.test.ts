@@ -19,6 +19,7 @@ import {
   AGE_MAXIMAL_MS,
   enfiler,
   lireLaFile,
+  memeErreur,
   propsDifferees,
   suiteDeLEnvoi,
   TAILLE_DE_LA_FILE,
@@ -143,5 +144,21 @@ describe('suiteDeLEnvoi', () => {
     for (const status of [500, 502, 503, 504, 429, 408]) {
       expect(suiteDeLEnvoi(status, { message: 'panne' })).toBe('garder');
     }
+  });
+});
+
+describe('memeErreur', () => {
+  // Éprouvé en le cassant le 19/10/2026 : sans la comparaison d'`origine` ni de `version`, le deuxième
+  // test tombe, et lui seul — deux pannes de la même milliseconde, l'une partie et l'autre gardée,
+  // sortaient alors toutes deux de la file.
+  const panne: ErreurEnAttente = { category: 'type', route: '/plan', noteeLe: MAINTENANT, origine: 'globale', version: '1.0.0+14' };
+
+  test('reconnaît la même panne', () => {
+    expect(memeErreur(panne, { ...panne })).toBe(true);
+  });
+
+  test('distingue deux pannes de la même milliseconde qui diffèrent par leur origine ou leur version', () => {
+    expect(memeErreur(panne, { ...panne, origine: 'promesse' })).toBe(false);
+    expect(memeErreur(panne, { ...panne, version: '1.0.0+15' })).toBe(false);
   });
 });

@@ -151,5 +151,11 @@ export function suiteDeLEnvoi(status: number, erreur: unknown): 'vider' | 'garde
 
 /** Une erreur est-elle celle-là ? — pour retirer de la file ce qui vient de partir, et rien d'autre. */
 export function memeErreur(a: ErreurEnAttente, b: ErreurEnAttente): boolean {
-  return a.noteeLe === b.noteeLe && a.route === b.route && a.category === b.category;
+  return (
+    a.noteeLe === b.noteeLe &&
+    a.route === b.route &&
+    a.category === b.category &&
+    a.origine === b.origine &&
+    a.version === b.version
+  );
 }

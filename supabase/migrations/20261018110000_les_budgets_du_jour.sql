@@ -1,6 +1,9 @@
 -- Les budgets du jour : ce que la base reçoit d'événements d'usage, et ce que coûte une correction du
 -- contexte.
 --
+-- **Avant de l'appliquer au distant : une sauvegarde manuelle** (workflow « Sauvegarde de la base »
+-- lancé à la main, attendre le vert), parce qu'elle réécrit `purge_usage_events()` (`sauvegarde.md` §6).
+--
 -- 1. **Un compte de plus de vingt-quatre heures écrivait sans plafond de tout le projet.** Le plafond
 --    horaire (6 000 événements, dont 300 pannes) ne visait que les comptes nés depuis moins d'un jour ;
 --    au-delà, seuls les 500 événements par jour et par compte bornaient l'écriture. Mesuré sur la

@@ -229,7 +229,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // l'origine d'une erreur et la version ne sont dites que des erreurs inattendues, seules à les porter ; et
 // les hébergeurs viennent de `src/constants/editeur.ts`. Textes à valider par la personne qui pilote, comme
 // chaque phrase de cette page.
-const UPDATED_AT = '18 octobre 2026';
+const UPDATED_AT = '19 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {

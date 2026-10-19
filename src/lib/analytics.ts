@@ -162,7 +162,7 @@ export function garderUnePanne(panne: UsageEventPropsByName['app_error']): Promi
  * lot qui le franchissait était refusé en entier, et la file se vidait des pannes qui tenaient encore
  * dessous. Désormais celles d'avant le refus sont parties. Après l'échec, la règle de la file
  * s'applique au reste (`suiteDeLEnvoi`) : une panne passagère du serveur garde la panne refusée et les
- * suivantes ; un refus les vide, puisqu'elles buteraient sur le même budget. Ne sont retirées de la file
+ * suivantes ; un refus les vide — le budget atteint, sur lequel elles buteraient aussi, ou une session refusée. Ne sont retirées de la file
  * que celles de ce lot — une panne survenue pendant l'envoi reste pour le suivant.
  *
  * **Un seul envoi à la fois** : le client Supabase ne pose aucun délai à ses requêtes, donc un envoi du

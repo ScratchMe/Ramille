@@ -113,7 +113,8 @@ describe('la file d’attente des erreurs', () => {
    * encore dessous. Éprouvé le 18/10/2026, une mutation à la fois, l'état d'avant réécrit après chacune :
    *   - un seul insert pour tout le lot (l'état d'avant) → quatre : « un refus au milieu… », « une
    *     panne passagère au milieu… », « envoie les pannes gardées une par une… » et « une panne gardée
-   *     garde son origine… », qui lisent une ligne et non un tableau ;
+   *     garde son origine… », qui lisent une ligne et non un tableau — compte relevé avant l'ajout du
+   *     test « un envoi qui lève… », qu'elle ferait aussi tomber (cinq depuis, non rejoué) ;
    *   - l'envoi qui continue après un échec → « un refus au milieu… » et « une panne passagère au
    *     milieu… », deux ;
    *   - un refus qui garde le reste du lot → « un refus au milieu… », seul ;

@@ -40,7 +40,9 @@
  * `posteFerme` dans `api/partage.ts`, 1. **Une mutation passait** : remplacer l'arrondi des kilos par
  * une troncature (`Math.floor`) — équivalente sur tout ce que l'app envoie, des kilos entiers passés
  * par trois décimales, donc invisible du balayage ; elle a sa propre assertion (0,9996 t est une
- * tonne), qui la fait tomber seule.
+ * tonne), qui la fait tomber seule. **Ces comptes datent d'avant le 19/10/2026**, où le test des adresses
+ * de l'app est devenu un `it.each` sur les deux lectures (`'refuser'`, `'ignorer'`) : une mutation qui le
+ * touche y fait tomber un test de plus — non rejoué depuis.
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -212,7 +212,27 @@ export default function RootLayout() {
   // déjà, elle, si les notifications sont coupées.
   useEffect(() => {
     if (!configurationSupabase.complete) return;
-    if (laSessionSOuvreIci ? sessionOuverte : sessionRestauree || sessionOuverte) return;
+    if (laSessionSOuvreIci && sessionOuverte) {
+      // Le retour sur l'app après une surface sans compte : si la session est arrivée pendant qu'on
+      // y était, l'écoute d'auth ne l'a pas rattrapée (elle ne rattrape que sur une route de l'app),
+      // donc l'ouverture de ce chargement se rattrape ici, une fois.
+      if (montageSansSession && !ouvertureDejaComptee) {
+        void supabase.auth.getSession().then(({ data }) => {
+          if (
+            rattraperLOuverture({
+              session: data.session !== null,
+              montageSansSession,
+              dejaComptee: ouvertureDejaComptee,
+              chemin: cheminAffiche.current,
+            })
+          ) {
+            apresLaSessionDuDemarrage();
+          }
+        });
+      }
+      return;
+    }
+    if (!laSessionSOuvreIci && (sessionRestauree || sessionOuverte)) return;
     if (laSessionSOuvreIci) sessionOuverte = true;
     else sessionRestauree = true;
     (laSessionSOuvreIci ? ensureSession() : restaurerLaSession())
@@ -313,7 +333,8 @@ export default function RootLayout() {
       // Le montage a fini sans session, et celle-ci arrive ensuite (la racine après « Réessayer », le
       // réseau revenu, une reconnexion) : l'ouverture de ce chargement se rattrape ici, une fois — mais
       // pas sur une surface sans compte, où la session qui s'ouvre est celle de la page (le code reçu
-      // sur `/compte/suppression`) ; c'est en la quittant pour l'app que l'effet du montage l'émet.
+      // sur `/compte/suppression`) ; c'est en la quittant pour l'app que l'effet du montage l'émet,
+      // qu'il ait déjà ouvert une session ailleurs ou non.
       if (
         rattraperLOuverture({
           session: session !== null,

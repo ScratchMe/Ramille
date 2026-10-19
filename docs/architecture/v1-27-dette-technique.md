@@ -2003,7 +2003,8 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   du pare-feu Vercel. **Fait le 18/10/2026** (§12.41, `VERCEL.md` §2.2) : la règle de pare-feu était posée
   (plus bas) ; les deux fonctions ne lisent plus qu'une forme — un total
   `^\d{1,12}(\.\d{1,12})?$`, une part entière, un `poste` de la liste fermée —, redirigent (308) toute variante
-  lisible vers l'adresse canonique, répondent 400 à ce qui ne se lit pas, et leurs réponses portent
+  lisible vers l'adresse canonique — la carte répond 400 à ce qui ne se lit pas, la page l'ignore et redirige
+  (308) —, et leurs réponses portent
   `s-maxage` (le CDN les garde un an, par adresse et par déploiement). **Ce que la vague laisse** : l'espace des adresses
   canoniques, de l'ordre de 2·10⁹, que seule une signature des paramètres ou un total arrondi borne — et le
   second change ce que l'app produit.
@@ -2022,8 +2023,8 @@ mes rappels » décidé le même jour. Ce qui suit n'y est pas, et chaque ligne 
   événements d'usage par heure pour tout le projet, dont 300 pannes, 60 retours par heure, et une
   garde de volume qui ne compte plus que les comptes qui portent un bilan ou un retour — les vides
   partent à chaque passage. Les plafonds ne refusent que les comptes nés depuis moins de
-  vingt-quatre heures, pour qu'un flot ne coûte pas leurs signes de vie aux vrais comptes. **Remplacés le
-  18/10/2026** par des budgets du jour valables quel que soit l'âge du compte (`20261018110000`, `MESURE.md`
+  vingt-quatre heures, pour qu'un flot ne coûte pas leurs signes de vie aux vrais comptes. **Ceux des
+  événements sont remplacés le 18/10/2026** (celui des retours, soixante par heure, reste) par des budgets du jour valables quel que soit l'âge du compte (`20261018110000`, `MESURE.md`
   §4, §12.41). Le captcha,
   les plafonds d'e-mail et la carte de partage restent à faire. **Le widget Turnstile est créé le même
   soir** (registre d'exploitation §3.11, la clé de site y est), et **le captcha est branché sur le

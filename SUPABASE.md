@@ -634,7 +634,7 @@ quelque chose la réécrit, et il vaut mieux l'apprendre là que sur un écran.
 
 ### 2.4 Sessions : pannes, refus et doublons
 
-Le modèle lui-même — session anonyme dès l'ouverture de l'app (sauf sur les cinq surfaces sans compte,
+Le modèle lui-même — session anonyme dès l'ouverture de l'app (sauf sur les surfaces sans compte,
 `COMPTE.md` §1), conversion qui garde le `user_id`, pas de mot de passe, `/connexion/retrouver` comme seul
 chemin délibéré vers un compte existant — est dans `CLAUDE.md`, « Modèle d'authentification », pour ses deux
 paragraphes fondateurs, et dans `COMPTE.md` pour tout le reste. Ici, ce qui s'est cassé autour.
