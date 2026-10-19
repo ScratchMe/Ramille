@@ -2571,8 +2571,10 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
 
 **Ce qui reste, technique, et pourquoi pas maintenant** :
 
-- les six correctifs d'Expo (`npx expo install --fix`, `EXPO.md` §1.9) : leur propre PR, le passage du
-  lundi rougira d'ici là ;
+- ~~les six correctifs d'Expo (`npx expo install --fix`, `EXPO.md` §1.9) : leur propre PR, le passage du
+  lundi rougira d'ici là~~ — **faits le 19/10/2026**, dans leur propre PR (`expo` 57.0.30,
+  `expo-router` 57.0.28 et quatre autres ; `expo-doctor` passe ses 21 contrôles, aucune dépendance
+  d'`api/` ne bouge) ;
 - le bundle web d'un seul fichier (2,96 Mo, dont 27 % de Reanimated) et l'écran du plan (2 134 lignes,
   environ neuf requêtes à chaque focus) : des refontes, pas des correctifs ;
 - les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
