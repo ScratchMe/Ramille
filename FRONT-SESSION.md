@@ -33,9 +33,11 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   que l'appareil restait inscrit au nom de celui qu'on vient de quitter — et recevait ses rappels
   jusqu'au prochain démarrage à froid. La garde vit hors du composant (`onAuthStateChange` émet à
   chaque rafraîchissement de jeton, soit toutes les heures) et sa règle est pure et testée
-  (`gardeDuJeton`, `src/types/session.ts`) : un même utilisateur ne relance rien, un enregistrement
-  en cours ne se double pas, et **un enregistrement qui n'a rien inscrit se retente au retour au
-  premier plan** et au démarrage suivant — jamais à l'émission d'une session, ni de lui-même. Elle ne
+  (`gardeDuJeton`, `src/types/session.ts`) : un même utilisateur ne relance rien — sauf après une
+  session nulle, puisque la déconnexion désinscrit le jeton et que qui revient dans le même lancement
+  doit le réinscrire —, un enregistrement en cours ne se double pas, et **un enregistrement qui n'a
+  rien inscrit se retente au retour au premier plan** et au démarrage suivant — jamais à l'émission
+  d'une session, ni de lui-même. Elle ne
   se fondait que sur une exception, alors que l'enregistrement rend `false` sur ses échecs courants :
   un échec réseau passait pour fait jusqu'au démarrage à froid suivant. Le retour retente à chaque
   `active`, même court : l'aller-retour dans les réglages du téléphone, où l'on vient de rouvrir les
