@@ -2534,8 +2534,8 @@ tiers faire partir plus de messages depuis notre domaine ; la fermeture des sess
 
 Audit sur six axes (technique, base et sécurité, produit, juridique, commercial, méthode), demandé
 par la personne qui pilote, puis « tout ce que tu peux faire de ton côté ». Sept chantiers en copies
-de travail, intégrés sur une branche, quatre migrations (`20261018100000` à `20261018130000`) et
-quatre fichiers pgTAP (54 à 57).
+de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `20261018130000`, et
+`20261019085520`, que `apply_migration` a datée en l'appliquant) et quatre fichiers pgTAP (54 à 57).
 
 **Ce qui est corrigé** :
 
@@ -2544,7 +2544,7 @@ quatre fichiers pgTAP (54 à 57).
   procédure butait avant même d'y arriver. Le dump porte les privilèges, `analytics` et un fichier de
   compléments (triggers sur `auth.*`, planifications) ; la procédure neutralise les privilèges par défaut
   de la cible ; une restauration à blanc l'a jouée (`sauvegarde.md` §5 ter). Et **les fonctions naissent
-  fermées** : `20261018100000`, avec la liste blanche de ce que le client exécute (test 54).
+  fermées** : `20261019085520`, avec la liste blanche de ce que le client exécute (test 54).
 - **Un compte vieux de deux jours pouvait remplir la base** (500 Mo, lecture seule) : budgets du jour
   pour tout le projet quel que soit l'âge du compte, par compte, et à part pour `app_error` ; plus de
   plafond horaire, qui coupait l'entonnoir d'un lancement ; vingt corrections du contexte par jour, sous

@@ -490,7 +490,7 @@ colonnes homonymes de `profiles`, est resté dans `CLAUDE.md`, section « Base d
   `from public, anon, authenticated` — sans quoi n'importe quel visiteur appelait
   `/rest/v1/rpc/purge_usage_events`.
 
-**Les fonctions naissent fermées depuis `20261018100000`** : celles que `postgres` crée n'ont plus
+**Les fonctions naissent fermées depuis `20261019085520`** : celles que `postgres` crée n'ont plus
 d'`EXECUTE` pour PUBLIC, `anon` ni `authenticated`, dans aucun schéma. Une fonction que le client
 appelle — un RPC, ou une fonction qu'une policy ou un `check` évalue pendant une écriture du client
 — porte son `grant execute` dans sa migration, et sa ligne dans la liste blanche de

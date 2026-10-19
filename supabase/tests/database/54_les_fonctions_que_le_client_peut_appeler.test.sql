@@ -1,4 +1,4 @@
--- Les fonctions que le client peut appeler (migration 20261018100000_les_fonctions_naissent_fermees.sql).
+-- Les fonctions que le client peut appeler (migration 20261019085520_les_fonctions_naissent_fermees.sql).
 --
 -- `18_grants_explicites` épingle la matrice entière des tables ; ce fichier fait de même pour les
 -- fonctions des schémas que PostgREST expose (`public`, `graphql_public` : `supabase/config.toml`,
