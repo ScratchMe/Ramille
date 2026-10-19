@@ -24,7 +24,8 @@
  * Trois bornes, et chacune a sa raison :
  *
  *   * **vingt erreurs au plus**, les plus récentes : une boucle de pannes ne remplit ni le stockage ni le
- *     garde-fou de volume d'`usage_events` (500 lignes par jour et par personne) ;
+ *     budget des pannes d'`usage_events` (cinquante par compte sur vingt-quatre heures,
+ *     `enforce_usage_events_rate_limit`) ;
  *   * **trente jours au plus** : une panne d'il y a un mois ne dit plus rien de la version en service ;
  *   * **un refus vide la file, une panne du serveur la garde** : rejouer une ligne que la base refuse — une
  *     propriété hors des bornes — la referait refuser à chaque démarrage, pour toujours, et le garde-fou
@@ -107,7 +108,6 @@ export function lireLaFile(brut: string | null, maintenant: number): ErreurEnAtt
     .slice(-TAILLE_DE_LA_FILE);
 }
 
-/** Les propriétés de l'événement envoyé en différé. */
 /** Une propriété absente est acceptée ; présente, elle doit être valable — sinon l'entrée entière part. */
 function facultative(valeur: unknown, valable: (v: unknown) => boolean): boolean {
   return valeur === undefined || valable(valeur);

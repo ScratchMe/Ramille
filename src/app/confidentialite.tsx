@@ -1,5 +1,5 @@
 import { LegalPage, type LegalSection } from '@/components/legal/legal-page';
-import { CONTACT_EMAIL, EDITOR_NAME } from '@/constants/editeur';
+import { CONTACT_EMAIL, EDITOR_NAME, HEBERGEUR_DES_DONNEES, HEBERGEUR_DU_SITE } from '@/constants/editeur';
 // **`ORIGINE_CANONIQUE` et non `APP_URL`, et ce n'est pas interchangeable ici.** `APP_URL`
 // vaut l'origine réelle côté client et le domaine canonique au rendu statique : écrite dans
 // un **texte**, elle produit un écart d'hydratation — le HTML exporté dit
@@ -38,6 +38,11 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //   - retours utilisateur -> table `feedback`, insert-only côté client, issue #29 ;
 //   - trace des demandes de code de connexion (deux jours au plus) -> `envois_d_e_mails_d_auth`,
 //     cron `purge-envois-d-e-mails-d-auth` (ce qui a plus d'un jour, chaque nuit), rendue par l'export ;
+//   - corrections du contexte (vingt au plus sur vingt-quatre heures) -> `profiles.corrections_du_contexte`
+//     et `corrections_du_contexte_depuis`, écrites par `mettre_a_jour_le_contexte`, rendues par l'export
+//     (clé `compte`) ; le compteur horaire des événements, sans identifiant -> `evenements_d_usage_par_heure`,
+//     purgé chaque nuit au-delà de deux jours par `purge_usage_events()` (3 h 30 UTC), donc trois jours au
+//     plus (`20261018110000`) ;
 //   - sous-traitants et localisation -> les seuls tiers appelés par le produit :
 //     `api.resend.com` et `exp.host` dans `send_pending_reminders()`, `api.brevo.com` dans
 //     `requete_d_e_mail_d_auth()` pour les codes de connexion depuis le 05/10/2026 (`api.resend.com`
@@ -219,8 +224,11 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // à la personne qui pilote. (4) Trois exactitudes que le code imposait : la suppression des sessions
 // anonymes peut s'étaler sur plusieurs nuits (garde de volume de la purge, `20261006130000`), la sauvegarde
 // garde une copie chiffrée des repères (ils ne « quittaient pas l'hébergeur » que sans elle), et la plateforme
-// est enregistrée avec chaque repère. Textes à valider par la personne qui pilote, comme chaque phrase de
-// cette page.
+// est enregistrée avec chaque repère. (5) La contre-lecture du même jour : la liste des durées nomme les
+// corrections du contexte, une donnée du compte que l'export rend, et le compteur horaire des événements ;
+// l'origine d'une erreur et la version ne sont dites que des erreurs inattendues, seules à les porter ; et
+// les hébergeurs viennent de `src/constants/editeur.ts`. Textes à valider par la personne qui pilote, comme
+// chaque phrase de cette page.
 const UPDATED_AT = '18 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -319,10 +327,10 @@ const SECTIONS: LegalSection[] = [
           'de connexion ou rattaché un compte — et, quand tu cherches un compte existant, si cet appareil portait déjà ' +
           'un bilan —, et le fait qu’une erreur inattendue s’est produite (un écran qui n’a pas réussi à s’afficher, ' +
           'une opération restée sans réponse, une erreur qui a fermé l’application), qu’un envoi de ton bilan a échoué ' +
-          'ou qu’un code de connexion n’a pas pu partir (le type de l’erreur, l’endroit et d’où elle vient, jamais son ' +
-          'message). Chaque repère porte aussi ' +
-          'la plateforme (web ou Android), et ceux de l’ouverture de l’application et des erreurs la version de ' +
-          'l’application que tu utilises, pour savoir si un défaut vient d’une version précise. Ces ' +
+          'ou qu’un code de connexion n’a pas pu partir : le type de l’erreur et l’endroit, jamais son message, et pour ' +
+          'une erreur inattendue, d’où elle vient. Chaque repère porte aussi ' +
+          'la plateforme (web ou Android), et ceux de l’ouverture de l’application et des erreurs inattendues la ' +
+          'version de l’application que tu utilises, pour savoir si un défaut vient d’une version précise. Ces ' +
           'repères ne portent rien d’autre : ni texte que tu aurais saisi, ni adresse IP, ni identifiant d’appareil, et ' +
           'aucun suivi de ce que tu fais ailleurs. Ils servent à voir où le produit décroche pour le réparer. ' +
           'L’ouverture de l’application sert aussi à savoir que tu es toujours là : elle remet tes rappels à leur ' +
@@ -426,8 +434,9 @@ const SECTIONS: LegalSection[] = [
             term: 'Supabase',
             text:
               'Base de données, authentification et hébergement des données applicatives — donc l’intégralité de tes ' +
-              'réponses, de tes résultats et de ton compte. Serveurs situés à Paris (région eu-west-3), chez Amazon Web ' +
-              'Services. Le contrat est conclu avec Supabase Pte. Ltd., société singapourienne : il l’autorise à traiter ' +
+              'réponses, de tes résultats et de ton compte. ' +
+              `Serveurs situés à ${HEBERGEUR_DES_DONNEES.emplacementDesServeurs} (région eu-west-3), chez Amazon Web ` +
+              `Services. Le contrat est conclu avec ${HEBERGEUR_DES_DONNEES.nom}, société singapourienne : il l’autorise à traiter ` +
               'ces données hors de la région choisie si le service ou la loi l’exige, et il incorpore à ce titre les clauses ' +
               'contractuelles types de la Commission européenne.',
           },
@@ -437,7 +446,7 @@ const SECTIONS: LegalSection[] = [
               'Hébergement de la version web de l’application. Vercel sert les pages, sans rien lire dans la base. ' +
               'Si tu utilises « Partager mon bilan », c’est aussi Vercel qui fabrique la carte d’aperçu à partir du ' +
               'lien que tu génères : ce lien porte ton total annuel, ton poste principal et sa part — rien d’autre. ' +
-              'Vercel Inc., société américaine (Californie), inscrite au Data Privacy Framework.',
+              `${HEBERGEUR_DU_SITE.nom}, société américaine (Californie), inscrite au Data Privacy Framework.`,
           },
           {
             term: 'Resend',
@@ -575,6 +584,12 @@ const SECTIONS: LegalSection[] = [
           'Demandes de code de connexion par e-mail : pour chacune, nous gardons deux jours une trace — le compte ' +
             'concerné, la date, ce qu’il en est advenu et une empreinte de l’adresse, jamais l’adresse elle-même — le ' +
             'temps d’appliquer les plafonds qui empêchent les envois abusifs. Elle est supprimée ensuite.',
+          'Corrections de ton contexte de mobilité : pour que personne ne puisse faire recalculer son bilan et son ' +
+            'plan sans fin, nous gardons le nombre de fois où tu l’as corrigé sur vingt-quatre heures (vingt au plus) ' +
+            'et la date de la première de ces corrections — un nombre et une date, rien d’autre —, tant que ton compte ' +
+            'existe, et l’export de tes données les rend. Le nombre d’événements que notre service reçoit à chaque ' +
+            'heure, qui borne ce que la base accepte, ne porte aucun identifiant et s’efface au plus tard au bout de ' +
+            'trois jours.',
           'À la suppression de ton compte, l’ensemble de tes bilans, résultats, points de suivi, plans, retours, ' +
             'repères de parcours et sessions est supprimé.',
           'Après une suppression, il ne reste que des compteurs, sans aucun identifiant — et, le temps qu’elles ' +

@@ -84,10 +84,11 @@ export const PANNES_PAR_LANCEMENT = 10;
 /**
  * Le tri des pannes d'un lancement : une signature ne part qu'une fois, et pas plus de
  * `PANNES_PAR_LANCEMENT` en tout. **Une panne qui se répète n'est pas plus grave à chaque fois** : une
- * exception levée dans un rendu que « Réessayer » relance, ou par un minuteur, partait autant de fois
- * qu'elle tombait, et une seule personne pouvait remplir le plafond horaire des pannes de tout le projet
- * (300, `20261004201217`) — celles des autres ne passaient plus. Chaque lancement repart à zéro : une
- * panne qui revient à chaque ouverture se compte une fois par ouverture.
+ * exception levée dans un rendu que « Réessayer » relance, ou par un minuteur, partirait autant de fois
+ * qu'elle tombe, et épuiserait les cinquante pannes que la base accepte d'un compte
+ * sur vingt-quatre heures (`enforce_usage_events_rate_limit`) — celles qui viendraient ensuite, d'une
+ * autre cause, ne passeraient plus. Chaque lancement repart à zéro : une panne qui revient à chaque
+ * ouverture se compte une fois par ouverture.
  */
 export function trierLesPannes(plafond = PANNES_PAR_LANCEMENT): (signature: string) => boolean {
   const vues = new Set<string>();
@@ -118,7 +119,8 @@ export function laPanneEstANous(evenement: { aUneErreur: boolean; fichier: strin
  * **Elles arrivent par le même événement qu'une vraie panne** : React 19 les rend à
  * `window.reportError` (`defaultOnRecoverableError`), comme une exception que personne n'a rattrapée.
  * Signalées, une seule page dont le HTML diffère du premier rendu en écrirait une à chaque chargement,
- * chez chaque visiteur, et prendrait la place des vraies dans le plafond horaire.
+ * chez chaque visiteur, et prendrait la place des vraies dans le budget des pannes de chaque compte et
+ * de tout le projet.
  */
 const HYDRATATION = /Minified React error #(418|419|420|421|422|423|425)\b|hydrat/i;
 

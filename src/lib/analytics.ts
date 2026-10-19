@@ -56,7 +56,8 @@ async function send(name: UsageEventName, props: UsageEventProps | undefined): P
     // fait encore son aller-retour de création de compte. C'est ce qui avait vidé `app_open`,
     // dénominateur de tous les entonnoirs : **une seule ligne en base pour six vues d'étape
     // d'onboarding** (v1-13, préambule ; la contre-vérification d'A1-3 du 09/09 comptait zéro).
-    // Le layout racine l'émet désormais dans le `.then(ensureSession)`. La règle qui en découle,
+    // Le layout racine l'émet désormais après la session de son montage (`ensureSession`, ou
+    // `restaurerLaSession` sur une surface sans compte). La règle qui en découle,
     // et qui est la responsabilité de l'appelant : **un événement qui peut partir avant la
     // première session s'émet après elle**, jamais au montage.
     //

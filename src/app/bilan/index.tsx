@@ -284,7 +284,8 @@ export default function BilanQuestionnaire() {
   //     du dernier bilan si la personne repartait de lui — deux affichages comptés pour un
   //     seul écran de questionnaire montré ;
   //   - ne compter chaque étape qu'une fois par visite, sinon un aller-retour Précédent /
-  //     Suivant gonfle le volume sans rien apprendre — et mange le garde-fou de 500/24 h.
+  //     Suivant gonfle le volume sans rien apprendre — et mange le plafond de 200 événements par
+  //     compte sur vingt-quatre heures.
   const etapesVues = useRef(new Set<BilanStepId>());
 
   // **Le verrou de soumission vit dans une `useRef`, pas dans l'état d'affichage.** `submitting`

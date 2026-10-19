@@ -211,7 +211,9 @@ Quatre choses à ne pas défaire :
 - **les budgets se comptent dans `evenements_d_usage_par_heure`**, une ligne par heure, trois nombres,
   sans identifiant : relire les événements coûterait 14 ms par insertion à cent mille lignes, et le
   plafond deviendrait lui-même la façon d'occuper la base. Les plafonds et la fenêtre n'ont qu'une
-  définition, `budgets_des_evenements_d_usage()`, que lisent le déclencheur et l'alerte ;
+  définition, `budgets_des_evenements_d_usage()`, que lisent le déclencheur et l'alerte. Le compteur ne
+  garde que deux jours : la purge quotidienne des événements (`purge_usage_events`) retire ses tranches
+  plus anciennes, que rien ne lit ;
 - **un refus ne laisse aucune trace**, donc l'alerte d'exploitation lit le compteur et dit un budget
   entamé à 80 % (`budgets_des_evenements_entames`), avant que rien ne se perde. Un budget atteint pour
   de vrais usages — plus d'un millier d'arrivées par jour, plus de deux mille personnes qui

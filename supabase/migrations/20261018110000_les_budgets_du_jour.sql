@@ -26,7 +26,8 @@
 --      - 2 500 pannes (`app_error`), à part : un flot d'autres événements ne les étouffe pas, et
 --        inversement.
 --    Au pire, 77 500 événements de 675 octets : 52 Mo par jour, soit cinq jours avant l'alerte des
---    300 Mo et neuf avant les 500, depuis les 18 Mo de la production.
+--    300 Mo et neuf avant les 500, depuis les 18 Mo de la production. Le compteur, lui, ne garde que
+--    deux jours : la purge quotidienne des événements retire ses tranches plus anciennes.
 --
 --    **Le premier `app_open` d'un compte en vingt-quatre heures passe toujours ces budgets** : c'est le
 --    signe de vie que lisent le régime des rappels et la purge, et le dénominateur de l'entonnoir d'une
@@ -68,7 +69,21 @@ alter table public.evenements_d_usage_par_heure enable row level security;
 revoke all on table public.evenements_d_usage_par_heure from public, anon, authenticated, service_role;
 
 comment on table public.evenements_d_usage_par_heure is
-  'Les événements d''usage reçus, par heure (UTC) : ceux des comptes nés depuis moins de vingt-quatre heures, ceux des autres comptes, et les pannes (app_error). Les budgets du jour se lisent sur les vingt-quatre dernières lignes (budgets_des_evenements_d_usage). Écrit par enforce_usage_events_rate_limit, jamais lu par un client. Sans identifiant.';
+  'Les événements d''usage reçus, par heure (UTC) : ceux des comptes nés depuis moins de vingt-quatre heures, ceux des autres comptes, et les pannes (app_error). Les budgets du jour se lisent sur les vingt-quatre dernières lignes (budgets_des_evenements_d_usage). Écrit par enforce_usage_events_rate_limit, jamais lu par un client, purgé au-delà de deux jours par purge_usage_events. Sans identifiant.';
+
+-- Le compteur ne sert que sur ses vingt-quatre dernières heures : la purge quotidienne des événements
+-- (tâche `purge-usage-events`, 3 h 30 UTC) en retire les tranches de plus de deux jours, plutôt que d'en
+-- garder 8 760 par an que rien ne lit. Réécrite depuis `pg_get_functiondef` — son corps n'a pas bougé
+-- depuis `20260905170000` — : seule la seconde ligne s'ajoute, et ses privilèges restent ceux d'avant.
+create or replace function public.purge_usage_events()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from public.usage_events where occurred_at < now() - interval '12 months';
+  delete from public.evenements_d_usage_par_heure where heure < now() - interval '2 days';
+$$;
 
 -- Les vingt-quatre heures déjà reçues comptent dès l'application : sans elles, le premier jour aurait
 -- un budget de plus. L'âge du compte est celui qu'il avait à l'événement, comme le déclencheur le lit.
@@ -725,6 +740,7 @@ declare
   v_contexte text := pg_get_functiondef('public.mettre_a_jour_le_contexte(text, text[], text, text)'::regprocedure);
   v_export text := pg_get_functiondef('public.export_my_data()'::regprocedure);
   v_releve text := pg_get_functiondef('public.releve_des_alertes(timestamptz)'::regprocedure);
+  v_purge text := pg_get_functiondef('public.purge_usage_events()'::regprocedure);
 begin
   if position('budgets_des_evenements_d_usage()' in v_evenements) = 0
      or position('c_pannes_par_compte' in v_evenements) = 0
@@ -744,6 +760,14 @@ begin
   end if;
   if position('''/+not-found''' in v_releve) = 0 then
     raise exception 'L''alerte classe de nouveau la page introuvable en « route hors forme »';
+  end if;
+  if position('evenements_d_usage_par_heure' in v_purge) = 0
+     or position('12 months' in v_purge) = 0 then
+    raise exception 'La purge des événements ne purge plus le compteur, ou plus les événements';
+  end if;
+  if has_function_privilege('anon', 'public.purge_usage_events()', 'execute')
+     or has_function_privilege('authenticated', 'public.purge_usage_events()', 'execute') then
+    raise exception 'La purge des événements est appelable par un client';
   end if;
   if not (select relrowsecurity from pg_class where oid = 'public.evenements_d_usage_par_heure'::regclass)
      or has_table_privilege('authenticated', 'public.evenements_d_usage_par_heure', 'select')
