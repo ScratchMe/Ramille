@@ -2556,7 +2556,12 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
 - **« Remplacer un aller-retour en avion par le train » valait un aller** : deux vols désormais, bornés
   par la déclaration (test 57).
 - **La carte de partage se contournait du cache** : forme canonique (308 ; 400 pour la seule carte), `s-maxage`, module
-  commun dans `api/`, fichiers hachés en cache immuable (`VERCEL.md` §2.2 et §2.4).
+  commun dans `api/`, fichiers hachés en cache immuable (`VERCEL.md` §2.2 et §2.4). **Et la forme
+  s'est jugée au caractère près jusqu'au correctif du 19/10/2026** : en production, Vercel décode la
+  chaîne avant la fonction, donc tout partage portant un poste se redirigeait vers lui-même, en boucle,
+  dès la fusion. Ni Jest ni `verifier-api.mjs` ne pouvaient le voir, puisqu'ils passent la chaîne telle
+  qu'écrite, et le second exigeait même la redirection de `%20`. C'est la sonde, lancée à la main juste
+  après le déploiement, qui l'a trouvé ; la forme se juge désormais sans l'encodage (`VERCEL.md` §1.10).
 - **La CI rougissait sans changement** : `expo-doctor` avertit sur une PR et bloque le lundi ; un build
   Android de débogage tourne en CI (`android.yml`) ; l'image EAS est épinglée (D14 révisée) ; une sonde
   horaire de la production (`sonde.yml`, registre §8.13).

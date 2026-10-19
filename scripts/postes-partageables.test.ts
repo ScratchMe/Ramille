@@ -8,13 +8,16 @@
  * format de total changé : les vrais partages perdent leur ligne « Poste principal », ou sont
  * redirigés en boucle, ou refusés en 400, sans que rien ne casse d'un côté ni de l'autre.
  *
- * Quatre exigences, et pas une de plus :
+ * Cinq exigences, et pas une de plus :
  *   - **chaque libellé que `dominantShareLabel` produit est accepté** : quatre noms de poste (le
  *     résiduel des sorties rares compris) × chaque mode connu, et sans mode ;
  *   - **chaque adresse que `urlDePartage` produit est canonique** : lue sans rien perdre, et servie
  *     telle quelle — jamais redirigée, jamais refusée. C'est la contrepartie de la redirection des
  *     variantes : une forme canonique qui ne serait pas celle de l'app redirigerait chaque vrai
  *     partage ;
+ *   - **et elle le reste dans l'écriture où Vercel la passe à la fonction** (19/10/2026), alors qu'un `&`
+ *     ou un `?` de trop ne l'est plus : sinon elle se redirige vers elle-même, en boucle, en production
+ *     seulement ;
  *   - **le total se dit comme `formatTonnes`** (`src/lib/format.ts`), kilo par kilo : la règle des
  *     kilos sous la tonne est recopiée dans `api/`, et un partage dont le titre dit « 1,0 t » quand
  *     le message dit « 999 kg » se contredit lui-même ;
@@ -43,6 +46,13 @@
  * tonne), qui la fait tomber seule. **Ces comptes datent d'avant le 19/10/2026**, où le test des adresses
  * de l'app est devenu un `it.each` sur les deux lectures (`'refuser'`, `'ignorer'`) : une mutation qui le
  * touche y fait tomber un test de plus — non rejoué depuis.
+ *
+ * **Et le 19/10/2026, l'encodage** : Vercel passe la chaîne décodée à la fonction (une espace y arrive en
+ * `%20`), et la forme canonique, jugée au caractère près, redirigeait chaque partage qui porte un poste
+ * vers lui-même, en boucle — trouvé en production par la sonde, juste après la fusion. Éprouvé en le
+ * cassant : remettre la comparaison au caractère près fait tomber les 2 tests des écritures de Vercel ;
+ * juger la forme sur `params.toString()`, qui oublie un `&` et un `?` de trop, fait tomber le leur,
+ * seul ; réécrire chaque segment sans le `&` posé devant, qui laisse passer le `?`, le même, seul.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -135,6 +145,39 @@ describe('l’adresse de partage que l’app produit', () => {
       expect(refusees).toEqual([]);
     }
   );
+
+  // Vercel décode la chaîne avant la fonction : une espace s'y lit `%20`, qu'on l'ait envoyée en `+` ou
+  // en `%20` (relevé en production le 19/10/2026) ; ce qu'il fait d'un accent ou d'une parenthèse n'est
+  // pas mesuré côté fonction, d'où la seconde écriture, tout décodé puis relu par le parseur d'URL. La
+  // même adresse, dans l'une ou l'autre, doit rester canonique — sinon elle se redirige vers elle-même.
+  const commeVercel = {
+    'espaces en %20': (adresse: URL) => adresse.search.replace(/\+/g, '%20'),
+    'tout décodé, puis relu': (adresse: URL) =>
+      new URL(`${adresse.pathname}?${decodeURIComponent(adresse.search.slice(1).replace(/\+/g, ' '))}`, adresse.origin)
+        .search,
+  };
+  it.each(Object.keys(commeVercel) as (keyof typeof commeVercel)[])(
+    'reste canonique dans l’écriture où Vercel la passe à la fonction (%s)',
+    (ecriture) => {
+      const redirigees: string[] = [];
+      for (const bilan of bilansDeLApp(4213.7)) {
+        const adresse = new URL(urlDePartage(bilan, 'https://www.ramille.fr'));
+        const recue = commeVercel[ecriture](adresse);
+        const lecture = lireLaRequete(recue, 'refuser');
+        if (lecture.statut !== 'lisible' || !lecture.canonique) redirigees.push(`${recue} → ${JSON.stringify(lecture)}`);
+      }
+      expect(redirigees).toEqual([]);
+    }
+  );
+
+  it('n’est plus canonique avec un `&` ou un `?` de trop : rien ne dit ce que la fonction en reçoit', () => {
+    expect(lireLaRequete('?total=4.200&&percent=50', 'refuser')).toMatchObject({ statut: 'lisible', canonique: false });
+    expect(lireLaRequete('??total=4.200&percent=50', 'refuser')).toMatchObject({
+      statut: 'lisible',
+      canonique: false,
+      query: 'total=4.200&percent=50',
+    });
+  });
 
   it('reste canonique sans poste : le total et la part suffisent à une adresse', () => {
     const lecture = lireLaRequete('?total=4.200&percent=50', 'refuser');
