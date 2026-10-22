@@ -66,7 +66,8 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   accordée » d'un échec réseau, et la garde n'en a pas besoin : dans les deux cas l'appareil n'est
   pas inscrit au nom de la personne, et le retour suivant retente.
 - **Une surface sans compte ne crée pas de session à l'ouverture** (18/10/2026, `COMPTE.md` §1) :
-  `/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` restaurent
+  `/confidentialite`, `/conditions`, `/licences`, `/compte/suppression`, `/rappels/stop` et `/status`
+  (`SURFACES_SANS_COMPTE`) restaurent
   la session de l'appareil, et le layout ouvre la session dès qu'on en sort pour l'app. Un écran
   ajouté à cette liste ne doit rien lire qui demande une session, ni rien écrire sans
   `ensureSession()` avant ; un écran qui écrit n'y entre pas (`/feedback`).

@@ -29,7 +29,7 @@
 | # | Étape | Une question d'abord ? | Ce qu'elle touche | État |
 |---|---|---|---|---|
 | 1 | **Correctifs sans décision** : le jeton de notification ne part plus chez Expo sans la notification choisie ; les refus de plafond (engagements, bilans) disent « Réessaie demain » au lieu de « Réessaie dans un instant » | Non | Client, page de confidentialité, registres | **Livrée le 22/10/2026** (#382). Trois contre-lectures ont trouvé de vrais défauts dans la logique du jeton, tous corrigés : la garde du retour, la reprise avant la désactivation, la marque du jeton qui appartient à l'appareil (`FRONT-SESSION.md` §2.7) |
-| 2 | **Mentions légales et conservation** : écran des licences, âge minimum, mentions légales, durée de conservation des adresses IP de session, journal d'audit d'Auth après suppression | Non | Écran neuf, conditions, base | À faire |
+| 2 | **Mentions légales et conservation** : écran des licences, âge minimum, mentions légales, durée de conservation des adresses IP de session, journal d'audit d'Auth après suppression | Deux, posées en chemin : **aucun âge** dans les conditions, et l'**adresse IP d'une session effacée après 90 jours** sans servir (tranchées le 22/10/2026) | Écran neuf, conditions, migration, page de confidentialité, registre | En cours. Les mentions légales étaient déjà justes (audit du 18/10/2026) ; le journal d'Auth est vide sur la production (registre, E7) |
 | 3 | **Le périmètre du bilan** | Oui : libellés élargis sur une étape, ou deux étapes | Questionnaire, calcul, méthodologie, recettes | À faire |
 | 4 | **Le web et l'iPhone** : le compte comme condition des rappels sur le web ; la purge des sessions anonymes à 120 jours | Non (tranché) | Feuille des rappels, migration, registre, confidentialité | À faire |
 | 5 | **La page d'accueil du web**, avec le film | Oui : ce que voit quelqu'un qui revient ; la phrase « pas de série » du film face à « deuxième semaine de suite » | Route racine du web, export du film, titre | À faire |
@@ -39,6 +39,13 @@
 | 7 | **Le ménage**, facultatif : le bundle web d'un seul fichier, l'écran du plan | Oui : le faire ou pas | Refontes | À faire |
 
 ## 3. Ce qui a été écarté en chemin
+
+- **Les dépendances Gradle dans l'écran des licences** (étape 2). AndroidX, Kotlin, Firebase et Material
+  Components entrent dans l'APK sans passer par `node_modules`, sous Apache 2.0 pour la plupart : les lister
+  demande un build Android avec son SDK. L'écran le dit en une phrase plutôt que de se prétendre complet ; la
+  piste est au relevé de la dette (`v1-27`).
+- **L'indexation de `/licences`** : la page reste en `noindex` et hors du plan du site, comme toute page
+  absente de `PAGE_DESCRIPTIONS`. Une liste de licences n'a rien à chercher dans un moteur.
 
 - **Les contrastes des barres** (`accentMuted` sur le fond de carte, environ 1,6:1). Chaque barre porte sa
   valeur écrite à côté d'elle : WCAG 1.4.11 n'exige 3:1 que d'un graphique **nécessaire** à la

@@ -178,8 +178,8 @@ s'ouvrirait sur un départ choisi. Et **« Commencer un bilan sur cet appareil �
 compte quitté**, comme une déconnexion : ce sont celles d'un autre propriétaire.
 
 **Les surfaces sans compte n'ouvrent pas de session : elles restaurent celle qui est là** (18/10/2026).
-`/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` — la liste de
-`src/types/session.ts`, la même que celle où l'écran de reconnexion ne se pose pas — ne demandent pas de
+`/confidentialite`, `/conditions`, `/licences` (depuis le 22/10/2026), `/compte/suppression`,
+`/rappels/stop` et `/status` — la liste de `src/types/session.ts` (`SURFACES_SANS_COMPTE`), la même que celle où l'écran de reconnexion ne se pose pas — ne demandent pas de
 compte, et le layout racine ouvrait pourtant une session anonyme au montage, sur toute route : un
 navigateur neuf qui lisait la politique de confidentialité, l'examinateur de Play le premier, recevait un
 compte et le captcha qui le précède. Le montage y appelle `restaurerLaSession()` — la session de

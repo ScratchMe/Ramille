@@ -52,6 +52,12 @@ export const PAGE_TITLES: Record<string, string> = {
   '/confidentialite': `Politique de confidentialité — ${APP_NAME}`,
   '/conditions': `Conditions d’utilisation — ${APP_NAME}`,
 
+  // Les licences de ce que l'application embarque d'autres auteurs, atteintes depuis les conditions. Une
+  // page légale, mais pas une surface que Google Play ou l'écran de consentement demandent : elle n'a donc
+  // pas de description, et `TitreDePage` la met en `noindex` — l'ouvrir à l'indexation serait une sixième
+  // page offerte aux moteurs, et cela se décide (voir `PAGE_DESCRIPTIONS`).
+  '/licences': `Licences — ${APP_NAME}`,
+
   // Exigée par Google Play : une URL de suppression atteignable sans l'app, donc une page
   // publique à part entière, avec son titre.
   '/compte/suppression': `Supprimer mon compte — ${APP_NAME}`,

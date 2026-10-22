@@ -1,10 +1,11 @@
 import React from 'react';
 import { SortieDuDetour } from '../navigation/SortieDuDetour.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
-// Source : src/components/legal/legal-page.tsx — le gabarit des deux pages légales (confidentialité, conditions) : date de
-// mise à jour, titre, introduction, sections faites de paragraphes, de puces (un tiret cadratin tertiaire) ou de
-// définitions. Une mesure de lecture de 480 au plus, centrée. Les titres de section sont des en-têtes de niveau 2 en
-// 18/26 — un `subtitle` en porterait le rôle mais aussi les 32 px. Ce sont les seules surfaces publiques du produit, lues
+import { TextLink } from '../core/TextLink.jsx';
+// Source : src/components/legal/legal-page.tsx — le gabarit des pages légales (confidentialité, conditions, et depuis le
+// 22/10/2026 licences) : date de mise à jour, titre, introduction, sections faites de paragraphes, de puces (un tiret
+// cadratin tertiaire), de définitions ou d'un renvoi vers une autre page (un `TextLink` souligné). Une mesure de lecture de 480 au plus, centrée. Les titres de section sont des en-têtes de niveau 2 en
+// 18/26 — un `subtitle` en porterait le rôle mais aussi les 32 px. Ce sont les surfaces publiques du produit, lues
 // hors app et sans session : d'où leur pied, avec un vrai lien vers l'éditeur (une ancre, pas un bouton). Deux sorties
 // (`v1-33` T-10) : en haut, au-dessus de la date, et à la fin, pour qui a tout lu.
 const EDITOR_NAME = 'Antoine Berthaud';
@@ -12,6 +13,7 @@ const EDITOR_CV_URL = 'https://cv.antoine.berthaud.me/';
 const corps = { fontSize: 15, lineHeight: '23px' };
 function Bloc({ block }) {
   if (block.kind === 'paragraph') return <ThemedText themeColor="textSecondary" style={corps}>{block.text}</ThemedText>;
+  if (block.kind === 'link') return <TextLink label={block.label} apparence="souligne" role="link" onPress={() => {}} />;
   if (block.kind === 'bullets') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

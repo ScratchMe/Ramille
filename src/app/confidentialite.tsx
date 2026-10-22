@@ -61,7 +61,8 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     -> `reglerLeJetonDeCetAppareil` (`src/lib/rappels.ts`), appelé à chaque démarrage par
 //     `src/app/_layout.tsx`, qui le désactive pour un autre canal ;
 //   - adresse IP et appareil de chaque session -> colonnes `ip` et `user_agent` de
-//     `auth.sessions`, posées par Supabase Auth (110 sessions sur 110, mesuré le 02/10/2026) ;
+//     `auth.sessions`, posées par Supabase Auth (110 sessions sur 110, mesuré le 02/10/2026), et
+//     effacées après 90 jours sans renouvellement par `menage_des_jetons_d_auth()` (22/10/2026) ;
 //   - ce que la connexion Google transmet -> le droit `userinfo.profile` que Supabase Auth
 //     demande, d'où le nom et la photo dans `auth.identities.identity_data`.
 //
@@ -247,6 +248,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // de ce qui est enregistré, sa base légale — l'exécution du service et non plus l'intérêt légitime,
 // puisqu'il ne sert qu'à la notification demandée —, Expo, qui ne reçoit plus rien sans elle, ce que
 // garde une session anonyme, et la durée de conservation de l'identifiant.
+//
+// **22/10/2026 : l'adresse IP d'une session s'efface après 90 jours sans servir** (décision de la
+// personne qui pilote, `v1-35` étape 2, `20261022123448_l_ip_des_sessions_s_efface.sql`). Deux phrases :
+// la définition des sessions, et la liste des durées, qui disait « sans limite de durée ». La session
+// elle-même reste — la fermer déconnecterait la personne. Même jour que l'entrée d'au-dessus, donc même
+// date de mise à jour.
 const UPDATED_AT = '22 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -315,7 +322,7 @@ const SECTIONS: LegalSection[] = [
             text:
               'Pour chaque session ouverte sur un appareil, la session anonyme comprise, notre service ' +
               'd’authentification enregistre l’adresse IP et le navigateur ou le système de sa dernière utilisation, ' +
-              'remplacés à chaque renouvellement de la session. ' +
+              'remplacés à chaque renouvellement de la session, et effacés quand elle reste 90 jours sans servir. ' +
               'C’est son fonctionnement ordinaire : nous ne nous en servons pas, et nous n’en tirons aucune position.',
           },
           {
@@ -585,9 +592,9 @@ const SECTIONS: LegalSection[] = [
             'tu n’as pas créé de compte.',
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
-          'Sessions de connexion, avec leur adresse IP et leur appareil : gardées sans limite de durée tant que ton ' +
-            'compte existe. Une session part quand tu te déconnectes de cet appareil, si l’appareil joint alors notre ' +
-            'service, et toutes partent avec la ' +
+          'Sessions de connexion : gardées tant que ton compte existe. Leur adresse IP et leur appareil sont effacés ' +
+            'quand une session reste 90 jours sans servir ; si elle sert de nouveau, la nouvelle adresse est notée. Une session part quand tu ' +
+            'te déconnectes de cet appareil, si l’appareil joint alors notre service, et toutes partent avec la ' +
             'suppression de ton compte ou la suppression automatique d’une session anonyme.',
           'Identifiant de notification de ton téléphone : désactivé au prochain démarrage de l’application si tu ' +
             'passes aux rappels par email ou sans rappel, ou si tu as retiré la permission dans les réglages du ' +

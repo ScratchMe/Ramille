@@ -22,7 +22,7 @@
  * « serveur », ni « instant », ni « connexion » — le test du fichier voisin garde ces mots hors des
  * phrases. Et aucune ne propose de réessayer tout de suite.
  *
- * Phrases à valider par la personne qui pilote, comme celles de `messageDEcriture` (`v1-27` §12.29).
+ * **Validées par la personne qui pilote le 22/10/2026**, à la fusion de l'étape 1 de `v1-35`.
  *
  * ## Les autres refus `RM002`
  *

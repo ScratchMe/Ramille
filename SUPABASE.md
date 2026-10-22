@@ -335,8 +335,10 @@ sur la stack locale :
   reconnexion, donc ne les distingue pas (mesuré le 06/10/2026). L'alerte lit les deux (`v1-27` §12.40).
 - **Une tâche du dépôt écrit dans `auth`, et c'est assumé** : le ménage de GoTrue est éteint sur la
   production et ne se règle pas, donc `menage_des_jetons_d_auth` (0h50 UTC) supprime les jetons révoqués
-  de plus de deux jours et les `flow_state` de plus d'un jour — jamais une session. `postgres` en a le
-  droit sur la production. **Une mise à jour d'Auth** qui renommerait une colonne de ces tables ferait
+  de plus de deux jours et les `flow_state` de plus d'un jour, et, depuis le 22/10/2026, efface l'adresse
+  IP et l'appareil (`ip`, `user_agent`) des sessions sans renouvellement depuis 90 jours — sans jamais
+  fermer une session. `postgres` en a le droit sur la production (lu le 06/10 et le 22/10/2026). **Une mise
+  à jour d'Auth** qui retirerait ce droit ou renommerait une colonne de ces trois tables ferait
   échouer la tâche : l'alerte la nomme, rien n'est perdu, et sa requête se relit contre le nouveau schéma.
 - **Un trigger sur `auth.users` se déclenche pour tous les rôles, GoTrue (`supabase_auth_admin`)
   compris**, donc il borne ce que le client peut y écrire là où aucun plafond `public.*` ne voit cette

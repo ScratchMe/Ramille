@@ -1,18 +1,20 @@
-import { Link } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SortieDuDetour } from '@/components/sortie-du-detour';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EDITOR_CV_URL, EDITOR_NAME } from '@/constants/editeur';
 import { Spacing } from '@/constants/theme';
 import { revenirOu } from '@/lib/navigation';
 
-// Coquille commune aux pages légales (/confidentialite, /conditions). Ces pages ne sont pas
-// des écrans du parcours : elles existent parce que l'écran de consentement Google OAuth et
-// la fiche Google Play en exigent l'URL publique, et elles doivent donc rester lisibles
-// hors app, sur le domaine, sans session.
+// Coquille commune aux pages légales (/confidentialite, /conditions, et depuis le 22/10/2026 /licences).
+// Ces pages ne sont pas des écrans du parcours. Les deux premières existent parce que l'écran de
+// consentement Google OAuth et la fiche Google Play en exigent l'URL publique ; la troisième, parce que
+// les licences des bibliothèques embarquées veulent leurs avis reproduits. Toutes doivent rester
+// lisibles hors app, sur le domaine, sans session.
 //
 // Le contenu est passé en données plutôt qu'en JSX : une page légale se relit et se modifie
 // paragraphe par paragraphe, et il ne faut pas avoir à traverser du balisage pour le faire.
@@ -20,7 +22,10 @@ import { revenirOu } from '@/lib/navigation';
 export type LegalBlock =
   | { kind: 'paragraph'; text: string }
   | { kind: 'bullets'; items: string[] }
-  | { kind: 'definitions'; items: { term: string; text: string }[] };
+  | { kind: 'definitions'; items: { term: string; text: string }[] }
+  // Un renvoi vers une autre page du produit (`/conditions` → `/licences`). Un `TextLink` souligné, comme
+  // tout texte cliquable (`FRONT.md` §2.4) : il suit une phrase de la même encre, et se lit comme un lien.
+  | { kind: 'link'; label: string; href: Href };
 
 export type LegalSection = {
   heading: string;
@@ -78,9 +83,9 @@ export function LegalPage({
 
             <SortieDuDetour label="Retour" onPress={() => revenirOu('/')} />
 
-            {/* Ces deux pages sont les seules surfaces publiques du produit : leurs URL sont
-                données à Google Play et à l'écran de consentement Google, et elles se lisent
-                hors app, sans session. C'est donc le seul endroit où un pied de page a du sens
+            {/* Les pages légales sont les surfaces publiques du produit : les URL de deux d'entre
+                elles sont données à Google Play et à l'écran de consentement Google, et toutes se
+                lisent hors app, sans session. C'est donc le seul endroit où un pied de page a du sens
                 — les écrans du parcours n'en ont pas, et la racine n'est qu'une redirection.
 
                 `Link` et pas `Pressable` : react-native-web rend un `onPress` en `<div>`, qui
@@ -108,6 +113,10 @@ function LegalBlockView({ block }: { block: LegalBlock }) {
         {block.text}
       </ThemedText>
     );
+  }
+
+  if (block.kind === 'link') {
+    return <TextLink label={block.label} apparence="souligne" role="link" onPress={() => router.push(block.href)} containerStyle={styles.lien} />;
   }
 
   if (block.kind === 'bullets') {
@@ -154,7 +163,7 @@ function LegalBlockView({ block }: { block: LegalBlock }) {
  * À 480 px, le corps (15 px, Spline Sans) tient de 64 à 72 caractères en moyenne par ligne, 74 au
  * plus — relevé sur l'export des deux pages, pas estimé. Sur téléphone la colonne est plus étroite
  * que ça de toute façon (342 px à 390 de large), donc rien n'y bouge : c'est un plafond, pas une
- * largeur. Propre à ces deux pages, les seules qu'on lit d'un bout à l'autre — d'où une constante
+ * largeur. Propre aux pages légales, les seules qu'on lit d'un bout à l'autre — d'où une constante
  * ici plutôt qu'un jeton.
  */
 const MESURE_DE_LECTURE = 480;
@@ -177,4 +186,6 @@ const styles = StyleSheet.create({
   bullet: { fontSize: 15, lineHeight: 23 },
   listText: { flex: 1 },
   definition: { gap: 2 },
+  // Le lien se range à gauche de la colonne : sans cela, la cible de 48 px s'étirerait sur toute sa largeur.
+  lien: { alignSelf: 'flex-start' },
 });

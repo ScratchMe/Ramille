@@ -1897,7 +1897,9 @@ ce que l'app fait, et deux touchent au natif, donc à un build (le premier et le
   (`[auth.sessions]` est commentée dans `supabase/config.toml`, et rien ne la règle sur le distant) ; d'après
   Supabase, elle demande une offre payante. Une session d'appareil abandonné reste jusqu'à la
   suppression du compte, avec son adresse IP. **Condition** : un passage au plan Pro, ou une purge à nous
-  sur `auth.sessions`, que GoTrue possède.
+  sur `auth.sessions`, que GoTrue possède. **Réduit le 22/10/2026** (décision de la personne qui pilote,
+  `v1-35` étape 2) : la session reste, mais son adresse IP et son appareil sont effacés après 90 jours sans
+  renouvellement (`20261022123448_l_ip_des_sessions_s_efface.sql`, dans le ménage de chaque nuit).
 
 Et un cinquième, **écarté** et non reporté : effacer le nom et la photo que Google transmet, par un
 déclencheur sur les tables d'auth (fiche §1.4, « les autres voies »).
@@ -2596,6 +2598,19 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
   installé sur la production : un relevé d'empreintes sur le distant, avec confirmation ;
 - l'espace des cartes canoniques (de l'ordre de 2·10⁹) : seule une signature ou un arrondi du total le
   borne, et le second change ce que l'app produit.
+
+**Ce que l'écran des licences laisse (22/10/2026, `v1-35` étape 2)** :
+
+- **les dépendances Gradle** des modules natifs (AndroidX, Kotlin, Firebase, Material Components,
+  ShortcutBadger) n'y figurent pas : elles ne sont pas dans `node_modules`, et les lister demande un build
+  Android avec son SDK — le greffon `oss-licenses` de Google, ou une lecture de `./gradlew dependencies`
+  dans `android.yml`. L'écran le dit ;
+- **`generer-les-licences.mjs --verifier` n'est pas dans la CI** : il exporte deux plateformes. Le test
+  Jest (`scripts/licences.test.ts`) voit une dépendance directe nouvelle, pas une dépendance transitive qui
+  entrerait dans le bundle sans que `package-lock.json` le dise. Le brancher touche `ci.yml` et
+  `rejouer-la-ci.mjs` ;
+- **`react-native-gesture-handler`** est dans `dependencies` sans être importé nulle part dans `src/` ; son
+  code natif entre dans l'APK par l'autolinking seul. Le retirer demande un build EAS pour le vérifier.
 
 **Ce qui revient à la personne qui pilote** est dans le compte rendu de la PR : les décisions de
 produit (périmètre du bilan, progrès visible, chemin web et iPhone, purge, une action avion pour qui

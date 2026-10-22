@@ -76,8 +76,8 @@ export function doitOuvrirUneSessionAnonyme(etat: EtatDeSession): boolean {
 
 /**
  * **Les surfaces publiques et de service** — `/compte/suppression` (exigée par Google Play),
- * `/rappels/stop` (le lien de désinscription d'un e-mail), `/confidentialite`, `/conditions`, `/status` :
- * elles ne demandent pas de compte. Deux règles s'en déduisent, et une seule liste les porte, pour
+ * `/rappels/stop` (le lien de désinscription d'un e-mail), `/confidentialite`, `/conditions`, `/licences`,
+ * `/status` : elles ne demandent pas de compte. Deux règles s'en déduisent, et une seule liste les porte, pour
  * qu'une page ne soit jamais publique pour l'une et pas pour l'autre :
  *
  *   * **l'écran de reconnexion ne s'y pose pas**, même pendant un refus (`lEcranDeReconnexionSePose`) :
@@ -85,7 +85,7 @@ export function doitOuvrirUneSessionAnonyme(etat: EtatDeSession): boolean {
  *   * **leur ouverture ne crée pas de session** (`laSessionSOuvreSur`, 18/10/2026) : un navigateur neuf
  *     qui lit la politique de confidentialité — l'examinateur de Play, quelqu'un qui a désinstallé l'app —
  *     recevait un compte anonyme, et le captcha qui le précède. Aucune n'en a besoin : les pages légales
- *     ne lisent rien, `/status` lit un référentiel public, `/rappels/stop` appelle un RPC ouvert à `anon`
+ *     (les licences comprises : une liste générée, sans lecture ni écriture) ne lisent rien, `/status` lit un référentiel public, `/rappels/stop` appelle un RPC ouvert à `anon`
  *     (le jeton du lien autorise), et `/compte/suppression` ouvre la session du compte par le code reçu —
  *     une session anonyme créée là n'était pas celle de la personne. Une session déjà là se restaure.
  *
@@ -102,6 +102,7 @@ const SURFACES_SANS_COMPTE = [
   '/rappels/stop',
   '/confidentialite',
   '/conditions',
+  '/licences',
   '/status',
 ] as const;
 

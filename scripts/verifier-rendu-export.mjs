@@ -113,6 +113,13 @@ const ROUTES = [
   { chemin: '/onboarding', marqueur: 'Moi, c’est Ramille' },
   { chemin: '/confidentialite', marqueur: 'Politique de confidentialité' },
   { chemin: '/conditions', marqueur: 'Conditions d’utilisation' },
+  // Les licences (22/10/2026) : le marqueur est le titre d'une section que le fichier généré produit, pas
+  // le titre de la page — une page qui rendrait sa coquille et aucune licence n'aurait plus ce texte.
+  // Éprouvé le jour même sur deux exports mutés (cache de Metro privé, source restaurée avant la lecture),
+  // chacun ne faisant tomber que sa ligne : la page rendue avec ses sections vides → « /licences : « Licence
+  // MIT » est absent de la page » ; le fichier de la route renommé → « /licences : le serveur répond 404, et
+  // non 200 ».
+  { chemin: '/licences', marqueur: 'Licence MIT' },
   // Surface publique exigée par Google Play : elle doit s'afficher sans l'app et sans compte.
   { chemin: '/compte/suppression', marqueur: 'Supprimer mon compte' },
   // La sortie des rappels (C2.9), ouverte depuis une messagerie, sans session et parfois sans

@@ -400,9 +400,9 @@ par un `onPress`.** `react-native-web` rend un `onPress` sur du texte en `<div>`
 pour un humain, inexistant pour un crawler. Et il ne suffit pas que l'ancrage soit correct, il
 doit se retrouver dans le HTML **statique** — à vérifier dans `dist/*.html` après
 `expo export`, même piège silencieux que `cleanUrls`. Seul cas aujourd'hui : le lien vers la
-page personnelle de l'éditeur (`EDITOR_CV_URL`) au pied des deux pages légales, qui sont les
-seules surfaces publiques du produit (leurs URL sont données à Google Play et à l'écran de
-consentement Google). Le sens du lien est délibéré — Ramille vers le CV — et il ne porte
+page personnelle de l'éditeur (`EDITOR_CV_URL`) au pied des pages légales, qui sont les surfaces
+publiques du produit (les URL de `/confidentialite` et `/conditions` sont données à Google Play et à
+l'écran de consentement Google ; `/licences`, depuis le 22/10/2026, partage leur coquille). Le sens du lien est délibéré — Ramille vers le CV — et il ne porte
 pas de `nofollow`.
 
 ### 2.2 Le web : hydratation, thème, `react-native-web`
