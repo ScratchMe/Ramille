@@ -466,11 +466,14 @@ function avisDeLEnteteDuFichier(chemin) {
   return avis;
 }
 
-/** L'auteur que déclare le `package.json`, sans son adresse ni son lien : « Scott Taylor <…> (https://…) » → « Scott Taylor ». */
+/**
+ * L'auteur que déclare le `package.json`, sans son adresse ni son lien : « Scott Taylor <…> (https://…) » → « Scott Taylor ».
+ * Le format de npm met le nom en premier, donc on garde ce qui précède le premier `<` ou `(`.
+ */
 function auteurDuPaquet(pj) {
   const brut = typeof pj.author === 'string' ? pj.author : pj.author?.name;
   if (typeof brut !== 'string') return null;
-  const nom = espaces(brut.replace(/<[^>]*>|\([^)]*\)/g, ''));
+  const nom = espaces(brut.split(/[<(]/)[0] ?? '');
   return nom === '' ? null : nom;
 }
 
