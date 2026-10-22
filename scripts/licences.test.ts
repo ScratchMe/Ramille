@@ -16,7 +16,13 @@
  *     montée de version sans régénération rougit, et c'est le seul chemin par lequel un paquet imbriqué (une
  *     dépendance d'une dépendance) change sans qu'on y touche ;
  *   - la cohérence du fichier : chaque texte est employé, chaque paquet renvoie à un texte qui existe, aucun
- *     doublon.
+ *     doublon ;
+ *   - **chaque texte affiché garde toutes les lignes du fichier de licence de ses paquets et de ses polices**,
+ *     les avis, les titres et le préambule de l'OFL exceptés — relues dans `node_modules/`, que
+ *     `package-lock.json` situe. C'est la garde qui aurait vu l'Apache perdre sa clause 4(c) ; et elle n'emprunte
+ *     pas les motifs du script, qui y passerait avec ses propres erreurs ;
+ *   - l'Apache reproduit ses repères « (a) » à « (d) », et une copie rangée dans un autre paquet
+ *     (`react-helmet-async`, dans `expo-router`) est listée à part avec sa licence, son avis et son hôte.
  * **Ce qu'elle ne voit pas**, et que seul `node scripts/generer-les-licences.mjs --verifier` voit, en relisant les
  * cartes de sources du bundle : une dépendance **transitive** qui entre dans le bundle sans que rien dans
  * `package.json` ni dans `src/` ne l'ait demandé (une montée d'`expo-router` qui tire un paquet de plus) — le
@@ -25,10 +31,11 @@
  * personne qui pilote le veut, dans `.github/workflows/ci.yml` et `scripts/rejouer-la-ci.mjs`.
  *
  * **2. Le script contre un arbre fabriqué** — le générateur est joué sur de petits projets, en entier, par
- * `--depuis` : les cartes de sources, les paquets imbriqués, les avis de copyright, les textes rangés une fois
- * par type, la police et son avis lus dans le fichier de police, et tout ce qu'il refuse de deviner.
+ * `--depuis` : les cartes de sources, les paquets imbriqués, les copies logées dans un paquet, les avis de
+ * copyright (de la licence, des sources, de l'auteur), les textes rangés une fois par type, la police et son avis
+ * lus dans le fichier de police, et tout ce qu'il refuse de deviner.
  *
- * Éprouvé en cassant ce qu'il garde, le 22/10/2026 — voir « Mutations » en bas du fichier.
+ * Éprouvé en cassant ce qu'il garde, le 22/10/2026, en deux passages — voir « Mutations » en bas du fichier.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -871,10 +878,16 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
       const loin = `${'export {};\n'.repeat(60)}// Copyright (c) 2019 Trop loin\n`;
       const paquet = {
         package: pj('meta', '1.0.0'),
-        fichiers: { 'a.js': 'const mention = "Copyright (c) 2020 Dans une chaîne";\n', 'b.js': loin, 'c.js': '// Copyright notice : voir LICENSE\n// copyright (c) en minuscules\n' },
+        fichiers: {
+          'a.js': 'const mention = "Copyright (c) 2020 Dans une chaîne";\n',
+          'b.js': loin,
+          'c.js': '// Copyright notice : voir LICENSE\n// copyright (c) en minuscules\n',
+          // Deux lignes seulement, mais la seconde commence après les quatre premiers kio : le script ne lit pas plus que l'en-tête.
+          'd.js': `// ${'x'.repeat(5000)}\n// Copyright (c) 2019 Après quatre kio\n`,
+        },
       };
 
-      expect(avisDe(paquet, ['a.js', 'b.js', 'c.js'])).toBeNull();
+      expect(avisDe(paquet, ['a.js', 'b.js', 'c.js', 'd.js'])).toBeNull();
     });
 
     it('cherche aussi dans les sources quand le fichier de licence existe mais ne porte aucun avis', () => {
@@ -1136,7 +1149,52 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
  * - le relevé remplacé par une expression régulière nue, qui lit aussi les commentaires → 1 tombe, « lit tous
  *   les genres d'import, et pas les commentaires ».
  *
+ * ## Mutations, deuxième passage (22/10/2026, contre-lecture de l'écran `/licences`)
+ *
+ * Même méthode, et la suite jouée avec celle de `src/types/licences.test.ts` : **80 tests (57 + 23)**. Une mutation
+ * du script qui doit changer le fichier engagé est jouée **avec le fichier régénéré** par le script muté : les
+ * gardes du fichier généré lisent l'artefact, et muter la source sans lui ne les atteint pas. Les noms sont ceux
+ * des tests ; chaque mutation en a fait tomber au moins un.
+ *
+ * **Les défauts relevés** :
+ * - `(c) ` seul repris comme avis (le motif d'avant) → 7 tombent : les trois gardes du fichier régénéré (« reproduit
+ *   l'Apache 2.0 avec les quatre repères… », « liste react-helmet-async à part… », « garde chaque ligne du fichier
+ *   de licence… ») et quatre essais sur l'arbre fabriqué. **Le motif que la contre-lecture proposait,
+ *   `\(c\)\s*(\d|[A-Z])`, tombe de la même façon (7)** : « You » commence par une majuscule, donc la clause 4(c)
+ *   reste prise pour un avis ; seule l'année la distingue, et aucun fichier de licence installé ne porte un « (c) »
+ *   d'avis sans le mot « Copyright » ou une année ;
+ * - le fichier engagé d'avant ce passage (celui du commit `dfb90b4`) → 3 tombent, les trois gardes du fichier
+ *   régénéré ;
+ * - l'emplacement vide de l'appendice Apache conservé dans le texte → 2 tombent (« range une seule fois l'Apache… »
+ *   et « liste react-helmet-async… », dont le texte devient une « autre rédaction ») ; pris pour l'avis du paquet
+ *   (`estUnAvis` qui ne regarde plus les emplacements) → 2 tombent.
+ *
+ * **Les copies** :
+ * - `copieDansLePaquet` qui rend toujours `null` → 8 tombent (le fichier régénéré perd `react-helmet-async`, et six
+ *   essais fabriqués) ; le sous-dossier le plus éloigné au lieu du plus proche → 1 ; une licence sans identité
+ *   acceptée → 1 ; une façade `{ "type": "module" }` prise pour un paquet → 2 ; l'hôte qui n'est plus listé quand
+ *   seul un fichier de la copie entre dans le bundle → 2 ; `dans` jamais écrit → 3 ; un nom de licence illisible
+ *   dans un sous-dossier sans le refus → 1 ;
+ * - le fichier engagé dont `dans` pointe un paquet absent → 3 (« ne cite en “dans” qu'un paquet qu'il liste
+ *   lui-même », la copie, et la lecture de ses fichiers).
+ *
+ * **L'avis lu hors de la licence** : un avis pris hors d'un commentaire → 1 ; l'en-tête sans limite de lignes → 1,
+ * sans limite d'octets → 1 ; les fichiers pris dans l'ordre de la carte et non l'ordre alphabétique → 1 ; les
+ * fichiers du paquet que le bundle ne contient pas lus aussi → 1 ; l'auteur jamais donné → 1, donné avec son
+ * adresse → 1 ; les sources ignorées quand le fichier de licence existe → 1 ; préférées à l'avis de la licence → 1 ;
+ * l'auteur préféré aux sources → 1.
+ *
+ * **Le texte de chaque licence** (le fichier engagé amputé d'une phrase, un type après l'autre) : MIT, ISC, 0BSD,
+ * BSD à deux et à trois clauses, OFL (un intitulé) → 1 tombe à chaque fois, « garde chaque ligne du fichier de
+ * licence… » ; l'Apache privé de son repère « (d) » → 2.
+ *
+ * **La mise en page** (`src/types/licences.test.ts`) : l'ancienne phrase de repli (« Ce paquet ne donne pas de ligne
+ * de copyright ») → 1 ; l'ancienne introduction → 2 ; une introduction sans renvoi à la dernière section → 1 ; la
+ * nuance mise hors de la phrase qui dit ce que la page liste → 1 ; `termeDuPaquet` qui oublie la copie → 1.
+ *
  * **Ce que rien d'ici n'éprouve** : l'autolinking (`--sans-natif` dans tous les essais), qui ne se joue que sur
  * le dépôt réel — par `node scripts/generer-les-licences.mjs`, qui l'a utilisé pour écrire le fichier engagé,
- * et par `--verifier` ; et l'export lui-même, qui est la commande d'Expo.
+ * et par `--verifier` ; l'export lui-même, qui est la commande d'Expo ; et que `package_original.json` soit le
+ * nom que toute copie d'Expo donne à son identité — la convention est lue sur un seul cas (`expo-router`), le
+ * script refuse une copie dont il ne trouve pas l'identité plutôt que de la deviner.
  */

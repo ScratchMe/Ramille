@@ -32,6 +32,17 @@
  *   `EXPO.md` §1.8 décrit — un mois en anglais sur un Hermes sans ICU — n'est pas observable d'ici. Ce que ces
  *   tests gardent est la forme (les mois de `MOIS_FRANCAIS`, le « 1er ») ; que le code ne demande jamais la
  *   locale se lit dans `dateEnMots`, et nulle part ailleurs.
+ *
+ * Deuxième passage, le même jour (contre-lecture de l'écran, 23 tests ; la suite de `scripts/licences.test.ts` est
+ * jouée avec, 80 en tout), cinq mutations de ce module :
+ * - l'ancienne phrase de repli, « Ce paquet ne donne pas de ligne de copyright », rendue à `SANS_COPYRIGHT` → 1
+ *   tombe, « ne dit pas d'un paquet qu'il “ne donne pas” d'avis » (la phrase était fausse de la plupart des paquets
+ *   qui l'affichaient : leurs sources portent un avis) ;
+ * - l'ancienne introduction (« Cette page liste ce que l'application embarque d'autres auteurs… ») → 2 tombent : sa
+ *   forme et « ne se dit pas complète… » ; la même sans son renvoi à la dernière section → 1 ; la nuance rejetée
+ *   hors de la phrase qui dit ce que la page liste → 1 : **c'est la phrase, pas la page, qui ne doit pas se
+ *   dire complète** — une nuance deux phrases plus loin laisse la première fausse seule ;
+ * - `termeDuPaquet` qui oublie la copie (`dans`) → 1 tombe, « dit d'une copie rangée dans un autre paquet… ».
  */
 import { LICENCES } from '@/constants/licences';
 import {
