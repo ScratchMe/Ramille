@@ -30,7 +30,7 @@
 |---|---|---|---|---|
 | 1 | **Correctifs sans décision** : le jeton de notification ne part plus chez Expo sans la notification choisie ; les refus de plafond (engagements, bilans) disent « Réessaie demain » au lieu de « Réessaie dans un instant » | Non | Client, page de confidentialité, registres | **Livrée le 22/10/2026** (#382). Trois contre-lectures ont trouvé de vrais défauts dans la logique du jeton, tous corrigés : la garde du retour, la reprise avant la désactivation, la marque du jeton qui appartient à l'appareil (`FRONT-SESSION.md` §2.7) |
 | 2 | **Mentions légales et conservation** : écran des licences, âge minimum, mentions légales, durée de conservation des adresses IP de session, journal d'audit d'Auth après suppression | Deux, posées en chemin : **aucun âge** dans les conditions, et l'**adresse IP d'une session effacée après 90 jours** sans servir (tranchées le 22/10/2026) | Écran neuf, conditions, migration, page de confidentialité, registre | **Livrée le 22/10/2026** (#384). Les mentions légales étaient déjà justes (audit du 18/10/2026) ; le journal d'Auth est vide sur la production (registre, E7). L'écran des licences ne couvre pas les dépendances Gradle (§3) |
-| 3 | **Le périmètre du bilan** | Oui : libellés élargis sur une étape, ou deux étapes | Questionnaire, calcul, méthodologie, recettes | À faire |
+| 3 | **Le périmètre du bilan** | Oui : libellés élargis sur une étape, ou deux étapes. **Tranchée le 22/10/2026 : une étape**, des libellés qui disent la semaine et le week-end, et une cinquième réponse, « Presque tous les jours » (5 sorties par semaine). La question : « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en semaine ? » — l'ordre inversé après coup, pour ne pas couper « week-end » au milieu (`FRONT-QUESTIONNAIRE.md`). Le poste s'appelle « Loisirs » | Questionnaire, calcul, méthodologie, kit, recettes (`v1-13` §11.39) | En cours. Migration `20261022163000`, test `60` |
 | 4 | **Le web et l'iPhone** : le compte comme condition des rappels sur le web ; la purge des sessions anonymes à 120 jours | Non (tranché) | Feuille des rappels, migration, registre, confidentialité | À faire |
 | 5 | **La page d'accueil du web**, avec le film | Oui : ce que voit quelqu'un qui revient ; la phrase « pas de série » du film face à « deuxième semaine de suite » | Route racine du web, export du film, titre | À faire |
 | 6a | **Le progrès visible : le chiffre** | Oui : un « oui » ne dit pas combien de fois, et `v1-23` §3.2 refuse un second chiffre concurrent du bilan | Plan, suivi | À faire |
@@ -51,17 +51,18 @@
   voiture le week-end, mais elles ajoutaient deux écrans, et un trajet du vendredi soir ne se range ni
   d'un côté ni de l'autre. Retenu : une étape, des libellés qui disent la semaine et le week-end, et
   une cinquième réponse, « Presque tous les jours » (5 sorties par semaine).
-- **À voir sur appareil, à la prochaine recette** (étape 3) : un bilan qui répond « Presque tous les
-  jours » sur le web, puis rouvert pour un nouveau bilan sur un build Android d'avant le 22/10/2026,
-  arrive prérempli d'une valeur que ce build ne connaît pas : aucune rangée cochée, et « Suivant »
-  actif. Ramille n'est pas lancé, donc seuls les testeurs ont ce build ; le prochain build EAS règle
-  le cas. Le titre de l'étape, sur Android, peut aussi couper « week-end » à une largeur que la
-  mesure du web n'a pas vue (`FRONT-QUESTIONNAIRE.md`).
-- **Le film montre encore l'ancienne étape des loisirs** (étape 3). Il n'est pas diffusé : il se
-  reprend avant la diffusion, avec l'écran du plan (`docs/communication/le-fil-de-ramille/README.md`),
-  donc à l'étape 5 au plus tard.
 
 - **Les contrastes des barres** (`accentMuted` sur le fond de carte, environ 1,6:1). Chaque barre porte sa
   valeur écrite à côté d'elle : WCAG 1.4.11 n'exige 3:1 que d'un graphique **nécessaire** à la
   compréhension, ce que ces barres ne sont pas. Et le jeton est celui du design system entier : le changer
   serait une décision de design, pas un correctif.
+
+## 4. Ce qui reste ouvert après une étape
+
+- **Étape 3, sur appareil** : `v1-13` §11.39 — les cinq rangées sur Android, la coupure du titre, et le
+  préremplissage de « Presque tous les jours » sur un build d'avant le 22/10/2026. Elle attend le prochain
+  build EAS.
+- **Étape 3, le film** : il montre encore l'ancienne étape des loisirs. Il n'est pas diffusé ; il se reprend
+  avant la diffusion, avec l'écran du plan (`docs/communication/le-fil-de-ramille/README.md`), donc à
+  l'étape 5 au plus tard.
+- **Étape 3, la coupure du titre à 430 de large** : au relevé de la dette (`v1-27` §12.42).

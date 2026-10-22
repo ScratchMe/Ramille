@@ -52,8 +52,9 @@ une sixième :
   `normaliserReponses` garde, ce que `loisirsSontLeResiduel` et `phraseDuCalculDuContexte` répondent ;
 - **le seul endroit qui énumère les fréquences est le `case` du calcul, et il n'a pas de `else`** :
   une valeur admise par le `check` sans sa branche rend un total NULL, que la colonne refuse, donc
-  chaque bilan portant cette réponse échoue à la soumission. Le contrôle de la migration et les
-  fichiers pgTAP `41` et `60` vérifient **chaque** valeur admise, lue dans la contrainte ;
+  chaque bilan portant cette réponse échoue à la soumission. Le contrôle de la migration et le
+  fichier pgTAP `41` vérifient **chaque** valeur admise, lue dans la contrainte ; `60` garde la
+  valeur de la cinquième et ce qu'elle déclenche ;
 - **la valeur affichée et la valeur calculée sont gardées à part** : `HYPOTHESES.sortiesParSemaine`
   (`presqueTousLesJours: 5`, appariée à `leisure_freq_almost_daily`) par
   `scripts/verifier-hypotheses-calcul.mjs`, qui lit la **dernière migration réécrivant le calcul en

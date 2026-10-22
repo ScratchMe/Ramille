@@ -2642,3 +2642,16 @@ contexte), **la révision de sa décision D14 du 10/09/2026** (l'image EAS épin
   au prochain plan reconstruit, et si c'est une correction du contexte qui le reconstruit, l'encart dit que le
   plan a changé « avec tes nouvelles réponses de contexte », alors que la cause est la règle neuve. Seuls des
   comptes de test peuvent être dans ce cas.
+
+### 12.42 Le titre de l'étape des loisirs peut couper « week-end » (22/10/2026)
+
+L'étape 3 de `v1-35` a changé la question des loisirs : « À quelle fréquence fais-tu des trajets pour tes
+loisirs, le week-end comme en semaine ? ». Mesurée sur l'export, l'étape ouverte par un brouillon, elle tient
+sur quatre lignes de 320 à 412 de large sans couper le mot, et **se coupe après « week- » à 430** (« end comme
+en semaine ? » dessous). La première tournure, « …, en semaine comme le week-end ? », coupait à 390 ; l'ancien
+titre, à 360, 375 et 390. La parade ordinaire, un trait d'union insécable (U+2011) ou un gluon (U+2060),
+n'existe pas dans Spline Sans (relevé dans sa table `cmap`) : le caractère tomberait sur une autre police.
+Restent deux pistes, aucune faite : une tournure sans « week-end », qui touche à un texte validé, ou un
+`white-space: nowrap` sur le seul mot côté web, qui ne vaut pas sur Android. Détail dans
+`FRONT-QUESTIONNAIRE.md`, et la vérification sur appareil en `v1-13` §11.39.
+

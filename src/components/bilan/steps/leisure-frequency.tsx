@@ -32,8 +32,8 @@ const QUESTION_FREQUENCE =
 // domicile-travail, la maquette « Progression adaptative — section sautée » remplaçait les exemples
 // par un encadré « Sans trajet domicile-travail, ton bilan compte N étapes. » : il répétait l'en-tête
 // (« Étape 2 sur 6 »), changeait de chiffre sous le doigt — « Rarement » retire une étape — et ôtait
-// les exemples au profil qui en a le plus besoin, retraité ou sans emploi, pour qui « trajets
-// loisirs » est la première question du bilan.
+// les exemples au profil qui en a le plus besoin, retraité ou sans emploi, pour qui la question des
+// loisirs est la première du bilan.
 export function LeisureFrequencyStep({
   answers,
   update,

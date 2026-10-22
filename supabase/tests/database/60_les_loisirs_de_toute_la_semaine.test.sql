@@ -13,7 +13,8 @@
 --     de loisirs, il reçoit la boucle mensuelle sans voyage, et son point du mois porte sur ses
 --     sorties ;
 --   - le poste s'appelle « Loisirs » dans les libellés que le calcul fige, et la question du mois
---     dit « tes sorties », sans « week-end » ;
+--     dit « tes sorties », sans « week-end ». Ce fichier lit la forme avec mode ; celle du résiduel,
+--     « Loisirs (occasionnels) », est gardée par `01` et `20` ;
 --   - une valeur hors de la liste est refusée.
 -- Que **chaque** fréquence admise ait sa branche dans le calcul, `41` le garde déjà, en lisant la
 -- liste dans la contrainte : il en compte cinq depuis cette migration.
@@ -148,6 +149,8 @@ rollback;
 --   - la réponse traitée comme « rarement » (distance et mode par défaut) → 1, seule ;
 --   - « Loisirs du week-end (<mode>) » rendu au libellé des sorties → 4, `01` n° 12, `20` n° 25 ;
 --   - « Loisirs du week-end » rendu au poste dominant → 4, `05` n° 4, `20` n° 26 et 34 ;
+--   - « Loisirs du week-end (occasionnels) » rendu au résiduel → `01` n° 3, `20` n° 21 et 24, et rien
+--     ici (ajoutée sur un constat de la contre-lecture du même jour) ;
 --   - « tes sorties du week-end » rendu à `poste_inserable` → 8, `19` n° 2 et 5, `23` n° 20 ;
 --   - « Loisirs du week-end » rendu à la question du mois (`generate_extras_checkins`) → `40` n° 3 et
 --     9 seulement : ce fichier ne passe pas par cette branche (P n'a engagé aucune action), et `40`
