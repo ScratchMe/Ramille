@@ -299,11 +299,11 @@ export const PARTS_DU_SECOND_MODE: { value: number; label: string }[] = [
  * « Rarement » saute le détail des sorties et passe sur le résiduel.
  *
  * **« Presque tous les jours » est la cinquième depuis le 22/10/2026** (`v1-35`, étape 3), avec la
- * question qui couvre désormais la semaine comme le week-end : « Plusieurs fois par semaine » vaut
- * 3 sorties, et qui sort presque chaque jour en faisait au moins quatre de plus. Elle vaut 5 sorties
- * par semaine, et se comporte, comme les autres, en sortie déclarée — mode et distance demandés,
- * boucle mensuelle, actions de loisirs. Elle est **dernière** : l'échelle monte, du moins fréquent au
- * plus fréquent.
+ * question qui couvre désormais la semaine comme le week-end : « Plusieurs fois par semaine », la plus
+ * haute jusque-là, vaut 3 sorties par semaine, et la semaine entière en compte davantage. La nouvelle
+ * vaut 5 sorties par semaine, et se comporte, comme les autres, en sortie déclarée — mode et distance
+ * demandés, boucle mensuelle, actions de loisirs. Elle est **dernière** : l'échelle monte, du moins
+ * fréquent au plus fréquent.
  *
  * Miroir du `check` de `assessment_answers.leisure_frequency`, comparé à la base
  * (`scripts/verifier-miroirs-de-check.mjs`), comme l'union `LeisureFrequency`.

@@ -95,6 +95,9 @@ const ENGAGEMENT = { action: 'Faire un de tes longs trajets en train plutôt qu�
 const FEUILLE = 'Ton plan va être recalculé';
 const BANDEAU = 'Tes réponses précédentes sont préremplies. Modifie ce qui a changé.';
 const TITRE_DU_TRAJET = 'As-tu un trajet régulier pour le travail ou les études ?';
+// Le titre depuis le 22/10/2026 (`v1-35` étape 3). Éprouvé en le cassant le même jour : remettre l'ancien
+// titre dans `leisure-frequency.tsx` fait tomber le bandeau ici et le retour matériel dans
+// `retour-du-questionnaire.test.tsx`, ces deux-là et aucun autre.
 const TITRE_DES_SORTIES = 'À quelle fréquence fais-tu des trajets pour tes loisirs, en semaine comme le week-end ?';
 
 beforeEach(() => {

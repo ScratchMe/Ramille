@@ -14,6 +14,9 @@
  * **Éprouvé en le cassant, le 01/10/2026** (`TESTING.md` §1.1), le fichier restauré depuis une copie :
  *   - la liste remise en dur avec les anciens libellés (l'état d'avant) → « porte les noms de l'en-tête » et
  *     « les quatre noms de la page », et eux seuls ;
+ *   - le 22/10/2026 (`v1-35` étape 3), « Loisirs du week-end » devenu « Loisirs » : `BILAN_SECTION_LABEL` remis
+ *     à l'ancien nom fait tomber « les quatre noms de la page », et lui seul — « porte les noms de l'en-tête »
+ *     suit la source ;
  *   - un libellé du questionnaire renommé dans `BILAN_SECTION_LABEL` sans toucher à la page → rien ne tombe, et
  *     c'est le but : « porte les noms de l'en-tête » le suit au lieu de le contredire. « les quatre noms de la
  *     page », écrit en littéral, tombe alors — c'est lui qui force à relire un renommage, qui est un texte.

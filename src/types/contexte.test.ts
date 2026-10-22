@@ -190,7 +190,8 @@ describe('phraseDuCalculDuContexte', () => {
   it('dit la règle à tous les autres', () => {
     const autres = REPONSES_FREQUENCE_DES_LOISIRS.map((r) => r.value).filter((f) => f !== 'rarely');
     // « Deux ou trois fois par mois » (02/10/2026, `v1-33` D5) et « Presque tous les jours » (22/10/2026,
-    // `v1-35`) comprises : seule « Rarement » change la phrase.
+    // `v1-35`) comprises : seule « Rarement » change la phrase. Éprouvé le 22/10/2026 : la phrase de
+    // l'exception rendue aussi pour « almost_daily » fait tomber ce test, et lui seul.
     expect(autres).toHaveLength(4);
     for (const frequence of [...autres, null]) {
       expect(phraseDuCalculDuContexte(frequence)).toBe(

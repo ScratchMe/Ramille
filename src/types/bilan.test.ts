@@ -940,6 +940,13 @@ describe('les tables de réponses chiffrées', () => {
   // jours » vient s'ajouter à la fin, et elle compte 5 sorties par semaine (`HYPOTHESES`). Les valeurs sont
   // comparées à la base en CI (`verifier-miroirs-de-check.mjs`) ; ce que ce test épingle, c'est ce que la
   // base ne voit pas — le texte que la personne lit, et l'ordre de l'échelle.
+  //
+  // Éprouvé en le cassant, le 22/10/2026 (`TESTING.md` §1.1), le fichier remis en place depuis le commit :
+  // la cinquième réponse retirée de la liste fait tomber 4 tests — celui-ci, « demande le détail… »
+  // (`isStepVisible`), et, ailleurs, `phraseDuCalculDuContexte` (« dit la règle à tous les autres ») et la
+  // méthode (« porte une valeur par réponse »). `normaliserReponses` qui la traite comme « Rarement » fait
+  // tomber « garde le détail des sorties de qui sort « almost_daily » », et lui seul ; `isStepVisible` qui
+  // masque le détail pour elle, « demande le détail… », et lui seul.
   it('les loisirs se déclarent sur cinq fréquences, du moins fréquent au plus fréquent', () => {
     expect(REPONSES_FREQUENCE_DES_LOISIRS).toEqual([
       { value: 'rarely', label: 'Rarement — une fois par mois ou moins' },

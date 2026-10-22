@@ -1,3 +1,20 @@
+/**
+ * Le vocabulaire des postes, et la lecture des libellés que le serveur fige.
+ *
+ * **Éprouvé en le cassant, le 22/10/2026** (`v1-35` étape 3 ; `TESTING.md` §1.1), le fichier remis en
+ * place depuis le commit après chaque mutation, et le compte pris sur `src/constants`, `src/types`,
+ * `src/tests` et `scripts/postes-partageables.test.ts` ensemble :
+ *   - `FORME_INSERABLE.leisure` redevenue « tes loisirs » (les deux registres fusionnés) : 13 tests
+ *     tombent, dont 6 ici (la table, le repli, la différence entre registres, le mot-clé, « pas de
+ *     week-end », `nomDuPoste` inséré) ;
+ *   - `POSTE_LABEL.leisure` redevenue « Loisirs du week-end » : 6 (4 ici, 2 de `resultat.test.ts`) ;
+ *   - `POSTE_SUBJECT.leisure` redevenue « Tes loisirs du week-end » : 6 (3 ici, 3 de `resultat.test.ts`) ;
+ *   - le marqueur lu en « Loisirs (occasionnels) » seul : 7 tests, tous ceux qui portent le libellé
+ *     d'avant le 22/10/2026 ; lu en « Loisirs du week-end (occasionnels) » seul : 9, ceux qui portent le
+ *     libellé d'aujourd'hui. Chaque libellé a ses cas, et le seul test qui les porte tous les deux
+ *     (« retombe sur les libellés quand la fréquence n'a pas été lue ») tombe sur l'une et l'autre ;
+ *   - `loisirsSontLeResiduel` qui prend « Presque tous les jours » pour le résiduel : 1, et lui seul.
+ */
 import {
   FORME_INSERABLE,
   POSTES,

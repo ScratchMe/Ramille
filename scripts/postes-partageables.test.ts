@@ -47,6 +47,15 @@
  * de l'app est devenu un `it.each` sur les deux lectures (`'refuser'`, `'ignorer'`) : une mutation qui le
  * touche y fait tomber un test de plus — non rejoué depuis.
  *
+ * **Le 22/10/2026, les loisirs de toute la semaine** (`v1-35` étape 3) : l'app dit « Loisirs » au lieu de
+ * « Loisirs du week-end », et les adresses déjà partagées portent l'ancien nom. Éprouvé en le cassant, le
+ * fichier remis en place depuis le commit : retirer « Loisirs du week-end » de la liste fait tomber 1 test,
+ * « accepte encore le nom que portaient les loisirs avant le 22/10/2026 », et lui seul — le balayage des
+ * libellés de l'app ne le voit pas, puisque l'app ne le produit plus ; retirer « Loisirs » fait tomber 5
+ * (l'acceptation de chaque libellé, les deux lectures de chaque adresse, les deux écritures de Vercel).
+ * Avant même d'y toucher, le renommage dans `POSTE_LABEL` avait fait tomber ce test-ci : c'est la garde
+ * qui a dit qu'`api/` n'avait pas suivi.
+ *
  * **Et le 19/10/2026, l'encodage** : Vercel passe la chaîne décodée à la fonction (une espace y arrive en
  * `%20`), et la forme canonique, jugée au caractère près, redirigeait chaque partage qui porte un poste
  * vers lui-même, en boucle — trouvé en production par la sonde, juste après la fusion. Éprouvé en le

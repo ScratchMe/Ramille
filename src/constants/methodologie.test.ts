@@ -31,6 +31,13 @@ describe('HYPOTHESES', () => {
   // bloc : une réponse ajoutée au questionnaire sans sa ligne dans `HYPOTHESES` n'aurait de valeur affichée
   // nulle part, et une valeur qui descendrait ferait « plusieurs fois par semaine » compter moins que
   // « une fois par semaine ».
+  //
+  // Éprouvé en le cassant, le 22/10/2026 (`TESTING.md` §1.1), le fichier remis en place depuis le commit :
+  // `presqueTousLesJours` à 4 fait tomber 2 tests (« cinq sorties par semaine » et « affiche chaque
+  // hypothèse ») ; à 2,5, 3 — les mêmes et « de la plus rare à la plus fréquente », qui est seul à voir une
+  // échelle qui redescend ; la clause « presque tous les jours » retirée de la phrase, 1 (« affiche chaque
+  // hypothèse ») ; « plusieurs fois par semaine » redevenue « plusieurs fois », 1 (le même) ; la cinquième
+  // réponse retirée de la liste des réponses, 1 (« porte une valeur par réponse »).
   const CLE_DE_LA_FREQUENCE: Record<LeisureFrequency, keyof typeof HYPOTHESES.sortiesParSemaine> = {
     rarely: 'rarement',
     multiple_monthly: 'deuxOuTroisParMois',

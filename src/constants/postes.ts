@@ -97,7 +97,7 @@ export const POSTE_EN_PHRASE: Record<string, string> = {
  *
  * `travel` perd « longue distance » et `leisure` devient « sorties » : dans « as-tu changé de
  * mode de transport pour … ? », la forme longue fait une question de trente mots. Les sorties ne
- * sont plus « du week-end » depuis le 22/10/2026 : elles se font en semaine comme le samedi.
+ * sont plus « du week-end » depuis le 22/10/2026 : la question couvre la semaine comme le week-end.
  */
 export const FORME_INSERABLE: Record<string, string> = {
   commute: 'ton trajet domicile-travail',
