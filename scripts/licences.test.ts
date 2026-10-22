@@ -170,7 +170,9 @@ describe('le fichier généré des licences', () => {
     }
 
     const problemes: string[] = [];
-    for (const { nom, version, licence } of [...LICENCES.paquets, ...LICENCES.polices.map((p) => ({ nom: p.paquet, version: '', licence: p.licence }))]) {
+    // Une copie (`dans`) n'est pas installée à part : le verrou ne la connaît pas, il connaît son hôte, listé lui aussi.
+    const installes = LICENCES.paquets.filter((paquet) => paquet.dans === undefined);
+    for (const { nom, version, licence } of [...installes, ...LICENCES.polices.map((p) => ({ nom: p.paquet, version: '', licence: p.licence }))]) {
       if (version === '') continue;
       const licences = connus.get(`${nom}@${version}`);
       if (!licences) {
@@ -206,6 +208,100 @@ describe('le fichier généré des licences', () => {
     expect(spline?.copyright).toMatch(/Spline Sans Project Authors/);
     expect(spline?.licence).toBe('OFL-1.1');
     expect(LICENCES.textes.find((texte) => texte.id === spline?.texte)?.paragraphes.join(' ')).toMatch(/SIL OPEN FONT LICENSE/);
+  });
+
+  it('reproduit l’Apache 2.0 avec les quatre repères de sa clause 4, « (c) » compris', () => {
+    // Relevé le 22/10/2026 : « (c) You must retain… » avait disparu, prise pour un avis de copyright.
+    const apacheAffiche = LICENCES.textes.find((texte) => texte.id === 'Apache-2.0');
+
+    expect(apacheAffiche).toBeDefined();
+    const reperes = ['(a) You must give', '(b) You must cause', '(c) You must retain, in the Source form of any Derivative Works', '(d) If the Work includes'];
+    expect(reperes.filter((debut) => (apacheAffiche?.paragraphes ?? []).some((paragraphe) => paragraphe.startsWith(debut)))).toEqual(reperes);
+    expect(apacheAffiche?.paragraphes.join('\n')).toContain('(c) You must retain, in the Source form of any Derivative Works');
+  });
+
+  it('liste react-helmet-async à part, avec l’avis du New York Times, dans expo-router — et expo-router sans lui', () => {
+    // `expo-router/vendor/react-helmet-async` entre dans le bundle web par `expo-router/head`.
+    const copie = LICENCES.paquets.find((paquet) => paquet.nom === 'react-helmet-async');
+    const hote = LICENCES.paquets.find((paquet) => paquet.nom === 'expo-router');
+
+    expect(copie).toMatchObject({ licence: 'Apache-2.0', texte: 'Apache-2.0', dans: 'expo-router', sur: 'web' });
+    expect(copie?.copyright).toBe('Copyright 2018 The New York Times Company');
+    expect(hote).toMatchObject({ licence: 'MIT' });
+    expect(hote?.copyright ?? '').not.toMatch(/New York Times/);
+    expect(hote?.dans).toBeUndefined();
+  });
+
+  it('ne cite en « dans » qu’un paquet qu’il liste lui-même', () => {
+    const problemes = LICENCES.paquets.filter((paquet) => paquet.dans !== undefined && !embarques.has(paquet.dans)).map((paquet) => `« ${paquet.nom} » est dans « ${paquet.dans} », qui n’est pas listé.`);
+
+    exiger(problemes, REGENERER);
+  });
+
+  it('garde chaque ligne du fichier de licence de ses paquets et de ses polices — les avis, les titres et le préambule de l’OFL exceptés', () => {
+    // Ce que ni le typecheck ni la cohérence du fichier ne voient : un texte affiché amputé. On relit les fichiers de
+    // licence installés (`package-lock.json` dit où chaque paquet vit) et on cherche, ligne à ligne, celles que
+    // le texte affiché ne contient plus. Une ligne retirée doit ressembler à ce qu'on retire, sans que cette
+    // garde reprenne les motifs du script : sinon une erreur du script y passerait aussi.
+    const verrou = JSON.parse(lire('package-lock.json')) as { packages: Record<string, { version?: string }> };
+    const NOM_DE_LICENCE = /^(licen[cs]e|copying|unlicense)(\.(md|txt|markdown))?$/i;
+    const normaliser = (texte: string) => texte.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const affiches = new Map(LICENCES.textes.map((texte) => [texte.id, ` ${normaliser(texte.paragraphes.join(' '))} `]));
+    const ressembleAUnRetrait = (ligne: string) => {
+      const nue = ligne.trim().replace(/^[#*=_\s-]+|[#*=_\s-]+$/g, '');
+      const titre = nue.length <= 40 && /licen[cs]e/i.test(nue) && !/[.:;,]$/.test(nue);
+      return /^(copyright\b|\(c\)\s*\d|©|all rights reserved)/i.test(nue) || titre || /\[(yyyy|name of copyright owner)\]/i.test(nue);
+    };
+    const dossierDuVerrou = (nom: string, version: string) => {
+      const cle = Object.keys(verrou.packages).find((chemin) => chemin.endsWith(`node_modules/${nom}`) && verrou.packages[chemin].version === version);
+      return cle === undefined ? null : path.join(racine, cle);
+    };
+    /** La copie d'un paquet rangée sous son hôte : `<hôte>/…/<nom>/`, à trois niveaux au plus. */
+    const dossierDeLaCopie = (hote: string, nom: string): string | null => {
+      const chercher = (dossier: string, profondeur: number): string | null => {
+        for (const entree of fs.readdirSync(dossier, { withFileTypes: true })) {
+          if (!entree.isDirectory() || entree.name === 'node_modules') continue;
+          const chemin = path.join(dossier, entree.name);
+          if (entree.name === nom && fs.readdirSync(chemin).some((f) => NOM_DE_LICENCE.test(f))) return chemin;
+          const dedans = profondeur > 1 ? chercher(chemin, profondeur - 1) : null;
+          if (dedans !== null) return dedans;
+        }
+        return null;
+      };
+      return chercher(path.join(racine, 'node_modules', hote), 3);
+    };
+
+    const compares: string[] = [];
+    const absentes: string[] = [];
+    const comparer = (etiquette: string, fichier: string, texteId: string) => {
+      let lignes = fs.readFileSync(fichier, 'utf8').replace(/\r\n?/g, '\n').split('\n');
+      if (texteId.startsWith('OFL')) lignes = lignes.slice(Math.max(0, lignes.findIndex((l) => /^\s*SIL OPEN FONT LICENSE\b/i.test(l))));
+      compares.push(etiquette);
+      lignes.forEach((ligne, i) => {
+        const normalisee = normaliser(ligne);
+        if (normalisee === '' || (affiches.get(texteId) ?? '').includes(` ${normalisee} `) || ressembleAUnRetrait(ligne)) return;
+        absentes.push(`${etiquette} : ${path.basename(fichier)} ligne ${i + 1} (« ${ligne.trim().slice(0, 70)} ») n’est pas dans le texte « ${texteId} » affiché.`);
+      });
+    };
+
+    for (const paquet of LICENCES.paquets) {
+      const dossier = paquet.dans === undefined ? dossierDuVerrou(paquet.nom, paquet.version) : dossierDeLaCopie(paquet.dans, paquet.nom);
+      if (dossier === null) throw new Error(`« ${paquet.nom} ${paquet.version} » est listé, et on ne retrouve pas son dossier installé. ${REGENERER}`);
+      const fichier = fs.readdirSync(dossier).find((nom) => NOM_DE_LICENCE.test(nom));
+      if (fichier !== undefined) comparer(`${paquet.nom} ${paquet.version}`, path.join(dossier, fichier), paquet.texte);
+    }
+    for (const police of LICENCES.polices) {
+      const version = LICENCES.paquets.find((paquet) => paquet.nom === police.paquet)?.version ?? '';
+      const dossier = dossierDuVerrou(police.paquet, version);
+      const fichier = dossier === null ? undefined : fs.readdirSync(dossier).find((nom) => /^licen[cs]e_font/i.test(nom));
+      if (dossier === null || fichier === undefined) throw new Error(`La police « ${police.nom} » n’a pas de LICENSE_FONT installé.`);
+      comparer(`police ${police.nom}`, path.join(dossier, fichier), police.texte);
+    }
+
+    // Une garde dont le succès est une absence doit prouver qu'elle a regardé (`TESTING.md` §1.1).
+    expect(compares.length).toBeGreaterThan(LICENCES.paquets.length / 2);
+    expect(compares).toEqual(expect.arrayContaining(['police Material Symbols', 'police Spline Sans', 'react-helmet-async 2.0.4']));
+    exiger(absentes, `Un texte de licence ne doit rien perdre de son corps. ${REGENERER}`);
   });
 });
 
@@ -273,6 +369,49 @@ const OFL = [
   'Software, subject to the following conditions:',
   '',
 ].join('\n');
+
+/**
+ * L'Apache 2.0 réduit à ce qui compte ici : son titre, la clause 4 — dont les repères « (a) », « (b) », « (c) » et
+ * « (d) » commencent chacun une ligne — et l'emplacement de l'avis dans l'appendice, vide ou rempli.
+ */
+const apache = (emplacement = 'Copyright [yyyy] [name of copyright owner]') =>
+  [
+    '                                 Apache License',
+    '                           Version 2.0, January 2004',
+    '                        http://www.apache.org/licenses/',
+    '',
+    '   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION',
+    '',
+    '   4. Redistribution. You may reproduce and distribute copies of the',
+    '      Work or Derivative Works thereof in any medium, with or without',
+    '      modifications, and in Source or Object form, provided that You',
+    '      meet the following conditions:',
+    '',
+    '      (a) You must give any other recipients of the Work or',
+    '          Derivative Works a copy of this License; and',
+    '',
+    '      (b) You must cause any modified files to carry prominent notices',
+    '          stating that You changed the files; and',
+    '',
+    '      (c) You must retain, in the Source form of any Derivative Works',
+    '          that You distribute, all copyright, patent, trademark, and',
+    '          attribution notices from the Source form of the Work,',
+    '          excluding those notices that do not pertain to any part of',
+    '          the Derivative Works; and',
+    '',
+    '      (d) If the Work includes a "NOTICE" text file as part of its',
+    '          distribution, then any Derivative Works must include a copy.',
+    '',
+    '   END OF TERMS AND CONDITIONS',
+    '',
+    '   APPENDIX: How to apply the Apache License to your work.',
+    '',
+    `   ${emplacement}`,
+    '',
+    '   Licensed under the Apache License, Version 2.0 (the "License");',
+    '   you may not use this file except in compliance with the License.',
+    '',
+  ].join('\n');
 
 /** Une police TrueType minimale : une table `name` avec l'avis (0), la famille (1) et la famille typographique (16). */
 function police(avis: string, famille: string): Buffer {
@@ -551,6 +690,222 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
     ]);
   });
 
+  describe('l’Apache 2.0 et le repère « (c) » de sa clause 4', () => {
+    it('garde la ligne « (c) You must retain… » : ce n’est pas un avis de copyright', () => {
+      // Relevé le 22/10/2026 : `(c) ` seul était pris pour un avis, et la clause 4(c) perdait sa première ligne.
+      const p = fabriquer({ paquets: { alpha: { package: pj('alpha', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache() } } }, web: sources('alpha'), android: [] });
+
+      expect(lancer(p).code).toBe(0);
+      const donnees = donneesEcrites(p);
+      const reperes = ['(a) You must give', '(b) You must cause', '(c) You must retain, in the Source form of any Derivative Works', '(d) If the Work includes'];
+      expect(reperes.filter((debut) => donnees.textes[0].paragraphes.some((paragraphe) => paragraphe.startsWith(debut)))).toEqual(reperes);
+      expect(donnees.paquets[0].copyright).toBeNull();
+    });
+
+    it('reconnaît « (c) 2020 … » et « © 2021 … » comme des avis : « (c) » suivi d’une année, ou « © »', () => {
+      const p = fabriquer({
+        paquets: {
+          alpha: { package: pj('alpha', '1.0.0'), fichiers: { LICENSE: mit('(c) 2020 Alpha') } },
+          beta: { package: pj('beta', '1.0.0'), fichiers: { LICENSE: mit('© 2021 Beta') } },
+        },
+        web: sources('alpha', 'beta'),
+        android: [],
+      });
+
+      expect(lancer(p).code).toBe(0);
+      const donnees = donneesEcrites(p);
+      expect(donnees.paquets.map((x) => x.copyright)).toEqual(['(c) 2020 Alpha', '© 2021 Beta']);
+      expect(donnees.textes[0].paragraphes.join('\n')).not.toMatch(/2020 Alpha|2021 Beta/);
+    });
+
+    it('range une seule fois l’Apache, que l’emplacement de l’avis soit resté vide ou ait été rempli', () => {
+      const p = fabriquer({
+        paquets: {
+          vide: { package: pj('vide', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache() } },
+          rempli: { package: pj('rempli', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache('Copyright 2018 Les auteurs de Rempli') } },
+        },
+        web: sources('vide', 'rempli'),
+        android: [],
+      });
+
+      expect(lancer(p).code).toBe(0);
+      const donnees = donneesEcrites(p);
+      expect(donnees.textes.map((t) => t.id)).toEqual(['Apache-2.0']);
+      expect(donnees.paquets.map((x) => [x.nom, x.copyright])).toEqual([
+        ['rempli', 'Copyright 2018 Les auteurs de Rempli'],
+        ['vide', null],
+      ]);
+      // L'emplacement vide n'est l'avis de personne : il ne va ni dans le copyright, ni dans le texte.
+      expect(donnees.textes[0].paragraphes.join('\n')).not.toMatch(/\[yyyy\]|Les auteurs de Rempli/);
+    });
+  });
+
+  describe('une copie qu’un paquet range dans ses sources', () => {
+    const copie = (identite: Record<string, string>) => ({
+      'vendor/copie/LICENSE': apache('Copyright 2018 Les auteurs de Copie'),
+      'vendor/copie/lib/index.js': '',
+      ...identite,
+    });
+    const IDENTITE_ORIGINALE = { 'vendor/copie/package_original.json': JSON.stringify(pj('copie', '2.0.4', 'Apache-2.0')) };
+    const hote = (identite: Record<string, string>, fichiers: Record<string, string> = {}) => ({
+      package: pj('hote', '5.0.0'),
+      fichiers: { LICENSE: mit('Copyright (c) 2020 Hote'), 'index.js': '', ...copie(identite), ...fichiers },
+    });
+    const COPIE_ATTENDUE = { nom: 'copie', version: '2.0.4', licence: 'Apache-2.0', texte: 'Apache-2.0', copyright: 'Copyright 2018 Les auteurs de Copie', sur: 'web', dans: 'hote' };
+    const HOTE_ATTENDU = { nom: 'hote', version: '5.0.0', licence: 'MIT', texte: 'MIT', copyright: 'Copyright (c) 2020 Hote', sur: 'web' };
+
+    it('la liste à part, avec sa licence et son avis, dans son hôte — et pas sous la licence de l’hôte', () => {
+      // `expo-router/vendor/react-helmet-async` : Apache 2.0, New York Times Company, dans un paquet MIT.
+      const p = fabriquer({
+        paquets: { hote: hote(IDENTITE_ORIGINALE) },
+        web: ['/node_modules/hote/index.js', '/node_modules/hote/vendor/copie/lib/index.js'],
+        android: [],
+      });
+
+      expect(lancer(p).code).toBe(0);
+      const donnees = donneesEcrites(p);
+      expect(donnees.paquets).toEqual([COPIE_ATTENDUE, HOTE_ATTENDU]);
+      expect(donnees.textes.map((t) => t.id).sort()).toEqual(['Apache-2.0', 'MIT']);
+    });
+
+    it('lit son identité dans un package.json de son dossier, comme dans package_original.json', () => {
+      const p = fabriquer({
+        paquets: { hote: hote({ 'vendor/copie/package.json': JSON.stringify(pj('copie', '2.0.4', 'Apache-2.0')) }) },
+        web: ['/node_modules/hote/index.js', '/node_modules/hote/vendor/copie/lib/index.js'],
+        android: [],
+      });
+
+      expect(lancer(p).code).toBe(0);
+      expect(donneesEcrites(p).paquets).toEqual([COPIE_ATTENDUE, HOTE_ATTENDU]);
+    });
+
+    it('garde l’hôte dans la liste même quand seul un fichier de la copie entre dans le bundle', () => {
+      const p = fabriquer({ paquets: { hote: hote(IDENTITE_ORIGINALE) }, web: ['/node_modules/hote/vendor/copie/lib/index.js'], android: [] });
+
+      expect(lancer(p).code).toBe(0);
+      expect(donneesEcrites(p).paquets.map((x) => x.nom)).toEqual(['copie', 'hote']);
+    });
+
+    it('laisse à l’hôte un sous-dossier qui n’a qu’un package.json de façade, sans nom ni version', () => {
+      // `{ "type": "module" }` : c'est ce que portent `@babel/runtime/helpers/esm` ou `reanimated/lib/module`.
+      const p = fabriquer({
+        paquets: { hote: { package: pj('hote', '5.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Hote'), 'lib/module/package.json': '{ "type": "module" }', 'lib/module/index.js': '' } } },
+        web: ['/node_modules/hote/lib/module/index.js'],
+        android: [],
+      });
+
+      expect(lancer(p).code).toBe(0);
+      expect(donneesEcrites(p).paquets).toEqual([HOTE_ATTENDU]);
+    });
+
+    it('donne un fichier au sous-dossier le plus proche, quand une copie en contient une autre', () => {
+      const p = fabriquer({
+        paquets: {
+          hote: {
+            package: pj('hote', '5.0.0'),
+            fichiers: {
+              LICENSE: mit('Copyright (c) 2020 Hote'),
+              'vendor/a/LICENSE': mit('Copyright (c) 2021 Auteur A'),
+              'vendor/a/package.json': JSON.stringify(pj('a', '1.0.0')),
+              'vendor/a/deep/b/LICENSE': mit('Copyright (c) 2022 Auteur B'),
+              'vendor/a/deep/b/package.json': JSON.stringify(pj('b', '2.0.0')),
+              'vendor/a/deep/b/x.js': '',
+            },
+          },
+        },
+        web: ['/node_modules/hote/vendor/a/deep/b/x.js'],
+        android: [],
+      });
+
+      expect(lancer(p).code).toBe(0);
+      expect(donneesEcrites(p).paquets.map((x) => [x.nom, x.version, x.copyright, x.dans])).toEqual([
+        ['b', '2.0.0', 'Copyright (c) 2022 Auteur B', 'hote'],
+        ['hote', '5.0.0', 'Copyright (c) 2020 Hote', undefined],
+      ]);
+    });
+
+    it('ne regarde que le chemin des fichiers que la carte nomme', () => {
+      // Une copie sans identité n'embête personne tant qu'aucun de ses fichiers n'entre dans un bundle.
+      const p = fabriquer({ paquets: { hote: hote({}) }, web: ['/node_modules/hote/index.js'], android: [] });
+
+      expect(lancer(p).code).toBe(0);
+      expect(donneesEcrites(p).paquets).toEqual([HOTE_ATTENDU]);
+    });
+  });
+
+  describe('l’avis d’un paquet dont le fichier de licence n’en porte pas', () => {
+    const alpha = { package: pj('alpha', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Alpha') } };
+    /** L'avis que le script donne à `meta`, un paquet que la carte nomme par ces fichiers ; `alpha` apporte le texte MIT standard. */
+    const avisDe = (paquet: { package: Record<string, unknown>; fichiers?: Record<string, string | Buffer> }, fichiersDeLaCarte: string[]) => {
+      const p = fabriquer({ paquets: { alpha, meta: paquet }, web: ['/node_modules/alpha/index.js', ...fichiersDeLaCarte.map((f) => `/node_modules/meta/${f}`)], android: [] });
+      expect(lancer(p).code).toBe(0);
+      return donneesEcrites(p).paquets.find((x) => x.nom === 'meta')?.copyright;
+    };
+    const EN_TETE_META = '/**\n * Copyright (c) Meta Platforms, Inc. and affiliates.\n *\n * This source code is licensed under the MIT license found in the\n * LICENSE file in the root directory of this source tree.\n */\n';
+
+    it('prend le premier avis qu’un fichier du paquet porte en commentaire de tête, parmi ceux que le bundle contient', () => {
+      // `Copyright (c) Meta Platforms, Inc. and affiliates.` en tête des fichiers de `@react-native/*`.
+      expect(avisDe({ package: pj('meta', '1.0.0'), fichiers: { 'src/a.js': EN_TETE_META } }, ['src/a.js'])).toBe('Copyright (c) Meta Platforms, Inc. and affiliates.');
+    });
+
+    it('lit aussi « // Copyright © … » sous « "use strict"; », et « /** Copyright … */ » sur une ligne', () => {
+      expect(avisDe({ package: pj('meta', '1.0.0'), fichiers: { 'a.js': '"use strict";\n// Copyright © 2024 650 Industries.\n\'use client\';\n' } }, ['a.js'])).toBe(
+        'Copyright © 2024 650 Industries.'
+      );
+      expect(avisDe({ package: pj('meta', '1.0.0'), fichiers: { 'a.js': '/** Copyright 2015-present 650 Industries */\n' } }, ['a.js'])).toBe('Copyright 2015-present 650 Industries');
+    });
+
+    it('choisit dans l’ordre alphabétique des chemins, et non dans l’ordre où la carte les a rangés', () => {
+      const paquet = { package: pj('meta', '1.0.0'), fichiers: { 'src/a.js': '// Copyright (c) 2019 Premier\n', 'src/b.js': '// Copyright (c) 2020 Second\n' } };
+
+      expect(avisDe(paquet, ['src/b.js', 'src/a.js'])).toBe('Copyright (c) 2019 Premier');
+    });
+
+    it('ignore un fichier que les bundles ne contiennent pas', () => {
+      const paquet = { package: pj('meta', '1.0.0'), fichiers: { 'src/a.js': 'export {};\n', 'src/hors-bundle.js': '// Copyright (c) 2019 Ailleurs\n' } };
+
+      expect(avisDe(paquet, ['src/a.js'])).toBeNull();
+    });
+
+    it('ne prend ni une ligne qui n’est pas un commentaire, ni un avis qui n’est pas en tête de fichier', () => {
+      const loin = `${'export {};\n'.repeat(60)}// Copyright (c) 2019 Trop loin\n`;
+      const paquet = {
+        package: pj('meta', '1.0.0'),
+        fichiers: { 'a.js': 'const mention = "Copyright (c) 2020 Dans une chaîne";\n', 'b.js': loin, 'c.js': '// Copyright notice : voir LICENSE\n// copyright (c) en minuscules\n' },
+      };
+
+      expect(avisDe(paquet, ['a.js', 'b.js', 'c.js'])).toBeNull();
+    });
+
+    it('cherche aussi dans les sources quand le fichier de licence existe mais ne porte aucun avis', () => {
+      const bare = ['Permission to use, copy, modify, and/or distribute this software for any', 'purpose with or without fee is hereby granted, provided that the above', 'copyright notice and this permission notice appear in all copies.', ''].join('\n');
+      const paquet = { package: pj('meta', '1.0.0', 'ISC'), fichiers: { LICENSE: bare, 'a.js': '// Copyright (c) 2019 Dans les sources\n' } };
+
+      expect(avisDe(paquet, ['a.js'])).toBe('Copyright (c) 2019 Dans les sources');
+    });
+
+    it('préfère l’avis du fichier de licence à celui des sources', () => {
+      const paquet = { package: pj('meta', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Dans la licence'), 'a.js': '// Copyright (c) 2019 Dans les sources\n' } };
+
+      expect(avisDe(paquet, ['a.js'])).toBe('Copyright (c) 2020 Dans la licence');
+    });
+
+    it('à défaut, donne l’auteur du package.json, présenté comme tel et sans son adresse', () => {
+      const auteur = (author: unknown) => avisDe({ package: { ...pj('meta', '1.0.0'), author }, fichiers: { 'a.js': 'export {};\n' } }, ['a.js']);
+
+      expect(auteur('Scott Taylor <scott@example.org> (https://example.org)')).toBe('Auteur indiqué par le paquet : Scott Taylor');
+      expect(auteur({ name: 'Ada Lovelace', email: 'ada@example.org' })).toBe('Auteur indiqué par le paquet : Ada Lovelace');
+      expect(auteur('<scott@example.org>')).toBeNull();
+      expect(auteur(undefined)).toBeNull();
+    });
+
+    it('préfère l’avis des sources à l’auteur du package.json', () => {
+      const paquet = { package: { ...pj('meta', '1.0.0'), author: 'Quelqu’un' }, fichiers: { 'a.js': '// Copyright (c) 2019 Dans les sources\n' } };
+
+      expect(avisDe(paquet, ['a.js'])).toBe('Copyright (c) 2019 Dans les sources');
+    });
+  });
+
   describe('refuse de deviner', () => {
     const refus = (f: Fabrique, extra: string[] = []) => {
       const p = fabriquer(f);
@@ -614,6 +969,35 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
 
       expect(r.code).toBe(1);
       expect(r.erreur).toMatch(/la licence ISC est déclarée, mais ni lui ni aucun autre paquet n’en apporte le texte/);
+    });
+
+    it('un sous-dossier qui porte une licence sans dire de quel paquet il s’agit', () => {
+      // Lui prêter la licence de l'hôte, ou une identité, serait attribuer à quelqu'un du code qu'il n'a pas écrit.
+      const r = refus({
+        paquets: {
+          hote: {
+            package: pj('hote', '5.0.0'),
+            fichiers: { LICENSE: mit('Copyright (c) 2020 Hote'), 'vendor/copie/LICENSE': apache('Copyright 2018 Les auteurs de Copie'), 'vendor/copie/package.json': '{ "type": "module" }', 'vendor/copie/lib/index.js': '' },
+          },
+        },
+        web: ['/node_modules/hote/vendor/copie/lib/index.js'],
+        android: [],
+      });
+
+      expect(r.code).toBe(1);
+      expect(r.erreur).toMatch(/hote@5\.0\.0, vendor\/copie : le dossier porte un fichier de licence \(LICENSE\).*aucun package\.json/);
+      expect(r.ecrit).toBe(false);
+    });
+
+    it('un sous-dossier dont le fichier de licence a un nom qu’il ne sait pas lire', () => {
+      const r = refus({
+        paquets: { hote: { package: pj('hote', '5.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Hote'), 'vendor/copie/LICENSE-MIT': mit('Copyright (c) 2021 Copie'), 'vendor/copie/lib/index.js': '' } } },
+        web: ['/node_modules/hote/vendor/copie/lib/index.js'],
+        android: [],
+      });
+
+      expect(r.code).toBe(1);
+      expect(r.erreur).toMatch(/hote@5\.0\.0, vendor\/copie : « LICENSE-MIT » ressemble à une licence/);
     });
 
     it('une police sans fichier LICENSE_FONT', () => {

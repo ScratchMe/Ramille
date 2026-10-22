@@ -104,11 +104,30 @@ describe('sectionsDesLicences', () => {
     expect(termeDuPaquet({ nom: 'gamma', version: '0.3.0', sur: 'web' })).toBe('gamma 0.3.0 (web)');
   });
 
-  it('dit qu’un paquet ne donne pas de ligne de copyright, au lieu de n’afficher rien', () => {
-    expect(SANS_COPYRIGHT.length).toBeGreaterThan(0);
+  it('dit d’une copie rangée dans un autre paquet où elle est, pour qu’on ne la cherche pas parmi les paquets installés', () => {
+    expect(termeDuPaquet({ nom: 'copie', version: '2.0.4', sur: 'web', dans: 'hote' })).toBe('copie 2.0.4 (web), copie intégrée à hote');
+    expect(termeDuPaquet({ nom: 'copie', version: '2.0.4', sur: 'les deux', dans: 'hote' })).toBe('copie 2.0.4, copie intégrée à hote');
+
+    const avecCopie: DonneesDesLicences = {
+      ...PETIT,
+      paquets: [...PETIT.paquets, { nom: 'copie', version: '2.0.4', licence: 'MIT', texte: 'MIT', copyright: 'Copyright (c) Copie', sur: 'web', dans: 'alpha' }],
+    };
+    const mit = sectionsDesLicences(avecCopie).find((section) => section.heading === 'Licence MIT');
+    const termes = mit?.blocks[0].kind === 'definitions' ? mit.blocks[0].items.map((item) => item.term) : [];
+    expect(termes).toContain('copie 2.0.4 (web), copie intégrée à alpha');
+  });
+
+  it('dit qu’aucun avis n’a été trouvé pour un paquet qui n’en a pas, au lieu de n’afficher rien', () => {
     const mit = sectionsDesLicences(PETIT).find((section) => section.heading === 'Licence MIT');
     const items = mit?.blocks[0].kind === 'definitions' ? mit.blocks[0].items : [];
     expect(items.map((item) => item.text)).toContain(SANS_COPYRIGHT);
+  });
+
+  it('ne dit pas d’un paquet qu’il « ne donne pas » d’avis : le script n’a pas lu tout ce qu’il livre', () => {
+    // La phrase d'avant, « Ce paquet ne donne pas de ligne de copyright », était fausse de la plupart des paquets qui
+    // l'affichaient : leurs sources portent un avis. Ce que la phrase peut dire est ce que la recherche a trouvé.
+    expect(SANS_COPYRIGHT).toBe('Aucun avis de copyright n’a été trouvé dans ce paquet.');
+    expect(SANS_COPYRIGHT).not.toMatch(/ne donne pas/);
   });
 
   it('reproduit chaque licence une seule fois, quel que soit le nombre de bibliothèques qui la portent', () => {
@@ -224,7 +243,20 @@ describe('introDesLicences', () => {
     const intro = introDesLicences('Ramille');
     expect(intro.indexOf('AGPL-3.0-or-later')).toBeGreaterThan(-1);
     expect(intro.indexOf('Ramille')).toBeLessThan(intro.indexOf('Cette page liste'));
-    expect(intro).toMatch(/embarque d’autres auteurs/);
+    expect(intro).toMatch(/d’autres auteurs que l’application embarque/);
+  });
+
+  it('ne se dit pas complète, dès la phrase qui dit ce que la page liste, et renvoie à la section qui dit ce qui manque', () => {
+    // Relevé le 22/10/2026 : « Cette page liste ce que l'application embarque d'autres auteurs » était contredit par la
+    // dernière section de la même page, qui dit ce qui n'est pas listé (les dépendances Gradle).
+    const intro = introDesLicences('Ramille');
+    const phraseDeLaListe = intro.split('. ').find((phrase) => phrase.startsWith('Cette page liste')) ?? '';
+    expect(phraseDeLaListe).toMatch(/sans prétendre être complète/);
+    expect(intro).not.toMatch(/ce que l’application embarque d’autres auteurs/);
+
+    const sections = sectionsDesLicences(PETIT);
+    expect(intro).toMatch(/dernière section/);
+    expect(sections[sections.length - 1].heading).toBe('Ce que cette page ne liste pas');
   });
 });
 

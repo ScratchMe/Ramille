@@ -7,13 +7,16 @@
 // **Les données ne s'écrivent pas ici.** `src/constants/licences.ts` est généré par
 // `scripts/generer-les-licences.mjs` à partir de ce que les bundles web et Android et le code natif
 // contiennent vraiment ; la méthode et ce qu'elle ne couvre pas sont en tête de ce script. Ce module ne
-// fait que mettre ces données en page — il ne trie rien, l'ordre est celui du fichier.
+// fait que mettre ces données en page : il garde l'ordre du fichier, pour les polices, les bibliothèques et
+// les textes, et ne range qu'une chose — les licences que seules des polices emploient viennent **après**
+// celles des bibliothèques (`sectionsDesLicences` dit pourquoi).
 //
-// **Ce que la page promet, et ce qu'elle ne promet pas.** Elle liste ce que l'application embarque et dont
-// la licence demande qu'on reproduise un avis : les bibliothèques JavaScript des deux bundles, le code
-// natif que l'autolinking compile, les polices. Elle ne liste **pas** les composants Android que Gradle
-// tire à la compilation (AndroidX, Kotlin, Firebase…) : ils ne sont pas dans le dépôt, et la page le dit
-// (`LIMITE_DE_LA_LISTE`) plutôt que de passer pour complète.
+// **Ce que la page promet, et ce qu'elle ne promet pas.** Elle liste ce que le script relève dans ce que
+// l'application embarque et dont la licence demande qu'on reproduise un avis : les bibliothèques JavaScript
+// des deux bundles, le code natif que l'autolinking compile, les polices. Elle ne liste **pas** les
+// composants Android que Gradle tire à la compilation (AndroidX, Kotlin, Firebase…) : ils ne sont pas dans
+// le dépôt, et la page le dit — dans son introduction (`introDesLicences`) comme dans sa dernière section
+// (`LIMITE_DE_LA_LISTE`) — plutôt que de passer pour complète.
 
 import { MOIS_FRANCAIS, jourDuMois } from '@/types/checkin';
 
@@ -27,9 +30,15 @@ export type PaquetLicencie = {
   licence: string;
   /** L'identifiant du texte reproduit plus bas : celui de la licence, ou une « autre rédaction ». */
   texte: string;
-  /** La ligne d'avis du paquet, à la lettre, ou `null` quand il n'en donne pas. */
+  /**
+   * La ligne d'avis du paquet, à la lettre — celle de son fichier de licence ou, à défaut, celle d'un de ses
+   * fichiers qui entrent dans les bundles —, ou « Auteur indiqué par le paquet : … » quand seul son
+   * `package.json` nomme quelqu'un, ou `null` quand le script n'a rien trouvé.
+   */
   copyright: string | null;
   sur: SurQuoi;
+  /** Le paquet dans les sources duquel ce code est une copie (`react-helmet-async`, rangé dans `expo-router`), quand ce n'est pas un paquet installé à part. */
+  dans?: string;
 };
 
 export type PoliceLicenciee = {
@@ -73,15 +82,25 @@ export type SectionDeLicences = { heading: string; blocks: BlocDeLicences[] };
 export const LIMITE_DE_LA_LISTE =
   'Les composants Android que les bibliothèques natives récupèrent à la compilation (AndroidX, Kotlin, Firebase, Material Components…) ne figurent pas dans cette liste : ils ne sont pas dans le dépôt, et leur liste n’est pas établie.';
 
-/** Ce qui tient lieu de ligne de copyright pour un paquet qui n'en donne pas. */
-export const SANS_COPYRIGHT = 'Ce paquet ne donne pas de ligne de copyright.';
+/**
+ * Ce qui tient lieu de ligne de copyright quand le script n'en a trouvé aucune. **« N'a pas été trouvé » et
+ * non « le paquet n'en donne pas »** : le script lit le fichier de licence, l'en-tête des fichiers que les
+ * bundles contiennent et l'auteur du `package.json`, pas tout ce que le paquet livre.
+ */
+export const SANS_COPYRIGHT = 'Aucun avis de copyright n’a été trouvé dans ce paquet.';
 
-/** Les deux phrases d'ouverture : le code de Ramille d'abord, puis ce que la page liste et d'où elle le tire. */
+/**
+ * Les phrases d'ouverture : le code de Ramille d'abord, puis ce que la page liste et d'où elle le tire —
+ * **et qu'elle ne prétend pas être complète**, dès la phrase qui dit ce qu'elle liste : sa dernière
+ * section (`LIMITE_DE_LA_LISTE`) dit ce qui manque, et une introduction qui se dirait complète la
+ * contredirait.
+ */
 export function introDesLicences(nomDuProduit: string): string {
   return (
     `Le code de ${nomDuProduit} est publié sous licence AGPL-3.0-or-later, comme le disent les conditions d’utilisation. ` +
-    'Cette page liste ce que l’application embarque d’autres auteurs : des polices et des bibliothèques libres, ' +
-    'relevées dans ce que l’application contient vraiment, chacune avec sa licence.'
+    'Cette page liste, sans prétendre être complète, les polices et les bibliothèques d’autres auteurs que l’application embarque, ' +
+    'relevées dans ce qu’elle contient, chacune avec sa licence. ' +
+    'Sa dernière section dit ce qu’elle ne liste pas.'
   );
 }
 
@@ -99,9 +118,10 @@ function marqueDeLaPlateforme(sur: SurQuoi): string {
   return '';
 }
 
-/** La ligne qui nomme une bibliothèque : son nom et sa version, et sa plateforme quand ce n'est pas les deux. */
-export function termeDuPaquet(paquet: Pick<PaquetLicencie, 'nom' | 'version' | 'sur'>): string {
-  return `${paquet.nom} ${paquet.version}${marqueDeLaPlateforme(paquet.sur)}`;
+/** La ligne qui nomme une bibliothèque : son nom et sa version, sa plateforme quand ce n'est pas les deux, et le paquet qui en porte la copie quand elle n'est pas installée à part. */
+export function termeDuPaquet(paquet: Pick<PaquetLicencie, 'nom' | 'version' | 'sur' | 'dans'>): string {
+  const copie = paquet.dans === undefined ? '' : `, copie intégrée à ${paquet.dans}`;
+  return `${paquet.nom} ${paquet.version}${marqueDeLaPlateforme(paquet.sur)}${copie}`;
 }
 
 /**

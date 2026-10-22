@@ -4,7 +4,8 @@
 //
 // Ce que Ramille embarque d'autres auteurs : les bibliothèques et les polices qui sont dans le bundle
 // web, dans le bundle Android ou dans le code natif de l'APK, avec leur licence, leur avis de copyright
-// quand le paquet en donne un, et le texte de chaque licence **une seule fois**. L'écran `/licences`
+// quand on en a trouvé un (dans leur licence, sinon dans leurs sources, sinon l'auteur que déclare le
+// paquet), et le texte de chaque licence **une seule fois**. L'écran `/licences`
 // (`src/app/licences.tsx`) le montre ; la méthode, et ce qu'elle ne couvre pas, sont en tête du script.
 //
 // `scripts/licences.test.ts` fait rougir la CI quand une dépendance de `package.json`, un import de
@@ -24,16 +25,16 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"@expo/dom-webview","version":"57.0.1","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},
   {"nom":"@expo/log-box","version":"57.0.4","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},
   {"nom":"@expo/metro-runtime","version":"57.0.17","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
-  {"nom":"@expo/ui","version":"57.0.26","licence":"MIT","texte":"MIT","copyright":null,"sur":"android"},
+  {"nom":"@expo/ui","version":"57.0.26","licence":"MIT","texte":"MIT","copyright":"Auteur indiqué par le paquet : 650 Industries, Inc.","sur":"android"},
   {"nom":"@radix-ui/react-compose-refs","version":"1.1.5","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2022 WorkOS","sur":"les deux"},
   {"nom":"@radix-ui/react-slot","version":"1.3.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2022 WorkOS","sur":"les deux"},
   {"nom":"@react-native-async-storage/async-storage","version":"2.2.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present, Facebook, Inc.","sur":"les deux"},
   {"nom":"@react-native-masked-view/masked-view","version":"0.3.2","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present, Facebook, Inc.","sur":"android"},
-  {"nom":"@react-native/assets-registry","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":null,"sur":"android"},
-  {"nom":"@react-native/js-polyfills","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":null,"sur":"les deux"},
-  {"nom":"@react-native/normalize-colors","version":"0.74.89","licence":"MIT","texte":"MIT","copyright":null,"sur":"web"},
-  {"nom":"@react-native/normalize-colors","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":null,"sur":"android"},
-  {"nom":"@react-native/virtualized-lists","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":null,"sur":"android"},
+  {"nom":"@react-native/assets-registry","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"android"},
+  {"nom":"@react-native/js-polyfills","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"les deux"},
+  {"nom":"@react-native/normalize-colors","version":"0.74.89","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"web"},
+  {"nom":"@react-native/normalize-colors","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"android"},
+  {"nom":"@react-native/virtualized-lists","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"android"},
   {"nom":"@supabase/auth-js","version":"2.116.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2020 Supabase","sur":"les deux"},
   {"nom":"@supabase/functions-js","version":"2.116.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2020 Supabase","sur":"les deux"},
   {"nom":"@supabase/phoenix","version":"0.4.5","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2014 Chris McCord","sur":"les deux"},
@@ -43,7 +44,7 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"@supabase/supabase-js","version":"2.116.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2020 Supabase","sur":"les deux"},
   {"nom":"@ungap/structured-clone","version":"1.4.0","licence":"ISC","texte":"ISC","copyright":"Copyright (c) 2021, Andrea Giammarchi, @WebReflection","sur":"android"},
   {"nom":"abort-controller","version":"3.0.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2017 Toru Nagashima","sur":"les deux"},
-  {"nom":"badgin","version":"1.2.3","licence":"MIT","texte":"MIT","copyright":null,"sur":"web"},
+  {"nom":"badgin","version":"1.2.3","licence":"MIT","texte":"MIT","copyright":"Auteur indiqué par le paquet : Julian Hundeloh","sur":"web"},
   {"nom":"base64-js","version":"1.5.1","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2014 Jameson Little","sur":"android"},
   {"nom":"color","version":"4.2.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2012 Heather Arthur","sur":"les deux"},
   {"nom":"color-convert","version":"2.0.1","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2011-2016 Heather Arthur <fayearthur@gmail.com>","sur":"les deux"},
@@ -67,7 +68,7 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"expo-linking","version":"57.0.13","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-modules-core","version":"57.0.24","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-notifications","version":"57.0.23","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
-  {"nom":"expo-router","version":"57.0.29","licence":"MIT","texte":"MIT","copyright":null,"sur":"les deux"},
+  {"nom":"expo-router","version":"57.0.29","licence":"MIT","texte":"MIT","copyright":"Copyright © 2026 650 Industries.","sur":"les deux"},
   {"nom":"expo-splash-screen","version":"57.0.10","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-symbols","version":"57.0.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},
   {"nom":"expo-system-ui","version":"57.0.4","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},
@@ -96,6 +97,7 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"react-dom","version":"19.2.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"web"},
   {"nom":"react-fast-compare","version":"3.2.2","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2018 Formidable Labs Copyright (c) 2017 Evgeny Poberezkin","sur":"web"},
   {"nom":"react-freeze","version":"1.0.4","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2021 Software Mansion","sur":"android"},
+  {"nom":"react-helmet-async","version":"2.0.4","licence":"Apache-2.0","texte":"Apache-2.0","copyright":"Copyright 2018 The New York Times Company","sur":"web","dans":"expo-router"},
   {"nom":"react-is","version":"19.2.8","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"les deux"},
   {"nom":"react-native","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"android"},
   {"nom":"react-native-gesture-handler","version":"2.32.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2016 Software Mansion <swmansion.com>","sur":"android"},
@@ -115,7 +117,7 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"simple-swizzle","version":"0.2.4","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015 Josh Junon","sur":"les deux"},
   {"nom":"split-on-first","version":"1.1.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)","sur":"les deux"},
   {"nom":"stacktrace-parser","version":"0.1.11","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2014-2019 Georg Tavonius","sur":"android"},
-  {"nom":"standard-navigation","version":"0.0.5","licence":"MIT","texte":"MIT","copyright":null,"sur":"les deux"},
+  {"nom":"standard-navigation","version":"0.0.5","licence":"MIT","texte":"MIT","copyright":"Auteur indiqué par le paquet : Satyajit Sahoo","sur":"les deux"},
   {"nom":"strict-uri-encode","version":"2.0.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Kevin Martensson <kevinmartensson@gmail.com> (github.com/kevva)","sur":"les deux"},
   {"nom":"styleq","version":"0.1.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Nicolas Gallagher","sur":"web"},
   {"nom":"tslib","version":"2.8.1","licence":"0BSD","texte":"0BSD","copyright":"Copyright (c) Microsoft Corporation.","sur":"les deux"},
@@ -133,14 +135,6 @@ export const LICENCES: DonneesDesLicences = {
     "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:",
     "The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.",
     "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
-  ] },
-  { "id": "ISC", "nom": "Licence ISC", "paragraphes": [
-    "Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.",
-    "THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE."
-  ] },
-  { "id": "0BSD", "nom": "Licence BSD à zéro clause (0BSD)", "paragraphes": [
-    "Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted.",
-    "THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE."
   ] },
   { "id": "Apache-2.0", "nom": "Apache License 2.0", "paragraphes": [
     "Apache License Version 2.0, January 2004 http://www.apache.org/licenses/",
@@ -161,7 +155,7 @@ export const LICENCES: DonneesDesLicences = {
     "4. Redistribution. You may reproduce and distribute copies of the Work or Derivative Works thereof in any medium, with or without modifications, and in Source or Object form, provided that You meet the following conditions:",
     "(a) You must give any other recipients of the Work or Derivative Works a copy of this License; and",
     "(b) You must cause any modified files to carry prominent notices stating that You changed the files; and",
-    "that You distribute, all copyright, patent, trademark, and attribution notices from the Source form of the Work, excluding those notices that do not pertain to any part of the Derivative Works; and",
+    "(c) You must retain, in the Source form of any Derivative Works that You distribute, all copyright, patent, trademark, and attribution notices from the Source form of the Work, excluding those notices that do not pertain to any part of the Derivative Works; and",
     "(d) If the Work includes a \"NOTICE\" text file as part of its distribution, then any Derivative Works that You distribute must include a readable copy of the attribution notices contained within such NOTICE file, excluding those notices that do not pertain to any part of the Derivative Works, in at least one of the following places: within a NOTICE text file distributed as part of the Derivative Works; within the Source form or documentation, if provided along with the Derivative Works; or, within a display generated by the Derivative Works, if and wherever such third-party notices normally appear. The contents of the NOTICE file are for informational purposes only and do not modify the License. You may add Your own attribution notices within Derivative Works that You distribute, alongside or as an addendum to the NOTICE text from the Work, provided that such additional attribution notices cannot be construed as modifying the License.",
     "You may add Your own copyright statement to Your modifications and may provide additional or different license terms and conditions for use, reproduction, or distribution of Your modifications, or for any such Derivative Works as a whole, provided Your use, reproduction, and distribution of the Work otherwise complies with the conditions stated in this License.",
     "5. Submission of Contributions. Unless You explicitly state otherwise, any Contribution intentionally submitted for inclusion in the Work by You to the Licensor shall be under the terms and conditions of this License, without any additional terms or conditions. Notwithstanding the above, nothing herein shall supersede or modify the terms of any separate license agreement you may have executed with Licensor regarding such Contributions.",
@@ -172,10 +166,17 @@ export const LICENCES: DonneesDesLicences = {
     "END OF TERMS AND CONDITIONS",
     "APPENDIX: How to apply the Apache License to your work.",
     "To apply the Apache License to your work, attach the following boilerplate notice, with the fields enclosed by brackets \"[]\" replaced with your own identifying information. (Don't include the brackets!)  The text should be enclosed in the appropriate comment syntax for the file format. We also recommend that a file or class name and description of purpose be included on the same \"printed page\" as the copyright notice for easier identification within third-party archives.",
-    "Copyright [yyyy] [name of copyright owner]",
     "Licensed under the Apache License, Version 2.0 (the \"License\"); you may not use this file except in compliance with the License. You may obtain a copy of the License at",
     "http://www.apache.org/licenses/LICENSE-2.0",
     "Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License."
+  ] },
+  { "id": "ISC", "nom": "Licence ISC", "paragraphes": [
+    "Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.",
+    "THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE."
+  ] },
+  { "id": "0BSD", "nom": "Licence BSD à zéro clause (0BSD)", "paragraphes": [
+    "Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted.",
+    "THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE."
   ] },
   { "id": "BSD-2-Clause", "nom": "Licence BSD à deux clauses", "paragraphes": [
     "Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:",

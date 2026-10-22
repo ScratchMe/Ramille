@@ -18,7 +18,11 @@
 //   1. **Le bundle web et le bundle Android**, par leurs cartes de sources. `expo export --platform web
 //      --platform android --source-maps` écrit, pour chaque bundle, la liste des fichiers que Metro y a
 //      mis ; un chemin sous `node_modules/` désigne le paquet (le dernier `node_modules/` du chemin :
-//      un paquet imbriqué compte pour lui-même, avec sa propre version). Le graphe n'est pas le même
+//      un paquet imbriqué compte pour lui-même, avec sa propre version). **Sous ce dossier, un
+//      sous-dossier qui porte sa propre licence ou son propre `package.json` (nom et version) est un autre
+//      paquet** : `expo-router/vendor/react-helmet-async/` est une copie de `react-helmet-async` (Apache 2.0,
+//      New York Times Company), listée à part, « dans expo-router » — sans quoi elle passait pour du code
+//      d'`expo-router` (MIT). Le sous-dossier le plus proche du fichier l'emporte. Le graphe n'est pas le même
 //      des deux côtés — `react-native-web` d'un côté, `react-native` de l'autre, `react-native-webview`
 //      et la police Material Symbols seulement sur Android —, d'où les deux exports. Hermès compile le
 //      bundle Android en bytecode, mais sa carte garde les chemins. L'export est celui du build : mêmes
@@ -32,10 +36,22 @@
 //      copyright est lu dans le fichier de police lui-même — celui qu'on distribue.
 //
 // Pour chaque paquet retenu : la licence déclarée par son `package.json`, le texte de son fichier de
-// licence et les lignes de copyright qu'il contient. Les textes sont rangés **une fois par type** : on
-// retire les lignes de copyright et le titre, on compare ce qui reste sans la casse ni la ponctuation, et
-// deux textes identiques n'en font qu'un. Un texte qui diffère vraiment pour une même licence reste à
-// part (« autre rédaction »), plutôt que d'être écrasé par le plus fréquent.
+// licence et son avis de copyright, cherché dans cet ordre et arrêté au premier qui répond :
+//
+//   1. les lignes de copyright de son fichier de licence ;
+//   2. à défaut, le premier avis que porte, en commentaire de tête, un des fichiers du paquet **qui entrent
+//      dans les bundles** (`Copyright (c) Meta Platforms, Inc. and affiliates.` en tête des fichiers de
+//      `@react-native/*`) — les fichiers du paquet que les bundles ne contiennent pas ne comptent pas ;
+//   3. à défaut, le champ `author` de son `package.json`, présenté comme tel (« Auteur indiqué par le
+//      paquet : … ») : ce n'est pas un avis, et l'écran ne le fait pas passer pour un ;
+//   4. à défaut, rien, et l'écran dit qu'aucun avis n'a été trouvé.
+//
+// Les textes sont rangés **une fois par type** : on retire les lignes de copyright — et l'emplacement vide
+// qu'en laisse l'appendice de l'Apache (« Copyright [yyyy] [name of copyright owner] ») — et le titre, on
+// compare ce qui reste sans la casse ni la ponctuation, et deux textes identiques n'en font qu'un. Un texte
+// qui diffère vraiment pour une même licence reste à part (« autre rédaction »), plutôt que d'être écrasé
+// par le plus fréquent. **« (c) » n'est un avis que suivi d'une année** : c'est aussi le repère de la clause
+// 4(c) de l'Apache, dont la première ligne disparaissait du texte affiché.
 //
 // ## Ce que le script refuse de deviner
 //
@@ -43,9 +59,10 @@
 // expression (`OR`, `AND`) qu'il ne sait pas trancher — sauf le cas d'une police, où `MIT AND OFL-1.1`
 // se lit « le paquet en MIT, la police en OFL » ; le texte du fichier ne ressemble pas à la licence
 // déclarée ; un fichier de licence existe sous un nom qu'il ne sait pas lire ; un fichier NOTICE existe
-// (la licence Apache exige de le reproduire, et l'écran ne sait pas le montrer) ; ou aucun paquet
-// n'apporte le texte d'une licence que d'autres déclarent. Un message vaut mieux qu'une liste qui a l'air
-// complète.
+// (la licence Apache exige de le reproduire, et l'écran ne sait pas le montrer) ; un sous-dossier d'un paquet
+// porte une licence sans dire de quel paquet il s'agit (ni `package.json`, ni `package_original.json` avec un
+// nom et une version) ; ou aucun paquet n'apporte le texte d'une licence que d'autres déclarent. Un message
+// vaut mieux qu'une liste qui a l'air complète.
 //
 // ## Ce qu'il ne couvre pas — et que l'écran dit
 //
@@ -59,8 +76,11 @@
 //   * **Ce qui n'est pas dans `node_modules`** : les images, la mascotte et l'identité de Ramille
 //     (réservées, `NOTICE`), et le logo de Google du bouton de connexion.
 //   * **Les paquets sans fichier de licence** : ils sont listés avec la licence que leur `package.json`
-//     déclare et le texte standard, sans ligne de copyright — l'écran dit « quand le paquet en donne
-//     une », et c'est vrai de ces paquets-là.
+//     déclare et le texte standard, et l'avis est cherché ailleurs (sources, puis `author` : voir plus haut).
+//     Un paquet où rien n'est trouvé reste sans ligne de copyright, et l'écran dit qu'aucun avis n'y a été
+//     trouvé — pas que le paquet n'en donne pas : les fichiers que les bundles ne contiennent pas, un en-tête
+//     au-delà des quarante premières lignes (ou des quatre premiers kio), un avis qui n'est pas en commentaire ne
+//     sont pas lus.
 //   * **iOS** : la V1 est Google Play seul.
 //   * **Les dépendances directes qui n'entrent nulle part** (`satori` et `@resvg/resvg-wasm`, que `api/`
 //     utilise sur le serveur de Vercel) : elles sont recensées dans `ecartes`, pour que la garde sache
@@ -119,15 +139,26 @@ const AVEC_TITRE_A_RETIRER = new Set(['MIT', 'ISC', 'BSD-2-Clause', 'BSD-3-Claus
 
 // ─── Lecture d'un texte de licence ────────────────────────────────────────────────────────────
 
-// Un avis de copyright commence par « Copyright » (majuscule) ou « (c) » ou « © ». Les phrases du texte
-// de la licence qui contiennent le mot (« the above copyright notice », « COPYRIGHT HOLDERS BE LIABLE »)
-// sont en minuscules, ou en capitales, ou ne commencent pas ainsi ; et celles qu'une césure de ligne
-// ferait commencer par « Copyright notice… » sont écartées par le second motif.
-const AVIS = /^\s*(?:Copyright\b|COPYRIGHT\s*(?:\(C\)|©|\d)|\(c\)\s|©)/;
+// Un avis de copyright commence par « Copyright » (majuscule), par « © », ou par « (c) » **suivi d'une
+// année**. Les phrases du texte de la licence qui contiennent le mot (« the above copyright notice »,
+// « COPYRIGHT HOLDERS BE LIABLE ») sont en minuscules, ou en capitales, ou ne commencent pas ainsi ; et
+// celles qu'une césure de ligne ferait commencer par « Copyright notice… » sont écartées par le second motif.
+//
+// « (c) » seul n'est pas un avis : c'est le repère de la clause 4(c) de l'Apache 2.0 (« (c) You must retain,
+// in the Source form of any Derivative Works… »), de la 2.2(c) de la MPL. Le prendre pour un avis retirait
+// du texte affiché la première ligne de la clause (relevé le 22/10/2026, contre-lecture de l'écran
+// `/licences`). Une majuscule après « (c) » ne suffit pas non plus — « You » en a une —, d'où l'année.
+const AVIS = /^\s*(?:Copyright\b|COPYRIGHT\s*(?:\(C\)|©|\d)|\([cC]\)\s*\d|©)/;
 const PAS_UN_AVIS = /^\s*Copyright\s+(?:holders?|notice|owners?|licen[cs]e|statement|laws?)\b/i;
 const MODELE = /\[yyyy\]|\{yyyy\}|<year>|\[year\]|\[name of copyright owner\]|\{name of copyright owner\}|<copyright holders?>|<owner>/i;
 
 const estUnAvis = (ligne) => AVIS.test(ligne) && !PAS_UN_AVIS.test(ligne) && !MODELE.test(ligne);
+// L'emplacement d'un avis que personne n'a rempli — « Copyright [yyyy] [name of copyright owner] », dans
+// l'appendice de l'Apache. Ce n'est l'avis de personne (il ne va pas dans la ligne de copyright du paquet),
+// mais il part du texte comme un avis : un projet qui remplit l'emplacement (« Copyright 2018 The New York
+// Times Company ») et un autre qui le laisse vide auraient sinon deux textes « différents ».
+const estUnEmplacement = (ligne) => AVIS.test(ligne) && !PAS_UN_AVIS.test(ligne) && MODELE.test(ligne);
+const estRetiree = (ligne) => estUnAvis(ligne) || estUnEmplacement(ligne);
 const espaces = (texte) => texte.replace(/\s+/g, ' ').trim();
 const toutesLesLignes = (texte) => texte.replace(/\r\n?/g, '\n').split('\n');
 const DROITS_RESERVES = /^all rights reserved\.?$/i;
@@ -144,10 +175,10 @@ function avisDuTexte(texte) {
   return [...new Set(avis)];
 }
 
-/** Le texte sans ses avis, ligne à ligne. « All rights reserved. » seul, qui suivait un avis, part avec lui. */
+/** Le texte sans ses avis (ni leur emplacement vide), ligne à ligne. « All rights reserved. » seul, qui suivait un avis, part avec lui. */
 function sansLesAvis(texte) {
   const lignes = toutesLesLignes(texte);
-  return lignes.filter((ligne, i) => !estUnAvis(ligne) && !(DROITS_RESERVES.test(espaces(ligne)) && i > 0 && estUnAvis(lignes[i - 1])));
+  return lignes.filter((ligne, i) => !estRetiree(ligne) && !(DROITS_RESERVES.test(espaces(ligne)) && i > 0 && estRetiree(lignes[i - 1])));
 }
 
 /** Un titre est une première ligne courte qui nomme la licence — « MIT License », « # The MIT License (MIT) ». */
@@ -247,6 +278,105 @@ function lirePaquet(dossier) {
   const pj = JSON.parse(fs.readFileSync(path.join(dossier, 'package.json'), 'utf8'));
   if (typeof pj.name !== 'string' || typeof pj.version !== 'string') throw new Error(`${dossier}/package.json n’a ni nom ni version.`);
   return { dossier, nom: pj.name, version: pj.version, pj };
+}
+
+// ─── Les copies : un paquet qui en porte un autre dans ses sources ───────────────────────────
+//
+// Le paquet qu'une carte désigne par le dernier `node_modules/` de son chemin est celui qui **contient** le
+// fichier, pas toujours celui qui l'a écrit : `expo-router` range une copie de `react-helmet-async`
+// (Apache 2.0, « Copyright 2018 The New York Times Company ») sous `vendor/react-helmet-async/`, avec sa
+// propre licence, et la rattacher à `expo-router` (MIT) donnait l'avis de l'un à du code de l'autre.
+
+/** Les noms sous lesquels un dossier dit qui il est : son `package.json`, ou la copie d'amont qu'Expo garde en `package_original.json`. */
+const FICHIERS_D_IDENTITE = ['package.json', 'package_original.json'];
+
+/** Nom et version d'un dossier, ou `null` — un `package.json` sans les deux (`{ "type": "module" }`) ne désigne personne. */
+function identiteDuDossier(dossier) {
+  for (const nom of FICHIERS_D_IDENTITE) {
+    const chemin = path.join(dossier, nom);
+    if (!fs.existsSync(chemin)) continue;
+    const pj = JSON.parse(fs.readFileSync(chemin, 'utf8'));
+    if (typeof pj.name === 'string' && typeof pj.version === 'string') return { dossier, nom: pj.name, version: pj.version, pj };
+  }
+  return null;
+}
+
+/**
+ * Si `fichier` (relatif au dossier de l'hôte) vit sous un sous-dossier qui porte son propre fichier de licence
+ * ou son propre `package.json` (nom et version), rend ce sous-dossier comme un paquet à part, avec le chemin
+ * du fichier relatif à lui ; sinon `null`. Le sous-dossier le plus proche du fichier l'emporte, comme le
+ * dernier `node_modules/` d'un chemin. **Un sous-dossier qui porte une licence sans dire de quel paquet il
+ * s'agit fait échouer le script** : lui donner la licence de l'hôte, ou une identité inventée, serait
+ * attribuer à quelqu'un du code qu'il n'a pas écrit.
+ */
+function copieDansLePaquet(hote, fichier) {
+  const segments = fichier.split('/');
+  let courant = hote.dossier;
+  let trouvee = null;
+  for (let i = 0; i < segments.length - 1; i++) {
+    courant = path.join(courant, segments[i]);
+    if (!fs.existsSync(courant)) break;
+    const etiquette = `${hote.nom}@${hote.version}, ${segments.slice(0, i + 1).join('/')}`;
+    const licence = fichierDeLicence(courant, etiquette);
+    const identite = identiteDuDossier(courant);
+    if (licence !== null && identite === null) {
+      throw new Error(
+        `${etiquette} : le dossier porte un fichier de licence (${licence}) et des fichiers qu'un bundle contient, mais aucun package.json (ni package_original.json) qui dise de quel paquet il s’agit — le script ne lui prête ni la licence de ${hote.nom}, ni une identité (FICHIERS_D_IDENTITE).`
+      );
+    }
+    if (identite === null || (identite.nom === hote.nom && identite.version === hote.version)) continue;
+    trouvee = { paquet: { ...identite, dans: hote.nom }, fichier: segments.slice(i + 1).join('/') };
+  }
+  return trouvee;
+}
+
+// ─── L'avis d'un paquet qui n'en donne pas dans sa licence ───────────────────────────────────
+
+const MARQUE_DE_COMMENTAIRE = /^\s*(?:\/\*+!?|\*+(?!\/)|\/\/+!?|#+)\s*(.*?)\s*(?:\*+\/)?\s*$/;
+/** Un avis se pose en tête de fichier : au-delà, une ligne « Copyright » est plus souvent celle d'un code collé que celle du paquet. */
+const OCTETS_D_ENTETE = 4096;
+const LIGNES_D_ENTETE = 40;
+const AUTEUR_DU_PAQUET = 'Auteur indiqué par le paquet : ';
+
+/** Le premier avis que l'en-tête d'un fichier source porte **en commentaire** (`/** Copyright … */`, `// Copyright …`), ou `null`. */
+function avisDeLEnteteDuFichier(chemin) {
+  if (!fs.existsSync(chemin) || !fs.statSync(chemin).isFile()) return null;
+  const tampon = Buffer.alloc(OCTETS_D_ENTETE);
+  const descripteur = fs.openSync(chemin, 'r');
+  let lus;
+  try {
+    lus = fs.readSync(descripteur, tampon, 0, OCTETS_D_ENTETE, 0);
+  } finally {
+    fs.closeSync(descripteur);
+  }
+  for (const ligne of toutesLesLignes(tampon.toString('utf8', 0, lus)).slice(0, LIGNES_D_ENTETE)) {
+    const commentaire = MARQUE_DE_COMMENTAIRE.exec(ligne);
+    if (commentaire && estUnAvis(commentaire[1])) return espaces(commentaire[1]);
+  }
+  return null;
+}
+
+/** L'auteur que déclare le `package.json`, sans son adresse ni son lien : « Scott Taylor <…> (https://…) » → « Scott Taylor ». */
+function auteurDuPaquet(pj) {
+  const brut = typeof pj.author === 'string' ? pj.author : pj.author?.name;
+  if (typeof brut !== 'string') return null;
+  const nom = espaces(brut.replace(/<[^>]*>|\([^)]*\)/g, ''));
+  return nom === '' ? null : nom;
+}
+
+/**
+ * Ce qui tient lieu d'avis quand le fichier de licence n'en porte pas : le premier avis de copyright que
+ * portent les fichiers du paquet **qui entrent dans les bundles** (dans l'ordre alphabétique de leur chemin,
+ * pour que le résultat ne dépende pas de l'ordre où Metro les a rangés), à défaut l'auteur du `package.json`,
+ * présenté comme tel. Rien d'autre : un paquet sans avis ni auteur n'en a pas, et l'écran le dit.
+ */
+function avisHorsLicence(paquet) {
+  for (const fichier of [...paquet.fichiers].sort()) {
+    const avis = avisDeLEnteteDuFichier(fichier);
+    if (avis !== null) return [avis];
+  }
+  const auteur = auteurDuPaquet(paquet.pj);
+  return auteur === null ? [] : [`${AUTEUR_DU_PAQUET}${auteur}`];
 }
 
 // ─── Polices : le nom et l'avis de copyright, lus dans le fichier ─────────────────────────────
@@ -413,14 +543,19 @@ function dossiersNatifs(racine) {
 
 const comparer = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
-/** Les paquets embarqués, avec où : « nom@version » → { …paquet, sur:Set }. Les polices en sont tirées à part. */
+/**
+ * Les paquets embarqués, avec où et par quels fichiers : « nom@version » → { …paquet, sur:Set, fichiers:Set }.
+ * Un fichier qui vit dans la copie d'un autre paquet (voir `copieDansLePaquet`) est compté pour cette copie ;
+ * son hôte reste listé, puisque c'est lui qui l'a mise dans le bundle. Les polices sont tirées à part.
+ */
 function releverLesPaquets({ racine, cartes, natifs }) {
   const paquets = new Map();
   const polices = new Map();
-  const enregistrer = (paquet, plateforme) => {
+  const enregistrer = (paquet, plateforme, fichier = null) => {
     const cle = `${paquet.nom}@${paquet.version}`;
-    const connu = paquets.get(cle) ?? { ...paquet, sur: new Set() };
+    const connu = paquets.get(cle) ?? { ...paquet, sur: new Set(), fichiers: new Set() };
     connu.sur.add(plateforme);
+    if (fichier !== null) connu.fichiers.add(fichier);
     paquets.set(cle, connu);
   };
 
@@ -428,17 +563,21 @@ function releverLesPaquets({ racine, cartes, natifs }) {
     for (const source of sources) {
       const designation = paquetDeLaSource(source);
       if (!designation) continue;
-      const paquet = lirePaquet(dossierDuPaquet(racine, designation));
-      enregistrer(paquet, plateforme);
-      if (!FICHIER_DE_POLICE.test(designation.fichier)) continue;
+      const hote = lirePaquet(dossierDuPaquet(racine, designation));
+      const copie = copieDansLePaquet(hote, designation.fichier);
+      const paquet = copie?.paquet ?? hote;
+      const fichier = copie?.fichier ?? designation.fichier;
+      if (copie) enregistrer(hote, plateforme);
+      enregistrer(paquet, plateforme, path.join(paquet.dossier, fichier));
+      if (!FICHIER_DE_POLICE.test(fichier)) continue;
 
       const etiquette = `${paquet.nom}@${paquet.version}`;
       const licenceFichier = fichierDePolice(paquet.dossier);
-      if (!licenceFichier) throw new Error(`${etiquette} : la police « ${designation.fichier} » est embarquée, mais le paquet n’a pas de fichier LICENSE_FONT.`);
-      let famille = path.basename(designation.fichier).replace(/\.[^.]+$/, '');
+      if (!licenceFichier) throw new Error(`${etiquette} : la police « ${fichier} » est embarquée, mais le paquet n’a pas de fichier LICENSE_FONT.`);
+      let famille = path.basename(fichier).replace(/\.[^.]+$/, '');
       let copyright = null;
-      if (/\.(ttf|otf)$/i.test(designation.fichier)) {
-        const noms = nomsDeLaPolice(fs.readFileSync(path.join(paquet.dossier, designation.fichier)));
+      if (/\.(ttf|otf)$/i.test(fichier)) {
+        const noms = nomsDeLaPolice(fs.readFileSync(path.join(paquet.dossier, fichier)));
         famille = nomDansLaPolice(noms, [16, 1]) ?? famille;
         copyright = nomDansLaPolice(noms, [0]);
       }
@@ -479,10 +618,11 @@ function analyserLesPaquets(paquets, polices) {
     const fichier = fichierDeLicence(p.dossier, etiquette);
     const texte = fichier ? fs.readFileSync(path.join(p.dossier, fichier), 'utf8') : null;
     const lignes = texte === null ? null : lignesDuTexte(id, texte);
+    const avisDeLicence = texte === null ? [] : avisDuTexte(texte);
     analyses.push({
       paquet: p,
       id,
-      avis: texte === null ? [] : avisDuTexte(texte),
+      avis: avisDeLicence.length > 0 ? avisDeLicence : avisHorsLicence(p),
       lignes,
       corps: lignes === null ? null : reconnaitre(id, lignes, `${etiquette} (${fichier})`),
     });
@@ -547,6 +687,7 @@ function assembler({ racine, cartes, natifs, date }) {
     texte: a.corps === null ? textePrincipal(a.id, `${a.paquet.nom}@${a.paquet.version}`) : identifiants.get(`${a.id}\0${a.corps}`),
     copyright: a.avis.length > 0 ? a.avis.join(' ') : null,
     sur: sur(a.paquet.sur),
+    ...(a.paquet.dans ? { dans: a.paquet.dans } : {}),
   }));
   const policesSorties = policesLues
     .map(({ police, id, corps }) => ({
@@ -582,7 +723,8 @@ const ENTETE = `// FICHIER GÉNÉRÉ — ne pas modifier à la main.
 //
 // Ce que Ramille embarque d'autres auteurs : les bibliothèques et les polices qui sont dans le bundle
 // web, dans le bundle Android ou dans le code natif de l'APK, avec leur licence, leur avis de copyright
-// quand le paquet en donne un, et le texte de chaque licence **une seule fois**. L'écran \`/licences\`
+// quand on en a trouvé un (dans leur licence, sinon dans leurs sources, sinon l'auteur que déclare le
+// paquet), et le texte de chaque licence **une seule fois**. L'écran \`/licences\`
 // (\`src/app/licences.tsx\`) le montre ; la méthode, et ce qu'elle ne couvre pas, sont en tête du script.
 //
 // \`scripts/licences.test.ts\` fait rougir la CI quand une dépendance de \`package.json\`, un import de
@@ -681,6 +823,10 @@ function principal() {
     for (const t of donnees.textes) console.log(`  ${t.id} : ${emploi.get(t.id) ?? 0} — ${t.nom}`);
     const compte = (sur) => donnees.paquets.filter((p) => p.sur === sur).length;
     console.log(`  web seul : ${compte('web')} ; Android seul : ${compte('android')} ; les deux : ${compte('les deux')}`);
+    const copies = donnees.paquets.filter((p) => p.dans);
+    console.log(`  copies logées dans un autre paquet : ${copies.map((p) => `${p.nom} (dans ${p.dans})`).join(', ') || 'aucune'}`);
+    const auteursSeuls = donnees.paquets.filter((p) => p.copyright?.startsWith(AUTEUR_DU_PAQUET));
+    console.log(`  auteur du package.json, faute d’avis : ${auteursSeuls.map((p) => p.nom).join(', ') || 'aucun'}`);
     console.log(`  sans ligne de copyright : ${donnees.paquets.filter((p) => p.copyright === null).map((p) => p.nom).join(', ') || 'aucun'}`);
     console.log(`  dépendances directes écartées : ${donnees.ecartes.join(', ') || 'aucune'}`);
     for (const police of donnees.polices.filter((f) => f.copyright === null)) console.log(`  ! la police ${police.nom} ne donne pas d’avis de copyright`);
