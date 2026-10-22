@@ -20,9 +20,16 @@
  *   - **chaque texte affiché garde toutes les lignes du fichier de licence de ses paquets et de ses polices**,
  *     les avis, les titres et le préambule de l'OFL exceptés — relues dans `node_modules/`, que
  *     `package-lock.json` situe. C'est la garde qui aurait vu l'Apache perdre sa clause 4(c) ; et elle n'emprunte
- *     pas les motifs du script, qui y passerait avec ses propres erreurs ;
- *   - l'Apache reproduit ses repères « (a) » à « (d) », et une copie rangée dans un autre paquet
- *     (`react-helmet-async`, dans `expo-router`) est listée à part avec sa licence, son avis et son hôte.
+ *     pas les motifs du script, qui y passerait avec ses propres erreurs. **Une exception de plus, dans l'autre
+ *     sens : l'emplacement de l'avis de l'appendice Apache** (« Copyright [yyyy] [name of copyright owner] »), que
+ *     le fichier de licence a laissé vide ou rempli (« Copyright 2018 The New York Times Company »), ne se compare
+ *     pas à l'affiché — qui le montre sous cette forme canonique — et sa garde est à part (l'appendice) ;
+ *   - l'Apache reproduit ses repères « (a) » à « (d) », garde l'emplacement de son avis entre la phrase qui parle
+ *     de ses champs et le modèle d'avis, et une copie rangée dans un autre paquet (`react-helmet-async`, dans
+ *     `expo-router`) est listée à part avec sa licence, son avis et son hôte ;
+ *   - les **avis d'autres auteurs que portent des fichiers embarqués** (`avisRepris`) : Joyent sous
+ *     `@react-native/js-polyfills`, Deno sous `@expo/metro-runtime`, Nicolas Gallagher sous async-storage, et
+ *     web-streams-polyfill avec Facebook et Meta sous `expo` — la seule garde du fichier qui les voit.
  * **Ce qu'elle ne voit pas**, et que seul `node scripts/generer-les-licences.mjs --verifier` voit, en relisant les
  * cartes de sources du bundle : une dépendance **transitive** qui entre dans le bundle sans que rien dans
  * `package.json` ni dans `src/` ne l'ait demandé (une montée d'`expo-router` qui tire un paquet de plus) — le
@@ -35,7 +42,7 @@
  * copyright (de la licence, des sources, de l'auteur), les textes rangés une fois par type, la police et son avis
  * lus dans le fichier de police, et tout ce qu'il refuse de deviner.
  *
- * Éprouvé en cassant ce qu'il garde, le 22/10/2026, en deux passages — voir « Mutations » en bas du fichier.
+ * Éprouvé en cassant ce qu'il garde, le 22/10/2026, en trois passages — voir « Mutations » en bas du fichier.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -1519,6 +1526,53 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
  * **La mise en page** (`src/types/licences.test.ts`) : l'ancienne phrase de repli (« Ce paquet ne donne pas de ligne
  * de copyright ») → 1 ; l'ancienne introduction → 2 ; une introduction sans renvoi à la dernière section → 1 ; la
  * nuance mise hors de la phrase qui dit ce que la page liste → 1 ; `termeDuPaquet` qui oublie la copie → 1.
+ *
+ * ## Mutations, troisième passage (22/10/2026, seconde contre-lecture de l'écran `/licences`)
+ *
+ * Même méthode, et la suite jouée avec celle de `src/types/licences.test.ts` : **108 tests (82 + 26)**. Chaque mutation
+ * est un remplacement exact, l'état d'avant est réécrit depuis une copie, l'arbre est relu propre après chacune, et le
+ * fichier engagé est régénéré par le script muté (depuis le même export) quand la mutation doit le changer. Chacune en
+ * a fait tomber au moins un ; les noms sont ceux des tests.
+ *
+ * **Les deux mutations que la contre-lecture disait passer la suite — rejouées d'abord sur la suite d'avant (57 tests
+ * du script) : 0 tombait, pour l'une comme pour l'autre** :
+ * - le marqueur de commentaire rendu facultatif (`MARQUE_DE_COMMENTAIRE`) → 3 tombent : « ne prend pas pour un avis une
+ *   ligne qui commence par “Copyright” sans être un commentaire — dans une chaîne multiligne », « ne reprend que des
+ *   commentaires » et « ne prête à un avis que les licences de son propre bloc de commentaire ». Les essais d'avant
+ *   n'avaient que des lignes qui commencent par autre chose que « Copyright » : le marqueur n'y servait à rien ;
+ * - la lecture du seul premier fichier, dans l'ordre des chemins → 5 tombent : « lit le deuxième fichier quand le
+ *   premier… », « relève les avis de chaque fichier, même quand le premier n'en porte aucun », « relève les avis des
+ *   paquets qui n'ont aucun fichier de licence… », « dédoublonne les avis repris par titulaire… » et « accepte un avis
+ *   qui cite la MIT par son nom ou en recopie le texte ».
+ *
+ * **Les avis repris d'autres projets (`avisRepris`)** :
+ * - aucun avis repris gardé → 18 tombent (deux gardes du fichier régénéré, qui perd les quatre paquets, et seize essais
+ *   fabriqués) ;
+ * - le titulaire pris pour le texte entier de l'avis → 6 ; le titulaire du paquet jamais comparé → 7 ; aucun
+ *   dédoublonnage entre avis repris → 3 ; les années gardées dans le titulaire → 5 ; « (aka Expo) » gardé → 2 ; la
+ *   forme sociale (« Inc. ») gardée → 3 ;
+ * - la licence d'un avis repris jamais vérifiée → 4 ; le texte d'une licence recopié sans être nommé, non reconnu → 1
+ *   (la BSD à trois clauses) ; la MIT examinée comme les autres → 1 (« accepte la MIT même quand… la page n'a pas de
+ *   texte MIT ») ; une licence illisible (GPL, « BSD » seul) ignorée → 2 ; une licence citée par son nom ignorée → 1 ;
+ *   la licence cherchée dans tout l'en-tête et non dans le bloc de l'avis → 1 ;
+ * - l'en-tête limité à 20 lignes → 3 (le fichier régénéré perd Joyent, ligne 22 de `console.js`) ; limité à 512 octets
+ *   → 4 (Joyent est à 573 octets du début) ; sans limite de lignes → 1 ; sans limite d'octets → 1 ;
+ * - les fichiers lus dans l'ordre de la carte → 1 ; ceux que le bundle ne contient pas lus aussi → 1 ; l'auteur jamais
+ *   donné → 1, donné avec son adresse → 1 ; les sources ignorées quand le fichier de licence existe → 1, préférées à
+ *   son avis → 17 ; l'auteur préféré aux sources → 1 ;
+ * - `avisRepris` jamais écrit dans le fichier → 14 ; **`--verifier` qui ne compare plus l'entrée d'un paquet → 1** :
+ *   la branche « différent » n'était gardée par aucun essai avant « rougit… quand ses avis repris ne sont plus ceux de
+ *   ses fichiers ».
+ *
+ * **L'appendice Apache** :
+ * - l'emplacement de l'avis retiré du texte affiché (le défaut relevé) → 3 : la garde du fichier régénéré et deux essais
+ *   fabriqués ; gardé dans la comparaison → 1 (« range une seule fois l'Apache… » : un texte qui l'a effacé devient une
+ *   « autre rédaction ») ;
+ * - un emplacement rempli non remplacé par la forme canonique → 3 ; l'emplacement entre accolades non remplacé → 2 ;
+ *   la préférence pour le membre qui porte l'emplacement retirée → 1 (le texte affiché dépendrait de l'ordre des
+ *   paquets) ; l'emplacement cherché sur la seule ligne d'avant, sans sauter les blancs → 3 ;
+ * - `estUnAvis` qui ne regarde plus les emplacements, donc l'emplacement vide pris pour l'avis du paquet → 2 ; « (c) »
+ *   seul repris comme avis (rejoué) → 7, comme au deuxième passage.
  *
  * **Ce que rien d'ici n'éprouve** : l'autolinking (`--sans-natif` dans tous les essais), qui ne se joue que sur
  * le dépôt réel — par `node scripts/generer-les-licences.mjs`, qui l'a utilisé pour écrire le fichier engagé,

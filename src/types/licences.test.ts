@@ -43,6 +43,14 @@
  *   hors de la phrase qui dit ce que la page liste → 1 : **c'est la phrase, pas la page, qui ne doit pas se
  *   dire complète** — une nuance deux phrases plus loin laisse la première fausse seule ;
  * - `termeDuPaquet` qui oublie la copie (`dans`) → 1 tombe, « dit d'une copie rangée dans un autre paquet… ».
+ *
+ * Troisième passage, le même jour (seconde contre-lecture, 26 tests ; la suite de `scripts/licences.test.ts` est jouée
+ * avec, 108 en tout), cinq mutations de ce module, le fichier engagé étant celui du script non muté :
+ * - une police sans avis qui reprend la phrase des bibliothèques (`SANS_COPYRIGHT`, « …dans ce paquet ») → 1 tombe, « dit
+ *   qu'aucun avis n'a été trouvé pour une police… » ; la phrase propre aux polices remise à « …dans ce paquet » → le même 1 ;
+ * - les avis repris jamais écrits sous la bibliothèque → 3 tombent (leur rendu, leur unicité, et l'avis de Joyent sous
+ *   `@react-native/js-polyfills` sur les vraies données) ; écrits sans « Avis de fichiers repris d'autres projets : »
+ *   → 3 ; écrits avant l'avis principal → 2.
  */
 import { LICENCES } from '@/constants/licences';
 import {
