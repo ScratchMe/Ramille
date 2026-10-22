@@ -250,7 +250,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // garde une session anonyme, et la durée de conservation de l'identifiant.
 //
 // **22/10/2026 : l'adresse IP d'une session s'efface après 90 jours sans servir** (décision de la
-// personne qui pilote, `v1-35` étape 2, `20261022130000_l_ip_des_sessions_s_efface.sql`). Deux phrases :
+// personne qui pilote, `v1-35` étape 2, `20261022123448_l_ip_des_sessions_s_efface.sql`). Deux phrases :
 // la définition des sessions, et la liste des durées, qui disait « sans limite de durée ». La session
 // elle-même reste — la fermer déconnecterait la personne. Même jour que l'entrée d'au-dessus, donc même
 // date de mise à jour.

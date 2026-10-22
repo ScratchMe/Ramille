@@ -1,5 +1,5 @@
 -- L'adresse IP et l'appareil d'une session s'effacent après 90 jours sans utilisation
--- (migration `20261022130000_l_ip_des_sessions_s_efface.sql`, décision du 22/10/2026).
+-- (migration `20261022123448_l_ip_des_sessions_s_efface.sql`, décision du 22/10/2026).
 --
 -- Ce que ce fichier garde :
 --   * qu'une session **inutilisée depuis plus de 90 jours** perd son adresse IP et son appareil, et

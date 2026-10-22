@@ -1899,7 +1899,7 @@ ce que l'app fait, et deux touchent au natif, donc à un build (le premier et le
   suppression du compte, avec son adresse IP. **Condition** : un passage au plan Pro, ou une purge à nous
   sur `auth.sessions`, que GoTrue possède. **Réduit le 22/10/2026** (décision de la personne qui pilote,
   `v1-35` étape 2) : la session reste, mais son adresse IP et son appareil sont effacés après 90 jours sans
-  renouvellement (`20261022130000_l_ip_des_sessions_s_efface.sql`, dans le ménage de chaque nuit).
+  renouvellement (`20261022123448_l_ip_des_sessions_s_efface.sql`, dans le ménage de chaque nuit).
 
 Et un cinquième, **écarté** et non reporté : effacer le nom et la photo que Google transmet, par un
 déclencheur sur les tables d'auth (fiche §1.4, « les autres voies »).
