@@ -33,6 +33,7 @@ import { ensureSession, supabase } from '@/lib/supabase';
 import { type EngagementEnCours } from '@/types/rebilan';
 import { relireEnArrierePlan } from '@/types/relecture-en-arriere-plan';
 import {
+  echecDeLaSoumission,
   genreErreurSoumission,
   repriseDeLaSoumission,
   type EtapeSoumission,
@@ -61,7 +62,6 @@ import {
   visibleSteps,
   STATUT_DE_BILAN,
 } from '@/types/bilan';
-import { decrireErreur } from '@/types/erreur';
 import { sensDuPassage, type Sens } from '@/types/mouvement';
 import { ouvreUnPremierParcours } from '@/types/premier-parcours';
 
@@ -731,10 +731,12 @@ export default function BilanQuestionnaire() {
       // part dans `detail` — concaténé à cette phrase, il faisait lire « Network request
       // failed » ou une contrainte Postgres entière, en anglais, au terme de cinq minutes de
       // saisie (audit A2-16).
-      setMessage(
-        'Ton bilan n’a pas pu être enregistré. Tes réponses sont conservées, réessaie dans un instant.'
-      );
-
+      //
+      // **Deux phrases, et le plafond de bilans a la sienne** (22/10/2026) : « réessaie dans un instant »
+      // est faux d'un refus qui dure jusqu'au lendemain (`RM002`, `TROP_DE_BILANS`). La dérivation vit
+      // hors de l'écran avec ses tests (`echecDeLaSoumission`, `FRONT.md` §1.1) ; l'état, lui, ne change
+      // pas — `finally` rend le questionnaire, le bouton n'est plus en calcul et les réponses restent.
+      //
       // **Sur une coupure réseau, il n'y a pas de détail du tout.** `decrireErreur` reste juste
       // et indispensable aux quatre autres genres — une contrainte, une permission, un `P0002`
       // se recopient à la main et nomment la cause. Mais sur `reseau` il rend
@@ -743,8 +745,11 @@ export default function BilanQuestionnaire() {
       // probable en production** — un tunnel, un ascenseur, un réseau qui tombe —, pas un
       // défaut, et le seul où la phrase française au-dessus est déjà toute la vérité. Le reste
       // du produit y répond ainsi depuis C1.4 (l'écran `erreur_reseau` de `/plan`) ; le
-      // questionnaire était le seul endroit à y répondre par une trace de pile.
-      setDetail(genre === 'reseau' ? null : decrireErreur(error));
+      // questionnaire était le seul endroit à y répondre par une trace de pile. Un plafond atteint
+      // n'a pas de détail non plus : sa phrase est déjà toute la vérité.
+      const echec = echecDeLaSoumission(error, genre);
+      setMessage(echec.message);
+      setDetail(echec.detail);
     } finally {
       soumissionEnCours.current = false;
       setSubmitting(false);

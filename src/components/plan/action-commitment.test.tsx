@@ -35,6 +35,7 @@ import React from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 import { ActionCommitment } from '@/components/plan/action-commitment';
+import { TROP_DE_CHANGEMENTS_D_ENGAGEMENT } from '@/types/refus-de-plafond';
 
 const mockEngager = jest.fn();
 const mockLiberer = jest.fn();
@@ -529,5 +530,74 @@ describe('ActionCommitment — un refus qui demande une relecture', () => {
     expect(onRefus).toHaveBeenLastCalledWith('Ton plan a changé entre-temps.');
     expect(screen.queryByText('Ton plan a changé entre-temps.')).toBeNull();
     expect(onEngage).not.toHaveBeenCalled();
+  });
+});
+
+// Un plafond atteint (`RM002`, 22/10/2026) : le refus dure jusqu'au lendemain, et `commitPlanAction` rend
+// sa phrase **sans** demander de relire le plan (`src/lib/plan-engagement.test.ts`). Ce que l'écran en
+// fait est ce qui se garde ici : rien n'est enregistré, donc rien ne paraît engagé — ni carte engagée, ni
+// feuille des rappels, ni relecture —, le bouton ne reste pas en attente, et la sélection de la personne
+// reste là, sous la phrase, pour qu'elle n'ait pas à tout recocher demain.
+//
+// Éprouvé en le cassant, le 22/10/2026 (`TESTING.md` §1.1) : le `setBusy(false)` de l'échec retiré de
+// `submit` → 4 : les trois de ce bloc, et « « Annuler » efface l'échec d'un envoi qu'on abandonne »
+// (« Annuler » est inactif tant que `busy`) ; tout refus traité comme une relecture (`rechargerLePlan`
+// forcé) → 5 : les trois de ce bloc, ce même « Annuler » et « la carte relue engagée efface l'échec… » (la
+// phrase part à l'écran au lieu du sélecteur).
+describe('ActionCommitment — un plafond atteint', () => {
+  const plafond = { ok: false, message: TROP_DE_CHANGEMENTS_D_ENGAGEMENT };
+
+  it('dit la phrase sous le sélecteur, rend « C’est noté » actif et garde la sélection', async () => {
+    mockEngager.mockResolvedValue(plafond);
+    render(carte());
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+
+    expect(await screen.findByText(TROP_DE_CHANGEMENTS_D_ENGAGEMENT)).toBeTruthy();
+    // Le bouton n'est pas resté en attente : l'aller-retour est fini, et rien n'attend de relecture.
+    expect(inactif('C’est noté')).toBe(false);
+    // La sélection est celle de la personne, pas un engagement : elle reste cochée, et rien d'autre ne l'est.
+    expect(coche('mardi')).toBe(true);
+    expect(coche('jeudi')).toBe(false);
+    // Rien n'a été enregistré : pas de relecture, pas de feuille des rappels, pas de carte engagée.
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(onEngage).not.toHaveBeenCalled();
+    expect(onModifie).not.toHaveBeenCalled();
+    // Et la phrase est dite ici, dans le sélecteur : le seul `onRefus` est l'effacement d'avant l'envoi.
+    expect(onRefus).toHaveBeenCalledTimes(1);
+    expect(onRefus).toHaveBeenLastCalledWith(null);
+    expect(screen.queryByText('Changer d’avis')).toBeNull();
+  });
+
+  it('laisse la personne changer d’avis sur ce qu’elle voulait envoyer : « Annuler » efface la phrase', async () => {
+    mockEngager.mockResolvedValue(plafond);
+    render(carte());
+    fireEvent.press(screen.getByText('Je m’y engage'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'mardi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+    await screen.findByText(TROP_DE_CHANGEMENTS_D_ENGAGEMENT);
+
+    fireEvent.press(screen.getByText('Annuler'));
+    expect(screen.getByText('Je m’y engage')).toBeTruthy();
+    expect(screen.queryByText(TROP_DE_CHANGEMENTS_D_ENGAGEMENT)).toBeNull();
+  });
+
+  // « Modifier les jours » rappelle `commit_plan_action` sur l'action déjà engagée : le plafond la refuse
+  // aussi, et l'intention en place n'a pas bougé — la carte reste engagée, sans rien relire.
+  it('à la modification : la carte reste engagée, le sélecteur actif et la sélection gardée', async () => {
+    mockEngager.mockResolvedValue(plafond);
+    render(carte({ committed: true, intentionDays: [2, 4] }));
+    fireEvent.press(screen.getByText('Modifier les jours'));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'vendredi' }));
+    fireEvent.press(screen.getByText('C’est noté'));
+
+    expect(await screen.findByText(TROP_DE_CHANGEMENTS_D_ENGAGEMENT)).toBeTruthy();
+    expect(inactif('C’est noté')).toBe(false);
+    expect(coche('mardi')).toBe(true);
+    expect(coche('jeudi')).toBe(true);
+    expect(coche('vendredi')).toBe(true);
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(onModifie).not.toHaveBeenCalled();
   });
 });

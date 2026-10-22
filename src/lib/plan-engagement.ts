@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { messageDEcriture } from '@/types/ecriture-en-echec';
 import { genreDeLEchec } from '@/types/lecture-en-echec';
 import type { IntentionDay, IntentionTiming } from '@/types/plan';
+import { estUnRefusDePlafond, TROP_DE_CHANGEMENTS_D_ENGAGEMENT } from '@/types/refus-de-plafond';
 
 export type EngagementResult =
   | { ok: true }
@@ -87,6 +88,14 @@ export async function commitPlanAction(
       message: 'Ton choix n’a pas été enregistré : ton plan a changé entre-temps. Il vient d’être relu.',
       rechargerLePlan: true,
     };
+  }
+
+  if (estUnRefusDePlafond(error)) {
+    // **Trente archivages par jour** (`20261005170000`, vérifiés à l'entrée du RPC) : le refus dure
+    // jusqu'au lendemain, donc « Réessaie dans un instant », la phrase d'une panne, serait fausse. Et
+    // `rechargerLePlan` reste absent : l'état du plan n'a pas changé, il n'y a rien à relire — l'écran
+    // garde le sélecteur ouvert, la sélection de la personne, et dit la phrase dessous.
+    return { ok: false, message: TROP_DE_CHANGEMENTS_D_ENGAGEMENT };
   }
 
   if (error) {
