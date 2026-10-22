@@ -1152,6 +1152,13 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
       expect(reprisDe(fichiers)).toEqual(['Copyright (c) 2019 Nommée', 'Copyright (c) 2020 Sans mention', 'Copyright (c) 2021 Recopiée']);
     });
 
+    it('ne prête à un avis que les licences de son propre bloc de commentaire', () => {
+      // Plus loin dans le fichier, un autre commentaire parle de la GPL : il ne parle pas de l'avis du haut.
+      const fichier = '// Copyright (c) 2019 Autre Auteur\n// MIT license\n\nconst x = 1;\n// Plus rapide que la version sous GPL.\n';
+
+      expect(reprisDe({ 'a.js': fichier })).toEqual(['Copyright (c) 2019 Autre Auteur']);
+    });
+
     it('accepte une licence autre que la MIT quand la page la reproduit déjà', () => {
       const fichiers = { 'a.js': '/**\n * Copyright (c) 2019 Autre Auteur\n * Licensed under the Apache License, Version 2.0\n */\n' };
       const apacheEnPlus = { package: pj('apachee', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache(), 'index.js': '' } };
