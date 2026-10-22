@@ -5,7 +5,8 @@
 // Ce que Ramille embarque d'autres auteurs : les bibliothèques et les polices qui sont dans le bundle
 // web, dans le bundle Android ou dans le code natif de l'APK, avec leur licence, leur avis de copyright
 // quand on en a trouvé un (dans leur licence, sinon dans leurs sources, sinon l'auteur que déclare le
-// paquet), et le texte de chaque licence **une seule fois**. L'écran `/licences`
+// paquet) et ceux des fichiers qu'ils ont repris d'autres projets (`avisRepris`), et le texte de chaque
+// licence **une seule fois**. L'écran `/licences`
 // (`src/app/licences.tsx`) le montre ; la méthode, et ce qu'elle ne couvre pas, sont en tête du script.
 //
 // `scripts/licences.test.ts` fait rougir la CI quand une dépendance de `package.json`, un import de
@@ -24,14 +25,14 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"@expo-google-fonts/spline-sans","version":"0.4.2","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2020 Expo","sur":"les deux"},
   {"nom":"@expo/dom-webview","version":"57.0.1","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},
   {"nom":"@expo/log-box","version":"57.0.4","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},
-  {"nom":"@expo/metro-runtime","version":"57.0.17","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
+  {"nom":"@expo/metro-runtime","version":"57.0.17","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","avisRepris":["Copyright 2018-2023 the Deno authors. All rights reserved. MIT license."],"sur":"les deux"},
   {"nom":"@expo/ui","version":"57.0.26","licence":"MIT","texte":"MIT","copyright":"Auteur indiqué par le paquet : 650 Industries, Inc.","sur":"android"},
   {"nom":"@radix-ui/react-compose-refs","version":"1.1.5","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2022 WorkOS","sur":"les deux"},
   {"nom":"@radix-ui/react-slot","version":"1.3.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2022 WorkOS","sur":"les deux"},
-  {"nom":"@react-native-async-storage/async-storage","version":"2.2.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present, Facebook, Inc.","sur":"les deux"},
+  {"nom":"@react-native-async-storage/async-storage","version":"2.2.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present, Facebook, Inc.","avisRepris":["Copyright (c) Nicolas Gallagher."],"sur":"les deux"},
   {"nom":"@react-native-masked-view/masked-view","version":"0.3.2","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present, Facebook, Inc.","sur":"android"},
   {"nom":"@react-native/assets-registry","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"android"},
-  {"nom":"@react-native/js-polyfills","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"les deux"},
+  {"nom":"@react-native/js-polyfills","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","avisRepris":["Copyright Joyent, Inc. and other Node contributors."],"sur":"les deux"},
   {"nom":"@react-native/normalize-colors","version":"0.74.89","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"web"},
   {"nom":"@react-native/normalize-colors","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"android"},
   {"nom":"@react-native/virtualized-lists","version":"0.86.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Meta Platforms, Inc. and affiliates.","sur":"android"},
@@ -54,7 +55,7 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"decode-uri-component","version":"0.5.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2017, Sam Verschueren <sam.verschueren@gmail.com> (github.com/SamVerschueren)","sur":"les deux"},
   {"nom":"escape-string-regexp","version":"4.0.0","licence":"MIT","texte":"MIT","copyright":"Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)","sur":"les deux"},
   {"nom":"event-target-shim","version":"5.0.1","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015 Toru Nagashima","sur":"les deux"},
-  {"nom":"expo","version":"57.0.31","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
+  {"nom":"expo","version":"57.0.31","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","avisRepris":["Copyright (c) Facebook, Inc. and its affiliates.","Copyright © Meta Platforms, Inc. and affiliates.","Copyright 2024 Mattias Buelens, Diwank Singh Tomer and other contributors."],"sur":"les deux"},
   {"nom":"expo-application","version":"57.0.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-asset","version":"57.0.20","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-auth-session","version":"57.0.16","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
@@ -166,6 +167,7 @@ export const LICENCES: DonneesDesLicences = {
     "END OF TERMS AND CONDITIONS",
     "APPENDIX: How to apply the Apache License to your work.",
     "To apply the Apache License to your work, attach the following boilerplate notice, with the fields enclosed by brackets \"[]\" replaced with your own identifying information. (Don't include the brackets!)  The text should be enclosed in the appropriate comment syntax for the file format. We also recommend that a file or class name and description of purpose be included on the same \"printed page\" as the copyright notice for easier identification within third-party archives.",
+    "Copyright [yyyy] [name of copyright owner]",
     "Licensed under the Apache License, Version 2.0 (the \"License\"); you may not use this file except in compliance with the License. You may obtain a copy of the License at",
     "http://www.apache.org/licenses/LICENSE-2.0",
     "Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License."

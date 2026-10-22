@@ -43,13 +43,24 @@
  *   hors de la phrase qui dit ce que la page liste → 1 : **c'est la phrase, pas la page, qui ne doit pas se
  *   dire complète** — une nuance deux phrases plus loin laisse la première fausse seule ;
  * - `termeDuPaquet` qui oublie la copie (`dans`) → 1 tombe, « dit d'une copie rangée dans un autre paquet… ».
+ *
+ * Troisième passage, le même jour (seconde contre-lecture, 26 tests ; la suite de `scripts/licences.test.ts` est jouée
+ * avec, 108 en tout), cinq mutations de ce module, le fichier engagé étant celui du script non muté :
+ * - une police sans avis qui reprend la phrase des bibliothèques (`SANS_COPYRIGHT`, « …dans ce paquet ») → 1 tombe, « dit
+ *   qu'aucun avis n'a été trouvé pour une police… » ; la phrase propre aux polices remise à « …dans ce paquet » → le même 1 ;
+ * - les avis repris jamais écrits sous la bibliothèque → 3 tombent (leur rendu, leur unicité, et l'avis de Joyent sous
+ *   `@react-native/js-polyfills` sur les vraies données) ; écrits sans « Avis de fichiers repris d'autres projets : »
+ *   → 3 ; écrits avant l'avis principal → 2.
  */
 import { LICENCES } from '@/constants/licences';
 import {
+  AVIS_REPRIS,
+  avisDuPaquet,
   dateEnMots,
   introDesLicences,
   LIMITE_DE_LA_LISTE,
   SANS_COPYRIGHT,
+  SANS_COPYRIGHT_DE_POLICE,
   sectionsDesLicences,
   termeDuPaquet,
   type BlocDeLicences,
@@ -174,15 +185,50 @@ describe('sectionsDesLicences', () => {
     expect(textesDe(ofl?.blocks ?? [])).toEqual(['Le texte de cette licence s’applique à la police ci-dessus :', 'Texte OFL.']);
   });
 
-  it('dit qu’une police ne donne pas d’avis, au lieu d’écrire « null »', () => {
+  it('dit qu’aucun avis n’a été trouvé pour une police, au lieu d’écrire « null » — avec sa phrase à elle, qui ne parle pas de paquet', () => {
     const sans: DonneesDesLicences = { ...PETIT, polices: [{ ...PETIT.polices[0], copyright: null }] };
 
     expect(sectionsDesLicences(sans)[0].blocks).toEqual([
       {
         kind: 'definitions',
-        items: [{ term: 'Fonte (Android)', text: `Licence : SIL Open Font License 1.1, dont le texte figure plus bas. ${SANS_COPYRIGHT}` }],
+        items: [{ term: 'Fonte (Android)', text: `Licence : SIL Open Font License 1.1, dont le texte figure plus bas. ${SANS_COPYRIGHT_DE_POLICE}` }],
       },
     ]);
+    // L'avis d'une police n'est cherché que dans le fichier de la police : « dans ce paquet » serait faux.
+    expect(SANS_COPYRIGHT_DE_POLICE).toBe('Aucun avis de copyright n’a été trouvé dans le fichier de cette police.');
+    expect(SANS_COPYRIGHT_DE_POLICE).not.toMatch(/paquet/);
+    expect(SANS_COPYRIGHT_DE_POLICE).not.toBe(SANS_COPYRIGHT);
+  });
+
+  it('montre, sous l’avis d’une bibliothèque, ceux des fichiers qu’elle a repris — en disant d’où ils viennent', () => {
+    const avecRepris: DonneesDesLicences = {
+      ...PETIT,
+      paquets: PETIT.paquets.map((paquet) =>
+        paquet.nom === 'alpha' ? { ...paquet, avisRepris: ['Copyright Joyent, Inc. and other Node contributors.', 'Copyright (c) Nicolas Gallagher.'] } : paquet
+      ),
+    };
+    const mit = sectionsDesLicences(avecRepris).find((section) => section.heading === 'Licence MIT');
+    const items = mit?.blocks[0].kind === 'definitions' ? mit.blocks[0].items : [];
+
+    expect(items[0]).toEqual({
+      term: 'alpha 1.0.0',
+      text: 'Copyright (c) 2020 Alpha Avis de fichiers repris d’autres projets : Copyright Joyent, Inc. and other Node contributors. Copyright (c) Nicolas Gallagher.',
+    });
+    expect(AVIS_REPRIS).toMatch(/repris d’autres projets/);
+    // Un paquet qui n'en a pas ne parle pas de fichiers repris.
+    expect(items[1].text).toBe(SANS_COPYRIGHT);
+    expect(avisDuPaquet({ copyright: 'Copyright (c) 2020 Alpha' })).toBe('Copyright (c) 2020 Alpha');
+    expect(avisDuPaquet({ copyright: 'Copyright (c) 2020 Alpha', avisRepris: [] })).toBe('Copyright (c) 2020 Alpha');
+  });
+
+  it('ne reproduit les avis repris que sous leur bibliothèque, une seule fois', () => {
+    const avecRepris: DonneesDesLicences = {
+      ...PETIT,
+      paquets: PETIT.paquets.map((paquet) => (paquet.nom === 'gamma' ? { ...paquet, avisRepris: ['Copyright (c) 2019 Autre Auteur'] } : paquet)),
+    };
+
+    expect(occurrences(sectionsDesLicences(avecRepris), 'Copyright (c) 2019 Autre Auteur')).toBe(1);
+    expect(occurrences(sectionsDesLicences(avecRepris), AVIS_REPRIS)).toBe(1);
   });
 
   it('accorde « police » et « polices » avec leur nombre', () => {
@@ -242,6 +288,13 @@ describe('sectionsDesLicences — sur les vraies données', () => {
     expect(spline?.text).toMatch(/SIL Open Font License 1\.1/);
     const ofl = sections.find((section) => section.heading === 'SIL Open Font License 1.1');
     expect(textesDe(ofl?.blocks ?? []).some((t) => t.startsWith('SIL OPEN FONT LICENSE Version 1.1'))).toBe(true);
+  });
+
+  it('montre l’avis de Joyent sous @react-native/js-polyfills, après celui de Meta, en disant qu’il vient d’un fichier repris', () => {
+    const items = sections.flatMap((section) => section.blocks.flatMap((bloc) => (bloc.kind === 'definitions' ? bloc.items : [])));
+    const polyfills = items.find((item) => item.term.startsWith('@react-native/js-polyfills'));
+
+    expect(polyfills?.text).toBe(`Copyright (c) Meta Platforms, Inc. and affiliates. ${AVIS_REPRIS} Copyright Joyent, Inc. and other Node contributors.`);
   });
 
   it('commence par ses bibliothèques sous MIT, la licence la plus employée', () => {

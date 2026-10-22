@@ -20,9 +20,16 @@
  *   - **chaque texte affiché garde toutes les lignes du fichier de licence de ses paquets et de ses polices**,
  *     les avis, les titres et le préambule de l'OFL exceptés — relues dans `node_modules/`, que
  *     `package-lock.json` situe. C'est la garde qui aurait vu l'Apache perdre sa clause 4(c) ; et elle n'emprunte
- *     pas les motifs du script, qui y passerait avec ses propres erreurs ;
- *   - l'Apache reproduit ses repères « (a) » à « (d) », et une copie rangée dans un autre paquet
- *     (`react-helmet-async`, dans `expo-router`) est listée à part avec sa licence, son avis et son hôte.
+ *     pas les motifs du script, qui y passerait avec ses propres erreurs. **Une exception de plus, dans l'autre
+ *     sens : l'emplacement de l'avis de l'appendice Apache** (« Copyright [yyyy] [name of copyright owner] »), que
+ *     le fichier de licence a laissé vide ou rempli (« Copyright 2018 The New York Times Company »), ne se compare
+ *     pas à l'affiché — qui le montre sous cette forme canonique — et sa garde est à part (l'appendice) ;
+ *   - l'Apache reproduit ses repères « (a) » à « (d) », garde l'emplacement de son avis entre la phrase qui parle
+ *     de ses champs et le modèle d'avis, et une copie rangée dans un autre paquet (`react-helmet-async`, dans
+ *     `expo-router`) est listée à part avec sa licence, son avis et son hôte ;
+ *   - les **avis d'autres auteurs que portent des fichiers embarqués** (`avisRepris`) : Joyent sous
+ *     `@react-native/js-polyfills`, Deno sous `@expo/metro-runtime`, Nicolas Gallagher sous async-storage, et
+ *     web-streams-polyfill avec Facebook et Meta sous `expo` — la seule garde du fichier qui les voit.
  * **Ce qu'elle ne voit pas**, et que seul `node scripts/generer-les-licences.mjs --verifier` voit, en relisant les
  * cartes de sources du bundle : une dépendance **transitive** qui entre dans le bundle sans que rien dans
  * `package.json` ni dans `src/` ne l'ait demandé (une montée d'`expo-router` qui tire un paquet de plus) — le
@@ -35,7 +42,7 @@
  * copyright (de la licence, des sources, de l'auteur), les textes rangés une fois par type, la police et son avis
  * lus dans le fichier de police, et tout ce qu'il refuse de deviner.
  *
- * Éprouvé en cassant ce qu'il garde, le 22/10/2026, en deux passages — voir « Mutations » en bas du fichier.
+ * Éprouvé en cassant ce qu'il garde, le 22/10/2026, en trois passages — voir « Mutations » en bas du fichier.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -205,6 +212,14 @@ describe('le fichier généré des licences', () => {
     for (const id of textes) if (!employes.has(id)) problemes.push(`Le texte « ${id} » n’est employé par rien.`);
     for (const texte of LICENCES.textes) if (texte.paragraphes.length === 0 || texte.paragraphes.some((p) => p.trim() === '')) problemes.push(`Le texte « ${texte.id} » est vide.`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(LICENCES.genereLe)) problemes.push('« genereLe » n’est pas une date AAAA-MM-JJ.');
+    for (const p of LICENCES.paquets) {
+      const repris = p.avisRepris;
+      if (repris === undefined) continue;
+      if (repris.length === 0 || repris.some((avis) => avis.trim() === '')) problemes.push(`« ${p.nom} » porte une liste d’avis repris vide.`);
+      if (new Set(repris).size !== repris.length) problemes.push(`« ${p.nom} » porte deux fois le même avis repris.`);
+      if (p.copyright === null) problemes.push(`« ${p.nom} » porte des avis repris sans avis principal.`);
+      if (repris.some((avis) => p.copyright?.includes(avis))) problemes.push(`« ${p.nom} » reprend un avis qu’il affiche déjà comme le sien.`);
+    }
 
     exiger(problemes, REGENERER);
   });
@@ -225,6 +240,35 @@ describe('le fichier généré des licences', () => {
     const reperes = ['(a) You must give', '(b) You must cause', '(c) You must retain, in the Source form of any Derivative Works', '(d) If the Work includes'];
     expect(reperes.filter((debut) => (apacheAffiche?.paragraphes ?? []).some((paragraphe) => paragraphe.startsWith(debut)))).toEqual(reperes);
     expect(apacheAffiche?.paragraphes.join('\n')).toContain('(c) You must retain, in the Source form of any Derivative Works');
+  });
+
+  it('garde, dans l’appendice de l’Apache, l’emplacement de l’avis sous sa forme canonique — après la phrase qui parle de ses champs, avant le modèle d’avis', () => {
+    // Relevé le 22/10/2026 : l'emplacement était retiré du texte affiché, et « with the fields enclosed by brackets "[]"
+    // replaced… » enchaînait sur le modèle sans aucun champ entre crochets. Il ne sort que de la comparaison.
+    const paragraphes = LICENCES.textes.find((texte) => texte.id === 'Apache-2.0')?.paragraphes ?? [];
+    const i = paragraphes.indexOf('Copyright [yyyy] [name of copyright owner]');
+
+    expect(i).toBeGreaterThan(-1);
+    expect(paragraphes.filter((p) => p.startsWith('Copyright '))).toEqual(['Copyright [yyyy] [name of copyright owner]']);
+    expect(paragraphes[i - 1]).toMatch(/with the fields enclosed by brackets "\[\]" replaced/);
+    expect(paragraphes[i + 1]).toMatch(/^Licensed under the Apache License, Version 2\.0/);
+  });
+
+  it('porte, sous le paquet qui les a repris, les avis d’autres auteurs que des fichiers embarqués contiennent', () => {
+    // Relevé le 22/10/2026 : le script ne gardait qu'un avis par paquet. Ces fichiers sont des copies d'un seul fichier,
+    // sans dossier ni package.json : la détection des copies ne les voit pas.
+    const repris = (nom: string) => LICENCES.paquets.find((paquet) => paquet.nom === nom)?.avisRepris;
+
+    expect(repris('@react-native/js-polyfills')).toEqual(['Copyright Joyent, Inc. and other Node contributors.']);
+    expect(repris('@expo/metro-runtime')).toEqual(['Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.']);
+    expect(repris('@react-native-async-storage/async-storage')).toEqual(['Copyright (c) Nicolas Gallagher.']);
+    expect(repris('expo')).toEqual([
+      'Copyright (c) Facebook, Inc. and its affiliates.',
+      'Copyright © Meta Platforms, Inc. and affiliates.',
+      'Copyright 2024 Mattias Buelens, Diwank Singh Tomer and other contributors.',
+    ]);
+    // Le titulaire du paquet n'est pas repris : « 650 Industries » est l'avis d'`expo`, écrit de plusieurs façons dans ses fichiers.
+    expect(repris('expo')?.some((avis) => /650 Industries/.test(avis))).toBe(false);
   });
 
   it('liste react-helmet-async à part, avec l’avis du New York Times, dans expo-router — et expo-router sans lui', () => {
@@ -379,9 +423,10 @@ const OFL = [
 
 /**
  * L'Apache 2.0 réduit à ce qui compte ici : son titre, la clause 4 — dont les repères « (a) », « (b) », « (c) » et
- * « (d) » commencent chacun une ligne — et l'emplacement de l'avis dans l'appendice, vide ou rempli.
+ * « (d) » commencent chacun une ligne — et l'emplacement de l'avis dans l'appendice : vide, rempli, entre
+ * accolades, ou `null` quand le projet l'a effacé.
  */
-const apache = (emplacement = 'Copyright [yyyy] [name of copyright owner]') =>
+const apache = (emplacement: string | null = 'Copyright [yyyy] [name of copyright owner]') =>
   [
     '                                 Apache License',
     '                           Version 2.0, January 2004',
@@ -413,8 +458,12 @@ const apache = (emplacement = 'Copyright [yyyy] [name of copyright owner]') =>
     '',
     '   APPENDIX: How to apply the Apache License to your work.',
     '',
-    `   ${emplacement}`,
+    '      To apply the Apache License to your work, attach the following',
+    '      boilerplate notice, with the fields enclosed by brackets "[]"',
+    '      replaced with your own identifying information. (Don\'t include',
+    '      the brackets!)',
     '',
+    ...(emplacement === null ? [] : [`   ${emplacement}`, '']),
     '   Licensed under the Apache License, Version 2.0 (the "License");',
     '   you may not use this file except in compliance with the License.',
     '',
@@ -725,13 +774,22 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
       expect(donnees.textes[0].paragraphes.join('\n')).not.toMatch(/2020 Alpha|2021 Beta/);
     });
 
-    it('range une seule fois l’Apache, que l’emplacement de l’avis soit resté vide ou ait été rempli', () => {
+    /** Ce que l'appendice affiché dit autour de l'emplacement de l'avis : la phrase qui parle de ses champs, lui, puis le modèle d'avis. */
+    const autourDeLEmplacement = (paragraphes: string[]) => {
+      const i = paragraphes.indexOf('Copyright [yyyy] [name of copyright owner]');
+      return { i, avant: paragraphes[i - 1] ?? '', apres: paragraphes[i + 1] ?? '', fois: paragraphes.filter((p) => p === 'Copyright [yyyy] [name of copyright owner]').length };
+    };
+
+    it('range une seule fois l’Apache, que l’emplacement de l’avis soit resté vide, ait été rempli, écrit entre accolades ou effacé', () => {
+      // `aaa` passe le premier et n'a plus d'emplacement : le texte affiché ne doit pas dépendre de l'ordre des paquets.
       const p = fabriquer({
         paquets: {
-          vide: { package: pj('vide', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache() } },
+          aaa: { package: pj('aaa', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache(null) } },
+          accolades: { package: pj('accolades', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache('Copyright {yyyy} {name of copyright owner}') } },
           rempli: { package: pj('rempli', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache('Copyright 2018 Les auteurs de Rempli') } },
+          vide: { package: pj('vide', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache() } },
         },
-        web: sources('vide', 'rempli'),
+        web: sources('aaa', 'accolades', 'rempli', 'vide'),
         android: [],
       });
 
@@ -739,11 +797,40 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
       const donnees = donneesEcrites(p);
       expect(donnees.textes.map((t) => t.id)).toEqual(['Apache-2.0']);
       expect(donnees.paquets.map((x) => [x.nom, x.copyright])).toEqual([
+        ['aaa', null],
+        ['accolades', null],
         ['rempli', 'Copyright 2018 Les auteurs de Rempli'],
         ['vide', null],
       ]);
-      // L'emplacement vide n'est l'avis de personne : il ne va ni dans le copyright, ni dans le texte.
-      expect(donnees.textes[0].paragraphes.join('\n')).not.toMatch(/\[yyyy\]|Les auteurs de Rempli/);
+      // L'emplacement n'est l'avis de personne, et l'avis d'un projet n'est pas dans le texte de la licence ;
+      // mais le texte affiché garde l'emplacement, sous sa forme canonique, et une seule fois.
+      const { i, avant, apres, fois } = autourDeLEmplacement(donnees.textes[0].paragraphes);
+      expect(i).toBeGreaterThan(-1);
+      expect(fois).toBe(1);
+      expect(donnees.textes[0].paragraphes.join('\n')).not.toMatch(/\{yyyy\}|Les auteurs de Rempli/);
+      expect(avant).toMatch(/^To apply the Apache License to your work, attach the following boilerplate notice, with the fields enclosed by brackets "\[\]"/);
+      expect(apres).toMatch(/^Licensed under the Apache License, Version 2\.0/);
+    });
+
+    it('affiche l’emplacement de l’avis sous sa forme canonique même quand le seul Apache l’a rempli, ou écrit entre accolades', () => {
+      // `react-helmet-async` : « Copyright 2018 The New York Times Company » à la place de l'emplacement. Sans lui, la phrase
+      // « with the fields enclosed by brackets "[]" replaced… » enchaînait sur le modèle sans aucun champ à remplacer.
+      for (const emplacement of ['Copyright 2018 Les auteurs de Rempli', 'Copyright {yyyy} {name of copyright owner}']) {
+        const p = fabriquer({ paquets: { seul: { package: pj('seul', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache(emplacement) } } }, web: sources('seul'), android: [] });
+
+        expect(lancer(p).code).toBe(0);
+        const { fois, avant, apres } = autourDeLEmplacement(donneesEcrites(p).textes[0].paragraphes);
+        expect(fois).toBe(1);
+        expect(avant).toMatch(/with the fields enclosed by brackets "\[\]"/);
+        expect(apres).toMatch(/^Licensed under the Apache License/);
+      }
+    });
+
+    it('n’ajoute pas d’emplacement à un texte qui n’en a pas, tant qu’aucun autre Apache n’en porte', () => {
+      const p = fabriquer({ paquets: { aaa: { package: pj('aaa', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache(null) } } }, web: sources('aaa'), android: [] });
+
+      expect(lancer(p).code).toBe(0);
+      expect(autourDeLEmplacement(donneesEcrites(p).textes[0].paragraphes).fois).toBe(0);
     });
   });
 
@@ -840,14 +927,31 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
     });
   });
 
+  // Les essais sur `meta`, un paquet que la carte nomme par certains de ses fichiers : celui de l'avis qu'il porte
+  // quand sa licence n'en donne pas, et celui des avis des fichiers qu'il a repris. `alpha` apporte le texte MIT standard.
+  const alpha = { package: pj('alpha', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Alpha') } };
+  type Paquet = { package: Record<string, unknown>; fichiers?: Record<string, string | Buffer> };
+  /** Le script joué sur `meta` et ses fichiers, avec en plus les paquets `autres`. */
+  const jouer = (paquet: Paquet, fichiersDeLaCarte: string[], autres: Record<string, Paquet> = {}) => {
+    const sourcesAutres = Object.keys(autres).map((nom) => `/node_modules/${nom}/index.js`);
+    const p = fabriquer({
+      paquets: { alpha, meta: paquet, ...autres },
+      web: ['/node_modules/alpha/index.js', ...sourcesAutres, ...fichiersDeLaCarte.map((f) => `/node_modules/meta/${f}`)],
+      android: [],
+    });
+    return { p, r: lancer(p) };
+  };
+  /** L'entrée que le script écrit pour `meta`. */
+  const entreeDe = (paquet: Paquet, fichiersDeLaCarte: string[], autres: Record<string, Paquet> = {}) => {
+    const { p, r } = jouer(paquet, fichiersDeLaCarte, autres);
+    expect(r.erreur).toBe('');
+    expect(r.code).toBe(0);
+    return donneesEcrites(p).paquets.find((x) => x.nom === 'meta');
+  };
+  /** L'avis que le script donne à `meta`. */
+  const avisDe = (paquet: Paquet, fichiersDeLaCarte: string[]) => entreeDe(paquet, fichiersDeLaCarte)?.copyright;
+
   describe('l’avis d’un paquet dont le fichier de licence n’en porte pas', () => {
-    const alpha = { package: pj('alpha', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Alpha') } };
-    /** L'avis que le script donne à `meta`, un paquet que la carte nomme par ces fichiers ; `alpha` apporte le texte MIT standard. */
-    const avisDe = (paquet: { package: Record<string, unknown>; fichiers?: Record<string, string | Buffer> }, fichiersDeLaCarte: string[]) => {
-      const p = fabriquer({ paquets: { alpha, meta: paquet }, web: ['/node_modules/alpha/index.js', ...fichiersDeLaCarte.map((f) => `/node_modules/meta/${f}`)], android: [] });
-      expect(lancer(p).code).toBe(0);
-      return donneesEcrites(p).paquets.find((x) => x.nom === 'meta')?.copyright;
-    };
     const EN_TETE_META = '/**\n * Copyright (c) Meta Platforms, Inc. and affiliates.\n *\n * This source code is licensed under the MIT license found in the\n * LICENSE file in the root directory of this source tree.\n */\n';
 
     it('prend le premier avis qu’un fichier du paquet porte en commentaire de tête, parmi ceux que le bundle contient', () => {
@@ -916,6 +1020,176 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
       const paquet = { package: { ...pj('meta', '1.0.0'), author: 'Quelqu’un' }, fichiers: { 'a.js': '// Copyright (c) 2019 Dans les sources\n' } };
 
       expect(avisDe(paquet, ['a.js'])).toBe('Copyright (c) 2019 Dans les sources');
+    });
+
+    it('lit le deuxième fichier quand le premier, dans l’ordre des chemins, ne porte aucun avis', () => {
+      // Une lecture du seul premier fichier passait toute la suite (mutation jouée le 22/10/2026).
+      const paquet = { package: pj('meta', '1.0.0'), fichiers: { 'a.js': 'export {};\n', 'b.js': '// Copyright (c) 2019 Dans le second\n' } };
+
+      expect(avisDe(paquet, ['b.js', 'a.js'])).toBe('Copyright (c) 2019 Dans le second');
+    });
+
+    it('ne prend pas pour un avis une ligne qui commence par « Copyright » sans être un commentaire — dans une chaîne multiligne', () => {
+      // Le marqueur de commentaire rendu facultatif passait toute la suite (mutation jouée le 22/10/2026) : les essais
+      // d'avant n'avaient que des lignes qui commencent par autre chose que « Copyright ».
+      const chaine = 'const modele = `\nCopyright (c) 2020 Dans une chaîne multiligne\n  Copyright (c) 2021 Indentée\n`;\n';
+
+      expect(avisDe({ package: pj('meta', '1.0.0'), fichiers: { 'a.js': chaine } }, ['a.js'])).toBeNull();
+      expect(entreeDe({ package: pj('meta', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Meta'), 'a.js': chaine } }, ['a.js'])?.avisRepris).toBeUndefined();
+    });
+  });
+
+  describe('les avis des fichiers repris d’autres projets', () => {
+    const META = 'Copyright (c) Meta Platforms, Inc. and affiliates.';
+    const meta = (fichiers: Record<string, string>, licence = mit(META)) => ({ package: pj('meta', '1.0.0'), fichiers: { LICENSE: licence, ...fichiers } });
+    const reprisDe = (fichiers: Record<string, string>, autres: Record<string, { package: Record<string, unknown>; fichiers?: Record<string, string> }> = {}) =>
+      entreeDe(meta(fichiers), Object.keys(fichiers), autres)?.avisRepris;
+    /** Les 21 premières lignes de `console.js` de `@react-native/js-polyfills`, puis l'avis de Joyent à la ligne 22 et la MIT qu'il recopie. */
+    const CONSOLE = [
+      '/**',
+      ' * Copyright (c) Meta Platforms, Inc. and affiliates.',
+      ' *',
+      ' * This source code is licensed under the MIT license found in the',
+      ' * LICENSE file in the root directory of this source tree.',
+      ' *',
+      ' * @format',
+      ' * @noflow',
+      ' * @nolint',
+      ' * @polyfill',
+      ' */',
+      '',
+      "'use client';",
+      '',
+      '/* eslint-disable no-shadow, eqeqeq, no-unused-vars, no-control-regex  */',
+      '',
+      '/**',
+      ' * This pipes all of our console logging functions to native logging so that',
+      ' * JavaScript errors in required modules show up in Xcode via NSLog.',
+      ' */',
+      'const inspect = (function () {',
+      '  // Copyright Joyent, Inc. and other Node contributors.',
+      '  //',
+      ...MIT_CORPS.map((ligne) => `  // ${ligne}`.trimEnd()),
+      '  //',
+      '  // https://github.com/joyent/node/blob/master/lib/util.js',
+      '',
+      '  function inspect(obj, opts) {',
+      '  }',
+      '',
+    ].join('\n');
+
+    it('relève, sous l’avis du paquet, celui d’un autre auteur que porte un de ses fichiers — l’avis de Joyent, ligne 22 de console.js', () => {
+      // `@react-native/js-polyfills` : la limite de lecture d'en-tête (40 lignes, 4 kio) suffit à cette ligne 22, à 573 octets du début.
+      const lignes = CONSOLE.split('\n');
+      expect(lignes[21]).toBe('  // Copyright Joyent, Inc. and other Node contributors.');
+      expect(Buffer.byteLength(lignes.slice(0, 22).join('\n'))).toBeLessThan(600);
+
+      const entree = entreeDe(meta({ 'console.js': CONSOLE }), ['console.js']);
+
+      // L'avis de Meta, en tête du même fichier, est celui du paquet : il n'est pas repris.
+      expect(entree).toMatchObject({ copyright: META, avisRepris: ['Copyright Joyent, Inc. and other Node contributors.'] });
+    });
+
+    it('relève les avis des paquets qui n’ont aucun fichier de licence, et le premier tient lieu d’avis principal', () => {
+      const paquet = { package: pj('meta', '1.0.0'), fichiers: { 'a.js': '// Copyright (c) 2019 Premier\n', 'b.js': '// Copyright (c) 2020 Second\n', 'c.js': '// Copyright (c) 2021 Premier\n' } };
+
+      expect(entreeDe(paquet, ['a.js', 'b.js', 'c.js'])).toMatchObject({ copyright: 'Copyright (c) 2019 Premier', avisRepris: ['Copyright (c) 2020 Second'] });
+    });
+
+    it('relève les avis de chaque fichier, même quand le premier n’en porte aucun', () => {
+      expect(reprisDe({ 'a.js': 'export {};\n', 'b.js': '// Copyright (c) 2019 Autre Auteur\n' })).toEqual(['Copyright (c) 2019 Autre Auteur']);
+    });
+
+    it('relève tous les avis d’un même en-tête, dans l’ordre', () => {
+      const entete = '/**\n * Copyright (c) Nicolas Gallagher.\n * Copyright (c) Facebook, Inc. and its affiliates.\n *\n * This source code is licensed under the MIT license found in the\n * LICENSE file in the root directory of this source tree.\n */\n';
+
+      expect(reprisDe({ 'AsyncStorage.js': entete })).toEqual(['Copyright (c) Nicolas Gallagher.', 'Copyright (c) Facebook, Inc. and its affiliates.']);
+    });
+
+    it('ne reprend pas un avis du même titulaire que le paquet : ni l’année, ni la forme sociale, ni « (aka …) » n’y changent rien', () => {
+      const licence = mit('Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)');
+      const fichiers = {
+        'a.js': '// Copyright © 2024 650 Industries.\n',
+        'b.js': '// Copyright 2015-present 650 Industries. All rights reserved.\n',
+        'c.js': '/**\n * Copyright (c) 2013 650 Industries, Inc. and its affiliates.\n */\n',
+      };
+
+      const entree = entreeDe(meta(fichiers, licence), ['a.js', 'b.js', 'c.js']);
+
+      expect(entree?.copyright).toBe('Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)');
+      expect(entree?.avisRepris).toBeUndefined();
+    });
+
+    it('garde deux titulaires que rien ne dit être le même, fût-ce Facebook devenu Meta', () => {
+      // Le script ne connaît pas l'histoire des sociétés : un avis au nom de Facebook sous un avis au nom de Meta est repris.
+      expect(reprisDe({ 'a.js': '// Copyright (c) Facebook, Inc. and its affiliates.\n' })).toEqual(['Copyright (c) Facebook, Inc. and its affiliates.']);
+    });
+
+    it('dédoublonne les avis repris par titulaire, et garde le premier dans l’ordre des chemins', () => {
+      const fichiers = {
+        'a.js': '// Copyright 2018 The Deno authors.\n',
+        'b.js': '// Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.\n',
+        'c.js': '// Copyright (c) 2021 Autre\n',
+        'd.js': '// Copyright (c) 2022, Autre, Inc.\n',
+      };
+
+      expect(reprisDe(fichiers)).toEqual(['Copyright 2018 The Deno authors.', 'Copyright (c) 2021 Autre']);
+    });
+
+    it('cite l’avis tel que le fichier l’écrit, « All rights reserved. MIT license. » compris', () => {
+      expect(reprisDe({ 'Location.native.ts': '// Copyright © 2023 650 Industries.\n// Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.\n' })).toEqual([
+        'Copyright © 2023 650 Industries.',
+        'Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.',
+      ]);
+    });
+
+    it('ne reprend que des commentaires', () => {
+      const chaine = 'const modele = `\nCopyright (c) 2020 Dans une chaîne multiligne\n`;\nconst a = "Copyright (c) 2021 Dans une chaîne";\n';
+
+      expect(reprisDe({ 'a.js': chaine })).toBeUndefined();
+    });
+
+    it('accepte un avis qui cite la MIT par son nom ou en recopie le texte, et un avis qui ne cite aucune licence', () => {
+      const fichiers = {
+        'a.js': '// Copyright (c) 2019 Nommée\n// Released under the MIT license.\n',
+        'b.js': '/* Copyright (c) 2020 Sans mention */\n',
+        'c.js': `// Copyright (c) 2021 Recopiée\n//\n${MIT_CORPS.map((ligne) => `// ${ligne}`.trimEnd()).join('\n')}\n`,
+      };
+
+      expect(reprisDe(fichiers)).toEqual(['Copyright (c) 2019 Nommée', 'Copyright (c) 2020 Sans mention', 'Copyright (c) 2021 Recopiée']);
+    });
+
+    it('ne prête à un avis que les licences de son propre bloc de commentaire', () => {
+      // Plus loin dans le fichier, un autre commentaire parle de la GPL : il ne parle pas de l'avis du haut.
+      const fichier = '// Copyright (c) 2019 Autre Auteur\n// MIT license\n\nconst x = 1;\n// Plus rapide que la version sous GPL.\n';
+
+      expect(reprisDe({ 'a.js': fichier })).toEqual(['Copyright (c) 2019 Autre Auteur']);
+    });
+
+    it('accepte une licence autre que la MIT quand la page la reproduit déjà', () => {
+      const fichiers = { 'a.js': '/**\n * Copyright (c) 2019 Autre Auteur\n * Licensed under the Apache License, Version 2.0\n */\n' };
+      const apacheEnPlus = { package: pj('apachee', '1.0.0', 'Apache-2.0'), fichiers: { LICENSE: apache(), 'index.js': '' } };
+
+      expect(reprisDe(fichiers, { apachee: apacheEnPlus })).toEqual(['Copyright (c) 2019 Autre Auteur']);
+    });
+
+    it('accepte la MIT même quand le paquet est sous une autre licence et que la page n’a pas de texte MIT', () => {
+      // Seule la MIT passe sans que la page la reproduise : c'est l'exception de la consigne (« autre que MIT »).
+      const isc = ['Permission to use, copy, modify, and/or distribute this software for any', 'purpose with or without fee is hereby granted, provided that the above', 'copyright notice and this permission notice appear in all copies.', ''];
+      const paquet = { package: pj('meta', '1.0.0', 'ISC'), fichiers: { LICENSE: ['Copyright (c) 2020 Meta', '', ...isc].join('\n'), 'a.js': '// Copyright (c) 2019 Autre\n// MIT license\n' } };
+      const p = fabriquer({ paquets: { meta: paquet }, web: ['/node_modules/meta/a.js'], android: [] });
+
+      expect(lancer(p).code).toBe(0);
+      const donnees = donneesEcrites(p);
+      expect(donnees.textes.map((t) => t.id)).toEqual(['ISC']);
+      expect(donnees.paquets[0].avisRepris).toEqual(['Copyright (c) 2019 Autre']);
+    });
+
+    it('ne regarde pas la licence d’un avis qu’il ne reprend pas', () => {
+      // Même titulaire que le paquet : l'avis n'est pas repris, la licence dont il parle n'est donc pas examinée.
+      const entree = entreeDe(meta({ 'a.js': '// Copyright (c) 2021 Meta Platforms, Inc.\n// Released under the GPL.\n' }), ['a.js']);
+
+      expect(entree?.avisRepris).toBeUndefined();
     });
   });
 
@@ -1013,6 +1287,51 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
       expect(r.erreur).toMatch(/hote@5\.0\.0, vendor\/copie : « LICENSE-MIT » ressemble à une licence/);
     });
 
+    describe('un avis repris qui renvoie à une licence', () => {
+      const alphaMit = { package: pj('alpha', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Alpha'), 'index.js': '' } };
+      const avecFichier = (contenu: string): Fabrique => ({
+        paquets: { alpha: alphaMit, meta: { package: pj('meta', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Meta'), 'a.js': contenu } } },
+        web: ['/node_modules/alpha/index.js', '/node_modules/meta/a.js'],
+        android: [],
+      });
+
+      it('que la page ne reproduit pas', () => {
+        const r = refus(avecFichier('/**\n * Copyright (c) 2019 Autre Auteur\n * Licensed under the Apache License, Version 2.0\n */\n'));
+
+        expect(r.code).toBe(1);
+        expect(r.erreur).toMatch(/meta@1\.0\.0 : le fichier « a\.js » porte l’avis « Copyright \(c\) 2019 Autre Auteur » et renvoie à la licence Apache-2\.0, que la page ne reproduit pas/);
+        expect(r.ecrit).toBe(false);
+      });
+
+      it('dont le bloc recopie le texte sans la nommer', () => {
+        const bsd3 = [
+          'Copyright (c) 2019 Autre Auteur',
+          '',
+          'Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:',
+          'Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software.',
+        ];
+        const r = refus(avecFichier(`/*\n${bsd3.map((ligne) => ` * ${ligne}`.trimEnd()).join('\n')}\n */\n`));
+
+        expect(r.code).toBe(1);
+        expect(r.erreur).toMatch(/meta@1\.0\.0 : le fichier « a\.js » .* renvoie à la licence BSD-3-Clause, que la page ne reproduit pas/);
+      });
+
+      it('que le script ne sait pas lire', () => {
+        const r = refus(avecFichier('// Copyright (c) 2019 Autre Auteur\n// Released under the GPL v3.\n'));
+
+        expect(r.code).toBe(1);
+        expect(r.erreur).toMatch(/meta@1\.0\.0 : le fichier « a\.js » .* renvoie à « GPL », une licence que le script ne sait pas lire/);
+        expect(r.ecrit).toBe(false);
+      });
+
+      it('nommée « BSD » sans dire laquelle : il ne choisit pas entre deux et trois clauses', () => {
+        const r = refus(avecFichier('// Copyright (c) 2019 Autre Auteur\n// BSD licensed.\n'));
+
+        expect(r.code).toBe(1);
+        expect(r.erreur).toMatch(/renvoie à « BSD », une licence que le script ne sait pas lire/);
+      });
+    });
+
     it('une police sans fichier LICENSE_FONT', () => {
       const r = refus({
         paquets: { fonte: { package: pj('fonte', '0.4.0', 'MIT AND OFL-1.1'), fichiers: { LICENSE: mit('Copyright (c) E'), '400/F.ttf': police('Copyright 2021 X', 'Fonte') } } },
@@ -1093,6 +1412,22 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
 
       expect(r.code).toBe(1);
       expect(r.erreur).toMatch(/manque dans le fichier : beta@1\.0\.0/);
+    });
+
+    it('rougit, en nommant le paquet, quand ses avis repris ne sont plus ceux de ses fichiers', () => {
+      const p = fabriquer({
+        paquets: { alpha: { package: pj('alpha', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Alpha'), 'a.js': '// Copyright (c) 2019 Autre Auteur\n' } } },
+        web: ['/node_modules/alpha/a.js'],
+        android: [],
+      });
+      expect(lancer(p).code).toBe(0);
+      expect(donneesEcrites(p).paquets[0].avisRepris).toEqual(['Copyright (c) 2019 Autre Auteur']);
+      fs.writeFileSync(p.sortie, fs.readFileSync(p.sortie, 'utf8').replace(',"avisRepris":["Copyright (c) 2019 Autre Auteur"]', ''));
+
+      const r = lancer(p, ['--verifier']);
+
+      expect(r.code).toBe(1);
+      expect(r.erreur).toMatch(/différent : alpha@1\.0\.0/);
     });
 
     it('n’écrit rien', () => {
@@ -1191,6 +1526,53 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
  * **La mise en page** (`src/types/licences.test.ts`) : l'ancienne phrase de repli (« Ce paquet ne donne pas de ligne
  * de copyright ») → 1 ; l'ancienne introduction → 2 ; une introduction sans renvoi à la dernière section → 1 ; la
  * nuance mise hors de la phrase qui dit ce que la page liste → 1 ; `termeDuPaquet` qui oublie la copie → 1.
+ *
+ * ## Mutations, troisième passage (22/10/2026, seconde contre-lecture de l'écran `/licences`)
+ *
+ * Même méthode, et la suite jouée avec celle de `src/types/licences.test.ts` : **108 tests (82 + 26)**. Chaque mutation
+ * est un remplacement exact, l'état d'avant est réécrit depuis une copie, l'arbre est relu propre après chacune, et le
+ * fichier engagé est régénéré par le script muté (depuis le même export) quand la mutation doit le changer. Chacune en
+ * a fait tomber au moins un ; les noms sont ceux des tests.
+ *
+ * **Les deux mutations que la contre-lecture disait passer la suite — rejouées d'abord sur la suite d'avant (57 tests
+ * du script) : 0 tombait, pour l'une comme pour l'autre** :
+ * - le marqueur de commentaire rendu facultatif (`MARQUE_DE_COMMENTAIRE`) → 3 tombent : « ne prend pas pour un avis une
+ *   ligne qui commence par “Copyright” sans être un commentaire — dans une chaîne multiligne », « ne reprend que des
+ *   commentaires » et « ne prête à un avis que les licences de son propre bloc de commentaire ». Les essais d'avant
+ *   n'avaient que des lignes qui commencent par autre chose que « Copyright » : le marqueur n'y servait à rien ;
+ * - la lecture du seul premier fichier, dans l'ordre des chemins → 5 tombent : « lit le deuxième fichier quand le
+ *   premier… », « relève les avis de chaque fichier, même quand le premier n'en porte aucun », « relève les avis des
+ *   paquets qui n'ont aucun fichier de licence… », « dédoublonne les avis repris par titulaire… » et « accepte un avis
+ *   qui cite la MIT par son nom ou en recopie le texte ».
+ *
+ * **Les avis repris d'autres projets (`avisRepris`)** :
+ * - aucun avis repris gardé → 18 tombent (deux gardes du fichier régénéré, qui perd les quatre paquets, et seize essais
+ *   fabriqués) ;
+ * - le titulaire pris pour le texte entier de l'avis → 6 ; le titulaire du paquet jamais comparé → 7 ; aucun
+ *   dédoublonnage entre avis repris → 3 ; les années gardées dans le titulaire → 5 ; « (aka Expo) » gardé → 2 ; la
+ *   forme sociale (« Inc. ») gardée → 3 ;
+ * - la licence d'un avis repris jamais vérifiée → 4 ; le texte d'une licence recopié sans être nommé, non reconnu → 1
+ *   (la BSD à trois clauses) ; la MIT examinée comme les autres → 1 (« accepte la MIT même quand… la page n'a pas de
+ *   texte MIT ») ; une licence illisible (GPL, « BSD » seul) ignorée → 2 ; une licence citée par son nom ignorée → 1 ;
+ *   la licence cherchée dans tout l'en-tête et non dans le bloc de l'avis → 1 ;
+ * - l'en-tête limité à 20 lignes → 3 (le fichier régénéré perd Joyent, ligne 22 de `console.js`) ; limité à 512 octets
+ *   → 4 (Joyent est à 573 octets du début) ; sans limite de lignes → 1 ; sans limite d'octets → 1 ;
+ * - les fichiers lus dans l'ordre de la carte → 1 ; ceux que le bundle ne contient pas lus aussi → 1 ; l'auteur jamais
+ *   donné → 1, donné avec son adresse → 1 ; les sources ignorées quand le fichier de licence existe → 1, préférées à
+ *   son avis → 17 ; l'auteur préféré aux sources → 1 ;
+ * - `avisRepris` jamais écrit dans le fichier → 14 ; **`--verifier` qui ne compare plus l'entrée d'un paquet → 1** :
+ *   la branche « différent » n'était gardée par aucun essai avant « rougit… quand ses avis repris ne sont plus ceux de
+ *   ses fichiers ».
+ *
+ * **L'appendice Apache** :
+ * - l'emplacement de l'avis retiré du texte affiché (le défaut relevé) → 3 : la garde du fichier régénéré et deux essais
+ *   fabriqués ; gardé dans la comparaison → 1 (« range une seule fois l'Apache… » : un texte qui l'a effacé devient une
+ *   « autre rédaction ») ;
+ * - un emplacement rempli non remplacé par la forme canonique → 3 ; l'emplacement entre accolades non remplacé → 2 ;
+ *   la préférence pour le membre qui porte l'emplacement retirée → 1 (le texte affiché dépendrait de l'ordre des
+ *   paquets) ; l'emplacement cherché sur la seule ligne d'avant, sans sauter les blancs → 3 ;
+ * - `estUnAvis` qui ne regarde plus les emplacements, donc l'emplacement vide pris pour l'avis du paquet → 2 ; « (c) »
+ *   seul repris comme avis (rejoué) → 7, comme au deuxième passage.
  *
  * **Ce que rien d'ici n'éprouve** : l'autolinking (`--sans-natif` dans tous les essais), qui ne se joue que sur
  * le dépôt réel — par `node scripts/generer-les-licences.mjs`, qui l'a utilisé pour écrire le fichier engagé,

@@ -367,7 +367,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   remplir, jamais de mention en dur dans un écran. Ce régime tomberait si le projet devenait
   une activité professionnelle.
 - **`/licences` ne s'écrit pas, elle se génère** (22/10/2026, audit du 18/10 : l'APK et le bundle web
-  embarquent des bibliothèques sous MIT, ISC, BSD et deux polices, et ces licences demandent qu'on
+  embarquent des bibliothèques sous MIT, ISC, BSD, Apache 2.0 et deux polices, et ces licences demandent qu'on
   reproduise leur avis et leur texte). `src/constants/licences.ts` vient de
   `scripts/generer-les-licences.mjs` et ne se retouche jamais à la main ; `src/types/licences.ts` le met
   en page (testé), `src/app/licences.tsx` ne fait que le brancher sur `LegalPage`. **La liste n'est pas
