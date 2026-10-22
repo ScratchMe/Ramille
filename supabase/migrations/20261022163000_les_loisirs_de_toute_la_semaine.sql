@@ -7,7 +7,7 @@
 -- Qui va au sport en semaine ne savait pas s'il devait le compter. Et l'échelle s'arrêtait à
 -- « Plusieurs fois par semaine », comptée 3 : une sortie chaque soir était sous-comptée.
 --
--- **La décision : une seule étape**, des libellés qui disent « en semaine comme le week-end », et
+-- **La décision : une seule étape**, des libellés qui disent que la semaine compte comme le week-end, et
 -- une cinquième réponse, `almost_daily`, **5 sorties par semaine** sur 52 semaines. Deux étapes
 -- (semaine, week-end) auraient été plus précises, mais plus longues, et un trajet du vendredi soir ne
 -- se range ni d'un côté ni de l'autre.

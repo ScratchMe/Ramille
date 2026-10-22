@@ -202,7 +202,7 @@ voyage est en `FRONT.md` §1.
   le contour au repos dit qu'il y a un champ. Ne pas remettre de placeholder (`numeric-field.test.tsx`).
 - **Les loisirs couvrent la semaine comme le week-end, en une seule étape** (22/10/2026, `v1-35` étape 3,
   décidé avec la personne qui pilote). La question de B2.1 est « À quelle fréquence fais-tu des trajets
-  pour tes loisirs, en semaine comme le week-end ? » (`QUESTION_FREQUENCE`, qui est aussi le nom du
+  pour tes loisirs, le week-end comme en semaine ? » (`QUESTION_FREQUENCE`, qui est aussi le nom du
   groupe), la ligne d'exemples dessous ne change pas (« Sport, sorties, visites à la famille. »), et la
   section s'appelle « Loisirs » dans l'en-tête comme dans l'annonce de l'onboarding (une seule source,
   `BILAN_SECTION_LABEL`). Une étape et non deux — semaine, puis week-end — : une étape de plus aurait
@@ -221,7 +221,14 @@ voyage est en `FRONT.md` §1.
   **Mesuré le 22/10/2026 sur l'export** (Chromium, l'étape ouverte par un brouillon) : à 390 × 844 le titre
   tient sur **quatre lignes** (trois avant), et les cinq rangées comme le pied tiennent sans défiler — la
   dernière rangée finit à 658, « Suivant » commence à 766 ; à 360 × 640 l'étape défile (602 px de contenu
-  pour 416 de zone). **La ligne casse après « week- » à 390**, « end ? » seul dessous : c'est la césure du
-  trait d'union, que la règle des espaces insécables ne lie pas (`FRONT.md` §1, « Un caractère de mise en forme… »). L'ancien titre cassait
-  de même à 390, 375 et 360 ; le nouveau ne le fait plus à 375 ni à 360, et pas davantage à 412 ni à 320.
-  Constaté, non corrigé : une césure dans « week-end » est un défaut de mise en forme, pas de texte.
+  pour 416 de zone). **La ligne peut casser dans « week-end »** : c'est la césure du trait d'union, que la
+  règle des espaces insécables ne lie pas (`FRONT.md` §1, « Un caractère de mise en forme… »), et Spline
+  Sans n'a ni trait d'union insécable (U+2011) ni gluon (U+2060) — relevé dans sa table `cmap` le
+  22/10/2026 —, donc le caractère tomberait sur une autre police. La première tournure, « …, en semaine
+  comme le week-end ? », cassait après « week- » à 390 (« end ? » seul sur sa ligne), comme l'ancien
+  titre à 390, 375 et 360. **L'ordre a été inversé** : « …, le week-end comme en semaine ? ». Mesuré le
+  même jour sur l'export (Chromium, l'étape ouverte par un brouillon, hauteur 844) : quatre lignes de
+  320 à 412, sans couper le mot ; trois lignes à 430, **coupées après « week- »** (« end comme en
+  semaine ? » dessous). Constaté, non corrigé : moins grave qu'un « end ? » seul, et à la seule largeur
+  des plus grands téléphones. Aucune tournure qui garde « week-end » n'est à l'abri à toutes les
+  largeurs ; Android coupe aussi après un trait d'union, sans mesure ici.

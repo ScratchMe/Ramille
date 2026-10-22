@@ -46,6 +46,20 @@
   piste est au relevé de la dette (`v1-27`).
 - **L'indexation de `/licences`** : la page reste en `noindex` et hors du plan du site, comme toute page
   absente de `PAGE_DESCRIPTIONS`. Une liste de licences n'a rien à chercher dans un moteur.
+- **Deux étapes pour les loisirs, la semaine puis le week-end** (étape 3, écartée par la personne qui
+  pilote le 22/10/2026). Elles auraient été plus précises pour qui fait du vélo en semaine et prend la
+  voiture le week-end, mais elles ajoutaient deux écrans, et un trajet du vendredi soir ne se range ni
+  d'un côté ni de l'autre. Retenu : une étape, des libellés qui disent la semaine et le week-end, et
+  une cinquième réponse, « Presque tous les jours » (5 sorties par semaine).
+- **À voir sur appareil, à la prochaine recette** (étape 3) : un bilan qui répond « Presque tous les
+  jours » sur le web, puis rouvert pour un nouveau bilan sur un build Android d'avant le 22/10/2026,
+  arrive prérempli d'une valeur que ce build ne connaît pas : aucune rangée cochée, et « Suivant »
+  actif. Ramille n'est pas lancé, donc seuls les testeurs ont ce build ; le prochain build EAS règle
+  le cas. Le titre de l'étape, sur Android, peut aussi couper « week-end » à une largeur que la
+  mesure du web n'a pas vue (`FRONT-QUESTIONNAIRE.md`).
+- **Le film montre encore l'ancienne étape des loisirs** (étape 3). Il n'est pas diffusé : il se
+  reprend avant la diffusion, avec l'écran du plan (`docs/communication/le-fil-de-ramille/README.md`),
+  donc à l'étape 5 au plus tard.
 
 - **Les contrastes des barres** (`accentMuted` sur le fond de carte, environ 1,6:1). Chaque barre porte sa
   valeur écrite à côté d'elle : WCAG 1.4.11 n'exige 3:1 que d'un graphique **nécessaire** à la

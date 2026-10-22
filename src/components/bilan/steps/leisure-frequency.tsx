@@ -20,8 +20,8 @@ import { optionCible } from '@/types/demande';
  *
  * **« le week-end comme en semaine », dans cet ordre** : « en semaine comme le week-end » coupait la
  * ligne dans « week- » / « end ? » à 390 de large, et Spline Sans n'a ni trait d'union insécable
- * (U+2011) ni gluon (U+2060) pour l'empêcher — le caractère serait tombé sur une autre police.
- * Mesuré sur l'export le 22/10/2026 (`FRONT-QUESTIONNAIRE.md`).
+ * (U+2011) ni gluon (U+2060) pour l'empêcher — le caractère serait tombé sur une autre police. Cet
+ * ordre-ci ne coupe le mot qu'à 430 (mesuré sur l'export le 22/10/2026, `FRONT-QUESTIONNAIRE.md`).
  */
 const QUESTION_FREQUENCE =
   'À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en semaine ?';

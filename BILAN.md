@@ -37,8 +37,8 @@ le 02/10/2026 — `v1-33` D5, `20261002201852_la_quatrieme_frequence_des_loisirs
 semaine » (`weekly`, 1), « Plusieurs fois par semaine » (`multiple_weekly`, 3) et **« Presque tous les
 jours » (`almost_daily`, 5)**, toutes sur 52 semaines. La cinquième vient avec la décision du
 22/10/2026 : la seconde partie du questionnaire couvre les loisirs **de la semaine et du week-end**,
-ensemble, **en une seule étape** — « À quelle fréquence fais-tu des trajets pour tes loisirs, en semaine
-comme le week-end ? » —, et « Plusieurs fois par semaine » (3 sorties), la plus haute jusque-là, ne
+ensemble, **en une seule étape** — « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end
+comme en semaine ? » —, et « Plusieurs fois par semaine » (3 sorties), la plus haute jusque-là, ne
 laissait plus de place à qui sort presque chaque jour. Le poste y perd « du week-end » dans ses quatre registres (`FRONT.md` §2.1) et
 dans les libellés que le serveur fige : « Loisirs », « Loisirs (<mode>) », « Loisirs (occasionnels) »,
 et `public.poste_inserable('leisure')` rend « tes sorties ». Trois choses à savoir avant d'en ajouter
