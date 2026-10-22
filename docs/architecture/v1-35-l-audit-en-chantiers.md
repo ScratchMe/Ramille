@@ -40,6 +40,13 @@
 
 ## 3. Ce qui a été écarté en chemin
 
+- **Les dépendances Gradle dans l'écran des licences** (étape 2). AndroidX, Kotlin, Firebase et Material
+  Components entrent dans l'APK sans passer par `node_modules`, sous Apache 2.0 pour la plupart : les lister
+  demande un build Android avec son SDK. L'écran le dit en une phrase plutôt que de se prétendre complet ; la
+  piste est au relevé de la dette (`v1-27`).
+- **L'indexation de `/licences`** : la page reste en `noindex` et hors du plan du site, comme toute page
+  absente de `PAGE_DESCRIPTIONS`. Une liste de licences n'a rien à chercher dans un moteur.
+
 - **Les contrastes des barres** (`accentMuted` sur le fond de carte, environ 1,6:1). Chaque barre porte sa
   valeur écrite à côté d'elle : WCAG 1.4.11 n'exige 3:1 que d'un graphique **nécessaire** à la
   compréhension, ce que ces barres ne sont pas. Et le jeton est celui du design system entier : le changer

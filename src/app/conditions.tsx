@@ -55,9 +55,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // l'Union européenne », sans l'entité ni l'adresse : c'est Supabase Pte. Ltd. (Singapour) selon ses conditions
 // et son avenant de sous-traitance, lus le 18/10/2026 (`HEBERGEUR_DES_DONNEES`). (4) Le renvoi à
 // l'« article 6 III-2 » de la LCEN : la loi n° 2024-449 du 21 mai 2024 a déplacé la règle (voir `editeur.ts`).
-// **Aucun âge minimal n'est ajouté**, par décision : la fiche Play déclare 18 ans et plus, les conditions
-// n'en fixent aucun (`docs/exploitation/fiche-google-play.md` §1.3), et en poser un est une décision de
-// produit.
+// **Aucun âge minimal n'est ajouté**, et c'est tranché : la personne qui pilote l'a décidé le 22/10/2026
+// (`v1-35` étape 2, `docs/exploitation/fiche-google-play.md` §1.3). La fiche Play déclare 18 ans et plus,
+// ce qui oriente l'examen de Google ; les conditions n'interdisent rien, et le RGPD n'impose pas d'âge à
+// un service dont aucun traitement ne repose sur le consentement.
 const UPDATED_AT = '18 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
