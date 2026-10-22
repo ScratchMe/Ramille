@@ -31,9 +31,9 @@ import { lireEtatDuRattachement } from '@/lib/compte';
 import { effacerLesMarquesDuCompte } from '@/lib/marques-locales';
 import {
   afficherLesNotificationsAuPremierPlan,
-  enregistrerLeJeton,
   estNatif,
   preparerLesCanauxAndroid,
+  reglerLeJetonDeCetAppareil,
 } from '@/lib/rappels';
 import {
   installerLaRemonteeDesPannes,
@@ -107,7 +107,10 @@ function apresLaSessionDuDemarrage() {
 // jusqu'au prochain démarrage à froid — exactement A4-7, que ce code existe pour corriger. La règle
 // vit dans `gardeDuJeton` (`src/types/session.ts`), avec ses tests ; elle ne se fondait que sur une
 // exception, alors que l'enregistrement rend `false` sur ses échecs courants.
-const enregistrerLeJetonPour = gardeDuJeton(enregistrerLeJeton);
+//
+// **Et l'appareil ne s'inscrit que pour qui a choisi la notification** (22/10/2026) : sans elle, le
+// réglage désactive le jeton de cet appareil au lieu de l'inscrire (`reglerLeJetonDeCetAppareil`).
+const enregistrerLeJetonPour = gardeDuJeton(reglerLeJetonDeCetAppareil);
 
 /** Le retour au premier plan : l'enregistrement se retente pour la session courante s'il n'a rien inscrit. */
 function retenterLeJeton(): void {

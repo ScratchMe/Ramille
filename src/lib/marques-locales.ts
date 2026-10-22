@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { CLE_DE_LA_FILE } from '@/types/erreurs-en-attente';
 import { conciliationDesMarques, type SiProprietaireInconnu } from '@/types/marques-locales';
+import { CLE_DU_JETON_DE_L_APPAREIL } from '@/types/rappels';
 
 /**
  * Tout ce que cet appareil garde du produit, effacé après une suppression de compte.
@@ -30,11 +31,12 @@ import { conciliationDesMarques, type SiProprietaireInconnu } from '@/types/marq
  * Best-effort et **après** le succès du RPC : un AsyncStorage indisponible ne doit pas faire
  * échouer une suppression déjà effectuée côté serveur.
  *
- * **Ses appelants** : les deux sorties de cet appareil, suppression de compte et déconnexion
- * (`src/lib/compte.ts`). Les changements de compte — l'arrivée d'une session d'un **autre** compte que
- * le propriétaire des marques (`concilierLesMarques`, ci-dessous), dont la reconnexion par code, et
- * « Commencer un bilan sur cet appareil » depuis l'écran de reconnexion — appellent
- * `effacerLesMarquesDuCompte`, qui garde la file des erreurs. Ce qui part avec, et qu'il faut savoir :
+ * **Son appelant** : la suppression de compte (`src/lib/compte.ts`). La déconnexion appelle
+ * `effacerLesMarquesALaDeconnexion`, qui garde la marque du jeton de notification. Les changements de
+ * compte — l'arrivée d'une session d'un **autre** compte que le propriétaire des marques
+ * (`concilierLesMarques`, ci-dessous), dont la reconnexion par code, et « Commencer un bilan sur cet
+ * appareil » depuis l'écran de reconnexion — appellent `effacerLesMarquesDuCompte`, qui garde la file
+ * des erreurs et la marque du jeton. Ce qui part avec, et qu'il faut savoir :
  * le brouillon de questionnaire. C'est le bon choix quand on change de compte — le brouillon
  * appartenait à l'autre session — et c'est déjà ce que fait la déconnexion.
  *
@@ -48,14 +50,27 @@ export function effacerLesMarquesLocales(): Promise<void> {
 }
 
 /**
+ * À la déconnexion : tout, sauf **la marque du jeton de notification** (22/10/2026). La déconnexion
+ * désinscrit le jeton d'abord, et cette désinscription efface la marque quand elle réussit ; quand elle
+ * échoue — hors ligne, ou abandonnée au bout de cinq secondes —, la marque est la seule trace du jeton
+ * resté actif au nom du compte quitté, et c'est par elle que la session suivante le désactive
+ * (`CLE_DU_JETON_DE_L_APPAREIL`, `src/types/rappels.ts`).
+ */
+export function effacerLesMarquesALaDeconnexion(): Promise<void> {
+  return effacer((cle) => cle !== CLE_DU_JETON_DE_L_APPAREIL);
+}
+
+/**
  * Les marques du compte, sans ce qui appartient à l'appareil — **la file des erreurs**
- * (`CLE_DE_LA_FILE`, 02/10/2026). Une panne n'est pas une marque du compte : elle part sous la session
- * suivante, quelle qu'elle soit. Et le changement de compte le plus fréquent — un jeton refusé, une
- * session neuve — est celui où la file a des pannes à rendre : balayée là, elle les perdait toutes
- * avant leur envoi (contre-lecture du 02/10/2026).
+ * (`CLE_DE_LA_FILE`, 02/10/2026) et **la marque du jeton de notification** (22/10/2026). Une panne
+ * n'est pas une marque du compte : elle part sous la session suivante, quelle qu'elle soit. Et le
+ * changement de compte le plus fréquent — un jeton refusé, une session neuve — est celui où la file a
+ * des pannes à rendre : balayée là, elle les perdait toutes avant leur envoi (contre-lecture du
+ * 02/10/2026). Le jeton, lui, appartient au compte quitté **et** au téléphone : c'est par sa marque que
+ * le réglage du compte suivant le reprend ou le désactive.
  */
 export function effacerLesMarquesDuCompte(): Promise<void> {
-  return effacer((cle) => cle !== CLE_DE_LA_FILE);
+  return effacer((cle) => cle !== CLE_DE_LA_FILE && cle !== CLE_DU_JETON_DE_L_APPAREIL);
 }
 
 async function effacer(aussi: (cle: string) => boolean): Promise<void> {

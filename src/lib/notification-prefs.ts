@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
 import { genreDeLEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 import {
+  CLE_DU_JETON_DE_L_APPAREIL,
   reponseALaVeilleDe,
   type CanalPrefere,
   type EtatDesRappels,
@@ -114,8 +115,9 @@ export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille 
  * L'enregistrement du jeton en cours, que la lecture du jeton attend (`v1-33` T-12, 03/10/2026).
  *
  * `enregistrerLeJeton` (`src/lib/rappels.ts`) réinscrit le jeton quand la permission est accordée,
- * ou le désinscrit et efface sa marque sinon ; le démarrage le lance (`_layout.tsx`), la feuille des
- * rappels et « Toi » aussi. Rien ne garantissait qu'une lecture partie au même moment le lise après :
+ * ou le désinscrit et efface sa marque sinon ; la feuille des rappels et « Toi » l'appellent, et le
+ * démarrage lance `reglerLeJetonDeCetAppareil` (`_layout.tsx`), qui l'appelle avec la notification
+ * choisie et désactive le jeton sans elle (22/10/2026). Rien ne garantissait qu'une lecture partie au même moment le lise après :
  * elle pouvait trouver la marque d'avant, et la carte d'attente promettait alors « Par notification
  * sur ce téléphone » à qui venait de les couper — ou les taisait à qui venait de les rouvrir. Le
  * risque est devenu réel quand la lecture du plan s'est mise à partir pendant l'écran de lancement,
@@ -124,7 +126,10 @@ export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille 
  */
 let enregistrementDuJeton: Promise<unknown> = Promise.resolve();
 
-/** Posé par `enregistrerLeJeton` : la prochaine lecture du jeton attend qu'il ait fini. */
+/**
+ * Posé par `enregistrerLeJeton`, et par `reglerLeJetonDeCetAppareil` dès son départ — sa lecture de la
+ * préférence est un aller-retour : la prochaine lecture du jeton attend qu'il ait fini.
+ */
 export function suivreLEnregistrementDuJeton(enregistrement: Promise<unknown>): void {
   enregistrementDuJeton = enregistrement.then(
     () => undefined,
@@ -157,6 +162,27 @@ async function leJetonDeCetAppareilEstActif(): Promise<boolean | null> {
 
   if (error) return null;
   return !!data;
+}
+
+/**
+ * La préférence seule, ou **`null` quand on ne l'a pas lue** — pour le jeton du démarrage
+ * (`reglerLeJetonDeCetAppareil`, `src/lib/rappels.ts`), qui n'a besoin que d'elle. La session est lue
+ * sur l'appareil et non au serveur : le démarrage vient de l'établir.
+ */
+export async function lireLeCanalPrefere(): Promise<CanalPrefere | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('reminder_channel')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  // Même lecture que `loadReminderPrefs` : la colonne est `not null` et bornée par son `check`.
+  return error || !data ? null : (data.reminder_channel as CanalPrefere);
 }
 
 /**
@@ -243,10 +269,12 @@ export async function marquerLaVeilleProposee(): Promise<void> {
 // le sien » dans `enregistrerLeJeton()`.
 //
 // Même préfixe historique `traceverte.` que les autres clés locales (CLAUDE.md dit pourquoi il
-// ne se renomme pas), donc elle part avec la suppression de compte, qui balaie par préfixe.
+// ne se renomme pas), donc elle part avec la suppression de compte, qui balaie par préfixe — et
+// **seulement** avec elle : c'est une marque de l'appareil, que le changement de compte et la
+// déconnexion gardent (`CLE_DU_JETON_DE_L_APPAREIL`, `src/types/rappels.ts`, dit pourquoi).
 // Le préfixe est compté nulle part exprès : une phrase qui dénombre les clés devient fausse à
 // la prochaine, en silence — c'est déjà arrivé deux fois.
-const JETON_KEY = 'traceverte.jeton_appareil.v1';
+const JETON_KEY = CLE_DU_JETON_DE_L_APPAREIL;
 
 export async function lireLeJetonDeCetAppareil(): Promise<string | null> {
   try {
@@ -270,26 +298,31 @@ export async function memoriserLeJetonDeCetAppareil(jeton: string | null): Promi
  * Désactive le jeton de cet appareil côté serveur, tant que la session qui le possède est encore là, et
  * efface sa marque si le serveur l'a fait. Sans jeton connu (web, ou aucune inscription), rien.
  *
- * Deux appelants. `enregistrerLeJeton()` (`src/lib/rappels.ts`), quand la permission n'est plus
- * accordée — on ne désactive que le jeton qu'on a soi-même enregistré (A4-6). Et **« Me déconnecter »**
- * (04/10/2026, revue finale avant la production) : la déconnexion efface la marque locale du jeton
- * avec les autres ; sans ce geste avant elle, la ligne restait active au nom du compte quitté. Avec
- * la permission accordée, la session anonyme suivante reprend le jeton et rien ne se voit ; mais si
- * elle est coupée, plus rien sur l'appareil ne sait quel jeton désactiver, et le compte ne retombe
- * jamais sur le rappel par e-mail — le serveur continue d'envoyer dans le vide.
+ * Deux appelants. `src/lib/rappels.ts`, quand la permission n'est plus accordée ou, depuis le 22/10/2026,
+ * quand la notification n'est plus le canal choisi — on ne désactive que le jeton qu'on a soi-même
+ * enregistré (A4-6), et ce chemin-là le **reprend d'abord** pour la session présente, faute de quoi un
+ * changement de compte laissait la ligne active au nom du compte quitté (`desactiverLeJetonDeCetAppareil`).
+ * Et **« Me déconnecter »**
+ * (04/10/2026, revue finale avant la production) : sans ce geste avant elle, la ligne restait active
+ * au nom du compte quitté. **Depuis le 22/10/2026, la déconnexion garde la marque du jeton**
+ * (`effacerLesMarquesALaDeconnexion`) : une désinscription qui a bien désactivé la ligne de la session
+ * l'efface ici, et une désinscription en échec — ou qui n'a rien touché, la ligne appartenant encore à
+ * un autre compte — la laisse à la session suivante, dont le réglage reprend puis désactive le jeton — sans
+ * elle, plus rien sur l'appareil ne saurait quel jeton désactiver, et le compte quitté ne retomberait
+ * jamais sur le rappel par e-mail.
  *
- * **La raison enregistrée ne distingue pas les deux** : `unregister_push_token` écrit
- * `disabled_reason = 'permission retirée'`, y compris pour une déconnexion. C'est assumé — ce que la
- * raison sert à dire, c'est que cet appareil ne reçoit plus pour ce compte, et c'est vrai dans les deux
- * cas ; la distinguer demanderait un argument de plus au RPC pour un journal que rien ne trie.
+ * **La raison enregistrée ne distingue pas les cas** : `unregister_push_token` écrit
+ * `disabled_reason = 'permission retirée'`, y compris pour une déconnexion ou un changement de canal.
+ * C'est assumé — ce que la raison sert à dire, c'est que cet appareil ne reçoit plus pour ce compte, et
+ * c'est vrai dans chacun ; la distinguer demanderait un argument de plus au RPC pour un journal que rien ne trie.
  *
  * Au mieux de ce qui est possible : hors ligne, l'appel échoue et la déconnexion se fait quand même —
  * c'est la situation d'avant, pas une régression.
  *
  * **`abandon`, pour la déconnexion qui n'attend pas** (contre-lecture du 04/10/2026) : passé son délai,
- * elle part sans la réponse, efface les marques, et la session anonyme suivante peut mémoriser le
- * jeton de nouveau. Une réponse tardive qui effacerait alors la marque ferait croire à « Toi » que
- * l'appareil n'a plus de jeton actif. L'appel est donc annulé, et sa réponse ne touche plus à rien
+ * elle part sans la réponse et garde la marque, que la session suivante peut aussi mémoriser de
+ * nouveau. Une réponse tardive qui effacerait alors la marque ferait croire à « Toi » que l'appareil
+ * n'a plus de jeton actif — et laisserait le jeton actif sans plus rien pour le retrouver. L'appel est donc annulé, et sa réponse ne touche plus à rien
  * une fois l'abandon signalé — l'annulation d'un `fetch` n'étant pas garantie partout.
  */
 export async function desinscrireLeJetonDeCetAppareil(abandon?: AbortSignal): Promise<void> {
@@ -297,5 +330,16 @@ export async function desinscrireLeJetonDeCetAppareil(abandon?: AbortSignal): Pr
   if (!connu) return;
   const appel = supabase.rpc('unregister_push_token', { p_token: connu });
   const { error } = await (abandon ? appel.abortSignal(abandon) : appel);
-  if (!error && !abandon?.aborted) await memoriserLeJetonDeCetAppareil(null);
+  if (error || abandon?.aborted) return;
+
+  // **La marque ne part que si la ligne était à la session** (troisième contre-lecture du 22/10/2026).
+  // `unregister_push_token` ne touche que les lignes de `auth.uid()` et rend sans erreur quand il n'en
+  // touche aucune : après un changement de compte que le réglage n'a pas encore suivi, la déconnexion
+  // effaçait la marque d'un jeton resté actif au nom du compte quitté. Une ligne visible est à soi, et
+  // vient d'être désactivée ; une ligne invisible garde sa marque pour la reprise de la session suivante
+  // (`desactiverLeJetonDeCetAppareil`, `src/lib/rappels.ts`).
+  let lecture = supabase.from('push_tokens').select('token').eq('token', connu);
+  if (abandon) lecture = lecture.abortSignal(abandon);
+  const { data, error: erreurDeLecture } = await lecture.maybeSingle();
+  if (!erreurDeLecture && data && !abandon?.aborted) await memoriserLeJetonDeCetAppareil(null);
 }

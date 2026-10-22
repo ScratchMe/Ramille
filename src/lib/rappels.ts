@@ -2,10 +2,12 @@
 // impose, isolé ici pour que les écrans n'en sachent rien.
 // Réf. docs/architecture/v1-12-rappels.md §5.3.
 //
-// **Le jeton suit la personne connectée sur l'appareil.** `enregistrerLeJeton()` est donc
+// **Le jeton suit la personne connectée sur l'appareil.** `reglerLeJetonDeCetAppareil()` est donc
 // appelée à chaque ouverture, à chaque changement d'utilisateur, et au retour au premier plan
-// tant qu'elle n'a rien inscrit : le RPC reprend le jeton à son propriétaire précédent, ce
+// tant qu'aucun jeton n'est inscrit : le RPC reprend le jeton à son propriétaire précédent, ce
 // qu'une policy RLS ne pourrait pas faire au moment où une session anonyme devient un compte.
+// **Et seulement pour qui a choisi la notification** (22/10/2026) : sans elle, le jeton de cet
+// appareil est désactivé, et rien ne part chez Expo.
 //
 // Rien ici ne parle à l'utilisateur, mais **tout se dit à l'appelant** : `enregistrerLeJeton()`
 // rend un booléen, et c'est ce qui empêche la feuille d'annoncer une notification qui ne
@@ -17,11 +19,13 @@ import { Platform } from 'react-native';
 
 import {
   desinscrireLeJetonDeCetAppareil,
+  lireLeCanalPrefere,
+  lireLeJetonDeCetAppareil,
   memoriserLeJetonDeCetAppareil,
   suivreLEnregistrementDuJeton,
 } from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
-import { CANAUX_ANDROID, type Permission } from '@/types/rappels';
+import { CANAUX_ANDROID, leJetonAuDemarrage, type Permission } from '@/types/rappels';
 
 export const estNatif = Platform.OS !== 'web';
 
@@ -137,7 +141,7 @@ async function enregistrerLeJetonMaintenant(): Promise<boolean> {
     // permission retirée, donc `collect_push_receipts` ne le verrait pas non plus, et le repli
     // email ne partirait jamais. La marque se pose au premier enregistrement réussi, donc la
     // fenêtre se referme au premier lancement de cette version avec la permission accordée.
-    await desinscrireLeJetonDeCetAppareil();
+    await desactiverLeJetonDeCetAppareil();
     return false;
   }
 
@@ -164,4 +168,82 @@ async function enregistrerLeJetonMaintenant(): Promise<boolean> {
     // rappel partira par email si c'est possible — et l'appelant, lui, l'apprend.
     return false;
   }
+}
+
+/**
+ * Le jeton au démarrage, au changement d'utilisateur et au retour au premier plan (`gardeDuJeton`,
+ * `src/app/_layout.tsx`) : **inscrit seulement si la personne a choisi la notification**
+ * (`leJetonAuDemarrage`, `src/types/rappels.ts`, qui dit pourquoi), désactivé sinon.
+ *
+ * **Rend `true` seulement quand un jeton est inscrit**, comme `enregistrerLeJeton` : tout autre cas se
+ * réévalue au retour au premier plan suivant. Le cas qui l'exige (contre-lecture du 22/10/2026) : au
+ * lancement, la préférence est l'e-mail ; la personne choisit ensuite la notification dans la feuille,
+ * refuse l'invite, puis la rouvre dans les réglages du téléphone. Un `true` rendu au lancement aurait
+ * fermé la garde, et le retour des réglages n'aurait rien réinscrit. Sans jeton connu, la réévaluation
+ * ne coûte qu'une lecture du profil.
+ *
+ * **Suivi dès le départ** (`suivreLEnregistrementDuJeton`) et pas seulement par `enregistrerLeJeton` :
+ * la lecture de la préférence est un aller-retour, pendant lequel une lecture du jeton aurait trouvé la
+ * marque d'avant (`v1-33` T-12).
+ */
+export function reglerLeJetonDeCetAppareil(): Promise<boolean> {
+  const reglage = reglerLeJetonMaintenant();
+  suivreLEnregistrementDuJeton(reglage);
+  return reglage;
+}
+
+async function reglerLeJetonMaintenant(): Promise<boolean> {
+  if (!estNatif || !Device.isDevice) return false;
+
+  switch (leJetonAuDemarrage(await lireLeCanalPrefere())) {
+    case 'attendre':
+      return false;
+    case 'desinscrire':
+      await desactiverLeJetonDeCetAppareil();
+      return false;
+    case 'inscrire':
+      return enregistrerLeJeton();
+  }
+}
+
+/**
+ * Désactive le jeton de cet appareil **au nom de la session présente**. `unregister_push_token` ne touche
+ * que les lignes de `auth.uid()` : après un changement de compte — `/connexion/retrouver`, ou un code
+ * demandé pour une adresse déjà prise —, la ligne appartient encore au compte quitté, et la désactivation
+ * ne la trouvait pas (A4-7, revenu par ce chemin, contre-lecture du 22/10/2026). D'où la **reprise**
+ * (`register_push_token`, qui rattache le jeton à la session ; le jeton est la marque locale, donc rien
+ * ne part chez Expo), puis la désactivation.
+ *
+ * **La reprise seulement quand la ligne n'est pas à soi** (seconde contre-lecture du même jour) : elle
+ * remet la ligne active et vue à l'instant, ce qui peut évincer un autre appareil du compte au-delà de
+ * cinq, et rouvrir une ligne que le serveur avait désactivée le temps d'un aller-retour. Une ligne que la
+ * session voit est déjà la sienne (la RLS ne rend que celles-là) : elle se désactive directement. Une
+ * ligne invisible appartient à un autre compte, ou a été purgée — une session anonyme purgée au bout de
+ * 90 jours, un compte supprimé depuis un autre appareil. Dans ce second cas, la reprise en recrée une,
+ * aussitôt désactivée et supprimée 90 jours plus tard comme tout jeton désactivé : c'est ce que dit la
+ * page de confidentialité (« désactivé au démarrage suivant »), et rien ne part chez Expo. Reste un effet
+ * rare, assumé : la reprise d'une ligne d'un autre compte peut évincer un appareil du compte présent
+ * au-delà de cinq — un RPC qui désactiverait par jeton sans rattacher l'éviterait, au prix d'une
+ * migration. Une lecture ou une reprise en échec laisse tout en place, marque comprise : le retour
+ * suivant retente.
+ */
+async function desactiverLeJetonDeCetAppareil(): Promise<void> {
+  const connu = await lireLeJetonDeCetAppareil();
+  if (!connu) return;
+
+  const { data: aSoi, error: lecture } = await supabase
+    .from('push_tokens')
+    .select('token')
+    .eq('token', connu)
+    .maybeSingle();
+  if (lecture) return;
+
+  if (!aSoi) {
+    const { error } = await supabase.rpc('register_push_token', {
+      p_token: connu,
+      p_platform: Platform.OS === 'ios' ? 'ios' : 'android',
+    });
+    if (error) return;
+  }
+  await desinscrireLeJetonDeCetAppareil();
 }

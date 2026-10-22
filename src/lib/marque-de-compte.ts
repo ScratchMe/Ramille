@@ -22,8 +22,8 @@
 //     balaie les marques de l'ancien propriétaire, celle-ci comprise : la racine, que la reconnexion
 //     rejoint aussitôt, relit la session et la repose ;
 //   * **elle ne survit à aucun départ voulu** : « Me déconnecter » et la suppression du compte
-//     balaient les marques par le préfixe historique `traceverte.` (`effacerLesMarquesLocales`),
-//     d'où le nom de la clé, qui n'est pas négociable ;
+//     balaient les marques par le préfixe historique `traceverte.` (`effacerLesMarquesALaDeconnexion`
+//     et `effacerLesMarquesLocales`), d'où le nom de la clé, qui n'est pas négociable ;
 //   * **« Commencer un bilan sur cet appareil » l'efface aussi** : c'est un départ choisi depuis
 //     l'écran de reconnexion (`repartirSurCetAppareil`).
 import AsyncStorage from '@react-native-async-storage/async-storage';

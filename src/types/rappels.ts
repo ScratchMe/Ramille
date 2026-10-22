@@ -409,6 +409,41 @@ export type Permission =
   | 'fermee';
 
 /**
+ * **La marque du jeton est une marque de l'appareil, pas du compte** (22/10/2026, seconde contre-lecture
+ * de l'étape 1 de `v1-35`). Elle dit quel jeton **ce téléphone** a obtenu, et c'est la seule chose qui
+ * permette de le désactiver : `push_tokens` est owner-scoped. Balayée au changement de compte (avec les
+ * marques du compte quitté) ou à une déconnexion dont la désinscription avait échoué, elle laissait le
+ * jeton actif au nom du compte quitté, sans plus rien sur l'appareil pour le retrouver — tant que chaque
+ * démarrage réinscrivait le jeton quelle que soit la préférence, la reprise réparait ; depuis que seul le
+ * `push` l'inscrit, plus rien ne répare. Elle survit donc au changement de compte et à la déconnexion
+ * (`src/lib/marques-locales.ts`), et ne part qu'avec la suppression du compte, dont la cascade a déjà
+ * effacé les lignes. Le préfixe historique `traceverte.` reste (CLAUDE.md dit pourquoi).
+ */
+export const CLE_DU_JETON_DE_L_APPAREIL = 'traceverte.jeton_appareil.v1';
+
+/**
+ * Ce que le démarrage fait du jeton de **cet** appareil : l'inscrire, le désactiver, ou attendre.
+ *
+ * **Le jeton ne sert qu'à la notification** (22/10/2026, audit du 18/10/2026). Il s'inscrivait dès que
+ * la permission était accordée, quel que soit le canal : sur Android 12 et avant, où elle l'est d'office,
+ * l'identifiant partait chez Expo au premier lancement, y compris pour qui avait choisi l'email ou « Sans
+ * rappel ». Rien ne l'emploie hors du `push` — le mot de la veille lui-même ne part que si
+ * `reminder_channel_for()` rend `push` (`mettre_en_file_les_mots_de_la_veille`).
+ *
+ * - `push` : l'inscrire, la permission décidant ensuite (`enregistrerLeJeton`) ;
+ * - `email` ou `none` : désactiver celui de cet appareil, s'il en a un ;
+ * - préférence illisible (`null`) : ne rien toucher, et retenter au retour au premier plan. Désactiver
+ *   sur une lecture ratée couperait la notification de quelqu'un qui l'a choisie.
+ *
+ * **La préférence ne se dégrade toujours pas d'elle-même** : choisir la notification, depuis la feuille
+ * des rappels comme depuis « Toi », inscrit le jeton au moment du geste.
+ */
+export function leJetonAuDemarrage(prefere: CanalPrefere | null): 'inscrire' | 'desinscrire' | 'attendre' {
+  if (prefere === null) return 'attendre';
+  return prefere === 'push' ? 'inscrire' : 'desinscrire';
+}
+
+/**
  * La feuille ne s'ouvre **qu'une fois par appareil**, juste après « C'est noté ». C'est une
  * cérémonie assumée pour la première fois, pas un passage obligé à chaque engagement — après,
  * c'est « Toi » qui porte le réglage.

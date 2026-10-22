@@ -41,6 +41,8 @@ const mockGetSession = jest.fn();
 // Un départ est-il déclaré au moment de l'appel ? Chaque appel au serveur le note.
 let mockDepartDeclare = false;
 const mockDeclare: { appel: string; declare: boolean }[] = [];
+let mockLigneASoi: { data: unknown; error: unknown } = { data: null, error: null };
+const mockFiltres: string[] = [];
 const mockStock = new Map<string, string>();
 
 jest.mock('@/lib/supabase', () => ({
@@ -54,6 +56,20 @@ jest.mock('@/lib/supabase', () => ({
     }
   },
   supabase: {
+    // La relecture de sa propre ligne après la désinscription (22/10/2026) : `mockLigneASoi` dit si la
+    // RLS la rend, et le double vérifie qu'elle est bien cherchée par le jeton de la marque.
+    from: (table: string) => {
+      const maillon = {
+        select: () => maillon,
+        eq: (colonne: string, valeur: unknown) => {
+          mockFiltres.push(`${table}.${colonne}=${String(valeur)}`);
+          return maillon;
+        },
+        abortSignal: () => maillon,
+        maybeSingle: async () => mockLigneASoi,
+      };
+      return maillon;
+    },
     rpc: (...args: unknown[]) => {
       mockDeclare.push({ appel: 'rpc', declare: mockDepartDeclare });
       // L'appel de PostgREST se laisse annuler (`abortSignal`) : le double l'accepte et l'ignore —
@@ -93,6 +109,9 @@ beforeEach(() => {
   mockRpc.mockReset();
   mockSignOut.mockReset();
   mockDeclare.length = 0;
+  mockFiltres.length = 0;
+  // Par défaut, la ligne du jeton est à la session : la désinscription l'a bien désactivée.
+  mockLigneASoi = { data: { token: 'ExponentPushToken[abc]' }, error: null };
   mockGetSession.mockReset();
   mockStock.clear();
   mockStock.set('traceverte.a_un_bilan.v1', '1');
@@ -132,6 +151,22 @@ describe('seDeconnecterDeCetAppareil', () => {
     expect(await marques()).toEqual(['autre.cle']);
   });
 
+  // **Une désinscription qui n'a rien touché ne vaut pas désactivation** (troisième contre-lecture du
+  // 22/10/2026) : `unregister_push_token` rend sans erreur sur une ligne d'un autre compte — un changement
+  // de compte que le réglage n'a pas encore suivi. La marque reste, pour la reprise de la session suivante.
+  // Mutation du même jour : la marque effacée sans relire la ligne → ce test tombe, seul.
+  it('garde la marque quand la ligne du jeton n’est pas à la session', async () => {
+    mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
+    mockRpc.mockResolvedValue({ error: null });
+    mockSignOut.mockResolvedValue({ error: null });
+    mockLigneASoi = { data: null, error: null };
+
+    expect(await seDeconnecterDeCetAppareil()).toEqual({ ok: true });
+
+    expect(mockFiltres).toContain('push_tokens.token=ExponentPushToken[abc]');
+    expect(mockStock.get('traceverte.jeton_appareil.v1')).toBe('ExponentPushToken[abc]');
+  });
+
   // Un appel qui **lève**, et non un `{ error }` rendu : c'est ce cas que le `.catch` de la déconnexion
   // existe pour couvrir (contre-lecture du 04/10/2026, le test ne le gardait pas).
   it('se déconnecte quand même si le jeton n’a pas pu être désactivé', async () => {
@@ -143,6 +178,10 @@ describe('seDeconnecterDeCetAppareil', () => {
 
     expect(resultat).toEqual({ ok: true });
     expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    // La marque reste (22/10/2026) : c'est par elle que la session suivante désactivera le jeton resté
+    // actif au nom du compte quitté — seul le `push` le réinscrit désormais. Mutation du 22/10/2026 :
+    // `effacerLesMarquesALaDeconnexion` qui balaie tout → ce test tombe, seul.
+    expect(mockStock.get('traceverte.jeton_appareil.v1')).toBe('ExponentPushToken[abc]');
   });
 
   // Un appel qui ne répond **jamais** : le `fetch` de React Native n'a pas de délai par défaut, et le
@@ -213,6 +252,10 @@ describe('seDeconnecterDeCetAppareil', () => {
 
 describe('deleteMyAccount', () => {
   it('ferme la session de cet appareil, sans rien demander au serveur sur les autres', async () => {
+    // La marque du jeton de notification part ici, et seulement ici (22/10/2026) : la cascade a effacé
+    // la ligne, et une marque gardée ferait réinsérer le jeton par la reprise de la session suivante.
+    // Mutation du même jour : la suppression qui garde cette marque → ce test tombe, seul.
+    mockStock.set('traceverte.jeton_appareil.v1', 'ExponentPushToken[abc]');
     mockRpc.mockResolvedValue({ error: null });
     mockSignOut.mockResolvedValue({ error: null });
 

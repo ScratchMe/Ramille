@@ -1874,11 +1874,20 @@ ce que l'app fait, et deux touchent au natif, donc à un build (le premier et le
   à chaque démarrage par `src/app/_layout.tsx`, ne regarde que la permission). Plus sobre : ne l'enregistrer
   qu'avec le push choisi ou le mot de la veille demandé. **Ce qui retient** : c'est une retouche de la
   feuille des rappels et de sa reprise, et la règle « la préférence ne se dégrade jamais d'elle-même »
-  (`BOUCLE.md`) suppose qu'un jeton existe déjà quand on choisit le push.
+  (`BOUCLE.md`) suppose qu'un jeton existe déjà quand on choisit le push. **Fait le 22/10/2026**, sur
+  l'audit du 18/10/2026 : le mot de la veille ne part qu'avec la préférence `push` (`reminder_channel_for()`),
+  donc seule cette préférence compte, et la feuille comme « Toi » inscrivent le jeton au moment où on la
+  choisit. Le démarrage désactive celui d'un appareil passé à un autre canal (`leJetonAuDemarrage`,
+  `reglerLeJetonDeCetAppareil`).
 - **Un identifiant que rien n'emploie n'est jamais désactivé.** `disabled_at` ne se pose qu'au démarrage
   sans permission, sur un `DeviceNotRegistered` ou au-delà de cinq appareils par compte ; avec les rappels par e-mail ou aucun, et l'application
   désinstallée, aucun envoi ne part, donc le jeton reste actif jusqu'à la suppression du compte. Plus
   sobre : une purge sur `last_seen_at`. **Condition** : choisir la durée, qui est une promesse de la page.
+  **Réduit le 22/10/2026** par le point d'au-dessus : un passage à l'e-mail ou à « Sans rappel » désactive
+  désormais le jeton au démarrage suivant. Restent deux cas : une application désinstallée **avec** la
+  notification choisie et un régime de rappel au silence (aucun envoi, donc aucun `DeviceNotRegistered`) ;
+  et un passage à l'e-mail dans « Toi » suivi d'une désinstallation avant tout redémarrage — « Toi » ne
+  désactive rien au moment du choix, c'est le démarrage suivant qui le fait.
 - **Firebase attribue son identifiant dès le premier lancement**, permission accordée ou non — lu, pas
   mesuré : `firebase-messaging` est embarqué par `expo-notifications` et son initialisation automatique
   n'est coupée nulle part. Plus sobre : la couper et l'initialiser à la demande. **À vérifier d'abord sur le
@@ -2577,8 +2586,11 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
   d'`api/` ne bouge) ;
 - le bundle web d'un seul fichier (2,96 Mo, dont 27 % de Reanimated) et l'écran du plan (2 134 lignes,
   environ neuf requêtes à chaque focus) : des refontes, pas des correctifs ;
-- les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
-  « Réessaie dans un instant » ;
+- ~~les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
+  « Réessaie dans un instant »~~ — **faits le 22/10/2026** pour les engagements et les bilans
+  (`src/types/refus-de-plafond.ts`, « Réessaie demain »). Celui des jetons d'appareil ne s'affiche nulle
+  part : l'inscription rend `false`, et la feuille des rappels retombe sur la ligne d'un jeton inactif —
+  muet plutôt que faux ;
 - l'empreinte de signature Play dans `assetlinks.json`, qui attend le compte Play ;
 - les quatre migrations de sécurité du 06/10/2026 appliquées hors de `schema_migrations`, et pgTAP
   installé sur la production : un relevé d'empreintes sur le distant, avec confirmation ;

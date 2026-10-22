@@ -29,6 +29,16 @@
 //
 // La seule valeur qui ne vienne pas du SDES est la cible 2050 (ADEME) : c'est un objectif
 // normatif, pas une mesure concurrente, donc aucune contradiction possible avec le total.
+//
+// ## Pourquoi pas 8,2 t (2024)
+//
+// La série annuelle n'a pas de ventilation par poste : la prendre ferait un total qui ne serait plus
+// la somme des postes, la faute que l'en-tête vient de décrire. **Revérifié le 22/10/2026** (audit du
+// 18/10/2026) : la page « Empreinte carbone » du SDES, mise à jour en octobre 2026, présente toujours la
+// décomposition de 2017. Une seule ventilation plus récente a été trouvée, pour 2018, dans l'INSEE
+// Références « Transformations de l'agriculture et des consommations alimentaires » (traitements SDES) :
+// 9,2 t, dont 2,86 t de déplacements, en six postes rangés autrement — un an de plus seulement, pour
+// changer de publication et de découpage. On garde 2017 tant que le SDES ne publie pas mieux.
 
 /** Étiquette de source affichée sous les graphiques qui utilisent ces repères. */
 export const CARBON_SOURCE_LABEL = 'SDES, données 2017 · cible 2050 : ADEME';

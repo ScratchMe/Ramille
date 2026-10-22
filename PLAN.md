@@ -226,7 +226,10 @@ produit demande, annulé par le second geste le plus encouragé. Quatre points �
   personne a lu en choisissant. **Trente archivages par jour et par compte au plus** (passe avant le
   lancement, 05/10/2026, `20261005170000`) : `commit_plan_action` refuse au-delà (`RM002`), parce
   que mille changements d'intention laissaient mille lignes. Le plafond est dans le RPC client, pas
-  dans `archiver_engagement`, que le re-bilan et la reconduction appellent aussi.
+  dans `archiver_engagement`, que le re-bilan et la reconduction appellent aussi : « Changer d'avis »
+  (`clear_plan_action_commitment`) n'est pas plafonné. **L'écran le dit** (22/10/2026, `TROP_DE_CHANGEMENTS_D_ENGAGEMENT`,
+  `src/types/refus-de-plafond.ts`) : « … Réessaie demain. », sans relire le plan, plutôt que « Réessaie
+  dans un instant », faux jusqu'au lendemain — le refus se reconnaît à son code, jamais à son message.
 - **Modifier l'intention ne libère pas, et laisse sa trace** (`v1-33` D15, 02/10/2026,
   `20261002220916_modifier_l_intention_sans_liberer.sql`, test `44`). « Modifier les jours » et
   « Modifier l'échéance » rouvrent le sélecteur prérempli et rappellent `commit_plan_action` sur

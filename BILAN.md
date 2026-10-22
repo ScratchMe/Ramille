@@ -327,7 +327,9 @@ bilans en deux secondes et pouvait remplir la base de 500 Mo, que le plan gratui
 lecture seule pour tout le monde. L'index unique partiel `assessments_un_seul_en_cours` épouse la
 reprise de l'écran (il reprend le bilan qui traîne, jamais n'en crée un second) et refuse une
 insertion de plusieurs lignes ; le trigger `plafonner_les_bilans` compte les créations du jour
-(`RM002`). **Les distances sont bornées à 10 000 km, vingt décimales au plus**, et la part du second
+(`RM002`), et le questionnaire le dit pour ce qu'il est (22/10/2026, `TROP_DE_BILANS`,
+`echecDeLaSoumission`) : « … Réessaie demain. », sans bloc de cause à recopier, plutôt que « réessaie
+dans un instant ». **Les distances sont bornées à 10 000 km, vingt décimales au plus**, et la part du second
 mode à vingt décimales (une contrainte par colonne, `…_bornee` : la garde des miroirs ne sait pas évaluer une contrainte qui en nomme plusieurs) : `> 0` laissait passer `NaN` et
 `Infinity`, qui empoisonnaient toutes les moyennes de l'analyse, et un nombre de 131 000 chiffres.
 La borne n'arrête aucun trajet réel ; le seuil où l'app fait relire reste `COMMUTE_DISTANCE_A_RELIRE_KM`.

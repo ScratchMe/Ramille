@@ -49,19 +49,19 @@ const TITRE = 'Les rappels';
  * pourrait lire comme un échec de son geste.
  *
  * **Et le texte ne suffit pas : le retour doit réparer.** Quand la permission tombe, le
- * lancement suivant désactive le jeton de cet appareil (`enregistrerLeJeton`). Rouvrir les
- * notifications dans les réglages ne le réinscrit pas : `enregistrerLeJeton` n'est appelée
- * qu'au démarrage et au changement d'utilisateur. Sans la réinscription ci-dessous, la ligne
- * repasserait à « Le matin où la question s'ouvre. » pendant que `push_tokens` porte toujours
- * un `disabled_at` — le serveur retomberait sur l'email, ou sur rien, jusqu'au prochain
- * démarrage à froid. C'est la « petite trahison » d'A4-8, réintroduite par la porte qu'on
- * vient d'ouvrir.
+ * lancement suivant désactive le jeton de cet appareil (`enregistrerLeJeton`). Depuis le 22/10/2026,
+ * le réglage du démarrage (`reglerLeJetonDeCetAppareil`) se relance aussi au retour au premier plan
+ * tant qu'aucun jeton n'est inscrit, donc le retour des réglages réinscrit de lui-même ; la
+ * réinscription ci-dessous reste celle de « Toi », qui la sait **et range son résultat**
+ * (`onJeton`). Sans elle, la ligne repasserait à « Le matin où la question s'ouvre. » sans que
+ * l'écran sache si `push_tokens` porte encore un `disabled_at` — la « petite trahison » d'A4-8.
  */
 export function ChoixDeRappel({
   prefs,
   fenetre,
   onChoisir,
   onChoisirLaVeille,
+  onJeton,
 }: {
   prefs: ReminderPrefs;
   /** La fenêtre du mot de la veille (C4.2), `null` quand on ne l'a pas lue. */
@@ -69,20 +69,32 @@ export function ChoixDeRappel({
   onChoisir: (canal: CanalPrefere) => void;
   /** Cocher ou décocher le mot de la veille : jamais `jamais_propose`, une réponse ne se retire pas. */
   onChoisirLaVeille: (reponse: 'oui' | 'refuse') => void;
+  /**
+   * Ce que la réinscription ci-dessous a **vraiment** obtenu, pour que l'écran l'affiche. Sans lui,
+   * passer à la notification laissait `jetonActif` à sa valeur du montage — faux depuis que le jeton
+   * n'est plus inscrit sans la notification (22/10/2026) —, et la ligne du mot de la veille disait « En
+   * pause sur ce téléphone » d'un jeton qui venait de s'inscrire. Le booléen est celui de la feuille
+   * (`onFerme(canal, jetonActif)`). Stable chez l'appelant : il entre dans les dépendances de l'effet.
+   */
+  onJeton: (actif: boolean) => void;
 }) {
   // Point de départ `demandable` : c'est l'état neutre, le seul qui ne promette pas une
   // notification qui marche ni n'accuse un réglage que personne n'a touché, le temps que la
   // vraie valeur arrive (elle est locale, donc au rendu suivant).
   const [permission, setPermission] = useState<Permission>('demandable');
 
+  // **Et seulement pour qui a choisi la notification** (22/10/2026, `leJetonAuDemarrage`) : la permission
+  // accordée suffisait, et l'identifiant partait chez Expo pour un rappel par e-mail ou sans rappel. Le
+  // choix de la notification relance l'effet, donc l'inscription suit le geste.
+  const choisitLaNotification = prefs.prefere === 'push';
   const relireLaPermission = useCallback(() => {
     void lirePermission()
       .then(async (etat) => {
         setPermission(etat);
-        if (etat === 'accordee') await enregistrerLeJeton();
+        if (etat === 'accordee' && choisitLaNotification) onJeton(await enregistrerLeJeton());
       })
       .catch(() => undefined);
-  }, []);
+  }, [choisitLaNotification, onJeton]);
 
   useEffect(relireLaPermission, [relireLaPermission]);
   useRafraichirAuRetour(relireLaPermission);

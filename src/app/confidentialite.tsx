@@ -56,9 +56,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     (`.github/workflows/sauvegarde.yml`, `docs/exploitation/sauvegarde.md`), et depuis le
 //     04/10/2026 Cloudflare Turnstile pour le captcha de la session anonyme et des codes
 //     (`src/lib/captcha.ts` — sur le web d'abord, l'app Android au build qui suit) ;
-//   - identifiant de notification enregistré dès que le téléphone accepte les notifications,
-//     quel que soit le canal -> `enregistrerLeJetonPour`, appelé à chaque démarrage par
-//     `src/app/_layout.tsx`, ne regarde que la permission (`src/lib/rappels.ts`) ;
+//   - identifiant de notification enregistré quand la personne a choisi la notification et que le
+//     téléphone l'accepte (depuis le 22/10/2026 ; avant, dès la permission, quel que soit le canal)
+//     -> `reglerLeJetonDeCetAppareil` (`src/lib/rappels.ts`), appelé à chaque démarrage par
+//     `src/app/_layout.tsx`, qui le désactive pour un autre canal ;
 //   - adresse IP et appareil de chaque session -> colonnes `ip` et `user_agent` de
 //     `auth.sessions`, posées par Supabase Auth (110 sessions sur 110, mesuré le 02/10/2026) ;
 //   - ce que la connexion Google transmet -> le droit `userinfo.profile` que Supabase Auth
@@ -238,7 +239,15 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // plateforme, et pourquoi la date reste ; la liste des durées nomme la date de l'opposition, une donnée du
 // compte que l'export rend. Même jour que la refonte d'au-dessus, donc même date de mise à jour — à avancer
 // si la page part en production un autre jour.
-const UPDATED_AT = '19 octobre 2026';
+//
+// **22/10/2026 : l'identifiant de notification suit le canal choisi** (audit du 18/10/2026, `v1-27`
+// §12.30, premier point). Il n'est plus enregistré qu'avec la notification choisie, et celui d'un
+// téléphone passé à l'email ou à « Sans rappel » est désactivé au démarrage suivant
+// (`leJetonAuDemarrage`, `src/types/rappels.ts`). Cinq phrases suivent : l'identifiant dans la liste
+// de ce qui est enregistré, sa base légale — l'exécution du service et non plus l'intérêt légitime,
+// puisqu'il ne sert qu'à la notification demandée —, Expo, qui ne reçoit plus rien sans elle, ce que
+// garde une session anonyme, et la durée de conservation de l'identifiant.
+const UPDATED_AT = '22 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -312,11 +321,10 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'L’identifiant de notification de ton téléphone',
             text:
-              'Dès que ton téléphone accepte les notifications de l’application, nous enregistrons l’identifiant qui ' +
-              'permet de lui en envoyer, quel que soit le canal de rappel que tu choisis. Sur les versions d’Android ' +
-              'antérieures à la 13, les notifications sont acceptées d’office : l’identifiant est donc enregistré dès le ' +
-              'premier lancement. Les couper dans les réglages du téléphone le désactive au prochain démarrage de ' +
-              'l’application.',
+              'Si tu choisis les notifications comme canal de rappel et que ton téléphone les accepte, nous ' +
+              'enregistrons l’identifiant qui permet de lui en envoyer. Avec un rappel par email ou sans rappel, nous ' +
+              'ne le demandons pas, et celui que ton téléphone avait déjà est désactivé au démarrage suivant de ' +
+              'l’application. Couper les notifications dans les réglages du téléphone le désactive de même.',
           },
         ],
       },
@@ -354,8 +362,8 @@ const SECTIONS: LegalSection[] = [
           'parcours, c’est notre intérêt légitime — maintenir le suivi que tu as commencé dans un cas, corriger ce qui ne ' +
           'fonctionne pas dans l’autre. Ce que nos services techniques enregistrent d’eux-mêmes — tes sessions, ce que ' +
           'Google transmet — relève de l’exécution du service : la connexion ne fonctionne pas sans. L’identifiant de ' +
-          'notification, enregistré quel que soit le canal choisi, relève de notre intérêt légitime : pouvoir t’envoyer ' +
-          'des notifications dès que tu les choisis, sans réglage à refaire. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
+          'notification, que nous ne demandons que si tu choisis les notifications, en relève aussi : sans lui, elles ' +
+          'ne peuvent pas t’arriver. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
           'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
           'que tu aies à te connecter.',
       },
@@ -415,7 +423,7 @@ const SECTIONS: LegalSection[] = [
           'numéro de téléphone — sauf l’adresse que tu saisis pour recevoir un code, gardée même si tu ne vas pas au ' +
           'bout, jusqu’à ce que tu la confirmes, en saisisses une autre ou que la session soit supprimée. Comme toute ' +
           'session, elle garde l’adresse IP et l’appareil de sa dernière utilisation, et l’identifiant de ' +
-          'notification dès que ton téléphone accepte les notifications (le détail plus haut).',
+          'notification si tu choisis les notifications comme canal de rappel (le détail plus haut).',
       },
       {
         kind: 'paragraph',
@@ -475,11 +483,11 @@ const SECTIONS: LegalSection[] = [
           {
             term: 'Expo',
             text:
-              'Acheminement des notifications vers ton téléphone. Dès que ton téléphone accepte les notifications, quel ' +
-              'que soit le canal choisi, Expo reçoit l’identifiant que Google attribue à l’application sur ton téléphone ' +
-              'et un identifiant d’installation, et nous rend l’identifiant de notification. Il ne reçoit ' +
-              'le texte d’un message que si tu as choisi les notifications comme canal de rappel, ou demandé le mot ' +
-              'de la veille : la question de ton point, ou ce mot (le détail plus bas). 650 Industries, Inc. (Expo), ' +
+              'Acheminement des notifications vers ton téléphone, si tu les as choisies comme canal de rappel. Expo ' +
+              'reçoit alors l’identifiant que Google attribue à l’application sur ton téléphone et un identifiant ' +
+              'd’installation, et nous rend l’identifiant de notification ; puis le texte de chaque notification : la ' +
+              'question de ton point, ou le mot de la veille si tu l’as demandé (le détail plus bas). Avec un rappel par ' +
+              'email ou sans rappel, aucun de ces identifiants ne lui est envoyé. 650 Industries, Inc. (Expo), ' +
               'société américaine, serveurs situés aux États-Unis, inscrite au Data Privacy Framework.',
           },
           {
@@ -582,11 +590,11 @@ const SECTIONS: LegalSection[] = [
             'service, et toutes partent avec la ' +
             'suppression de ton compte ou la suppression automatique d’une session anonyme.',
           'Identifiant de notification de ton téléphone : désactivé au prochain démarrage de l’application si tu ' +
-            'as retiré la permission dans les réglages du téléphone, ou au premier envoi qui échoue si l’application ' +
-            'est désinstallée, puis supprimé 90 jours plus tard. Si aucun envoi ne part vers ce téléphone, par exemple ' +
-            'parce que tu as choisi les rappels par email ou aucun rappel, il reste enregistré tant que ton compte existe. Il ' +
-            'part dans tous les cas avec la suppression de ton compte et avec la suppression automatique d’une ' +
-            'session anonyme.',
+            'passes aux rappels par email ou sans rappel, ou si tu as retiré la permission dans les réglages du ' +
+            'téléphone, et au premier envoi qui échoue si l’application est désinstallée ; puis supprimé 90 jours plus ' +
+            'tard. Tant que tu gardes les notifications, il reste enregistré, même quand aucun rappel ne part. Il part ' +
+            'dans tous les cas avec la suppression de ton compte et avec la suppression automatique d’une session ' +
+            'anonyme.',
           'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +
             'd’envoi, message — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',

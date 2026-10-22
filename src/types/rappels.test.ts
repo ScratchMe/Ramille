@@ -11,6 +11,7 @@ import {
   carteAttente,
   doitProposerLaFeuille,
   laVeilleSeRepropose,
+  leJetonAuDemarrage,
   libelleBouton,
   laBoucleDuPointTourne,
   lignesDeReglage,
@@ -232,6 +233,27 @@ describe('doitProposerLaFeuille', () => {
     expect(
       doitProposerLaFeuille({ plateforme: 'web', emailPossible: true, dejaProposee: false })
     ).toBe(true);
+  });
+});
+
+// Mutations jouées le 22/10/2026 : `email` qui rend `inscrire` (le comportement d'avant) fait tomber
+// « l'e-mail le désactive » ; `none` qui rend `attendre` fait tomber « sans rappel le désactive » ; une
+// préférence illisible qui rend `desinscrire` fait tomber « une lecture ratée ne touche à rien ».
+describe('leJetonAuDemarrage', () => {
+  it('la notification choisie : le jeton de cet appareil s’inscrit', () => {
+    expect(leJetonAuDemarrage('push')).toBe('inscrire');
+  });
+
+  it('l’e-mail le désactive : rien ne l’emploie, le mot de la veille ne part qu’en notification', () => {
+    expect(leJetonAuDemarrage('email')).toBe('desinscrire');
+  });
+
+  it('sans rappel le désactive', () => {
+    expect(leJetonAuDemarrage('none')).toBe('desinscrire');
+  });
+
+  it('une lecture ratée ne touche à rien : désactiver couperait une notification choisie', () => {
+    expect(leJetonAuDemarrage(null)).toBe('attendre');
   });
 });
 
