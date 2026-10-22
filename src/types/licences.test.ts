@@ -136,6 +136,17 @@ describe('sectionsDesLicences', () => {
     expect(textesDe(ofl?.blocks ?? [])).toEqual(['Le texte de cette licence s’applique à la police ci-dessus :', 'Texte OFL.']);
   });
 
+  it('dit qu’une police ne donne pas d’avis, au lieu d’écrire « null »', () => {
+    const sans: DonneesDesLicences = { ...PETIT, polices: [{ ...PETIT.polices[0], copyright: null }] };
+
+    expect(sectionsDesLicences(sans)[0].blocks).toEqual([
+      {
+        kind: 'definitions',
+        items: [{ term: 'Fonte (Android)', text: `Licence : SIL Open Font License 1.1, dont le texte figure plus bas. ${SANS_COPYRIGHT}` }],
+      },
+    ]);
+  });
+
   it('accorde « police » et « polices » avec leur nombre', () => {
     const deux: DonneesDesLicences = {
       ...PETIT,
