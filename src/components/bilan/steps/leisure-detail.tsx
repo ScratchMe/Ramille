@@ -150,7 +150,7 @@ export function LeisureDetailStep({
       ),
       // C4.4 — les jumelles loisirs des deux révélations du quotidien. Elles sont posées ici plutôt
       // que déduites de B1 parce qu'on ne fait pas ses sorties comme son trajet : on peut aller au
-      // travail en RER et en week-end en TER.
+      // travail en RER et faire ses sorties en TER.
       choice.modeId === 'train' && (
         <PrecisionMode
           key="train"

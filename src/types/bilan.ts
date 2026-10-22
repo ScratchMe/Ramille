@@ -5,7 +5,12 @@ import type { TransportModeId } from '@/constants/transport-modes';
 
 export type DistanceBracket = 'lt_5' | '5_15' | '15_30' | '30_50' | '50_plus';
 export type LeisureDistanceBracket = 'lt_5' | '5_15' | '15_30' | '30_plus';
-export type LeisureFrequency = 'rarely' | 'multiple_monthly' | 'weekly' | 'multiple_weekly';
+export type LeisureFrequency =
+  | 'rarely'
+  | 'multiple_monthly'
+  | 'weekly'
+  | 'multiple_weekly'
+  | 'almost_daily';
 export type ZoneType = 'urbain_dense' | 'periurbain' | 'rural';
 /**
  * L'accès aux transports, **déduit** depuis `v1-34` (02/10/2026) : la question n'est plus posée, et
@@ -285,13 +290,20 @@ export const PARTS_DU_SECOND_MODE: { value: number; label: string }[] = [
 ];
 
 /**
- * Les quatre réponses à B2.1, dans l'ordre de l'écran.
+ * Les cinq réponses à B2.1, dans l'ordre de l'écran.
  *
  * **« Deux ou trois fois par mois » est la quatrième depuis le 02/10/2026** (`v1-33` D5) : entre
  * « Rarement » (0,25 sortie par semaine) et « Une fois par semaine » (1), il n'y avait rien, et qui
  * sort deux ou trois fois par mois se trompait d'un facteur 2 environ. Elle vaut 0,6 sortie par
  * semaine (`HYPOTHESES.sortiesParSemaine`), et elle se comporte comme une sortie déclarée : seule
  * « Rarement » saute le détail des sorties et passe sur le résiduel.
+ *
+ * **« Presque tous les jours » est la cinquième depuis le 22/10/2026** (`v1-35`, étape 3), avec la
+ * question qui couvre désormais la semaine comme le week-end : « Plusieurs fois par semaine », la plus
+ * haute jusque-là, vaut 3 sorties par semaine, et la semaine entière en compte davantage. La nouvelle
+ * vaut 5 sorties par semaine, et se comporte, comme les autres, en sortie déclarée — mode et distance
+ * demandés, boucle mensuelle, actions de loisirs. Elle est **dernière** : l'échelle monte, du moins
+ * fréquent au plus fréquent.
  *
  * Miroir du `check` de `assessment_answers.leisure_frequency`, comparé à la base
  * (`scripts/verifier-miroirs-de-check.mjs`), comme l'union `LeisureFrequency`.
@@ -301,6 +313,7 @@ export const REPONSES_FREQUENCE_DES_LOISIRS: { value: LeisureFrequency; label: s
   { value: 'multiple_monthly', label: 'Deux ou trois fois par mois' },
   { value: 'weekly', label: 'Une fois par semaine' },
   { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
+  { value: 'almost_daily', label: 'Presque tous les jours' },
 ];
 
 /**
@@ -432,6 +445,10 @@ export type BilanStepId = (typeof BILAN_STEP_ORDER)[number];
  * du questionnaire**, le produit nomme un **poste**, et c'est le poste que la personne retrouve
  * partout ensuite.
  *
+ * **Le poste s'appelle « Loisirs » depuis le 22/10/2026** (`v1-35`, étape 3) : la question couvre la
+ * semaine comme le week-end, et « Loisirs du week-end » en tête de section n'en disait que la moitié.
+ * Les bilans soumis avant cette date gardent le libellé qu'on leur a figé.
+ *
  * « Domicile-travail » reste court : c'est le seul libellé où la forme longue
  * (« Trajet domicile-travail ») sonnerait redondante en face de « Étape 3 sur 9 ».
  */
@@ -440,8 +457,8 @@ export const BILAN_SECTION_LABEL: Record<BilanStepId, string> = {
   commute_days_distance: 'Domicile-travail',
   commute_mode: 'Domicile-travail',
   commute_extra: 'Domicile-travail',
-  leisure_frequency: 'Loisirs du week-end',
-  leisure_detail: 'Loisirs du week-end',
+  leisure_frequency: 'Loisirs',
+  leisure_detail: 'Loisirs',
   flights: 'Voyages longue distance',
   long_trips: 'Voyages longue distance',
   context: 'Contexte de mobilité',

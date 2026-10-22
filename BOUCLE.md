@@ -73,9 +73,9 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   carte.
 - **Le mode par défaut des loisirs « rarement » est un résiduel de calcul, et il ne nomme plus
   rien.** Le calcul reste (D5, spec §5 : 15 km, 0,25 fois par semaine) mais ses conséquences
-  partent : `extras_poste_label` **et** `dominant_poste_label` disent « Loisirs du week-end
-  (occasionnels) », `dominant_poste_mode` est nul (sans quoi la restitution écrivait « Tes loisirs
-  du week-end **en voiture** »), et `estimate_action_savings` refuse les gabarits `leisure` — une
+  partent : `extras_poste_label` **et** `dominant_poste_label` disent « Loisirs (occasionnels) »,
+  `dominant_poste_mode` est nul (sans quoi la restitution écrivait « Tes loisirs **en voiture** »),
+  et `estimate_action_savings` refuse les gabarits `leisure` — une
   action « faire une sortie sur trois à vélo » sur des sorties jamais déclarées. Les deux libellés
   partagent le mot parce que leur condition est **le même test** (`v_leisure_co2 >= v_travel_co2 ×
   0,95`), donc ils ne peuvent pas se contredire. Conséquence à connaître : **tout cycliste et tout
@@ -85,6 +85,13 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   s'affichait encore au-dessus, relevé pour C3.8. Et si `household_vehicles = '0'`, le résiduel passe en **train** et non en bus :
   à 0,1224 kg/km le bus ne vaut que 14 % de moins qu'une thermique en ACV, la correction aurait été
   un non-événement (A7-13).
+  **Les loisirs ne sont plus « du week-end » depuis le 22/10/2026** (`v1-35` étape 3,
+  `20261022163000_les_loisirs_de_toute_la_semaine.sql`) : la question du questionnaire couvre la semaine
+  comme le week-end, les libellés figés disent « Loisirs », « Loisirs (<mode>) » et « Loisirs
+  (occasionnels) », `public.poste_inserable('leisure')` rend « tes sorties » et la question du mois nomme
+  le poste « Loisirs ». **Un point déjà généré garde sa question et son libellé** (`committed_question`,
+  `trip_label` : figés à la génération), « du week-end » compris, et un bilan soumis avant garde les
+  siens : ce que le client en lit est le marqueur « (occasionnels) », vrai des deux (`BILAN.md` §1).
 - **La boucle mensuelle demande une base déclarée**, sinon elle n'est pas générée :
   `extras_poste_label` est calculé sans condition, donc sans ce filtre un profil qui a répondu sortir
   rarement et n'avoir pris ni vol ni long trajet recevait chaque mois une question sur des
@@ -122,7 +129,7 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   devant (30/09/2026, §2), et le libellé du résiduel n'est jamais repris sur un point. **La bascule vit dans la boucle et non dans `assessment_results`**, et c'est
   la moitié à ne pas « simplifier » : `extras_poste_label` reste le plus lourd des deux, parce que
   l'app y lit le marqueur « (occasionnels) » pour reconnaître le résiduel ; déplacer la règle dans
-  le calcul ferait dire « tes loisirs du week-end » à l'étiquette de la restitution. Quatre
+  le calcul ferait dire « tes loisirs » à l'étiquette de la restitution. Quatre
   mutations en tête de `20` disent laquelle de ces moitiés chaque assertion garde.
 
 ## 2. Le point : la période, la question, la réponse

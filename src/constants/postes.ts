@@ -3,6 +3,9 @@
  *
  * ## Le défaut que ce fichier existe pour fermer
  *
+ * (Les loisirs s'appelaient « du week-end » à l'époque ; ils s'appellent « Loisirs » depuis le
+ * 22/10/2026, la question couvrant la semaine comme le week-end — voir `POSTE_LABEL`.)
+ *
  * Le même poste portait trois noms selon l'écran. La restitution disait « Tes loisirs du
  * week-end », la liste du suivi « Loisirs du week-end », et la question du point, l'email, le
  * push, le sous-titre du plan et le cap collaient après une préposition le libellé **snapshoté**
@@ -25,9 +28,9 @@
  *    `POSTE_SUBJECT` à la majuscule près, pour que les deux ne divergent pas.
  *  - **`FORME_INSERABLE`** — ce qui se glisse après une préposition : « pour ton trajet
  *    domicile-travail », « − 20 % sur tes voyages ». Forme **courte**, et c'est tout l'intérêt :
- *    « pour tes voyages longue distance » et « pour tes loisirs du week-end » alourdissent une
- *    question déjà longue, alors que « pour tes voyages » et « pour tes sorties du week-end »
- *    se lisent d'un trait.
+ *    « pour tes voyages longue distance » alourdit une question déjà longue, alors que « pour tes
+ *    voyages » se lit d'un trait ; et les loisirs y gardent « sorties » (« pour tes sorties »), le
+ *    mot de la copie validée du canvas, là où le sujet d'une phrase dit « tes loisirs ».
  *
  * **Ne pas fusionner `FORME_INSERABLE` et `POSTE_EN_PHRASE`.** Elles se ressemblent assez pour
  * qu'on soit tenté ; les unifier rallonge chaque question du point d'un « longue distance » ou
@@ -51,10 +54,19 @@ export type Poste = (typeof POSTES)[number];
 /** Les deux boucles d'engagement (`engagement_checkins.loop_type`). */
 export type LoopType = 'commute' | 'extras';
 
-/** L'étiquette nue : répartition du bilan, liste du suivi, en-tête du questionnaire, partage. */
+/**
+ * L'étiquette nue : répartition du bilan, liste du suivi, en-tête du questionnaire, partage.
+ *
+ * **Les loisirs s'appellent « Loisirs » depuis le 22/10/2026** (`v1-35`, étape 3, décidé avec la
+ * personne qui pilote) : la question couvre la semaine comme le week-end, et « du week-end » en
+ * promettait la moitié. Les bilans soumis avant cette date portent encore « Loisirs du week-end »
+ * dans les libellés que le serveur leur a figés (`assessment_results` ne se réécrit pas) : tout
+ * code qui **lit** un libellé figé accepte donc les deux, et c'est le cas du partage
+ * (`api/_partage-commun.ts`) comme du marqueur « (occasionnels) ».
+ */
 export const POSTE_LABEL: Record<string, string> = {
   commute: 'Trajet domicile-travail',
-  leisure: 'Loisirs du week-end',
+  leisure: 'Loisirs',
   travel: 'Voyages longue distance',
 };
 
@@ -64,18 +76,19 @@ export const POSTE_LABEL: Record<string, string> = {
  * « Trajets loisirs » / « Voyages » seuls ne distinguaient pas les deux postes (retour
  * utilisateur du 03/09/2026) : ce sont deux postes bien distincts du bilan (B2 « Week-ends et
  * loisirs » vs B3 « Voyages sur l'année »). Même wording que les libellés persistés côté
- * serveur, cf. `20260903120000_precise_poste_labels.sql`.
+ * serveur, cf. `20260903120000_precise_poste_labels.sql` — et, pour les loisirs depuis le 22/10/2026,
+ * `20261022163000_les_loisirs_de_toute_la_semaine.sql`.
  */
 export const POSTE_SUBJECT: Record<string, string> = {
   commute: 'Ton trajet domicile-travail',
-  leisure: 'Tes loisirs du week-end',
+  leisure: 'Tes loisirs',
   travel: 'Tes voyages longue distance',
 };
 
 /** Les mêmes, en milieu de phrase. Un seul vocabulaire, deux casses. */
 export const POSTE_EN_PHRASE: Record<string, string> = {
   commute: 'ton trajet domicile-travail',
-  leisure: 'tes loisirs du week-end',
+  leisure: 'tes loisirs',
   travel: 'tes voyages longue distance',
 };
 
@@ -83,11 +96,12 @@ export const POSTE_EN_PHRASE: Record<string, string> = {
  * La forme courte, celle qui suit une préposition. Copie du canvas v1-14 (§3.2) et du brief.
  *
  * `travel` perd « longue distance » et `leisure` devient « sorties » : dans « as-tu changé de
- * mode de transport pour … ? », la forme longue fait une question de trente mots.
+ * mode de transport pour … ? », la forme longue fait une question de trente mots. Les sorties ne
+ * sont plus « du week-end » depuis le 22/10/2026 : la question couvre la semaine comme le week-end.
  */
 export const FORME_INSERABLE: Record<string, string> = {
   commute: 'ton trajet domicile-travail',
-  leisure: 'tes sorties du week-end',
+  leisure: 'tes sorties',
   travel: 'tes voyages',
 };
 
@@ -99,7 +113,7 @@ export const FORME_INSERABLE: Record<string, string> = {
  * dominante du bilan), donc elle ne suffit pas à nommer le poste. Quand le poste est connu, il
  * gagne toujours ; `loopType` ne sert qu'aux lignes anciennes où il manque.
  *
- * Le repli d'`extras` est « tes sorties du week-end » et non une formule neutre : c'est le poste
+ * Le repli d'`extras` est « tes sorties » et non une formule neutre : c'est le poste
  * le plus fréquent des deux, et une phrase vague (« pour ce poste ») serait pire qu'un libellé
  * légèrement décalé sur un cas résiduel.
  */
@@ -117,12 +131,14 @@ export function formeInserable(
  * Le poste est-il le **résiduel des sorties rares** — un poste que le calcul suppose, et que la
  * personne n'a pas déclaré ?
  *
- * Quelqu'un qui sort « rarement » le week-end se voit compter quinze kilomètres une semaine sur
+ * Quelqu'un qui sort « rarement » se voit compter quinze kilomètres une semaine sur
  * quatre (D5, spec §5). Chez un cycliste sans voyage, ce résiduel devient le poste dominant, donc
  * celui du plan — et tout ce qui le nomme félicite ou sollicite la personne sur des sorties qu'elle
  * a dit ne presque pas faire. Le serveur le marque dans les deux libellés qu'il fige
- * (`dominant_poste_label` et `extras_poste_label` : « Loisirs du week-end (occasionnels) », épinglé
- * par les tests `01` et `20`) ; c'est ce marqueur qu'on lit, faute d'une colonne qui le dise.
+ * (`dominant_poste_label` et `extras_poste_label` : « Loisirs (occasionnels) » depuis le 22/10/2026,
+ * « Loisirs du week-end (occasionnels) » sur les bilans d'avant, épinglés par les tests `01`, `20`
+ * et `60`) ; c'est ce marqueur qu'on lit, faute d'une colonne qui le dise — et `(occasionnels)`
+ * est vrai des deux, c'est pourquoi il ne cherche que lui.
  *
  * **Une seule lecture pour deux écrans** (25/09/2026, `v1-29` §6.3) : la félicitation du plan et la
  * marche de la restitution. Écrit deux fois, le test du marqueur aurait pu diverger entre l'écran
@@ -152,8 +168,8 @@ export function posteLabel(poste: string | null | undefined, repli: string): str
  * (arbitrage du 27/09/2026, `v1-29` §6.3). « Loisirs du week-end » décrivait un comportement que la
  * personne a dit ne presque pas avoir ; le mot est celui du libellé que le serveur fige,
  * « (occasionnels) », qu'aucun écran n'affichait. Un nom par registre, comme les quatre tables
- * ci-dessus — et seulement pour ce résiduel : des sorties déclarées restent les « loisirs du
- * week-end » de la section du questionnaire.
+ * ci-dessus — et seulement pour ce résiduel : des sorties déclarées restent les « loisirs » de la
+ * section du questionnaire (le nom a perdu « du week-end » le 22/10/2026, l'arbitrage tient).
  */
 export const LOISIRS_OCCASIONNELS = {
   label: 'Loisirs occasionnels',

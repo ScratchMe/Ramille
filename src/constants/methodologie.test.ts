@@ -1,3 +1,5 @@
+import { REPONSES_FREQUENCE_DES_LOISIRS, type LeisureFrequency } from '@/types/bilan';
+
 import { HYPOTHESES, METHODE_TITRE, sectionsDeMethode } from './methodologie';
 
 // Le bloc « Comment ce chiffre est calculé » (C3.2).
@@ -21,6 +23,40 @@ describe('HYPOTHESES', () => {
   // bilan qui n'a pas répondu, c'est-à-dire à tout bilan antérieur à la question.
   it('garde la moitié comme part du second mode quand elle n’a pas été demandée', () => {
     expect(HYPOTHESES.partDuSecondMode).toBe(0.5);
+  });
+
+  // **Chaque réponse de la fréquence des loisirs a sa valeur, et l'échelle monte** (22/10/2026, `v1-35`
+  // étape 3 : « Presque tous les jours » compte 5 sorties par semaine). La valeur est comparée au calcul par
+  // `verifier-hypotheses-calcul.mjs` ; ce qui reste ici, c'est le lien entre la liste des réponses et le
+  // bloc : une réponse ajoutée au questionnaire sans sa ligne dans `HYPOTHESES` n'aurait de valeur affichée
+  // nulle part, et une valeur qui descendrait ferait « plusieurs fois par semaine » compter moins que
+  // « une fois par semaine ».
+  //
+  // Éprouvé en le cassant, le 22/10/2026 (`TESTING.md` §1.1), le fichier remis en place depuis le commit :
+  // `presqueTousLesJours` à 4 fait tomber 2 tests (« cinq sorties par semaine » et « affiche chaque
+  // hypothèse ») ; à 2,5, 3 — les mêmes et « de la plus rare à la plus fréquente », qui est seul à voir une
+  // échelle qui redescend ; la clause « presque tous les jours » retirée de la phrase, 1 (« affiche chaque
+  // hypothèse ») ; « plusieurs fois par semaine » redevenue « plusieurs fois », 1 (le même) ; la cinquième
+  // réponse retirée de la liste des réponses, 1 (« porte une valeur par réponse »).
+  const CLE_DE_LA_FREQUENCE: Record<LeisureFrequency, keyof typeof HYPOTHESES.sortiesParSemaine> = {
+    rarely: 'rarement',
+    multiple_monthly: 'deuxOuTroisParMois',
+    weekly: 'hebdomadaire',
+    multiple_weekly: 'plusieurs',
+    almost_daily: 'presqueTousLesJours',
+  };
+
+  it('porte une valeur par réponse de la fréquence des loisirs, de la plus rare à la plus fréquente', () => {
+    expect(Object.keys(HYPOTHESES.sortiesParSemaine)).toHaveLength(REPONSES_FREQUENCE_DES_LOISIRS.length);
+    const valeurs = REPONSES_FREQUENCE_DES_LOISIRS.map(
+      ({ value }) => HYPOTHESES.sortiesParSemaine[CLE_DE_LA_FREQUENCE[value]]
+    );
+    expect(valeurs).toEqual([...valeurs].sort((a, b) => a - b));
+    expect(new Set(valeurs).size).toBe(valeurs.length);
+  });
+
+  it('compte « Presque tous les jours » pour cinq sorties par semaine', () => {
+    expect(HYPOTHESES.sortiesParSemaine.presqueTousLesJours).toBe(5);
   });
 });
 
@@ -63,6 +99,10 @@ describe('sectionsDeMethode', () => {
     expect(texte).toContain('52 semaines');
     expect(texte).toContain('0,25 sortie');
     expect(texte).toContain('« deux ou trois fois par mois » 0,6,');
+    // La phrase des fréquences cite les cinq, chacune avec sa valeur (22/10/2026) : la cinquième ferme la
+    // liste, juste avant les semaines.
+    expect(texte).toContain('« plusieurs fois par semaine » 3,');
+    expect(texte).toContain('« presque tous les jours » 5 — sur 52 semaines.');
     expect(texte).toContain('15 km');
     expect(texte).toContain('1\u00a0500 km');
     expect(texte).toContain('9\u00a0000 km');

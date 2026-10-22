@@ -47,6 +47,15 @@
  * de l'app est devenu un `it.each` sur les deux lectures (`'refuser'`, `'ignorer'`) : une mutation qui le
  * touche y fait tomber un test de plus — non rejoué depuis.
  *
+ * **Le 22/10/2026, les loisirs de toute la semaine** (`v1-35` étape 3) : l'app dit « Loisirs » au lieu de
+ * « Loisirs du week-end », et les adresses déjà partagées portent l'ancien nom. Éprouvé en le cassant, le
+ * fichier remis en place depuis le commit : retirer « Loisirs du week-end » de la liste fait tomber 1 test,
+ * « accepte encore le nom que portaient les loisirs avant le 22/10/2026 », et lui seul — le balayage des
+ * libellés de l'app ne le voit pas, puisque l'app ne le produit plus ; retirer « Loisirs » fait tomber 5
+ * (l'acceptation de chaque libellé, les deux lectures de chaque adresse, les deux écritures de Vercel).
+ * Avant même d'y toucher, le renommage dans `POSTE_LABEL` avait fait tomber ce test-ci : c'est la garde
+ * qui a dit qu'`api/` n'avait pas suivi.
+ *
  * **Et le 19/10/2026, l'encodage** : Vercel passe la chaîne décodée à la fonction (une espace y arrive en
  * `%20`), et la forme canonique, jugée au caractère près, redirigeait chaque partage qui porte un poste
  * vers lui-même, en boucle — trouvé en production par la sonde, juste après la fusion. Éprouvé en le
@@ -74,7 +83,13 @@ const racine = path.resolve(__dirname, '..');
 function bilansDeLApp(total_co2_kg_year: number): ResultatBilan[] {
   const bilans: ResultatBilan[] = [];
   for (const poste of POSTES) {
-    const marqueurs = poste === 'leisure' ? ['Loisirs du week-end', 'Loisirs du week-end (occasionnels)'] : ['x'];
+    // Les libellés que le serveur fige sur les loisirs : ceux d'aujourd'hui, et ceux des bilans soumis avant
+    // le 22/10/2026 (`assessment_results` ne se réécrit pas). Le partage s'écrit depuis la table
+    // (`dominantShareLabel`), jamais depuis le libellé figé : les deux doivent donner les mêmes adresses.
+    const marqueurs =
+      poste === 'leisure'
+        ? ['Loisirs', 'Loisirs (occasionnels)', 'Loisirs du week-end', 'Loisirs du week-end (occasionnels)']
+        : ['x'];
     for (const dominant_poste_label of marqueurs) {
       for (const dominant_poste_mode of [null, ...MODE_IDS]) {
         bilans.push({
@@ -103,6 +118,18 @@ describe('le poste de la carte de partage', () => {
     // Quatre noms (le résiduel des sorties rares compris) × (chaque mode, et aucun).
     expect(libelles).toHaveLength(4 * (MODE_IDS.length + 1));
     expect(libelles.filter((libelle) => posteFerme(libelle) !== libelle)).toEqual([]);
+  });
+
+  // **Les liens déjà partagés restent lisibles** (22/10/2026, `v1-35` étape 3) : l'app dit « Loisirs » depuis
+  // ce jour, et une adresse partagée avant porte « Loisirs du week-end » — avec ou sans mode. Elle n'est
+  // plus produite par personne, donc le balayage des libellés de l'app ne la voit pas : ce test est sa
+  // seule garde, et il tombe si quelqu'un nettoie la liste de ce qu'« aucun libellé ne produit plus ».
+  it('accepte encore le nom que portaient les loisirs avant le 22/10/2026', () => {
+    expect(posteFerme('Loisirs du week-end')).toBe('Loisirs du week-end');
+    expect(posteFerme('Loisirs du week-end en voiture')).toBe('Loisirs du week-end en voiture');
+    expect(posteFerme('Loisirs du week-end à vélo')).toBe('Loisirs du week-end à vélo');
+    // Et il ne dérive pas vers un mode qu'aucune liste ne connaît.
+    expect(posteFerme('Loisirs du week-end en jet privé')).toBeNull();
   });
 
   it('ignore un libellé forgé, et garde le poste seul', () => {

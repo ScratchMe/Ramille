@@ -494,7 +494,7 @@ export function variantePourLaPeriode(variantes: readonly string[], periodStart:
 /**
  * Laquelle des quatre répliques de « pas de trajet » — indexée sur le **poste**, pas sur la boucle.
  *
- * La boucle mensuelle couvre deux postes depuis C2.6 (les voyages et les sorties du week-end) :
+ * La boucle mensuelle couvre deux postes depuis C2.6 (les voyages et les sorties) :
  * répondre « Pas de voyage, pas de question. » à quelqu'un qui vient d'appuyer sur « Pas de sortie
  * en septembre » serait la fausseté lisible que ce chantier-là a retirée ailleurs. `autre` ferme la
  * liste pour un point généré avant C2.6, qui ne porte pas de poste.
@@ -754,7 +754,7 @@ export function estDeuxiemeFoisDeSuite(
  * **sous** sa réplique, et sa place ici plutôt que dans `RAMILLE`.
  *
  * Quatre formes et non deux : le canvas écrit celle du trajet et celle des voyages, mais la boucle
- * mensuelle couvre aussi les sorties du week-end depuis C2.6 — même raison que pour le libellé du
+ * mensuelle couvre aussi les sorties depuis C2.6 — même raison que pour le libellé du
  * troisième choix et la réplique qui lui répond.
  */
 export function phraseDeSecondRenforcement(

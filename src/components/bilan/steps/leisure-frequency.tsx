@@ -10,8 +10,16 @@ import { Spacing } from '@/constants/theme';
 import { REPONSES_FREQUENCE_DES_LOISIRS as OPTIONS, type BilanAnswers } from '@/types/bilan';
 import { optionCible } from '@/types/demande';
 
-/** Écrite une fois : le titre de l'étape et le nom de la série (`GroupeDeChoix`). */
-const QUESTION_FREQUENCE = 'À quelle fréquence fais-tu des trajets loisirs le week-end ?';
+/**
+ * Écrite une fois : le titre de l'étape et le nom de la série (`GroupeDeChoix`).
+ *
+ * **Elle couvre la semaine comme le week-end, et elle le dit** (22/10/2026, `v1-35` étape 3, décidé avec
+ * la personne qui pilote) : « le week-end » seul laissait de côté les sorties du mercredi soir. Une
+ * seule étape et non deux — une étape de plus aurait demandé une distinction limpide entre la semaine
+ * et le week-end, faute de quoi elle ajoutait de la confusion (`v1-35` §1) : les libellés suffisent.
+ */
+const QUESTION_FREQUENCE =
+  'À quelle fréquence fais-tu des trajets pour tes loisirs, en semaine comme le week-end ?';
 
 // B2.1.
 //
