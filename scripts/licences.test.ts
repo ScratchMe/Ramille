@@ -862,7 +862,7 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
     });
 
     it('ignore un fichier que les bundles ne contiennent pas', () => {
-      const paquet = { package: pj('meta', '1.0.0'), fichiers: { 'src/a.js': 'export {};\n', 'src/hors-bundle.js': '// Copyright (c) 2019 Ailleurs\n' } };
+      const paquet = { package: pj('meta', '1.0.0'), fichiers: { 'src/a.js': 'export {};\n', 'hors-bundle.js': '// Copyright (c) 2019 Ailleurs\n', 'src/hors-bundle.js': '// Copyright (c) 2018 Ailleurs\n' } };
 
       expect(avisDe(paquet, ['src/a.js'])).toBeNull();
     });
