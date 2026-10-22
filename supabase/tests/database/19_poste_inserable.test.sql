@@ -11,8 +11,8 @@
 --   * **la forme courte** — « tes voyages », pas « tes voyages longue distance ». La forme longue
 --     est celle de la restitution ; après une préposition, dans une question de vingt mots, elle
 --     alourdit. Les deux tables coexistent exprès ;
---   * **le poste l'emporte toujours sur la boucle** — l'inverse ferait lire « tes sorties du
---     week-end » à quelqu'un dont le poste extras est les voyages, c'est-à-dire remplacerait une
+--   * **le poste l'emporte toujours sur la boucle** — l'inverse ferait lire « tes sorties » à
+--     quelqu'un dont le poste extras est les voyages, c'est-à-dire remplacerait une
 --     vérité laide par une fausseté lisible ;
 --   * **jamais une chaîne vide**, y compris sur un poste inconnu : elle produirait « pour  ? »
 --     dans un email déjà parti.
@@ -25,7 +25,7 @@ select plan(14);
 
 select is(public.poste_inserable('commute'), 'ton trajet domicile-travail',
   'poste_inserable: commute');
-select is(public.poste_inserable('leisure'), 'tes sorties du week-end',
+select is(public.poste_inserable('leisure'), 'tes sorties',
   'poste_inserable: leisure — « sorties » et non « loisirs », copie du canvas v1-14');
 select is(public.poste_inserable('travel'), 'tes voyages',
   'poste_inserable: travel — la forme courte, sans « longue distance »');
@@ -34,7 +34,7 @@ select is(public.poste_inserable('travel'), 'tes voyages',
 
 select is(public.poste_inserable(null, 'commute'), 'ton trajet domicile-travail',
   'poste_inserable: sans poste, la boucle commute donne le trajet');
-select is(public.poste_inserable(null, 'extras'), 'tes sorties du week-end',
+select is(public.poste_inserable(null, 'extras'), 'tes sorties',
   'poste_inserable: sans poste, la boucle extras retombe sur les sorties');
 select is(public.poste_inserable('travel', 'extras'), 'tes voyages',
   'poste_inserable: le poste l''emporte sur la boucle — jamais « sorties » pour un voyageur');

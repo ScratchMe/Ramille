@@ -332,16 +332,16 @@ select is(
   (select public.checkin_question('extras', 'generique', 'travel', null, period_start)
    from public.engagement_checkins
    where user_id = 'e2500000-0000-0000-0000-000000000008' and loop_type = 'extras'),
-  'et la question le dit : « … pour tes voyages ? », jamais « … pour tes sorties du week-end ? »'
+  'et la question le dit : « … pour tes voyages ? », jamais « … pour tes sorties ? »'
 );
 
 -- **Le bilan, lui, ne bouge pas** : l'app lit le marqueur « (occasionnels) » d'`extras_poste_label`
 -- pour reconnaître le résiduel (`etiquetteDuPosteDominant`). Le déplacer dans le résultat plutôt
--- que dans la boucle aurait fait dire « tes loisirs du week-end » à l'étiquette de la restitution.
+-- que dans la boucle aurait fait dire « tes loisirs » à l'étiquette de la restitution.
 select results_eq(
   $$ select extras_poste, extras_poste_label from public.assessment_results
      where assessment_id = 'e2510000-0000-0000-0000-000000000008' $$,
-  $$ values ('leisure'::text, 'Loisirs du week-end (occasionnels)'::text) $$,
+  $$ values ('leisure'::text, 'Loisirs (occasionnels)'::text) $$,
   'le résultat du bilan garde le résiduel comme poste le plus lourd — seule la boucle change de poste'
 );
 
@@ -368,14 +368,14 @@ select results_eq(
 select is(
   (select extras_poste_label from public.assessment_results
    where assessment_id = 'e2510000-0000-0000-0000-000000000003'),
-  'Loisirs du week-end (occasionnels)',
+  'Loisirs (occasionnels)',
   'loisirs rares : le libellé ne nomme aucun mode — personne n''en a déclaré'
 );
 
 select is(
   (select extras_poste_label from public.assessment_results
    where assessment_id = 'e2510000-0000-0000-0000-000000000006'),
-  'Loisirs du week-end (Voiture thermique)',
+  'Loisirs (Voiture thermique)',
   'témoin : des sorties déclarées gardent leur mode dans le libellé'
 );
 
@@ -386,7 +386,7 @@ select is(
 select results_eq(
   $$ select dominant_poste, dominant_poste_mode, dominant_poste_label
      from public.assessment_results where assessment_id = 'e2510000-0000-0000-0000-000000000001' $$,
-  $$ values ('leisure'::text, null::text, 'Loisirs du week-end (occasionnels)'::text) $$,
+  $$ values ('leisure'::text, null::text, 'Loisirs (occasionnels)'::text) $$,
   'cycliste : son poste dominant est le résiduel, mais il ne se présente pas comme une réponse donnée'
 );
 
@@ -455,7 +455,7 @@ select is(
 select results_eq(
   $$ select dominant_poste, dominant_poste_label from public.assessment_results
      where assessment_id = 'e2510000-0000-0000-0000-000000000004' $$,
-  $$ values ('leisure'::text, 'Loisirs du week-end (Marche)'::text) $$,
+  $$ values ('leisure'::text, 'Loisirs (Marche)'::text) $$,
   'bilan à zéro : le poste dominant est celui où quelque chose est déclaré, pas commute par défaut'
 );
 

@@ -163,7 +163,7 @@ select is(
 
 select is(
   public.checkin_question('extras', 'generique', 'leisure', null, '2026-09-01', null, null),
-  'En septembre, as-tu changé de mode de transport pour tes sorties du week-end ?',
+  'En septembre, as-tu changé de mode de transport pour tes sorties ?',
   'generique mensuel : le mois écoulé est nommé'
 );
 

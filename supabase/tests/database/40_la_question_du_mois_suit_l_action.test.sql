@@ -207,7 +207,7 @@ select public.generate_extras_checkins();
 select results_eq(
   $$ select poste, trip_label from public.engagement_checkins
      where user_id = 'e4000000-0000-0000-0000-00000000000a' and loop_type = 'extras' $$,
-  $$ values ('leisure'::text, 'Loisirs du week-end'::text) $$,
+  $$ values ('leisure'::text, 'Loisirs'::text) $$,
   'J : le point du mois porte sur les sorties, où l''action est engagée — nommées sans mode'
 );
 
@@ -263,7 +263,7 @@ select results_eq(
 select results_eq(
   $$ select poste, trip_label, question_kind, committed_action_text from public.engagement_checkins
      where user_id = 'e4000000-0000-0000-0000-00000000000e' and loop_type = 'extras' $$,
-  $$ values ('leisure'::text, 'Loisirs du week-end'::text, 'occasion'::text,
+  $$ values ('leisure'::text, 'Loisirs'::text, 'occasion'::text,
              'Faire une sortie sur trois à vélo à assistance électrique'::text) $$,
   'N : l''action engagée est interrogée, et jamais sous le libellé du résiduel des sorties rares'
 );
