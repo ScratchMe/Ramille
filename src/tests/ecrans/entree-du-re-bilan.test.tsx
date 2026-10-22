@@ -98,7 +98,7 @@ const TITRE_DU_TRAJET = 'As-tu un trajet régulier pour le travail ou les étude
 // Le titre depuis le 22/10/2026 (`v1-35` étape 3). Éprouvé en le cassant le même jour : remettre l'ancien
 // titre dans `leisure-frequency.tsx` fait tomber le bandeau ici et le retour matériel dans
 // `retour-du-questionnaire.test.tsx`, ces deux-là et aucun autre.
-const TITRE_DES_SORTIES = 'À quelle fréquence fais-tu des trajets pour tes loisirs, en semaine comme le week-end ?';
+const TITRE_DES_SORTIES = 'À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en semaine ?';
 
 beforeEach(() => {
   jest.mocked(router.back).mockClear();

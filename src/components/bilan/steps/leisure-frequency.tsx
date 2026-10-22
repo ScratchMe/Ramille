@@ -17,9 +17,14 @@ import { optionCible } from '@/types/demande';
  * la personne qui pilote) : « le week-end » seul laissait de côté les sorties du mercredi soir. Une
  * seule étape et non deux — une étape de plus aurait demandé une distinction limpide entre la semaine
  * et le week-end, faute de quoi elle ajoutait de la confusion (`v1-35` §1) : les libellés suffisent.
+ *
+ * **« le week-end comme en semaine », dans cet ordre** : « en semaine comme le week-end » coupait la
+ * ligne dans « week- » / « end ? » à 390 de large, et Spline Sans n'a ni trait d'union insécable
+ * (U+2011) ni gluon (U+2060) pour l'empêcher — le caractère serait tombé sur une autre police.
+ * Mesuré sur l'export le 22/10/2026 (`FRONT-QUESTIONNAIRE.md`).
  */
 const QUESTION_FREQUENCE =
-  'À quelle fréquence fais-tu des trajets pour tes loisirs, en semaine comme le week-end ?';
+  'À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en semaine ?';
 
 // B2.1.
 //
