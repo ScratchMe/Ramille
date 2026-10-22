@@ -33,6 +33,8 @@ const PAIRES = [
   ['deuxOuTroisParMois', 'leisure_freq_multiple_monthly'],
   ['hebdomadaire', 'leisure_freq_weekly'],
   ['plusieurs', 'leisure_freq_multiple'],
+  // Ajoutée le 22/10/2026 avec la cinquième fréquence des loisirs (étape 3 de `v1-35`).
+  ['presqueTousLesJours', 'leisure_freq_almost_daily'],
   ['distanceSortieParDefautKm', 'leisure_default_distance'],
   ['volCourtKm', 'dist_flight_short'],
   ['volLongKm', 'dist_flight_long'],

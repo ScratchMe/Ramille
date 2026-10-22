@@ -305,7 +305,17 @@ exactement ce qui avait laissé passer le mauvais caractère.
   puis n'en gardait que le libellé. `assessment_results.extras_poste` (loisirs ou voyages),
   `engagement_checkins.poste` (`loop_type` ne le nomme pas : « extras » couvre les deux) et
   `plan_cycles.poste`. Se rabattre sur `loop_type` aurait remplacé une vérité laide par une
-  **fausseté lisible** — « tes sorties du week-end » à quelqu'un dont le poste est les voyages.
+  **fausseté lisible** — « tes sorties » à quelqu'un dont le poste est les voyages.
+- **Les loisirs ne sont plus « du week-end » depuis le 22/10/2026** (`v1-35` étape 3, décidé avec la
+  personne qui pilote) : la seconde partie du questionnaire couvre la semaine comme le week-end, en une
+  seule étape, et les quatre registres disent « Loisirs », « Tes loisirs », « tes loisirs » et « tes
+  sorties ». `FORME_INSERABLE` garde **« sorties »**, le mot de la copie validée du canvas : c'est ce qui
+  la garde distincte de `POSTE_EN_PHRASE` (le test de la différence). Le mot-clé que les quatre se
+  partageaient (« week-end ») a disparu avec lui, et le test du mot-clé dit « loisirs » pour trois
+  registres et « sorties » pour le quatrième, à dessein. **Les libellés que le serveur a figés avant cette
+  date, eux, disent encore « du week-end »** (`assessment_results` ne se réécrit pas) : tout ce qui les lit
+  accepte les deux — le marqueur « (occasionnels) » du résiduel, la liste fermée du partage —, et tout le
+  reste vient de ces tables, pas du libellé figé (`BILAN.md` §1).
 - **Le résiduel des sorties rares a son propre nom dans les quatre registres : « loisirs
   occasionnels »** (arbitrage du 27/09/2026, `v1-29` §6.3). Pour qui sort « rarement », les loisirs
   comptés sont une hypothèse du calcul, et « Tes loisirs du week-end » les présentait comme un
@@ -623,7 +633,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   soit accepté, et que **chaque adresse que `urlDePartage` produit soit déjà canonique** — sinon la
   page redirigerait chaque vrai partage (`VERCEL.md` §2.2). **Renommer un poste, ajouter un mode ou
   changer le format du total impose donc de suivre dans `api/_partage-commun.ts`**, et le test dit
-  lequel.
+  lequel. **Et l'ancien nom reste dans la liste** : l'inverse n'est pas exigé, mais les adresses déjà
+  partagées le portent — « Loisirs du week-end » à côté de « Loisirs » depuis le 22/10/2026 — et le
+  balayage des libellés de l'app ne le voit plus, donc un test à part exige qu'il soit encore accepté.
 - **Une valeur `EXPO_PUBLIC_*` peut disparaître du bundle sans que rien ne bronche** — lire la
   variable dans un `const`, jamais en valeur d'une propriété homonyme ;
   `scripts/verifier-configuration-export.mjs` garde ce point : `EXPO.md` §1.2 et §2.1.

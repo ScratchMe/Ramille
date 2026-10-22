@@ -30,31 +30,57 @@ une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par 
 `BilanAnswers` (`src/types/bilan.ts`) est un miroir direct des colonnes de la table, pour un
 insert sans transformation.
 
-**La fréquence des loisirs a quatre réponses depuis le 02/10/2026** (`v1-33` D5,
-`20261002201852_la_quatrieme_frequence_des_loisirs.sql`) : « Rarement — une fois par mois ou
-moins » (`rarely`, 0,25 sortie par semaine), « Deux ou trois fois par mois » (`multiple_monthly`,
-0,6), « Une fois par semaine » (`weekly`, 1) et « Plusieurs fois par semaine » (`multiple_weekly`,
-3), toutes sur 52 semaines. Trois choses à savoir avant d'en ajouter une cinquième :
+**La fréquence des loisirs a cinq réponses depuis le 22/10/2026** (`v1-35` étape 3,
+`20261022201848_les_loisirs_de_toute_la_semaine.sql`) : « Rarement — une fois par mois ou moins »
+(`rarely`, 0,25 sortie par semaine), « Deux ou trois fois par mois » (`multiple_monthly`, 0,6, ajoutée
+le 02/10/2026 — `v1-33` D5, `20261002201852_la_quatrieme_frequence_des_loisirs.sql`), « Une fois par
+semaine » (`weekly`, 1), « Plusieurs fois par semaine » (`multiple_weekly`, 3) et **« Presque tous les
+jours » (`almost_daily`, 5)**, toutes sur 52 semaines. La cinquième vient avec la décision du
+22/10/2026 : la seconde partie du questionnaire couvre les loisirs **de la semaine et du week-end**,
+ensemble, **en une seule étape** — « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end
+comme en semaine ? » —, et « Plusieurs fois par semaine » (3 sorties), la plus haute jusque-là, ne
+laissait plus de place à qui sort presque chaque jour. Le poste y perd « du week-end » dans ses quatre registres (`FRONT.md` §2.1) et
+dans les libellés que le serveur fige : « Loisirs », « Loisirs (<mode>) », « Loisirs (occasionnels) »,
+et `public.poste_inserable('leisure')` rend « tes sorties ». Trois choses à savoir avant d'en ajouter
+une sixième :
 
 - **seule « Rarement » est à part** : elle saute le détail des sorties et passe sur le résiduel
   (`BOUCLE.md` §1). Tout le schéma et tout l'écran testent `= 'rarely'` ou `<> 'rarely'`, donc une
   réponse nouvelle se comporte d'office comme une sortie déclarée — mode et distance demandés,
-  boucle mensuelle sur les sorties, actions de loisirs au plan ;
+  boucle mensuelle sur les sorties, actions de loisirs au plan. Les tests Jest le disent en balayant la
+  liste des réponses, jamais une énumération : la visibilité de l'étape du détail, ce que
+  `normaliserReponses` garde, ce que `loisirsSontLeResiduel` et `phraseDuCalculDuContexte` répondent ;
 - **le seul endroit qui énumère les fréquences est le `case` du calcul, et il n'a pas de `else`** :
   une valeur admise par le `check` sans sa branche rend un total NULL, que la colonne refuse, donc
   chaque bilan portant cette réponse échoue à la soumission. Le contrôle de la migration et le
-  fichier pgTAP `41` vérifient **chaque** valeur admise, lue dans la contrainte ;
+  fichier pgTAP `41` vérifient **chaque** valeur admise, lue dans la contrainte ; `60` garde la
+  valeur de la cinquième et ce qu'elle déclenche ;
 - **la valeur affichée et la valeur calculée sont gardées à part** : `HYPOTHESES.sortiesParSemaine`
-  par `scripts/verifier-hypotheses-calcul.mjs`, qui lit la **dernière migration réécrivant le
-  calcul en entier** — d'où la réécriture complète du 02/10/2026, une substitution lui aurait caché
-  la constante —, et la liste des réponses (`REPONSES_FREQUENCE_DES_LOISIRS`, `LeisureFrequency`)
-  par `scripts/verifier-miroirs-de-check.mjs`, où elle manquait depuis le premier jour.
+  (`presqueTousLesJours: 5`, appariée à `leisure_freq_almost_daily`) par
+  `scripts/verifier-hypotheses-calcul.mjs`, qui lit la **dernière migration réécrivant le calcul en
+  entier** — d'où la réécriture complète du 02/10/2026, une substitution lui aurait caché la
+  constante —, et la liste des réponses (`REPONSES_FREQUENCE_DES_LOISIRS`, `LeisureFrequency`) par
+  `scripts/verifier-miroirs-de-check.mjs`, où elle manquait depuis le premier jour. La phrase de
+  méthode cite les cinq (`methodologie.test.ts` : une valeur par réponse, et l'échelle monte).
+
+**Les bilans déjà soumis gardent leurs anciens libellés, et ce qui les lit accepte les deux.**
+`assessment_results` est figé et la question d'un point l'est à sa génération : « Loisirs du week-end
+(occasionnels) » et « Loisirs du week-end (Voiture thermique) » restent en base, à côté des nouveaux.
+Ce que le client en lit est le **marqueur** `(occasionnels)`, vrai des deux (`estLeResiduelDesSortiesRares`) ;
+tout le reste vient de la table de `postes.ts`, pas du libellé figé. Le partage fait exception, parce
+qu'une adresse déjà partagée porte l'ancien nom : `api/_partage-commun.ts` garde « Loisirs du week-end »
+dans sa liste fermée à côté de « Loisirs » (`scripts/postes-partageables.test.ts` exige les deux).
+Aucun code ne compare un libellé figé à une chaîne écrite en dur au 22/10/2026 — un qui s'y mettrait
+devrait accepter les deux ; `accentDesPoints` (`src/types/checkin.ts`) en compare deux entre eux, le
+`trip_label` d'un point et celui du cycle, ce qui suppose que la même version du serveur les ait figés.
 
 Et ce qu'aucune garde ne suit, à reprendre à la main : le **nombre** de fréquences écrit dans le
-contrôle de la migration et dans la prémisse du fichier `41` (quatre), et les recopies du kit —
-`docs/design/design-system/components/bilan/LeisureFrequencyStep.*`, l'union de `ContextStep.d.ts`,
-la phrase de `suivi/BlocMethode.jsx` — avec la hauteur de son aperçu (`.design-sync/config.json`).
-Les domaines des tests Jest, eux, se dérivent de la liste.
+contrôle de la migration et dans la prémisse du fichier `41` (quatre jusqu'au 22/10/2026), et les
+recopies du kit — `docs/design/design-system/components/bilan/LeisureFrequencyStep.*`, l'union de
+`ContextStep.d.ts`, la phrase de `suivi/BlocMethode.jsx` — avec la hauteur de son aperçu
+(`.design-sync/config.json`). Aucune garde ne compare ces recopies du kit au dépôt : on les retrouve
+par `rg "multiple_weekly"` sur le kit (relevé du 22/10/2026 dans `.design-sync/NOTES.md`). Les domaines des
+tests Jest, eux, se dérivent de la liste.
 
 **Le questionnaire demande désormais ce que le calcul supposait** (C3.4 + C3.5 + C3.6,
 `20260914123432`). Quatre réponses s'ajoutent, toutes **obligatoires dès que leur déclencheur est

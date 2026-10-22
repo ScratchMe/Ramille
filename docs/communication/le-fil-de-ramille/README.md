@@ -166,6 +166,18 @@ avant chaque diffusion.
   Le détail et le premier pas de chaque piste sont imprimés par `profil-d-exemple.sql`. Reprendre
   ces écarts allonge le choix des jours et la carte engagée : le défilement du plan et les appuis
   du doigt se recalent, et `verifier.mjs` dit où.
+- **Ce qui ne suit plus l'app depuis le 22/10/2026 : l'étape des loisirs** (étape 3 de
+  `docs/architecture/v1-35-l-audit-en-chantiers.md`). Les loisirs couvrent désormais la semaine et le
+  week-end, en une seule étape. Le film montre encore l'ancienne question, quatre réponses et le
+  poste « Loisirs du week-end » (`film.html`, vers les lignes 416, 417, 431 et 1315). Deux autres
+  endroits portent le week-end, et les changer est un choix de communication, pas une mise à jour : le
+  sous-titre « Chez toi, au travail, le week-end, en vacances. », qui fait répondre un moment à chaque
+  poste, et l'étiquette « Le week-end » d'`ETIQ_ARRETS` (vers les lignes 638 et 939). Dans l'app, la
+  question est « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en
+  semaine ? » (`src/components/bilan/steps/leisure-frequency.tsx`), il y a **cinq** réponses, la
+  dernière étant « Presque tous les jours », et le poste s'appelle « Loisirs ». À reprendre avant la
+  diffusion, comme l'écran du plan. Le titre tient sur quatre lignes au lieu de trois, et la
+  cinquième rangée allonge l'étape : `verifier.mjs` dira si le téléphone du film déborde.
 
 ## Décidé le 03/10/2026
 

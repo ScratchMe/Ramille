@@ -125,7 +125,7 @@ select public.compute_assessment_results('d1111111-1111-1111-1111-111111111114')
 
 select results_eq(
   $$ select dominant_poste, dominant_poste_mode, dominant_poste_label from public.assessment_results where assessment_id = 'd1111111-1111-1111-1111-111111111114' $$,
-  $$ values ('leisure'::text, 'voiture_electrique'::text, 'Loisirs du week-end (Voiture électrique)'::text) $$,
+  $$ values ('leisure'::text, 'voiture_electrique'::text, 'Loisirs (Voiture électrique)'::text) $$,
   'D : loisirs voiture électrique dominants -> mode et libellé résolus précisément'
 );
 

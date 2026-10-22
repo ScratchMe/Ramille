@@ -7,7 +7,7 @@ import { ProgressHeader } from 'ramille-design-system';
  */
 export const Debut = () => <ProgressHeader section="Domicile-travail" step={3} total={9} />;
 
-export const AuMilieu = () => <ProgressHeader section="Weekend et loisirs" step={2} total={6} />;
+export const AuMilieu = () => <ProgressHeader section="Loisirs" step={2} total={6} />;
 
 /** Le dernier écran : la barre est pleine, il n'y a pas de célébration. */
 export const DernierEcran = () => <ProgressHeader section="Contexte" step={9} total={9} />;

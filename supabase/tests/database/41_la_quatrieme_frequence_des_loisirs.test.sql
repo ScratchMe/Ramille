@@ -103,10 +103,11 @@ begin
 end
 $$;
 
+-- Cinq depuis le 22/10/2026 : « Presque tous les jours » (`20261022201848`, gardée par `60`).
 select is(
   (select count(*)::int from distances_par_frequence),
-  4,
-  'prémisse : les quatre fréquences admises ont été jouées'
+  5,
+  'prémisse : les cinq fréquences admises ont été jouées'
 );
 
 select is(

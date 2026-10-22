@@ -42,9 +42,12 @@ export const CHEMIN_CARTE = '/api/share-card';
 //
 // `scripts/postes-partageables.test.ts` exige que chaque libellé que l’app produit soit accepté.
 // L’inverse n’est pas exigé, et c’est voulu : un libellé que l’app ne produit plus garde lisibles les
-// liens déjà partagés.
+// liens déjà partagés. **C’est le cas de « Loisirs du week-end »** : l’app dit « Loisirs » depuis le
+// 22/10/2026 (`POSTE_LABEL`), et les adresses partagées avant cette date portent encore l’ancien nom.
+// Il reste donc dans la liste, et le test exige qu’il y reste.
 export const POSTES_PARTAGEABLES = [
   'Trajet domicile-travail',
+  'Loisirs',
   'Loisirs du week-end',
   'Loisirs occasionnels',
   'Voyages longue distance',

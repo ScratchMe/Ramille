@@ -45,8 +45,8 @@ export const INTENTION_DAYS: { value: IntentionDay; short: string; long: string 
 ];
 
 /**
- * Les échéances des **sorties** : elles se pensent au calendrier du mois, parce qu'une sortie du
- * week-end se décide dans le mois où elle tombe.
+ * Les échéances des **sorties** : elles se pensent au calendrier du mois, parce qu'une sortie se
+ * décide dans le mois où elle tombe.
  */
 export const INTENTION_TIMINGS_LOISIRS: { value: IntentionTiming; label: string }[] = [
   { value: 'ce_mois', label: 'Ce mois-ci' },
@@ -385,7 +385,7 @@ export function phraseDesPistesSuffisantes({
  * le registre qu'on insère après une préposition.
  *
  * **Un poste inconnu garde l'ancienne phrase**, et c'est délibéré : `formeInserable` retombe sur
- * « tes sorties du week-end » faute de mieux, repli pensé pour la boucle mensuelle — sur une
+ * « tes sorties » faute de mieux, repli pensé pour la boucle mensuelle — sur une
  * félicitation, un poste deviné serait une fausseté lisible, alors que « ce poste » ne ment pas.
  *
  * **Et le résiduel des sorties rares n'est ni nommé ni promis** (relevé en intégrant le chantier,

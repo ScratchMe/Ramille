@@ -9,8 +9,9 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // boucles. Le lien vers ce qu'on enregistre revient ici, juste avant la première écriture.
 // Les libellés de `BILAN_SECTION_LABEL` (src/types/bilan.ts), recopiés faute de pouvoir importer `src/` : le dépôt
 // les lit à la source, et ce sont ceux de l'en-tête du questionnaire (01/10/2026, `v1-33`, Q-15) — « Domicile-travail »
-// et « Contexte de mobilité », non plus « Trajet domicile-travail » et « Ton contexte de mobilité ».
-const SECTIONS = ['1 — Domicile-travail', '2 — Loisirs du week-end', '3 — Voyages longue distance', '4 — Contexte de mobilité'];
+// et « Contexte de mobilité », non plus « Trajet domicile-travail » et « Ton contexte de mobilité » ; et « Loisirs »
+// depuis le 22/10/2026, non plus « Loisirs du week-end » (`v1-35`) : la question couvre la semaine comme le week-end.
+const SECTIONS = ['1 — Domicile-travail', '2 — Loisirs', '3 — Voyages longue distance', '4 — Contexte de mobilité'];
 export function EtapeTransition({ onCommencer, onPrecedent, onConfidentialite, style }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 24, background: 'var(--color-background)', minHeight: 760, boxSizing: 'border-box', ...style }}>

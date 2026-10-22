@@ -565,7 +565,7 @@ describe('legendeDeLEcart', () => {
   it('nomme le résiduel « tes loisirs occasionnels »', () => {
     const residuel = [{ poste: 'leisure' as const, precedentKg: 12, courantKg: 11, dominant: true }];
     expect(legendeDeLEcart(residuel, true)).toContain('accent : tes loisirs occasionnels,');
-    expect(legendeDeLEcart(residuel, false)).toContain('accent : tes loisirs du week-end,');
+    expect(legendeDeLEcart(residuel, false)).toContain('accent : tes loisirs,');
   });
 
   // L'invariant plutôt que la phrase : quel que soit le poste accentué, la légende n'affirme rien du

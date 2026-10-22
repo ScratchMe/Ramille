@@ -82,8 +82,9 @@ select is(
 
 -- Libellés par poste (increment 11, boucles hebdo/mensuelle) : persistés indépendamment de
 -- la décision dominante globale, cf. migration 20260827090000_engagement_checkins.sql.
--- Libellés précis ("Loisirs du week-end"/"Voyages longue distance", pas juste "Trajets
--- loisirs"/"Voyages") depuis 20260903120000_precise_poste_labels.sql.
+-- Libellés précis ("Loisirs"/"Voyages longue distance", pas juste "Trajets loisirs"/"Voyages")
+-- depuis 20260903120000_precise_poste_labels.sql ; « Loisirs » et non plus « Loisirs du week-end »
+-- depuis 20261022201848_les_loisirs_de_toute_la_semaine.sql, qui compte la semaine aussi.
 --
 -- **« (occasionnels) » et non « (Voiture) »** depuis C2.5 : ce scénario répond « rarement » aux
 -- loisirs, donc son mode de loisir est un résiduel de calcul que personne n'a déclaré. Le nommer
@@ -92,7 +93,7 @@ select is(
 -- total de l'assertion juste au-dessus ne bouge pas.
 select results_eq(
   $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '21111111-1111-1111-1111-111111111111' $$,
-  $$ values ('Trajet domicile-travail (Voiture)'::text, 'Loisirs du week-end (occasionnels)'::text) $$,
+  $$ values ('Trajet domicile-travail (Voiture)'::text, 'Loisirs (occasionnels)'::text) $$,
   'scénario 1 : libellés commute/extras persistés indépendamment du poste dominant'
 );
 
@@ -182,7 +183,7 @@ select is(
 
 select results_eq(
   $$ select commute_poste_label, extras_poste_label from public.assessment_results where assessment_id = '24444444-4444-4444-4444-444444444444' $$,
-  $$ values (null::text, 'Loisirs du week-end (Bus)'::text) $$,
+  $$ values (null::text, 'Loisirs (Bus)'::text) $$,
   'scénario 4 : loisirs dominants -> extras_poste_label reflète loisirs même sans voyages concurrents'
 );
 

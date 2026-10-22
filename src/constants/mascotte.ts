@@ -66,7 +66,7 @@ export const RAMILLE = {
    *
    * Deux tableaux parce que la boucle mensuelle ne revient pas lundi. `mensuel[1]` dit « Une fois
    * autrement » là où le canvas écrit « Un voyage autrement » : cette boucle couvre aussi les sorties
-   * du week-end depuis C2.6 (écart consigné en `v1-14` §10).
+   * depuis C2.6 (écart consigné en `v1-14` §10).
    */
   checkinOui: {
     hebdo: [
@@ -110,7 +110,7 @@ export const RAMILLE = {
    * **Quatre variantes et non deux, et c'est un écart au canvas** (consigné en `v1-14` §10). Le
    * canvas en écrit deux, indexées sur la boucle — « Pas de trajet … » pour l'hebdomadaire, « Pas
    * de voyage … » pour la mensuelle — mais la boucle mensuelle couvre **deux** postes depuis C2.6 :
-   * les voyages et les sorties du week-end. Répondre « Pas de voyage, pas de question. » à
+   * les voyages et les sorties. Répondre « Pas de voyage, pas de question. » à
    * quelqu'un qui vient d'appuyer sur « Pas de sortie en septembre » serait la même fausseté
    * lisible que C2.6 a retirée ailleurs. Les variantes sont donc indexées sur le **poste**, comme
    * le libellé du bouton, et `autre` ferme la liste pour un point d'avant C2.6 qui n'en porte pas.
@@ -361,7 +361,7 @@ export const RAMILLE = {
     // Un mois et non une semaine depuis le 02/10/2026 (`v1-33` D5, décidé avec la personne qui
     // pilote) : qui sort deux ou trois fois par mois n'a qu'une sortie, ou aucune, dans une semaine
     // ordinaire — la semaine le poussait vers « Rarement » ou « Une fois par semaine », l'erreur
-    // que la quatrième réponse corrige. Les quatre réponses se lisent sur un mois.
+    // que la quatrième réponse corrige. Les réponses se lisent sur un mois.
     leisure_frequency: 'Pense à un mois ordinaire, pas au meilleur ni au pire.',
     flights: 'De mémoire, sans aller chercher. C’est l’ordre de grandeur qui compte.',
     context: 'Ce qui est possible là où tu vis change ce que je te proposerai ensuite.',
