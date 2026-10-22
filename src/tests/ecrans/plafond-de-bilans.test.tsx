@@ -14,9 +14,17 @@
  *     effacé — ni le brouillon, ni la navigation vers la restitution ;
  *   - toute autre panne garde sa phrase et sa cause.
  *
- * **Éprouvé en le cassant, le 22/10/2026** (`TESTING.md` §1.1), le fichier restauré depuis une copie
- * après chaque mutation — voir le compte en fin de session dans le rapport de la PR ; il s'écrit ici
- * quand les mutations ont été jouées.
+ * **Éprouvé en le cassant, le 22/10/2026** (`TESTING.md` §1.1), le fichier restauré depuis l'état commité
+ * après chaque mutation :
+ *   - l'écran revenu à sa phrase et à son détail d'avant (`setMessage` fixe, `JSON.stringify(error)`) → 3 :
+ *     « dit « Réessaie demain »… », « laisse le bouton soumettre de nouveau… » et « mesure le refus à la
+ *     création » (qui attend la phrase avant de lire la mesure). La dernière garde, « autre erreur », reste
+ *     verte — c'est ce qu'on attend d'elle ;
+ *   - `clearBilanDraft()` appelé dans le `catch` (le brouillon effacé sur un échec) → « dit « Réessaie
+ *     demain »… », seul, par son assertion « rien n'a été effacé » ;
+ *   - la dérivation (`echecDeLaSoumission`) et la reconnaissance (`estUnRefusDePlafond`) cassées font
+ *     aussi tomber ce fichier : leur compte est dans `src/types/soumission.test.ts` et
+ *     `src/types/refus-de-plafond.test.ts`.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';

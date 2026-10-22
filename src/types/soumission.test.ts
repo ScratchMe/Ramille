@@ -108,8 +108,11 @@ describe('repriseDeLaSoumission', () => {
 // dérivation, **jamais son appel** : que l'écran la branche est gardé par
 // `src/tests/ecrans/plafond-de-bilans.test.tsx`.
 //
-// Éprouvé en cassant ce qu'il garde, le 22/10/2026 (`TESTING.md` §1.1) : voir le compte en tête de
-// `src/types/refus-de-plafond.test.ts`, qui garde la reconnaissance elle-même.
+// Éprouvé en cassant ce qu'il garde, le 22/10/2026 (`TESTING.md` §1.1) : le plafond plus reconnu dans
+// `echecDeLaSoumission` → 3 ici (« dit le plafond de bilans… », « ne montre pas le JSON… », « lit le plafond
+// au code et non au genre ») et 3 à l'écran ; son détail rendu par `decrireErreur` au lieu de `null` → 2 ici
+// (« dit le plafond de bilans… », « ne montre pas le JSON… ») et 1 à l'écran. La reconnaissance elle-même et
+// son compte complet : en tête de `src/types/refus-de-plafond.test.ts`.
 describe('echecDeLaSoumission', () => {
   // Ce que PostgREST rend du `raise exception … using errcode = 'RM002'` de `plafonner_les_bilans`.
   const PLAFOND = {

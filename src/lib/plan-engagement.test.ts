@@ -14,6 +14,9 @@
 // Et le 04/10/2026, le plan périmé (`P0002`) : plus reconnu dans `commitPlanAction` → « relit le plan
 // quand l'action n'est plus… », seul ; dans `clearPlanActionCommitment` → « relit le plan quand
 // l'engagement n'est plus… », seul.
+// Et le 22/10/2026, le plafond d'engagements (`RM002`) : plus reconnu dans `commitPlanAction` → « dit le
+// plafond d'engagements… », seul ; rendu avec `rechargerLePlan: true` → le même, seul (son assertion « sans
+// relire le plan »). Le compte complet de la reconnaissance : `src/types/refus-de-plafond.test.ts`.
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
 import { CODE_REFUS_DE_PLAFOND, TROP_DE_CHANGEMENTS_D_ENGAGEMENT } from '@/types/refus-de-plafond';
 

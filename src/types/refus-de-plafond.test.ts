@@ -9,17 +9,34 @@
  * `src/lib/plan-engagement.test.ts`, `src/types/soumission.test.ts`, et les écrans
  * (`src/components/plan/action-commitment.test.tsx`, `src/tests/ecrans/plafond-de-bilans.test.tsx`).
  *
- * Éprouvé en le cassant le 22/10/2026 (`TESTING.md` §1.1), le fichier restauré depuis une copie après
- * chaque mutation :
- *   - la reconnaissance lue au message (`erreur.message` contenant « Reviens demain ») au lieu du code →
- *     « reconnaît le plafond à son code » et « ne le reconnaît jamais à son message », ensemble ;
+ * **Éprouvé en le cassant le 22/10/2026** (`TESTING.md` §1.1), le fichier restauré depuis l'état commité après
+ * chaque mutation. Chacune a été jouée sur les cinq fichiers de tests du chantier, et le compte dit
+ * **tout** ce qui est tombé, ici et ailleurs :
+ *   - la reconnaissance lue au message (`message` contenant « Reviens demain ») → 4 : « reconnaît le plafond
+ *     à son code » et « ne le reconnaît jamais à son message » ici ; « ne reconnaît pas le plafond à sa
+ *     phrase » (`plan-engagement.test.ts`) ; « ne prend pas pour un plafond une autre erreur qui porte la
+ *     même phrase » (`soumission.test.ts`). Les écrans restent verts : leur erreur porte la phrase du
+ *     serveur, et c'est aux deux gardes « même phrase, autre code » de le voir ;
  *   - la reconnaissance étendue à toute la classe `RM` (`startsWith('RM')`) → « ne prend pas pour un
- *     plafond », seul : `RM001`, le refus de remplacement, est le premier des codes voisins ;
- *   - « Réessaie demain. » remplacé par « Réessaie dans un instant. » dans `TROP_DE_BILANS` → « dit la
- *     suite à attendre » et « ne dit ni chiffre » (le mot « instant »), et « épingle les deux phrases » ;
- *     dans `TROP_DE_CHANGEMENTS_D_ENGAGEMENT`, de même ;
- *   - un chiffre ajouté à une phrase (« trente ») n'est pas un chiffre : « ne dit ni chiffre » ne le voit
- *     pas, et « épingle les deux phrases » le voit seul — c'est pour cela que les deux gardes coexistent.
+ *     plafond un autre refus du produit… », seul ;
+ *   - la reconnaissance toujours fausse → 8 : « reconnaît le plafond à son code » ici, « dit le plafond
+ *     d'engagements… » (`plan-engagement.test.ts`), trois de `echecDeLaSoumission` (`soumission.test.ts`)
+ *     et les trois de l'écran du questionnaire qui attendent la phrase du plafond ;
+ *   - la constante retouchée (`RM003`) → 2, ici : « épingle le SQLSTATE que la base lève » et « ne prend pas
+ *     pour un plafond un autre refus du produit… » (`RM003` est dans sa liste) — les assertions des autres
+ *     fichiers importent la constante, donc la suivent ;
+ *   - la garde de type retirée (`typeof erreur !== 'object'`) → 2 : « ne lève sur rien… » ici et « rend ok
+ *     quand l'engagement est enregistré » (`plan-engagement.test.ts`), dont l'erreur est `null` ;
+ *   - « Réessaie demain. » remplacé par « Réessaie dans un instant. » dans `TROP_DE_BILANS` → 3 : « dit la
+ *     suite à attendre : demain », « ne dit ni chiffre… » (le mot « instant ») et « épingle les deux
+ *     phrases » ; dans `TROP_DE_CHANGEMENTS_D_ENGAGEMENT`, ces trois et « dit le plafond d'engagements… »
+ *     (`plan-engagement.test.ts`, qui lit la fin de la phrase) → 4 ;
+ *   - « 10 bilans » dans `TROP_DE_BILANS` → 2 : « ne dit ni chiffre… » et « épingle les deux phrases » —
+ *     « dit la suite à attendre » reste verte ;
+ *   - « le serveur a déjà enregistré… » dans la phrase de l'engagement → 2 : « ne dit ni… serveur… » et
+ *     « épingle les deux phrases ».
+ * Le registre et l'épingle se recouvrent exprès : le premier dit **pourquoi** une phrase est fausse, la
+ * seconde empêche une retouche qui passerait les expressions régulières.
  */
 import {
   CODE_REFUS_DE_PLAFOND,

@@ -539,7 +539,11 @@ describe('ActionCommitment — un refus qui demande une relecture', () => {
 // feuille des rappels, ni relecture —, le bouton ne reste pas en attente, et la sélection de la personne
 // reste là, sous la phrase, pour qu'elle n'ait pas à tout recocher demain.
 //
-// Éprouvé en le cassant, le 22/10/2026 (`TESTING.md` §1.1) : voir le compte ci-dessous, en fin de bloc.
+// Éprouvé en le cassant, le 22/10/2026 (`TESTING.md` §1.1) : le `setBusy(false)` de l'échec retiré de
+// `submit` → 4 : les trois de ce bloc, et « « Annuler » efface l'échec d'un envoi qu'on abandonne »
+// (« Annuler » est inactif tant que `busy`) ; tout refus traité comme une relecture (`rechargerLePlan`
+// forcé) → 5 : les trois de ce bloc, ce même « Annuler » et « la carte relue engagée efface l'échec… » (la
+// phrase part à l'écran au lieu du sélecteur).
 describe('ActionCommitment — un plafond atteint', () => {
   const plafond = { ok: false, message: TROP_DE_CHANGEMENTS_D_ENGAGEMENT };
 
