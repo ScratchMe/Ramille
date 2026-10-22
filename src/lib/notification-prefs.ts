@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
 import { genreDeLEchec, type GenreDEchec } from '@/types/lecture-en-echec';
 import {
+  CLE_DU_JETON_DE_L_APPAREIL,
   reponseALaVeilleDe,
   type CanalPrefere,
   type EtatDesRappels,
@@ -268,10 +269,12 @@ export async function marquerLaVeilleProposee(): Promise<void> {
 // le sien » dans `enregistrerLeJeton()`.
 //
 // Même préfixe historique `traceverte.` que les autres clés locales (CLAUDE.md dit pourquoi il
-// ne se renomme pas), donc elle part avec la suppression de compte, qui balaie par préfixe.
+// ne se renomme pas), donc elle part avec la suppression de compte, qui balaie par préfixe — et
+// **seulement** avec elle : c'est une marque de l'appareil, que le changement de compte et la
+// déconnexion gardent (`CLE_DU_JETON_DE_L_APPAREIL`, `src/types/rappels.ts`, dit pourquoi).
 // Le préfixe est compté nulle part exprès : une phrase qui dénombre les clés devient fausse à
 // la prochaine, en silence — c'est déjà arrivé deux fois.
-const JETON_KEY = 'traceverte.jeton_appareil.v1';
+const JETON_KEY = CLE_DU_JETON_DE_L_APPAREIL;
 
 export async function lireLeJetonDeCetAppareil(): Promise<string | null> {
   try {
@@ -300,24 +303,25 @@ export async function memoriserLeJetonDeCetAppareil(jeton: string | null): Promi
  * enregistré (A4-6), et ce chemin-là le **reprend d'abord** pour la session présente, faute de quoi un
  * changement de compte laissait la ligne active au nom du compte quitté (`desactiverLeJetonDeCetAppareil`).
  * Et **« Me déconnecter »**
- * (04/10/2026, revue finale avant la production) : la déconnexion efface la marque locale du jeton
- * avec les autres ; sans ce geste avant elle, la ligne restait active au nom du compte quitté. Avec
- * la permission accordée, la session anonyme suivante reprend le jeton et rien ne se voit ; mais si
- * elle est coupée, plus rien sur l'appareil ne sait quel jeton désactiver, et le compte ne retombe
- * jamais sur le rappel par e-mail — le serveur continue d'envoyer dans le vide.
+ * (04/10/2026, revue finale avant la production) : sans ce geste avant elle, la ligne restait active
+ * au nom du compte quitté. **Depuis le 22/10/2026, la déconnexion garde la marque du jeton**
+ * (`effacerLesMarquesALaDeconnexion`) : une désinscription réussie l'efface ici, et une désinscription
+ * en échec la laisse à la session suivante, dont le réglage reprend puis désactive le jeton — sans
+ * elle, plus rien sur l'appareil ne saurait quel jeton désactiver, et le compte quitté ne retomberait
+ * jamais sur le rappel par e-mail.
  *
  * **La raison enregistrée ne distingue pas les cas** : `unregister_push_token` écrit
- * `disabled_reason = 'permission retirée'`, y compris pour une déconnexion ou un changement de canal. C'est assumé — ce que la
- * raison sert à dire, c'est que cet appareil ne reçoit plus pour ce compte, et c'est vrai dans les deux
- * cas ; la distinguer demanderait un argument de plus au RPC pour un journal que rien ne trie.
+ * `disabled_reason = 'permission retirée'`, y compris pour une déconnexion ou un changement de canal.
+ * C'est assumé — ce que la raison sert à dire, c'est que cet appareil ne reçoit plus pour ce compte, et
+ * c'est vrai dans chacun ; la distinguer demanderait un argument de plus au RPC pour un journal que rien ne trie.
  *
  * Au mieux de ce qui est possible : hors ligne, l'appel échoue et la déconnexion se fait quand même —
  * c'est la situation d'avant, pas une régression.
  *
  * **`abandon`, pour la déconnexion qui n'attend pas** (contre-lecture du 04/10/2026) : passé son délai,
- * elle part sans la réponse, efface les marques, et la session anonyme suivante peut mémoriser le
- * jeton de nouveau. Une réponse tardive qui effacerait alors la marque ferait croire à « Toi » que
- * l'appareil n'a plus de jeton actif. L'appel est donc annulé, et sa réponse ne touche plus à rien
+ * elle part sans la réponse et garde la marque, que la session suivante peut aussi mémoriser de
+ * nouveau. Une réponse tardive qui effacerait alors la marque ferait croire à « Toi » que l'appareil
+ * n'a plus de jeton actif — et laisserait le jeton actif sans plus rien pour le retrouver. L'appel est donc annulé, et sa réponse ne touche plus à rien
  * une fois l'abandon signalé — l'annulation d'un `fetch` n'étant pas garantie partout.
  */
 export async function desinscrireLeJetonDeCetAppareil(abandon?: AbortSignal): Promise<void> {

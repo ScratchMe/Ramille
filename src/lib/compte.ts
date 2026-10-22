@@ -8,7 +8,12 @@
 import { Platform, Share } from 'react-native';
 
 import { noterUneReconnexion } from '@/lib/connexion-prefs';
-import { concilierLesMarques, effacerLesMarquesDuCompte, effacerLesMarquesLocales } from '@/lib/marques-locales';
+import {
+  concilierLesMarques,
+  effacerLesMarquesALaDeconnexion,
+  effacerLesMarquesDuCompte,
+  effacerLesMarquesLocales,
+} from '@/lib/marques-locales';
 import { desinscrireLeJetonDeCetAppareil } from '@/lib/notification-prefs';
 import { pendantUnDepartVolontaire, supabase } from '@/lib/supabase';
 import { APP_NAME } from '@/constants/produit';
@@ -242,7 +247,7 @@ export async function seDeconnecterDeCetAppareil(): Promise<CompteResult> {
     }
   }
 
-  await effacerLesMarquesLocales();
+  await effacerLesMarquesALaDeconnexion();
   return { ok: true };
 }
 

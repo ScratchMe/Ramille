@@ -10,8 +10,13 @@
 //   session présente, donc après un changement de compte le jeton restait actif au nom du compte
 //   quitté (A4-7).
 //
-// Doublés : le client (le seul `rpc`), les marques et la préférence (`@/lib/notification-prefs`), et
-// les modules d'Expo — un téléphone réel, la permission accordée, un jeton que le service rend.
+// Doublés : le client (le `rpc`, et la lecture de sa propre ligne de `push_tokens`), les marques et la
+// préférence (`@/lib/notification-prefs`), et les modules d'Expo — un téléphone réel, une permission
+// qu'on règle, un jeton que le service rend.
+//
+// **La reprise seulement pour une ligne qui n'est pas à soi** (seconde contre-lecture du 22/10/2026) :
+// elle remet la ligne active et vue à l'instant, ce qui peut évincer un autre appareil du compte. Une
+// ligne que la session voit est la sienne, et se désactive directement.
 //
 // Mutations jouées le 22/10/2026 (consignées ici, `TESTING.md` §1.1) :
 // - la branche `desinscrire` qui rend `true` → tombent « sans la notification, rien n'est inscrit, et
@@ -20,7 +25,10 @@
 //   et « une reprise refusée ne désactive rien » ;
 // - la désactivation faite malgré une reprise refusée → tombe « une reprise refusée ne désactive rien » ;
 // - le suivi posé seulement par `enregistrerLeJeton` → tombe « le suivi porte le réglage entier » ;
-// - une préférence illisible traitée comme l'e-mail → tombe « une préférence illisible ne touche à rien ».
+// - une préférence illisible traitée comme l'e-mail → tombe « une préférence illisible ne touche à rien » ;
+// - la reprise faite même pour une ligne à soi → tombe « une ligne déjà à soi se désactive sans reprise » ;
+// - le chemin de la permission retirée remis sur la désactivation directe → tombe « la permission
+//   retirée reprend aussi le jeton avant de le désactiver ».
 import { reglerLeJetonDeCetAppareil } from '@/lib/rappels';
 
 const mockAppels: string[] = [];
@@ -29,13 +37,16 @@ const mockEtat: {
   prefere: 'push' | 'email' | 'none' | null;
   marque: string | null;
   erreurDeReprise: unknown;
-} = { prefere: null, marque: null, erreurDeReprise: null };
+  /** La ligne du jeton est-elle visible pour la session présente — c'est-à-dire à elle ? */
+  aSoi: boolean;
+  permission: 'granted' | 'denied';
+} = { prefere: null, marque: null, erreurDeReprise: null, aSoi: false, permission: 'granted' };
 
 jest.mock('expo-device', () => ({ isDevice: true }));
 jest.mock('expo-constants', () => ({ expoConfig: { extra: { eas: { projectId: 'projet' } } } }));
 jest.mock('expo-notifications', () => ({
   AndroidImportance: { DEFAULT: 3 },
-  getPermissionsAsync: async () => ({ status: 'granted', canAskAgain: true }),
+  getPermissionsAsync: async () => ({ status: mockEtat.permission, canAskAgain: true }),
   getExpoPushTokenAsync: async () => {
     mockAppels.push('expo');
     return { data: 'ExponentPushToken[neuf]' };
@@ -44,6 +55,15 @@ jest.mock('expo-notifications', () => ({
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
+    // La lecture de sa propre ligne : la RLS ne rend que les lignes de la session.
+    from: () => {
+      const maillon = {
+        select: () => maillon,
+        eq: () => maillon,
+        maybeSingle: async () => ({ data: mockEtat.aSoi ? { token: mockEtat.marque } : null, error: null }),
+      };
+      return maillon;
+    },
     rpc: async (nom: string, args: { p_token: string }) => {
       mockAppels.push(`${nom}:${args.p_token}`);
       if (nom === 'register_push_token' && mockEtat.erreurDeReprise) {
@@ -78,6 +98,8 @@ beforeEach(() => {
   mockEtat.prefere = null;
   mockEtat.marque = null;
   mockEtat.erreurDeReprise = null;
+  mockEtat.aSoi = false;
+  mockEtat.permission = 'granted';
 });
 
 describe('reglerLeJetonDeCetAppareil', () => {
@@ -106,6 +128,27 @@ describe('reglerLeJetonDeCetAppareil', () => {
     expect(reprise).toBeGreaterThanOrEqual(0);
     expect(desactivation).toBeGreaterThan(reprise);
     // Le jeton repris est la marque locale : rien ne part chez Expo.
+    expect(mockAppels).not.toContain('expo');
+  });
+
+  it('une ligne déjà à soi se désactive sans reprise', async () => {
+    mockEtat.prefere = 'email';
+    mockEtat.marque = 'ExponentPushToken[ancien]';
+    mockEtat.aSoi = true;
+    await reglerLeJetonDeCetAppareil();
+    expect(mockAppels.some((appel) => appel.startsWith('register_push_token'))).toBe(false);
+    expect(mockAppels).toContain('desinscrire:ExponentPushToken[ancien]');
+  });
+
+  it('la permission retirée reprend aussi le jeton avant de le désactiver', async () => {
+    mockEtat.prefere = 'push';
+    mockEtat.permission = 'denied';
+    mockEtat.marque = 'ExponentPushToken[ancien]';
+    await expect(reglerLeJetonDeCetAppareil()).resolves.toBe(false);
+    const reprise = mockAppels.indexOf('register_push_token:ExponentPushToken[ancien]');
+    const desactivation = mockAppels.indexOf('desinscrire:ExponentPushToken[ancien]');
+    expect(reprise).toBeGreaterThanOrEqual(0);
+    expect(desactivation).toBeGreaterThan(reprise);
     expect(mockAppels).not.toContain('expo');
   });
 

@@ -416,6 +416,25 @@ describe('une session refusée', () => {
     expect(await AsyncStorage.getItem(PROPRIETAIRE)).toBe('compte-reel');
   });
 
+  // **La marque du jeton de notification appartient à l'appareil** (seconde contre-lecture du 22/10/2026) :
+  // balayée par la reconnexion, elle ne laissait plus rien pour désactiver le jeton du compte quitté, que
+  // seul le `push` réinscrit désormais (`CLE_DU_JETON_DE_L_APPAREIL`, `src/types/rappels.ts`). Mutation du
+  // 22/10/2026 : `effacerLesMarquesDuCompte` qui balaie aussi cette marque → ce test tombe, seul.
+  it('la marque du jeton de notification survit à une reconnexion à un autre compte', async () => {
+    await nouveauLancement([
+      [CLE_DE_SESSION, JSON.stringify(sessionDuCompte(dans(3600)))],
+      [PROPRIETAIRE, 'anonyme-de-cet-appareil'],
+      ...MARQUES_DE_L_ANONYME_PURGE,
+      ['traceverte.jeton_appareil.v1', 'ExponentPushToken[de-l-anonyme]'],
+    ]);
+    const { apresUneReconnexion } = jest.requireActual<typeof import('@/lib/compte')>('@/lib/compte');
+
+    await apresUneReconnexion();
+
+    for (const [cle] of MARQUES_DE_L_ANONYME_PURGE) expect(await AsyncStorage.getItem(cle)).toBeNull();
+    expect(await AsyncStorage.getItem('traceverte.jeton_appareil.v1')).toBe('ExponentPushToken[de-l-anonyme]');
+  });
+
   // ── La file des erreurs appartient à l'appareil (contre-lecture du 02/10/2026) ───────────────
 
   it('la file des erreurs survit à la session anonyme refusée : ses pannes partiront sous la suivante', async () => {

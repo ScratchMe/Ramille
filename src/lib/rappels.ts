@@ -4,7 +4,7 @@
 //
 // **Le jeton suit la personne connectée sur l'appareil.** `reglerLeJetonDeCetAppareil()` est donc
 // appelée à chaque ouverture, à chaque changement d'utilisateur, et au retour au premier plan
-// tant qu'elle n'a rien réglé : le RPC reprend le jeton à son propriétaire précédent, ce
+// tant qu'aucun jeton n'est inscrit : le RPC reprend le jeton à son propriétaire précédent, ce
 // qu'une policy RLS ne pourrait pas faire au moment où une session anonyme devient un compte.
 // **Et seulement pour qui a choisi la notification** (22/10/2026) : sans elle, le jeton de cet
 // appareil est désactivé, et rien ne part chez Expo.
@@ -209,20 +209,36 @@ async function reglerLeJetonMaintenant(): Promise<boolean> {
 /**
  * Désactive le jeton de cet appareil **au nom de la session présente**. `unregister_push_token` ne touche
  * que les lignes de `auth.uid()` : après un changement de compte — `/connexion/retrouver`, ou un code
- * demandé pour une adresse déjà prise —, la ligne appartient encore au compte quitté, la désactivation
- * ne la trouvait pas, la marque locale s'effaçait quand même, et le téléphone recevait les rappels de
- * celui qu'on venait de quitter (A4-7, revenu par ce chemin, contre-lecture du 22/10/2026). D'où la
- * reprise d'abord (`register_push_token`, qui rattache le jeton à la session ; le jeton est la marque
- * locale, donc rien ne part chez Expo), puis la désactivation. Une reprise refusée laisse tout en
- * place, marque comprise : le retour suivant retente.
+ * demandé pour une adresse déjà prise —, la ligne appartient encore au compte quitté, et la désactivation
+ * ne la trouvait pas (A4-7, revenu par ce chemin, contre-lecture du 22/10/2026). D'où la **reprise**
+ * (`register_push_token`, qui rattache le jeton à la session ; le jeton est la marque locale, donc rien
+ * ne part chez Expo), puis la désactivation.
+ *
+ * **La reprise seulement quand la ligne n'est pas à soi** (seconde contre-lecture du même jour) : elle
+ * remet la ligne active et vue à l'instant, ce qui peut évincer un autre appareil du compte au-delà de
+ * cinq, et rouvrir une ligne que le serveur avait désactivée le temps d'un aller-retour. Une ligne que la
+ * session voit est déjà la sienne (la RLS ne rend que celles-là) : elle se désactive directement. Une
+ * ligne invisible appartient à un autre compte, ou a été purgée — la reprise en recrée alors une, aussitôt
+ * désactivée, ce qui est rare et sans effet. Une lecture ou une reprise en échec laisse tout en place,
+ * marque comprise : le retour suivant retente.
  */
 async function desactiverLeJetonDeCetAppareil(): Promise<void> {
   const connu = await lireLeJetonDeCetAppareil();
   if (!connu) return;
-  const { error } = await supabase.rpc('register_push_token', {
-    p_token: connu,
-    p_platform: Platform.OS === 'ios' ? 'ios' : 'android',
-  });
-  if (error) return;
+
+  const { data: aSoi, error: lecture } = await supabase
+    .from('push_tokens')
+    .select('token')
+    .eq('token', connu)
+    .maybeSingle();
+  if (lecture) return;
+
+  if (!aSoi) {
+    const { error } = await supabase.rpc('register_push_token', {
+      p_token: connu,
+      p_platform: Platform.OS === 'ios' ? 'ios' : 'android',
+    });
+    if (error) return;
+  }
   await desinscrireLeJetonDeCetAppareil();
 }

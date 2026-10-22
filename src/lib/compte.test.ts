@@ -143,6 +143,10 @@ describe('seDeconnecterDeCetAppareil', () => {
 
     expect(resultat).toEqual({ ok: true });
     expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+    // La marque reste (22/10/2026) : c'est par elle que la session suivante désactivera le jeton resté
+    // actif au nom du compte quitté — seul le `push` le réinscrit désormais. Mutation du 22/10/2026 :
+    // `effacerLesMarquesALaDeconnexion` qui balaie tout → ce test tombe, seul.
+    expect(mockStock.get('traceverte.jeton_appareil.v1')).toBe('ExponentPushToken[abc]');
   });
 
   // Un appel qui ne répond **jamais** : le `fetch` de React Native n'a pas de délai par défaut, et le

@@ -191,7 +191,9 @@ export default function Compte() {
     setRappels((p) => (p ? { ...p, prefere: canal } : p));
     const echec = await setReminderChannel(canal);
     if (!echec) return;
-    setRappels(avant);
+    // Le seul champ touché, et non l'instantané d'avant : une réinscription du jeton arrivée entre-temps
+    // (`noterLeJeton`) serait effacée, et la ligne dirait « en pause » d'un jeton actif.
+    setRappels((p) => (p && avant ? { ...p, prefere: avant.prefere } : p));
     setMessageCanal(messageDEcriture('Ton choix n’a pas été enregistré.', echec));
   };
 
@@ -210,7 +212,7 @@ export default function Compte() {
     setRappels((p) => (p ? { ...p, reponseALaVeille: reponse } : p));
     const echec = await setMotDeLaVeille(reponse);
     if (!echec) return;
-    setRappels(avant);
+    setRappels((p) => (p && avant ? { ...p, reponseALaVeille: avant.reponseALaVeille } : p));
     setMessageCanal(messageDEcriture('Ton choix n’a pas été enregistré.', echec));
   };
 

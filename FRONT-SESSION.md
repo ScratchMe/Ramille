@@ -52,7 +52,11 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   qu'avec un jeton inscrit**, sinon la garde se ferme et le retour des réglages du téléphone ne réinscrit
   plus personne ; et la désactivation **reprend d'abord** le jeton pour la session présente, parce que
   `unregister_push_token` ne touche que les lignes de `auth.uid()` — après un changement de compte, le
-  jeton restait actif au nom du compte quitté (A4-7).
+  jeton restait actif au nom du compte quitté (A4-7) —, mais seulement quand la ligne n'est pas visible,
+  donc pas à soi : la reprise remet une ligne active, ce qui peut évincer un autre appareil. **Et la
+  marque du jeton est une marque de l'appareil** (`CLE_DU_JETON_DE_L_APPAREIL`, seconde contre-lecture
+  du même jour) : le changement de compte et la déconnexion la gardent, la suppression seule l'efface.
+  Balayée, elle ne laissait plus rien pour désactiver le jeton du compte quitté.
 - **`enregistrerLeJeton()` rend un booléen, et c'est la seule chose qui peut faire passer
   `jetonActif` à vrai** (`src/lib/rappels.ts`) — une permission accordée dont l'enregistrement a
   échoué (pas d'identifiants FCM, pas de réseau, simulateur) faisait promettre au plan une

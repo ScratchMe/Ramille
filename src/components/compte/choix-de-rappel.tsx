@@ -49,14 +49,12 @@ const TITRE = 'Les rappels';
  * pourrait lire comme un échec de son geste.
  *
  * **Et le texte ne suffit pas : le retour doit réparer.** Quand la permission tombe, le
- * lancement suivant désactive le jeton de cet appareil (`enregistrerLeJeton`). Rouvrir les
- * notifications dans les réglages ne le réinscrit pas : le réglage du jeton
- * (`reglerLeJetonDeCetAppareil`) ne se fait qu'au démarrage, au changement d'utilisateur, et au
- * retour au premier plan qui suit un échec. Sans la réinscription ci-dessous, la ligne
- * repasserait à « Le matin où la question s'ouvre. » pendant que `push_tokens` porte toujours
- * un `disabled_at` — le serveur retomberait sur l'email, ou sur rien, jusqu'au prochain
- * démarrage à froid. C'est la « petite trahison » d'A4-8, réintroduite par la porte qu'on
- * vient d'ouvrir.
+ * lancement suivant désactive le jeton de cet appareil (`enregistrerLeJeton`). Depuis le 22/10/2026,
+ * le réglage du démarrage (`reglerLeJetonDeCetAppareil`) se relance aussi au retour au premier plan
+ * tant qu'aucun jeton n'est inscrit, donc le retour des réglages réinscrit de lui-même ; la
+ * réinscription ci-dessous reste celle de « Toi », qui la sait **et range son résultat**
+ * (`onJeton`). Sans elle, la ligne repasserait à « Le matin où la question s'ouvre. » sans que
+ * l'écran sache si `push_tokens` porte encore un `disabled_at` — la « petite trahison » d'A4-8.
  */
 export function ChoixDeRappel({
   prefs,
