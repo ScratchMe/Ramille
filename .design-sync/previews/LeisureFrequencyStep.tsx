@@ -14,8 +14,9 @@ const Etape = ({ depart }: { depart: Reponses }) => {
 };
 
 /**
- * Rien de choisi : la ligne d'exemples sous le titre — pour tous, avec ou sans trajet domicile-travail
- * (01/10/2026, `v1-33` D7) —, quatre rangées dans un groupe nommé par la question.
+ * Rien de choisi : le titre — « le week-end comme en semaine », une seule étape pour toute la semaine
+ * (22/10/2026, `v1-35`), sur quatre lignes à cette largeur —, la ligne d'exemples dessous — pour tous, avec ou
+ * sans trajet domicile-travail (01/10/2026, `v1-33` D7) —, cinq rangées dans un groupe nommé par la question.
  */
 export const Vierge = () => <Etape depart={{ leisure_frequency: null }} />;
 
@@ -30,3 +31,10 @@ export const Rarement = () => <Etape depart={{ leisure_frequency: 'rarely' }} />
  * s'ouvre — la base par défaut ne vaut que pour « Rarement ».
  */
 export const DeuxOuTroisFoisParMois = () => <Etape depart={{ leisure_frequency: 'multiple_monthly' }} />;
+
+/**
+ * « Presque tous les jours », la cinquième et dernière fréquence (22/10/2026, `v1-35`) : elle se coche comme les
+ * autres et aucune ligne ne s'ouvre — la base par défaut ne vaut que pour « Rarement » ; le mode et la distance
+ * se demandent à l'étape suivante, comme pour toute sortie déclarée.
+ */
+export const PresqueTousLesJours = () => <Etape depart={{ leisure_frequency: 'almost_daily' }} />;

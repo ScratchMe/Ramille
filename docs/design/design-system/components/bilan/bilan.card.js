@@ -73,7 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Etape etape="commute_has_trip" section="Domicile-travail" step={1}
         mot="À peu près, c’est déjà bien. Je ne vérifie rien, et personne ne relit."
         rendre={(a, u) => <CommuteHasTripStep answers={a} update={u} />} />
-      <Etape etape="leisure_frequency" section="Loisirs du week-end" step={5} depart={{ commute_has_regular_trip: true }}
+      <Etape etape="leisure_frequency" section="Loisirs" step={5} depart={{ commute_has_regular_trip: true }}
         mot="Pense à un mois ordinaire, pas au meilleur ni au pire."
         rendre={(a, u) => <LeisureFrequencyStep answers={a} update={u} />} />
       <Etape etape="flights" section="Voyages longue distance" step={7} depart={{ commute_has_regular_trip: true }}

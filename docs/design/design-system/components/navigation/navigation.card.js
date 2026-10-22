@@ -12,7 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </div>
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       <ProgressHeader section="Domicile-travail" step={3} total={9} />
-      <ProgressHeader section="Loisirs du week-end" step={2} total={6} />
+      <ProgressHeader section="Loisirs" step={2} total={6} />
       <ProgressHeader section="Contexte" step={9} total={9} />
       <div style={{background:'var(--color-background-selected)',borderRadius:12,padding:'10px 16px'}}><ThemedText type="small" themeColor="accentText">Tes réponses précédentes sont préremplies. Modifie ce qui a changé.</ThemedText></div>
     </div>

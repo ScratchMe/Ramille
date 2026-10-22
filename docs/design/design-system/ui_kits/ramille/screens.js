@@ -111,7 +111,7 @@ function Restitution({ go }) {
           <ThemedText type="small" weight={600}>Répartition par poste</ThemedText>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Bar label="Trajet domicile-travail" value="2,1 t CO₂e" pct={62} bold />
-            <Bar label="Loisirs du week-end" value="380 kg CO₂e" pct={11} muted />
+            <Bar label="Loisirs" value="380 kg CO₂e" pct={11} muted />
             <Bar label="Voyages longue distance" value="920 kg CO₂e" pct={27} muted />
           </div>
         </div>

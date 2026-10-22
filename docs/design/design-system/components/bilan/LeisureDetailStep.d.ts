@@ -19,7 +19,7 @@ export interface LeisureDetailStepAnswers {
   /** La distance d'un aller, demandée sous « Plus de 30 km » seulement. */
   leisure_distance_km: number | null;
 }
-/** Étape du questionnaire — le mode principal des sorties du week-end, ses précisions, puis la distance d'un aller. */
+/** Étape du questionnaire — le mode principal des sorties, ses précisions, puis la distance d'un aller. */
 export interface LeisureDetailStepProps {
   answers: LeisureDetailStepAnswers;
   /** Écrit les réponses touchées ; l'écran du questionnaire efface ensuite les précisions d'un mode quitté. */

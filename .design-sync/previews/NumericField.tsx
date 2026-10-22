@@ -22,8 +22,8 @@ export const AvecDecimale = () => (
 /** Les trois postes, l'un sous l'autre. */
 export const LesTroisPostes = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-    <NumericField value={12} unit="km" label="Distance d’un aller" />
-    <NumericField value={40} unit="km" label="Distance d’une sortie du week-end" />
+    <NumericField value={12} unit="km" label="Distance pour un aller" />
+    <NumericField value={40} unit="km" label="Distance d’un aller" />
     <NumericField value={2} unit="voyages" label="Voyages de plus de 300 km par an" />
   </div>
 );

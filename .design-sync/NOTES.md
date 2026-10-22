@@ -556,6 +556,60 @@ synchronisation (plus bas), puis, le même jour, `tokens/mouvement.css` tel que 
   relus en ligne) : 72 aperçus rendus, aucun en défaut, aucun jeton lu sans déclaration. Les cinq fichiers relus
   après l'envoi : identiques à ce qui est parti.
 
+## Relevé du 22/10/2026 — les loisirs de toute la semaine, le kit rattrape le code (hors synchronisation)
+
+Pas une synchronisation : le pilote n'a pas tourné (`.ds-sync/` absent de ce conteneur), rien n'est parti vers Claude
+Design, et la dernière synchronisation reste la dixième (04/10/2026). C'est la règle de `v1-29` §5 appliquée à une
+décision de la personne qui pilote du 22/10/2026 (`v1-35`, étape « Le périmètre du bilan ») : les loisirs couvrent la
+semaine comme le week-end, en une seule étape. Le code l'a livré en quatre commits de la branche de travail — la
+base, le client, les gardes et les documents, puis l'ordre des mots de la question (`95df100` pour le dernier ; les
+commits d'une branche disparaissent au squash, `v1-35` reste) ; **le kit, lui, décrivait encore l'étape du week-end**,
+et un kit qui décrit l'ancienne étape est ce que l'agent de design recopie. Relu contre `src/` tel que `95df100` le porte.
+
+- **Ce que le code dit, et que le kit dit désormais** : la question de B2.1 est « À quelle fréquence fais-tu des
+  trajets pour tes loisirs, le week-end comme en semaine ? » — **dans cet ordre**, parce que « en semaine comme le
+  week-end » coupait la ligne dans « week- » / « end ? » à 390 de large ; l'échelle a **cinq** réponses, la
+  cinquième et dernière étant « Presque tous les jours » (`almost_daily`, 5 sorties par semaine) ; le poste s'appelle
+  « Loisirs » (étiquette), « Tes loisirs » (sujet), « tes loisirs » (milieu de phrase), « tes sorties » (après une
+  préposition) ; la section du questionnaire s'appelle « Loisirs », dans l'en-tête comme dans l'annonce de
+  l'onboarding ; le texte de méthode cite « presque tous les jours » 5. Le résiduel reste « Loisirs occasionnels ».
+- **Où il fallait le dire** : `LeisureFrequencyStep` (source, `.d.ts`, fiche), `ContextStep.d.ts` (l'union
+  `leisure_frequency`), les `section="Loisirs"` de `LeisureDetailStep.prompt.md`, de `bilan.card.js` et de
+  `navigation.card.js`, `EtapeTransition` (la liste des sections et sa fiche), `EcartParPoste` (les deux tables de
+  noms et la fiche du résiduel), `BlocMethode` (la ligne des hypothèses, comparée octet par octet à
+  `sectionsDeMethode` après substitution des valeurs), `ui_kits/ramille/screens.js` (la barre de la restitution), et
+  des commentaires de `LeisureDetailStep` (`.jsx`, `.d.ts`). **Rien à changer** dans `readme.md`, `conventions.md`,
+  `StepShell.jsx`, `IntituleDuChamp.d.ts` (le champ `leisure_frequency` est un nom de colonne, qui n'a pas bougé) ni
+  `loader.js` (le nom d'un composant) : ils ne citent l'ancien état nulle part, et le `rg` n'y trouve que des
+  identifiants — un nom de composant, un nom de colonne — ou rien, jamais une phrase.
+- **Les aperçus** : `LeisureFrequencyStep` gagne l'histoire `PresqueTousLesJours` (la dernière rangée cochée, sans
+  ligne qui s'ouvre) ; `ChoiceRow` ne dit plus « du week-end » dans un commentaire ; `NumericField` / `LesTroisPostes`
+  portait « Distance d'une sortie du week-end », un libellé que le produit n'a jamais écrit — le champ des loisirs
+  dit « Distance d'un aller », celui du trajet « Distance pour un aller » — ; `ProgressHeader` / `AuMilieu` portait
+  « Weekend et loisirs », encore un nom d'avant. `props-check.py` : 73 interfaces, 0 écart.
+- **Le cadre de `LeisureFrequencyStep` passe de 390 × 560 à 390 × 660.** Le titre tient désormais sur quatre lignes
+  (trois avant, 96 px de titre contre 128) et il y a cinq rangées au lieu de quatre. Mesuré avec un banc jetable
+  hors du dépôt — l'étape rendue en HTML statique (`react-dom/server`, les `.jsx` transpilés par Babel), ouverte dans le
+  chromium 1194 à 390 de large, contenu à 342 sous le `body{padding:24px}` de la page d'aperçu —, **et non avec la
+  capture du pilote**, qui n'était pas là. La plus basse ligne peinte vaut **556** quand rien n'est choisi, **556**
+  sur « Presque tous les jours » et **600** sur « Rarement » (la ligne qui dit la petite base prend deux lignes). Le même
+  banc, rejoué sur le kit d'avant, donne 502 sur « Rarement » pour un cadre qui valait 560 : la marge de 58 s'est
+  gardée, d'où 660. Dans la coquille de `bilan.card.js` (820 de haut), l'étape tient sans défiler. **À remesurer à la
+  prochaine synchronisation** par `mesurer-les-cadres.cjs LeisureFrequencyStep` : un cadre trop grand ne coupe rien,
+  trop petit si.
+- **Ce que les gardes ne voient pas, et qui a décidé du relevé** : l'échelle des réponses est **recopiée à la main**
+  dans le kit (`OPTIONS` de `LeisureFrequencyStep.jsx`, et l'union de deux `.d.ts`), et `verifier-miroirs-de-check.mjs`
+  ne compare que le dépôt à la base. `props-check.py` compare des props d'aperçu à des `.d.ts`, jamais un `.d.ts` au
+  dépôt. Le relevé d'une échelle qui grandit est donc `rg "multiple_weekly"` sur le kit — trois fichiers ici —, et
+  celui d'un renommage de poste `rg -i "week-end|weekend"` sur le kit **et** sur `.design-sync/previews/`.
+- **Pour la prochaine synchronisation** : cet arbre porte plus que cette passe, la dixième datant du 04/10/2026. Les
+  composants dont le **rendu** a changé ici : `LeisureFrequencyStep` (le titre, une cinquième rangée),
+  `EtapeTransition` (un nom de section), `EcartParPoste` (le nom du poste, dans le libellé et dans la légende) et
+  `BlocMethode` (une ligne des hypothèses) — à relire par `--spot-check-components` plutôt que d'attendre qu'un
+  pilote les classe inchangés côté vérification, puisqu'il suit les aperçus et non le code. Ceux dont seule la
+  déclaration ou un commentaire a bougé : `ContextStep`, `LeisureDetailStep`. Le système de design de la galerie
+  (section suivante) ne suit pas, comme toujours.
+
 ## Le système de design de la galerie — un second miroir, remis à jour le 04/10/2026
 
 À côté du projet Claude Design, la galerie d'artefacts de la personne qui pilote porte un système de design

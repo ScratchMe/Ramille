@@ -1,7 +1,7 @@
 L'étape qui suit la fréquence des sorties, quand elle n'est pas « Rarement » : « Avec quel mode, principalement ? » puis « Quelle distance aller, en général ? », deux questions sur un même écran de `StepShell`.
 
 ```jsx
-<StepShell section="Loisirs du week-end" step={6} total={9} entree={{ cle: 'leisure_detail', sens }}
+<StepShell section="Loisirs" step={6} total={9} entree={{ cle: 'leisure_detail', sens }}
   manque={manqueDeLEtape('leisure_detail', answers)} reponsesDonnees={reponsesDonnees} onBack={back} onNext={next}>
   <LeisureDetailStep answers={answers} update={update} />
 </StepShell>
