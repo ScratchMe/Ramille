@@ -3,27 +3,35 @@
  *
  * Ce que ces tests gardent, et que ni le typecheck ni la garde du fichier généré (`scripts/licences.test.ts`)
  * ne voient : **une licence est reproduite une seule fois**, quel que soit le nombre de bibliothèques qui la
- * portent — c'est ce qui tient le bundle web à quelques dizaines d'octets par bibliothèque au lieu de mille ;
+ * portent — un texte MIT fait environ mille caractères, et le bundle web est un seul fichier ;
  * chaque section porte la liste de ses bibliothèques avant son texte ; la plateforme se dit quand ce n'est
  * pas « les deux » ; un paquet sans avis de copyright le dit au lieu de s'afficher sans rien ; et la page ne
  * passe jamais pour complète — sa dernière section dit ce qu'elle ne liste pas. `LegalPage` prend le titre
  * d'une section et le terme d'une définition pour clés React : un doublon, sur les vraies données, ferait
  * perdre une ligne sans une erreur.
  *
- * Éprouvé en cassant ce qu'il garde, le 22/10/2026 (six mutations, chacune défaite en réécrivant l'état
- * d'avant ; 17 tests) :
- * - le texte de la licence recopié sous chaque bibliothèque → 2 tombent : « reproduit chaque licence une
- *   seule fois » et « ne reproduit pas la licence MIT à chaque bibliothèque », sur les vraies données ;
- * - la marque de plateforme retirée du terme (`marqueDeLaPlateforme` rend toujours une chaîne vide) → 2
- *   tombent : le terme d'une bibliothèque Android, et celui d'une police ;
- * - la phrase de ce qui n'est pas listé retirée → 2 tombent : l'ordre des sections et « dit ce qu’elle ne
- *   liste pas » ;
- * - les licences de police placées avant les bibliothèques → 1 tombe, « range les licences de police après
- *   celles des bibliothèques » ;
- * - le repli « pas de ligne de copyright » rendu vide → 1 tombe, « dit qu’un paquet ne donne pas de ligne
- *   de copyright » ;
- * - la date lue par `toLocaleDateString` → 1 tombe, « écrit la date en mots sans passer par l’ICU »
- *   (un `Date` local en UTC−x donne la veille ; ce test n'en attrape que la forme, voir son commentaire).
+ * Éprouvé en cassant ce qu'il garde, le 22/10/2026 (neuf mutations, chacune défaite en réécrivant l'état
+ * d'avant ; 20 tests) :
+ * - le texte de la licence recopié dans la ligne de chaque bibliothèque → 4 tombent : le terme et le texte
+ *   attendus d'une bibliothèque (deux tests), « reproduit chaque licence une seule fois » et, sur les vraies
+ *   données, « ne reproduit pas la licence MIT à chaque bibliothèque ». **La première version ne comptait
+ *   que les paragraphes** : un texte glissé dans une ligne de définition lui échappait, et le comptage lit
+ *   désormais tout ce que la page écrit ;
+ * - la marque de plateforme retirée (`marqueDeLaPlateforme` rend toujours une chaîne vide) → 2 tombent : le
+ *   terme d'une bibliothèque Android, et celui d'une police ;
+ * - la phrase de ce que la page ne liste pas retirée → 3 tombent : l'ordre des sections, le cas sans police,
+ *   et « dit ce qu’elle ne liste pas » ;
+ * - les licences de police rangées dans l'ordre du fichier, avec les autres → 4 tombent, dont « range les
+ *   licences de police après celles des bibliothèques » ;
+ * - le repli « pas de ligne de copyright » rendu vide → 1 tombe ;
+ * - un texte que personne n'emploie qui reçoit sa section → 1 tombe ;
+ * - **une police sans avis rendue sans repli → 0 tombaient** : aucun test n'en donnait une. « dit qu’une
+ *   police ne donne pas d’avis, au lieu d’écrire “null” » existe depuis, et elle en fait tomber 1 ;
+ * - la date rendue en anglais (`toLocaleDateString('en-US')`) → 2 tombent ; **rendue par
+ *   `toLocaleDateString('fr-FR')` → 1 seule tombe, « 1er »** : Node porte l'ICU complet, donc le défaut que
+ *   `EXPO.md` §1.8 décrit — un mois en anglais sur un Hermes sans ICU — n'est pas observable d'ici. Ce que ces
+ *   tests gardent est la forme (les mois de `MOIS_FRANCAIS`, le « 1er ») ; que le code ne demande jamais la
+ *   locale se lit dans `dateEnMots`, et nulle part ailleurs.
  */
 import { LICENCES } from '@/constants/licences';
 import {

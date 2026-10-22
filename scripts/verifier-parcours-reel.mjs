@@ -1371,6 +1371,10 @@ try {
   // « /confidentialite, ouverte à froid, a rangé une session dans le navigateur » ; et le layout qui ne
   // fait rien sur une surface sans compte (la restauration jamais rendue) passe cette étape et s'arrête
   // à la 8 ter, « l'ouverture de /confidentialite avec une session ne s'est pas comptée (0) ».
+  //
+  // `/licences` a rejoint la liste le 22/10/2026, **sans rejeu contre la stack** : le travail d'export qui la
+  // couvre (`verifier-etats-export.mjs`, section M) l'a éprouvée, mais cette étape-ci n'a pas été jouée avec
+  // elle — la page des licences ne lit ni n'écrit rien, et rien dans cette étape n'y est propre à elle.
   etape('surfaces sans compte — ouvertes à froid, aucun compte ne naît');
   {
     const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/status'];

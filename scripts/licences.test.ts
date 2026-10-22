@@ -707,3 +707,52 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
     });
   });
 });
+
+/**
+ * ## Mutations
+ *
+ * Éprouvé en cassant ce qu'il garde, le 22/10/2026 : chaque mutation est un remplacement exact, défait en
+ * **réécrivant l'état d'avant** depuis une copie (jamais par un second remplacement), et la suite entière est
+ * rejouée à chaque fois (33 tests). Les noms sont ceux des tests.
+ *
+ * **Le script** (seize mutations de `scripts/generer-les-licences.mjs`) :
+ * - le dernier `node_modules/` d'un chemin lu comme le premier → 1 tombe, « distingue un paquet imbriqué… » ;
+ * - le titre d'une licence jamais retiré → 1 tombe, « range une licence une seule fois… » ;
+ * - l'exclusion « Copyright notice » du motif d'avis retirée → 1 tombe, « …fait commencer par “Copyright
+ *   notice” ». **Le cas « COPYRIGHT HOLDERS BE LIABLE » est tenu par deux couches** : la casse du motif, et
+ *   cette exclusion. Retirer l'exclusion seule laisse son test vert, la casse suffisant ; retirer les deux
+ *   (le motif insensible à la casse, sans l'exclusion) fait tomber 3 tests, dont le sien ;
+ * - le contrôle d'un fichier NOTICE retiré → 1 tombe ; la reconnaissance du texte (« ne ressemble pas à la
+ *   licence déclarée ») retirée → 1 tombe ;
+ * - la licence d'une police cherchée parmi toutes (l'OFL contient la phrase d'ouverture de la MIT, qui la
+ *   ferait lire MIT) → 1 tombe, « lit la police et son avis… » ;
+ * - les dépendances écartées jamais relevées → 1 tombe ; `--sans-natif` permis sans `--sortie` → 1 tombe ;
+ * - les intitulés en capitales de l'OFL collés à la phrase suivante → 1 tombe, celui de la police ;
+ * - `--verifier` qui ne relève plus aucun écart → 2 tombent (version changée, paquet de plus) ; qui compare
+ *   aussi la date → 1 tombe, « …la date exceptée » ;
+ * - le repli sur le `node_modules` du projet retiré → 1 tombe ;
+ * - les textes regroupés par licence seule, sans leur corps → 4 tombent, dont « garde à part un texte
+ *   réellement différent… » ; les avis jamais relevés → 3 tombent ; l'avis de la police pris ailleurs que
+ *   dans son fichier → 1 tombe.
+ *
+ * **Le fichier généré contre le dépôt** (dix mutations) :
+ * - `expo-notifications` retirée du fichier → 2 tombent, « connaît chaque dépendance… » et « liste chaque
+ *   bibliothèque que le code de l'application importe » ;
+ * - une dépendance neuve dans `package.json` (`left-pad`) → 1 tombe, la première ;
+ * - un `import 'playwright'` dans le code de l'application → 1 tombe, « liste chaque bibliothèque… » ;
+ * - `react` listée à une autre version que le verrou → 1 tombe, « ne cite que des paquets que
+ *   package-lock.json connaît… » ; une licence changée contre le verrou → 1 tombe, la même ;
+ * - `satori` retirée des dépendances écartées → 1 tombe, « connaît chaque dépendance… » ;
+ * - `@supabase/supabase-js` déplacée parmi les écartées, alors que le code l'importe → 1 tombe, « liste chaque
+ *   bibliothèque… » (le message dit « écartée du fichier des licences, et … l'importe ») ;
+ * - un texte que rien n'emploie → 1 tombe, « est cohérent… » ;
+ * - le relevé des imports qui ne lit plus rien (`paquetDuSpecifieur` rend toujours `null`) → 2 tombent, la
+ *   lecture des genres d'import et « ne se laisse pas lire à vide » — **c'est ce second test qui garde les
+ *   autres** : sans lui, la garde passerait sur une application qui n'importerait rien ;
+ * - le relevé remplacé par une expression régulière nue, qui lit aussi les commentaires → 1 tombe, « lit tous
+ *   les genres d'import, et pas les commentaires ».
+ *
+ * **Ce que rien d'ici n'éprouve** : l'autolinking (`--sans-natif` dans tous les essais), qui ne se joue que sur
+ * le dépôt réel — par `node scripts/generer-les-licences.mjs`, qui l'a utilisé pour écrire le fichier engagé,
+ * et par `--verifier` ; et l'export lui-même, qui est la commande d'Expo.
+ */

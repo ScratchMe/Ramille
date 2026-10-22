@@ -118,7 +118,11 @@ describe('lEcranDeReconnexionSePose', () => {
  * l'écran de reconnexion : une page publique pour l'une et pas pour l'autre serait un oubli. Éprouvé le
  * 18/10/2026 : `laSessionSOuvreSur` réduite à `return true` → « ne crée rien sur les surfaces sans
  * compte », « … avec ou sans barre finale » et « suit la même liste… » ; la barre finale plus retirée
- * → « … avec ou sans barre finale », seul.
+ * → « … avec ou sans barre finale », seul. **Et le 22/10/2026, `/licences` retirée de la liste** (la page des
+ * licences, ajoutée aux trois énumérations de ce fichier) → 2 tombent, « laisse les surfaces publiques et de
+ * service… » et « ne crée rien sur les surfaces sans compte… » ; « suit la même liste que l'écran de
+ * reconnexion » reste vert, les deux fonctions lisant la même liste — c'est la garde de la cohérence, pas
+ * celle du contenu.
  */
 describe('laSessionSOuvreSur', () => {
   it('ouvre la session partout où l’app peut écrire, et sur une route neuve', () => {

@@ -65,9 +65,14 @@ describe('LegalPage — ses sorties', () => {
  * il pousse la page demandée. Rien d'autre ne lit ce bloc : le parcours réel n'ouvre aucune page légale,
  * et `verifier-rendu-export.mjs` ne lit que leur titre.
  *
- * Éprouvé en cassant ce qu'il garde, le 22/10/2026 — deux mutations, chacune faisant tomber la sienne :
- *   - le bloc rendu sans `onPress` qui pousse (`onPress={() => undefined}`) → « …et pousse la page demandée » ;
- *   - le bloc `link` retiré de `LegalBlockView` (il retombe sur la définition) → « …un lien annoncé comme tel ».
+ * Éprouvé en cassant ce qu'il garde, le 22/10/2026 — trois mutations, chacune défaite en réécrivant l'état
+ * d'avant :
+ *   - le lien rendu sans `onPress` qui pousse (`onPress={() => undefined}`) → 1 tombe, « …et pousse la page
+ *     demandée » ;
+ *   - le bloc `link` plus lu par `LegalBlockView` (il retombe sur la définition) → 2 tombent, « rend un lien
+ *     annoncé comme tel… » et « …et pousse la page demandée » : le rendu lève ;
+ *   - le lien annoncé en `button` au lieu de `link` → 2 tombent, les deux mêmes : le nom accessible se cherche
+ *     par son rôle.
  */
 describe('LegalPage — un renvoi vers une autre page', () => {
   function rendreAvecUnRenvoi() {
