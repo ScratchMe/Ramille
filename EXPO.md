@@ -285,15 +285,18 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   Ramille) : au plus un build tous les deux jours, et la vérification web se fait sans build.
 - **`expo-doctor` compare aux versions qu'Expo recommande au moment du passage**, et ce jeu-là
   vit chez Expo : la CI peut rougir sans qu'une ligne du dépôt ait bougé, dès qu'Expo publie un
-  patch (chez Ramille le 11/09, 15/09, 18/09, 12/10 et 18/10/2026 — six paquets en retard ce
-  dernier jour —, donc à attendre plutôt qu'à diagnostiquer). Épingler la version de l'outil
+  patch (chez Ramille le 11/09, 15/09, 18/09, 12/10, 18/10 — six paquets en retard ce jour-là — et
+  22/10/2026), donc à attendre plutôt qu'à diagnostiquer). Épingler la version de l'outil
   n'épingle pas ce qu'il attend. **Le bloquer sur chaque PR punit celles qui n'y sont pour rien ;
   le retirer perd l'alerte avant un build.** La forme retenue : un **avertissement** (annotation)
   sur une PR et un push, **bloquant** sur un passage planifié hebdomadaire et sur un lancement à la
   main — un `continue-on-error` qui dépend de l'événement, et une annotation qui lit
   `steps.<id>.outcome` : c'est `outcome`, et non `conclusion`, qui garde l'échec que
   `continue-on-error` masque. Quand le passage du lundi rougit, la conduite est
-  `npx expo install --fix`, puis rejouer typecheck, lint, tests et export.
+  `npx expo install --fix`, puis **régénérer le fichier des licences**
+  (`node scripts/generer-les-licences.mjs`) — depuis le 22/10/2026, `scripts/licences.test.ts` rougit
+  dès qu'une version embarquée diffère de `package-lock.json` —, puis rejouer typecheck, lint, tests et
+  export.
 - **Une image de build EAS se nomme en entier** (`ubuntu-26.04-jdk-17-ndk-r27b-sdk-57` pour le SDK 57,
   page « Build server infrastructure » d'Expo), et ni `latest` ni `auto` : `latest` suit la dernière
   image publiée, donc change de NDK ou de Java sous un projet resté sur son SDK, et la page de
