@@ -35,6 +35,7 @@ import {
   termeDuPaquet,
   type BlocDeLicences,
   type DonneesDesLicences,
+  type SectionDeLicences,
 } from '@/types/licences';
 
 // Un petit jeu, écrit pour que chaque branche existe : deux bibliothèques sous MIT dont une sans avis et
@@ -57,8 +58,13 @@ const PETIT: DonneesDesLicences = {
 };
 
 const textesDe = (blocs: BlocDeLicences[]) => blocs.flatMap((bloc) => (bloc.kind === 'paragraph' ? [bloc.text] : []));
-const tousLesTextes = (donnees: DonneesDesLicences) => sectionsDesLicences(donnees).flatMap((section) => textesDe(section.blocks));
-const compter = (liste: string[], texte: string) => liste.filter((t) => t === texte).length;
+/** Tout ce que la page écrit, d'un seul tenant : les paragraphes, mais aussi les termes et les textes des définitions. */
+const toutCeQueLaPageEcrit = (sections: SectionDeLicences[]) =>
+  sections
+    .flatMap((section) => [section.heading, ...section.blocks.flatMap((bloc) => (bloc.kind === 'paragraph' ? [bloc.text] : bloc.items.flatMap((i) => [i.term, i.text])))])
+    .join('\n');
+/** Combien de fois la page écrit ce passage : une licence reproduite sous chaque bibliothèque se compte ici, où un paragraphe seul ne la verrait pas. */
+const occurrences = (sections: SectionDeLicences[], passage: string) => toutCeQueLaPageEcrit(sections).split(passage).length - 1;
 
 describe('sectionsDesLicences', () => {
   it('range les sections : la police, une section par licence, puis ce que la page ne liste pas', () => {
@@ -98,10 +104,13 @@ describe('sectionsDesLicences', () => {
   });
 
   it('reproduit chaque licence une seule fois, quel que soit le nombre de bibliothèques qui la portent', () => {
-    const textes = tousLesTextes(PETIT);
-    expect(compter(textes, 'Texte MIT, un.')).toBe(1);
-    expect(compter(textes, 'Texte MIT, deux.')).toBe(1);
-    expect(compter(textes, 'Texte ISC.')).toBe(1);
+    // Deux bibliothèques sous MIT : le texte vient une fois, pas une fois chacune — ni en paragraphe, ni
+    // recopié dans la ligne d'une bibliothèque.
+    const sections = sectionsDesLicences(PETIT);
+    expect(occurrences(sections, 'Texte MIT, un.')).toBe(1);
+    expect(occurrences(sections, 'Texte MIT, deux.')).toBe(1);
+    expect(occurrences(sections, 'Texte ISC.')).toBe(1);
+    expect(occurrences(sections, 'Texte OFL.')).toBe(1);
   });
 
   it('met la liste avant le texte, et dit que le texte vaut pour toute la liste', () => {
@@ -147,7 +156,7 @@ describe('sectionsDesLicences', () => {
   it('ne fait pas de section d’un texte que personne n’emploie', () => {
     const orphelin: DonneesDesLicences = { ...PETIT, textes: [...PETIT.textes, { id: 'X', nom: 'Licence orpheline', paragraphes: ['Jamais montré.'] }] };
     expect(sectionsDesLicences(orphelin).map((section) => section.heading)).not.toContain('Licence orpheline');
-    expect(tousLesTextes(orphelin)).not.toContain('Jamais montré.');
+    expect(occurrences(sectionsDesLicences(orphelin), 'Jamais montré.')).toBe(0);
   });
 
   it('dit ce qu’elle ne liste pas, en dernier', () => {
@@ -171,10 +180,9 @@ describe('sectionsDesLicences — sur les vraies données', () => {
   });
 
   it('ne reproduit pas la licence MIT à chaque bibliothèque', () => {
-    const textes = sections.flatMap((section) => textesDe(section.blocks));
     // « of this software » : l'OFL ouvre sa permission de la même façon, pour « the Font Software ».
-    expect(textes.filter((t) => t.startsWith('Permission is hereby granted, free of charge, to any person obtaining a copy of this software')).length).toBe(1);
-    expect(textes.filter((t) => t.startsWith('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY')).length).toBe(1);
+    expect(occurrences(sections, 'Permission is hereby granted, free of charge, to any person obtaining a copy of this software')).toBe(1);
+    expect(occurrences(sections, 'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY')).toBe(1);
   });
 
   it('liste la police du produit avec son avis et sa licence, dont le texte est dans la page', () => {

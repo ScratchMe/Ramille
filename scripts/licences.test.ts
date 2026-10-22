@@ -430,6 +430,31 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
     expect(donneesEcrites(p).paquets[0].copyright).toBe('Copyright 2017 Andrey Sitnik');
   });
 
+  it('ne prend pas pour un avis une phrase de la licence qu’une césure fait commencer par « Copyright notice »', () => {
+    // Une ISC dont la césure met « Copyright notice and this permission notice… » en tête de ligne, avec une
+    // majuscule : ce n'est pas un avis, et ce paquet n'en donne aucun.
+    const isc = [
+      'Permission to use, copy, modify, and/or distribute this software for any',
+      'purpose with or without fee is hereby granted, provided that the above',
+      'Copyright notice and this permission notice appear in all copies.',
+      '',
+      'THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES',
+      'WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF',
+      'MERCHANTABILITY AND FITNESS.',
+      '',
+    ].join('\n');
+    const p = fabriquer({
+      paquets: { alpha: { package: pj('alpha', '1.0.0', 'ISC'), fichiers: { LICENSE: isc } } },
+      web: sources('alpha'),
+      android: [],
+    });
+
+    expect(lancer(p).code).toBe(0);
+    const donnees = donneesEcrites(p);
+    expect(donnees.paquets[0].copyright).toBeNull();
+    expect(donnees.textes[0].paragraphes[0]).toMatch(/Copyright notice and this permission notice appear in all copies\.$/);
+  });
+
   it('garde à part un texte réellement différent pour la même licence, et le dit', () => {
     const p = fabriquer({
       paquets: {
