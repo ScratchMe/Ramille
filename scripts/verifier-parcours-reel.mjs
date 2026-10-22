@@ -1373,7 +1373,7 @@ try {
   // à la 8 ter, « l'ouverture de /confidentialite avec une session ne s'est pas comptée (0) ».
   etape('surfaces sans compte — ouvertes à froid, aucun compte ne naît');
   {
-    const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/compte/suppression', '/rappels/stop', '/status'];
+    const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/status'];
     const avant = await compterLesComptes();
     const onglet = await nouvelOnglet();
     const demandes = [];

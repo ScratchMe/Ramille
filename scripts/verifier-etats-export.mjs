@@ -2689,7 +2689,7 @@ async function attendreLeTexte(page, texte) {
 //   | le même, sans clé (l'export de la CI) | les cinq surfaces, la session demandée — seule moitié mesurable sans clé |
 //   | le layout ne fait que restaurer, partout | le témoin `/onboarding`, deux fois : pas de session demandée, pas de captcha |
 {
-  const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/compte/suppression', '/rappels/stop', '/status'];
+  const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/status'];
   const cle = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null;
   const dossierDuBundle = join(DIST, '_expo', 'static', 'js', 'web');
   let cleDansLeBundle = false;

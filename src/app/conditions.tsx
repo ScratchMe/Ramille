@@ -182,6 +182,11 @@ const SECTIONS: LegalSection[] = [
       },
       {
         kind: 'paragraph',
+        text: 'L’application embarque aussi des bibliothèques et des polices d’autres auteurs, chacune sous sa propre licence.',
+      },
+      { kind: 'link', label: 'Licences des bibliothèques et des polices', href: '/licences' },
+      {
+        kind: 'paragraph',
         text: 'Les données que tu saisis restent les tiennes. Nous ne les exploitons pas à d’autres fins que le service.',
       },
     ],

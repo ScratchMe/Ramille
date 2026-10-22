@@ -113,6 +113,9 @@ const ROUTES = [
   { chemin: '/onboarding', marqueur: 'Moi, c’est Ramille' },
   { chemin: '/confidentialite', marqueur: 'Politique de confidentialité' },
   { chemin: '/conditions', marqueur: 'Conditions d’utilisation' },
+  // Les licences (22/10/2026) : le marqueur est le titre d'une section que le fichier généré produit, pas
+  // le titre de la page — une page qui rendrait sa coquille et aucune licence n'aurait plus ce texte.
+  { chemin: '/licences', marqueur: 'Licence MIT' },
   // Surface publique exigée par Google Play : elle doit s'afficher sans l'app et sans compte.
   { chemin: '/compte/suppression', marqueur: 'Supprimer mon compte' },
   // La sortie des rappels (C2.9), ouverte depuis une messagerie, sans session et parfois sans

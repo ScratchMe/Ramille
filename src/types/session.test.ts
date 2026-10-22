@@ -107,7 +107,7 @@ describe('lEcranDeReconnexionSePose', () => {
   });
 
   it('laisse les surfaces publiques et de service, qui ne demandent pas de compte', () => {
-    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/status']) {
+    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
       expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: false });
     }
   });
@@ -128,7 +128,7 @@ describe('laSessionSOuvreSur', () => {
   });
 
   it('ne crée rien sur les surfaces sans compte — elles ne font que restaurer', () => {
-    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/status']) {
+    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
       expect({ chemin, ouvre: laSessionSOuvreSur(chemin) }).toEqual({ chemin, ouvre: false });
     }
   });
@@ -139,7 +139,7 @@ describe('laSessionSOuvreSur', () => {
   });
 
   it('suit la même liste que l’écran de reconnexion, hors `/connexion/…`', () => {
-    for (const chemin of ['/', '/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/status', '/feedback']) {
+    for (const chemin of ['/', '/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
       expect({ chemin, ouvre: laSessionSOuvreSur(chemin) }).toEqual({ chemin, ouvre: lEcranDeReconnexionSePose(chemin) });
     }
   });
