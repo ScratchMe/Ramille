@@ -2,7 +2,9 @@
 export type LegalBlock =
   | { kind: 'paragraph'; text: string }
   | { kind: 'bullets'; items: string[] }
-  | { kind: 'definitions'; items: { term: string; text: string }[] };
+  | { kind: 'definitions'; items: { term: string; text: string }[] }
+  /** Un renvoi vers une autre page du produit (`/conditions` → `/licences`), un `TextLink` souligné (22/10/2026). */
+  | { kind: 'link'; label: string; href: string };
 export interface LegalSection {
   heading: string;
   blocks: LegalBlock[];

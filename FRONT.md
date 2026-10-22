@@ -381,7 +381,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   listées et la page le dit** — n'ôter cette phrase qu'après les avoir listées (il y faut un build Android) ;
   **une dépendance neuve fait rougir `scripts/licences.test.ts`** — relancer le script (deux minutes : il
   exporte les deux plateformes), relire le diff ; `--verifier` seul relit le bundle lui-même, et n'est pas
-  dans la CI ; **la page n'est pas offerte à l'indexation** (aucune ligne dans `PAGE_DESCRIPTIONS`) et ouvre
+  dans la CI ; **la page n'est pas offerte à l'indexation** (aucune ligne dans `PAGE_DESCRIPTIONS`) et n'ouvre
   ni session ni captcha (`SURFACES_SANS_COMPTE`, `src/types/session.ts`) ; et le lien des conditions est un
   bloc `link` de `LegalPage`, un `TextLink` — pas un `Link`, qui ne servirait qu'à un moteur.
   `ThemedText` pose ses espaces insécables de ponctuation double sur ces textes anglais comme sur les

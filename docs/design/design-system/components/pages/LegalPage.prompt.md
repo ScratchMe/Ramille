@@ -1,4 +1,4 @@
-Le gabarit des deux pages légales — « Politique de confidentialité » et « Conditions d’utilisation ».
+Le gabarit des pages légales — « Politique de confidentialité », « Conditions d’utilisation » et, depuis le 22/10/2026, « Licences ».
 
 ```jsx
 <LegalPage
@@ -9,9 +9,9 @@ Le gabarit des deux pages légales — « Politique de confidentialité » et «
 />
 ```
 
-**Trois formes de bloc, pas une de plus** : le paragraphe, les puces (un tiret cadratin tertiaire, jamais un point), les définitions (le terme en petit gras, l'explication dessous). Une mesure de lecture de 480 au plus, centrée : ce sont les textes les plus longs du produit.
+**Quatre formes de bloc, pas une de plus** : le paragraphe, les puces (un tiret cadratin tertiaire, jamais un point), les définitions (le terme en petit gras, l'explication dessous) et, depuis le 22/10/2026, le renvoi vers une autre page du produit — un `TextLink` souligné, comme tout texte cliquable (`/conditions` → `/licences`). Une mesure de lecture de 480 au plus, centrée : ce sont les textes les plus longs du produit.
 
-**Les titres de section sont de vrais en-têtes**, en 18/26 : sans eux, ces pages ne se parcourent qu'en lisant tout. **Ce sont les seules surfaces publiques** — leurs adresses sont données à Google Play et à l'écran de consentement Google, et elles se lisent sans session —, d'où le seul pied de page du produit, avec un vrai lien vers l'éditeur.
+**Les titres de section sont de vrais en-têtes**, en 18/26 : sans eux, ces pages ne se parcourent qu'en lisant tout. **Ce sont les surfaces publiques du produit** — les adresses des deux premières sont données à Google Play et à l'écran de consentement Google, et toutes se lisent sans session —, d'où le seul pied de page du produit, avec un vrai lien vers l'éditeur.
 
 **Deux sorties, de la même forme** (`SortieDuDetour`, `v1-33` T-10) : en haut, au-dessus de la date — la seule était la dernière ligne de la page, à 10 559 px du haut —, et à la fin, pour qui a tout lu.
 

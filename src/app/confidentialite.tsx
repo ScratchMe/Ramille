@@ -593,7 +593,7 @@ const SECTIONS: LegalSection[] = [
           'Repères de parcours : supprimés automatiquement au bout de douze mois. Au-delà, ils ne disent plus rien du ' +
             'produit tel qu’il est.',
           'Sessions de connexion : gardées tant que ton compte existe. Leur adresse IP et leur appareil sont effacés ' +
-            'quand une session reste 90 jours sans servir, et reviennent si elle resservait. Une session part quand tu ' +
+            'quand une session reste 90 jours sans servir ; si elle sert de nouveau, la nouvelle adresse est notée. Une session part quand tu ' +
             'te déconnectes de cet appareil, si l’appareil joint alors notre service, et toutes partent avec la ' +
             'suppression de ton compte ou la suppression automatique d’une session anonyme.',
           'Identifiant de notification de ton téléphone : désactivé au prochain démarrage de l’application si tu ' +

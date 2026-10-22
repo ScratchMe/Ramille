@@ -15,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(9);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at) values
   ('a5900000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
@@ -25,7 +25,9 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, c
 --   s1 : renouvelée il y a cent jours, rien depuis → effacée ;
 --   s2 : renouvelée il y a dix jours → gardée ;
 --   s3 : jamais renouvelée, mise à jour il y a cent jours → effacée ;
---   s4 : créée il y a cent jours, mais renouvelée hier → gardée (le plus récent l'emporte).
+--   s4 : créée il y a cent jours, mais renouvelée hier → gardée (le plus récent l'emporte) ;
+--   s5 : créée il y a cent cinquante jours, jamais renouvelée, mais mise à jour il y a dix jours → gardée
+--        (`updated_at` compte aussi : la contre-lecture du 22/10/2026 l'a vu sans garde).
 insert into auth.sessions (id, user_id, created_at, updated_at, refreshed_at, ip, user_agent) values
   ('a5900000-0000-0000-0000-0000000000a1', 'a5900000-0000-0000-0000-000000000001',
    now() - interval '150 days', now() - interval '100 days', (now() - interval '100 days') at time zone 'UTC',
@@ -38,7 +40,10 @@ insert into auth.sessions (id, user_id, created_at, updated_at, refreshed_at, ip
    '203.0.113.3', 'pgtap-appareil-3'),
   ('a5900000-0000-0000-0000-0000000000a4', 'a5900000-0000-0000-0000-000000000001',
    now() - interval '100 days', now() - interval '100 days', (now() - interval '1 day') at time zone 'UTC',
-   '203.0.113.4', 'pgtap-appareil-4');
+   '203.0.113.4', 'pgtap-appareil-4'),
+  ('a5900000-0000-0000-0000-0000000000a5', 'a5900000-0000-0000-0000-000000000001',
+   now() - interval '150 days', now() - interval '10 days', null,
+   '203.0.113.5', 'pgtap-appareil-5');
 
 create temporary table premier on commit drop as select public.menage_des_jetons_d_auth() as r;
 
@@ -49,13 +54,14 @@ select results_eq(
        ('a5900000-0000-0000-0000-0000000000a1', true, true),
        ('a5900000-0000-0000-0000-0000000000a2', false, false),
        ('a5900000-0000-0000-0000-0000000000a3', true, true),
-       ('a5900000-0000-0000-0000-0000000000a4', false, false) $$,
+       ('a5900000-0000-0000-0000-0000000000a4', false, false),
+       ('a5900000-0000-0000-0000-0000000000a5', false, false) $$,
   'les sessions inutilisées depuis 90 jours perdent adresse et appareil, les autres les gardent'
 );
 
 select is(
   (select count(*)::int from auth.sessions where user_id = 'a5900000-0000-0000-0000-000000000001'),
-  4,
+  5,
   'aucune session n''est fermée'
 );
 
@@ -95,6 +101,12 @@ select is(
   'une session revenue garde sa nouvelle adresse'
 );
 
+select is(
+  (select ip::text from auth.sessions where id = 'a5900000-0000-0000-0000-0000000000a5'),
+  '203.0.113.5/32',
+  'une session jamais renouvelée mais mise à jour il y a dix jours garde son adresse'
+);
+
 select ok(
   not has_function_privilege('authenticated', 'public.menage_des_jetons_d_auth()', 'execute'),
   'le ménage reste fermé aux clients'
@@ -114,8 +126,10 @@ rollback;
 --   - les sessions fermées (`delete`) au lieu d'effacées → 1, 2 et 7 ;
 --   - les lignes déjà vides recomptées (le filtre `ip is not null or user_agent is not null` retiré) → 6,
 --     seule ;
---   - l'adresse effacée sans l'appareil → 1 et 6.
+--   - l'adresse effacée sans l'appareil → 1 et 6 ;
+--   - `updated_at` retiré de la dernière utilisation (ajoutée après la contre-lecture du même jour, qui
+--     l'a vue passer) → 1 et 8.
 --
--- La 5 (les clés d'avant toujours rendues) et la 8 (le ménage fermé aux clients) gardent ce que la
+-- La 5 (les clés d'avant toujours rendues) et la 9 (le ménage fermé aux clients) gardent ce que la
 -- substitution aurait pu défaire : un retour réécrit sans `jetons_revoques`, un `create or replace` qui
 -- rouvrirait la fonction. Aucune des six mutations ne les vise.
