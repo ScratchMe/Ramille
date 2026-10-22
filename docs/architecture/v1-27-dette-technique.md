@@ -2581,8 +2581,11 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
   d'`api/` ne bouge) ;
 - le bundle web d'un seul fichier (2,96 Mo, dont 27 % de Reanimated) et l'écran du plan (2 134 lignes,
   environ neuf requêtes à chaque focus) : des refontes, pas des correctifs ;
-- les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
-  « Réessaie dans un instant » ;
+- ~~les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
+  « Réessaie dans un instant »~~ — **faits le 22/10/2026** pour les engagements et les bilans
+  (`src/types/refus-de-plafond.ts`, « Réessaie demain »). Celui des jetons d'appareil ne s'affiche nulle
+  part : l'inscription rend `false`, et la feuille des rappels retombe sur la ligne d'un jeton inactif —
+  muet plutôt que faux ;
 - l'empreinte de signature Play dans `assetlinks.json`, qui attend le compte Play ;
 - les quatre migrations de sécurité du 06/10/2026 appliquées hors de `schema_migrations`, et pgTAP
   installé sur la production : un relevé d'empreintes sur le distant, avec confirmation ;
