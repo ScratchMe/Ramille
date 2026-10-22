@@ -77,8 +77,8 @@ Et ce qu'aucune garde ne suit, à reprendre à la main : le **nombre** de fréqu
 contrôle de la migration et dans la prémisse du fichier `41` (quatre jusqu'au 22/10/2026), et les
 recopies du kit — `docs/design/design-system/components/bilan/LeisureFrequencyStep.*`, l'union de
 `ContextStep.d.ts`, la phrase de `suivi/BlocMethode.jsx` — avec la hauteur de son aperçu
-(`.design-sync/config.json`) ; le kit nomme encore le poste « Loisirs du week-end » (`bilan.card.js`,
-`EcartParPoste`, `LeisureDetailStep`, `EtapeTransition`) tant qu'on ne l'a pas repris. Les domaines des
+(`.design-sync/config.json`). Aucune garde ne compare ces recopies du kit au dépôt : on les retrouve
+par `rg "multiple_weekly"` sur le kit (relevé du 22/10/2026 dans `.design-sync/NOTES.md`). Les domaines des
 tests Jest, eux, se dérivent de la liste.
 
 **Le questionnaire demande désormais ce que le calcul supposait** (C3.4 + C3.5 + C3.6,
