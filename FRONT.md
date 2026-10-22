@@ -366,6 +366,26 @@ exactement ce qui avait laissé passer le mauvais caractère.
   responsable de traitement, regroupés dans `src/constants/editeur.ts` — un seul endroit à
   remplir, jamais de mention en dur dans un écran. Ce régime tomberait si le projet devenait
   une activité professionnelle.
+- **`/licences` ne s'écrit pas, elle se génère** (22/10/2026, audit du 18/10 : l'APK et le bundle web
+  embarquent des bibliothèques sous MIT, ISC, BSD et deux polices, et ces licences demandent qu'on
+  reproduise leur avis et leur texte). `src/constants/licences.ts` vient de
+  `scripts/generer-les-licences.mjs` et ne se retouche jamais à la main ; `src/types/licences.ts` le met
+  en page (testé), `src/app/licences.tsx` ne fait que le brancher sur `LegalPage`. **La liste n'est pas
+  `npm ls`** — 840 paquets, dont tout l'outillage d'Expo, qui n'entrent ni dans le bundle ni dans l'APK —
+  mais ce que les **cartes de sources** des bundles web et Android contiennent, plus les modules que
+  l'**autolinking** compile dans l'APK (un module natif présent y est compilé qu'un écran l'importe ou non) :
+  une centaine de paquets et deux polices, dont Material Symbols, que seul le bundle Android embarque. La méthode, et
+  ce qu'elle ne couvre pas, sont en tête du script ; **une licence est reproduite une fois par type**, pas
+  une fois par paquet, parce qu'un texte par paquet aurait alourdi un bundle web d'un seul fichier.
+  Quatre règles : **les dépendances Gradle des modules natifs (AndroidX, Kotlin, Firebase…) ne sont pas
+  listées et la page le dit** — n'ôter cette phrase qu'après les avoir listées (il y faut un build Android) ;
+  **une dépendance neuve fait rougir `scripts/licences.test.ts`** — relancer le script (deux minutes : il
+  exporte les deux plateformes), relire le diff ; `--verifier` seul relit le bundle lui-même, et n'est pas
+  dans la CI ; **la page n'est pas offerte à l'indexation** (aucune ligne dans `PAGE_DESCRIPTIONS`) et ouvre
+  ni session ni captcha (`SURFACES_SANS_COMPTE`, `src/types/session.ts`) ; et le lien des conditions est un
+  bloc `link` de `LegalPage`, un `TextLink` — pas un `Link`, qui ne servirait qu'à un moteur.
+  `ThemedText` pose ses espaces insécables de ponctuation double sur ces textes anglais comme sur les
+  autres : seul le blanc change, pas un mot.
 
 ### 2.4 Ce qui se touche, et ce qui s'annonce
 

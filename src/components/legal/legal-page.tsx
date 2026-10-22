@@ -1,8 +1,9 @@
-import { Link } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SortieDuDetour } from '@/components/sortie-du-detour';
+import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EDITOR_CV_URL, EDITOR_NAME } from '@/constants/editeur';
@@ -20,7 +21,10 @@ import { revenirOu } from '@/lib/navigation';
 export type LegalBlock =
   | { kind: 'paragraph'; text: string }
   | { kind: 'bullets'; items: string[] }
-  | { kind: 'definitions'; items: { term: string; text: string }[] };
+  | { kind: 'definitions'; items: { term: string; text: string }[] }
+  // Un renvoi vers une autre page du produit (`/conditions` → `/licences`). Un `TextLink` souligné, comme
+  // tout texte cliquable (`FRONT.md` §2.4) : il suit une phrase de la même encre, et se lit comme un lien.
+  | { kind: 'link'; label: string; href: Href };
 
 export type LegalSection = {
   heading: string;
@@ -110,6 +114,10 @@ function LegalBlockView({ block }: { block: LegalBlock }) {
     );
   }
 
+  if (block.kind === 'link') {
+    return <TextLink label={block.label} apparence="souligne" role="link" onPress={() => router.push(block.href)} containerStyle={styles.lien} />;
+  }
+
   if (block.kind === 'bullets') {
     return (
       <View style={styles.list}>
@@ -177,4 +185,6 @@ const styles = StyleSheet.create({
   bullet: { fontSize: 15, lineHeight: 23 },
   listText: { flex: 1 },
   definition: { gap: 2 },
+  // Le lien se range à gauche de la colonne : sans cela, la cible de 48 px s'étirerait sur toute sa largeur.
+  lien: { alignSelf: 'flex-start' },
 });

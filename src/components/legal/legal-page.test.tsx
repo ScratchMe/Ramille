@@ -16,9 +16,13 @@ import React from 'react';
 import { LegalPage } from '@/components/legal/legal-page';
 import { revenirOu } from '@/lib/navigation';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => {
   const { Text } = jest.requireActual('react-native');
-  return { Link: ({ children }: { children: React.ReactNode }) => <Text>{children}</Text> };
+  return {
+    Link: ({ children }: { children: React.ReactNode }) => <Text>{children}</Text>,
+    router: { push: (href: string) => mockPush(href) },
+  };
 });
 jest.mock('@/lib/navigation', () => ({ revenirOu: jest.fn() }));
 
@@ -52,5 +56,68 @@ describe('LegalPage — ses sorties', () => {
     const sorties = screen.getAllByRole('link', { name: 'Retour' });
     fireEvent.press(sorties[sorties.length - 1]);
     expect(revenirOu).toHaveBeenCalledWith('/');
+  });
+});
+
+/**
+ * Un renvoi d'une page légale vers une autre (22/10/2026) : `/conditions` renvoie à `/licences`. Le bloc
+ * `link` est un `TextLink` — le texte cliquable du produit, annoncé comme un lien, de 48 px de haut — et
+ * il pousse la page demandée. Rien d'autre ne lit ce bloc : le parcours réel n'ouvre aucune page légale,
+ * et `verifier-rendu-export.mjs` ne lit que leur titre.
+ *
+ * Éprouvé en cassant ce qu'il garde, le 22/10/2026 — trois mutations, chacune défaite en réécrivant l'état
+ * d'avant :
+ *   - le lien rendu sans `onPress` qui pousse (`onPress={() => undefined}`) → 1 tombe, « …et pousse la page
+ *     demandée » ;
+ *   - le bloc `link` plus lu par `LegalBlockView` (il retombe sur la définition) → 2 tombent, « rend un lien
+ *     annoncé comme tel… » et « …et pousse la page demandée » : le rendu lève ;
+ *   - le lien annoncé en `button` au lieu de `link` → 2 tombent, les deux mêmes : le nom accessible se cherche
+ *     par son rôle.
+ */
+describe('LegalPage — un renvoi vers une autre page', () => {
+  function rendreAvecUnRenvoi() {
+    render(
+      <LegalPage
+        title="Conditions d’utilisation"
+        updatedAt="18 octobre 2026"
+        intro="Ce que fait le service."
+        sections={[
+          {
+            heading: 'Propriété intellectuelle',
+            blocks: [
+              { kind: 'paragraph', text: 'Le code est publié sous licence libre.' },
+              { kind: 'link', label: 'Licences des bibliothèques et des polices', href: '/licences' },
+            ],
+          },
+        ]}
+      />
+    );
+  }
+
+  beforeEach(() => mockPush.mockClear());
+
+  it('rend un lien annoncé comme tel, sous la phrase qui le porte', () => {
+    rendreAvecUnRenvoi();
+
+    const lien = screen.getByRole('link', { name: 'Licences des bibliothèques et des polices' });
+    expect(lien).toBeTruthy();
+    const texte = JSON.stringify(screen.toJSON());
+    expect(texte.indexOf('Licences des bibliothèques et des polices')).toBeGreaterThan(texte.indexOf('Le code est publié'));
+  });
+
+  it('…et pousse la page demandée', () => {
+    rendreAvecUnRenvoi();
+
+    fireEvent.press(screen.getByRole('link', { name: 'Licences des bibliothèques et des polices' }));
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/licences');
+  });
+
+  it('ne rend aucun renvoi quand la page n’en porte pas', () => {
+    rendre();
+
+    expect(screen.queryByRole('link', { name: /Licences/ })).toBeNull();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

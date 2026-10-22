@@ -44,6 +44,11 @@
 //      fait tomber ce contrôle **et** les contrôles 1 (titre vide) et 3 (pas de `noindex`) — trois
 //      lignes pour la même cause, dont seule la septième la nomme.
 //
+// **`/licences` (22/10/2026) n'a besoin d'aucune ligne ici** : c'est une page d'application du point de vue de
+// l'indexation — un titre, pas de description, donc `noindex` —, et `PAGES_PUBLIQUES` ne la nomme pas exprès. Éprouvé
+// sur un export où sa ligne de `PAGE_TITLES` est retirée : le contrôle 2 la signale seule (« licences.html : le titre
+// vaut « Ramille »… »).
+//
 // Lancé en CI après `expo export`, cf. .github/workflows/ci.yml.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

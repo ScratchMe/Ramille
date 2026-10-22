@@ -107,7 +107,7 @@ describe('lEcranDeReconnexionSePose', () => {
   });
 
   it('laisse les surfaces publiques et de service, qui ne demandent pas de compte', () => {
-    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/status']) {
+    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
       expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: false });
     }
   });
@@ -118,7 +118,11 @@ describe('lEcranDeReconnexionSePose', () => {
  * l'écran de reconnexion : une page publique pour l'une et pas pour l'autre serait un oubli. Éprouvé le
  * 18/10/2026 : `laSessionSOuvreSur` réduite à `return true` → « ne crée rien sur les surfaces sans
  * compte », « … avec ou sans barre finale » et « suit la même liste… » ; la barre finale plus retirée
- * → « … avec ou sans barre finale », seul.
+ * → « … avec ou sans barre finale », seul. **Et le 22/10/2026, `/licences` retirée de la liste** (la page des
+ * licences, ajoutée aux trois énumérations de ce fichier) → 2 tombent, « laisse les surfaces publiques et de
+ * service… » et « ne crée rien sur les surfaces sans compte… » ; « suit la même liste que l'écran de
+ * reconnexion » reste vert, les deux fonctions lisant la même liste — c'est la garde de la cohérence, pas
+ * celle du contenu.
  */
 describe('laSessionSOuvreSur', () => {
   it('ouvre la session partout où l’app peut écrire, et sur une route neuve', () => {
@@ -128,7 +132,7 @@ describe('laSessionSOuvreSur', () => {
   });
 
   it('ne crée rien sur les surfaces sans compte — elles ne font que restaurer', () => {
-    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/status']) {
+    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
       expect({ chemin, ouvre: laSessionSOuvreSur(chemin) }).toEqual({ chemin, ouvre: false });
     }
   });
@@ -139,7 +143,7 @@ describe('laSessionSOuvreSur', () => {
   });
 
   it('suit la même liste que l’écran de reconnexion, hors `/connexion/…`', () => {
-    for (const chemin of ['/', '/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/status', '/feedback']) {
+    for (const chemin of ['/', '/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
       expect({ chemin, ouvre: laSessionSOuvreSur(chemin) }).toEqual({ chemin, ouvre: lEcranDeReconnexionSePose(chemin) });
     }
   });

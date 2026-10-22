@@ -2688,8 +2688,13 @@ async function attendreLeTexte(page, texte) {
 //   | le layout ouvre la session sur toute route (l'appel d'avant), avec clé | les cinq surfaces, deux fois chacune : la session demandée, le captcha chargé |
 //   | le même, sans clé (l'export de la CI) | les cinq surfaces, la session demandée — seule moitié mesurable sans clé |
 //   | le layout ne fait que restaurer, partout | le témoin `/onboarding`, deux fois : pas de session demandée, pas de captcha |
+//
+// **Et `/licences` y est depuis le 22/10/2026** (la liste est celle de `laSessionSOuvreSur`, six surfaces). Éprouvé
+// sur un export où `/licences` est retirée de `SURFACES_SANS_COMPTE` (`src/types/session.ts`) : le script sort 1
+// avec une seule ligne, « M : /licences, ouverte à froid, a demandé une session anonyme » — les cinq autres
+// surfaces et le témoin restent verts.
 {
-  const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/compte/suppression', '/rappels/stop', '/status'];
+  const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/status'];
   const cle = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null;
   const dossierDuBundle = join(DIST, '_expo', 'static', 'js', 'web');
   let cleDansLeBundle = false;
