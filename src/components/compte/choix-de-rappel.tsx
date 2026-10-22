@@ -50,8 +50,9 @@ const TITRE = 'Les rappels';
  *
  * **Et le texte ne suffit pas : le retour doit réparer.** Quand la permission tombe, le
  * lancement suivant désactive le jeton de cet appareil (`enregistrerLeJeton`). Rouvrir les
- * notifications dans les réglages ne le réinscrit pas : `enregistrerLeJeton` n'est appelée
- * qu'au démarrage et au changement d'utilisateur. Sans la réinscription ci-dessous, la ligne
+ * notifications dans les réglages ne le réinscrit pas : le réglage du jeton
+ * (`reglerLeJetonDeCetAppareil`) ne se fait qu'au démarrage, au changement d'utilisateur, et au
+ * retour au premier plan qui suit un échec. Sans la réinscription ci-dessous, la ligne
  * repasserait à « Le matin où la question s'ouvre. » pendant que `push_tokens` porte toujours
  * un `disabled_at` — le serveur retomberait sur l'email, ou sur rien, jusqu'au prochain
  * démarrage à froid. C'est la « petite trahison » d'A4-8, réintroduite par la porte qu'on
@@ -75,14 +76,18 @@ export function ChoixDeRappel({
   // vraie valeur arrive (elle est locale, donc au rendu suivant).
   const [permission, setPermission] = useState<Permission>('demandable');
 
+  // **Et seulement pour qui a choisi la notification** (22/10/2026, `leJetonAuDemarrage`) : la permission
+  // accordée suffisait, et l'identifiant partait chez Expo pour un rappel par e-mail ou sans rappel. Le
+  // choix de la notification relance l'effet, donc l'inscription suit le geste.
+  const choisitLaNotification = prefs.prefere === 'push';
   const relireLaPermission = useCallback(() => {
     void lirePermission()
       .then(async (etat) => {
         setPermission(etat);
-        if (etat === 'accordee') await enregistrerLeJeton();
+        if (etat === 'accordee' && choisitLaNotification) await enregistrerLeJeton();
       })
       .catch(() => undefined);
-  }, []);
+  }, [choisitLaNotification]);
 
   useEffect(relireLaPermission, [relireLaPermission]);
   useRafraichirAuRetour(relireLaPermission);

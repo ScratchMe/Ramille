@@ -42,6 +42,12 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   un échec réseau passait pour fait jusqu'au démarrage à froid suivant. Le retour retente à chaque
   `active`, même court : l'aller-retour dans les réglages du téléphone, où l'on vient de rouvrir les
   notifications, est le cas qu'il attend.
+- **Et depuis le 22/10/2026, le jeton ne s'inscrit que pour qui a choisi la notification**
+  (`leJetonAuDemarrage`, `src/types/rappels.ts`) : la permission accordée suffisait, et sur Android 12
+  et avant l'identifiant partait chez Expo au premier lancement, rappel par e-mail ou sans rappel. Le
+  démarrage désactive désormais celui d'un appareil passé à un autre canal, et une préférence illisible
+  ne touche à rien. Choisir la notification inscrit le jeton au moment du geste, dans la feuille comme
+  dans « Toi » — sinon la préférence se dégraderait d'elle-même.
 - **`enregistrerLeJeton()` rend un booléen, et c'est la seule chose qui peut faire passer
   `jetonActif` à vrai** (`src/lib/rappels.ts`) — une permission accordée dont l'enregistrement a
   échoué (pas d'identifiants FCM, pas de réseau, simulateur) faisait promettre au plan une

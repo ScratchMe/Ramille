@@ -160,6 +160,27 @@ async function leJetonDeCetAppareilEstActif(): Promise<boolean | null> {
 }
 
 /**
+ * La préférence seule, ou **`null` quand on ne l'a pas lue** — pour le jeton du démarrage
+ * (`reglerLeJetonDeCetAppareil`, `src/lib/rappels.ts`), qui n'a besoin que d'elle. La session est lue
+ * sur l'appareil et non au serveur : le démarrage vient de l'établir.
+ */
+export async function lireLeCanalPrefere(): Promise<CanalPrefere | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('reminder_channel')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  // Même lecture que `loadReminderPrefs` : la colonne est `not null` et bornée par son `check`.
+  return error || !data ? null : (data.reminder_channel as CanalPrefere);
+}
+
+/**
  * **`null` quand le choix est enregistré, le genre de l'échec sinon** (02/10/2026, `v1-33` §9) : les
  * deux écrans qui l'appellent disaient « Vérifie ta connexion » à toute erreur, et un booléen ne leur
  * laissait pas le choix. La phrase vient de `messageDEcriture` ; l'appelant remet le réglage en place

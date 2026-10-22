@@ -2,10 +2,12 @@
 // impose, isolé ici pour que les écrans n'en sachent rien.
 // Réf. docs/architecture/v1-12-rappels.md §5.3.
 //
-// **Le jeton suit la personne connectée sur l'appareil.** `enregistrerLeJeton()` est donc
+// **Le jeton suit la personne connectée sur l'appareil.** `reglerLeJetonDeCetAppareil()` est donc
 // appelée à chaque ouverture, à chaque changement d'utilisateur, et au retour au premier plan
-// tant qu'elle n'a rien inscrit : le RPC reprend le jeton à son propriétaire précédent, ce
+// tant qu'elle n'a rien réglé : le RPC reprend le jeton à son propriétaire précédent, ce
 // qu'une policy RLS ne pourrait pas faire au moment où une session anonyme devient un compte.
+// **Et seulement pour qui a choisi la notification** (22/10/2026) : sans elle, le jeton de cet
+// appareil est désactivé, et rien ne part chez Expo.
 //
 // Rien ici ne parle à l'utilisateur, mais **tout se dit à l'appelant** : `enregistrerLeJeton()`
 // rend un booléen, et c'est ce qui empêche la feuille d'annoncer une notification qui ne
@@ -17,11 +19,13 @@ import { Platform } from 'react-native';
 
 import {
   desinscrireLeJetonDeCetAppareil,
+  lireLeCanalPrefere,
+  lireLeJetonDeCetAppareil,
   memoriserLeJetonDeCetAppareil,
   suivreLEnregistrementDuJeton,
 } from '@/lib/notification-prefs';
 import { supabase } from '@/lib/supabase';
-import { CANAUX_ANDROID, type Permission } from '@/types/rappels';
+import { CANAUX_ANDROID, leJetonAuDemarrage, type Permission } from '@/types/rappels';
 
 export const estNatif = Platform.OS !== 'web';
 
@@ -163,5 +167,28 @@ async function enregistrerLeJetonMaintenant(): Promise<boolean> {
     // Pas d'identifiants FCM, pas de réseau, simulateur : rien à dire à l'utilisateur, le
     // rappel partira par email si c'est possible — et l'appelant, lui, l'apprend.
     return false;
+  }
+}
+
+/**
+ * Le jeton au démarrage, au changement d'utilisateur et au retour au premier plan (`gardeDuJeton`,
+ * `src/app/_layout.tsx`) : **inscrit seulement si la personne a choisi la notification**
+ * (`leJetonAuDemarrage`, `src/types/rappels.ts`, qui dit pourquoi), désactivé sinon.
+ *
+ * **Rend `true` quand il n'y a rien à retenter** : un jeton inscrit, ou aucun jeton de cet appareil
+ * resté actif. `false` sur une préférence illisible, une inscription ratée ou une désactivation qui
+ * n'a pas abouti — la marque locale est encore là —, que le retour au premier plan suivant retente.
+ */
+export async function reglerLeJetonDeCetAppareil(): Promise<boolean> {
+  if (!estNatif || !Device.isDevice) return false;
+
+  switch (leJetonAuDemarrage(await lireLeCanalPrefere())) {
+    case 'attendre':
+      return false;
+    case 'desinscrire':
+      await desinscrireLeJetonDeCetAppareil();
+      return (await lireLeJetonDeCetAppareil()) === null;
+    case 'inscrire':
+      return enregistrerLeJeton();
   }
 }

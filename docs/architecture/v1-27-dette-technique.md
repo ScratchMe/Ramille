@@ -1874,7 +1874,11 @@ ce que l'app fait, et deux touchent au natif, donc à un build (le premier et le
   à chaque démarrage par `src/app/_layout.tsx`, ne regarde que la permission). Plus sobre : ne l'enregistrer
   qu'avec le push choisi ou le mot de la veille demandé. **Ce qui retient** : c'est une retouche de la
   feuille des rappels et de sa reprise, et la règle « la préférence ne se dégrade jamais d'elle-même »
-  (`BOUCLE.md`) suppose qu'un jeton existe déjà quand on choisit le push.
+  (`BOUCLE.md`) suppose qu'un jeton existe déjà quand on choisit le push. **Fait le 22/10/2026**, sur
+  l'audit du 18/10/2026 : le mot de la veille ne part qu'avec la préférence `push` (`reminder_channel_for()`),
+  donc seule cette préférence compte, et la feuille comme « Toi » inscrivent le jeton au moment où on la
+  choisit. Le démarrage désactive celui d'un appareil passé à un autre canal (`leJetonAuDemarrage`,
+  `reglerLeJetonDeCetAppareil`).
 - **Un identifiant que rien n'emploie n'est jamais désactivé.** `disabled_at` ne se pose qu'au démarrage
   sans permission, sur un `DeviceNotRegistered` ou au-delà de cinq appareils par compte ; avec les rappels par e-mail ou aucun, et l'application
   désinstallée, aucun envoi ne part, donc le jeton reste actif jusqu'à la suppression du compte. Plus
