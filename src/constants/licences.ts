@@ -68,7 +68,7 @@ export const LICENCES: DonneesDesLicences = {
   {"nom":"expo-keep-awake","version":"57.0.2","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},
   {"nom":"expo-linking","version":"57.0.13","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-modules-core","version":"57.0.24","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
-  {"nom":"expo-notifications","version":"57.0.23","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
+  {"nom":"expo-notifications","version":"57.0.24","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-router","version":"57.0.29","licence":"MIT","texte":"MIT","copyright":"Copyright © 2026 650 Industries.","sur":"les deux"},
   {"nom":"expo-splash-screen","version":"57.0.10","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"les deux"},
   {"nom":"expo-symbols","version":"57.0.3","licence":"MIT","texte":"MIT","copyright":"Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)","sur":"android"},

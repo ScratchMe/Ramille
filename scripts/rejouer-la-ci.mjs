@@ -121,7 +121,7 @@ const NON_REJOUEES = [
     raison: 'les dépendances sont celles de l’arbre : un package-lock.json changé sans `npm install` se voit en CI, pas ici',
   },
   {
-    ci: `echo "::warning title=expo-doctor rouge (non bloquant)::Les paquets Expo ont du retard sur le SDK. Détail dans le journal de l'étape précédente ; correction par npx expo install --fix. Le passage du lundi, lui, bloquera."`,
+    ci: `echo "::warning title=expo-doctor rouge (non bloquant)::Les paquets Expo ont du retard sur le SDK. Détail dans le journal de l'étape précédente ; correction par npx expo install --fix, puis node scripts/generer-les-licences.mjs (EXPO.md §1.9). Le passage du lundi, lui, bloquera."`,
     raison: 'annotation GitHub : le rejeu affiche lui-même l’avertissement (`!`) et le détail du journal d’expo-doctor',
   },
   {

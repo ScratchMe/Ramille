@@ -148,7 +148,7 @@ jobs:
         continue-on-error: ${{ github.event_name != 'schedule' && github.event_name != 'workflow_dispatch' }}
         run: npx expo-doctor@1.20.4
       - if: steps.doctor.outcome == 'failure'
-        run: echo "::warning title=expo-doctor rouge (non bloquant)::Les paquets Expo ont du retard sur le SDK. Détail dans le journal de l'étape précédente ; correction par npx expo install --fix. Le passage du lundi, lui, bloquera."
+        run: echo "::warning title=expo-doctor rouge (non bloquant)::Les paquets Expo ont du retard sur le SDK. Détail dans le journal de l'étape précédente ; correction par npx expo install --fix, puis node scripts/generer-les-licences.mjs (EXPO.md §1.9). Le passage du lundi, lui, bloquera."
 
   unit-tests:
     name: Tests unitaires (Jest)
