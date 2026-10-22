@@ -86,7 +86,7 @@ hebdo, 1er du mois 6h pour la boucle mensuelle). Voir
   à 0,1224 kg/km le bus ne vaut que 14 % de moins qu'une thermique en ACV, la correction aurait été
   un non-événement (A7-13).
   **Les loisirs ne sont plus « du week-end » depuis le 22/10/2026** (`v1-35` étape 3,
-  `20261022163000_les_loisirs_de_toute_la_semaine.sql`) : la question du questionnaire couvre la semaine
+  `20261022201848_les_loisirs_de_toute_la_semaine.sql`) : la question du questionnaire couvre la semaine
   comme le week-end, les libellés figés disent « Loisirs », « Loisirs (<mode>) » et « Loisirs
   (occasionnels) », `public.poste_inserable('leisure')` rend « tes sorties » et la question du mois nomme
   le poste « Loisirs ». **Un point déjà généré garde sa question et son libellé** (`committed_question`,

@@ -103,7 +103,7 @@ begin
 end
 $$;
 
--- Cinq depuis le 22/10/2026 : « Presque tous les jours » (`20261022163000`, gardée par `60`).
+-- Cinq depuis le 22/10/2026 : « Presque tous les jours » (`20261022201848`, gardée par `60`).
 select is(
   (select count(*)::int from distances_par_frequence),
   5,

@@ -84,7 +84,7 @@ select is(
 -- la décision dominante globale, cf. migration 20260827090000_engagement_checkins.sql.
 -- Libellés précis ("Loisirs"/"Voyages longue distance", pas juste "Trajets loisirs"/"Voyages")
 -- depuis 20260903120000_precise_poste_labels.sql ; « Loisirs » et non plus « Loisirs du week-end »
--- depuis 20261022163000_les_loisirs_de_toute_la_semaine.sql, qui compte la semaine aussi.
+-- depuis 20261022201848_les_loisirs_de_toute_la_semaine.sql, qui compte la semaine aussi.
 --
 -- **« (occasionnels) » et non « (Voiture) »** depuis C2.5 : ce scénario répond « rarement » aux
 -- loisirs, donc son mode de loisir est un résiduel de calcul que personne n'a déclaré. Le nommer

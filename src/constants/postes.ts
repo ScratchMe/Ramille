@@ -77,7 +77,7 @@ export const POSTE_LABEL: Record<string, string> = {
  * utilisateur du 03/09/2026) : ce sont deux postes bien distincts du bilan (B2 « Week-ends et
  * loisirs » vs B3 « Voyages sur l'année »). Même wording que les libellés persistés côté
  * serveur, cf. `20260903120000_precise_poste_labels.sql` — et, pour les loisirs depuis le 22/10/2026,
- * `20261022163000_les_loisirs_de_toute_la_semaine.sql`.
+ * `20261022201848_les_loisirs_de_toute_la_semaine.sql`.
  */
 export const POSTE_SUBJECT: Record<string, string> = {
   commute: 'Ton trajet domicile-travail',

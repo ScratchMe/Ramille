@@ -31,7 +31,7 @@ une liste ouverte de trajets. Chaque utilisateur a exactement 0 ou 1 valeur par 
 insert sans transformation.
 
 **La fréquence des loisirs a cinq réponses depuis le 22/10/2026** (`v1-35` étape 3,
-`20261022163000_les_loisirs_de_toute_la_semaine.sql`) : « Rarement — une fois par mois ou moins »
+`20261022201848_les_loisirs_de_toute_la_semaine.sql`) : « Rarement — une fois par mois ou moins »
 (`rarely`, 0,25 sortie par semaine), « Deux ou trois fois par mois » (`multiple_monthly`, 0,6, ajoutée
 le 02/10/2026 — `v1-33` D5, `20261002201852_la_quatrieme_frequence_des_loisirs.sql`), « Une fois par
 semaine » (`weekly`, 1), « Plusieurs fois par semaine » (`multiple_weekly`, 3) et **« Presque tous les

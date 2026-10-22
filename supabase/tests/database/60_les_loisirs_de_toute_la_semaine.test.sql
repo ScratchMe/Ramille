@@ -1,6 +1,6 @@
 -- Tests pgTAP : les loisirs de toute la semaine, et la cinquième fréquence, « Presque tous les jours »
 -- (étape 3 de `docs/architecture/v1-35-l-audit-en-chantiers.md`, migration
--- `20261022163000_les_loisirs_de_toute_la_semaine.sql`).
+-- `20261022201848_les_loisirs_de_toute_la_semaine.sql`).
 --
 -- **Deux profils, aux réponses identiques sauf la fréquence** : P sort presque tous les jours, Q une
 -- fois par semaine — en voiture thermique, 15 à 30 km, sans trajet domicile-travail ni voyage. Q est
