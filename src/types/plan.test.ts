@@ -402,11 +402,12 @@ describe('felicitationDuPlanSansAction', () => {
     );
   });
 
-  // Le registre qu'on insère après une préposition : « tes sorties du week-end », jamais « tes
-  // loisirs du week-end ».
+  // Le registre qu'on insère après une préposition : « tes sorties », jamais « tes loisirs ». Le libellé
+  // figé n'y est pas lu : un cycle d'avant le 22/10/2026 porte « Loisirs du week-end (…) » et se dit pareil.
   it('parle le registre inséré', () => {
+    expect(titre('leisure', 'Loisirs (Voiture thermique)')).toBe('Tu fais déjà l’essentiel sur tes sorties.');
     expect(titre('leisure', 'Loisirs du week-end (Voiture thermique)')).toBe(
-      'Tu fais déjà l’essentiel sur tes sorties du week-end.'
+      'Tu fais déjà l’essentiel sur tes sorties.'
     );
     expect(titre('travel')).toBe('Tu fais déjà l’essentiel sur tes voyages.');
   });
@@ -419,13 +420,18 @@ describe('felicitationDuPlanSansAction', () => {
   // Le cycliste aux sorties rares du parcours réel : son poste est le résiduel du calcul, pas un
   // comportement déclaré, et aucune boucle mensuelle ne porte dessus. Son total (11 kg) est celui
   // que le parcours réel mesure.
-  const RESIDUEL = 'Loisirs du week-end (occasionnels)';
-  it('ne nomme ni ne promet le résiduel des sorties rares, et dit pourquoi le plan est vide', () => {
-    expect(felicitationDuPlanSansAction('leisure', RESIDUEL, 11, LES_DEUX)).toEqual({
-      titre: 'Tu es déjà sous le repère 2050.',
-      promettreLePoint: false,
-    });
-  });
+  const RESIDUEL = 'Loisirs (occasionnels)';
+  // Le cycle d'un bilan soumis avant le 22/10/2026 porte l'ancien libellé figé, et le résiduel y est
+  // reconnu à son marqueur, pas à son nom.
+  it.each([RESIDUEL, 'Loisirs du week-end (occasionnels)'])(
+    'ne nomme ni ne promet le résiduel des sorties rares, et dit pourquoi le plan est vide : « %s »',
+    (libelle) => {
+      expect(felicitationDuPlanSansAction('leisure', libelle, 11, LES_DEUX)).toEqual({
+        titre: 'Tu es déjà sous le repère 2050.',
+        promettreLePoint: false,
+      });
+    }
+  );
 
   // **Le titre affirme un repère, donc il se conditionne au total** (arbitrage du 25/09/2026). Vrai
   // par construction aujourd'hui, pas garanti demain : un poste neuf pourrait faire passer ce
@@ -448,7 +454,7 @@ describe('felicitationDuPlanSansAction', () => {
 
   it('promet le point partout ailleurs', () => {
     expect(felicitationDuPlanSansAction('commute', 'Trajet domicile-travail (Vélo)', 11, LES_DEUX).promettreLePoint).toBe(true);
-    expect(felicitationDuPlanSansAction('leisure', 'Loisirs du week-end (Voiture thermique)', 11, LES_DEUX).promettreLePoint).toBe(true);
+    expect(felicitationDuPlanSansAction('leisure', 'Loisirs (Voiture thermique)', 11, LES_DEUX).promettreLePoint).toBe(true);
     expect(felicitationDuPlanSansAction('travel', 'Voyages longue distance (Avion)', 11, LES_DEUX).promettreLePoint).toBe(true);
     expect(felicitationDuPlanSansAction(null, null, null, LES_DEUX).promettreLePoint).toBe(true);
   });
@@ -467,7 +473,7 @@ describe('felicitationDuPlanSansAction', () => {
     const promet = (poste: string | null, libelle: string | null, boucles: LoopType[] | null) =>
       felicitationDuPlanSansAction(poste, libelle, 11, boucles).promettreLePoint;
     expect(promet('commute', 'Trajet domicile-travail (Vélo)', ['extras'])).toBe(false);
-    expect(promet('leisure', 'Loisirs du week-end (Voiture thermique)', ['commute'])).toBe(false);
+    expect(promet('leisure', 'Loisirs (Voiture thermique)', ['commute'])).toBe(false);
     expect(promet('travel', 'Voyages longue distance (Avion)', [])).toBe(false);
     // La boucle du poste suffit, l'autre n'y est pour rien.
     expect(promet('commute', 'Trajet domicile-travail (Vélo)', ['commute'])).toBe(true);

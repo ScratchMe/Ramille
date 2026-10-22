@@ -137,6 +137,21 @@ describe('isStepVisible', () => {
     expect(isStepVisible('leisure_detail', answers({ leisure_frequency: null }))).toBe(true);
   });
 
+  // **La cinquième réponse est une sortie déclarée, comme les trois d'avant elle** (22/10/2026, `v1-35`
+  // étape 3) : seule « Rarement » saute le détail. Le balayage vient de la liste des réponses et non d'une
+  // énumération — une sixième réponse serait éprouvée sans qu'on y pense —, et la cinquième est nommée
+  // pour que la liste ne puisse pas la perdre sans que ce test le dise.
+  it('demande le détail des sorties à chaque réponse sauf « Rarement », « Presque tous les jours » comprise', () => {
+    const declarees = REPONSES_FREQUENCE_DES_LOISIRS.map((r) => r.value).filter((v) => v !== 'rarely');
+    expect(declarees).toContain('almost_daily');
+    for (const frequence of declarees) {
+      expect({ frequence, visible: isStepVisible('leisure_detail', answers({ leisure_frequency: frequence })) }).toEqual({
+        frequence,
+        visible: true,
+      });
+    }
+  });
+
   it('les étapes sans condition sont toujours visibles', () => {
     const a = answers({});
     expect(isStepVisible('commute_has_trip', a)).toBe(true);
@@ -921,6 +936,20 @@ describe('distanceBornee', () => {
 });
 
 describe('les tables de réponses chiffrées', () => {
+  // **La fréquence des loisirs a cinq réponses depuis le 22/10/2026** (`v1-35` étape 3) : « Presque tous les
+  // jours » vient s'ajouter à la fin, et elle compte 5 sorties par semaine (`HYPOTHESES`). Les valeurs sont
+  // comparées à la base en CI (`verifier-miroirs-de-check.mjs`) ; ce que ce test épingle, c'est ce que la
+  // base ne voit pas — le texte que la personne lit, et l'ordre de l'échelle.
+  it('les loisirs se déclarent sur cinq fréquences, du moins fréquent au plus fréquent', () => {
+    expect(REPONSES_FREQUENCE_DES_LOISIRS).toEqual([
+      { value: 'rarely', label: 'Rarement — une fois par mois ou moins' },
+      { value: 'multiple_monthly', label: 'Deux ou trois fois par mois' },
+      { value: 'weekly', label: 'Une fois par semaine' },
+      { value: 'multiple_weekly', label: 'Plusieurs fois par semaine' },
+      { value: 'almost_daily', label: 'Presque tous les jours' },
+    ]);
+  });
+
   // Ces trois tables sont des **miroirs des `check` du schéma**, pas des choix d'écran : une
   // valeur hors bornes ne serait refusée qu'à la soumission, neuf étapes trop tard et en
   // anglais. Les bornes sont recopiées ici parce que rien ne peut les lire depuis le SQL — même
@@ -1203,6 +1232,38 @@ describe('normaliserReponses', () => {
       ).leisure_car_engine
     ).toBeNull();
   });
+
+  // **« Presque tous les jours » garde le détail de ses sorties** (22/10/2026) : la règle d'effacement de
+  // « Rarement » ne vaut que pour elle. Une cinquième réponse prise pour « Rarement » effacerait le mode, la
+  // distance, le covoiturage et le type de train d'un bilan que la personne vient de décrire en détail.
+  it.each(REPONSES_FREQUENCE_DES_LOISIRS.map((r) => r.value).filter((v) => v !== 'rarely'))(
+    'garde le détail des sorties de qui sort « %s »',
+    (frequence) => {
+      const voiture = normaliserReponses(
+        answers({
+          leisure_frequency: frequence,
+          leisure_mode: 'voiture',
+          leisure_car_engine: 'electrique',
+          leisure_is_carpool: true,
+          leisure_carpool_size: 3,
+          leisure_distance_bracket: '30_plus',
+          leisure_distance_km: 120,
+        })
+      );
+      expect(voiture).toMatchObject({
+        leisure_mode: 'voiture',
+        leisure_car_engine: 'electrique',
+        leisure_is_carpool: true,
+        leisure_carpool_size: 3,
+        leisure_distance_bracket: '30_plus',
+        leisure_distance_km: 120,
+      });
+      const train = normaliserReponses(
+        answers({ leisure_frequency: frequence, leisure_mode: 'train', leisure_train_type: 'ter' })
+      );
+      expect(train).toMatchObject({ leisure_mode: 'train', leisure_train_type: 'ter' });
+    }
+  );
 
   it('une distance saisie efface la tranche, que le calcul n’utiliserait plus', () => {
     // État qu'aucun des deux liens de l'écran ne produit (ils s'effacent l'un l'autre), mais

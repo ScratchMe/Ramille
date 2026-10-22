@@ -74,7 +74,13 @@ const racine = path.resolve(__dirname, '..');
 function bilansDeLApp(total_co2_kg_year: number): ResultatBilan[] {
   const bilans: ResultatBilan[] = [];
   for (const poste of POSTES) {
-    const marqueurs = poste === 'leisure' ? ['Loisirs du week-end', 'Loisirs du week-end (occasionnels)'] : ['x'];
+    // Les libellés que le serveur fige sur les loisirs : ceux d'aujourd'hui, et ceux des bilans soumis avant
+    // le 22/10/2026 (`assessment_results` ne se réécrit pas). Le partage s'écrit depuis la table
+    // (`dominantShareLabel`), jamais depuis le libellé figé : les deux doivent donner les mêmes adresses.
+    const marqueurs =
+      poste === 'leisure'
+        ? ['Loisirs', 'Loisirs (occasionnels)', 'Loisirs du week-end', 'Loisirs du week-end (occasionnels)']
+        : ['x'];
     for (const dominant_poste_label of marqueurs) {
       for (const dominant_poste_mode of [null, ...MODE_IDS]) {
         bilans.push({
@@ -103,6 +109,18 @@ describe('le poste de la carte de partage', () => {
     // Quatre noms (le résiduel des sorties rares compris) × (chaque mode, et aucun).
     expect(libelles).toHaveLength(4 * (MODE_IDS.length + 1));
     expect(libelles.filter((libelle) => posteFerme(libelle) !== libelle)).toEqual([]);
+  });
+
+  // **Les liens déjà partagés restent lisibles** (22/10/2026, `v1-35` étape 3) : l'app dit « Loisirs » depuis
+  // ce jour, et une adresse partagée avant porte « Loisirs du week-end » — avec ou sans mode. Elle n'est
+  // plus produite par personne, donc le balayage des libellés de l'app ne la voit pas : ce test est sa
+  // seule garde, et il tombe si quelqu'un nettoie la liste de ce qu'« aucun libellé ne produit plus ».
+  it('accepte encore le nom que portaient les loisirs avant le 22/10/2026', () => {
+    expect(posteFerme('Loisirs du week-end')).toBe('Loisirs du week-end');
+    expect(posteFerme('Loisirs du week-end en voiture')).toBe('Loisirs du week-end en voiture');
+    expect(posteFerme('Loisirs du week-end à vélo')).toBe('Loisirs du week-end à vélo');
+    // Et il ne dérive pas vers un mode qu'aucune liste ne connaît.
+    expect(posteFerme('Loisirs du week-end en jet privé')).toBeNull();
   });
 
   it('ignore un libellé forgé, et garde le poste seul', () => {

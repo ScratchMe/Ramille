@@ -11,20 +11,21 @@ import {
   posteDeLHistorique,
   posteLabel,
 } from '@/constants/postes';
+import { REPONSES_FREQUENCE_DES_LOISIRS } from '@/types/bilan';
 
 describe('formeInserable', () => {
   // La table du canvas v1-14 §3.2 et du brief. C'est elle qui décide de la question du point,
   // de l'email, du push, du sous-titre du plan et du cap — cinq phrases, une table.
   it.each([
     ['commute', 'ton trajet domicile-travail'],
-    ['leisure', 'tes sorties du week-end'],
+    ['leisure', 'tes sorties'],
     ['travel', 'tes voyages'],
   ])('%s → « %s »', (poste, forme) => {
     expect(formeInserable(poste)).toBe(forme);
   });
 
   // Le repli n'existe que pour les lignes générées avant la colonne `poste` : quand le poste est
-  // là, il gagne toujours. L'inverse ferait lire « tes sorties du week-end » à quelqu'un dont le
+  // là, il gagne toujours. L'inverse ferait lire « tes sorties » à quelqu'un dont le
   // poste extras est les voyages — une fausseté lisible à la place d'une vérité laide.
   it('le poste l’emporte toujours sur la boucle', () => {
     expect(formeInserable('travel', 'extras')).toBe('tes voyages');
@@ -33,8 +34,8 @@ describe('formeInserable', () => {
 
   it('retombe sur la boucle quand le poste manque', () => {
     expect(formeInserable(null, 'commute')).toBe('ton trajet domicile-travail');
-    expect(formeInserable(null, 'extras')).toBe('tes sorties du week-end');
-    expect(formeInserable(undefined, 'extras')).toBe('tes sorties du week-end');
+    expect(formeInserable(null, 'extras')).toBe('tes sorties');
+    expect(formeInserable(undefined, 'extras')).toBe('tes sorties');
   });
 
   // Jamais de chaîne vide : elle produirait « pour  ? » dans un email déjà parti.
@@ -80,21 +81,50 @@ describe('le vocabulaire du poste', () => {
     expect(FORME_INSERABLE.travel.length).toBeLessThan(POSTE_EN_PHRASE.travel.length);
   });
 
-  // Le vocabulaire doit rester le même d'un registre à l'autre : la personne qui lit « Loisirs du
-  // week-end » en tête du questionnaire doit retrouver « loisirs » dans la restitution.
+  // Le vocabulaire doit rester le même d'un registre à l'autre : la personne qui lit « Trajet
+  // domicile-travail » en tête du questionnaire doit retrouver « domicile-travail » dans la restitution.
+  //
+  // **Les loisirs sont l'exception, et elle est écrite** (22/10/2026, `v1-35` étape 3) : ils s'appelaient
+  // « … du week-end » dans les quatre registres, et ce mot-clé commun a disparu avec le week-end. Trois
+  // registres disent « loisirs » ; la forme insérable dit « sorties », le mot de la copie validée du
+  // canvas (`v1-14` §3.2), et c'est le test de la différence, plus haut, qui la tient à l'écart.
+  // Le nom d'un registre qui dériverait vers un autre mot (« Sorties » en tête de section, « tes trajets »
+  // en sujet) tombe ici.
   it('garde le même mot-clé d’un registre à l’autre', () => {
-    for (const [poste, motCle] of Object.entries({
-      commute: 'domicile-travail',
-      leisure: 'week-end',
-      travel: 'voyage',
-    })) {
-      for (const table of [POSTE_LABEL, POSTE_SUBJECT, POSTE_EN_PHRASE, FORME_INSERABLE]) {
-        expect({ poste, valeur: table[poste].toLowerCase() }).toEqual({
-          poste,
-          valeur: expect.stringContaining(motCle),
-        });
+    const motsCles: Record<string, { registres: Record<string, string>[]; motCle: string }[]> = {
+      commute: [
+        { registres: [POSTE_LABEL, POSTE_SUBJECT, POSTE_EN_PHRASE, FORME_INSERABLE], motCle: 'domicile-travail' },
+      ],
+      leisure: [
+        { registres: [POSTE_LABEL, POSTE_SUBJECT, POSTE_EN_PHRASE], motCle: 'loisirs' },
+        { registres: [FORME_INSERABLE], motCle: 'sorties' },
+      ],
+      travel: [{ registres: [POSTE_LABEL, POSTE_SUBJECT, POSTE_EN_PHRASE, FORME_INSERABLE], motCle: 'voyage' }],
+    };
+    for (const [poste, groupes] of Object.entries(motsCles)) {
+      for (const { registres, motCle } of groupes) {
+        for (const table of registres) {
+          expect({ poste, valeur: table[poste].toLowerCase() }).toEqual({
+            poste,
+            valeur: expect.stringContaining(motCle),
+          });
+        }
       }
     }
+  });
+
+  // **Les loisirs ne sont plus « du week-end », dans aucun des quatre registres** (22/10/2026) : la
+  // question couvre la semaine comme le week-end, et chaque registre qui garderait le mot en
+  // promettrait la moitié. Les libellés que le serveur a figés avant cette date, eux, le portent encore
+  // — c'est leur lecture qui l'accepte, pas leur écriture.
+  it('ne dit « week-end » nulle part pour les loisirs', () => {
+    for (const table of [POSTE_LABEL, POSTE_SUBJECT, POSTE_EN_PHRASE, FORME_INSERABLE]) {
+      expect(table.leisure.toLowerCase()).not.toMatch(/week-?end/);
+    }
+    expect(POSTE_LABEL.leisure).toBe('Loisirs');
+    expect(POSTE_SUBJECT.leisure).toBe('Tes loisirs');
+    expect(POSTE_EN_PHRASE.leisure).toBe('tes loisirs');
+    expect(FORME_INSERABLE.leisure).toBe('tes sorties');
   });
 });
 
@@ -120,18 +150,32 @@ describe('posteLabel', () => {
  * le serveur fige, épinglé côté base par `01` et `20`.
  */
 describe('estLeResiduelDesSortiesRares', () => {
-  it('reconnaît le libellé que le serveur fige sur le résiduel', () => {
-    expect(estLeResiduelDesSortiesRares('leisure', 'Loisirs du week-end (occasionnels)')).toBe(true);
-  });
+  // **Les deux libellés, parce que `assessment_results` ne se réécrit pas** (22/10/2026) : le serveur
+  // fige « Loisirs (occasionnels) » depuis la migration des loisirs de toute la semaine, et les bilans
+  // d'avant portent encore « Loisirs du week-end (occasionnels) ». Le marqueur lu est `(occasionnels)`,
+  // vrai des deux ; un test qui n'en prenait qu'un laisserait la lecture se resserrer sur lui sans bruit.
+  it.each(['Loisirs (occasionnels)', 'Loisirs du week-end (occasionnels)'])(
+    'reconnaît le libellé que le serveur fige sur le résiduel : « %s »',
+    (libelle) => {
+      expect(estLeResiduelDesSortiesRares('leisure', libelle)).toBe(true);
+    }
+  );
 
-  it('ne prend pas des sorties déclarées pour le résiduel', () => {
-    expect(estLeResiduelDesSortiesRares('leisure', 'Loisirs du week-end (Voiture thermique)')).toBe(false);
+  it.each(['Loisirs (Voiture thermique)', 'Loisirs du week-end (Voiture thermique)'])(
+    'ne prend pas des sorties déclarées pour le résiduel : « %s »',
+    (libelle) => {
+      expect(estLeResiduelDesSortiesRares('leisure', libelle)).toBe(false);
+    }
+  );
+
+  it('ne prend pas non plus un libellé absent', () => {
     expect(estLeResiduelDesSortiesRares('leisure', null)).toBe(false);
   });
 
   // Le marqueur ne vaut que sur les sorties : un autre poste qui le porterait resterait nommé.
   it('ne lit le marqueur que sur les sorties', () => {
     expect(estLeResiduelDesSortiesRares('travel', 'Voyages (occasionnels)')).toBe(false);
+    expect(estLeResiduelDesSortiesRares(null, 'Loisirs (occasionnels)')).toBe(false);
     expect(estLeResiduelDesSortiesRares(null, 'Loisirs du week-end (occasionnels)')).toBe(false);
   });
 });
@@ -142,10 +186,10 @@ describe('estLeResiduelDesSortiesRares', () => {
  */
 describe('nomDuPoste', () => {
   it.each([
-    ['label', 'Loisirs occasionnels', 'Loisirs du week-end'],
-    ['sujet', 'Tes loisirs occasionnels', 'Tes loisirs du week-end'],
-    ['enPhrase', 'tes loisirs occasionnels', 'tes loisirs du week-end'],
-    ['insere', 'tes loisirs occasionnels', 'tes sorties du week-end'],
+    ['label', 'Loisirs occasionnels', 'Loisirs'],
+    ['sujet', 'Tes loisirs occasionnels', 'Tes loisirs'],
+    ['enPhrase', 'tes loisirs occasionnels', 'tes loisirs'],
+    ['insere', 'tes loisirs occasionnels', 'tes sorties'],
   ] as const)('%s : « %s » pour le résiduel, « %s » sinon', (registre, residuel, declare) => {
     expect(nomDuPoste('leisure', registre, true)).toBe(residuel);
     expect(nomDuPoste('leisure', registre, false)).toBe(declare);
@@ -169,7 +213,9 @@ describe('nomDuPoste', () => {
  * qui sort rarement est interrogé sur ses voyages depuis le 27/09/2026.
  */
 describe('loisirsSontLeResiduel', () => {
-  const RESIDUEL = 'Loisirs du week-end (occasionnels)';
+  const RESIDUEL = 'Loisirs (occasionnels)';
+  // Un bilan soumis avant le 22/10/2026 : `assessment_results` garde le libellé d'alors.
+  const RESIDUEL_D_AVANT = 'Loisirs du week-end (occasionnels)';
 
   it('lit la fréquence quand elle est là, même quand aucun libellé ne marque le résiduel', () => {
     // « Rarement » et un vol : les voyages dominent et portent la boucle mensuelle.
@@ -192,6 +238,7 @@ describe('loisirsSontLeResiduel', () => {
 
   it('retombe sur les libellés quand la fréquence n’a pas été lue', () => {
     expect(loisirsSontLeResiduel({ dominant_poste: 'leisure', dominant_poste_label: RESIDUEL })).toBe(true);
+    expect(loisirsSontLeResiduel({ dominant_poste: 'leisure', dominant_poste_label: RESIDUEL_D_AVANT })).toBe(true);
     expect(
       loisirsSontLeResiduel({
         leisure_frequency: null,
@@ -204,10 +251,33 @@ describe('loisirsSontLeResiduel', () => {
       loisirsSontLeResiduel({
         dominant_poste: 'commute',
         dominant_poste_label: 'Trajet domicile-travail (Voiture thermique)',
+        extras_poste_label: 'Loisirs (Voiture thermique)',
+      })
+    ).toBe(false);
+    expect(
+      loisirsSontLeResiduel({
+        dominant_poste: 'commute',
+        dominant_poste_label: 'Trajet domicile-travail (Voiture thermique)',
         extras_poste_label: 'Loisirs du week-end (Voiture thermique)',
       })
     ).toBe(false);
   });
+
+  // « Presque tous les jours » est une sortie déclarée, comme les trois d'avant elle : seule « rarely »
+  // est le résiduel. Une cinquième réponse qu'on prendrait pour lui serait nommée « loisirs occasionnels »
+  // — le contraire de ce que la personne vient de dire (22/10/2026).
+  it.each(REPONSES_FREQUENCE_DES_LOISIRS.map((reponse) => reponse.value).filter((valeur) => valeur !== 'rarely'))(
+    'ne prend pas « %s » pour le résiduel, quel que soit le libellé',
+    (frequence) => {
+      expect(
+        loisirsSontLeResiduel({
+          leisure_frequency: frequence,
+          dominant_poste: 'leisure',
+          dominant_poste_label: RESIDUEL,
+        })
+      ).toBe(false);
+    }
+  );
 });
 
 /**
@@ -216,14 +286,23 @@ describe('loisirsSontLeResiduel', () => {
  * sans le mode que porte le libellé.
  */
 describe('posteDeLHistorique', () => {
-  it('nomme le résiduel « Loisirs occasionnels »', () => {
-    expect(posteDeLHistorique('leisure', 'Loisirs du week-end (occasionnels)')).toBe('Loisirs occasionnels');
-  });
+  it.each(['Loisirs (occasionnels)', 'Loisirs du week-end (occasionnels)'])(
+    'nomme le résiduel « Loisirs occasionnels » : le libellé figé est « %s »',
+    (libelle) => {
+      expect(posteDeLHistorique('leisure', libelle)).toBe('Loisirs occasionnels');
+    }
+  );
 
-  it('garde l’étiquette nue des postes déclarés', () => {
-    expect(posteDeLHistorique('leisure', 'Loisirs du week-end (Voiture thermique)')).toBe(
-      'Loisirs du week-end'
-    );
+  // L'étiquette nue vient de la table, jamais du libellé figé : un bilan d'avant le 22/10/2026 y lit
+  // « Loisirs du week-end », et l'historique l'appelle déjà « Loisirs ».
+  it.each(['Loisirs (Voiture thermique)', 'Loisirs du week-end (Voiture thermique)'])(
+    'garde l’étiquette nue des postes déclarés : le libellé figé est « %s »',
+    (libelle) => {
+      expect(posteDeLHistorique('leisure', libelle)).toBe('Loisirs');
+    }
+  );
+
+  it('garde l’étiquette nue des autres postes', () => {
     expect(posteDeLHistorique('commute', 'Trajet domicile-travail (Vélo)')).toBe(
       'Trajet domicile-travail'
     );

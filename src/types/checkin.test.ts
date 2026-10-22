@@ -216,7 +216,7 @@ describe('questionDuPoint', () => {
     ).toBe('En septembre, as-tu changé de mode de transport pour tes voyages ?');
     expect(
       questionDuPoint(point({ loop_type: 'extras', poste: 'leisure', period_start: '2026-08-01' }))
-    ).toBe('En août, as-tu changé de mode de transport pour tes sorties du week-end ?');
+    ).toBe('En août, as-tu changé de mode de transport pour tes sorties ?');
   });
 
   it('la question de maintien est affirmative et nomme le mode', () => {
@@ -249,7 +249,7 @@ describe('questionDuPoint', () => {
 
   it('un period_start illisible perd la précision, jamais la phrase', () => {
     expect(questionDuPoint(point({ loop_type: 'extras', poste: 'leisure', period_start: '' }))).toBe(
-      'Le mois dernier, as-tu changé de mode de transport pour tes sorties du week-end ?'
+      'Le mois dernier, as-tu changé de mode de transport pour tes sorties ?'
     );
   });
 });

@@ -533,7 +533,7 @@ describe('Plan — la feuille des rappels reçoit l’échéance (`v1-33` D14)',
     mockFeuilleVue = false;
     lectures({
       plan_cycles: async () => ({
-        data: [{ ...CYCLE, poste: 'leisure', trip_label: 'Loisirs du week-end', baseline_co2_kg_year: 900, plan_actions: [sortie] }],
+        data: [{ ...CYCLE, poste: 'leisure', trip_label: 'Loisirs', baseline_co2_kg_year: 900, plan_actions: [sortie] }],
         error: null,
       }),
     });

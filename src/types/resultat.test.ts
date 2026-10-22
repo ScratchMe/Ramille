@@ -139,22 +139,28 @@ describe('dominantHeadline', () => {
 
   // Arbitrage du 27/09/2026 (`v1-29` §6.3) : le résiduel des sorties rares s'appelle « loisirs
   // occasionnels », à commencer par le titre de la restitution — et par la carte de partage.
-  it('appelle le résiduel des sorties rares « Tes loisirs occasionnels »', () => {
+  //
+  // Les deux libellés figés, celui d'aujourd'hui et celui des bilans soumis avant le 22/10/2026 : le titre
+  // se dit pareil, la carte de partage aussi — c'est la table qui nomme le poste, pas le libellé du serveur.
+  it.each([
+    ['Loisirs (occasionnels)', 'Loisirs (Voiture thermique)'],
+    ['Loisirs du week-end (occasionnels)', 'Loisirs du week-end (Voiture thermique)'],
+  ])('appelle le résiduel des sorties rares « Tes loisirs occasionnels » (libellé figé « %s »)', (figeResiduel, figeDeclare) => {
     const residuel = resultat({
       dominant_poste: 'leisure',
       dominant_poste_mode: null,
-      dominant_poste_label: 'Loisirs du week-end (occasionnels)',
+      dominant_poste_label: figeResiduel,
     });
     expect(dominantHeadline(residuel)).toBe('Tes loisirs occasionnels');
     expect(dominantShareLabel(residuel)).toBe('Loisirs occasionnels');
-    // Des sorties déclarées gardent le nom de la section du questionnaire.
+    // Des sorties déclarées gardent le nom du poste, celui de la section du questionnaire.
     const declarees = resultat({
       dominant_poste: 'leisure',
       dominant_poste_mode: null,
-      dominant_poste_label: 'Loisirs du week-end (Voiture thermique)',
+      dominant_poste_label: figeDeclare,
     });
-    expect(dominantHeadline(declarees)).toBe('Tes loisirs du week-end');
-    expect(dominantShareLabel(declarees)).toBe('Loisirs du week-end');
+    expect(dominantHeadline(declarees)).toBe('Tes loisirs');
+    expect(dominantShareLabel(declarees)).toBe('Loisirs');
   });
 
   // Un poste que ce module ne connaît pas retombe sur le libellé figé côté serveur, jamais sur
@@ -244,29 +250,33 @@ describe('etiquetteDuPosteDominant', () => {
   // branche du résiduel neutralisée fait tomber ce test, et lui seul ; le critère lu sans le libellé
   // (tout loisir dominant pris pour le résiduel) fait tomber « vaut aussi entre les loisirs et les
   // voyages », et lui seul.
-  it('dit « presque à égalité » sans superlatif quand le dominant est le résiduel des sorties rares', () => {
-    const residuel = 'Loisirs du week-end (occasionnels)';
-    expect(etiquetteDuPosteDominant(poids('leisure', 1, 11, 11.3, residuel))).toBe(
-      'Presque à égalité avec tes voyages'
-    );
-    // Sans départage à dire, l'étiquette générale reste vraie, résiduel ou non.
-    expect(etiquetteDuPosteDominant(poids('leisure', 1, 11, 3, residuel))).toBe(ETIQUETTE_DU_PLUS_LOURD);
-  });
+  it.each(['Loisirs (occasionnels)', 'Loisirs du week-end (occasionnels)'])(
+    'dit « presque à égalité » sans superlatif quand le dominant est le résiduel des sorties rares : « %s »',
+    (residuel) => {
+      expect(etiquetteDuPosteDominant(poids('leisure', 1, 11, 11.3, residuel))).toBe(
+        'Presque à égalité avec tes voyages'
+      );
+      // Sans départage à dire, l'étiquette générale reste vraie, résiduel ou non.
+      expect(etiquetteDuPosteDominant(poids('leisure', 1, 11, 3, residuel))).toBe(ETIQUETTE_DU_PLUS_LOURD);
+    }
+  );
 
   // Le cas symétrique (arbitrage du 27/09/2026, `v1-29` §6.3) : le domicile-travail l'emporte sur
   // le résiduel, un peu plus lourd. Le marqueur est alors sur le libellé du plus lourd des deux
   // postes hors trajet (`extras_poste_label`).
-  it('nomme le résiduel « tes loisirs occasionnels » quand le domicile-travail l’emporte sur lui', () => {
-    const residuel = 'Loisirs du week-end (occasionnels)';
+  it.each([
+    ['Loisirs (occasionnels)', 'Loisirs (Voiture thermique)'],
+    ['Loisirs du week-end (occasionnels)', 'Loisirs du week-end (Voiture thermique)'],
+  ])('nomme le résiduel « tes loisirs occasionnels » quand le domicile-travail l’emporte sur lui (libellé figé « %s »)', (residuel, declare) => {
     expect(
       etiquetteDuPosteDominant(poids('commute', 50, 52, 0, 'Trajet domicile-travail (Trottinette)', residuel))
     ).toBe('Le plus régulier, presque à égalité avec tes loisirs occasionnels');
     // Des sorties déclarées gardent leur forme insérée.
     expect(
       etiquetteDuPosteDominant(
-        poids('commute', 500, 520, 0, 'Trajet domicile-travail (Voiture thermique)', 'Loisirs du week-end (Voiture thermique)')
+        poids('commute', 500, 520, 0, 'Trajet domicile-travail (Voiture thermique)', declare)
       )
-    ).toBe('Le plus régulier, presque à égalité avec tes sorties du week-end');
+    ).toBe('Le plus régulier, presque à égalité avec tes sorties');
   });
 
   // « Strictement » : à égalité exacte le dominant est aussi le plus lourd, et l'étiquette générale
@@ -280,15 +290,15 @@ describe('etiquetteDuPosteDominant', () => {
       'Le plus régulier, presque à égalité avec tes voyages'
     );
     expect(etiquetteDuPosteDominant(poids('commute', 1000, 1045, 1040))).toBe(
-      'Le plus régulier, presque à égalité avec tes sorties du week-end'
+      'Le plus régulier, presque à égalité avec tes sorties'
     );
   });
 
   // Le registre qu'on insère après une préposition (`FORME_INSERABLE`), pas le sujet de phrase :
-  // « tes sorties du week-end », jamais « tes loisirs du week-end ».
+  // « tes sorties », jamais « tes loisirs ».
   it('nomme l’autre poste dans le registre inséré', () => {
     const etiquette = etiquetteDuPosteDominant(poids('commute', 500, 520, 0));
-    expect(etiquette).toBe('Le plus régulier, presque à égalité avec tes sorties du week-end');
+    expect(etiquette).toBe('Le plus régulier, presque à égalité avec tes sorties');
     expect(etiquette).not.toContain(POSTE_EN_PHRASE.leisure);
   });
 
@@ -514,14 +524,14 @@ describe('palierNote', () => {
   // une note vide. Éprouvé le 25/09/2026 : `posteSuppose` ignoré fait tomber ce test, et lui seul ;
   // `posteSuppose` qui rend une note vide aussi, et lui seul.
   it('tait la marche quand le poste est supposé, et garde le reste mot pour mot', () => {
-    const sorties = 'tes sorties du week-end';
+    const sorties = 'tes sorties';
     const note = palierNote(palier({ reductionKg: 2, beyondTarget2050: true }), true, sorties, true);
     expect(note).toBe(
       'Tu es déjà sous le repère transport 2050. Ce que tu n’émets pas laisse de la marge ailleurs — ' +
         'pour tes autres postes, ou pour ceux dont les déplacements sont contraints.'
     );
     expect(palierNote(palier({ reductionKg: 2, beyondTarget2050: true }), true, sorties, false)).toBe(
-      `${note} S’il te reste de l’envie : 2 kg CO₂e de moins sur l’année sur tes sorties du week-end.`
+      `${note} S’il te reste de l’envie : 2 kg CO₂e de moins sur l’année sur tes sorties.`
     );
   });
 

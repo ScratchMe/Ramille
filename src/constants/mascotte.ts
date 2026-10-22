@@ -66,7 +66,7 @@ export const RAMILLE = {
    *
    * Deux tableaux parce que la boucle mensuelle ne revient pas lundi. `mensuel[1]` dit « Une fois
    * autrement » là où le canvas écrit « Un voyage autrement » : cette boucle couvre aussi les sorties
-   * du week-end depuis C2.6 (écart consigné en `v1-14` §10).
+   * depuis C2.6 (écart consigné en `v1-14` §10).
    */
   checkinOui: {
     hebdo: [
@@ -110,7 +110,7 @@ export const RAMILLE = {
    * **Quatre variantes et non deux, et c'est un écart au canvas** (consigné en `v1-14` §10). Le
    * canvas en écrit deux, indexées sur la boucle — « Pas de trajet … » pour l'hebdomadaire, « Pas
    * de voyage … » pour la mensuelle — mais la boucle mensuelle couvre **deux** postes depuis C2.6 :
-   * les voyages et les sorties du week-end. Répondre « Pas de voyage, pas de question. » à
+   * les voyages et les sorties. Répondre « Pas de voyage, pas de question. » à
    * quelqu'un qui vient d'appuyer sur « Pas de sortie en septembre » serait la même fausseté
    * lisible que C2.6 a retirée ailleurs. Les variantes sont donc indexées sur le **poste**, comme
    * le libellé du bouton, et `autre` ferme la liste pour un point d'avant C2.6 qui n'en porte pas.

@@ -46,7 +46,7 @@ describe('la page 4 de l’onboarding, et ses quatre sections', () => {
     render(<EtapeTransition onPrecedent={jest.fn()} />);
 
     expect(screen.getByText('1 — Domicile-travail')).toBeTruthy();
-    expect(screen.getByText('2 — Loisirs du week-end')).toBeTruthy();
+    expect(screen.getByText('2 — Loisirs')).toBeTruthy();
     expect(screen.getByText('3 — Voyages longue distance')).toBeTruthy();
     expect(screen.getByText('4 — Contexte de mobilité')).toBeTruthy();
     // Les anciens libellés ont disparu.

@@ -199,7 +199,7 @@ describe('le retour matériel du questionnaire', () => {
       appuyerSurRetour();
     });
 
-    expect(await screen.findByText('À quelle fréquence fais-tu des trajets loisirs le week-end ?')).toBeTruthy();
+    expect(await screen.findByText('À quelle fréquence fais-tu des trajets pour tes loisirs, en semaine comme le week-end ?')).toBeTruthy();
   });
 
   test('sur la première étape, le retour passe à la navigation', async () => {

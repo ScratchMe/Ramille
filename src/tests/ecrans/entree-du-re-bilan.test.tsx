@@ -95,7 +95,7 @@ const ENGAGEMENT = { action: 'Faire un de tes longs trajets en train plutôt qu�
 const FEUILLE = 'Ton plan va être recalculé';
 const BANDEAU = 'Tes réponses précédentes sont préremplies. Modifie ce qui a changé.';
 const TITRE_DU_TRAJET = 'As-tu un trajet régulier pour le travail ou les études ?';
-const TITRE_DES_SORTIES = 'À quelle fréquence fais-tu des trajets loisirs le week-end ?';
+const TITRE_DES_SORTIES = 'À quelle fréquence fais-tu des trajets pour tes loisirs, en semaine comme le week-end ?';
 
 beforeEach(() => {
   jest.mocked(router.back).mockClear();
