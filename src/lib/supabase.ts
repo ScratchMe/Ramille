@@ -291,7 +291,8 @@ export async function pendantUnDepartVolontaire<T>(action: () => Promise<T>): Pr
 /**
  * « Commencer un bilan sur cet appareil », sur l'écran de reconnexion : la marque du compte est
  * effacée, et le refus levé — la prochaine écriture ouvrira la session anonyme qu'il lui faut. Les
- * autres marques de l'appareil, celles du compte quitté, sont à l'appelant (`effacerLesMarquesLocales`).
+ * autres marques, celles du compte quitté, sont à l'appelant (`effacerLesMarquesDuCompte`, qui garde
+ * celles de l'appareil : la file des erreurs et le jeton de notification).
  */
 export async function repartirSurCetAppareil(): Promise<void> {
   await oublierLeCompteRattache();

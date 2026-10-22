@@ -322,8 +322,8 @@ const SECTIONS: LegalSection[] = [
             term: 'L’identifiant de notification de ton téléphone',
             text:
               'Si tu choisis les notifications comme canal de rappel et que ton téléphone les accepte, nous ' +
-              'enregistrons l’identifiant qui permet de lui en envoyer. Avec un rappel par email ou sans rappel, il ' +
-              'n’est pas enregistré, et celui que ton téléphone avait déjà est désactivé au démarrage suivant de ' +
+              'enregistrons l’identifiant qui permet de lui en envoyer. Avec un rappel par email ou sans rappel, nous ' +
+              'ne le demandons pas, et celui que ton téléphone avait déjà est désactivé au démarrage suivant de ' +
               'l’application. Couper les notifications dans les réglages du téléphone le désactive de même.',
           },
         ],
@@ -362,8 +362,8 @@ const SECTIONS: LegalSection[] = [
           'parcours, c’est notre intérêt légitime — maintenir le suivi que tu as commencé dans un cas, corriger ce qui ne ' +
           'fonctionne pas dans l’autre. Ce que nos services techniques enregistrent d’eux-mêmes — tes sessions, ce que ' +
           'Google transmet — relève de l’exécution du service : la connexion ne fonctionne pas sans. L’identifiant de ' +
-          'notification, enregistré seulement si tu choisis les notifications, en relève aussi : sans lui, elles ne ' +
-          'peuvent pas t’arriver. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
+          'notification, que nous ne demandons que si tu choisis les notifications, en relève aussi : sans lui, elles ' +
+          'ne peuvent pas t’arriver. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
           'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
           'que tu aies à te connecter.',
       },

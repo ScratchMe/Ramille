@@ -28,7 +28,10 @@
 // - une préférence illisible traitée comme l'e-mail → tombe « une préférence illisible ne touche à rien » ;
 // - la reprise faite même pour une ligne à soi → tombe « une ligne déjà à soi se désactive sans reprise » ;
 // - le chemin de la permission retirée remis sur la désactivation directe → tombe « la permission
-//   retirée reprend aussi le jeton avant de le désactiver ».
+//   retirée reprend aussi le jeton avant de le désactiver » ;
+// - le filtre `.eq('token', …)` retiré de la lecture → tombe « la ligne se cherche par le jeton » ;
+// - `if (lecture) return;` retiré → tombe « une lecture de la ligne en échec ne reprend ni ne
+//   désactive rien » (troisième contre-lecture du même jour).
 import { reglerLeJetonDeCetAppareil } from '@/lib/rappels';
 
 const mockAppels: string[] = [];
@@ -39,8 +42,9 @@ const mockEtat: {
   erreurDeReprise: unknown;
   /** La ligne du jeton est-elle visible pour la session présente — c'est-à-dire à elle ? */
   aSoi: boolean;
+  erreurDeLecture: unknown;
   permission: 'granted' | 'denied';
-} = { prefere: null, marque: null, erreurDeReprise: null, aSoi: false, permission: 'granted' };
+} = { prefere: null, marque: null, erreurDeReprise: null, aSoi: false, erreurDeLecture: null, permission: 'granted' };
 
 jest.mock('expo-device', () => ({ isDevice: true }));
 jest.mock('expo-constants', () => ({ expoConfig: { extra: { eas: { projectId: 'projet' } } } }));
@@ -59,8 +63,14 @@ jest.mock('@/lib/supabase', () => ({
     from: () => {
       const maillon = {
         select: () => maillon,
-        eq: () => maillon,
-        maybeSingle: async () => ({ data: mockEtat.aSoi ? { token: mockEtat.marque } : null, error: null }),
+        eq: (colonne: string, valeur: unknown) => {
+          mockAppels.push(`filtre:${colonne}=${String(valeur)}`);
+          return maillon;
+        },
+        maybeSingle: async () =>
+          mockEtat.erreurDeLecture
+            ? { data: null, error: mockEtat.erreurDeLecture }
+            : { data: mockEtat.aSoi ? { token: mockEtat.marque } : null, error: null },
       };
       return maillon;
     },
@@ -99,6 +109,7 @@ beforeEach(() => {
   mockEtat.marque = null;
   mockEtat.erreurDeReprise = null;
   mockEtat.aSoi = false;
+  mockEtat.erreurDeLecture = null;
   mockEtat.permission = 'granted';
 });
 
@@ -138,6 +149,25 @@ describe('reglerLeJetonDeCetAppareil', () => {
     await reglerLeJetonDeCetAppareil();
     expect(mockAppels.some((appel) => appel.startsWith('register_push_token'))).toBe(false);
     expect(mockAppels).toContain('desinscrire:ExponentPushToken[ancien]');
+  });
+
+  it('la ligne se cherche par le jeton de la marque, pas parmi toutes celles du compte', async () => {
+    mockEtat.prefere = 'email';
+    mockEtat.marque = 'ExponentPushToken[ancien]';
+    await reglerLeJetonDeCetAppareil();
+    // Sans ce filtre, la ligne d'un autre téléphone du compte passerait pour celle-ci : pas de reprise,
+    // une désactivation qui ne touche rien, et le jeton resterait actif au nom du compte quitté.
+    expect(mockAppels).toContain('filtre:token=ExponentPushToken[ancien]');
+  });
+
+  it('une lecture de la ligne en échec ne reprend ni ne désactive rien', async () => {
+    mockEtat.prefere = 'email';
+    mockEtat.marque = 'ExponentPushToken[ancien]';
+    mockEtat.erreurDeLecture = { code: '57014', message: 'canceling statement due to statement timeout' };
+    await expect(reglerLeJetonDeCetAppareil()).resolves.toBe(false);
+    expect(mockAppels.some((appel) => appel.startsWith('register_push_token'))).toBe(false);
+    expect(mockAppels.some((appel) => appel.startsWith('desinscrire'))).toBe(false);
+    expect(mockEtat.marque).toBe('ExponentPushToken[ancien]');
   });
 
   it('la permission retirée reprend aussi le jeton avant de le désactiver', async () => {

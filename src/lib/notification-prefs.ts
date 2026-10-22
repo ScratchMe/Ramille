@@ -305,8 +305,9 @@ export async function memoriserLeJetonDeCetAppareil(jeton: string | null): Promi
  * Et **« Me déconnecter »**
  * (04/10/2026, revue finale avant la production) : sans ce geste avant elle, la ligne restait active
  * au nom du compte quitté. **Depuis le 22/10/2026, la déconnexion garde la marque du jeton**
- * (`effacerLesMarquesALaDeconnexion`) : une désinscription réussie l'efface ici, et une désinscription
- * en échec la laisse à la session suivante, dont le réglage reprend puis désactive le jeton — sans
+ * (`effacerLesMarquesALaDeconnexion`) : une désinscription qui a bien désactivé la ligne de la session
+ * l'efface ici, et une désinscription en échec — ou qui n'a rien touché, la ligne appartenant encore à
+ * un autre compte — la laisse à la session suivante, dont le réglage reprend puis désactive le jeton — sans
  * elle, plus rien sur l'appareil ne saurait quel jeton désactiver, et le compte quitté ne retomberait
  * jamais sur le rappel par e-mail.
  *
@@ -329,5 +330,16 @@ export async function desinscrireLeJetonDeCetAppareil(abandon?: AbortSignal): Pr
   if (!connu) return;
   const appel = supabase.rpc('unregister_push_token', { p_token: connu });
   const { error } = await (abandon ? appel.abortSignal(abandon) : appel);
-  if (!error && !abandon?.aborted) await memoriserLeJetonDeCetAppareil(null);
+  if (error || abandon?.aborted) return;
+
+  // **La marque ne part que si la ligne était à la session** (troisième contre-lecture du 22/10/2026).
+  // `unregister_push_token` ne touche que les lignes de `auth.uid()` et rend sans erreur quand il n'en
+  // touche aucune : après un changement de compte que le réglage n'a pas encore suivi, la déconnexion
+  // effaçait la marque d'un jeton resté actif au nom du compte quitté. Une ligne visible est à soi, et
+  // vient d'être désactivée ; une ligne invisible garde sa marque pour la reprise de la session suivante
+  // (`desactiverLeJetonDeCetAppareil`, `src/lib/rappels.ts`).
+  let lecture = supabase.from('push_tokens').select('token').eq('token', connu);
+  if (abandon) lecture = lecture.abortSignal(abandon);
+  const { data, error: erreurDeLecture } = await lecture.maybeSingle();
+  if (!erreurDeLecture && data && !abandon?.aborted) await memoriserLeJetonDeCetAppareil(null);
 }
