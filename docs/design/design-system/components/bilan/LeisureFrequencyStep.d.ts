@@ -1,9 +1,9 @@
-/** La part de `BilanAnswers` (src/types/bilan.ts) que l'étape « fréquence des sorties » lit ou écrit ; `null` = pas encore répondu. */
+/** La part de `BilanAnswers` (src/types/bilan.ts) que l'étape « fréquence des loisirs » lit ou écrit ; `null` = pas encore répondu. */
 export interface LeisureFrequencyStepAnswers {
-  /** « Rarement — une fois par mois ou moins », « Deux ou trois fois par mois », « Une fois par semaine », « Plusieurs fois par semaine ». */
-  leisure_frequency: 'rarely' | 'multiple_monthly' | 'weekly' | 'multiple_weekly' | null;
+  /** « Rarement — une fois par mois ou moins », « Deux ou trois fois par mois », « Une fois par semaine », « Plusieurs fois par semaine », « Presque tous les jours » — la dernière, la plus fréquente. */
+  leisure_frequency: 'rarely' | 'multiple_monthly' | 'weekly' | 'multiple_weekly' | 'almost_daily' | null;
 }
-/** Étape du questionnaire — à quelle fréquence on fait des trajets de loisirs le week-end. */
+/** Étape du questionnaire — à quelle fréquence on fait des trajets pour ses loisirs, le week-end comme en semaine : une seule étape pour toute la semaine. */
 export interface LeisureFrequencyStepProps {
   answers: LeisureFrequencyStepAnswers;
   /** Écrit la réponse ; l'écran du questionnaire efface ensuite ce que « Rarement » rend sans objet. */

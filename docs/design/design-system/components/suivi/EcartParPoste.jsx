@@ -8,8 +8,10 @@ import { BarreContour } from './BarreContour.jsx';
 // — l'accent suit le poste DOMINANT du bilan courant, celui que le cap de la saison vise — pas forcément le plus lourd ;
 // — aucune hiérarchie morale : ni flèche, ni couleur de réussite ou d'échec. Deux nombres, deux barres.
 const HAUTEUR = 10;
-const LIBELLES = { commute: 'Trajet domicile-travail', leisure: 'Loisirs du week-end', travel: 'Voyages longue distance' };
-const EN_PHRASE = { commute: 'ton trajet domicile-travail', leisure: 'tes loisirs du week-end', travel: 'tes voyages longue distance' };
+// `POSTE_LABEL` et `POSTE_EN_PHRASE` (src/constants/postes.ts), recopiés. Les loisirs ne sont plus « du week-end » depuis le
+// 22/10/2026 (`v1-35`) : la question du questionnaire couvre la semaine comme le week-end.
+const LIBELLES = { commute: 'Trajet domicile-travail', leisure: 'Loisirs', travel: 'Voyages longue distance' };
+const EN_PHRASE = { commute: 'ton trajet domicile-travail', leisure: 'tes loisirs', travel: 'tes voyages longue distance' };
 // `nomDuPoste` (src/constants/postes.ts) : le résiduel des sorties rares s'appelle « loisirs occasionnels ».
 const libelle = (poste, occasionnels) => (poste === 'leisure' && occasionnels ? 'Loisirs occasionnels' : LIBELLES[poste]);
 const enPhrase = (poste, occasionnels) => (poste === 'leisure' && occasionnels ? 'tes loisirs occasionnels' : EN_PHRASE[poste]);

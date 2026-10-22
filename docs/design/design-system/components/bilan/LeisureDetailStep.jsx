@@ -10,7 +10,7 @@ import { TextLink } from '../core/TextLink.jsx';
 import { ThemedText } from '../core/ThemedText.jsx';
 import { MissingModeLink } from './MissingModeLink.jsx';
 import { PrecisionChiffres } from './PrecisionChiffres.jsx';
-// Source : src/components/bilan/steps/leisure-detail.tsx — le mode et la distance des sorties du week-end, deux
+// Source : src/components/bilan/steps/leisure-detail.tsx — le mode et la distance des sorties, deux
 // questions sur une étape. Quatre modes en avant, rangés par famille (Voiture (seul), Voiture (covoiturage) · Train ·
 // Vélo), les cinq autres derrière « Voir les autres modes » — ouverts d'emblée si la réponse déjà donnée y vit, sinon
 // la question paraîtrait vide alors qu'elle est remplie. Ils s'ajoutent en un bloc sous les quatre premiers, rangés par

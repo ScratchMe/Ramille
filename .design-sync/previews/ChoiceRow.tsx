@@ -29,7 +29,7 @@ export const TranchesDeDistance = () => (
   </Liste>
 );
 
-/** La fréquence des sorties du week-end (B2.1) : un libellé long reste sur une rangée pleine. */
+/** La fréquence des loisirs, la semaine comme le week-end (B2.1) : un libellé long reste sur une rangée pleine. */
 export const FrequenceDesSorties = () => (
   <Liste>
     <ChoiceRow label="Rarement — une fois par mois ou moins" selected={false} />
