@@ -15,6 +15,7 @@
 // quand l'action n'est plus… », seul ; dans `clearPlanActionCommitment` → « relit le plan quand
 // l'engagement n'est plus… », seul.
 import { clearPlanActionCommitment, commitPlanAction } from '@/lib/plan-engagement';
+import { CODE_REFUS_DE_PLAFOND, TROP_DE_CHANGEMENTS_D_ENGAGEMENT } from '@/types/refus-de-plafond';
 
 const mockRpc = jest.fn<Promise<{ data: unknown; error: unknown; status: number }>, [string, unknown]>();
 
@@ -57,6 +58,35 @@ describe('commitPlanAction', () => {
       ok: false,
       message: 'Une autre action est engagée sur cette période. Ton plan vient d’être relu.',
       rechargerLePlan: true,
+    });
+  });
+
+  // Le plafond d'engagements (`RM002`, trente archivages par jour, `20261005170000`) : le refus dure
+  // jusqu'au lendemain, et « Réessaie dans un instant » — la phrase d'une panne — était fausse.
+  it('dit le plafond d’engagements pour ce qu’il est : demain, et sans relire le plan', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { code: CODE_REFUS_DE_PLAFOND, message: 'Tu as changé ton engagement de nombreuses fois aujourd’hui. Reviens demain.' },
+      status: 400,
+    });
+    const resultat = await engager();
+    expect(resultat).toEqual({ ok: false, message: TROP_DE_CHANGEMENTS_D_ENGAGEMENT });
+    // Rien n'a changé côté serveur : relire le plan serait un aller-retour pour rien, et l'écran garde le
+    // sélecteur ouvert, sa sélection gardée.
+    expect(resultat).not.toHaveProperty('rechargerLePlan');
+    expect(TROP_DE_CHANGEMENTS_D_ENGAGEMENT.endsWith('Réessaie demain.')).toBe(true);
+  });
+
+  // La même phrase du serveur sous un autre code est une panne : le message n'est jamais lu.
+  it('ne reconnaît pas le plafond à sa phrase', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { code: 'XX000', message: 'Tu as changé ton engagement de nombreuses fois aujourd’hui. Reviens demain.' },
+      status: 500,
+    });
+    expect(await engager()).toEqual({
+      ok: false,
+      message: 'Ton choix n’a pas été enregistré. Réessaie dans un instant.',
     });
   });
 

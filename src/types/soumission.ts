@@ -20,6 +20,8 @@
  */
 
 import { STATUT_DE_BILAN } from '@/types/bilan';
+import { decrireErreur } from '@/types/erreur';
+import { estUnRefusDePlafond, TROP_DE_BILANS } from '@/types/refus-de-plafond';
 
 /**
  * Les cinq pas de la séquence de soumission, dans l'ordre. La valeur est **passée** par
@@ -103,6 +105,41 @@ export function genreErreurSoumission(erreur: unknown): GenreErreurSoumission {
   if (code === '42501') return 'permission';
   if (code === 'P0002') return 'introuvable';
   return 'autre';
+}
+
+/**
+ * La phrase d'une soumission qui a échoué pour une panne : les réponses sont gardées (`clearBilanDraft`
+ * n'est appelé qu'au succès), et « réessaie dans un instant » est un conseil vrai d'une panne — pas
+ * d'un plafond atteint, qui a sa phrase (`echecDeLaSoumission`).
+ */
+export const SOUMISSION_ECHOUEE =
+  'Ton bilan n’a pas pu être enregistré. Tes réponses sont conservées, réessaie dans un instant.';
+
+/** Ce que le questionnaire montre au-dessus du bouton après un échec : la phrase, et la cause à recopier. */
+export type EchecDeLaSoumission = {
+  message: string;
+  /** La cause technique, présentée comme un bloc à recopier — `null` quand la phrase est déjà toute la vérité. */
+  detail: string | null;
+};
+
+/**
+ * Ce que le questionnaire dit d'une soumission qui a échoué.
+ *
+ * **Le plafond de bilans se dit pour ce qu'il est** (`RM002`, dix par jour, `plafonner_les_bilans`) :
+ * « Réessaie demain », et **aucun détail** — la phrase est toute la vérité, et `decrireErreur` d'un objet
+ * PostgREST rendrait son JSON, code et message du serveur compris, sous une phrase qui dit déjà la même
+ * chose. Jusqu'au 22/10/2026 il tombait dans la phrase de toutes les pannes, « réessaie dans un instant »,
+ * suivie de ce JSON.
+ *
+ * Toute autre erreur garde la phrase d'avant, et son détail sauf sur une coupure réseau (13.2, recette
+ * web du 16/09/2026) : cinq lignes de bundle minifié en anglais, au terme de cinq minutes de saisie.
+ *
+ * Le `genre` est **passé**, pas recalculé : l'appelant l'a déjà dérivé pour la mesure
+ * (`genreErreurSoumission`), et le calculer une fois pour deux usages est le correctif de 13.2.
+ */
+export function echecDeLaSoumission(erreur: unknown, genre: GenreErreurSoumission): EchecDeLaSoumission {
+  if (estUnRefusDePlafond(erreur)) return { message: TROP_DE_BILANS, detail: null };
+  return { message: SOUMISSION_ECHOUEE, detail: genre === 'reseau' ? null : decrireErreur(erreur) };
 }
 
 /**

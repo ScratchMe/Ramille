@@ -1,8 +1,11 @@
+import { CODE_REFUS_DE_PLAFOND, TROP_DE_BILANS } from '@/types/refus-de-plafond';
 import {
+  echecDeLaSoumission,
   ETAPES_SOUMISSION,
   GENRES_ERREUR_SOUMISSION,
   genreErreurSoumission,
   repriseDeLaSoumission,
+  SOUMISSION_ECHOUEE,
 } from '@/types/soumission';
 
 describe('genreErreurSoumission', () => {
@@ -97,5 +100,69 @@ describe('repriseDeLaSoumission', () => {
   it('repart d’un bilan neuf quand l’ancien a disparu ou a été retiré', () => {
     expect(repriseDeLaSoumission(null)).toBe('nouveau');
     expect(repriseDeLaSoumission('withdrawn')).toBe('nouveau');
+  });
+});
+
+// Ce que le questionnaire dit d'une soumission qui a échoué (22/10/2026) : le plafond de bilans a sa phrase,
+// « Réessaie demain », et pas de détail ; toute autre erreur garde la phrase d'avant. Ce fichier garde la
+// dérivation, **jamais son appel** : que l'écran la branche est gardé par
+// `src/tests/ecrans/plafond-de-bilans.test.tsx`.
+//
+// Éprouvé en cassant ce qu'il garde, le 22/10/2026 (`TESTING.md` §1.1) : voir le compte en tête de
+// `src/types/refus-de-plafond.test.ts`, qui garde la reconnaissance elle-même.
+describe('echecDeLaSoumission', () => {
+  // Ce que PostgREST rend du `raise exception … using errcode = 'RM002'` de `plafonner_les_bilans`.
+  const PLAFOND = {
+    code: CODE_REFUS_DE_PLAFOND,
+    message: 'Tu as commencé beaucoup de bilans aujourd’hui. Reviens demain.',
+    details: null,
+    hint: null,
+  };
+  const CONTRAINTE = { code: '23514', message: 'new row violates check constraint', details: 'Failing row', hint: null };
+
+  it('dit le plafond de bilans pour ce qu’il est : demain, et aucune cause à recopier', () => {
+    expect(echecDeLaSoumission(PLAFOND, genreErreurSoumission(PLAFOND))).toEqual({
+      message: TROP_DE_BILANS,
+      detail: null,
+    });
+  });
+
+  // Le détail d'un objet PostgREST est son JSON, code et message du serveur compris : sous une phrase qui
+  // dit déjà la même chose, c'était du bruit en anglais et en SQL.
+  it('ne montre pas le JSON de l’erreur sous la phrase du plafond', () => {
+    expect(echecDeLaSoumission(PLAFOND, 'autre').detail).toBeNull();
+  });
+
+  // Le plafond se lit au code, pas au genre que la mesure en tire : `RM002` est un `autre` pour la mesure
+  // (aucun genre neuf sans migration de `usage_events`), et le genre qu'on lui passe ne change pas la phrase.
+  it('lit le plafond au code et non au genre', () => {
+    expect(genreErreurSoumission(PLAFOND)).toBe('autre');
+    expect(echecDeLaSoumission(PLAFOND, 'reseau').message).toBe(TROP_DE_BILANS);
+    expect(echecDeLaSoumission(PLAFOND, 'contrainte').message).toBe(TROP_DE_BILANS);
+  });
+
+  it('garde la phrase des pannes, et sa cause à recopier, pour toute autre erreur', () => {
+    expect(echecDeLaSoumission(CONTRAINTE, genreErreurSoumission(CONTRAINTE))).toEqual({
+      message: SOUMISSION_ECHOUEE,
+      detail: JSON.stringify(CONTRAINTE),
+    });
+    expect(SOUMISSION_ECHOUEE).toBe(
+      'Ton bilan n’a pas pu être enregistré. Tes réponses sont conservées, réessaie dans un instant.'
+    );
+  });
+
+  // La même phrase du serveur sous un autre code n'est pas un plafond.
+  it('ne prend pas pour un plafond une autre erreur qui porte la même phrase', () => {
+    const memePhrase = { code: 'XX000', message: PLAFOND.message };
+    expect(echecDeLaSoumission(memePhrase, genreErreurSoumission(memePhrase)).message).toBe(SOUMISSION_ECHOUEE);
+  });
+
+  // Sur une coupure réseau (13.2, recette web du 16/09/2026), la phrase est déjà toute la vérité.
+  it('ne donne aucun détail sur une coupure réseau', () => {
+    const coupure = new TypeError('Network request failed');
+    expect(echecDeLaSoumission(coupure, genreErreurSoumission(coupure))).toEqual({
+      message: SOUMISSION_ECHOUEE,
+      detail: null,
+    });
   });
 });
