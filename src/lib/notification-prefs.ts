@@ -114,8 +114,9 @@ export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille 
  * L'enregistrement du jeton en cours, que la lecture du jeton attend (`v1-33` T-12, 03/10/2026).
  *
  * `enregistrerLeJeton` (`src/lib/rappels.ts`) réinscrit le jeton quand la permission est accordée,
- * ou le désinscrit et efface sa marque sinon ; le démarrage le lance (`_layout.tsx`), la feuille des
- * rappels et « Toi » aussi. Rien ne garantissait qu'une lecture partie au même moment le lise après :
+ * ou le désinscrit et efface sa marque sinon ; la feuille des rappels et « Toi » l'appellent, et le
+ * démarrage lance `reglerLeJetonDeCetAppareil` (`_layout.tsx`), qui l'appelle avec la notification
+ * choisie et désactive le jeton sans elle (22/10/2026). Rien ne garantissait qu'une lecture partie au même moment le lise après :
  * elle pouvait trouver la marque d'avant, et la carte d'attente promettait alors « Par notification
  * sur ce téléphone » à qui venait de les couper — ou les taisait à qui venait de les rouvrir. Le
  * risque est devenu réel quand la lecture du plan s'est mise à partir pendant l'écran de lancement,
@@ -124,7 +125,10 @@ export async function lireLaFenetreDuMotDeLaVeille(): Promise<FenetreDeLaVeille 
  */
 let enregistrementDuJeton: Promise<unknown> = Promise.resolve();
 
-/** Posé par `enregistrerLeJeton` : la prochaine lecture du jeton attend qu'il ait fini. */
+/**
+ * Posé par `enregistrerLeJeton`, et par `reglerLeJetonDeCetAppareil` dès son départ — sa lecture de la
+ * préférence est un aller-retour : la prochaine lecture du jeton attend qu'il ait fini.
+ */
 export function suivreLEnregistrementDuJeton(enregistrement: Promise<unknown>): void {
   enregistrementDuJeton = enregistrement.then(
     () => undefined,
@@ -291,16 +295,19 @@ export async function memoriserLeJetonDeCetAppareil(jeton: string | null): Promi
  * Désactive le jeton de cet appareil côté serveur, tant que la session qui le possède est encore là, et
  * efface sa marque si le serveur l'a fait. Sans jeton connu (web, ou aucune inscription), rien.
  *
- * Deux appelants. `enregistrerLeJeton()` (`src/lib/rappels.ts`), quand la permission n'est plus
- * accordée — on ne désactive que le jeton qu'on a soi-même enregistré (A4-6). Et **« Me déconnecter »**
+ * Deux appelants. `src/lib/rappels.ts`, quand la permission n'est plus accordée ou, depuis le 22/10/2026,
+ * quand la notification n'est plus le canal choisi — on ne désactive que le jeton qu'on a soi-même
+ * enregistré (A4-6), et ce chemin-là le **reprend d'abord** pour la session présente, faute de quoi un
+ * changement de compte laissait la ligne active au nom du compte quitté (`desactiverLeJetonDeCetAppareil`).
+ * Et **« Me déconnecter »**
  * (04/10/2026, revue finale avant la production) : la déconnexion efface la marque locale du jeton
  * avec les autres ; sans ce geste avant elle, la ligne restait active au nom du compte quitté. Avec
  * la permission accordée, la session anonyme suivante reprend le jeton et rien ne se voit ; mais si
  * elle est coupée, plus rien sur l'appareil ne sait quel jeton désactiver, et le compte ne retombe
  * jamais sur le rappel par e-mail — le serveur continue d'envoyer dans le vide.
  *
- * **La raison enregistrée ne distingue pas les deux** : `unregister_push_token` écrit
- * `disabled_reason = 'permission retirée'`, y compris pour une déconnexion. C'est assumé — ce que la
+ * **La raison enregistrée ne distingue pas les cas** : `unregister_push_token` écrit
+ * `disabled_reason = 'permission retirée'`, y compris pour une déconnexion ou un changement de canal. C'est assumé — ce que la
  * raison sert à dire, c'est que cet appareil ne reçoit plus pour ce compte, et c'est vrai dans les deux
  * cas ; la distinguer demanderait un argument de plus au RPC pour un journal que rien ne trie.
  *

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -195,6 +195,12 @@ export default function Compte() {
     setMessageCanal(messageDEcriture('Ton choix n’a pas été enregistré.', echec));
   };
 
+  // Ce que la réinscription du jeton a obtenu (`ChoixDeRappel`), rangé avec le reste des réglages : c'est
+  // ce qui fait dire « sur ce téléphone » à la ligne de la notification, et au mot de la veille.
+  const noterLeJeton = useCallback((actif: boolean) => {
+    setRappels((p) => (p ? { ...p, jetonActif: actif } : p));
+  }, []);
+
   // Le mot de la veille, sur le même modèle : optimiste, remis en place et dit sur un échec. Il ne
   // passe jamais par `jamais_propose` — la base le refuse, et c'est ce qui garantit qu'un refus
   // n'est pas reproposé.
@@ -361,6 +367,7 @@ export default function Compte() {
                       fenetre={fenetre}
                       onChoisir={choisirLeCanal}
                       onChoisirLaVeille={choisirLaVeille}
+                      onJeton={noterLeJeton}
                     />
                     <MessageInline message={messageCanal} />
                   </View>

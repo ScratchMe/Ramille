@@ -243,9 +243,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // **22/10/2026 : l'identifiant de notification suit le canal choisi** (audit du 18/10/2026, `v1-27`
 // §12.30, premier point). Il n'est plus enregistré qu'avec la notification choisie, et celui d'un
 // téléphone passé à l'email ou à « Sans rappel » est désactivé au démarrage suivant
-// (`leJetonAuDemarrage`, `src/types/rappels.ts`). Trois phrases suivent : l'identifiant dans la liste
+// (`leJetonAuDemarrage`, `src/types/rappels.ts`). Cinq phrases suivent : l'identifiant dans la liste
 // de ce qui est enregistré, sa base légale — l'exécution du service et non plus l'intérêt légitime,
-// puisqu'il ne sert qu'à la notification demandée —, et Expo, qui ne reçoit plus rien sans elle.
+// puisqu'il ne sert qu'à la notification demandée —, Expo, qui ne reçoit plus rien sans elle, ce que
+// garde une session anonyme, et la durée de conservation de l'identifiant.
 const UPDATED_AT = '22 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -422,7 +423,7 @@ const SECTIONS: LegalSection[] = [
           'numéro de téléphone — sauf l’adresse que tu saisis pour recevoir un code, gardée même si tu ne vas pas au ' +
           'bout, jusqu’à ce que tu la confirmes, en saisisses une autre ou que la session soit supprimée. Comme toute ' +
           'session, elle garde l’adresse IP et l’appareil de sa dernière utilisation, et l’identifiant de ' +
-          'notification dès que ton téléphone accepte les notifications (le détail plus haut).',
+          'notification si tu choisis les notifications comme canal de rappel (le détail plus haut).',
       },
       {
         kind: 'paragraph',
@@ -589,11 +590,11 @@ const SECTIONS: LegalSection[] = [
             'service, et toutes partent avec la ' +
             'suppression de ton compte ou la suppression automatique d’une session anonyme.',
           'Identifiant de notification de ton téléphone : désactivé au prochain démarrage de l’application si tu ' +
-            'as retiré la permission dans les réglages du téléphone, ou au premier envoi qui échoue si l’application ' +
-            'est désinstallée, puis supprimé 90 jours plus tard. Si aucun envoi ne part vers ce téléphone, par exemple ' +
-            'parce que tu as choisi les rappels par email ou aucun rappel, il reste enregistré tant que ton compte existe. Il ' +
-            'part dans tous les cas avec la suppression de ton compte et avec la suppression automatique d’une ' +
-            'session anonyme.',
+            'passes aux rappels par email ou sans rappel, ou si tu as retiré la permission dans les réglages du ' +
+            'téléphone, et au premier envoi qui échoue si l’application est désinstallée ; puis supprimé 90 jours plus ' +
+            'tard. Tant que tu gardes les notifications, il reste enregistré, même quand aucun rappel ne part. Il part ' +
+            'dans tous les cas avec la suppression de ton compte et avec la suppression automatique d’une session ' +
+            'anonyme.',
           'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +
             'd’envoi, message — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',

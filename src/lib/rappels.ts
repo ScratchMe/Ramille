@@ -141,7 +141,7 @@ async function enregistrerLeJetonMaintenant(): Promise<boolean> {
     // permission retirée, donc `collect_push_receipts` ne le verrait pas non plus, et le repli
     // email ne partirait jamais. La marque se pose au premier enregistrement réussi, donc la
     // fenêtre se referme au premier lancement de cette version avec la permission accordée.
-    await desinscrireLeJetonDeCetAppareil();
+    await desactiverLeJetonDeCetAppareil();
     return false;
   }
 
@@ -175,20 +175,54 @@ async function enregistrerLeJetonMaintenant(): Promise<boolean> {
  * `src/app/_layout.tsx`) : **inscrit seulement si la personne a choisi la notification**
  * (`leJetonAuDemarrage`, `src/types/rappels.ts`, qui dit pourquoi), désactivé sinon.
  *
- * **Rend `true` quand il n'y a rien à retenter** : un jeton inscrit, ou aucun jeton de cet appareil
- * resté actif. `false` sur une préférence illisible, une inscription ratée ou une désactivation qui
- * n'a pas abouti — la marque locale est encore là —, que le retour au premier plan suivant retente.
+ * **Rend `true` seulement quand un jeton est inscrit**, comme `enregistrerLeJeton` : tout autre cas se
+ * réévalue au retour au premier plan suivant. Le cas qui l'exige (contre-lecture du 22/10/2026) : au
+ * lancement, la préférence est l'e-mail ; la personne choisit ensuite la notification dans la feuille,
+ * refuse l'invite, puis la rouvre dans les réglages du téléphone. Un `true` rendu au lancement aurait
+ * fermé la garde, et le retour des réglages n'aurait rien réinscrit. Sans jeton connu, la réévaluation
+ * ne coûte qu'une lecture du profil.
+ *
+ * **Suivi dès le départ** (`suivreLEnregistrementDuJeton`) et pas seulement par `enregistrerLeJeton` :
+ * la lecture de la préférence est un aller-retour, pendant lequel une lecture du jeton aurait trouvé la
+ * marque d'avant (`v1-33` T-12).
  */
-export async function reglerLeJetonDeCetAppareil(): Promise<boolean> {
+export function reglerLeJetonDeCetAppareil(): Promise<boolean> {
+  const reglage = reglerLeJetonMaintenant();
+  suivreLEnregistrementDuJeton(reglage);
+  return reglage;
+}
+
+async function reglerLeJetonMaintenant(): Promise<boolean> {
   if (!estNatif || !Device.isDevice) return false;
 
   switch (leJetonAuDemarrage(await lireLeCanalPrefere())) {
     case 'attendre':
       return false;
     case 'desinscrire':
-      await desinscrireLeJetonDeCetAppareil();
-      return (await lireLeJetonDeCetAppareil()) === null;
+      await desactiverLeJetonDeCetAppareil();
+      return false;
     case 'inscrire':
       return enregistrerLeJeton();
   }
+}
+
+/**
+ * Désactive le jeton de cet appareil **au nom de la session présente**. `unregister_push_token` ne touche
+ * que les lignes de `auth.uid()` : après un changement de compte — `/connexion/retrouver`, ou un code
+ * demandé pour une adresse déjà prise —, la ligne appartient encore au compte quitté, la désactivation
+ * ne la trouvait pas, la marque locale s'effaçait quand même, et le téléphone recevait les rappels de
+ * celui qu'on venait de quitter (A4-7, revenu par ce chemin, contre-lecture du 22/10/2026). D'où la
+ * reprise d'abord (`register_push_token`, qui rattache le jeton à la session ; le jeton est la marque
+ * locale, donc rien ne part chez Expo), puis la désactivation. Une reprise refusée laisse tout en
+ * place, marque comprise : le retour suivant retente.
+ */
+async function desactiverLeJetonDeCetAppareil(): Promise<void> {
+  const connu = await lireLeJetonDeCetAppareil();
+  if (!connu) return;
+  const { error } = await supabase.rpc('register_push_token', {
+    p_token: connu,
+    p_platform: Platform.OS === 'ios' ? 'ios' : 'android',
+  });
+  if (error) return;
+  await desinscrireLeJetonDeCetAppareil();
 }

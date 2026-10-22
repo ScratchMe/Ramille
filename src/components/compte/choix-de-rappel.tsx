@@ -63,6 +63,7 @@ export function ChoixDeRappel({
   fenetre,
   onChoisir,
   onChoisirLaVeille,
+  onJeton,
 }: {
   prefs: ReminderPrefs;
   /** La fenêtre du mot de la veille (C4.2), `null` quand on ne l'a pas lue. */
@@ -70,6 +71,14 @@ export function ChoixDeRappel({
   onChoisir: (canal: CanalPrefere) => void;
   /** Cocher ou décocher le mot de la veille : jamais `jamais_propose`, une réponse ne se retire pas. */
   onChoisirLaVeille: (reponse: 'oui' | 'refuse') => void;
+  /**
+   * Ce que la réinscription ci-dessous a **vraiment** obtenu, pour que l'écran l'affiche. Sans lui,
+   * passer à la notification laissait `jetonActif` à sa valeur du montage — faux depuis que le jeton
+   * n'est plus inscrit sans la notification (22/10/2026) —, et la ligne du mot de la veille disait « En
+   * pause sur ce téléphone » d'un jeton qui venait de s'inscrire. Le booléen est celui de la feuille
+   * (`onFerme(canal, jetonActif)`). Stable chez l'appelant : il entre dans les dépendances de l'effet.
+   */
+  onJeton: (actif: boolean) => void;
 }) {
   // Point de départ `demandable` : c'est l'état neutre, le seul qui ne promette pas une
   // notification qui marche ni n'accuse un réglage que personne n'a touché, le temps que la
@@ -84,10 +93,10 @@ export function ChoixDeRappel({
     void lirePermission()
       .then(async (etat) => {
         setPermission(etat);
-        if (etat === 'accordee' && choisitLaNotification) await enregistrerLeJeton();
+        if (etat === 'accordee' && choisitLaNotification) onJeton(await enregistrerLeJeton());
       })
       .catch(() => undefined);
-  }, [choisitLaNotification]);
+  }, [choisitLaNotification, onJeton]);
 
   useEffect(relireLaPermission, [relireLaPermission]);
   useRafraichirAuRetour(relireLaPermission);

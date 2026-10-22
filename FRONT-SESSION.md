@@ -47,7 +47,12 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   et avant l'identifiant partait chez Expo au premier lancement, rappel par e-mail ou sans rappel. Le
   démarrage désactive désormais celui d'un appareil passé à un autre canal, et une préférence illisible
   ne touche à rien. Choisir la notification inscrit le jeton au moment du geste, dans la feuille comme
-  dans « Toi » — sinon la préférence se dégraderait d'elle-même.
+  dans « Toi » — sinon la préférence se dégraderait d'elle-même. Deux pièges, trouvés par la
+  contre-lecture du même jour et épinglés par `src/lib/rappels.test.ts` : le réglage **ne rend `true`
+  qu'avec un jeton inscrit**, sinon la garde se ferme et le retour des réglages du téléphone ne réinscrit
+  plus personne ; et la désactivation **reprend d'abord** le jeton pour la session présente, parce que
+  `unregister_push_token` ne touche que les lignes de `auth.uid()` — après un changement de compte, le
+  jeton restait actif au nom du compte quitté (A4-7).
 - **`enregistrerLeJeton()` rend un booléen, et c'est la seule chose qui peut faire passer
   `jetonActif` à vrai** (`src/lib/rappels.ts`) — une permission accordée dont l'enregistrement a
   échoué (pas d'identifiants FCM, pas de réseau, simulateur) faisait promettre au plan une

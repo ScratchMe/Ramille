@@ -1883,6 +1883,9 @@ ce que l'app fait, et deux touchent au natif, donc à un build (le premier et le
   sans permission, sur un `DeviceNotRegistered` ou au-delà de cinq appareils par compte ; avec les rappels par e-mail ou aucun, et l'application
   désinstallée, aucun envoi ne part, donc le jeton reste actif jusqu'à la suppression du compte. Plus
   sobre : une purge sur `last_seen_at`. **Condition** : choisir la durée, qui est une promesse de la page.
+  **Réduit le 22/10/2026** par le point d'au-dessus : un passage à l'e-mail ou à « Sans rappel » désactive
+  désormais le jeton au démarrage suivant. Reste le cas d'une application désinstallée **avec** la
+  notification choisie et un régime de rappel au silence : aucun envoi, donc aucun `DeviceNotRegistered`.
 - **Firebase attribue son identifiant dès le premier lancement**, permission accordée ou non — lu, pas
   mesuré : `firebase-messaging` est embarqué par `expo-notifications` et son initialisation automatique
   n'est coupée nulle part. Plus sobre : la couper et l'initialiser à la demande. **À vérifier d'abord sur le
