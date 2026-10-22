@@ -36,6 +36,12 @@ export type PaquetLicencie = {
    * `package.json` nomme quelqu'un, ou `null` quand le script n'a rien trouvé.
    */
   copyright: string | null;
+  /**
+   * Les avis, à la lettre, de fichiers que le paquet a repris d'autres projets (un polyfill de Node dans
+   * `@react-native/js-polyfills`, du code de Deno dans `@expo/metro-runtime`…) : ceux dont le titulaire diffère de
+   * `copyright`. Absent quand il n'y en a pas — la page les montre sous l'avis principal.
+   */
+  avisRepris?: string[];
   sur: SurQuoi;
   /** Le paquet dans les sources duquel ce code est une copie (`react-helmet-async`, rangé dans `expo-router`), quand ce n'est pas un paquet installé à part. */
   dans?: string;
@@ -83,11 +89,27 @@ export const LIMITE_DE_LA_LISTE =
   'Les composants Android que les bibliothèques natives récupèrent à la compilation (AndroidX, Kotlin, Firebase, Material Components…) ne figurent pas dans cette liste : ils ne sont pas dans le dépôt, et leur liste n’est pas établie.';
 
 /**
- * Ce qui tient lieu de ligne de copyright quand le script n'en a trouvé aucune. **« N'a pas été trouvé » et
- * non « le paquet n'en donne pas »** : le script lit le fichier de licence, l'en-tête des fichiers que les
- * bundles contiennent et l'auteur du `package.json`, pas tout ce que le paquet livre.
+ * Ce qui tient lieu de ligne de copyright quand le script n'en a trouvé aucune pour une bibliothèque. **« N'a
+ * pas été trouvé » et non « le paquet n'en donne pas »** : le script lit le fichier de licence, l'en-tête des
+ * fichiers que les bundles contiennent et l'auteur du `package.json`, pas tout ce que le paquet livre.
  */
 export const SANS_COPYRIGHT = 'Aucun avis de copyright n’a été trouvé dans ce paquet.';
+
+/**
+ * Le même repli pour une police, qui ne dit pas « paquet » : son avis n'est cherché que dans le fichier de la
+ * police (la table `name` du `.ttf`), pas dans le paquet qui la porte.
+ */
+export const SANS_COPYRIGHT_DE_POLICE = 'Aucun avis de copyright n’a été trouvé dans le fichier de cette police.';
+
+/** Ce qui introduit, sous l'avis d'un paquet, les avis des fichiers qu'il a repris d'autres projets. */
+export const AVIS_REPRIS = 'Avis de fichiers repris d’autres projets :';
+
+/** Ce que la page écrit sous une bibliothèque : son avis principal, puis les avis des fichiers repris, en disant d'où ils viennent. */
+export function avisDuPaquet(paquet: Pick<PaquetLicencie, 'copyright' | 'avisRepris'>): string {
+  const principal = paquet.copyright ?? SANS_COPYRIGHT;
+  const repris = paquet.avisRepris ?? [];
+  return repris.length === 0 ? principal : `${principal} ${AVIS_REPRIS} ${repris.join(' ')}`;
+}
 
 /**
  * Les phrases d'ouverture : le code de Ramille d'abord, puis ce que la page liste et d'où elle le tire —
@@ -129,10 +151,11 @@ export function termeDuPaquet(paquet: Pick<PaquetLicencie, 'nom' | 'version' | '
  * bibliothèques, puis le texte une seule fois —, puis les textes que seules des polices emploient, puis
  * la phrase de ce que la liste ne couvre pas.
  *
- * Un texte qu'aucune bibliothèque ne porte (celui d'une police) a sa section sans liste : la police est
- * nommée dans la première section, et le texte vient là, après les bibliothèques — deux licences de
- * police au milieu des bibliothèques couperaient la liste. Un texte que personne n'emploie n'a pas de
- * section ; `scripts/licences.test.ts` refuse qu'il y en ait un dans le fichier généré.
+ * Un texte qu'aucune bibliothèque ne porte (celui d'une licence que seules des polices emploient) a sa
+ * section sans liste : la police est nommée dans la première section, et le texte vient là, après les
+ * bibliothèques — une licence de police rangée avec les autres, dans l'ordre du fichier, couperait la liste.
+ * Un texte que personne n'emploie n'a pas de section ; `scripts/licences.test.ts` refuse qu'il y en ait un
+ * dans le fichier généré.
  */
 export function sectionsDesLicences(donnees: DonneesDesLicences): SectionDeLicences[] {
   const nomDuTexte = new Map(donnees.textes.map((texte) => [texte.id, texte.nom]));
@@ -146,7 +169,7 @@ export function sectionsDesLicences(donnees: DonneesDesLicences): SectionDeLicen
           kind: 'definitions',
           items: donnees.polices.map((police) => ({
             term: `${police.nom}${marqueDeLaPlateforme(police.sur)}`,
-            text: `Licence : ${nomDuTexte.get(police.texte) ?? police.texte}, dont le texte figure plus bas. ${police.copyright ?? SANS_COPYRIGHT}`,
+            text: `Licence : ${nomDuTexte.get(police.texte) ?? police.texte}, dont le texte figure plus bas. ${police.copyright ?? SANS_COPYRIGHT_DE_POLICE}`,
           })),
         },
       ],
@@ -164,7 +187,7 @@ export function sectionsDesLicences(donnees: DonneesDesLicences): SectionDeLicen
       blocks: [
         {
           kind: 'definitions',
-          items: donnees.paquets.filter((paquet) => paquet.texte === texte.id).map((paquet) => ({ term: termeDuPaquet(paquet), text: paquet.copyright ?? SANS_COPYRIGHT })),
+          items: donnees.paquets.filter((paquet) => paquet.texte === texte.id).map((paquet) => ({ term: termeDuPaquet(paquet), text: avisDuPaquet(paquet) })),
         },
         { kind: 'paragraph', text: 'Le texte de cette licence s’applique à chaque bibliothèque ci-dessus :' },
         ...texte.paragraphes.map((paragraphe): BlocDeLicences => ({ kind: 'paragraph', text: paragraphe })),

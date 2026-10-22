@@ -46,12 +46,31 @@
 //      paquet : … ») : ce n'est pas un avis, et l'écran ne le fait pas passer pour un ;
 //   4. à défaut, rien, et l'écran dit qu'aucun avis n'a été trouvé.
 //
-// Les textes sont rangés **une fois par type** : on retire les lignes de copyright — et l'emplacement vide
-// qu'en laisse l'appendice de l'Apache (« Copyright [yyyy] [name of copyright owner] ») — et le titre, on
-// compare ce qui reste sans la casse ni la ponctuation, et deux textes identiques n'en font qu'un. Un texte
-// qui diffère vraiment pour une même licence reste à part (« autre rédaction »), plutôt que d'être écrasé
-// par le plus fréquent. **« (c) » n'est un avis que suivi d'une année** : c'est aussi le repère de la clause
-// 4(c) de l'Apache, dont la première ligne disparaissait du texte affiché.
+// **Et, que le paquet ait une licence ou non, les avis des fichiers repris d'autres projets.** Un paquet
+// range parfois dans ses sources du code qu'un autre auteur a écrit, sans dossier ni `package.json` à lui — donc
+// sans que la détection des copies (plus bas) le voie : le polyfill de console de `@react-native/js-polyfills`
+// (« Copyright Joyent, Inc. and other Node contributors. », sous MIT), `web-streams-polyfill` dans `expo`,
+// le code de Deno dans `@expo/metro-runtime`, celui de Nicolas Gallagher dans `@react-native-async-storage`.
+// Pour **chaque** fichier du paquet que les bundles contiennent, le script lit tous les avis que l'en-tête
+// porte **en commentaire** (mêmes limites de lecture que plus haut) et garde, dans l'ordre des chemins, ceux
+// dont le **titulaire** diffère de l'avis déjà affiché et de ceux déjà gardés. Le titulaire est ce qui reste
+// d'un avis sans « Copyright », ni année, ni forme sociale (« Inc. », « (aka Expo) », « and affiliates ») :
+// « Copyright © 2024 650 Industries. » et « Copyright (c) 2015-present 650 Industries, Inc. (aka Expo) » sont
+// le même titulaire. Le script ne sait pas que Facebook est devenu Meta : ce sont deux titulaires, et il
+// garde les deux. L'écran les montre sous l'avis principal, en disant qu'ils viennent de fichiers repris.
+// **Si un de ces avis renvoie à une licence — par son nom, ou parce que son bloc de commentaire en recopie le
+// texte — que la page ne reproduit pas déjà, ou que le script ne sait pas lire, il s'arrête** (la MIT, le
+// texte que ces fichiers citent, passe sans autre examen).
+//
+// Les textes sont rangés **une fois par type** : on retire les lignes de copyright et le titre, on compare ce
+// qui reste sans la casse ni la ponctuation, et deux textes identiques n'en font qu'un. Un texte qui diffère
+// vraiment pour une même licence reste à part (« autre rédaction »), plutôt que d'être écrasé par le plus
+// fréquent. **L'emplacement de l'avis dans l'appendice de l'Apache** (« Copyright [yyyy] [name of copyright
+// owner] ») est rempli par un projet (« Copyright 2018 The New York Times Company ») et laissé vide par un
+// autre : il ne compte pas dans la comparaison, mais **le texte affiché le garde, sous cette forme
+// canonique**, que le fichier l'ait rempli ou non — sans lui, « with the fields enclosed by brackets "[]"
+// replaced… » n'a plus de champ à désigner. **« (c) » n'est un avis que suivi d'une année** : c'est aussi le
+// repère de la clause 4(c) de l'Apache, dont la première ligne disparaissait du texte affiché.
 //
 // ## Ce que le script refuse de deviner
 //
@@ -61,8 +80,9 @@
 // déclarée ; un fichier de licence existe sous un nom qu'il ne sait pas lire ; un fichier NOTICE existe
 // (la licence Apache exige de le reproduire, et l'écran ne sait pas le montrer) ; un sous-dossier d'un paquet
 // porte une licence sans dire de quel paquet il s'agit (ni `package.json`, ni `package_original.json` avec un
-// nom et une version) ; ou aucun paquet n'apporte le texte d'une licence que d'autres déclarent. Un message
-// vaut mieux qu'une liste qui a l'air complète.
+// nom et une version) ; un avis repris d'un fichier renvoie à une licence (autre que la MIT) que la page ne
+// reproduit pas, ou que le script ne sait pas lire ; ou aucun paquet n'apporte le texte d'une licence que
+// d'autres déclarent. Un message vaut mieux qu'une liste qui a l'air complète.
 //
 // ## Ce qu'il ne couvre pas — et que l'écran dit
 //
@@ -75,12 +95,14 @@
 //     l'entrée `react-native` (MIT, Meta), pas par la liste de ce que ces artefacts tirent eux-mêmes.
 //   * **Ce qui n'est pas dans `node_modules`** : les images, la mascotte et l'identité de Ramille
 //     (réservées, `NOTICE`), et le logo de Google du bouton de connexion.
-//   * **Les paquets sans fichier de licence** : ils sont listés avec la licence que leur `package.json`
-//     déclare et le texte standard, et l'avis est cherché ailleurs (sources, puis `author` : voir plus haut).
-//     Un paquet où rien n'est trouvé reste sans ligne de copyright, et l'écran dit qu'aucun avis n'y a été
-//     trouvé — pas que le paquet n'en donne pas : les fichiers que les bundles ne contiennent pas, un en-tête
-//     au-delà des quarante premières lignes (ou des quatre premiers kio), un avis qui n'est pas en commentaire ne
-//     sont pas lus.
+//   * **Les paquets sans fichier de licence, et ceux dont la licence ne porte aucun avis** : ils sont listés
+//     avec la licence que leur `package.json` déclare (et, faute de fichier, le texte standard), et l'avis est
+//     cherché ailleurs (sources, puis `author` : voir plus haut). Un paquet où rien n'est trouvé reste sans
+//     ligne de copyright, et l'écran dit qu'aucun avis n'y a été trouvé — pas que le paquet n'en donne pas :
+//     les fichiers que les bundles ne contiennent pas, un en-tête au-delà des quarante premières lignes (ou des
+//     quatre premiers kio), un avis qui n'est pas en commentaire ne sont pas lus. Les quarante lignes et les
+//     quatre kio suffisent au cas qui a servi à les éprouver : l'avis de Joyent, dans `console.js` de
+//     `@react-native/js-polyfills`, est à la ligne 22, 573 octets du début.
 //   * **iOS** : la V1 est Google Play seul.
 //   * **Les dépendances directes qui n'entrent nulle part** (`satori` et `@resvg/resvg-wasm`, que `api/`
 //     utilise sur le serveur de Vercel) : elles sont recensées dans `ecartes`, pour que la garde sache
@@ -154,9 +176,11 @@ const MODELE = /\[yyyy\]|\{yyyy\}|<year>|\[year\]|\[name of copyright owner\]|\{
 
 const estUnAvis = (ligne) => AVIS.test(ligne) && !PAS_UN_AVIS.test(ligne) && !MODELE.test(ligne);
 // L'emplacement d'un avis que personne n'a rempli — « Copyright [yyyy] [name of copyright owner] », dans
-// l'appendice de l'Apache. Ce n'est l'avis de personne (il ne va pas dans la ligne de copyright du paquet),
-// mais il part du texte comme un avis : un projet qui remplit l'emplacement (« Copyright 2018 The New York
-// Times Company ») et un autre qui le laisse vide auraient sinon deux textes « différents ».
+// l'appendice de l'Apache. Ce n'est l'avis de personne (il ne va pas dans la ligne de copyright du paquet), et
+// il ne compte pas pour comparer deux textes : un projet qui remplit l'emplacement (« Copyright 2018 The New
+// York Times Company ») et un autre qui le laisse vide auraient sinon deux textes « différents ». Le texte
+// affiché, lui, le garde (`lignesDuTexte`) : l'appendice qui dit « the fields enclosed by brackets "[]" »
+// en a besoin.
 const estUnEmplacement = (ligne) => AVIS.test(ligne) && !PAS_UN_AVIS.test(ligne) && MODELE.test(ligne);
 const estRetiree = (ligne) => estUnAvis(ligne) || estUnEmplacement(ligne);
 const espaces = (texte) => texte.replace(/\s+/g, ' ').trim();
@@ -175,11 +199,34 @@ function avisDuTexte(texte) {
   return [...new Set(avis)];
 }
 
-/** Le texte sans ses avis (ni leur emplacement vide), ligne à ligne. « All rights reserved. » seul, qui suivait un avis, part avec lui. */
-function sansLesAvis(texte) {
-  const lignes = toutesLesLignes(texte);
-  return lignes.filter((ligne, i) => !estRetiree(ligne) && !(DROITS_RESERVES.test(espaces(ligne)) && i > 0 && estRetiree(lignes[i - 1])));
+/**
+ * Les lignes sans leurs avis (ni leur emplacement vide), sauf la ligne d'indice `gardee`. « All rights reserved. »
+ * seul, qui suivait un avis, part avec lui.
+ */
+function sansLesAvis(lignes, gardee) {
+  return lignes.filter((ligne, i) => i === gardee || (!estRetiree(ligne) && !(DROITS_RESERVES.test(espaces(ligne)) && i > 0 && estRetiree(lignes[i - 1]))));
 }
+
+/** L'emplacement de l'avis dans l'appendice de l'Apache, sous la forme que le texte de la licence lui donne. */
+const EMPLACEMENT_CANONIQUE = 'Copyright [yyyy] [name of copyright owner]';
+const AMORCE_DU_MODELE_APACHE = /^\s*Licensed under the Apache License,? Version 2\.0/i;
+
+/**
+ * L'indice de la ligne qui tient la place de l'avis dans le modèle de l'appendice de l'Apache — la dernière
+ * ligne non vide avant « Licensed under the Apache License, Version 2.0 » — quand c'est un avis ou un
+ * emplacement vide ; sinon -1. Un projet y met son avis (« Copyright 2018 The New York Times Company »), un
+ * autre y laisse « Copyright [yyyy] [name of copyright owner] », ou « {yyyy} », un troisième l'efface.
+ */
+function indiceDeLEmplacement(lignes) {
+  const amorce = lignes.findIndex((ligne) => AMORCE_DU_MODELE_APACHE.test(ligne));
+  if (amorce === -1) return -1;
+  for (let i = amorce - 1; i >= 0; i--) {
+    if (lignes[i].trim() !== '') return estRetiree(lignes[i]) ? i : -1;
+  }
+  return -1;
+}
+
+const porteLEmplacement = (lignes) => lignes.some((ligne) => ligne.trim() === EMPLACEMENT_CANONIQUE);
 
 /** Un titre est une première ligne courte qui nomme la licence — « MIT License », « # The MIT License (MIT) ». */
 function estUnTitre(ligne) {
@@ -187,9 +234,18 @@ function estUnTitre(ligne) {
   return nue.length > 0 && nue.length <= 40 && /licen[cs]e/i.test(nue) && !/[.:;,]$/.test(nue);
 }
 
-/** Les lignes à reproduire pour une licence : sans avis, sans titre pour les permissives, et pour l'OFL à partir de son intitulé. */
+/**
+ * Les lignes d'une licence, en deux formes. `affichees` : ce qu'on reproduit — sans avis, sans titre pour les
+ * permissives, pour l'OFL à partir de son intitulé, et l'Apache avec l'emplacement de son avis **sous sa forme
+ * canonique**, qu'il ait été rempli, laissé vide ou écrit « {yyyy} ». `comparees` : ce qui sert à dire que
+ * deux textes sont le même — les mêmes lignes **sans cet emplacement**, que les projets remplissent chacun
+ * à leur façon.
+ */
 function lignesDuTexte(id, texte) {
-  let lignes = sansLesAvis(texte);
+  const brutes = toutesLesLignes(texte);
+  const emplacement = id === 'Apache-2.0' ? indiceDeLEmplacement(brutes) : -1;
+  if (emplacement !== -1) brutes[emplacement] = EMPLACEMENT_CANONIQUE;
+  let lignes = sansLesAvis(brutes, emplacement);
   if (id === 'OFL-1.1') {
     const debut = lignes.findIndex((l) => /^\s*SIL OPEN FONT LICENSE\b/i.test(l));
     if (debut !== -1) lignes = lignes.slice(debut);
@@ -198,7 +254,7 @@ function lignesDuTexte(id, texte) {
     const premiere = lignes.findIndex((l) => l.trim() !== '');
     if (premiere !== -1 && estUnTitre(lignes[premiere])) lignes = lignes.slice(premiere + 1);
   }
-  return lignes;
+  return { affichees: lignes, comparees: lignes.filter((ligne) => ligne.trim() !== EMPLACEMENT_CANONIQUE) };
 }
 
 /** Ce qui sert à comparer deux textes : sans la casse, la ponctuation ni les espaces. */
@@ -330,7 +386,7 @@ function copieDansLePaquet(hote, fichier) {
   return trouvee;
 }
 
-// ─── L'avis d'un paquet qui n'en donne pas dans sa licence ───────────────────────────────────
+// ─── L'avis d'un paquet qui n'en donne pas dans sa licence, et ceux des fichiers qu'il a repris ─────
 
 const MARQUE_DE_COMMENTAIRE = /^\s*(?:\/\*+!?|\*+(?!\/)|\/\/+!?|#+)\s*(.*?)\s*(?:\*+\/)?\s*$/;
 /** Un avis se pose en tête de fichier : au-delà, une ligne « Copyright » est plus souvent celle d'un code collé que celle du paquet. */
@@ -338,9 +394,52 @@ const OCTETS_D_ENTETE = 4096;
 const LIGNES_D_ENTETE = 40;
 const AUTEUR_DU_PAQUET = 'Auteur indiqué par le paquet : ';
 
-/** Le premier avis que l'en-tête d'un fichier source porte **en commentaire** (`/** Copyright … */`, `// Copyright …`), ou `null`. */
+/**
+ * Les licences qu'un commentaire peut citer **par leur nom**, avec l'identifiant de `LICENCES_CONNUES`. Une
+ * mention est retirée du texte une fois reconnue, pour que « BSD » seul, plus bas, reste une licence qu'on ne sait
+ * pas lire (BSD à deux ou à trois clauses ?) et non le reste d'un « BSD-3-Clause ».
+ */
+const NOMS_DE_LICENCE = [
+  { id: 'MIT', motif: /\bMIT\b/g },
+  { id: 'ISC', motif: /\bISC\b/g },
+  { id: 'BSD-2-Clause', motif: /\bBSD[- ]2[- ]Clause\b/g },
+  { id: 'BSD-3-Clause', motif: /\bBSD[- ]3[- ]Clause\b/g },
+  { id: '0BSD', motif: /\b0BSD\b/g },
+  { id: 'Apache-2.0', motif: /\bApache(?: License)?,?(?: Version)?[ -]2(?:\.0)?\b/gi },
+  { id: 'OFL-1.1', motif: /\bSIL Open Font License\b|\bOFL(?:-1\.1)?\b/g },
+];
+/** Ce qu'un commentaire peut citer sans que le script sache de quelle licence il s'agit : on s'arrête plutôt que de deviner. */
+const LICENCE_QUE_LE_SCRIPT_NE_LIT_PAS =
+  /\b(?:A|L)?GPL\b|\bMPL\b|\bMozilla Public\b|\bEPL\b|\bEclipse Public\b|\bCC0\b|\bCC-BY\b|\bCreative Commons\b|\bUnlicense\b|\bWTFPL\b|\bZlib\b|\bBoost Software\b|\bpublic domain\b|\bBSD\b|\bApache\b/gi;
+
+/**
+ * Les licences qu'un bloc de commentaire cite : celles que le script connaît (`connues`, des identifiants de
+ * `LICENCES_CONNUES`), par leur nom ou parce que le bloc en recopie le texte — le polyfill de console de React
+ * Native recopie la MIT de Joyent sans la nommer —, et celles qu'il voit sans savoir les lire (`inconnues`).
+ */
+function licencesCitees(lignes) {
+  const connues = new Set();
+  let reste = espaces(lignes.join(' '));
+  for (const { id, motif } of NOMS_DE_LICENCE) {
+    if (reste.search(motif) === -1) continue;
+    connues.add(id);
+    reste = reste.replace(motif, ' ');
+  }
+  const corps = corpsNormalise(lignes);
+  for (const [id, spec] of Object.entries(LICENCES_CONNUES)) {
+    if (spec.requis.every((phrase) => corps.includes(phrase)) && !(spec.interdits ?? []).some((phrase) => corps.includes(phrase))) connues.add(id);
+  }
+  return { connues, inconnues: [...new Set([...reste.matchAll(LICENCE_QUE_LE_SCRIPT_NE_LIT_PAS)].map((m) => m[0]))] };
+}
+
+/**
+ * Les avis que l'en-tête d'un fichier source porte **en commentaire** (une ligne ` * Copyright …` dans un
+ * commentaire de bloc, ou `// Copyright …`), dans l'ordre, chacun avec les licences que cite son bloc de
+ * commentaire (les lignes de commentaire qui se suivent : la licence d'un avis est dite à côté de lui, pas à
+ * l'autre bout du fichier).
+ */
 function avisDeLEnteteDuFichier(chemin) {
-  if (!fs.existsSync(chemin) || !fs.statSync(chemin).isFile()) return null;
+  if (!fs.existsSync(chemin) || !fs.statSync(chemin).isFile()) return [];
   const tampon = Buffer.alloc(OCTETS_D_ENTETE);
   const descripteur = fs.openSync(chemin, 'r');
   let lus;
@@ -349,11 +448,22 @@ function avisDeLEnteteDuFichier(chemin) {
   } finally {
     fs.closeSync(descripteur);
   }
+  const avis = [];
+  let bloc = [];
+  const clore = () => {
+    if (bloc.some(estUnAvis)) {
+      const { connues, inconnues } = licencesCitees(bloc);
+      for (const ligne of bloc.filter(estUnAvis)) avis.push({ avis: espaces(ligne), licences: connues, inconnues });
+    }
+    bloc = [];
+  };
   for (const ligne of toutesLesLignes(tampon.toString('utf8', 0, lus)).slice(0, LIGNES_D_ENTETE)) {
     const commentaire = MARQUE_DE_COMMENTAIRE.exec(ligne);
-    if (commentaire && estUnAvis(commentaire[1])) return espaces(commentaire[1]);
+    if (commentaire) bloc.push(commentaire[1]);
+    else clore();
   }
-  return null;
+  clore();
+  return avis;
 }
 
 /** L'auteur que déclare le `package.json`, sans son adresse ni son lien : « Scott Taylor <…> (https://…) » → « Scott Taylor ». */
@@ -365,18 +475,89 @@ function auteurDuPaquet(pj) {
 }
 
 /**
- * Ce qui tient lieu d'avis quand le fichier de licence n'en porte pas : le premier avis de copyright que
- * portent les fichiers du paquet **qui entrent dans les bundles** (dans l'ordre alphabétique de leur chemin,
- * pour que le résultat ne dépende pas de l'ordre où Metro les a rangés), à défaut l'auteur du `package.json`,
- * présenté comme tel. Rien d'autre : un paquet sans avis ni auteur n'en a pas, et l'écran le dit.
+ * Tous les avis que portent, en commentaire de tête, les fichiers du paquet **qui entrent dans les bundles** —
+ * chaque fichier, que le paquet ait une licence ou non —, dans l'ordre alphabétique de leur chemin (pour que le
+ * résultat ne dépende pas de l'ordre où Metro les a rangés), puis dans l'ordre où ils s'écrivent.
  */
-function avisHorsLicence(paquet) {
+function avisDesFichiers(paquet) {
+  const avis = [];
   for (const fichier of [...paquet.fichiers].sort()) {
-    const avis = avisDeLEnteteDuFichier(fichier);
-    if (avis !== null) return [avis];
+    for (const trouve of avisDeLEnteteDuFichier(fichier)) avis.push({ ...trouve, fichier });
   }
-  const auteur = auteurDuPaquet(paquet.pj);
+  return avis;
+}
+
+/**
+ * Ce qui tient lieu d'avis quand le fichier de licence n'en porte pas : le premier avis de copyright que
+ * portent les fichiers du paquet **qui entrent dans les bundles** (`avisDesFichiersDuPaquet`, dans l'ordre
+ * alphabétique de leur chemin), à défaut l'auteur du `package.json`, présenté comme tel. Rien d'autre : un
+ * paquet sans avis ni auteur n'en a pas, et l'écran le dit.
+ */
+function avisHorsLicence(avisDesFichiersDuPaquet, pj) {
+  if (avisDesFichiersDuPaquet.length > 0) return [avisDesFichiersDuPaquet[0].avis];
+  const auteur = auteurDuPaquet(pj);
   return auteur === null ? [] : [`${AUTEUR_DU_PAQUET}${auteur}`];
+}
+
+/** Ce qui ne nomme personne dans un avis : la forme sociale, « the », « authors », « contributors ». */
+const MOTS_SANS_TITULAIRE = new Set(['the', 'and', 'inc', 'llc', 'ltd', 'corp', 'corporation', 'company', 'co', 'gmbh', 'author', 'authors', 'contributors']);
+
+/**
+ * Le titulaire d'un avis, ramené à ce qui le nomme : sans « Copyright », « (c) » ni « © », sans année ni
+ * « 2015-present », sans « All rights reserved. » ni « MIT license. », sans parenthèse (« (aka Expo) »), sans
+ * « and affiliates » ni « and other Node contributors », sans forme sociale, en minuscules et sans ponctuation.
+ * « Copyright © 2024 650 Industries. » et « Copyright (c) 2015-present 650 Industries, Inc. (aka Expo) » ont le
+ * même. Un avis qui n'en laisse rien (« Copyright 2020 ») garde son texte entier pour clé.
+ */
+function titulaireDe(avis) {
+  const mots = avis
+    .toLowerCase()
+    .replace(/copyright|©|\(c\)/g, ' ')
+    .replace(/all rights reserved/g, ' ')
+    .replace(/\b(?:mit|isc|bsd|apache)(?:-[\w.]+)? licen[cs]e\b/g, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\b(?:19|20)\d{2}\s*[-–]\s*(?:(?:19|20)\d{2}|present)\b|\b(?:19|20)\d{2}\b|\bpresent\b/g, ' ')
+    .replace(/\band (?:its |other )?(?:\p{L}+ )?(?:affiliates|contributors)\b/gu, ' ')
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((mot) => mot !== '' && !MOTS_SANS_TITULAIRE.has(mot));
+  return mots.length > 0 ? mots.join(' ') : espaces(avis).toLowerCase();
+}
+
+/**
+ * Les avis des fichiers du paquet dont le titulaire diffère de l'avis déjà affiché (`principal`) et de ceux déjà
+ * gardés — le code qu'un autre auteur a écrit et que le paquet a repris dans ses sources. Le premier de chaque
+ * titulaire reste, dans l'ordre des fichiers.
+ */
+function avisRepris(avisDesFichiersDuPaquet, principal) {
+  const vus = new Set(principal.map(titulaireDe));
+  const repris = [];
+  for (const trouve of avisDesFichiersDuPaquet) {
+    const titulaire = titulaireDe(trouve.avis);
+    if (vus.has(titulaire)) continue;
+    vus.add(titulaire);
+    repris.push(trouve);
+  }
+  return repris;
+}
+
+/**
+ * Un avis repris qui renvoie à une licence que la page ne reproduit pas, ou que le script ne sait pas lire, fait
+ * échouer le script : lui prêter la licence du paquet serait deviner. La MIT passe sans autre examen.
+ */
+function verifierLesLicencesDesAvisRepris(analyses, textes) {
+  const reproduites = new Set(textes.map((texte) => texte.licence));
+  for (const { paquet, repris } of analyses) {
+    for (const trouve of repris) {
+      const ou = `${paquet.nom}@${paquet.version} : le fichier « ${path.relative(paquet.dossier, trouve.fichier)} » porte l’avis « ${trouve.avis} »`;
+      const absentes = [...trouve.licences].filter((id) => id !== 'MIT' && !reproduites.has(id));
+      if (absentes.length > 0) {
+        throw new Error(`${ou} et renvoie à la licence ${absentes.join(', ')}, que la page ne reproduit pas — le script ne devine pas laquelle s’applique (voir l’en-tête du script).`);
+      }
+      if (trouve.inconnues.length > 0) {
+        throw new Error(`${ou} et renvoie à « ${trouve.inconnues.join(', ')} », une licence que le script ne sait pas lire — il ne devine pas laquelle s’applique (voir l’en-tête du script).`);
+      }
+    }
+  }
 }
 
 // ─── Polices : le nom et l'avis de copyright, lus dans le fichier ─────────────────────────────
@@ -619,12 +800,17 @@ function analyserLesPaquets(paquets, polices) {
     const texte = fichier ? fs.readFileSync(path.join(p.dossier, fichier), 'utf8') : null;
     const lignes = texte === null ? null : lignesDuTexte(id, texte);
     const avisDeLicence = texte === null ? [] : avisDuTexte(texte);
+    // Les avis des fichiers sont relevés pour tous les paquets : l'avis principal, à défaut de licence qui en porte
+    // un, et les avis des fichiers repris d'autres projets, que le paquet ait une licence ou non.
+    const dansLesFichiers = avisDesFichiers(p);
+    const principal = avisDeLicence.length > 0 ? avisDeLicence : avisHorsLicence(dansLesFichiers, p.pj);
     analyses.push({
       paquet: p,
       id,
-      avis: avisDeLicence.length > 0 ? avisDeLicence : avisHorsLicence(p),
-      lignes,
-      corps: lignes === null ? null : reconnaitre(id, lignes, `${etiquette} (${fichier})`),
+      avis: principal,
+      repris: avisRepris(dansLesFichiers, principal),
+      lignes: lignes === null ? null : lignes.affichees,
+      corps: lignes === null ? null : reconnaitre(id, lignes.comparees, `${etiquette} (${fichier})`),
     });
   }
   return analyses;
@@ -636,6 +822,9 @@ function rangerLesTextes(analyses, polices) {
   const ajouter = (id, corps, lignes) => {
     const parId = groupes.get(id) ?? new Map();
     const groupe = parId.get(corps) ?? { lignes, membres: 0 };
+    // Le texte affiché est celui d'un membre qui porte l'emplacement de l'avis de l'Apache, s'il y en a un : l'ordre
+    // des paquets ne décide pas de ce qu'on lit (l'emplacement ne compte pas dans la comparaison).
+    if (!porteLEmplacement(groupe.lignes) && porteLEmplacement(lignes)) groupe.lignes = lignes;
     groupe.membres += 1;
     parId.set(corps, groupe);
     groupes.set(id, parId);
@@ -644,8 +833,8 @@ function rangerLesTextes(analyses, polices) {
   const policesLues = [...polices.values()].map((police) => {
     const id = licenceDeLaPolice(police, `${police.paquet}@${police.version}`);
     const lignes = lignesDuTexte(id, fs.readFileSync(path.join(police.dossier, police.licenceFichier), 'utf8'));
-    const corps = reconnaitre(id, lignes, `${police.paquet}@${police.version} (${police.licenceFichier})`);
-    ajouter(id, corps, lignes);
+    const corps = reconnaitre(id, lignes.comparees, `${police.paquet}@${police.version} (${police.licenceFichier})`);
+    ajouter(id, corps, lignes.affichees);
     return { police, id, corps };
   });
 
@@ -671,6 +860,7 @@ function assembler({ racine, cartes, natifs, date }) {
   const { paquets, polices } = releverLesPaquets({ racine, cartes, natifs });
   const analyses = analyserLesPaquets(paquets, polices);
   const { textes, identifiants, policesLues } = rangerLesTextes(analyses, polices);
+  verifierLesLicencesDesAvisRepris(analyses, textes);
 
   // Un paquet sans fichier de licence prend le texte principal de la licence qu'il déclare.
   const textePrincipal = (id, etiquette) => {
@@ -686,6 +876,7 @@ function assembler({ racine, cartes, natifs, date }) {
     licence: a.id,
     texte: a.corps === null ? textePrincipal(a.id, `${a.paquet.nom}@${a.paquet.version}`) : identifiants.get(`${a.id}\0${a.corps}`),
     copyright: a.avis.length > 0 ? a.avis.join(' ') : null,
+    ...(a.repris.length > 0 ? { avisRepris: a.repris.map((r) => r.avis) } : {}),
     sur: sur(a.paquet.sur),
     ...(a.paquet.dans ? { dans: a.paquet.dans } : {}),
   }));
@@ -724,7 +915,8 @@ const ENTETE = `// FICHIER GÉNÉRÉ — ne pas modifier à la main.
 // Ce que Ramille embarque d'autres auteurs : les bibliothèques et les polices qui sont dans le bundle
 // web, dans le bundle Android ou dans le code natif de l'APK, avec leur licence, leur avis de copyright
 // quand on en a trouvé un (dans leur licence, sinon dans leurs sources, sinon l'auteur que déclare le
-// paquet), et le texte de chaque licence **une seule fois**. L'écran \`/licences\`
+// paquet) et ceux des fichiers qu'ils ont repris d'autres projets (\`avisRepris\`), et le texte de chaque
+// licence **une seule fois**. L'écran \`/licences\`
 // (\`src/app/licences.tsx\`) le montre ; la méthode, et ce qu'elle ne couvre pas, sont en tête du script.
 //
 // \`scripts/licences.test.ts\` fait rougir la CI quand une dépendance de \`package.json\`, un import de
@@ -827,6 +1019,8 @@ function principal() {
     console.log(`  copies logées dans un autre paquet : ${copies.map((p) => `${p.nom} (dans ${p.dans})`).join(', ') || 'aucune'}`);
     const auteursSeuls = donnees.paquets.filter((p) => p.copyright?.startsWith(AUTEUR_DU_PAQUET));
     console.log(`  auteur du package.json, faute d’avis : ${auteursSeuls.map((p) => p.nom).join(', ') || 'aucun'}`);
+    const repris = donnees.paquets.filter((p) => p.avisRepris);
+    console.log(`  avis de fichiers repris d’autres projets : ${repris.map((p) => `${p.nom} (${p.avisRepris.length})`).join(', ') || 'aucun'}`);
     console.log(`  sans ligne de copyright : ${donnees.paquets.filter((p) => p.copyright === null).map((p) => p.nom).join(', ') || 'aucun'}`);
     console.log(`  dépendances directes écartées : ${donnees.ecartes.join(', ') || 'aucune'}`);
     for (const police of donnees.polices.filter((f) => f.copyright === null)) console.log(`  ! la police ${police.nom} ne donne pas d’avis de copyright`);
