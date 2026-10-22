@@ -28,7 +28,7 @@
 
 | # | Étape | Une question d'abord ? | Ce qu'elle touche | État |
 |---|---|---|---|---|
-| 1 | **Correctifs sans décision** : le jeton de notification ne part plus chez Expo sans la notification choisie ; les refus de plafond (engagements, bilans) disent « Réessaie demain » au lieu de « Réessaie dans un instant » | Non | Client, page de confidentialité, registres | En cours |
+| 1 | **Correctifs sans décision** : le jeton de notification ne part plus chez Expo sans la notification choisie ; les refus de plafond (engagements, bilans) disent « Réessaie demain » au lieu de « Réessaie dans un instant » | Non | Client, page de confidentialité, registres | **Livrée le 22/10/2026** (#382). Trois contre-lectures ont trouvé de vrais défauts dans la logique du jeton, tous corrigés : la garde du retour, la reprise avant la désactivation, la marque du jeton qui appartient à l'appareil (`FRONT-SESSION.md` §2.7) |
 | 2 | **Mentions légales et conservation** : écran des licences, âge minimum, mentions légales, durée de conservation des adresses IP de session, journal d'audit d'Auth après suppression | Non | Écran neuf, conditions, base | À faire |
 | 3 | **Le périmètre du bilan** | Oui : libellés élargis sur une étape, ou deux étapes | Questionnaire, calcul, méthodologie, recettes | À faire |
 | 4 | **Le web et l'iPhone** : le compte comme condition des rappels sur le web ; la purge des sessions anonymes à 120 jours | Non (tranché) | Feuille des rappels, migration, registre, confidentialité | À faire |
