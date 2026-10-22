@@ -1407,6 +1407,22 @@ describe('scripts/generer-les-licences.mjs, sur un arbre fabriqué', () => {
       expect(r.erreur).toMatch(/manque dans le fichier : beta@1\.0\.0/);
     });
 
+    it('rougit, en nommant le paquet, quand ses avis repris ne sont plus ceux de ses fichiers', () => {
+      const p = fabriquer({
+        paquets: { alpha: { package: pj('alpha', '1.0.0'), fichiers: { LICENSE: mit('Copyright (c) 2020 Alpha'), 'a.js': '// Copyright (c) 2019 Autre Auteur\n' } } },
+        web: ['/node_modules/alpha/a.js'],
+        android: [],
+      });
+      expect(lancer(p).code).toBe(0);
+      expect(donneesEcrites(p).paquets[0].avisRepris).toEqual(['Copyright (c) 2019 Autre Auteur']);
+      fs.writeFileSync(p.sortie, fs.readFileSync(p.sortie, 'utf8').replace(',"avisRepris":["Copyright (c) 2019 Autre Auteur"]', ''));
+
+      const r = lancer(p, ['--verifier']);
+
+      expect(r.code).toBe(1);
+      expect(r.erreur).toMatch(/différent : alpha@1\.0\.0/);
+    });
+
     it('n’écrit rien', () => {
       const p = fabriquerEtEcrire();
       const avant = fs.readFileSync(p.sortie, 'utf8');
