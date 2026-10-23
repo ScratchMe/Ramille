@@ -472,6 +472,8 @@ jamais de route dynamique `[id]`) sont rappelées en fin de fichier et détaill�
 `FRONT.md`, pas ici.
 
 Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboarding` → `/bilan`
+— **sur le web, sinon la page d'accueil**, rendue à la racine même, dont « Découvrir mon impact » ouvre la
+session puis mène à la deuxième page de l'onboarding (23/10/2026, `destinationSurLaPlateforme`, `allerVers`) —
 (la sortie de l'onboarding vide la pile avant d'y entrer, `dismissAll()`) →
 `/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
 restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),
@@ -546,7 +548,8 @@ visiteur reçoit une session Supabase Auth anonyme dès l'ouverture de l'app**
 `src/app/_layout.tsx`), pas un bilan stocké en local puis rattaché à la connexion — **sauf sur les
 surfaces sans compte** (`/confidentialite`, `/conditions`, `/licences`, `/compte/suppression`,
 `/rappels/stop`, `/status` — `SURFACES_SANS_COMPTE`), qui ne font que restaurer une session existante, et l'ouvrent dès qu'on les quitte pour
-l'app (`COMPTE.md`, depuis le 18/10/2026). Le bilan
+l'app (`COMPTE.md`, depuis le 18/10/2026) — **et sur la racine du web**, la page d'accueil, qui restaure
+sans ouvrir sans être une surface sans compte (`laSessionSOuvreSur` prend la plateforme, 23/10/2026). Le bilan
 anonyme vit donc normalement dans `assessments`/`assessment_answers` etc., protégé par les
 mêmes policies RLS owner-scoped que n'importe quel utilisateur (`user_id not null` jamais
 assoupli).

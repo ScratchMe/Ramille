@@ -526,16 +526,18 @@ try {
     const contexteE = await nouveauContexte();
     const pageE = await contexteE.newPage();
     // La victime ouvre l'app une première fois : elle a sa propre session anonyme, c'est elle
-    // qu'on ne doit pas perdre.
+    // qu'on ne doit pas perdre. **Par l'onboarding, plus par la racine** (23/10/2026) : la racine du
+    // web est désormais la page d'accueil, qui n'ouvre pas de session (`laSessionSOuvreSur`) — la
+    // victime n'en avait plus, et le scénario ne voulait plus rien dire. L'onboarding l'ouvre.
     //
-    // **On attend que l'app ait fini de se router avant d'injecter**, et ce n'est pas de la
-    // prudence : la racine redirige côté client vers `/onboarding` ou `/plan`, et une navigation
-    // lancée pendant ce trajet est **emportée par la redirection**, fragment compris. Mesuré le
-    // 20/09/2026 : l'assertion d'injection restait verte même avec le flux implicite remis,
-    // parce que l'attaque n'avait tout simplement pas lieu. Une garde qui passe faute d'attaque
-    // est pire qu'une garde absente — elle dit le contraire de ce qu'elle mesure.
-    await pageE.goto(`${serveur.base}/`, { waitUntil: 'domcontentloaded' });
-    await pageE.waitForURL((u) => new URL(u).pathname !== '/', { timeout: 20000 }).catch(() => {});
+    // **On attend que l'app ait fini avant d'injecter**, et ce n'est pas de la prudence : une
+    // navigation lancée pendant une redirection de la racine est **emportée par elle**, fragment
+    // compris. Mesuré le 20/09/2026 : l'assertion d'injection restait verte même avec le flux
+    // implicite remis, parce que l'attaque n'avait tout simplement pas lieu. Une garde qui passe
+    // faute d'attaque est pire qu'une garde absente — elle dit le contraire de ce qu'elle mesure.
+    // Depuis le 23/10/2026, la racine où l'on injecte ne redirige plus une session sans bilan : elle
+    // reste sur la page d'accueil, et l'attaque a lieu là.
+    await pageE.goto(`${serveur.base}/onboarding`, { waitUntil: 'domcontentloaded' });
     await pageE.waitForLoadState('networkidle').catch(() => {});
     const avantE = await utilisateurDeLaPage(pageE);
     verifier(avantE !== null, 'la victime n’a pas de session de départ : le scénario d’injection ne veut rien dire');

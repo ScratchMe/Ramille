@@ -19,7 +19,8 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // Règle de rédaction : **ne décrire que ce que le produit fait réellement**. Chaque
 // affirmation ci-dessous est vérifiable dans le code ou le schéma :
 //   - session anonyme dès l'ouverture -> `ensureSession()` (src/lib/supabase.ts), v1-04 §1, sauf sur
-//     les surfaces sans compte, qui ne font que restaurer une session existante (`restaurerLaSession`,
+//     les surfaces sans compte et, depuis le 23/10/2026, la page d'accueil du web (la racine du site), qui
+//     ne font que restaurer une session existante (`restaurerLaSession`, `laSessionSOuvreSur`,
 //     `COMPTE.md`) ;
 //   - champs collectés -> colonnes de `assessment_answers` (v1-05 §3) ;
 //   - réponses aux points de suivi, oui, non ou sans objet -> `engagement_checkins.response_kind`
@@ -259,6 +260,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // qui pilote, `v1-35` étape 4, `20261023174656_la_purge_attend_une_saison.sql`) : une saison dure environ
 // 91 jours, et Ramille promet d'être là à chacune. Deux phrases : ce que devient une session jamais
 // rattachée, et la liste des durées.
+//
+// **Et le même jour, la page d'accueil du site** (`v1-35` étape 5) : la racine du web présente le produit
+// sans ouvrir de session, et la phrase qui nomme les pages qui n'en créent pas la compte. Même date.
 const UPDATED_AT = '23 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -430,8 +434,8 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Dès l’ouverture de l’application, une session anonyme est créée pour que ton bilan puisse être enregistré et te ' +
-          'revenir si tu fermes puis rouvres l’app. Lire cette page, les conditions d’utilisation, la page de ' +
-          'suppression de compte ou celle qui coupe les rappels n’en crée pas. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
+          'revenir si tu fermes puis rouvres l’app. Lire cette page, la page d’accueil du site, les conditions ' +
+          'd’utilisation, la page de suppression de compte ou celle qui coupe les rappels n’en crée pas. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
           'numéro de téléphone — sauf l’adresse que tu saisis pour recevoir un code, gardée même si tu ne vas pas au ' +
           'bout, jusqu’à ce que tu la confirmes, en saisisses une autre ou que la session soit supprimée. Comme toute ' +
           'session, elle garde l’adresse IP et l’appareil de sa dernière utilisation, et l’identifiant de ' +

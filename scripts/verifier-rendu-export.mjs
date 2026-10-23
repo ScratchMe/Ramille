@@ -108,8 +108,16 @@ const DIST = process.argv[2] ?? 'dist';
 // un texte reviendrait soit à figer une copie d'erreur, soit à faire échouer la CI pour une
 // raison étrangère au rendu. La page doit seulement ne pas être vide, et c'est bien ce que ce
 // garde-fou protège.
+//
+// **La racine du web a un marqueur depuis le 23/10/2026** : elle n'ouvre plus de session, elle restaure
+// celle de l'appareil — sans réseau —, et un navigateur neuf y voit la page d'accueil, configuration
+// factice ou non. « Sans compte, sans publicité » est un titre de section qu'elle seule porte (le titre de
+// la page est aussi celui de l'onboarding). Éprouvé le 23/10/2026, sur un export où la racine du web mène à
+// l'onboarding (`destinationSurLaPlateforme` sans sa condition) : une ligne ici, « / : « Sans compte, sans
+// publicité » est absent de la page », et une dans `verifier-etats-export.mjs` (section M), l'onboarding
+// ouvrant la session.
 const ROUTES = [
-  { chemin: '/', marqueur: null },
+  { chemin: '/', marqueur: 'Sans compte, sans publicité' },
   { chemin: '/onboarding', marqueur: 'Moi, c’est Ramille' },
   { chemin: '/confidentialite', marqueur: 'Politique de confidentialité' },
   { chemin: '/conditions', marqueur: 'Conditions d’utilisation' },
@@ -220,6 +228,31 @@ for (const [fonction, options] of Object.entries(configVercel.functions ?? {})) 
           ' La Function se déploierait sans cet asset et échouerait à l’exécution en ENOENT,' +
           ' derrière un FUNCTION_INVOCATION_FAILED sans détail côté client.',
       );
+    }
+  }
+}
+
+// Puis le film de la page d'accueil (23/10/2026, étape 5 de `v1-35`) : **ce que `public/` porte disparaît de
+// l'export sans erreur** (`EXPO.md` §1.1), et la page servirait alors une vidéo et une affiche en 404, sous un
+// cadre vide. Chaque adresse `/film/…` que `src/constants/accueil.ts` cite doit être dans l'export, octet pour
+// octet comme dans `public/film/`. Éprouvé le 23/10/2026 : une affiche retirée de l'export → une ligne,
+// « … manque dans l'export » ; une adresse de `accueil.ts` changée en un nom qui n'existe pas → une ligne,
+// « … n'existe pas dans public/film/ ».
+{
+  const adresses = [...readFileSync('src/constants/accueil.ts', 'utf8').matchAll(/'(\/film\/[^']+)'/g)].map((m) => m[1]);
+  if (adresses.length === 0) {
+    echecs.push('film : src/constants/accueil.ts ne cite plus aucune adresse /film/… — la garde ne lirait plus rien.');
+  }
+  const empreinte = (fichier) => createHash('md5').update(readFileSync(fichier)).digest('hex');
+  for (const adresse of adresses) {
+    const source = join('public', adresse);
+    const exporte = join(DIST, adresse);
+    if (!existsSync(source)) {
+      echecs.push(`film : ${adresse}, cité par src/constants/accueil.ts, n’existe pas dans public/film/.`);
+    } else if (!existsSync(exporte)) {
+      echecs.push(`film : ${adresse} manque dans l’export (${DIST}) — la page d’accueil le chargerait en 404.`);
+    } else if (empreinte(source) !== empreinte(exporte)) {
+      echecs.push(`film : ${adresse} n’est pas, dans l’export, le fichier de public/film/.`);
     }
   }
 }
@@ -470,5 +503,5 @@ console.log(
     ` ${choixInspectes} choix annonçant leur état.` +
     ' vercel.json : cleanUrls en place, assets des Functions présents, cache immuable limité aux' +
     ' fichiers hachés (tous), CSP appliquée sans infraction et scripts écrits en dur couverts par' +
-    ' leur empreinte.'
+    ' leur empreinte. Le film de la page d’accueil est dans l’export, tel que public/film/ le porte.'
 );

@@ -86,7 +86,8 @@ export function LegalPage({
             {/* Les pages légales sont les surfaces publiques du produit : les URL de deux d'entre
                 elles sont données à Google Play et à l'écran de consentement Google, et toutes se
                 lisent hors app, sans session. C'est donc le seul endroit où un pied de page a du sens
-                — les écrans du parcours n'en ont pas, et la racine n'est qu'une redirection.
+                — les écrans du parcours n'en ont pas —, avec celui de la page d'accueil du web
+                (`src/components/accueil/page-d-accueil.tsx`, 23/10/2026).
 
                 `Link` et pas `Pressable` : react-native-web rend un `onPress` en `<div>`, qui
                 n'est pas un lien pour un crawler. Le nom en toute lettre sert d'ancre. */}

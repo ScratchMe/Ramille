@@ -2693,8 +2693,17 @@ async function attendreLeTexte(page, texte) {
 // sur un export où `/licences` est retirée de `SURFACES_SANS_COMPTE` (`src/types/session.ts`) : le script sort 1
 // avec une seule ligne, « M : /licences, ouverte à froid, a demandé une session anonyme » — les cinq autres
 // surfaces et le témoin restent verts.
+//
+// **Et la racine du web depuis le 23/10/2026** (étape 5 de `v1-35`) : c'est la page d'accueil, qui n'est pas
+// une surface sans compte (l'écran de reconnexion s'y pose sur un refus) mais n'ouvre pas de session non
+// plus — un navigateur neuf y lit la présentation du produit. Elle s'ajoute aux pages mesurées, sous son
+// propre nom. Éprouvé le 23/10/2026, sur un export où `laSessionSOuvreSur` rend vrai à la racine du web (la
+// condition retirée) : une seule ligne, « M : / (la page d'accueil), ouverte à froid, a demandé une session
+// anonyme » — les six surfaces et le témoin restent verts.
 {
   const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/status'];
+  const SANS_SESSION_OUVERTE = [...SURFACES_SANS_COMPTE, '/'];
+  const nommer = (chemin) => (chemin === '/' ? '/ (la page d’accueil)' : chemin);
   const cle = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null;
   const dossierDuBundle = join(DIST, '_expo', 'static', 'js', 'web');
   let cleDansLeBundle = false;
@@ -2744,16 +2753,16 @@ async function attendreLeTexte(page, texte) {
     if (cleDansLeBundle && !temoin.requetes.some(versCloudflare)) {
       echecs.push('M : le témoin `/onboarding` n’a pas chargé le captcha, alors que l’export porte une clé de site.');
     }
-    for (const chemin of SURFACES_SANS_COMPTE) {
+    for (const chemin of SANS_SESSION_OUVERTE) {
       const { requetes, voile } = await ouvrirAFroid(chemin);
       if (requetes.some(demandeUneSession)) {
         echecs.push(
-          `M : ${chemin}, ouverte à froid, a demandé une session anonyme — un compte créé pour qui ne fait que` +
+          `M : ${nommer(chemin)}, ouverte à froid, a demandé une session anonyme — un compte créé pour qui ne fait que` +
             ' lire (`laSessionSOuvreSur`, `src/types/session.ts`).'
         );
       }
       if (requetes.some(versCloudflare) || voile) {
-        echecs.push(`M : ${chemin}, ouverte à froid, a chargé le captcha de Cloudflare.`);
+        echecs.push(`M : ${nommer(chemin)}, ouverte à froid, a chargé le captcha de Cloudflare.`);
       }
     }
   } catch (erreur) {
@@ -2761,8 +2770,8 @@ async function attendreLeTexte(page, texte) {
   }
   console.log(
     cleDansLeBundle
-      ? `M : ${SURFACES_SANS_COMPTE.length} surfaces sans compte mesurées à froid, session et captcha.`
-      : `M : ${SURFACES_SANS_COMPTE.length} surfaces sans compte mesurées à froid ; l’export ne porte pas de clé` +
+      ? `M : ${SURFACES_SANS_COMPTE.length} surfaces sans compte et la page d’accueil mesurées à froid, session et captcha.`
+      : `M : ${SURFACES_SANS_COMPTE.length} surfaces sans compte et la page d’accueil mesurées à froid ; l’export ne porte pas de clé` +
           ' de site, donc le captcha s’y lit par l’absence de demande de session, seul appel qui le charge.'
   );
 }

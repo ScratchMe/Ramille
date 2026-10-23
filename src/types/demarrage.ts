@@ -127,8 +127,61 @@ export type Destination =
   | { vers: 'reprise' }
   /** La présentation du produit, qui n'affirme rien et marche sans réseau. */
   | { vers: 'onboarding' }
+  /** La page d'accueil du web, rendue par la racine elle-même (`destinationSurLaPlateforme`). */
+  | { vers: 'accueil' }
   /** L'écran technique, destiné à être recopié. */
   | { vers: 'echec' };
+
+/**
+ * **Ce que la lecture rendrait sans session : aucun bilan** (23/10/2026). La racine du web n'ouvre pas
+ * de session (`laSessionSOuvreSur`, `src/types/session.ts`) : sans session restaurée, elle ne lit rien,
+ * et ce que le serveur aurait répondu à une session neuve est connu d'avance. Écrit comme une lecture
+ * réussie plutôt que comme une coupure : une coupure laisserait décider la marque locale de bilan, qui
+ * enverrait au plan un appareil sans session.
+ */
+export const LECTURE_SANS_SESSION: LectureDuBilan = { etat: 'lue', bilanComplete: false };
+
+/**
+ * **Le brouillon décide-t-il de la destination ?** (23/10/2026, contre-lecture de l'étape 5.) Oui, sauf à la
+ * racine du web sans session, quand les marques de l'appareil ont déjà un propriétaire : ce brouillon est
+ * celui d'une session partie — purgée, ou dont le jeton a été effacé —, et la règle de #319 veut que les
+ * marques d'un compte ne passent pas au suivant. Quand la racine ouvrait la session, la conciliation les
+ * balayait avant qu'on lise le brouillon ; la racine du web n'ouvre plus rien, donc elle le lit, et il
+ * enverrait au questionnaire de quelqu'un d'autre sur un navigateur partagé. **Sans propriétaire noté**, le
+ * brouillon est celui du visiteur — un questionnaire commencé hors ligne, avant toute session — et il
+ * décide comme avant.
+ */
+export function leBrouillonCompte(local: {
+  brouillon: boolean;
+  sansSession: boolean;
+  marquesAvecProprietaire: boolean;
+}): boolean {
+  return local.brouillon && !(local.sansSession && local.marquesAvecProprietaire);
+}
+
+/**
+ * **La première page de l'onboarding, selon d'où l'on vient** (décidé le 23/10/2026). Depuis la page
+ * d'accueil du web (`?depuis=accueil`), la première page — l'accroche, « Découvrir mon impact », « Pas de
+ * compte à créer pour commencer » — redirait ce que la page d'accueil vient de dire : l'onboarding s'ouvre
+ * sur la deuxième. Partout ailleurs, sur la première, comme avant.
+ */
+export function premierePageDeLOnboarding(depuis: string | string[] | undefined): number {
+  return depuis === 'accueil' ? 1 : 0;
+}
+
+/**
+ * **Sur le web, la présentation du produit est la page d'accueil, et elle vit à la racine** (23/10/2026,
+ * étape 5 de `docs/architecture/v1-35-l-audit-en-chantiers.md`). Qui n'a ni bilan ni questionnaire en
+ * cours la voit à l'adresse du site, et son bouton mène à l'onboarding ; qui en a un va comme avant au
+ * plan ou au questionnaire — décidé par la personne qui pilote le 23/10/2026 : la page d'accueil donne
+ * envie à qui ne connaît pas Ramille, et un retour ne paie pas un clic de plus.
+ *
+ * Sur natif, rien ne change : l'onboarding est le premier écran, et il n'y a pas de page d'accueil.
+ */
+export function destinationSurLaPlateforme(destination: Destination, plateforme: Plateforme): Destination {
+  if (plateforme === 'web' && destination.vers === 'onboarding') return { vers: 'accueil' };
+  return destination;
+}
 
 /**
  * La table de décision de `v1-15` §6, et elle est écrite pour être un test.

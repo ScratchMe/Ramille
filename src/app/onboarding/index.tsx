@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   Dimensions,
@@ -17,6 +18,8 @@ import { ThemedView } from '@/components/themed-view';
 import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { track } from '@/lib/analytics';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
+import { revenirOu } from '@/lib/navigation';
+import { premierePageDeLOnboarding } from '@/types/demarrage';
 
 // Onboarding — les quatre étapes dans un seul écran qui se balaie au doigt (issue #68).
 //
@@ -78,12 +81,30 @@ export default function Onboarding() {
   const [index, setIndex] = useState(0);
   const vues = useRef(new Set<string>());
 
+  // **Depuis la page d'accueil du web, l'onboarding s'ouvre à sa deuxième page** (décidé le 23/10/2026,
+  // `premierePageDeLOnboarding`) : la première redirait ce que la page d'accueil vient de dire. L'index part
+  // de 0 des deux côtés — le HTML exporté ne connaît pas l'adresse, et l'hydratation n'adopterait pas une
+  // autre page —, puis le pager se pose sur la sienne dès que la largeur est connue, sans animation : le
+  // défilement fait suivre l'index (`surDefilement`). **Tant qu'il n'y est pas, rien ne compte** : ni la
+  // vue d'une étape que personne n'a vue, ni le focus.
+  const { depuis } = useLocalSearchParams<{ depuis?: string }>();
+  const premiere = premierePageDeLOnboarding(depuis);
+  const enPlace = useRef(premiere === 0);
   useEffect(() => {
+    if (enPlace.current || width <= 0) return;
+    defilement.current?.scrollTo({ x: premiere * width, animated: false });
+  }, [premiere, width]);
+
+  useEffect(() => {
+    if (!enPlace.current) {
+      if (index < premiere) return;
+      enPlace.current = true;
+    }
     const etape = ETAPES[index];
     if (!etape || vues.current.has(etape)) return;
     vues.current.add(etape);
     track('onboarding_step_view', { step: etape });
-  }, [index]);
+  }, [index, premiere]);
 
   // **Le focus suit la page, sinon il se perd** (24/09/2026, `v1-29`). « Continuer » rend inerte
   // la page qui le porte (voir `propsDePage` plus bas) : le bouton qui avait le focus sort de
@@ -103,10 +124,11 @@ export default function Onboarding() {
   const titreContexte = useRef<unknown>(null);
   const titreReassurance = useRef<unknown>(null);
   const titreTransition = useRef<unknown>(null);
-  const pageDuFocus = useRef(index);
+  // La page où l'on arrive, et non 0 : se poser sur la deuxième n'est pas un geste à suivre du focus.
+  const pageDuFocus = useRef(premiere);
 
   useEffect(() => {
-    if (pageDuFocus.current === index) return;
+    if (!enPlace.current || pageDuFocus.current === index) return;
     pageDuFocus.current = index;
     donnerLeFocus([titreAccroche, titreContexte, titreReassurance, titreTransition][index]?.current);
   }, [index]);
@@ -160,7 +182,9 @@ export default function Onboarding() {
   // écrivait à la main en était le modèle, et il n'y a plus qu'une façon de le faire dans le dépôt. La
   // page 1 donne `null`, donc le retour passe à la navigation — c'est ce qui quitte l'app au premier
   // lancement, et ce que la règle de `v1-11` §8 demande.
-  useRetourVersLaPhasePrecedente(index > 0 ? () => allerA(index - 1) : null);
+  // Depuis la page d'accueil, la page où l'on arrive est la deuxième : le retour y passe à la navigation,
+  // qui ramène à la page d'accueil, au lieu de montrer la page qu'on a sautée.
+  useRetourVersLaPhasePrecedente(index > premiere ? () => allerA(index - 1) : null);
 
   // `onScroll` et non `onMomentumScrollEnd` : ce dernier n'existe pas sur web, où le geste
   // s'appuie sur le scroll-snap du navigateur. On arrondit à la page la plus proche ; React
@@ -288,7 +312,7 @@ export default function Onboarding() {
               déplace — l'effet plus haut. */}
           <EtapeContexte
             onSuivant={() => allerA(2)}
-            onPrecedent={() => allerA(0)}
+            onPrecedent={premiere === 1 ? () => revenirOu('/') : () => allerA(0)}
             titre={{ ref: titreContexte, ...FOCALISABLE_PAR_PROGRAMME }}
           />
         </ScrollView>

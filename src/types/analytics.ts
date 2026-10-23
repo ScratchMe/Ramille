@@ -41,6 +41,7 @@ import type { EtapeSoumission, GenreErreurSoumission } from '@/types/soumission'
 import type { ContexteDuCode } from '@/types/connexion';
 // La règle qui dit sur quelle route la session s'ouvre, pure elle aussi : le rattrapage de l'ouverture
 // la relit au lieu d'en tenir une seconde liste des surfaces sans compte.
+import type { Plateforme } from '@/types/rappels';
 import { laSessionSOuvreSur } from '@/types/session';
 
 export const USAGE_EVENT_NAMES = [
@@ -114,7 +115,7 @@ export type SourceConnexion = (typeof SOURCES_CONNEXION)[number];
 // **Et le même défaut vivait à quatre autres portes pendant que ce commentaire le décrivait**
 // (relevé le 20/09/2026, en relisant le dépôt entier). C2.11 en a ouvert trois — les deux états
 // vides du plan et celui du suivi — et `SessionRefusee` la quatrième ; aucune ne passait de
-// `source`, donc les quatre étaient comptées comme venant de l'accueil de l'onboarding, sur leurs
+// `source`, donc les quatre étaient comptées comme venant de la première page de l'onboarding, sur leurs
 // **deux** dimensions (`collision` étant faux dans les deux cas). Celle qui coûtait le plus cher :
 // `rappel`, quelqu'un qui ouvre le rappel e-mail sur un appareil neuf — c'est-à-dire le chiffre
 // que C2.11 existe pour produire, rendu indiscernable d'une découverte.
@@ -127,8 +128,15 @@ export type SourceConnexion = (typeof SOURCES_CONNEXION)[number];
 // `retrouver_send` partis de cet écran ne s'enregistrent pas, et aucun autre événement ne porte cette
 // source : un succès de reconnexion n'est pas mesuré. Ne pas lire un zéro ici comme « aucun refus » ;
 // le mesurer demanderait un événement de plus (une migration, `MESURE.md`).
+//
+// **Et `accueil`, la neuvième** (23/10/2026, étape 5 de `v1-35`) : « J'ai déjà un compte » de la page
+// d'accueil du web, la racine du site. Distincte d'`onboarding` (la première page de l'onboarding, sur
+// natif comme sur le web) : la page d'accueil n'existe que sur le web, et l'onboarding y vient après
+// elle. **Sa vue ne se perd pas** alors que la page n'ouvre pas de session à la lecture : son geste l'ouvre
+// avant de mener à la retrouvaille (`allerVers`, `src/app/index.tsx`), comme la racine native avant de router.
 export const SOURCES_RETROUVER = [
   'onboarding',
+  'accueil',
   'email',
   'google',
   'lien',
@@ -460,8 +468,11 @@ export function rattraperLOuverture(etat: {
   dejaComptee: boolean;
   /** La route affichée quand la session arrive. */
   chemin: string;
+  plateforme: Plateforme;
 }): boolean {
-  return etat.session && etat.montageSansSession && !etat.dejaComptee && laSessionSOuvreSur(etat.chemin);
+  return (
+    etat.session && etat.montageSansSession && !etat.dejaComptee && laSessionSOuvreSur(etat.chemin, etat.plateforme)
+  );
 }
 
 /**

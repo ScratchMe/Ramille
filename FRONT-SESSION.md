@@ -71,6 +71,17 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   la session de l'appareil, et le layout ouvre la session dès qu'on en sort pour l'app. Un écran
   ajouté à cette liste ne doit rien lire qui demande une session, ni rien écrire sans
   `ensureSession()` avant ; un écran qui écrit n'y entre pas (`/feedback`).
+- **La racine du web restaure, elle n'ouvre pas** (23/10/2026, `COMPTE.md` §1) : c'est la page d'accueil,
+  pour qui n'a ni bilan ni questionnaire en cours. `src/app/index.tsx` appelle `restaurerLaSession()` sur le
+  web et `ensureSession()` sur natif, d'après `laSessionSOuvreSur('/', plateforme)` ; une absence de session
+  y rend `sansSession` (`suiteDuDemarrage`), dont la lecture est connue sans aller-retour
+  (`LECTURE_SANS_SESSION` : aucun bilan) — et non un repli, où la marque locale de bilan enverrait au plan un
+  navigateur sans session. **Le HTML exporté de la racine reste l'écran de lancement** : la page d'accueil ne
+  s'affiche qu'une fois la session restaurée, pour que qui revient ne la voie pas le temps de charger l'app.
+  **La session s'ouvre au geste qui quitte la page d'accueil** (`allerVers`), avant de naviguer : le refus du
+  captcha y garde son écran, et l'onboarding — ouvert à sa deuxième page, `premierePageDeLOnboarding` — arrive
+  avec sa session. Sans session, un brouillon dont les marques ont un propriétaire ne décide pas
+  (`leBrouillonCompte`).
 - **Une absence de jeton n'accuse personne : c'est la permission qui le dit.** L'absence recouvre
   quatre situations — jamais demandée, refusée, enregistrement échoué, simulateur — qui n'appellent
   pas la même phrase. `lignesDeReglage` **et** `carteAttente` (`src/types/rappels.ts`) reçoivent

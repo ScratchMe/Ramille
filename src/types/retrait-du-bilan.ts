@@ -72,8 +72,8 @@ export type ConfirmationDuRetrait = {
  *     apparaît plus — vrai des trois côtés, d'où la phrase commune ;
  *   - le plan : reconstruit pour `dernier`, intact pour `ancien`, absent pour `seul` — trois phrases,
  *     et la troisième ne le nomme pas ;
- *   - la suite pour `seul` : la racine route vers l'onboarding, ou vers la reprise d'un questionnaire
- *     commencé — « tu repartiras d'un nouveau bilan » est vrai des deux, là où « tu reviendras à
+ *   - la suite pour `seul` : la racine route vers l'onboarding (sur le web, la page d'accueil, depuis le
+ *     23/10/2026), ou vers la reprise d'un questionnaire commencé — « tu repartiras d'un nouveau bilan » est vrai des deux, là où « tu reviendras à
  *     l'accueil » serait faux du second.
  *
  * **Et, dans le cas `dernier`, le sort de l'action engagée** (décidé le 27/09/2026 par la
@@ -213,7 +213,8 @@ export function issueDuRetrait(reponse: {
  * Où va l'écran une fois le bilan retiré.
  *
  *   - **`racine`** quand il ne reste aucun bilan valide (D3) : la racine ne trouve plus de bilan
- *     complété et route vers l'onboarding — ou vers la reprise d'un questionnaire commencé. C'est
+ *     complété et route vers l'onboarding (sur le web, la page d'accueil) — ou vers la reprise d'un
+ *     questionnaire commencé. C'est
  *     aussi là que l'appelant **efface la marque locale** `traceverte.a_un_bilan.v1` : sans ça, une
  *     réouverture hors ligne enverrait au plan (C4.5) ;
  *   - **`sur_place`** sinon : la restitution rend l'état « retiré », qui confirme le geste et mène au

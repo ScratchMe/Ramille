@@ -21,6 +21,9 @@ const TYPES = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
+  // Le film de la page d'accueil (`public/film/`, 23/10/2026) : Vercel le sert en `video/mp4`, et le parcours
+  // réel vérifie le type. Sans cette ligne, le serveur des gardes le servait en `application/octet-stream`.
+  '.mp4': 'video/mp4',
 };
 
 /**

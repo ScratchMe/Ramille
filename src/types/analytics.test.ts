@@ -93,7 +93,7 @@ describe('USAGE_EVENT_NAMES', () => {
 // une surface sans compte… », seul. Ce que ce bloc ne voit pas : que le layout appelle la décision depuis
 // son écoute d'auth, avec la route affichée — aucun test ne monte le layout racine.
 describe('rattraperLOuverture', () => {
-  const ARRIVEE = { session: true, montageSansSession: true, dejaComptee: false, chemin: '/plan' };
+  const ARRIVEE = { session: true, montageSansSession: true, dejaComptee: false, chemin: '/plan', plateforme: 'natif' as const };
 
   it('rattrape l’ouverture quand la session arrive après un montage qui n’en a pas eu', () => {
     expect(rattraperLOuverture(ARRIVEE)).toBe(true);
@@ -114,6 +114,16 @@ describe('rattraperLOuverture', () => {
     expect(rattraperLOuverture({ ...ARRIVEE, chemin: '/compte/suppression' })).toBe(false);
     expect(rattraperLOuverture({ ...ARRIVEE, chemin: '/confidentialite/' })).toBe(false);
     expect(rattraperLOuverture({ ...ARRIVEE, chemin: '/' })).toBe(true);
+  });
+
+  // 23/10/2026 : la racine du web est la page d'accueil, qui n'ouvre pas de session. Une session qui y
+  // arrive (ouverte dans un autre onglet) n'y compte pas d'ouverture ; c'est en entrant dans l'app — un
+  // pas vers l'onboarding — qu'elle se rattrape. Sur natif, la racine reste une route de l'app. Les
+  // mutations qui le font tomber sont consignées avec `laSessionSOuvreSur`, dans `session.test.ts`.
+  it('ne rattrape rien sur la page d’accueil du web, et rattrape dès qu’on entre dans l’app', () => {
+    expect(rattraperLOuverture({ ...ARRIVEE, plateforme: 'web', chemin: '/' })).toBe(false);
+    expect(rattraperLOuverture({ ...ARRIVEE, plateforme: 'web', chemin: '/onboarding' })).toBe(true);
+    expect(rattraperLOuverture({ ...ARRIVEE, plateforme: 'natif', chemin: '/' })).toBe(true);
   });
 });
 
@@ -246,7 +256,7 @@ describe('sourceRetrouver', () => {
   // 20/09/2026 elle vivait dans `/connexion/retrouver` sous la forme d'une **seconde liste écrite
   // à la main** — `if (source === 'email') …` sur trois valeurs — et l'écran n'étant pas testé,
   // rien ne pouvait dire qu'elle avait manqué les quatre portes ouvertes par C2.11. Les quatre
-  // arrivées étaient donc comptées comme venant de l'accueil de l'onboarding.
+  // arrivées étaient donc comptées comme venant de la première page de l'onboarding.
   //
   // Cette boucle est ce qui l'aurait vu : elle tombe dès que le garde cesse d'être **dérivé** de
   // la liste, quelle que soit la valeur oubliée.
@@ -256,7 +266,7 @@ describe('sourceRetrouver', () => {
     }
   });
 
-  it('retombe sur l’accueil pour une porte absente ou inconnue', () => {
+  it('retombe sur la première page de l’onboarding pour une porte absente ou inconnue', () => {
     // Un lien direct, un retour arrière : mieux vaut compté sur le chemin historique que perdu.
     expect(sourceRetrouver(undefined)).toBe('onboarding');
     expect(sourceRetrouver('')).toBe('onboarding');

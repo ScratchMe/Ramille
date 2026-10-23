@@ -32,7 +32,7 @@
 | 2 | **Mentions légales et conservation** : écran des licences, âge minimum, mentions légales, durée de conservation des adresses IP de session, journal d'audit d'Auth après suppression | Deux, posées en chemin : **aucun âge** dans les conditions, et l'**adresse IP d'une session effacée après 90 jours** sans servir (tranchées le 22/10/2026) | Écran neuf, conditions, migration, page de confidentialité, registre | **Livrée le 22/10/2026** (#384). Les mentions légales étaient déjà justes (audit du 18/10/2026) ; le journal d'Auth est vide sur la production (registre, E7). L'écran des licences ne couvre pas les dépendances Gradle (§3) |
 | 3 | **Le périmètre du bilan** | Oui : libellés élargis sur une étape, ou deux étapes. **Tranchée le 22/10/2026 : une étape**, des libellés qui disent la semaine et le week-end, et une cinquième réponse, « Presque tous les jours » (5 sorties par semaine). La question : « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en semaine ? » — l'ordre inversé après coup, pour ne pas couper « week-end » au milieu (`FRONT-QUESTIONNAIRE.md`). Le poste s'appelle « Loisirs » | Questionnaire, calcul, méthodologie, kit, recettes (`v1-13` §11.39) | **Livrée le 22/10/2026** (#386). Migration `20261022201848`, appliquée en production avant la fusion ; test `60`. Le kit suit ; le film, non diffusé, attend l'étape 5 (§4) |
 | 4 | **Le web et l'iPhone** : le compte comme condition des rappels sur le web ; la purge des sessions anonymes à 120 jours | Une, posée en chemin le 23/10/2026 : **une feuille, une seule fois**, au premier engagement sur le web sans compte — « Sur le web, je ne peux te faire signe que par email. Rattache ton adresse pour recevoir le rappel. » (« Rattacher mon adresse », « Plus tard ») ; pas chez qui a déjà choisi « Sans rappel » | Feuille des rappels, migration, registre, confidentialité, conditions | **Livrée le 23/10/2026** (#387). Migration `20261023174656` (purge), appliquée en production avant la fusion ; test `61` ; recette web `v1-13` §11.W.10 |
-| 5 | **La page d'accueil du web**, avec le film | Oui : ce que voit quelqu'un qui revient ; la phrase « pas de série » du film face à « deuxième semaine de suite » | Route racine du web, export du film, titre | À faire |
+| 5 | **La page d'accueil du web**, avec le film | Quatre, **tranchées le 23/10/2026** : qui revient avec un bilan ou un questionnaire en cours **va directement à son plan** ; « Pas de série » **reste** à côté de « Deuxième semaine de suite… », qui ne se dit qu'une fois et ne compte rien — à rouvrir à l'étape 6a ; **sous le film, une ligne** : « Sur Android, Ramille te fait signe par notification ; sur le web, par email. » ; et, posée en chemin sur la contre-lecture, **depuis la page d'accueil l'onboarding s'ouvre à sa deuxième page** (« 9,5 tonnes en moyenne, 2 tonnes visées en 2050 »), la première redisant la page d'accueil | Racine du web, session ouverte au geste, mesure, onboarding, film (loisirs et écran du plan repris, `public/film/`), confidentialité, recette web (`v1-13` §11.W.11) | **Livrée le 23/10/2026** (#388). Migration `20261023233954` (la porte `accueil`), appliquée en production avant la fusion ; test `62` ; recette web `v1-13` §11.W.11 |
 | 6a | **Le progrès visible : le chiffre** | Oui : un « oui » ne dit pas combien de fois, et `v1-23` §3.2 refuse un second chiffre concurrent du bilan | Plan, suivi | À faire |
 | 6b | **Répondre au point depuis l'e-mail** | Non | Gabarit, page de confirmation (les antivirus de messagerie cliquent sur les liens) | À faire |
 | 6c | **Répondre au point depuis la notification Android** | Non | Natif : un build EAS | À faire |
@@ -64,7 +64,21 @@
 - **Étape 3, sur appareil** : `v1-13` §11.39 — les cinq rangées sur Android, la coupure du titre, et le
   préremplissage de « Presque tous les jours » sur un build d'avant le 22/10/2026. Elle attend le prochain
   build EAS.
-- **Étape 3, le film** : il montre encore l'ancienne étape des loisirs. Il n'est pas diffusé ; il se reprend
-  avant la diffusion, avec l'écran du plan (`docs/communication/le-fil-de-ramille/README.md`), donc à
-  l'étape 5 au plus tard.
+- **Étape 3, le film** : repris à l'étape 5, le 23/10/2026, avec l'écran du plan
+  (`docs/communication/le-fil-de-ramille/README.md`).
+- **Étape 5, ce que la page d'accueil ne fait pas, et pourquoi** :
+  - **son HTML exporté reste l'écran de lancement** : la page ne s'affiche qu'une fois la session restaurée,
+    pour que qui revient ne la voie pas le temps de charger l'app. Un robot qui n'exécute pas de JavaScript ne
+    lit donc que le titre et la description de la page (`page-titles.ts`) ; Google, qui l'exécute, lit la
+    page. À rouvrir si une vérification (l'écran de consentement de Google, un moteur) demande le contenu dans
+    le HTML : il faudrait un script en tête qui reconnaisse une session avant la première image, et son
+    empreinte dans la CSP ;
+  - **une visite qui reste sur la page d'accueil ne se mesure pas** : elle n'ouvre pas de session, et la
+    mesure en demande une. L'entonnoir du web commence à « Découvrir mon impact » (`MESURE.md`) ;
+  - **le film n'a pas le badge de Google Play** : il viendra à la publication, et le film se réexporte vers
+    `public/film/` ce jour-là (`docs/exploitation/README.md` §4) ;
+  - **les écrans du questionnaire du film gardent des écarts d'avant le 03/10/2026** — des titres en 22 au lieu
+    de 26, des rangées un peu moins hautes, les lignes d'aide omises (README du film). Ses textes et ses
+    chiffres sont ceux de l'app ; sa mise en page de ces quatre écrans, pas tout à fait. À reprendre au
+    prochain export, celui du badge.
 - **Étape 3, la coupure du titre à 430 de large** : au relevé de la dette (`v1-27` §12.42).

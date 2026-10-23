@@ -161,6 +161,14 @@ d'arrivée, purgés compris (sans eux, la purge fait paraître une cohorte plus 
 et ni l'activation ni un taux de churn ne sont calculés — la première est une décision de produit,
 le second demanderait un effectif passé que le régime ne sait pas reconstruire.
 
+**Une seconde rupture, au déploiement de la page d'accueil du web** (23/10/2026, étape 5 de `v1-35`) : la
+racine du site n'ouvre plus de session, donc une visite qui s'arrête à la page d'accueil ne crée plus de compte
+anonyme et ne compte plus d'ouverture (`app_open`) ; l'entonnoir web commence désormais à « Découvrir mon
+impact », qui ouvre la session avant de mener à l'onboarding (`allerVers`) — l'onboarding et la retrouvaille
+arrivent donc avec elle, et leurs vues se comptent. Les arrivées du web baissent à cette date sans que personne
+ne soit parti. **Et l'onboarding du web s'ouvre à sa deuxième page** (décidé le 23/10/2026) : `accroche` n'y est
+plus vue, et l'entonnoir du web commence à `contexte` — une `accroche` qui manque n'y est pas un abandon.
+
 **Une rupture de série, au déploiement des surfaces sans compte** (18/10/2026) : `/confidentialite`,
 `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'ouvrent plus de session, donc
 l'entonnoir, la rétention et `purges_par_cohorte` perdent les arrivées qu'une lecture de ces pages

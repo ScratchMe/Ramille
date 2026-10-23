@@ -30,7 +30,7 @@ sont dans `SUPABASE.md` : §1.1 pour ceux qui voyagent, §2.4 pour ceux de Ramil
 faisait déjà tout le travail. Le seul chemin **délibéré** vers un compte existant (nouvel appareil) est
 `demanderLaConnexion` (`signInWithOtp` avec `shouldCreateUser: false` — elle s'appelait
 `sendAccountAccessLink` tant qu'elle envoyait un lien), écran
-`/connexion/retrouver`, atteignable depuis l'accueil de l'onboarding (« J'ai déjà un compte »)
+`/connexion/retrouver`, atteignable depuis la première page de l'onboarding (« J'ai déjà un compte »)
 et depuis le lien du même nom sur le formulaire de `/connexion/email`. Trois règles gardées par
 `src/types/connexion.ts` : une adresse inconnue
 (`422 otp_disabled`) mène au **même** écran qu'un envoi réussi, sinon l'écran dit qui utilise
@@ -177,6 +177,23 @@ suppression du compte le font —, sans quoi elle se lirait comme un refus, et l
 s'ouvrirait sur un départ choisi. Et **« Commencer un bilan sur cet appareil » efface les marques du
 compte quitté**, comme une déconnexion : ce sont celles d'un autre propriétaire.
 
+**La page d'accueil du web non plus, sans être une surface sans compte** (23/10/2026, étape 5 de `v1-35`). La
+racine du site présente le produit à qui n'a ni bilan ni questionnaire en cours (`destinationSurLaPlateforme`,
+`src/types/demarrage.ts`) ; elle restaure la session de l'appareil, décide d'après elle qu'on revient — et
+envoie alors au plan ou au questionnaire comme avant —, et n'en crée aucune. **La session s'ouvre au geste** :
+« Découvrir mon impact » et « J'ai déjà un compte » appellent `allerVers` (`src/app/index.tsx`), qui ouvre la
+session **puis** navigue, comme la racine native l'ouvre avant de router. C'est ce qui garde au refus du
+captcha son écran (« La vérification n'a pas abouti », et « Réessayer » reprend le geste) — la contre-lecture
+du 23/10/2026 l'a vu se perdre dans le layout quand la session s'ouvrait en arrivant dans l'onboarding —, et ce
+qui fait arriver l'onboarding et la retrouvaille avec leur session : leurs mesures ne partent pas avant elle.
+Une coupure n'arrête pas le geste : l'onboarding se parcourt hors ligne. **L'écran de reconnexion s'y pose
+encore** sur un refus, parce que qui y revient avec une session refusée a un compte : c'est pourquoi la racine
+n'est pas dans `SURFACES_SANS_COMPTE`, et que `laSessionSOuvreSur` prend la plateforme — sur natif, la racine
+ouvre la session comme avant. **Sans session, un brouillon dont les marques ont un propriétaire ne décide
+pas** (`leBrouillonCompte`) : il est celui d'une session partie, que la conciliation aurait balayé (#319).
+Garde : le parcours réel (étape 0 bis, aucun compte né, la vue de la porte comptée) et la section M de
+`verifier-etats-export.mjs`.
+
 **Les surfaces sans compte n'ouvrent pas de session : elles restaurent celle qui est là** (18/10/2026).
 `/confidentialite`, `/conditions`, `/licences` (depuis le 22/10/2026), `/compte/suppression`,
 `/rappels/stop` et `/status` — la liste de `src/types/session.ts` (`SURFACES_SANS_COMPTE`), la même que celle où l'écran de reconnexion ne se pose pas — ne demandent pas de
@@ -266,7 +283,9 @@ au bout de trente secondes — **deux minutes à partir du moment où Cloudflare
 l'écran de lancement, la racine attendant la session —, l'appel part **sans** jeton, et c'est Supabase qui tranche. Avant
 l'activation, il passe. Après, il rend `400 captcha_failed` : les écrans de code le disent
 (`estRefusDuCaptcha`, la phrase de la panne de transport) au lieu d'annoncer un code jamais parti,
-et **au démarrage**, la racine lui donne son propre écran (`issueDeLaSession`, `src/types/demarrage.ts`) :
+et **au démarrage**, la racine lui donne son propre écran (`issueDeLaSession`, `src/types/demarrage.ts`) —
+**sur le web, depuis le 23/10/2026, au geste de la page d'accueil** qui ouvre la session avant d'entrer dans
+l'app (`allerVers`, `src/app/index.tsx`), la racine du web n'en ouvrant plus au chargement (§1) :
 ni le repli hors ligne, ni l'écran technique et le message anglais de GoTrue qu'il recevait d'abord,
 mais « La vérification n'a pas abouti », la cause réaliste selon la plateforme (un bloqueur sur le
 web, le réseau dans l'app) et « Réessayer », qui relance la racine et donc un nouveau widget.
@@ -338,9 +357,10 @@ avant d'y toucher :
 
 ## 2. Retrouver un compte existant
 
-`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **huit**
+`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **neuf**
 endroits, et `SOURCES_RETROUVER` les énumère — le compte ne s'écrit ici que parce que la liste est
-la source, pas ce paragraphe. Quatre sont d'origine : l'accueil de l'onboarding (« J'ai déjà un
+la source, pas ce paragraphe. La neuvième, `accueil`, est le « J'ai déjà un compte » de la page
+d'accueil du web (23/10/2026, §1). Quatre sont d'origine : la première page de l'onboarding (« J'ai déjà un
 compte »), le lien délibéré « J'ai déjà un compte » du formulaire de `/connexion/email` — **et
 non plus l'adresse déjà prise, qui depuis le 21/09/2026 reçoit un code au lieu d'un écran**,
 `v1-28` §7.1 —, `/connexion` sur une collision
@@ -348,7 +368,7 @@ Google, et un lien de connexion arrivé en **échec** (expiré, déjà utilisé)
 route ici avec son motif (`src/app/_layout.tsx`) — un lien valide, lui, ouvre la session et ne
 passe pas par cet écran. **Les quatre autres étaient muettes jusqu'au 20/09/2026** : les deux
 états vides du plan et celui du suivi (ouverts par C2.11) et l'écran de session refusée ne
-passaient aucune provenance, donc le repli les comptait toutes comme l'accueil de l'onboarding.
+passaient aucune provenance, donc le repli les comptait toutes comme la première page de l'onboarding.
 La plus coûteuse était `rappel` — le rappel e-mail ouvert sur un appareil sans session,
 c'est-à-dire le chiffre même que C2.11 existe pour produire. **Et le garde qui les ramenait aux
 valeurs déclarées vivait dans l'écran, avec une seconde liste écrite à la main** ; il est

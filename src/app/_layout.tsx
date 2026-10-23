@@ -52,6 +52,7 @@ import {
 } from '@/lib/supabase';
 import { rattraperLOuverture, SEJOUR_INITIAL, suivreLEtatDeLApp } from '@/types/analytics';
 import { estVerifieurManquant, lireRetourDeLien, type MotifRetourLien } from '@/types/connexion';
+import type { Plateforme } from '@/types/rappels';
 import { gardeDuJeton, laSessionSOuvreSur, lEcranDeReconnexionSePose } from '@/types/session';
 
 SplashScreen.preventAutoHideAsync();
@@ -128,6 +129,8 @@ function retenterLeJeton(): void {
 // partir. Les deux drapeaux vivent hors du composant, comme `ouvertureDejaComptee`.
 let sessionRestauree = false;
 let sessionOuverte = false;
+// La plateforme, pour la règle de session : la racine du web restaure sans ouvrir (`laSessionSOuvreSur`).
+const PLATEFORME: Plateforme = Platform.OS === 'web' ? 'web' : 'natif';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -158,7 +161,7 @@ export default function RootLayout() {
     cheminAffiche.current = chemin;
   }, [chemin]);
   const ecranDeReconnexion = refus && lEcranDeReconnexionSePose(chemin);
-  const laSessionSOuvreIci = laSessionSOuvreSur(chemin);
+  const laSessionSOuvreIci = laSessionSOuvreSur(chemin, PLATEFORME);
 
   // La route d'une panne que le rendu ne voit pas (`src/lib/remontee-des-pannes.ts`) : hors de l'arbre,
   // personne d'autre ne peut la lire.
@@ -227,6 +230,7 @@ export default function RootLayout() {
               montageSansSession,
               dejaComptee: ouvertureDejaComptee,
               chemin: cheminAffiche.current,
+              plateforme: PLATEFORME,
             })
           ) {
             apresLaSessionDuDemarrage();
@@ -344,6 +348,7 @@ export default function RootLayout() {
           montageSansSession,
           dejaComptee: ouvertureDejaComptee,
           chemin: cheminAffiche.current,
+          plateforme: PLATEFORME,
         })
       ) {
         apresLaSessionDuDemarrage();
@@ -358,7 +363,7 @@ export default function RootLayout() {
   // fenêtre Google dont l'app a été tuée entre-temps, et **se taire sur ce que la fenêtre a pris**
   // — sur Android, son retour arrive aussi ici (`estUnRetourDuNavigateurDAuth`, plus bas). Sur
   // web, `detectSessionInUrl` ouvre la session tout seul. Une fois la session ouverte, la racine
-  // route vers le plan ou l'onboarding selon ce que porte le compte retrouvé. Les paragraphes
+  // route vers le plan ou l'onboarding (sur le web, la page d'accueil) selon ce que porte le compte retrouvé. Les paragraphes
   // qui suivent racontent les liens d'e-mail : c'est l'histoire de ce code, et le filet qu'il
   // garde pour un lien parti avant le changement.
   //

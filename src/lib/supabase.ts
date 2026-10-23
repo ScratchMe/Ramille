@@ -170,7 +170,8 @@ if (configurationSupabase.complete && Platform.OS !== 'web') {
 // sur tout ce qui touche au bilan) — cf. docs/architecture/v1-04-authentification.md.
 // Idempotent : ne crée une session anonyme que si aucune session (anonyme ou non)
 // n'existe déjà. Appelée au démarrage (_layout.tsx, en fire-and-forget) — sauf sur une surface
-// sans compte, où le layout ne fait que restaurer (`restaurerLaSession`, plus bas) — et re-vérifiée
+// sans compte et sur la racine du web, où l'on ne fait que restaurer (`restaurerLaSession`, plus bas) ;
+// là, c'est le geste de la page d'accueil qui l'appelle avant d'entrer dans l'app — et re-vérifiée
 // avant toute écriture bilan pour couvrir un démarrage à froid trop rapide ou un
 // deep-link direct vers /bilan.
 //
@@ -344,7 +345,8 @@ async function lireLaSession(): Promise<Session | null> {
 /**
  * **La session de l'appareil, restaurée si elle existe — et rien de créé sinon** (18/10/2026). C'est ce
  * que le layout racine demande sur une surface sans compte (`laSessionSOuvreSur`, `src/types/session.ts`) :
- * la politique de confidentialité ouverte dans un navigateur neuf n'ouvre ni compte anonyme ni captcha.
+ * la politique de confidentialité ouverte dans un navigateur neuf n'ouvre ni compte anonyme ni captcha. Et ce
+ * que la racine du web demande, depuis le 23/10/2026 : la page d'accueil se lit de même.
  * Une session déjà là s'accueille comme dans `ensureSession()` — ses marques, son état —, et un refus se
  * dit de même. Rend la session, ou `null`.
  */

@@ -236,7 +236,7 @@ export default function ConnexionEmail() {
       // raison : les marques locales décrivent celui qu'on quitte — annonce de rattachement, étape
       // du premier parcours (qui décide de la barre d'onglets), brouillon, et l'adresse mémorisée
       // elle-même. La racine route ensuite vers le plan si le compte retrouvé porte un bilan
-      // complété, vers l'onboarding sinon. **Et la pile se vide derrière le flux** (01/10/2026,
+      // complété, vers l'onboarding sinon (sur le web, la page d'accueil). **Et la pile se vide derrière le flux** (01/10/2026,
       // audit T-1, `terminerLeFlux`) : le retour ne ramène plus dans un flux terminé. Le balayage
       // ne se fait que si le compte change, et la reconnexion se note pour la mesure
       // (`apresUneReconnexion`).

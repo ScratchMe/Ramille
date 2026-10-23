@@ -110,7 +110,9 @@ lien du rappel ouvrant l'app et non le navigateur, réponse refermant le point (
 
 **Depuis le 22/10/2026, ce qui reste de l'audit du 18/10/2026 est mis en chantiers dans
 [`v1-35`](v1-35-l-audit-en-chantiers.md)** : une étape à la fois, et certaines commencent par une
-question à la personne qui pilote — la table du document dit lesquelles. Ce qui suit est l'histoire de la feuille de route d'avant.
+question à la personne qui pilote — la table du document dit lesquelles. **Depuis l'étape 5 (23/10/2026), le site
+web s'ouvre sur une page d'accueil** — la fiche Play et le film, pour qui n'a ni bilan ni questionnaire en
+cours ; qui revient va à son plan comme avant. Ce qui suit est l'histoire de la feuille de route d'avant.
 
 **Feuille de route courante : `v1-13-audit-et-chantiers.md`** (audit du 09/09/2026, 283 constats
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une
