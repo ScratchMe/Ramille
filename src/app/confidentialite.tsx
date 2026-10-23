@@ -256,7 +256,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // date de mise à jour.
 //
 // **23/10/2026 : une session anonyme attend 120 jours sans servir, et non plus 90** (décision de la personne
-// qui pilote, `v1-35` étape 4, `20261023090000_la_purge_attend_une_saison.sql`) : une saison dure environ
+// qui pilote, `v1-35` étape 4, `20261023174656_la_purge_attend_une_saison.sql`) : une saison dure environ
 // 91 jours, et Ramille promet d'être là à chacune. Deux phrases : ce que devient une session jamais
 // rattachée, et la liste des durées.
 const UPDATED_AT = '23 octobre 2026';

@@ -152,7 +152,7 @@ describe('ce qu’on perd sans compte', () => {
    * **Il ne bouge qu'avec le fait qu'il dit** : le 23/10/2026, « trois mois » est devenu « 120 jours »
    * parce que la purge des sessions anonymes attend désormais 120 jours — le chiffre, et non « quatre
    * mois », qui en promettait jusqu'à trois de plus (`v1-35` étape 4,
-   * `20261023090000_la_purge_attend_une_saison.sql`). Le reste de la phrase n'a pas changé.
+   * `20261023174656_la_purge_attend_une_saison.sql`). Le reste de la phrase n'a pas changé.
    */
   it('ne retouche pas le texte déjà en production sous la sortie de /connexion', () => {
     expect(PHRASE_SANS_COMPTE_SOUS_LA_SORTIE).toBe(

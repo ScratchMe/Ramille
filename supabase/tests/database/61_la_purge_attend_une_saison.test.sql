@@ -1,6 +1,6 @@
 -- Tests pgTAP : la purge des sessions anonymes attend 120 jours sans signe de vie, et non plus 90
 -- (étape 4 de `docs/architecture/v1-35-l-audit-en-chantiers.md`, migration
--- `20261023090000_la_purge_attend_une_saison.sql`).
+-- `20261023174656_la_purge_attend_une_saison.sql`).
 --
 -- **Ce que ce fichier garde : la frontière elle-même.** `16`, `49` et `51` gardent ce que la purge
 -- fait d'une session muette depuis cent cinquante jours, mais rien n'y distingue 90 de 120 : leurs
