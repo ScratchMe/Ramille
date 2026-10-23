@@ -79,6 +79,20 @@
 // référence de `mesurer()` remettent le cache d'accord. C'est la dernière mutation qui garde la famille.
 // Un libellé long dans un bouton à hauteur fixe qui passe sur deux lignes, lui, tient : ce n'est
 // pas un débordement, et le contrôle ne le relève pas.
+//
+// Rejoué le 23/10/2026, quand l'écran du plan a repris la forme de l'app (le choix des jours à cases, la
+// carte engagée à premier pas et à deux liens, un plan qui défile deux fois). Trois mutations de plus,
+// chacune sur une copie faussée, le témoin à zéro — les cartes sont plus hautes, et c'est ce qui les
+// rend visibles :
+//   - le plan qui ne défile plus pour amener « Je m'y engage » sous le doigt → « appui hors cadre » sur
+//     `c2-engage` aux quatre cas 16:9, et nulle part ailleurs : le téléphone des deux formats portrait
+//     tient entier ;
+//   - le cadre qui coupe pris pour la seule scène (`bas = G.H`) → « coupé par le cadre » sur le choix des
+//     jours et « appui hors cadre » sur « C'est noté », aux six cas portrait et 4:5, où l'écran du
+//     téléphone est le cadre qui coupe — et rien aux quatre cas 16:9 ;
+//   - la position du choix lue par la chaîne des `offset*` (arrondie à chaque niveau) → « coupé par le
+//     cadre » aux cas 16:9 de 1920 et de 1280 de large : il manquait deux pixels de la marge promise.
+//     C'est le défaut que la première version du calcul avait vraiment, vu avant qu'elle ne soit corrigée.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
