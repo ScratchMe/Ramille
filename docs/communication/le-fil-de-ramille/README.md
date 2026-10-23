@@ -300,8 +300,8 @@ date, on maintient pas de score, pas de série, pas de classement. »
    refaire au prochain changement de l'app. **Fait le 23/10/2026**, le jour où le film a reçu sa
    place sur la page d'accueil (« Ce que le film a repris de l'app le 23/10/2026 »).
 
-**Les MP4 de `exporter.mjs` ne sont pas versionnés** : il les rend depuis la source, en un peu plus
-d'une minute par format, dans le dossier temporaire du système — c'est l'export du jour de la
+**Les MP4 de `exporter.mjs` ne sont pas versionnés** : il les rend depuis la source, en quelques
+minutes par format, dans le dossier temporaire du système — c'est l'export du jour de la
 diffusion, badge compris, qui comptera. **Seules les deux versions du web le sont**, dans
 `public/film/` : plus légères, elles sont servies par le site, donc elles voyagent avec lui (« Les
 fichiers », plus haut).

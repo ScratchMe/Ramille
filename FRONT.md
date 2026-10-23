@@ -382,10 +382,13 @@ exactement ce qui avait laissé passer le mauvais caractère.
   textes vivent dans `src/constants/accueil.ts`, et `accueil.test.ts` les compare à la description de
   `docs/exploitation/fiche-google-play.md` §2.1 — une phrase changée d'un côté sans l'autre rougit. La fiche
   dit, phrase par phrase, ce qui la rend vraie : c'est là qu'une promesse de la page se vérifie, et qu'une
-  évolution du produit qui la rend fausse se voit. Deux phrases n'ont pas de jumelle et ont été décidées : la
-  ligne sous le film (« Sur Android, … par notification ; sur le web, par email. ») et le titre du film. **Le
-  film ne se lance jamais seul** (`preload="none"`, ni lecture automatique ni boucle), et **sa version texte se
-  recopie du film** : rien ne les compare, comme rien ne compare le film à l'app (le README du film).
+  évolution du produit qui la rend fausse se voit. Deux phrases n'ont pas de jumelle : la ligne sous le film
+  (« Sur Android, … par notification ; sur le web, par email. »), décidée le 23/10/2026, et le titre du film,
+  qui est son nom. **Le film ne se lance jamais seul** (`preload="none"`, ni lecture automatique ni boucle), et
+  **sa version texte se recopie du film** — ses repères nationaux, eux, viennent de `carbon-reference.ts` :
+  rien ne compare la version texte au film, comme rien ne compare le film à l'app (le README du film). **Ses
+  portes ouvrent la session au geste** (`allerVers`), et **son pied porte de vrais liens** (`Link`, une ancre
+  avec son adresse, que suivent un moteur et l'écran de consentement de Google).
 - **`/licences` ne s'écrit pas, elle se génère** (22/10/2026, audit du 18/10 : l'APK et le bundle web
   embarquent des bibliothèques sous MIT, ISC, BSD, Apache 2.0 et deux polices, et ces licences demandent qu'on
   reproduise leur avis et leur texte). `src/constants/licences.ts` vient de

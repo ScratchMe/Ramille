@@ -17,7 +17,6 @@ import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase
 import { demanderLaConnexion } from '@/lib/auth';
 import { apresUneReconnexion, lireEtatDuCompte } from '@/lib/compte';
 import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
-import { ensureSession } from '@/lib/supabase';
 import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   adresseSemblePlausible,
@@ -59,7 +58,7 @@ type Phase = 'chargement' | 'collision' | 'saisie' | 'code';
  * `sourceRetrouver`, qui **dérive** le garde de la liste déclarée au lieu de la recopier.
  *
  * **Ce commentaire décrivait un manque qui a été comblé**, et il l'a décrit un jour de trop : il
- * disait que la porte `lien` était « émise sans être déclarée », donc comptée comme l'accueil de
+ * disait que la porte `lien` était « émise sans être déclarée », donc comptée comme la première page de
  * l'onboarding, et donnait la ligne à ajouter le jour où la liste l'accueillerait. Elle l'accueille
  * depuis le 20/09/2026 — avec `rappel`, `plan_vide`, `suivi_vide` et `session_refusee`, les quatre
  * autres portes muettes trouvées le même jour —, et le garde les rend toutes. Relevé en
@@ -78,7 +77,7 @@ type Phase = 'chargement' | 'collision' | 'saisie' | 'code';
  * est faux et un `router.back()` nu **ne fait rien du tout**. Les deux sorties de l'écran étaient
  * exactement ça : quelqu'un qui clique un lien expiré restait enfermé sur l'écran où on venait de
  * le déposer, la phase « envoyé » ne menant nulle part non plus. La racine sait toujours où
- * envoyer la personne (plan si un bilan est complété, onboarding sinon). Le repli vit depuis le
+ * envoyer la personne (plan si un bilan est complété, onboarding sinon — sur le web, la page d'accueil). Le repli vit depuis le
  * 28/09/2026 dans `revenirOu` (`src/lib/navigation.ts`), partagé par tous les « Retour ».
  */
 const revenirOuRacine = () => revenirOu('/');
@@ -109,7 +108,8 @@ function Cadre({ children }: { children: ReactNode }) {
 
 export default function RetrouverMonCompte() {
   // `email` prérempli quand on arrive de /connexion/email après un `email_exists`. `source`
-  // dit par quelle porte on est entré — l'accueil de l'onboarding ou l'écran email — et c'est
+  // dit par quelle porte on est entré — la première page de l'onboarding, la page d'accueil du web,
+  // l'écran email… (`SOURCES_RETROUVER`) — et c'est
   // la moitié de ce qu'on cherche à savoir : combien de personnes changent d'appareil **avant**
   // de refaire un bilan, la porte qui doit rendre la collision rare (v1-10 §2.D).
   // **Pas de `email` ici**, et l'absence est délibérée : plus aucun appelant n'en passe, et le
@@ -161,14 +161,7 @@ export default function RetrouverMonCompte() {
 
   useEffect(() => {
     let annule = false;
-    // **La session d'abord, celle que le layout ouvre en arrivant ici** (23/10/2026). Depuis la page
-    // d'accueil du web, qui n'en ouvre pas, l'écran se montait avant elle : la lecture du compte ne
-    // voyait personne, et `track()` renonçait sans session — la porte `accueil` aurait compté zéro.
-    // `ensureSession()` rejoint la création en cours sans en lancer une seconde ; elle ne crée rien
-    // sur une session refusée, et son échec ne change rien à ce qui suit.
-    ensureSession()
-      .catch(() => null)
-      .then(() => lireEtatDuCompte())
+    lireEtatDuCompte()
       .then((etat) => {
         if (annule) return;
         const collision = etat.kind === 'anonyme-avec-donnees';
@@ -328,8 +321,8 @@ export default function RetrouverMonCompte() {
             // (#319, `apresUneReconnexion`).
             await apresUneReconnexion();
             // La racine route vers le plan si le compte retrouvé porte un bilan complété, vers
-            // l'onboarding sinon — **la pile vidée d'abord** (01/10/2026, audit T-1) : depuis
-            // l'accueil de l'onboarding, un `replace` seul y laissait l'onboarding, que le retour
+            // l'onboarding sinon (sur le web, la page d'accueil) — **la pile vidée d'abord** (01/10/2026,
+            // audit T-1) : depuis la première page de l'onboarding, un `replace` seul y laissait l'onboarding, que le retour
             // depuis le plan rejouait (`terminerLeFlux`).
             terminerLeFlux('/');
           }}

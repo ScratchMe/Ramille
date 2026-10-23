@@ -78,7 +78,10 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   (`LECTURE_SANS_SESSION` : aucun bilan) — et non un repli, où la marque locale de bilan enverrait au plan un
   navigateur sans session. **Le HTML exporté de la racine reste l'écran de lancement** : la page d'accueil ne
   s'affiche qu'une fois la session restaurée, pour que qui revient ne la voie pas le temps de charger l'app.
-  **Et un écran que la page d'accueil ouvre ne mesure qu'après la session** : il arrive avant elle.
+  **La session s'ouvre au geste qui quitte la page d'accueil** (`allerVers`), avant de naviguer : le refus du
+  captcha y garde son écran, et l'onboarding — ouvert à sa deuxième page, `premierePageDeLOnboarding` — arrive
+  avec sa session. Sans session, un brouillon dont les marques ont un propriétaire ne décide pas
+  (`leBrouillonCompte`).
 - **Une absence de jeton n'accuse personne : c'est la permission qui le dit.** L'absence recouvre
   quatre situations — jamais demandée, refusée, enregistrement échoué, simulateur — qui n'appellent
   pas la même phrase. `lignesDeReglage` **et** `carteAttente` (`src/types/rappels.ts`) reçoivent

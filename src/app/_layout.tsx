@@ -363,7 +363,7 @@ export default function RootLayout() {
   // fenêtre Google dont l'app a été tuée entre-temps, et **se taire sur ce que la fenêtre a pris**
   // — sur Android, son retour arrive aussi ici (`estUnRetourDuNavigateurDAuth`, plus bas). Sur
   // web, `detectSessionInUrl` ouvre la session tout seul. Une fois la session ouverte, la racine
-  // route vers le plan ou l'onboarding selon ce que porte le compte retrouvé. Les paragraphes
+  // route vers le plan ou l'onboarding (sur le web, la page d'accueil) selon ce que porte le compte retrouvé. Les paragraphes
   // qui suivent racontent les liens d'e-mail : c'est l'histoire de ce code, et le filet qu'il
   // garde pour un lien parti avant le changement.
   //

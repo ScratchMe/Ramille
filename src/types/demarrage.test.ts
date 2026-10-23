@@ -2,6 +2,8 @@ import {
   destinationDuDemarrage,
   destinationSurLaPlateforme,
   issueDeLaSession,
+  leBrouillonCompte,
+  premierePageDeLOnboarding,
   LECTURE_SANS_SESSION,
   phraseDeLaVerification,
   lireLeBilan,
@@ -201,6 +203,41 @@ describe('la racine du web', () => {
     for (const vers of ['plan', 'reprise', 'echec'] as const) {
       expect(destinationSurLaPlateforme({ vers }, 'web')).toEqual({ vers });
     }
+  });
+});
+
+/**
+ * Le brouillon sans session, à la racine du web (23/10/2026, contre-lecture de l'étape 5). Éprouvé le
+ * 23/10/2026 : la condition sur le propriétaire retirée (le brouillon décide toujours) → « … celui d'une session
+ * partie… » tombe, seul ; la condition sur `sansSession` retirée → « avec une session, le brouillon décide… »
+ * tombe, seul.
+ */
+describe('leBrouillonCompte', () => {
+  it('sans session, le brouillon d’une session partie ne décide pas : les marques ont un propriétaire', () => {
+    expect(leBrouillonCompte({ brouillon: true, sansSession: true, marquesAvecProprietaire: true })).toBe(false);
+  });
+
+  it('sans session ni propriétaire, le brouillon est celui du visiteur, et il décide', () => {
+    expect(leBrouillonCompte({ brouillon: true, sansSession: true, marquesAvecProprietaire: false })).toBe(true);
+  });
+
+  it('avec une session, le brouillon décide comme avant : la conciliation a déjà balayé ce qui n’était pas à elle', () => {
+    expect(leBrouillonCompte({ brouillon: true, sansSession: false, marquesAvecProprietaire: true })).toBe(true);
+    expect(leBrouillonCompte({ brouillon: false, sansSession: true, marquesAvecProprietaire: false })).toBe(false);
+  });
+});
+
+// Décidé le 23/10/2026. Éprouvé le même jour : la comparaison retirée (toujours 1) → « partout ailleurs… »
+// tombe, seul ; toujours 0 → « depuis la page d'accueil… » tombe, seul.
+describe('premierePageDeLOnboarding', () => {
+  it('depuis la page d’accueil, l’onboarding s’ouvre à sa deuxième page', () => {
+    expect(premierePageDeLOnboarding('accueil')).toBe(1);
+  });
+
+  it('partout ailleurs, à la première, et une valeur inconnue ne déplace rien', () => {
+    expect(premierePageDeLOnboarding(undefined)).toBe(0);
+    expect(premierePageDeLOnboarding('ailleurs')).toBe(0);
+    expect(premierePageDeLOnboarding(['accueil', 'accueil'])).toBe(0);
   });
 });
 

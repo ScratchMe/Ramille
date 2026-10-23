@@ -472,8 +472,8 @@ jamais de route dynamique `[id]`) sont rappelées en fin de fichier et détaill�
 `FRONT.md`, pas ici.
 
 Le parcours : `/` route sur `/plan` si un bilan complété existe, sinon `/onboarding` → `/bilan`
-— **sur le web, sinon la page d'accueil**, rendue à la racine même, dont « Découvrir mon impact » mène à
-l'onboarding (23/10/2026, `destinationSurLaPlateforme`) —
+— **sur le web, sinon la page d'accueil**, rendue à la racine même, dont « Découvrir mon impact » ouvre la
+session puis mène à la deuxième page de l'onboarding (23/10/2026, `destinationSurLaPlateforme`, `allerVers`) —
 (la sortie de l'onboarding vide la pile avant d'y entrer, `dismissAll()`) →
 `/suivi/bilan?id=…&nouveau=1`, d'où l'on rejoint le plan. `/connexion` s'atteint depuis la
 restitution — transition imposée (`resultat_transition`) et bouton délibéré (`resultat_cta`),

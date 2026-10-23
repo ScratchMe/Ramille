@@ -14,8 +14,8 @@ import { APP_NAME } from '@/constants/produit';
  * dans `document.title` après hydratation.
  *
  * Format « Page — Ramille » : le navigateur tronque par la fin quand l'onglet rétrécit,
- * donc ce qui distingue la page vient en premier. La racine porte le nom seul, n'étant
- * qu'une redirection.
+ * donc ce qui distingue la page vient en premier. La racine porte le nom seul : sur natif, une
+ * redirection ; sur le web, depuis le 23/10/2026, la page d'accueil, que son nom suffit à désigner.
  */
 // Déclaré **avant** `PAGE_TITLES`, qui le référence : une `const` lue avant son initialisation
 // lèverait à l'import du module, donc au premier rendu de n'importe quel écran.

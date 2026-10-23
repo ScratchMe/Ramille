@@ -9,7 +9,9 @@ import { FilmDePresentation } from './FilmDePresentation.jsx';
 // textes sont ceux de la fiche, mot pour mot (`src/constants/accueil.ts`, comparés par un test). Mascotte et nom en tête,
 // l'accroche de l'onboarding en titre, « Découvrir mon impact », « Pas de compte à créer pour commencer. » puis « J'ai déjà
 // un compte » ; le film, sa ligne et sa version texte repliée ; les sections de la fiche ; un second bouton ; le pied
-// (l'éditeur, le contact, les trois pages publiques). Une colonne de 480 pour le texte, de 800 pour le film. Aucun chiffre.
+// (l'éditeur, le contact, les trois pages publiques, en vrais liens). Une colonne de 480 pour le texte, de 800 pour le
+// film. Aucun chiffre sur la page. « Découvrir mon impact » ouvre la session au geste, puis l'onboarding à sa deuxième
+// page : la première redirait cette page (décidé le 23/10/2026).
 const corps = { fontSize: 15, lineHeight: '23px' };
 const titreDeSection = { fontSize: 18, lineHeight: '26px' };
 const colonne = { width: '100%', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 };
@@ -33,7 +35,7 @@ export function PageDAccueil({ sections = [], filmEnTexte = [], onCommencer, onD
         </div>
       </div>
       <div style={{ ...colonne, maxWidth: 800, gap: 16 }}>
-        <ThemedText weight={600} accessibilityRole="header" style={titreDeSection}>Ramille en une minute et demie</ThemedText>
+        <ThemedText weight={600} accessibilityRole="header" style={titreDeSection}>Le fil de Ramille</ThemedText>
         <FilmDePresentation />
         <ThemedText themeColor="textSecondary" style={corps}>Sur Android, Ramille te fait signe par notification ; sur le web, par email.</ThemedText>
         <TextLink label="Le film en texte" apparence="souligne" expanded={ouvert} onPress={() => setOuvert(!ouvert)} />

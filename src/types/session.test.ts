@@ -185,23 +185,29 @@ describe('laSessionSOuvreSur', () => {
  */
 describe('suiteDuDemarrage', () => {
   it('une session présente se lit', () => {
-    expect(suiteDuDemarrage('presente')).toBe('lire');
+    expect(suiteDuDemarrage('presente', true)).toBe('lire');
   });
 
   it('un refus attend l’écran de reconnexion, sans rien lire', () => {
-    expect(suiteDuDemarrage('refusee')).toBe('attendre');
+    expect(suiteDuDemarrage('refusee', true)).toBe('attendre');
   });
 
   it('un rafraîchissement en panne se replie comme une coupure, au lieu de lire en `anon`', () => {
-    expect(suiteDuDemarrage('indisponible')).toBe('repli');
+    expect(suiteDuDemarrage('indisponible', true)).toBe('repli');
   });
 
-  // 23/10/2026 : l'absence ne se voit qu'à la racine du web, qui restaure sans ouvrir. Elle ne lit rien, et
-  // elle n'est pas un repli : la marque locale de bilan n'y décide pas (`LECTURE_SANS_SESSION`). Éprouvé le
-  // 23/10/2026 : rendue à `repli`, la conduite d'avant → ce test tombe, seul, ici ; et `demarrage.test.ts`
-  // dit ce que la marque en ferait.
-  it('une absence ne lit rien, et dit qu’il n’y a personne plutôt que de se replier', () => {
-    expect(suiteDuDemarrage('absente')).toBe('sansSession');
+  // 23/10/2026 : l'absence, à la racine du web qui restaure sans ouvrir, ne lit rien, et elle n'est pas un
+  // repli : la marque locale de bilan n'y décide pas (`LECTURE_SANS_SESSION`). Mais là où la racine a tenté
+  // d'ouvrir (natif), une absence est une création ratée par coupure : le repli, comme avant. Éprouvé le
+  // 23/10/2026 : l'absence rendue à `repli` dans les deux cas → « … sans rien avoir tenté… » tombe, seul ;
+  // rendue à `sansSession` dans les deux cas (la première version de ce jour, relevée par la contre-lecture)
+  // → « … après une tentative… » tombe, seul.
+  it('une absence sans rien avoir tenté d’ouvrir dit qu’il n’y a personne, plutôt que de se replier', () => {
+    expect(suiteDuDemarrage('absente', false)).toBe('sansSession');
+  });
+
+  it('une absence après une tentative d’ouverture est une coupure : le repli, où la marque décide', () => {
+    expect(suiteDuDemarrage('absente', true)).toBe('repli');
   });
 });
 

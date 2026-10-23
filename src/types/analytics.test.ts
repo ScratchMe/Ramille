@@ -256,7 +256,7 @@ describe('sourceRetrouver', () => {
   // 20/09/2026 elle vivait dans `/connexion/retrouver` sous la forme d'une **seconde liste écrite
   // à la main** — `if (source === 'email') …` sur trois valeurs — et l'écran n'étant pas testé,
   // rien ne pouvait dire qu'elle avait manqué les quatre portes ouvertes par C2.11. Les quatre
-  // arrivées étaient donc comptées comme venant de l'accueil de l'onboarding.
+  // arrivées étaient donc comptées comme venant de la première page de l'onboarding.
   //
   // Cette boucle est ce qui l'aurait vu : elle tombe dès que le garde cesse d'être **dérivé** de
   // la liste, quelle que soit la valeur oubliée.
@@ -266,7 +266,7 @@ describe('sourceRetrouver', () => {
     }
   });
 
-  it('retombe sur l’accueil pour une porte absente ou inconnue', () => {
+  it('retombe sur la première page de l’onboarding pour une porte absente ou inconnue', () => {
     // Un lien direct, un retour arrière : mieux vaut compté sur le chemin historique que perdu.
     expect(sourceRetrouver(undefined)).toBe('onboarding');
     expect(sourceRetrouver('')).toBe('onboarding');

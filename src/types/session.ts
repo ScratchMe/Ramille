@@ -157,16 +157,20 @@ export function laSessionSOuvreSur(chemin: string, plateforme: Plateforme): bool
  *     d'authentification en panne) : la racine route comme hors ligne, sur ce que l'appareil sait. Elle
  *     lisait le bilan quand même, en `anon`, recevait un `42501`, et disait « Le démarrage a échoué »
  *     là où le repli était dû (`COMPTE.md` §3) ;
- *   * **`sansSession`** — personne n'est passé, et la racine n'a rien ouvert : c'est la racine du web,
- *     qui ne fait que restaurer (`laSessionSOuvreSur`, 23/10/2026). Il n'y a rien à lire, et la réponse
- *     est connue sans aller-retour : sans session, aucun bilan n'existe (`LECTURE_SANS_SESSION`,
- *     `src/types/demarrage.ts`). Ce n'est pas un repli : la marque locale de bilan n'y décide pas, elle
- *     enverrait au plan quelqu'un qui n'a plus de session. Sur natif, la racine ouvre la session, donc
- *     `absente` ne s'y voit pas — une création réussie rend `presente`, une création ratée lève.
+ *   * **`sansSession`** — personne n'est passé, **et la racine n'a rien tenté d'ouvrir** : c'est la
+ *     racine du web, qui ne fait que restaurer (`laSessionSOuvreSur`, 23/10/2026). Il n'y a rien à lire,
+ *     et la réponse est connue sans aller-retour : sans session, aucun bilan n'existe
+ *     (`LECTURE_SANS_SESSION`, `src/types/demarrage.ts`). Ce n'est pas un repli : la marque locale de
+ *     bilan n'y décide pas, elle enverrait au plan quelqu'un qui n'a plus de session.
+ *
+ * **Quand la racine a tenté d'ouvrir** (natif), `absente` veut dire autre chose : la création a échoué
+ * par une coupure de transport, que la racine a attrapée, et l'état est resté celui d'avant la tentative.
+ * C'est un repli, où la marque locale décide comme hors ligne (C4.5) — contre-lecture du 23/10/2026, qui
+ * a vu cette coupure tomber dans `sansSession`, sur natif, où rien ne devait changer.
  */
 export type SuiteDuDemarrage = 'lire' | 'attendre' | 'repli' | 'sansSession';
 
-export function suiteDuDemarrage(etat: EtatDeSession): SuiteDuDemarrage {
+export function suiteDuDemarrage(etat: EtatDeSession, ouvertureTentee: boolean): SuiteDuDemarrage {
   switch (etat) {
     case 'presente':
       return 'lire';
@@ -175,7 +179,7 @@ export function suiteDuDemarrage(etat: EtatDeSession): SuiteDuDemarrage {
     case 'indisponible':
       return 'repli';
     case 'absente':
-      return 'sansSession';
+      return ouvertureTentee ? 'repli' : 'sansSession';
     default: {
       const inconnu: never = etat;
       throw new Error(`État de session inconnu : ${String(inconnu)}`);

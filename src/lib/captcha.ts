@@ -22,7 +22,8 @@
 // **Un jeton qui ne vient pas n'arrête rien ici** : au plus trente secondes après — deux minutes à
 // partir du moment où Cloudflare demande de cocher —, l'appel part sans, et c'est Supabase qui
 // tranche : avant l'activation il passe, après il est refusé (`400 captcha_failed`, reconnu par
-// `estRefusDuCaptcha`), et la racine pose l'écran du refus. Un bloqueur de publicité qui coupe
+// `estRefusDuCaptcha`), et la racine pose l'écran du refus — sur le web, depuis le 23/10/2026, au geste
+// de la page d'accueil qui ouvre la session (`allerVers`, `src/app/index.tsx`), plus à l'ouverture du site. Un bloqueur de publicité qui coupe
 // `challenges.cloudflare.com` coûte donc la session une fois la protection active, et seulement à
 // ce moment-là.
 

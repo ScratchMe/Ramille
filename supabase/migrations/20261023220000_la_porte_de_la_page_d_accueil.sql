@@ -23,8 +23,7 @@ declare
   remplacement constant text :=
     'props.source, neuf portes : « onboarding » (« J''ai déjà un compte » sur la première page de '
     || 'l''onboarding), « accueil » (le même lien sur la page d''accueil du web, la racine du site, '
-    || 'depuis le 23/10/2026 — elle n''ouvre pas de session, l''écran attend celle qu''il ouvre avant de '
-    || 'mesurer), ';
+    || 'depuis le 23/10/2026 — la lire n''ouvre pas de session, le geste l''ouvre avant de mener ici), ';
 begin
   select description into v_description from public.usage_event_types where name = 'retrouver_view';
   if v_description is null then

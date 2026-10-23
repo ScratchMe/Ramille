@@ -4,12 +4,14 @@
 //
 // **L'équivalent de la fiche Play, avec le film.** Ses textes sont ceux de la fiche, mot pour mot
 // (`src/constants/accueil.ts`, et le test qui les compare) ; elle n'affirme rien que la fiche n'engage déjà.
-// Le bouton mène à l'onboarding, qui ouvre la session : cette page n'en ouvre pas
-// (`laSessionSOuvreSur`, `src/types/session.ts`), donc la lire ne crée ni compte anonyme ni captcha.
+// **La lire n'ouvre pas de session** (`laSessionSOuvreSur`, `src/types/session.ts`) : ni compte anonyme ni
+// captcha. Ses deux portes vers l'app passent par `allerVers` (`src/app/index.tsx`), qui ouvre la session au
+// geste puis navigue — un refus du captcha garde ainsi son écran. « Découvrir mon impact » ouvre l'onboarding
+// sur sa deuxième page : la première redirait ce que cette page vient de dire (décidé le 23/10/2026).
 //
 // **Sans chiffre, et la mascotte loin de tout chiffre** : elle signe la page en haut, comme sur la première
 // page de l'onboarding, et ne parle pas.
-import { Link, router } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,10 +30,18 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 /** La colonne du texte : celle des pages légales, que l'œil lit sans perdre la ligne suivante. */
 const MESURE_DE_LECTURE = 480;
 
-const commencer = () => router.push('/onboarding');
+/** L'onboarding, à sa deuxième page (`premierePageDeLOnboarding`, `src/types/demarrage.ts`). */
+const VERS_L_ONBOARDING: Href = { pathname: '/onboarding', params: { depuis: 'accueil' } };
+const VERS_LA_RETROUVAILLE: Href = { pathname: '/connexion/retrouver', params: { source: 'accueil' } };
 
-export function PageDAccueil() {
+export function PageDAccueil({
+  allerVers,
+}: {
+  /** Ouvre la session, puis navigue (`src/app/index.tsx`) : la page n'en ouvre pas elle-même. */
+  allerVers: (destination: Href) => void;
+}) {
   const [filmEnTexte, setFilmEnTexte] = useState(false);
+  const commencer = () => allerVers(VERS_L_ONBOARDING);
 
   return (
     <ThemedView style={styles.container}>
@@ -65,7 +75,7 @@ export function PageDAccueil() {
                 label={ACCUEIL.dejaUnCompte}
                 apparence="souligne"
                 role="link"
-                onPress={() => router.push({ pathname: '/connexion/retrouver', params: { source: 'accueil' } })}
+                onPress={() => allerVers(VERS_LA_RETROUVAILLE)}
                 containerStyle={styles.lienCentre}
               />
             </View>
@@ -156,12 +166,26 @@ export function PageDAccueil() {
                   {CONTACT_EMAIL}
                 </Link>
               </ThemedText>
-              {/* Les pages publiques, en liens : le seul pied de page du produit avec celui des pages
-                  légales — les écrans du parcours n'en ont pas. */}
+              {/* Les pages publiques, en **vrais liens** : `Link` rend une ancre avec son adresse, que suivent
+                  un moteur et l'écran de consentement de Google — un `TextLink` est un bouton sans adresse
+                  (`EXPO.md` §1.1). La cible fait 48 de haut, comme celle d'un `TextLink`. C'est le seul pied
+                  de page du produit avec celui des pages légales — les écrans du parcours n'en ont pas. */}
               <View style={styles.liensDuPied}>
-                <TextLink label="Confidentialité" apparence="souligne" role="link" onPress={() => router.push('/confidentialite')} />
-                <TextLink label="Conditions d’utilisation" apparence="souligne" role="link" onPress={() => router.push('/conditions')} />
-                <TextLink label="Licences" apparence="souligne" role="link" onPress={() => router.push('/licences')} />
+                <Link href="/confidentialite" asChild>
+                  <ThemedText type="small" themeColor="textTertiary" style={styles.lienDuPied}>
+                    Confidentialité
+                  </ThemedText>
+                </Link>
+                <Link href="/conditions" asChild>
+                  <ThemedText type="small" themeColor="textTertiary" style={styles.lienDuPied}>
+                    Conditions d’utilisation
+                  </ThemedText>
+                </Link>
+                <Link href="/licences" asChild>
+                  <ThemedText type="small" themeColor="textTertiary" style={styles.lienDuPied}>
+                    Licences
+                  </ThemedText>
+                </Link>
               </View>
             </View>
           </View>
@@ -198,4 +222,6 @@ const styles = StyleSheet.create({
   pied: { marginTop: Spacing.four, gap: Spacing.two },
   adresse: { textDecorationLine: 'underline' },
   liensDuPied: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three },
+  // `asChild` : le texte du thème devient l'ancre, avec son encre et sa police ; le rembourrage donne la cible.
+  lienDuPied: { textDecorationLine: 'underline', paddingVertical: 14 },
 });

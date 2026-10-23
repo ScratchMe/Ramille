@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, type Href } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
 import { prechargerLePlan } from '@/lib/lecture-du-plan';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
+import { lesMarquesOntUnProprietaire } from '@/lib/marques-locales';
 import { ecouterLeRefus, ensureSession, etatDeLaSession, restaurerLaSession, supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
 import { type ErreurAuth } from '@/types/connexion';
@@ -19,6 +20,7 @@ import {
   destinationSurLaPlateforme,
   issueDeLaSession,
   LECTURE_SANS_SESSION,
+  leBrouillonCompte,
   lireLeBilan,
   phraseDeLaVerification,
   prechargeLePlan,
@@ -56,6 +58,9 @@ export default function Index() {
   const [verificationRefusee, setVerificationRefusee] = useState(false);
   // Le web, sans bilan ni questionnaire en cours : la page d'accueil (`destinationSurLaPlateforme`).
   const [accueil, setAccueil] = useState(false);
+  // Le geste de la page d'accueil qui attend sa session : « Réessayer » le reprend (`allerVers`).
+  const [destinationEnAttente, setDestinationEnAttente] = useState<Href | null>(null);
+  const ouvertureEnCours = useRef(false);
 
   // Le `setState` d'échec vit **après** un `await`, dans une fonction asynchrone : une
   // écriture synchrone depuis le corps d'un effet déclencherait une cascade de rendus, que
@@ -77,11 +82,13 @@ export default function Index() {
         //
         // **Sur le web, la racine n'ouvre pas de session : elle restaure celle qui est là** (23/10/2026).
         // C'est la page d'accueil, qu'un navigateur neuf lit sans compte anonyme ni captcha ; la session
-        // s'ouvre au premier pas dans l'app (`laSessionSOuvreSur`). `restaurerLaSession()` ne lève pas :
-        // la branche du captcha ci-dessous ne vaut que sur natif.
+        // s'ouvre au geste qui entre dans l'app (`allerVers`, plus bas). `restaurerLaSession()` ne lève
+        // pas : la branche du captcha ci-dessous ne vaut ici que sur natif — sur le web, c'est le geste
+        // qui la rencontre.
+        const ouvertureTentee = laSessionSOuvreSur('/', PLATEFORME);
         let coupureALaSession = false;
         try {
-          await (laSessionSOuvreSur('/', PLATEFORME) ? ensureSession() : restaurerLaSession());
+          await (ouvertureTentee ? ensureSession() : restaurerLaSession());
         } catch (erreurDeSession) {
           const issue = issueDeLaSession(erreurDeSession as ErreurAuth);
           switch (issue) {
@@ -112,10 +119,10 @@ export default function Index() {
         // rend `null` sans lever, la session est `indisponible` — réseau coupé pendant le seul
         // rafraîchissement, ou serveur d'authentification en 5xx pendant que la base répond. La lecture
         // partait quand même, en `anon`, et le `42501` faisait dire « Le démarrage a échoué ».
-        const suite = suiteDuDemarrage(etatDeLaSession());
+        const suite = suiteDuDemarrage(etatDeLaSession(), ouvertureTentee);
         if (suite === 'attendre') return;
         if (suite === 'repli') coupureALaSession = true;
-        // Personne n'est passé, et rien n'a été ouvert (la racine du web) : la lecture est connue.
+        // Personne n'est passé, et rien n'a été tenté (la racine du web) : la lecture est connue.
         const sansSession = suite === 'sansSession';
 
         // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-10). Quelqu'un qui a
@@ -126,7 +133,7 @@ export default function Index() {
         //
         // En parallèle et non à la suite : les deux lectures locales ne coûtent rien, et les
         // enchaîner derrière l'aller-retour serveur retarderait le démarrage de tout le monde.
-        const [reponse, brouillon, marqueDeBilan] = await Promise.all([
+        const [reponse, brouillon, marqueDeBilan, marquesAvecProprietaire] = await Promise.all([
           coupureALaSession || sansSession
             ? null
             : supabase
@@ -141,6 +148,8 @@ export default function Index() {
           // La marque « cet appareil a vu un bilan complété » (C4.5). Elle rend `false` sur un
           // stockage indisponible, donc elle ne promet jamais rien qu'on ne puisse tenir.
           aDejaVuUnBilan(),
+          // Sans session, le brouillon d'une session partie ne décide pas (`leBrouillonCompte`).
+          sansSession ? lesMarquesOntUnProprietaire() : false,
         ]);
 
         // **Toute la décision vit dans `src/types/demarrage.ts`**, qui est pur et testé sur la table
@@ -163,7 +172,7 @@ export default function Index() {
 
         const destination = destinationSurLaPlateforme(
           destinationDuDemarrage(lecture, {
-            brouillon: brouillon !== null,
+            brouillon: leBrouillonCompte({ brouillon: brouillon !== null, sansSession, marquesAvecProprietaire }),
             marqueDeBilan,
           }),
           PLATEFORME
@@ -234,11 +243,45 @@ export default function Index() {
     []
   );
 
+  /**
+   * **Le geste de la page d'accueil ouvre la session, puis entre dans l'app** (23/10/2026, contre-lecture
+   * de l'étape 5). La racine du web n'ouvre plus de session au chargement ; c'est donc ici que le captcha
+   * se joue et qu'un refus se rencontre — et il garde son écran, celui du 04/10/2026, au lieu de se perdre
+   * dans le layout et de ne se dire qu'à la soumission du bilan, en anglais. L'onboarding et la
+   * retrouvaille arrivent ainsi avec leur session, comme derrière la racine native : leurs mesures ne
+   * partent pas avant elle. Une coupure n'arrête pas : l'onboarding se parcourt hors ligne, et la
+   * session s'ouvrira à la première écriture.
+   */
+  const allerVers = async (destination: Href) => {
+    if (ouvertureEnCours.current) return;
+    ouvertureEnCours.current = true;
+    try {
+      await ensureSession();
+      router.push(destination);
+    } catch (erreurDeSession) {
+      const issue = issueDeLaSession(erreurDeSession as ErreurAuth);
+      if (issue === 'coupure') {
+        router.push(destination);
+        return;
+      }
+      setDestinationEnAttente(destination);
+      if (issue === 'verification') setVerificationRefusee(true);
+      else setEchec(decrireErreur(erreurDeSession));
+    } finally {
+      ouvertureEnCours.current = false;
+    }
+  };
+
   // Gestionnaire d'événement : ici l'écriture synchrone est légitime, et l'incrément de
-  // `tentative` relance l'effet.
+  // `tentative` relance l'effet. Après un geste de la page d'accueil, c'est le geste qui se reprend.
   const reessayer = () => {
     setEchec(null);
     setVerificationRefusee(false);
+    if (destinationEnAttente !== null) {
+      setDestinationEnAttente(null);
+      void allerVers(destinationEnAttente);
+      return;
+    }
     setTentative((n) => n + 1);
   };
 
@@ -291,7 +334,7 @@ export default function Index() {
     );
   }
 
-  if (accueil) return <PageDAccueil />;
+  if (accueil) return <PageDAccueil allerVers={allerVers} />;
 
   return <EcranLancement />;
 }

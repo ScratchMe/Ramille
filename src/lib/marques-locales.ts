@@ -101,6 +101,15 @@ async function lireLeProprietaire(): Promise<string | null> {
   }
 }
 
+/**
+ * Les marques de cet appareil ont-elles un propriétaire noté ? (23/10/2026) — lu par la racine du web quand
+ * elle n'a pas de session : un brouillon laissé par une session partie n'est pas celui du visiteur
+ * (`leBrouillonCompte`, `src/types/demarrage.ts`). Un stockage illisible rend `false`, comme un appareil neuf.
+ */
+export async function lesMarquesOntUnProprietaire(): Promise<boolean> {
+  return (await lireLeProprietaire()) !== null;
+}
+
 async function noterLeProprietaire(userId: string): Promise<void> {
   try {
     await AsyncStorage.setItem(PROPRIETAIRE_KEY, userId);

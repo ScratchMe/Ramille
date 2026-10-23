@@ -5,7 +5,7 @@ import React from 'react';
 // suffit à le montrer. Le format se choisit une fois, à l'arrivée : le 4:5 sous 600 de large, le 16:9 au-delà. L'arrondi
 // est porté par la vidéo, pas par un cadre qui la découperait : la découpe couperait son anneau de focus. Sur natif, le
 // composant ne rend rien — la page d'accueil n'existe que sur le web.
-export function FilmDePresentation({ format = '16x9', affiche, video, titre = 'Ramille en une minute et demie' }) {
+export function FilmDePresentation({ format = '16x9', affiche, video, titre = 'Le fil de Ramille' }) {
   const rapport = format === '4x5' ? '4 / 5' : '16 / 9';
   return (
     <div style={{ width: '100%', aspectRatio: rapport, borderRadius: 18, background: 'var(--color-background-element)' }}>

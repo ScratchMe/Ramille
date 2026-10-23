@@ -9,10 +9,16 @@
 // dans la fiche sans ici, fait rougir la suite. L'accroche et la ligne sous le bouton sont celles de
 // l'onboarding (`src/components/onboarding/etape-accroche.tsx`), la description courte celle de Play.
 //
-// **Deux phrases n'ont pas de jumelle dans la fiche, et chacune a été décidée** : la ligne sous le film
-// (23/10/2026 : le film montre la notification d'Android, et sur le web le rappel n'arrive que par
-// email, avec un compte — `RAMILLE.signeSurLeWebParEmail` le dit au premier engagement), et le titre du
-// film.
+// **Deux phrases n'ont pas de jumelle dans la fiche** : la ligne sous le film, décidée par la personne qui
+// pilote le 23/10/2026 (le film montre la notification d'Android, et sur le web le rappel n'arrive que par
+// email, avec un compte — `RAMILLE.signeSurLeWebParEmail` le dit au premier engagement) ; et le titre du
+// film, qui est son nom (« Le fil de Ramille », son README).
+import {
+  CONSUMPTION_POSTES,
+  CONSUMPTION_POSTES_TOTAL_T,
+  formatTonnesShort,
+  TARGET_2050_TRANSPORT_T,
+} from '@/constants/carbon-reference';
 import { APP_NAME } from '@/constants/produit';
 
 /** Ce que la fiche Play dit, découpé comme la page le montre. */
@@ -77,7 +83,8 @@ export const ACCUEIL = {
 
 /** Le film de présentation (`docs/communication/le-fil-de-ramille/`), servi par le site. */
 export const FILM = {
-  titre: `${APP_NAME} en une minute et demie`,
+  /** Le nom du film (`docs/communication/le-fil-de-ramille/README.md`), qui ne dépend pas de sa durée. */
+  titre: `Le fil de ${APP_NAME}`,
   /**
    * **Sous le film, où le rappel arrive** (décidé le 23/10/2026). Le film montre la notification du
    * lundi sur un téléphone Android ; quelqu'un qui le regarde ici commencera sur le web, où il n'y a pas
@@ -104,7 +111,14 @@ export const LARGEUR_DU_FILM_ETROIT = 600;
  * ou ne le lance pas. Recopié du film (`docs/communication/le-fil-de-ramille/film.html`) : quand le film
  * change, cette version change avec lui — aucune garde ne compare les deux, comme aucune ne compare les
  * textes du film à ceux de l'app (le README du film le dit).
+ *
+ * **Les repères nationaux viennent de `carbon-reference.ts`, pas d'une recopie** (`FRONT.md` §2.1, contre-
+ * lecture du 23/10/2026) : un repère ne s'écrit jamais en dur dans un écran. Les chiffres du **profil
+ * d'exemple** — son bilan, ses postes, ses gains — restent écrits : ce sont ceux que le calcul rend pour ce
+ * profil (`profil-d-exemple.sql`), recopiés dans le film, et rien dans l'app ne les porte.
  */
+const [TRANSPORT, LOGEMENT, ALIMENTATION, SERVICES, EQUIPEMENTS] = CONSUMPTION_POSTES;
+const tonnes = (valeur: number) => formatTonnesShort(valeur);
 export const FILM_EN_TEXTE: readonly { chapitre: string; texte: string }[] = [
   {
     chapitre: 'Tes trajets',
@@ -115,10 +129,11 @@ export const FILM_EN_TEXTE: readonly { chapitre: string; texte: string }[] = [
   {
     chapitre: 'Ce qu’ils pèsent',
     texte:
-      '« En France, le transport est le premier poste de l’empreinte carbone » : 2,8 t CO₂e par personne et par ' +
-      'an, en moyenne, devant le logement (2,2 t), l’alimentation (2,1 t), les services (1,5 t) et les équipements ' +
-      '(0,9 t). Source : SDES, données 2017 ; l’empreinte moyenne, tous postes, est de 9,5 t. « Et les tiens, ils ' +
-      'pèsent combien ? »',
+      `« En France, le transport est le premier poste de l’empreinte carbone » : ${tonnes(TRANSPORT.valueT)} CO₂e ` +
+      `par personne et par an, en moyenne, devant le logement (${tonnes(LOGEMENT.valueT)}), l’alimentation ` +
+      `(${tonnes(ALIMENTATION.valueT)}), les services (${tonnes(SERVICES.valueT)}) et les équipements ` +
+      `(${tonnes(EQUIPEMENTS.valueT)}). Source : SDES, données 2017 ; l’empreinte moyenne, tous postes, est de ` +
+      `${tonnes(CONSUMPTION_POSTES_TOTAL_T)}. « Et les tiens, ils pèsent combien ? »`,
   },
   {
     chapitre: APP_NAME,
@@ -133,8 +148,8 @@ export const FILM_EN_TEXTE: readonly { chapitre: string; texte: string }[] = [
       'quatre des neuf étapes — le trajet régulier, son mode, les loisirs, les vols —, puis le résultat d’un profil ' +
       'd’exemple, calculé par l’app : 2,1 t CO₂e par an, dont 1,3 t pour le trajet domicile-travail, 333 kg pour ' +
       'les loisirs et 476 kg pour les voyages longue distance ; le prochain palier à 1,8 t, la moyenne en France à ' +
-      '2,8 t, le repère transport 2050 à 0,6 t. « Tu vois quel déplacement pèse le plus. Et où tu te situes, entre ' +
-      'la moyenne française et le repère 2050. »',
+      `${tonnes(TRANSPORT.valueT)}, le repère transport 2050 à ${tonnes(TARGET_2050_TRANSPORT_T)}. « Tu vois quel ` +
+      'déplacement pèse le plus. Et où tu te situes, entre la moyenne française et le repère 2050. »',
   },
   {
     chapitre: 'Ton plan',

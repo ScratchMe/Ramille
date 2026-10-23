@@ -12,8 +12,8 @@
  *     pas le film ne coûte que l'affiche ;
  *   - **le format suit l'écran à l'arrivée** : le 4:5 sous 600 px de large, le 16:9 au-delà.
  *
- * **Ce qu'il ne voit pas** : que les fichiers existent dans l'export (le contrôle de l'export,
- * `scripts/verifier-rendu-export.mjs`), et que le navigateur les lise (le parcours réel).
+ * **Ce qu'il ne voit pas** : que les fichiers existent dans l'export (`scripts/verifier-rendu-export.mjs`, le
+ * bloc du film, depuis le 23/10/2026), et que le site les serve en `video/mp4` (le parcours réel, étape 0 bis).
  *
  * **Éprouvé en le cassant, le 23/10/2026** — voir le relevé au pied.
  */

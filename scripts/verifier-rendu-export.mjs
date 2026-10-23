@@ -229,6 +229,31 @@ for (const [fonction, options] of Object.entries(configVercel.functions ?? {})) 
   }
 }
 
+// Puis le film de la page d'accueil (23/10/2026, étape 5 de `v1-35`) : **ce que `public/` porte disparaît de
+// l'export sans erreur** (`EXPO.md` §1.1), et la page servirait alors une vidéo et une affiche en 404, sous un
+// cadre vide. Chaque adresse `/film/…` que `src/constants/accueil.ts` cite doit être dans l'export, octet pour
+// octet comme dans `public/film/`. Éprouvé le 23/10/2026 : une affiche retirée de l'export → une ligne,
+// « … manque dans l'export » ; une adresse de `accueil.ts` changée en un nom qui n'existe pas → une ligne,
+// « … n'existe pas dans public/film/ ».
+{
+  const adresses = [...readFileSync('src/constants/accueil.ts', 'utf8').matchAll(/'(\/film\/[^']+)'/g)].map((m) => m[1]);
+  if (adresses.length === 0) {
+    echecs.push('film : src/constants/accueil.ts ne cite plus aucune adresse /film/… — la garde ne lirait plus rien.');
+  }
+  const empreinte = (fichier) => createHash('md5').update(readFileSync(fichier)).digest('hex');
+  for (const adresse of adresses) {
+    const source = join('public', adresse);
+    const exporte = join(DIST, adresse);
+    if (!existsSync(source)) {
+      echecs.push(`film : ${adresse}, cité par src/constants/accueil.ts, n’existe pas dans public/film/.`);
+    } else if (!existsSync(exporte)) {
+      echecs.push(`film : ${adresse} manque dans l’export (${DIST}) — la page d’accueil le chargerait en 404.`);
+    } else if (empreinte(source) !== empreinte(exporte)) {
+      echecs.push(`film : ${adresse} n’est pas, dans l’export, le fichier de public/film/.`);
+    }
+  }
+}
+
 // Puis le cache immuable des fichiers hachés : `Cache-Control: immutable` sur un nom qui ne change pas
 // avec le contenu, c'est un visiteur qui garde un an l'ancien code après un déploiement. Le nom se
 // juge ici, sur l'export : chaque fichier que la règle vise porte le md5 de son contenu, et aucun
@@ -475,5 +500,5 @@ console.log(
     ` ${choixInspectes} choix annonçant leur état.` +
     ' vercel.json : cleanUrls en place, assets des Functions présents, cache immuable limité aux' +
     ' fichiers hachés (tous), CSP appliquée sans infraction et scripts écrits en dur couverts par' +
-    ' leur empreinte.'
+    ' leur empreinte. Le film de la page d’accueil est dans l’export, tel que public/film/ le porte.'
 );

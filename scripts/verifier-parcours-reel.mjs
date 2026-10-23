@@ -800,8 +800,10 @@ async function boutonDuPager(nom, indexDePage) {
 }
 /**
  * **La page d'accueil du web** (23/10/2026, étape 5 de `v1-35`) : un navigateur sans bilan ni questionnaire
- * en cours la voit à la racine, à la place de l'onboarding, et son bouton y mène. Elle n'ouvre pas de
- * session — l'étape 0 le mesure à froid ; les profils, eux, la traversent comme une personne.
+ * en cours la voit à la racine, à la place de l'onboarding, et son bouton y mène — **à la deuxième page**
+ * (décidé le 23/10/2026) : `boutonDuPager` attend le pager posé sur la page 1 avant d'y cliquer, donc chaque
+ * profil le vérifie en passant. Elle n'ouvre pas de session à la lecture — l'étape 0 le mesure à froid — ;
+ * son geste l'ouvre avant de naviguer.
  */
 const TITRE_DE_L_ACCUEIL = 'Comprendre tes trajets, sans te juger.';
 async function entrerParLaPageDAccueil(onglet = page) {
@@ -1596,10 +1598,10 @@ try {
 
   // ── 0 bis. La page d'accueil, ouverte à froid (23/10/2026, étape 5 de `v1-35`) ──────────────────
   // La racine du web n'est pas une surface sans compte, mais elle n'ouvre pas de session : un navigateur
-  // neuf y lit la présentation du produit sans compte anonyme ni captcha. Puis « J'ai déjà un compte » :
-  // l'écran de retrouvaille ouvre la session en arrivant, et **sa vue se compte** avec la provenance
-  // `accueil` — l'écran attend la session avant de mesurer, sans quoi `track()` renonçait et la porte
-  // comptait zéro (`src/app/connexion/retrouver.tsx`). Ni Jest ni l'export ne voient cette course.
+  // neuf y lit la présentation du produit sans compte anonyme ni captcha. Puis « J'ai déjà un compte » : le
+  // geste ouvre la session **avant** de mener à la retrouvaille (`allerVers`, `src/app/index.tsx`), et **sa vue
+  // se compte** avec la provenance `accueil` — sans cela, l'écran se montait avant la session que le layout
+  // ouvre en y arrivant, et `track()` renonçait. Ni Jest ni l'export ne voient cette course.
   etape('page d’accueil — ouverte à froid, aucun compte ne naît, et sa porte se mesure');
   {
     const avant = await compterLesComptes();
@@ -1669,11 +1671,32 @@ try {
   etape('onboarding');
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await entrerParLaPageDAccueil();
-  await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
   await boutonDuPager('Commencer', 3);
   await page.waitForURL(/\/bilan/, { timeout: ATTENTE });
+  // **Les vues de l'onboarding se comptent, et `accroche` n'en est pas** (23/10/2026) : la session s'ouvre au
+  // geste de la page d'accueil, avant l'onboarding, donc sa première page vue — la deuxième — n'est pas perdue
+  // faute de session ; et la première, sautée, n'est pas comptée vue.
+  {
+    const { userId } = await session();
+    const limite = Date.now() + ATTENTE;
+    let etapes = [];
+    while (Date.now() < limite) {
+      const reponse = await fetch(
+        `${API}/rest/v1/usage_events?select=props,occurred_at&name=eq.onboarding_step_view&user_id=eq.${userId}&order=occurred_at`,
+        { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` } }
+      );
+      if (!reponse.ok) throw new Ecart(`vues de l’onboarding : HTTP ${reponse.status} ${await reponse.text()}`);
+      etapes = (await reponse.json()).map(({ props }) => props?.step);
+      if (etapes.length >= 3) break;
+      await page.waitForTimeout(250);
+    }
+    assurer(
+      JSON.stringify([...etapes].sort()) === JSON.stringify(['contexte', 'reassurance', 'transition']),
+      `les vues de l’onboarding venu de la page d’accueil devraient être contexte, reassurance et transition : ${JSON.stringify(etapes)}`
+    );
+  }
 
   // ── 2. Le questionnaire, réponse par réponse ────────────────────────────────────────────────
   etape('questionnaire — trajet régulier');
@@ -2918,7 +2941,6 @@ try {
   page = await nouvelOnglet({ reduire: true });
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await entrerParLaPageDAccueil();
-  await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
   await boutonDuPager('Commencer', 3);
@@ -3367,7 +3389,6 @@ try {
   // qui connaît déjà les deux lieux. Rien d'autre ne gardait cet appel : la fonction a ses tests, la
   // ligne qui l'appelle n'en avait aucun.
   etape('cycliste — un bilan après le retrait : le premier parcours ne recommence pas');
-  await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
   await boutonDuPager('Commencer', 3);
@@ -3409,7 +3430,6 @@ try {
   page = await nouvelOnglet({ reduire: false });
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await entrerParLaPageDAccueil();
-  await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
   await boutonDuPager('Commencer', 3);
