@@ -576,8 +576,8 @@
 // **La feuille du compte, traversée au premier engagement du premier profil** (23/10/2026, `v1-35` étape 4 :
 // sur le web, sans adresse, une petite feuille dit que Ramille ne peut faire signe que par email). La
 // phrase mot pour mot, les deux boutons, rien du choix du canal, la marque posée avant tout geste, le focus
-// sur la phrase, « Plus tard » qui la fait redescendre sans écrire la préférence — et, à chaque engagement
-// suivant, aucune feuille (`traverserLaFeuilleDuCompte`, `aucuneFeuilleDesRappels`). Le cycliste, navigateur
+// sur la phrase, « Plus tard » qui la fait redescendre sans écrire la préférence — et, aux deux engagements
+// qui suivent (retour de la liste, cycliste), aucune feuille (`traverserLaFeuilleDuCompte`, `aucuneFeuilleDesRappels`). Le cycliste, navigateur
 // neuf, a la marque posée d'avance : le `Modal` prendrait sinon le focus que son passage garde. Rejouées une
 // à la fois, un export chacune, l'arbre restauré par l'état d'avant réécrit, le témoin sans mutation vert
 // (7 pas sur 7) :
@@ -1481,6 +1481,15 @@ async function lire(chemin, jeton) {
   if (!reponse.ok) throw new Ecart(`lecture ${chemin} : HTTP ${reponse.status} ${await reponse.text()}`);
   return reponse.json();
 }
+/** Une écriture PostgREST **comme la personne** — la même que l'app (`profiles.update`), sous la RLS. */
+async function ecrire(chemin, jeton, corps) {
+  const reponse = await fetch(`${API}/rest/v1/${chemin}`, {
+    method: 'PATCH',
+    headers: { apikey: ANON, Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(corps),
+  });
+  if (!reponse.ok) throw new Ecart(`écriture ${chemin} : HTTP ${reponse.status} ${await reponse.text()}`);
+}
 async function rpc(nom, jeton, corps = {}) {
   const reponse = await fetch(`${API}/rest/v1/rpc/${nom}`, {
     method: 'POST',
@@ -2223,6 +2232,16 @@ try {
   }
   assurer(canalEnBase === 'none', `la préférence choisie à la barre d’espace n’a pas atteint la base : ${canalEnBase}`);
 
+  // **La préférence revient à son défaut, `email`, avant la suite** (23/10/2026, contre-lecture de l'étape
+  // 4 de `v1-35`). Sur le web sans compte, « Toi » ne propose que « Sans rappel » — « Par email » y est hors
+  // d'atteinte —, donc l'interface ne peut pas la remettre : c'est l'écriture même de l'app
+  // (`setReminderChannel`, `profiles.update`), sous la session de la personne. Sans elle, le second
+  // engagement de ce profil (« pistes ») ne voyait aucune feuille à cause de « Sans rappel » — la feuille du
+  // compte ne s'ouvre pas chez qui l'a choisi —, et la vérification de la marque passait sans rien prouver.
+  await ecrire(`profiles?id=eq.${userId}`, jeton, { reminder_channel: 'email' });
+  const [profilRemis] = await lire(`profiles?select=reminder_channel&id=eq.${userId}`, jeton);
+  assurer(profilRemis?.reminder_channel === 'email', `la préférence n’est pas revenue à email : ${profilRemis?.reminder_channel}`);
+
   // ── 8 ter. La feuille du re-bilan, avec et sans « réduire les animations » ───────────────────
   //
   // **Le voile se fond sur place, la feuille monte, Échap la fait redescendre** (27/09/2026, `v1-30`
@@ -2613,7 +2632,8 @@ try {
   await attendreTexte('TON ENGAGEMENT');
   // **Le second engagement de cet appareil n'ouvre aucune feuille** (23/10/2026) : la marque a été posée
   // par la feuille du compte, au premier — la moitié négative de `traverserLaFeuilleDuCompte`, sur le
-  // chemin de la liste (`useReprendreLEngagement`), qui n'est pas celui du plan.
+  // chemin de la liste (`useReprendreLEngagement`), qui n'est pas celui du plan. La préférence est revenue
+  // à `email` après « 8 bis » : c'est donc bien la marque qui tient ici, et non « Sans rappel ».
   await aucuneFeuilleDesRappels('au retour de la liste, après « C’est noté »');
   // **Le retour de la liste montre aussi l'action choisie** (audit P-1, 01/10/2026) : elle passe en
   // tête des cartes, et le plan s'ouvrait où il voulait — elle n'était pas à l'écran. Le passage de la

@@ -100,9 +100,9 @@ const CONSTAT_D_ECHEC = 'Ton choix n’a pas été enregistré.';
  * dit de la voix de Ramille et ouvre la porte : « Rattacher mon adresse » mène à `/connexion` par la
  * provenance `rappels` (la porte de la ligne « Par email », le même `allerRattacher`), « Plus tard »
  * referme. **Elle pose la même marque que la feuille du canal, dès qu'elle s'affiche** (comme la
- * question de la veille) : les deux feuilles sont complémentaires, jamais cumulées, donc qui rattache un
- * compte ensuite — ou ferme d'un geste de retour — ne voit pas la feuille du canal lui tomber dessus sur
- * le plan. Son réglage est dans « Toi ». Aucun choix à enregistrer : elle ne touche ni à la préférence
+ * question de la veille) : pour un même compte sur cet appareil, les deux feuilles ne se cumulent pas, donc
+ * qui rattache ensuite une adresse à sa session — ou ferme d'un geste de retour — ne voit pas la feuille du
+ * canal lui tomber dessus sur le plan (un compte qui change balaie la marque : `ouvertureDeLaFeuille`). Son réglage est dans « Toi ». Aucun choix à enregistrer : elle ne touche ni à la préférence
  * ni au jeton, et rend à l'écran ce qu'il lui avait donné.
  */
 export function FeuilleRappels({
@@ -118,7 +118,7 @@ export function FeuilleRappels({
   /** L'échéance de l'action engagée : « Le mois prochain » fait nommer un autre mois (`v1-33` D14). */
   echeance: IntentionTiming | null;
   permission: Permission;
-  /** L'étape où la feuille s'ouvre : le choix du canal, ou la seule question de la veille. */
+  /** L'étape où la feuille s'ouvre : le choix du canal, la seule question de la veille, ou le compte (web, sans adresse). */
   ouverture: OuvertureDeLaFeuille;
   /**
    * Le canal retenu et la réponse au mot de la veille, pour que le plan rafraîchisse sa carte

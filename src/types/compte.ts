@@ -78,8 +78,9 @@ export function etatDuRattachement(lu: {
  *
  * Le fait vient de `purge_stale_anonymous_accounts` : les sessions anonymes sont fermées après
  * une fenêtre de 120 jours (90 jusqu'au 23/10/2026, `v1-35` étape 4 : une saison dure environ 91 jours),
- * comptée sur le **dernier signe de vie** et non sur la création. « Quatre mois » l'arrondit d'un ou deux
- * jours, comme « trois mois » arrondissait les 90 ; les pages légales disent le chiffre exact. Deux
+ * comptée sur le **dernier signe de vie** et non sur la création. **Le chiffre, et non « quatre mois »** :
+ * quatre mois de calendrier font de 120 à 123 jours, donc « quatre mois » promettait jusqu'à trois jours de
+ * plus que la purge ne tient (contre-lecture du 23/10/2026). « Trois mois » avait le même défaut pour 90. Deux
  * écrans doivent le dire, et ils ne le disaient pas tous les deux — arbitré le 21/09/2026
  * (`v1-28` §7.2) :
  *
@@ -98,7 +99,7 @@ export function etatDuRattachement(lu: {
  * Le texte de `/connexion` n'est **pas** retouché au passage : il a été arbitré, il est en
  * production, et la seule chose que ce chantier avait à faire était de le faire lire ailleurs.
  */
-export const DELAI_SANS_COMPTE_EN_MOTS = 'quatre mois';
+export const DELAI_SANS_COMPTE_EN_MOTS = '120 jours';
 
 /** Les deux façons de perdre un bilan sans compte. La clause partagée, mot pour mot. */
 export const CONDITIONS_DE_PERTE_SANS_COMPTE = `si tu changes de téléphone ou si tu ne reviens pas pendant ${DELAI_SANS_COMPTE_EN_MOTS}`;

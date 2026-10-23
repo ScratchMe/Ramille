@@ -180,8 +180,9 @@ porte encore la carte des deux lieux, qui la remplace le temps de la visite. **D
 existait déjà** : le focus de la carte engagée ne se lit pas par-dessus le `Modal` qui l'a pris, donc
 `noterSurUnEcranCourt` ne le lit plus à ce passage-là (`feuilleDuCompte`) — il se garde au cycliste, dont la
 marque est posée d'avance, comme le ferait la feuille, pour que le chemin direct du plan garde sa garde — et
-au retour de la liste ; et **la moitié négative** (`aucuneFeuilleDesRappels`) se lit à chaque engagement
-suivant : une absence se constate en laissant au défaut le temps d'arriver. **Ce que le parcours ne joue
+au retour de la liste ; et **la moitié négative** (`aucuneFeuilleDesRappels`) se lit aux deux engagements qui suivent, au
+retour de la liste et chez le cycliste — la préférence remise à `email` après « 8 bis », pour que ce soit
+bien la marque qui tienne et non « Sans rappel » : une absence se constate en laissant au défaut le temps d'arriver. **Ce que le parcours ne joue
 pas** : « Rattacher mon adresse », qui quitte le plan alors que la feuille ne s'ouvre qu'une fois par
 appareil — `feuille-rappels-du-compte.test.tsx` tient son appel, sa provenance `rappels` et son ordre.
 

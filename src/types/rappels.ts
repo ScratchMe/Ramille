@@ -491,10 +491,13 @@ export function doitProposerLaFeuille({
  * moyen de recevoir un rappel, et la feuille des rappels ne s'ouvrait pas — seule la carte d'attente du
  * plan le disait, plus tard (« Rattache un compte pour recevoir le mot par email. »). Elle le dit
  * désormais au moment même de s'engager, une seule fois par appareil, et avec la même marque que la
- * feuille du canal (`feuilleDejaVue`) : **les deux feuilles sont complémentaires, jamais cumulées**. Sur
- * un appareil, une seule des deux s'ouvre au premier engagement, et la marque posée par l'une ferme
- * l'autre — qui rattache ensuite un compte ne voit donc pas la feuille du canal lui tomber dessus, son
- * réglage est dans « Toi ».
+ * feuille du canal (`feuilleDejaVue`) : **pour un même compte sur cet appareil, les deux feuilles ne se
+ * cumulent pas**. Au premier engagement, au plus l'une des deux s'ouvre (aucune chez qui a choisi « Sans
+ * rappel »), et la marque posée par l'une ferme l'autre — qui rattache ensuite une adresse à sa session ne
+ * voit donc pas la feuille du canal lui tomber dessus, son réglage est dans « Toi ». **Un compte qui change
+ * balaie la marque** : une adresse déjà connue rouvre l'autre compte, et `effacerLesMarquesDuCompte` emporte
+ * les marques de celui d'avant — la feuille du canal peut alors s'ouvrir une fois pour ce compte-là. Les
+ * marques appartiennent au compte (`COMPTE.md`), et c'est voulu.
  *
  * Exactement le complément de `doitProposerLaFeuille` : à `dejaProposee` faux, l'une est vraie quand
  * l'autre est fausse, sur chaque plateforme et chaque état de l'adresse (un test l'épingle).
@@ -749,7 +752,7 @@ export const REPONSES_DE_LA_PROPOSITION = { oui: 'Oui, la veille aussi', non: 'N
 
 /**
  * Les deux boutons de la feuille du compte (`etape: 'compte'`, 23/10/2026) : le premier mène au
- * rattachement par email, par la porte que la feuille du canal ouvre déjà (`/connexion`, provenance
+ * rattachement — Google ou email —, par la porte que la feuille du canal ouvre déjà (`/connexion`, provenance
  * `rappels`) ; le second referme, sans rien écrire en base. Du produit et non de Ramille : ce sont des actions.
  */
 export const REPONSES_DE_LA_FEUILLE_DU_COMPTE = { rattacher: 'Rattacher mon adresse', plusTard: 'Plus tard' } as const;

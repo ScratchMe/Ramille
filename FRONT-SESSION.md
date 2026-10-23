@@ -4,7 +4,7 @@
 > des rappels, au mot de la veille, à la carte d'attente du plan ou à un texte qui promet un point ·
 > au champ de code · au démarrage, au brouillon, à la reprise, à une marque locale · à ce que le
 > produit promet sans compte · la voix de Ramille à l'entrée des sections du questionnaire · le
-> préremplissage du questionnaire · une durée promise à qui reste sans compte (« quatre mois »). Ce
+> préremplissage du questionnaire · une durée promise à qui reste sans compte (« 120 jours »). Ce
 > que le serveur en fait est dans `COMPTE.md` et `BOUCLE.md`.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
@@ -163,9 +163,12 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
     un `Modal` ouvert reste dessous. « Plus tard » ne navigue pas, il redescend d'abord (`fermer`) ;
   - **la marque est la même que celle de la feuille du canal, et elle se pose dès que la feuille
     s'affiche** — comme la question de la veille, pas à la fermeture : un retour, un toucher sur le
-    voile et la porte la quittent chacun à leur façon, et aucun n'a rien à valider. Les deux feuilles
-    sont **complémentaires, jamais cumulées** : qui rattache une adresse ensuite, ou ferme d'un geste
-    de retour, ne voit pas la feuille du canal lui tomber dessus sur le plan — le réglage est dans
+    voile et la porte la quittent chacun à leur façon, et aucun n'a rien à valider. **Pour un même compte
+    sur cet appareil, les deux feuilles ne se cumulent pas** : qui rattache une adresse à sa session
+    ensuite, ou ferme d'un geste de retour, ne voit pas la feuille du canal lui tomber dessus sur le plan.
+    Un compte qui change, lui, balaie la marque — une adresse déjà connue rouvre l'autre compte, et
+    `effacerLesMarquesDuCompte` emporte les marques de celui d'avant, si bien que la feuille du canal peut
+    s'ouvrir une fois pour ce compte-là : les marques appartiennent au compte — le réglage est dans
     « Toi », et la préférence en base vaut `email` par défaut, donc le mot part dès que l'adresse est
     confirmée ;
   - **« adresse utilisable » est un seul fait** (`adresseUtilisable` : un compte rattaché et confirmé
@@ -377,9 +380,9 @@ périmerait en silence au prochain passage :
   hebdomadaire : elle nomme désormais ce qui suit le compte (les bilans, les réponses, le plan) sans
   promettre de cadence. Sous « Continuer sans compte », les deux faits qui n'étaient dits que dans
   les pages légales : changer de téléphone perd tout, et la purge des sessions anonymes ferme le
-  compte après quatre mois d'**inactivité** (`purge_stale_anonymous_accounts`, fenêtre de 120 jours depuis
-  le 23/10/2026, 90 avant ; `DELAI_SANS_COMPTE_EN_MOTS`) — donc ne pas écrire « quatre mois » ailleurs sans
-  vérifier cette fonction.
+  compte après 120 jours d'**inactivité** (`purge_stale_anonymous_accounts`, depuis le 23/10/2026, 90 avant ;
+  `DELAI_SANS_COMPTE_EN_MOTS`) — le chiffre, et non « quatre mois », qui en promettrait jusqu'à trois de plus.
+  Ne pas l'écrire ailleurs sans vérifier cette fonction.
 - Le questionnaire se préremplit dans cet ordre : **brouillon local > dernier bilan complété >
   vide** (`src/lib/bilan-history.ts`). Le brouillon prime car il est plus récent par
   construction. Un re-bilan prérempli est ce qui rend le suivi dans la durée praticable — sans

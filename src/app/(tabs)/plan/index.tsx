@@ -460,8 +460,8 @@ export default function Plan() {
   const { rappel } = useLocalSearchParams<{ rappel?: string }>();
   const vientDUnRappel = rappel === '1';
   /**
-   * L'étape où s'ouvre la feuille des rappels — le choix du canal, ou la seule question de la veille
-   * (C4.2) —, `null` quand elle est fermée. Décidée par `ouvertureDeLaFeuille`, jamais ici.
+   * L'étape où s'ouvre la feuille des rappels — le choix du canal, la seule question de la veille
+   * (C4.2), ou le compte (web, sans adresse, `v1-35` étape 4) —, `null` quand elle est fermée. Décidée par `ouvertureDeLaFeuille`, jamais ici.
    */
   const [ouvertureDeFeuille, setOuvertureDeFeuille] = useState<OuvertureDeLaFeuille | null>(null);
   /**

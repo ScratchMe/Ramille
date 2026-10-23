@@ -48,8 +48,41 @@ comment on function public.purge_stale_anonymous_accounts() is
   'nuit suivante. Compte les cohortes avant de supprimer, et journalise chaque passage dans purge_runs.';
 
 -- ---------------------------------------------------------------------------------------------
--- Contrôle : la fenêtre vaut 120 jours, plus aucune ne vaut 90, et la fonction reste fermée aux
--- clients. Lu sans les commentaires, qui pourraient citer l'ancienne valeur.
+-- La provenance `rappels` de `connexion_view` couvre aussi la feuille du compte
+-- ---------------------------------------------------------------------------------------------
+-- Même étape, autre moitié : sur le web sans adresse, la feuille du compte s'ouvre au premier
+-- engagement, et son « Rattacher mon adresse » mène à `/connexion` par la provenance `rappels`, sans
+-- valeur neuve. Le référentiel des événements est le seul endroit où les valeurs attendues d'une
+-- propriété vivent (`src/types/analytics.ts`) : il dit désormais que `rappels` mêle le natif et le web.
+-- Substitution vérifiée, comme `20260920221000` ; la description était identique en local et en
+-- production le 23/10/2026 (`a8644b8b87ad090eae718acfffc67307`).
+
+do $la_provenance_des_rappels$
+declare
+  v_description text;
+  ancre constant text :=
+    '« rappels » (la porte sous la ligne « Par email » de la feuille des rappels, ouverte le 20/09/2026)';
+  remplacement constant text :=
+    '« rappels » (la porte sous la ligne « Par email » de la feuille des rappels, ouverte le 20/09/2026, '
+    || 'et depuis le 23/10/2026 « Rattacher mon adresse » de la feuille du compte, sur le web sans adresse)';
+begin
+  select description into v_description from public.usage_event_types where name = 'connexion_view';
+  if position(remplacement in v_description) > 0 then
+    return;
+  end if;
+  if position(ancre in v_description) = 0 then
+    raise exception 'La description de connexion_view a été réécrite autrement : l''ancre de « rappels » est absente.';
+  end if;
+  update public.usage_event_types
+     set description = replace(description, ancre, remplacement)
+   where name = 'connexion_view';
+end
+$la_provenance_des_rappels$;
+
+-- ---------------------------------------------------------------------------------------------
+-- Contrôle : la fenêtre vaut 120 jours, plus aucune ne vaut 90, la provenance `rappels` nomme la
+-- feuille du compte, et la fonction reste fermée aux clients. Lu sans les commentaires, qui pourraient
+-- citer l'ancienne valeur.
 -- ---------------------------------------------------------------------------------------------
 
 do $controle$
@@ -63,6 +96,10 @@ begin
   end if;
   if position('90 days' in v_corps) > 0 then
     raise exception 'CONTROLE: une fenêtre de 90 jours reste dans la purge des sessions anonymes';
+  end if;
+  if not exists (select 1 from public.usage_event_types
+                  where name = 'connexion_view' and description like '%feuille du compte%') then
+    raise exception 'CONTROLE: la provenance « rappels » de connexion_view ne nomme pas la feuille du compte';
   end if;
   if has_function_privilege('anon', 'public.purge_stale_anonymous_accounts()', 'execute')
      or has_function_privilege('authenticated', 'public.purge_stale_anonymous_accounts()', 'execute') then

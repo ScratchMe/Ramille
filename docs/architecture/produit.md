@@ -350,7 +350,7 @@ boucles ; **`delete_my_account` compte après sa suppression et non avant**, sur
 supprimées — un second appel avec un jeton encore valable ne supprime rien, et ne compte donc rien ;
 et **un compteur qui échoue n'arrête jamais une suppression** (contre-lecture du 27/09/2026) : la
 purge supprime quand même et le dit dans `purge_runs.detail`, parce que la page de confidentialité
-promet l'effacement après 90 jours et qu'un compteur en échec à chaque passage l'aurait suspendu
+promet l'effacement après 120 jours (90 jusqu'au 23/10/2026) et qu'un compteur en échec à chaque passage l'aurait suspendu
 pour toujours, sans alerte. **À nos volumes, une ligne peut ne compter qu'une personne** : elle
 n'en porte aucun identifiant, mais « un compteur, jamais une personne » serait faux — c'est pour
 cela que les segments attendent. **Et la livraison a appris une chose qui éclaire la question du churn** :

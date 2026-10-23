@@ -36,7 +36,7 @@ export function FeuilleRappels({ boucle = 'hebdo', moisNomme = null, permission 
   // laquelle un rappel pourrait partir, la feuille du canal n'a rien à proposer — pas de notification, et
   // l'email exige un compte —, donc cette petite feuille s'ouvre à sa place, une fois par appareil, avec la
   // même marque. Ramille dit pourquoi ; deux boutons, qui sont du produit : le premier mène au rattachement
-  // par email (`/connexion`, provenance `rappels`), le second referme. Le focus va à la phrase.
+  // (`/connexion`, Google ou email, provenance `rappels`), le second referme. Le focus va à la phrase.
   if (etape === 'compte') {
     return (
       <FeuilleDuBas titre="Les rappels" enTete={false} onFerme={onFerme} voile={voile} style={style}>

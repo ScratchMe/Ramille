@@ -17,7 +17,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(7);
+select plan(8);
 
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at, last_sign_in_at) values
   ('c6100000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
@@ -80,6 +80,13 @@ select ok(
   'la description de la fonction dit la fenêtre qu''elle applique'
 );
 
+-- La même migration porte l'autre moitié de l'étape 4 : la provenance `rappels` de `connexion_view` couvre
+-- aussi « Rattacher mon adresse » de la feuille du compte, sur le web.
+select ok(
+  (select description like '%feuille du compte%' from public.usage_event_types where name = 'connexion_view'),
+  'la provenance « rappels » de connexion_view nomme aussi la feuille du compte'
+);
+
 select ok(
   not has_function_privilege('authenticated', 'public.purge_stale_anonymous_accounts()', 'execute')
     and not has_function_privilege('anon', 'public.purge_stale_anonymous_accounts()', 'execute'),
@@ -99,7 +106,9 @@ rollback;
 --     sessions de cent cinquante jours, qui partent dans les deux cas. C'est pour cette frontière que
 --     ce fichier existe ;
 --   - la fenêtre portée à 150 jours → 4, et `16` n° 2, 7, 10 à 12, `49` n° 3, 5 à 9, `51` n° 23 ;
---   - la description rendue à « 90 jours » → 6, seule.
+--   - la description rendue à « 90 jours » → 6, seule ;
+--   - la description de `connexion_view` rendue à son texte d'avant (ajoutée le même jour, sur un constat de
+--     la contre-lecture) → 7, seule.
 --
 -- Et, avant toute mutation, la première écriture : les événements insérés avec une date passée
 -- arrivaient datés d'aujourd'hui (le trigger de `usage_events`), et 2 et 3 passaient sans rien

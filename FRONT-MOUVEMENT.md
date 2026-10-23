@@ -106,7 +106,10 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   compris : tout élément qui porte un `tabindex` et précède le contrôle voulu prend le focus à sa
   place. Un `Pressable` de react-native-web en porte toujours un ; `focusable={false}` n'y change
   rien, et `tabIndex={-1}` retire l'arrêt de tabulation sans empêcher `.focus()`. Gardé par
-  `src/tests/ecrans/feuille-du-bas-sur-web.test.tsx` et par le parcours réel.
+  `src/tests/ecrans/feuille-du-bas-sur-web.test.tsx` et par le parcours réel. **Une exception, sans
+  conflit** (23/10/2026) : la feuille du compte pose aussi le focus de `TitreDArrivee` sur sa phrase, au
+  montage, sans délai — la même cible que le `Modal`, qui est le premier focalisable, donc rien ne se
+  contrarie ; c'est ce qui la garde sur natif, où le `Modal` ne pose rien.
 - **Une feuille qui redescend peut encore recevoir un choix** : la fermeture part au geste de
   retour, et un choix validé après un `await` arrive pendant la sortie — ou juste après. `fermer(apres)`
   remplace alors le rappel en attente, ou l'appelle aussitôt si la sortie est finie — ignoré, le

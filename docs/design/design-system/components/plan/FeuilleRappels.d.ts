@@ -33,7 +33,7 @@ export interface FeuilleRappelsProps {
   detailVeille?: string;
   /** « Oui, la veille aussi » ou « Non merci » : chacun enregistre une réponse. */
   onRepondreALaVeille?: (reponse: 'oui' | 'refuse') => void;
-  /** « Rattacher mon adresse », sur l'étape `compte` : mène au rattachement par email. « Plus tard » appelle `onFerme`. */
+  /** « Rattacher mon adresse », sur l'étape `compte` : mène à `/connexion` (Google ou email). « Plus tard » appelle `onFerme`. */
   onRattacher?: () => void;
 }
 export declare function FeuilleRappels(props: FeuilleRappelsProps): JSX.Element;
