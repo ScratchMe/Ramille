@@ -166,9 +166,9 @@ export function FeuilleRappels({
 
   // **La feuille du compte pose la marque de la feuille dès qu'elle s'affiche**, pas quand on la quitte :
   // elle n'a rien à valider, et un retour, un toucher sur le voile ou la porte vers `/connexion` la
-  // quittent chacun à leur façon. Refermée sans un geste d'elle, elle ne reviendrait sinon qu'au prochain
-  // engagement. Écrite avant de naviguer, donc : la marque est posée quand la personne revient du
-  // rattachement, et la feuille du canal — devenue possible, avec une adresse — ne s'ouvre pas.
+  // quittent chacun à leur façon — sans la marque, l'un d'eux la ferait revenir au prochain engagement.
+  // C'est aussi ce qui tient quand la personne revient du rattachement avec une adresse : la feuille du
+  // canal, devenue possible, ne s'ouvre pas, la marque étant déjà posée.
   const surLaFeuilleDuCompte = ouverture.etape === 'compte';
   useEffect(() => {
     if (surLaFeuilleDuCompte) void marquerFeuilleDeRappelVue();

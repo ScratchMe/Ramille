@@ -304,7 +304,8 @@ export const RAMILLE = {
    * s'engager**, une seule fois, avec la porte — deux boutons, qui sont du produit et pas d'elle.
    *
    * Elle dit ce qu'elle ne peut pas faire, puis ce qui le rend possible : ni reproche ni promesse. Pas
-   * de nombre, pas d'injonction (« Rattache » est la porte, comme la carte d'attente du plan).
+   * de nombre, ni « tu devrais » ni « il faut » ; « Rattache » est l'impératif de la carte d'attente du
+   * plan (« Rattache un compte pour… »), qui donne la porte avec lui — ici, le premier bouton.
    */
   signeSurLeWebParEmail:
     'Sur le web, je ne peux te faire signe que par email. Rattache ton adresse pour recevoir le rappel.',
