@@ -1,7 +1,7 @@
 -- Tests pgTAP : le référentiel des événements dit la neuvième porte de `/connexion/retrouver`,
 -- « J'ai déjà un compte » de la page d'accueil du web (étape 5 de
 -- `docs/architecture/v1-35-l-audit-en-chantiers.md`, migration
--- `20261023220000_la_porte_de_la_page_d_accueil.sql`).
+-- `20261023233954_la_porte_de_la_page_d_accueil.sql`).
 --
 -- **Ce que ce fichier garde.** `retrouver_view` porte `props.source`, que la base ne valide pas : la
 -- description du référentiel est le seul endroit où ses valeurs sont dites, et rien ne la compare à
