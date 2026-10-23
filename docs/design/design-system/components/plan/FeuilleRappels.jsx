@@ -13,7 +13,7 @@ import { LigneDeCanal } from '../forms/LigneDeCanal.jsx';
 // `libelleBouton` (src/types/rappels.ts) : le bouton n'annonce un dialogue système que s'il va s'en ouvrir un.
 const libelleBouton = (canal, permission) =>
   canal === 'none' ? 'Continuer sans rappel' : canal === 'email' ? 'C’est bon' : permission === 'demandable' ? 'Autoriser les notifications' : 'C’est bon';
-export function FeuilleRappels({ boucle = 'hebdo', moisNomme = null, permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style, etape = 'canal', detailVeille = 'Par notification, jusqu’au 15 novembre.', onRepondreALaVeille }) {
+export function FeuilleRappels({ boucle = 'hebdo', moisNomme = null, permission = 'demandable', lignes, canal = 'push', onCanal, boutonLabel, onValider, onFerme, erreur, voile = true, style, etape = 'canal', detailVeille = 'Par notification, jusqu’au 15 novembre.', onRepondreALaVeille, onRattacher }) {
   // La seconde étape (C4.2) : le mot de la veille, posé une fois la notification choisie et reçue — ou seule,
   // quand la feuille se rouvre une fois au premier engagement de trajet où elle peut être posée
   // (`ouvertureDeLaFeuille`). Le contenu change sous le doigt, d'où `TitreDArrivee` ; la ligne du produit
@@ -29,6 +29,22 @@ export function FeuilleRappels({ boucle = 'hebdo', moisNomme = null, permission 
         <Button title="Oui, la veille aussi" onPress={() => onRepondreALaVeille && onRepondreALaVeille('oui')} />
         <Button title="Non merci" variant="secondary" onPress={() => onRepondreALaVeille && onRepondreALaVeille('refuse')} />
         <ThemedText type="small" themeColor="textTertiary" style={{ textAlign: 'center' }}>Tu pourras changer d’avis dans « Toi ».</ThemedText>
+      </FeuilleDuBas>
+    );
+  }
+  // La troisième ouverture (23/10/2026, `v1-35` étape 4) : le compte. Sur le web, sans aucune adresse sur
+  // laquelle un rappel pourrait partir, la feuille du canal n'a rien à proposer — pas de notification, et
+  // l'email exige un compte —, donc cette petite feuille s'ouvre à sa place, une fois par appareil, avec la
+  // même marque. Ramille dit pourquoi ; deux boutons, qui sont du produit : le premier mène au rattachement
+  // (`/connexion`, Google ou email, provenance `rappels`), le second referme. Le focus va à la phrase.
+  if (etape === 'compte') {
+    return (
+      <FeuilleDuBas titre="Les rappels" enTete={false} onFerme={onFerme} voile={voile} style={style}>
+        <TitreDArrivee>
+          <RamilleDit ligne="Sur le web, je ne peux te faire signe que par email. Rattache ton adresse pour recevoir le rappel." mood="calm" size={44} themeColor="text" style={{ alignItems: 'flex-start' }} />
+        </TitreDArrivee>
+        <Button title="Rattacher mon adresse" onPress={onRattacher} />
+        <Button title="Plus tard" variant="secondary" onPress={onFerme} />
       </FeuilleDuBas>
     );
   }

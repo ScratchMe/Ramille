@@ -219,7 +219,7 @@ async function reglerLeJetonMaintenant(): Promise<boolean> {
  * cinq, et rouvrir une ligne que le serveur avait désactivée le temps d'un aller-retour. Une ligne que la
  * session voit est déjà la sienne (la RLS ne rend que celles-là) : elle se désactive directement. Une
  * ligne invisible appartient à un autre compte, ou a été purgée — une session anonyme purgée au bout de
- * 90 jours, un compte supprimé depuis un autre appareil. Dans ce second cas, la reprise en recrée une,
+ * 120 jours, un compte supprimé depuis un autre appareil. Dans ce second cas, la reprise en recrée une,
  * aussitôt désactivée et supprimée 90 jours plus tard comme tout jeton désactivé : c'est ce que dit la
  * page de confidentialité (« désactivé au démarrage suivant »), et rien ne part chez Expo. Reste un effet
  * rare, assumé : la reprise d'une ligne d'un autre compte peut évincer un appareil du compte présent

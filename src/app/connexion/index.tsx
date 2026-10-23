@@ -221,8 +221,8 @@ export default function ConnexionProposition() {
             />
             {/* **Ce qu'on perd sans compte n'était dit que dans les pages légales** (C3.9,
                 constat A1-11) : changer de téléphone perd tout, et la purge des sessions anonymes
-                ferme le compte après trois mois d'inactivité
-                (`purge_stale_anonymous_accounts`, fenêtre de 90 jours, comptée sur le dernier
+                ferme le compte après 120 jours d'inactivité
+                (`purge_stale_anonymous_accounts`, fenêtre de 120 jours, comptée sur le dernier
                 signe de vie et non sur la création). Elle est rendue pour **toutes** les
                 provenances depuis le 20/09/2026, et c'est une conséquence du retrait de
                 l'interstitiel : il la faisait lire à tout le monde au passage, en petit, sous un

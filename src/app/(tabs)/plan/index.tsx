@@ -460,8 +460,8 @@ export default function Plan() {
   const { rappel } = useLocalSearchParams<{ rappel?: string }>();
   const vientDUnRappel = rappel === '1';
   /**
-   * L'étape où s'ouvre la feuille des rappels — le choix du canal, ou la seule question de la veille
-   * (C4.2) —, `null` quand elle est fermée. Décidée par `ouvertureDeLaFeuille`, jamais ici.
+   * L'étape où s'ouvre la feuille des rappels — le choix du canal, la seule question de la veille
+   * (C4.2), ou le compte (web, sans adresse, `v1-35` étape 4) —, `null` quand elle est fermée. Décidée par `ouvertureDeLaFeuille`, jamais ici.
    */
   const [ouvertureDeFeuille, setOuvertureDeFeuille] = useState<OuvertureDeLaFeuille | null>(null);
   /**
@@ -480,7 +480,9 @@ export default function Plan() {
 
   // Appelée quand un engagement vient d'être pris — y compris « Choisir celle-ci à la place », qui
   // en prend un —, jamais quand on le libère. La feuille entière ne s'ouvre qu'une fois par appareil :
-  // c'est une cérémonie pour la première fois, pas un péage à chaque action. Et depuis C4.2 elle peut
+  // c'est une cérémonie pour la première fois, pas un péage à chaque action. **Sur le web sans adresse,
+  // c'est la petite feuille du compte qui s'ouvre à sa place** (`ouvertureDeLaFeuille`, 23/10/2026) :
+  // `rappels` porte l'adresse (`email`) que la dérivation lit, et la marque est la même. Et depuis C4.2 elle peut
   // rouvrir sur la seule question de la veille, une fois aussi, au premier engagement de trajet où
   // elle peut être posée — le cas de qui a choisi un vol d'abord (`ouvertureDeLaFeuille`).
   // **Elle ne s'ouvre que sur un plan au premier plan** : la réouverture attend une lecture réseau
@@ -521,9 +523,11 @@ export default function Plan() {
     const fenetre = laVeilleSeRepropose(etat) ? await lireLaFenetreDuMotDeLaVeille() : null;
     const ouverture = ouvertureDeLaFeuille({ ...etat, fenetre });
     if (ouverture === null || !auPremierPlan.current) return;
-    // `rappels_view` compte les vues du choix du canal : la seule question de la veille n'en est pas
-    // une, et la compter gonflerait l'entonnoir qu'il mesure. Sa réponse, elle, est en base
-    // (`profiles.mot_de_la_veille`).
+    // `rappels_view` compte les vues du choix du canal : ni la seule question de la veille, ni la feuille
+    // du compte (le web sans adresse, 23/10/2026) n'en sont une, et les compter gonflerait l'entonnoir
+    // qu'il mesure. La réponse à la veille est en base (`profiles.mot_de_la_veille`) ; la feuille du
+    // compte ne se compte pas, faute d'événement — il demanderait une migration (`MESURE.md`) —, et sa
+    // porte se lit à `connexion_view`, provenance `rappels`.
     if (ouverture.etape === 'canal') track('rappels_view');
     setOuvertureDeFeuille(ouverture);
   }, [rappels]);

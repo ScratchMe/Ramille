@@ -228,8 +228,9 @@
 //     hauteur, que la pile web a masquée pendant le détour ;
 //   - **la réponse au point** : la carte change de hauteur, et ce qui est dessous suit au lieu de
 //     sauter (`HauteurSuivie`) ;
-//   - **la feuille « Ton plan va être recalculé »**, la seule qui s'ouvre sur web sans adresse
-//     rattachée — à l'entrée d'un re-bilan, puisqu'elle demande une action engagée : le voile se fond
+//   - **la feuille « Ton plan va être recalculé »**, la seule — avec la petite feuille du compte, depuis le
+//     23/10/2026 — qui s'ouvre sur web sans adresse rattachée : à l'entrée d'un re-bilan, puisqu'elle demande
+//     une action engagée : le voile se fond
 //     sans bouger pendant que la feuille monte, et Échap la fait redescendre au lieu de l'effacer,
 //     puis ressort vers la restitution d'où l'on venait (01/10/2026, `v1-33` §6) ;
 //   - puis **la même feuille sous « réduire les animations »** (préférence émulée, page rechargée :
@@ -571,6 +572,36 @@
 // que PC ci-dessus — dit qu'une carte restée en place ne la satisfait toujours pas. **L'intégration
 // garde les deux lectures** : l'image rapportée à la position d'avant, et l'appel de défilement ; une
 // seule suffit à dire « dehors », et aucune ne le dit d'une carte que la relecture laisse en place.
+//
+// **La feuille du compte, traversée au premier engagement du premier profil** (23/10/2026, `v1-35` étape 4 :
+// sur le web, sans adresse, une petite feuille dit que Ramille ne peut faire signe que par email). La
+// phrase mot pour mot, les deux boutons, rien du choix du canal, la marque posée avant tout geste, le focus
+// sur la phrase, « Plus tard » qui la fait redescendre sans écrire la préférence — et, aux deux engagements
+// qui suivent (retour de la liste, cycliste), aucune feuille (`traverserLaFeuilleDuCompte`, `aucuneFeuilleDesRappels`). Le cycliste, navigateur
+// neuf, a la marque posée d'avance : le `Modal` prendrait sinon le focus que son passage garde. Rejouées une
+// à la fois, un export chacune, l'arbre restauré par l'état d'avant réécrit, le témoin sans mutation vert
+// (7 pas sur 7) :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PF1 — la feuille du compte jamais ouverte (`ouvertureDeLaFeuille` rend `null`, le silence d'avant) | « engagement » : la feuille du compte ne s'est pas ouverte |
+//   | PF2 — la marque n'est plus posée à l'affichage | « engagement » : la feuille est à l'écran mais la marque n'est pas posée |
+//   | PF3 — « Plus tard » démonte la feuille sans la faire redescendre | « engagement » : elle disparaît d'un coup |
+//   | PF4 — `TitreDArrivee` retiré de la phrase | « engagement » : le focus est dans la feuille, sur « Rattacher mon adresse » et non sur la phrase |
+//   | PF5 — la feuille du canal s'ouvre à la place | « engagement » : la feuille ne dit pas la phrase de la décision (« Comment tu préfères… ») |
+//   | PF6 — le plan ne lit pas la marque (`feuilleDejaVue` toujours faux) | « pistes — choisir depuis la liste, à la place » : une feuille des rappels s'est ouverte alors que la marque est posée |
+//   | PF7 — « Plus tard » écrit « Sans rappel » en base | « engagement » : « Plus tard » a écrit la préférence (`none` au lieu de `email`) |
+//   | PF8 — « Plus tard » prend la porte du rattachement | « engagement » : elle disparaît d'un coup — la porte appelle `onFerme` sans attendre la sortie ; le toucher est sur `/connexion?source=rappels` |
+//   | PF8b — « Plus tard » redescend, puis navigue vers le rattachement | « engagement » : « Plus tard » a quitté le plan |
+//   | PF9 — la phrase de Ramille change d'un mot | « engagement » : la feuille ne dit pas la phrase de la décision |
+//
+// **Trois choses que le premier passage a corrigées** : la mesure `feuille` cherchait l'en-tête de la feuille
+// pour en lire le haut, et « Les rappels » n'en affiche pas (`enTete={false}`) — elle retombe sur le premier
+// bouton, sans changer les feuilles qui en ont un ; une attente de la carte d'attente derrière la feuille,
+// écrite sans l'avoir lue, ne pouvait pas tenir (ce premier plan porte encore la carte des deux lieux, qui la
+// remplace le temps de la visite) — retirée ; et PF8 ne tombe pas sur « a quitté le plan » mais plus tôt, sur
+// la disparition d'un coup, ce que PF8b — qui redescend avant de naviguer — corrige : sans lui, l'assertion
+// de l'adresse n'aurait été vue tomber par aucune mutation.
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -935,7 +966,7 @@ async function amenerLeBoutonEnBas(titre, libelle) {
  * défilement, ou aucune — les deux mesurés sur le même arbre, à la même mise en page au pixel près
  * (en-tête, « lisait une course »). La précondition ne dépend plus de cette course.
  */
-async function noterSurUnEcranCourt(titre, ou, { glisse }) {
+async function noterSurUnEcranCourt(titre, ou, { glisse, feuilleDuCompte = false }) {
   const taille = page.viewportSize();
   await page.setViewportSize({ width: taille.width, height: 640 });
   await amenerLeBoutonEnBas(titre, 'C’est noté');
@@ -963,9 +994,126 @@ async function noterSurUnEcranCourt(titre, ou, { glisse }) {
     `${ou}, à ${imageSansRien?.t} ms, la carte ne montre ni « C’est noté » ni « Changer d’avis » : le sélecteur s’est refermé` +
       ' avant la relecture (`lectureAttendue`, src/components/plan/action-commitment.tsx)'
   );
-  await verifierLaCarteEngagee(ou, { vues: releve.map((e) => e.carte), appels, glisse, exigerUnDefilement: true });
+  // **Sur le web sans adresse, le premier engagement ouvre la feuille du compte** (23/10/2026, `v1-35`
+  // étape 4) : l'appelant dit si c'est ce passage-ci. Elle prend le focus (c'est le `Modal`), donc le focus
+  // de la carte engagée ne se lit pas par-dessus — il se lit où aucune feuille ne s'ouvre, et ce passage-là
+  // lit à la place celui de la feuille. Partout ailleurs, **aucune feuille des rappels ne s'ouvre**.
+  if (feuilleDuCompte) await traverserLaFeuilleDuCompte(ou);
+  else await aucuneFeuilleDesRappels(ou);
+  await verifierLaCarteEngagee(ou, {
+    vues: releve.map((e) => e.carte),
+    appels,
+    glisse,
+    exigerUnDefilement: true,
+    focus: !feuilleDuCompte,
+  });
   await page.setViewportSize(taille);
   await page.waitForTimeout(400);
+}
+
+/** La marque « la feuille des rappels a été vue sur cet appareil » (`src/lib/notification-prefs.ts`). */
+const MARQUE_DE_LA_FEUILLE_DES_RAPPELS = 'traceverte.rappels_proposes.v1';
+/** La phrase de la décision du 23/10/2026, mot pour mot (`RAMILLE.signeSurLeWebParEmail`). */
+const PHRASE_DE_LA_FEUILLE_DU_COMPTE =
+  'Sur le web, je ne peux te faire signe que par email. Rattache ton adresse pour recevoir le rappel.';
+/** Le dialogue de la feuille des rappels : le même nom pour ses trois ouvertures (`FeuilleRappels`). */
+const feuilleDesRappels = () => page.locator('[aria-modal="true"][aria-label="Les rappels"]');
+const sansEspaces = (texte) => (texte ?? '').replace(/\s+/g, ' ').trim();
+
+/**
+ * **La feuille du compte, traversée** (23/10/2026, `v1-35` étape 4, décision de la personne qui pilote).
+ * Sur le web, sans adresse sur laquelle un rappel pourrait partir, le premier engagement n'ouvre pas le
+ * choix du canal — il n'aurait rien à proposer — mais une petite feuille qui dit pourquoi. Ce que le
+ * navigateur seul peut dire, et que Jest ne voit pas :
+ *   - **elle s'ouvre**, avec la phrase de Ramille mot pour mot, deux boutons, et rien du choix du canal ;
+ *   - **la marque est posée dès qu'elle s'affiche**, avant tout geste : c'est elle qui l'empêche de revenir ;
+ *   - **le focus est dans la feuille, sur la phrase** — c'est toute l'explication ;
+ *   - **« Plus tard » la fait redescendre** (pas disparaître d'un coup), reste sur le plan, et n'écrit rien :
+ *     la préférence en base vaut toujours `email`, son défaut.
+ * Le bouton « Rattacher mon adresse » n'est pas joué ici : il quitte le plan, et la feuille ne s'ouvre qu'une
+ * fois par appareil — `feuille-rappels-du-compte.test.tsx` tient son appel, sa provenance et son ordre.
+ */
+async function traverserLaFeuilleDuCompte(ou) {
+  const feuille = feuilleDesRappels();
+  try {
+    await feuille.waitFor({ state: 'visible', timeout: ATTENTE });
+  } catch {
+    throw new Ecart(
+      `${ou}, la feuille du compte ne s’est pas ouverte : sur le web, sans adresse, le premier engagement dit que` +
+        ' Ramille ne peut faire signe que par email (`ouvertureDeLaFeuille`, `{ etape: \'compte\' }`)'
+    );
+  }
+  const texte = sansEspaces(await feuille.innerText());
+  assurer(
+    texte.includes(PHRASE_DE_LA_FEUILLE_DU_COMPTE),
+    `${ou}, la feuille du compte ne dit pas la phrase de la décision : « ${texte.slice(0, 160)} »`
+  );
+  assurer(
+    (await feuille.getByRole('button', { name: 'Rattacher mon adresse', exact: true }).count()) === 1 &&
+      (await feuille.getByRole('button', { name: 'Plus tard', exact: true }).count()) === 1,
+    `${ou}, la feuille du compte n’a pas ses deux boutons, « Rattacher mon adresse » et « Plus tard »`
+  );
+  assurer(
+    (await feuille.getByRole('radiogroup').count()) === 0 && !texte.includes('Comment tu préfères que je te fasse signe'),
+    `${ou}, la feuille du canal s’est ouverte à la place de la feuille du compte : il n’y a rien à choisir sans adresse`
+  );
+  // La marque, avant tout geste.
+  assurer(
+    (await page.evaluate((cle) => localStorage.getItem(cle), MARQUE_DE_LA_FEUILLE_DES_RAPPELS)) === '1',
+    `${ou}, la feuille du compte est à l’écran mais la marque « feuille des rappels vue » n’est pas posée : refermée d’un` +
+      ' geste de retour, elle reviendrait au prochain engagement (`FeuilleRappels`, la marque à l’affichage)'
+  );
+  // Le focus : le `Modal` le pose sur le premier descendant qui l'accepte, et `TitreDArrivee` y met la phrase.
+  try {
+    await page.waitForFunction(
+      (phrase) => {
+        const dialogue = document.querySelector('[aria-modal="true"][aria-label="Les rappels"]');
+        const actif = document.activeElement;
+        return Boolean(dialogue?.contains(actif)) && (actif?.textContent ?? '').replace(/\s+/g, ' ').trim().startsWith(phrase);
+      },
+      PHRASE_DE_LA_FEUILLE_DU_COMPTE.slice(0, 30),
+      { timeout: 2_000 }
+    );
+  } catch {
+    const vu = await page.evaluate(() => {
+      const actif = document.activeElement;
+      const dialogue = document.querySelector('[aria-modal="true"][aria-label="Les rappels"]');
+      return {
+        dansLaFeuille: Boolean(dialogue?.contains(actif)),
+        nom: actif?.getAttribute('aria-label') ?? (actif?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 60),
+      };
+    });
+    throw new Ecart(`${ou}, le focus de la feuille du compte n’est pas sur la phrase de Ramille : ${JSON.stringify(vu)}`);
+  }
+  // « Plus tard » : elle redescend avant de se démonter, et rien ne bouge d'autre.
+  const posee = await mesurer(page, 'feuille', 'Les rappels');
+  assurer(posee?.voile && posee.haut !== null, `${ou}, la feuille du compte est introuvable une fois ouverte`);
+  const fermeture = await releverPendant(page, { feuille: ['feuille', 'Les rappels'] }, () => bouton('Plus tard'));
+  assurer((await feuille.count()) === 0, `${ou}, « Plus tard » ne referme pas la feuille du compte`);
+  assurer(
+    enChemin(fermeture.map((e) => e.feuille?.haut).filter((h) => h != null), posee.haut),
+    `${ou}, la feuille du compte disparaît d’un coup à « Plus tard » : elle doit redescendre avant de se démonter (\`fermer\`, \`FeuilleDuBas\`)`
+  );
+  assurer(new URL(page.url()).pathname === '/plan', `${ou}, « Plus tard » a quitté le plan : ${page.url()}`);
+  const [profil] = await lire('profiles?select=reminder_channel', (await session()).jeton);
+  assurer(
+    profil?.reminder_channel === 'email',
+    `${ou}, « Plus tard » a écrit la préférence de rappel : ${JSON.stringify(profil)} au lieu de l’email, son défaut`
+  );
+}
+
+/**
+ * **Aucune feuille des rappels** — la moitié négative de la précédente : la marque est posée, donc ni la
+ * feuille du compte ni celle du canal ne reviennent au second engagement. Une absence se constate en
+ * laissant au défaut le temps d'arriver : la feuille s'ouvre dès que l'écran a lu la marque, quelques
+ * millisecondes après la réponse de `commit_plan_action`.
+ */
+async function aucuneFeuilleDesRappels(ou) {
+  await page.waitForTimeout(800);
+  assurer(
+    (await feuilleDesRappels().count()) === 0,
+    `${ou}, une feuille des rappels s’est ouverte alors que la marque est posée : elle ne s’ouvre qu’une fois par appareil`
+  );
 }
 
 /**
@@ -1062,7 +1210,10 @@ async function ouvrirLeSelecteurSurUnEcranCourt(titre, { glisse }) {
  * `appels` (facultatif) : la même mesure, prise à chaque appel de défilement de l'app
  * (`guetterLesDefilements`) — la seconde source de la précondition, qui ne dépend d'aucune image.
  */
-async function verifierLaCarteEngagee(ou, { vues = null, appels = [], glisse = true, exigerUnDefilement = false } = {}) {
+async function verifierLaCarteEngagee(
+  ou,
+  { vues = null, appels = [], glisse = true, exigerUnDefilement = false, focus = true } = {}
+) {
   const lireLaCarte = () =>
     page.evaluate(() => {
       const visible = (e) => e.getClientRects().length > 0 && (e.checkVisibility?.({ visibilityProperty: true }) ?? true);
@@ -1104,7 +1255,7 @@ async function verifierLaCarteEngagee(ou, { vues = null, appels = [], glisse = t
       ` ${carte.hauteur}) : l’écran devait l’y amener après la relecture (\`amenerDansLaFenetre\`, src/app/(tabs)/plan/index.tsx)`
   );
   assurer(
-    carte.focus,
+    carte.focus || !focus,
     `${ou}, le focus est sur « ${carte.vu} » et non sur le bloc de la carte engagée — il part avec le rendu qui retire « C’est noté »`
   );
   if (vues !== null) {
@@ -1329,6 +1480,15 @@ async function lire(chemin, jeton) {
   });
   if (!reponse.ok) throw new Ecart(`lecture ${chemin} : HTTP ${reponse.status} ${await reponse.text()}`);
   return reponse.json();
+}
+/** Une écriture PostgREST **comme la personne** — la même que l'app (`profiles.update`), sous la RLS. */
+async function ecrire(chemin, jeton, corps) {
+  const reponse = await fetch(`${API}/rest/v1/${chemin}`, {
+    method: 'PATCH',
+    headers: { apikey: ANON, Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(corps),
+  });
+  if (!reponse.ok) throw new Ecart(`écriture ${chemin} : HTTP ${reponse.status} ${await reponse.text()}`);
 }
 async function rpc(nom, jeton, corps = {}) {
   const reponse = await fetch(`${API}/rest/v1/rpc/${nom}`, {
@@ -1706,7 +1866,12 @@ try {
   // premier plan, la relecture remet le cap devant les pistes, et la carte qu'on venait de toucher
   // finissait sous la barre, le focus sur le document. Touchée au bas d'un écran court, pour que la
   // relecture l'en sorte (`noterSurUnEcranCourt`).
-  await noterSurUnEcranCourt(ATTENDU.pistes[0][0], 'après « C’est noté », sur le plan', { glisse: true });
+  //
+  // **Et c'est ici, au premier engagement de cet appareil, que s'ouvre la feuille du compte** (23/10/2026,
+  // `v1-35` étape 4) : ce profil est un navigateur sans adresse rattachée. Elle est traversée par
+  // `noterSurUnEcranCourt` — la phrase, la marque, le focus, « Plus tard » —, et le focus de la carte
+  // engagée ne se lit pas par-dessus : le `Modal` l'a pris. Le cycliste, plus bas, le garde.
+  await noterSurUnEcranCourt(ATTENDU.pistes[0][0], 'après « C’est noté », sur le plan', { glisse: true, feuilleDuCompte: true });
   const [engagee] = await lire('plan_actions?select=rank,committed_at,intention_days&rank=eq.1', jeton);
   assurer(engagee && engagee.committed_at !== null, 'la piste 1 n’est pas engagée en base');
   assurer(JSON.stringify(engagee.intention_days) === '[2,4]', `jours engagés ${JSON.stringify(engagee.intention_days)}, attendu [2,4]`);
@@ -1991,8 +2156,9 @@ try {
 
   // ── 8 bis. « Toi » : la ligne de canal, hors d'atteinte et au clavier ────────────────────────
   //
-  // **Le seul endroit de ce parcours où une ligne de canal se rend** (25/09/2026) : la feuille des
-  // rappels ne s'ouvre sur web qu'avec une adresse rattachée, et ce profil n'en a pas.
+  // **Le seul endroit de ce parcours où une ligne de canal se rend** (25/09/2026) : la feuille du choix du
+  // canal ne s'ouvre sur web qu'avec une adresse rattachée (sans, c'est la feuille du compte, qui n'a pas
+  // de ligne à rendre : 23/10/2026), et ce profil n'en a pas.
   // Deux choses s'y vérifient, qu'aucune autre garde ne voyait :
   //   - **la ligne hors d'atteinte le dit par son texte, jamais par une opacité** (kit, `readme.md`,
   //     puce « États ») : sans compte, « Par email » est désactivée, jamais cochée — la préférence en
@@ -2066,12 +2232,23 @@ try {
   }
   assurer(canalEnBase === 'none', `la préférence choisie à la barre d’espace n’a pas atteint la base : ${canalEnBase}`);
 
+  // **La préférence revient à son défaut, `email`, avant la suite** (23/10/2026, contre-lecture de l'étape
+  // 4 de `v1-35`). Sur le web sans compte, « Toi » ne propose que « Sans rappel » — « Par email » y est hors
+  // d'atteinte —, donc l'interface ne peut pas la remettre : c'est l'écriture même de l'app
+  // (`setReminderChannel`, `profiles.update`), sous la session de la personne. Sans elle, le second
+  // engagement de ce profil (« pistes ») ne voyait aucune feuille à cause de « Sans rappel » — la feuille du
+  // compte ne s'ouvre pas chez qui l'a choisi —, et la vérification de la marque passait sans rien prouver.
+  await ecrire(`profiles?id=eq.${userId}`, jeton, { reminder_channel: 'email' });
+  const [profilRemis] = await lire(`profiles?select=reminder_channel&id=eq.${userId}`, jeton);
+  assurer(profilRemis?.reminder_channel === 'email', `la préférence n’est pas revenue à email : ${profilRemis?.reminder_channel}`);
+
   // ── 8 ter. La feuille du re-bilan, avec et sans « réduire les animations » ───────────────────
   //
   // **Le voile se fond sur place, la feuille monte, Échap la fait redescendre** (27/09/2026, `v1-30`
   // §5.4). Le `Modal` animait tout d'un bloc : le voile gris montait du bas avec la feuille, la
-  // fermeture était instantanée sur web, et la feuille glissait même sous la préférence. C'est la
-  // seule feuille qui s'ouvre sur web sans adresse rattachée, et elle demande une action engagée.
+  // fermeture était instantanée sur web, et la feuille glissait même sous la préférence. C'est, avec la
+  // feuille du compte (23/10/2026, traversée à l'engagement), la seule qui s'ouvre sur web sans adresse
+  // rattachée, et elle demande une action engagée.
   //
   // **Elle s'ouvre à l'entrée du questionnaire, et plus à sa soumission** (01/10/2026, `v1-33` §6) :
   // on y entre comme le produit y mène, depuis la restitution, par « Faire un nouveau bilan ». C'est
@@ -2453,6 +2630,11 @@ try {
     throw new Ecart('« C’est noté », depuis la liste, n’a pas ramené au plan');
   }
   await attendreTexte('TON ENGAGEMENT');
+  // **Le second engagement de cet appareil n'ouvre aucune feuille** (23/10/2026) : la marque a été posée
+  // par la feuille du compte, au premier — la moitié négative de `traverserLaFeuilleDuCompte`, sur le
+  // chemin de la liste (`useReprendreLEngagement`), qui n'est pas celui du plan. La préférence est revenue
+  // à `email` après « 8 bis » : c'est donc bien la marque qui tient ici, et non « Sans rappel ».
+  await aucuneFeuilleDesRappels('au retour de la liste, après « C’est noté »');
   // **Le retour de la liste montre aussi l'action choisie** (audit P-1, 01/10/2026) : elle passe en
   // tête des cartes, et le plan s'ouvrait où il voulait — elle n'était pas à l'écran. Le passage de la
   // pile le dit au plan, qui l'amène dans la fenêtre à sa première lecture, et lui donne le focus.
@@ -3005,6 +3187,13 @@ try {
     'plan_actions?select=action_templates(action_text)&rank=eq.1',
     sobre.jeton
   );
+  //
+  // **Un appareil qui a déjà fermé la feuille des rappels** (23/10/2026) : ce profil est un navigateur
+  // neuf, donc son premier engagement ouvrirait la feuille du compte — que le premier profil traverse — et
+  // le `Modal` prendrait le focus que ce passage garde, celui de la carte engagée sur le chemin direct du
+  // plan. La marque est posée comme la poserait la feuille, par le stockage de l'appareil. Et la moitié
+  // négative en sort : sur cet appareil, aucune feuille des rappels ne s'ouvre.
+  await page.evaluate((cle) => localStorage.setItem(cle, '1'), MARQUE_DE_LA_FEUILLE_DES_RAPPELS);
   await ouvrirLeSelecteurSurUnEcranCourt(titreDeLaPremierePiste, { glisse: false });
   await choisir('mardi');
   await choisir('jeudi');

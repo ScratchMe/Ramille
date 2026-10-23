@@ -329,7 +329,8 @@ Rien d'autre : c'est le socle des cinq chantiers suivants.
 - **Accessibilité** : le dialogue garde son nom (le titre) ; le piège à focus de react-native-web ne
   change pas ; « le geste de retour referme toujours » reste le contrat.
 - **Garde** : le parcours réel (`scripts/verifier-parcours-reel.mjs`, étape « re-bilan ») ouvre la
-  feuille « Ton plan va être recalculé » — la seule qui s'ouvre sur web sans adresse rattachée, et
+  feuille « Ton plan va être recalculé » — la seule qui s'ouvre sur web sans adresse rattachée (jusqu'au
+  23/10/2026 : depuis, la feuille du compte s'y ouvre aussi, au premier engagement, `v1-35` étape 4), et
   elle demande une action engagée, d'où le re-bilan, jamais soumis :
   - animations actives : le voile ne bouge d'aucune image (son haut reste à 0), il passe par une
     opacité intermédiaire, la feuille est en chemin au moins une image ; à Échap, elle redescend au

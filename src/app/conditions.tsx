@@ -59,7 +59,9 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // (`v1-35` étape 2, `docs/exploitation/fiche-google-play.md` §1.3). La fiche Play déclare 18 ans et plus,
 // ce qui oriente l'examen de Google ; les conditions n'interdisent rien, et le RGPD n'impose pas d'âge à
 // un service dont aucun traitement ne repose sur le consentement.
-const UPDATED_AT = '18 octobre 2026';
+// **23/10/2026** : la session sans compte attend 120 jours sans utilisation avant d'être supprimée, et non
+// plus 90 (`v1-35` étape 4) — une phrase.
+const UPDATED_AT = '23 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -119,7 +121,7 @@ const SECTIONS: LegalSection[] = [
         items: [
           'Tu peux créer un compte avec ton adresse email, ou en passant par ton compte Google. Il n’y a pas de mot de passe : avec une adresse email, la connexion se fait par un code à usage unique envoyé à cette adresse.',
           'Tu es responsable de l’accès à ta boîte email et des actions effectuées depuis ton compte.',
-          'Sans rattachement à un compte, ton bilan reste lié à l’appareil et au navigateur utilisés, et il est supprimé automatiquement après 90 jours sans utilisation de l’application. Tant que tu reviens, rien n’est effacé.',
+          'Sans rattachement à un compte, ton bilan reste lié à l’appareil et au navigateur utilisés, et il est supprimé automatiquement après 120 jours sans utilisation de l’application. Tant que tu reviens, rien n’est effacé.',
         ],
       },
     ],

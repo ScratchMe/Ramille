@@ -398,7 +398,7 @@ dit à quelles conditions le rouvrir. Sept points à connaître :
   **et** déconnexion de l'appareil, ce qui resserre le risque de marque fausse à l'appareil
   restauré depuis une sauvegarde (`allowBackup` est absent d'`app.json`, donc vrai par défaut) — **et
   à un second chemin, vu en recette le 02/10/2026** (`v1-13` §20) : une session **anonyme** refusée,
-  par exemple purgée au bout de 90 jours, laissait ses marques à la session anonyme suivante, que rien
+  par exemple purgée au bout de 120 jours, laissait ses marques à la session anonyme suivante, que rien
   ne balayait ([#319](https://github.com/ScratchMe/Ramille/issues/319)) — corrigé le même jour : les
   marques suivent leur propriétaire (§1).
   **Et un troisième effacement depuis C4.7, qui n'est pas une sortie** : retirer son seul bilan

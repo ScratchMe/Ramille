@@ -38,8 +38,9 @@ se retrouve donc par cette table :
 **Trois règles vivent dans un morceau mais valent pour tout écran**, et c'est ici qu'on les croise :
 **la mascotte n'apparaît jamais à côté d'un chiffre lourd** (`FRONT-MASCOTTE.md` §2.3) ; **une
 découpe permanente** (`overflow: hidden` qui ne s'en va pas) **coupe l'anneau de focus** d'un
-contrôle posé au bord (`FRONT-MOUVEMENT.md` §2.12) ; et **« trois mois » sans compte ne s'écrit pas
-sans relire la purge des sessions anonymes**, qui ferme après trois mois d'inactivité
+contrôle posé au bord (`FRONT-MOUVEMENT.md` §2.12) ; et **« 120 jours » sans compte ne s'écrit pas
+sans relire la purge des sessions anonymes**, qui ferme après 120 jours d'inactivité (90 jusqu'au
+23/10/2026 ; jamais « quatre mois », qui en promettrait jusqu'à trois de plus)
 (`FRONT-SESSION.md` §2.9).
 
 ## 1. Ce qui vaut sur n'importe quelle app

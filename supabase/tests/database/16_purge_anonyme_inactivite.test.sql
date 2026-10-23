@@ -23,17 +23,17 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(12);
 
--- Cinq sessions anonymes, toutes créées il y a cent jours sauf la dernière : seule
+-- Cinq sessions anonymes, toutes créées il y a cent cinquante jours sauf la dernière : seule
 -- l'activité les distingue.
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at, last_sign_in_at) values
   -- A : muette depuis toujours -> doit partir
-  ('c6111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '100 days', now(), now() - interval '100 days'),
+  ('c6111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '150 days', now(), now() - interval '150 days'),
   -- B : a ouvert l'app il y a trois jours -> reste
-  ('c6111111-1111-1111-1111-111111111112', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '100 days', now(), now() - interval '100 days'),
+  ('c6111111-1111-1111-1111-111111111112', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '150 days', now(), now() - interval '150 days'),
   -- C : un bilan commencé il y a dix jours, aucun événement d'usage -> reste
-  ('c6111111-1111-1111-1111-111111111113', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '100 days', now(), now() - interval '100 days'),
+  ('c6111111-1111-1111-1111-111111111113', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '150 days', now(), now() - interval '150 days'),
   -- D : un check-in répondu il y a vingt jours -> reste
-  ('c6111111-1111-1111-1111-111111111114', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '100 days', now(), now() - interval '100 days'),
+  ('c6111111-1111-1111-1111-111111111114', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '150 days', now(), now() - interval '150 days'),
   -- E : créée avant-hier, rien fait encore -> reste, `created_at` sert de plancher
   ('c6111111-1111-1111-1111-111111111115', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true, now() - interval '2 days', now(), now() - interval '2 days');
 
@@ -53,12 +53,12 @@ insert into public.engagement_checkins (user_id, loop_type, period_start, period
 values ('c6111111-1111-1111-1111-111111111114', 'commute', (now() - interval '20 days')::date,
         'Semaine test', 'Trajet domicile-travail', 'answered', 'oui', true, now() - interval '20 days');
 
--- Toutes les vieilles sessions ont un `last_sign_in_at` de cent jours : si la purge s'y
+-- Toutes les vieilles sessions ont un `last_sign_in_at` de cent cinquante jours : si la purge s'y
 -- fiait, elle les emporterait toutes les quatre.
 select is(
   (select count(*)::int from auth.users
    where id::text like 'c6111111%' and is_anonymous
-     and last_sign_in_at < now() - interval '90 days'),
+     and last_sign_in_at < now() - interval '120 days'),
   4,
   'Les quatre vieilles sessions ont toutes un last_sign_in_at périmé — s''y fier les supprimerait toutes'
 );
@@ -67,7 +67,7 @@ select public.purge_stale_anonymous_accounts();
 
 select is_empty(
   $$ select 1 from auth.users where id = 'c6111111-1111-1111-1111-111111111111' $$,
-  'La session muette depuis cent jours est supprimée'
+  'La session muette depuis cent cinquante jours est supprimée'
 );
 
 select isnt_empty(
@@ -120,31 +120,31 @@ select ok(
   'Le journal des purges n''est ni lisible ni écrivable par anon ou authenticated'
 );
 
--- Soixante sessions anonymes muettes depuis plus de cent jours, **qui portent chacune un bilan** :
+-- Soixante sessions anonymes muettes depuis plus de cent cinquante jours, **qui portent chacune un bilan** :
 -- depuis le plan anti-abus (04/10/2026), la garde ne compte que les comptes qui portent quelque
 -- chose, et les comptes vides partent à chaque passage (`49`). Soixante candidats porteurs, au-delà
 -- du seuil (20 %, plancher 50 comptes). **Chacun a une date d'activité distincte** — le compte `i` est
--- né cent jours et `i` heures avant le test : plus `i` est grand, plus il est ancien —, pour que la
+-- né cent cinquante jours et `i` heures avant le test : plus `i` est grand, plus il est ancien —, pour que la
 -- garde ralentie (05/10/2026, `v1-27` §12.39) s'éprouve sur *lesquels* partent, pas seulement sur
 -- combien. **Et les dix plus anciennement nés (`i` de 51 à 60) ont soumis leur bilan plus tard**, il y
--- a 95 jours : candidats encore, mais leur dernier signe de vie est le plus récent de tous. Ce sont eux
+-- a 125 jours : candidats encore, mais leur dernier signe de vie est le plus récent de tous. Ce sont eux
 -- qui doivent rester. Un ordre sur la seule date de création les ferait partir et garderait 1 à 10 :
 -- c'est ce qui prouve que l'ordre lit le même `greatest(...)` des signes de vie que le prédicat.
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at, last_sign_in_at)
 select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
-       now() - interval '100 days' - make_interval(hours => i), now(),
-       now() - interval '100 days' - make_interval(hours => i)
+       now() - interval '150 days' - make_interval(hours => i), now(),
+       now() - interval '150 days' - make_interval(hours => i)
 from generate_series(1, 60) as g(i);
 
 -- Finalisés : un bilan en cours ne porte rien, et le compte partirait comme un compte vide
 -- (20261005170000). `submitted_at`, posé par le serveur, se recule : la purge le lit comme un signe de vie.
 insert into public.assessments (user_id, status, created_at)
 select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid, 'completed',
-       now() - interval '100 days' - make_interval(hours => i)
+       now() - interval '150 days' - make_interval(hours => i)
 from generate_series(1, 60) as g(i);
 update public.assessments set submitted_at = created_at where user_id::text like 'c6222222-2222-2222-2222-%';
-update public.assessments set submitted_at = now() - interval '95 days'
+update public.assessments set submitted_at = now() - interval '125 days'
 where user_id in (select ('c6222222-2222-2222-2222-' || lpad(i::text, 12, '0'))::uuid
                   from generate_series(51, 60) as g(i));
 

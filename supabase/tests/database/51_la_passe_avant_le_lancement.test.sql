@@ -201,16 +201,16 @@ select set_config('request.jwt.claims', ''::text, true);
 
 -- ── 6. La purge : un bilan en cours ne porte rien ───────────────────────────────────────────
 --
--- Soixante comptes muets depuis cent jours, un bilan en cours chacun : au-delà du plancher de la garde
+-- Soixante comptes muets depuis cent cinquante jours, un bilan en cours chacun : au-delà du plancher de la garde
 -- (50) s'ils étaient porteurs. Ils ne le sont pas, donc la garde ne se déclenche pas, et ils partent.
 delete from public.purge_runs;
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('51111111-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
-       now() - interval '100 days', now()
+       now() - interval '150 days', now()
 from generate_series(1, 60) as g(i);
 insert into public.assessments (user_id, status, created_at)
-select ('51111111-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'in_progress', now() - interval '100 days'
+select ('51111111-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'in_progress', now() - interval '150 days'
 from generate_series(1, 60) as g(i);
 
 select public.purge_stale_anonymous_accounts();

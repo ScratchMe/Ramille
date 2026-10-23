@@ -91,7 +91,7 @@ pas dans un chiffre** (11/09/2026) :
   monté qu'une fois par chargement du bundle, or le chemin nominal de la boucle d'engagement est
   une app en arrière-plan que la notification ramène devant. `retour` n'existe que sur natif.
   C'est aussi ce qui rend vraie la phrase sur laquelle `purge_stale_anonymous_accounts()` fonde sa
-  fenêtre de 90 jours. **Et quand le montage finit sans session** — un refus du captcha ou une coupure
+  fenêtre de 120 jours. **Et quand le montage finit sans session** — un refus du captcha ou une coupure
   à la création, un jeton expiré hors ligne, une session refusée —, le `demarrage` se rattrape à la
   première session obtenue ensuite, une fois (`rattraperLOuverture`, 04/10/2026).
 - **`connexion_demande` est l'intention, `connexion_success` le fait constaté.** L'écran email
@@ -183,7 +183,7 @@ d'usage ont leurs budgets du jour, §4.
 une policy `DELETE` owner-scoped traînait, sans justification dans sa migration et sans qu'aucun
 écran l'emprunte, alors que le trigger compte les lignes **vivantes** — dix retours, on efface, on
 recommence. Elle est partie ; l'effacement reste garanti là où il est promis, par la cascade de la
-suppression de compte et par la purge à 90 jours.
+suppression de compte et par la purge à 120 jours.
 **Attention en écrivant des tests dessus** : une assertion sur la contrainte de longueur peut
 passer sans rien éprouver de **deux** façons, et les deux se sont produites — `TESTING-PGTAP.md` §2.5,
 qui dit aussi pourquoi un fichier pgTAP se rejoue en séquence entière.
@@ -241,7 +241,7 @@ l'exemption de la première ouverture du jour (§4), donc sans elle une boucle d
 des rappels (`dernier_signe_de_vie`) et la purge des sessions anonymes (le plus récent des événements d'un
 compte). Garder la seule ligne la plus récente suffit à ces deux lecteurs sans en réécrire aucun, puisque tous
 deux lisent un `max(occurred_at)` ; tout couper aurait espacé les rappels de la personne, puis supprimé sa
-session anonyme quatre-vingt-dix jours après son dernier bilan.
+session anonyme cent vingt jours après son dernier bilan.
 
 **Ce que ça coûte aux mesures** : la personne sort de la rétention de sa cohorte, puisque ses ouvertures d'avant
 sont effacées, et les vues `analytics.*` ne voient plus qu'une ouverture. C'est le sens d'une opposition.

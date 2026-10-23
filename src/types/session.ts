@@ -29,7 +29,7 @@
 // ne voit plus ni session ni erreur, exactement comme à une première ouverture. Ce qui les sépare,
 // c'est que l'appareil **portait un compte rattaché** — une marque locale que seuls les départs voulus
 // effacent (`src/lib/marque-de-compte.ts`) : c'est `porteUnCompte`. Une session **anonyme** refusée
-// (purgée au bout de 90 jours, révoquée) ne la porte pas, et reste une première ouverture : elle n'a
+// (purgée au bout de 120 jours, révoquée) ne la porte pas, et reste une première ouverture : elle n'a
 // aucun compte à retrouver — **dans la forme du démarrage**. Quand c'est `getSession()` qui rend
 // l'erreur (un processus resté vivant, rare : une lecture passe d'ordinaire avant lui), le refus se
 // dit sans consulter la marque, anonyme compris. Mesuré sur l'export, puis reproduit sur le client réel par

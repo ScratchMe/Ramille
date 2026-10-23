@@ -23,14 +23,17 @@ export interface FeuilleRappelsProps {
   /** Style du voile, ou de la feuille quand `voile={false}`. */
   style?: React.CSSProperties;
   /**
-   * L'étape rendue : le choix du canal, ou le mot de la veille (C4.2) — la seconde étape après la notification
+   * L'étape rendue : le choix du canal, le mot de la veille (C4.2) — la seconde étape après la notification
    * choisie et reçue, ou la seule quand la feuille se rouvre une fois au premier engagement de trajet où
-   * elle peut être posée.
+   * elle peut être posée —, ou le compte (23/10/2026) : sur le web, sans adresse, la petite feuille qui
+   * s'ouvre à la place du choix du canal.
    */
-  etape?: 'canal' | 'veille';
+  etape?: 'canal' | 'veille' | 'compte';
   /** La ligne du produit sous la question de la veille, avec sa date (`affichageDeLaVeille`). */
   detailVeille?: string;
   /** « Oui, la veille aussi » ou « Non merci » : chacun enregistre une réponse. */
   onRepondreALaVeille?: (reponse: 'oui' | 'refuse') => void;
+  /** « Rattacher mon adresse », sur l'étape `compte` : mène à `/connexion` (Google ou email). « Plus tard » appelle `onFerme`. */
+  onRattacher?: () => void;
 }
 export declare function FeuilleRappels(props: FeuilleRappelsProps): JSX.Element;

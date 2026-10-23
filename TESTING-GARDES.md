@@ -169,6 +169,23 @@ et la personne qui pilote a décidé de rouvrir cette seule porte
 (`docs/architecture/v1-27-dette-technique.md` §12.26). L'ordre de lecture ne change pas : le journal
 d'abord, la capture ensuite.
 
+**Depuis le 23/10/2026, le premier engagement du premier profil ouvre la feuille du compte, et le
+parcours la traverse** (`v1-35` étape 4 : sur le web, sans adresse, une petite feuille dit que Ramille ne
+peut faire signe que par email). Ce que seul le navigateur dit : la phrase de la décision mot pour mot,
+deux boutons et rien du choix du canal ; **la marque « feuille vue » posée dès l'affichage, avant tout
+geste** ; le focus dans la feuille, sur la phrase ; « Plus tard » qui la fait **redescendre** (relevé
+image par image, comme le re-bilan), reste sur le plan et n'écrit rien — la préférence en base vaut
+toujours `email`. La carte d'attente, qui reste derrière elle, n'est pas lue ici : ce premier plan
+porte encore la carte des deux lieux, qui la remplace le temps de la visite. **Deux conséquences sur ce qui
+existait déjà** : le focus de la carte engagée ne se lit pas par-dessus le `Modal` qui l'a pris, donc
+`noterSurUnEcranCourt` ne le lit plus à ce passage-là (`feuilleDuCompte`) — il se garde au cycliste, dont la
+marque est posée d'avance, comme le ferait la feuille, pour que le chemin direct du plan garde sa garde — et
+au retour de la liste ; et **la moitié négative** (`aucuneFeuilleDesRappels`) se lit aux deux engagements qui suivent, au
+retour de la liste et chez le cycliste — la préférence remise à `email` après « 8 bis », pour que ce soit
+bien la marque qui tienne et non « Sans rappel » : une absence se constate en laissant au défaut le temps d'arriver. **Ce que le parcours ne joue
+pas** : « Rattacher mon adresse », qui quitte le plan alors que la feuille ne s'ouvre qu'une fois par
+appareil — `feuille-rappels-du-compte.test.tsx` tient son appel, sa provenance `rappels` et son ordre.
+
 **Un clic se donne à un écran posé, pas à un écran qui charge** (CI du 30/09/2026). L'étape de la
 suppression cliquait « Supprimer mon compte » dès que le lien devenait visible — c'est-à-dire dès le
 HTML statique —, puis `/compte` grandissait de 412 px au-dessus de lui quand le compte et les rappels
@@ -569,7 +586,7 @@ qu'il annonce, et des cases d'option sans groupe.
   répond « Non » comme avant : les chiffres attendus ne bougent pas.
 - **Le parcours réel joue le clavier là où il faut une session** : les jours de l'engagement — Espace coche sans faire défiler, Entrée décoche (une seule activation), une
   barre maintenue coche une fois (la répétition) — et « Toi », seul écran de ce parcours où une ligne
-  de canal se rend (la feuille des rappels ne s'ouvre sur web qu'avec une adresse rattachée) : la
+  de canal se rend (la feuille du choix du canal ne s'ouvre sur web qu'avec une adresse rattachée) : la
   ligne « Par email » hors d'atteinte est désactivée, jamais cochée, **sans opacité**, son titre en
   texte tertiaire (lu dans `theme.ts`) et son détail à 4,5:1 au moins ; Espace choisit « Sans rappel »,
   et la base relue le confirme.
