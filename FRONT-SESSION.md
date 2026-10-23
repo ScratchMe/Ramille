@@ -4,7 +4,7 @@
 > des rappels, au mot de la veille, à la carte d'attente du plan ou à un texte qui promet un point ·
 > au champ de code · au démarrage, au brouillon, à la reprise, à une marque locale · à ce que le
 > produit promet sans compte · la voix de Ramille à l'entrée des sections du questionnaire · le
-> préremplissage du questionnaire · une durée promise à qui reste sans compte (« trois mois »). Ce
+> préremplissage du questionnaire · une durée promise à qui reste sans compte (« quatre mois »). Ce
 > que le serveur en fait est dans `COMPTE.md` et `BOUCLE.md`.
 >
 > Il n'est **pas** chargé automatiquement — seul `CLAUDE.md` l'est. Sa table de déclencheurs dit
@@ -337,8 +337,9 @@ périmerait en silence au prochain passage :
   hebdomadaire : elle nomme désormais ce qui suit le compte (les bilans, les réponses, le plan) sans
   promettre de cadence. Sous « Continuer sans compte », les deux faits qui n'étaient dits que dans
   les pages légales : changer de téléphone perd tout, et la purge des sessions anonymes ferme le
-  compte après trois mois d'**inactivité** (`purge_stale_anonymous_accounts`, fenêtre de 90 jours) —
-  donc ne pas écrire « trois mois » ailleurs sans vérifier cette fonction.
+  compte après quatre mois d'**inactivité** (`purge_stale_anonymous_accounts`, fenêtre de 120 jours depuis
+  le 23/10/2026, 90 avant ; `DELAI_SANS_COMPTE_EN_MOTS`) — donc ne pas écrire « quatre mois » ailleurs sans
+  vérifier cette fonction.
 - Le questionnaire se préremplit dans cet ordre : **brouillon local > dernier bilan complété >
   vide** (`src/lib/bilan-history.ts`). Le brouillon prime car il est plus récent par
   construction. Un re-bilan prérempli est ce qui rend le suivi dans la durée praticable — sans

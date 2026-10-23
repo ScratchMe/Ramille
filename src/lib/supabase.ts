@@ -207,7 +207,7 @@ let dernierEtatDeSession: EtatDeSession = 'absente';
  * (`/connexion/retrouver`, `/connexion/email`) : c'est la session suivante, celle que la racine relit
  * aussitôt, qui la repose. La première version de cette correction déduisait le refus de tout
  * `SIGNED_OUT` non déclaré, et elle se trompait deux fois (contre-lecture de la PR #315) : une session
- * **anonyme** purgée au bout de 90 jours est refusée de la même façon, et se voyait dire « Reconnecte-toi
+ * **anonyme** purgée au bout de 120 jours est refusée de la même façon, et se voyait dire « Reconnecte-toi
  * pour retrouver ton bilan » ; et le drapeau, en mémoire, ne survivait ni à un rechargement ni à une app
  * tuée par le système — la session anonyme vide revenait au lancement suivant.
  *
@@ -245,7 +245,7 @@ function noterLaSession(session: Session | null) {
 /**
  * **La session que rend `ensureSession()` fait d'abord le ménage des marques d'un autre compte**, puis
  * pose la sienne ([#319](https://github.com/ScratchMe/Ramille/issues/319), 02/10/2026). Le cas qui
- * l'impose : une session anonyme refusée — purgée au bout de 90 jours, révoquée — laissait ses marques
+ * l'impose : une session anonyme refusée — purgée au bout de 120 jours, révoquée — laissait ses marques
  * (bilan, premier parcours, brouillon) à la session anonyme neuve, qui les lisait comme les siennes.
  * L'ordre compte : balayée après avoir été posée, la marque du compte rattaché serait perdue jusqu'à la
  * session suivante.

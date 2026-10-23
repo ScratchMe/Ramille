@@ -63,13 +63,13 @@ reset role;
 
 -- ── 3. La purge : les comptes vides partent, garde ou pas ─────────────────────────────────────
 --
--- Soixante sessions vides, muettes depuis cent jours : au-delà du seuil (plancher 50), elles ne
+-- Soixante sessions vides, muettes depuis cent cinquante jours : au-delà du seuil (plancher 50), elles ne
 -- retiennent plus rien, puisqu'elles ne portent rien.
 delete from public.feedback where user_id::text like '49000000-%';
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('49111111-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
-       now() - interval '100 days', now()
+       now() - interval '150 days', now()
 from generate_series(1, 60) as g(i);
 
 select public.purge_stale_anonymous_accounts();
@@ -95,13 +95,13 @@ select is(
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('49222222-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
-       now() - interval '100 days', now()
+       now() - interval '150 days', now()
 from generate_series(1, 70) as g(i);
 
 -- Finalisés : un bilan en cours ne porte rien, et le compte partirait comme un compte vide
 -- (20261005170000). `submitted_at`, posé par le serveur, se recule : la purge le lit comme un signe de vie.
 insert into public.assessments (user_id, status, created_at)
-select ('49222222-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'completed', now() - interval '100 days'
+select ('49222222-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'completed', now() - interval '150 days'
 from generate_series(1, 60) as g(i);
 update public.assessments set submitted_at = created_at where user_id::text like '49222222-0000-0000-0000-%';
 
@@ -146,12 +146,12 @@ from generate_series(1, 300) as g(i);
 insert into auth.users (id, instance_id, aud, role, is_anonymous, created_at, updated_at)
 select ('49444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', true,
-       now() - interval '100 days', now()
+       now() - interval '150 days', now()
 from generate_series(1, 60) as g(i);
 -- Finalisés : un bilan en cours ne porte rien, et le compte partirait comme un compte vide
 -- (20261005170000). `submitted_at`, posé par le serveur, se recule : la purge le lit comme un signe de vie.
 insert into public.assessments (user_id, status, created_at)
-select ('49444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'completed', now() - interval '100 days'
+select ('49444444-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid, 'completed', now() - interval '150 days'
 from generate_series(1, 60) as g(i);
 update public.assessments set submitted_at = created_at where user_id::text like '49444444-0000-0000-0000-%';
 

@@ -67,7 +67,7 @@ const sessionAnonyme = (expiresAt: number) => ({
   user: { id: 'anonyme-neuf', aud: 'authenticated', role: 'authenticated', is_anonymous: true },
 });
 
-/** Une session anonyme d'avant — purgée au bout de 90 jours d'inactivité, et dont le jeton est refusé. */
+/** Une session anonyme d'avant — purgée au bout de 120 jours d'inactivité, et dont le jeton est refusé. */
 const sessionAnonymePurgee = (expiresAt: number) => ({
   ...sessionAnonyme(expiresAt),
   access_token: 'jeton-purge',

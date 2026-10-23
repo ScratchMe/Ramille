@@ -50,7 +50,9 @@
   pilote le 22/10/2026). Elles auraient été plus précises pour qui fait du vélo en semaine et prend la
   voiture le week-end, mais elles ajoutaient deux écrans, et un trajet du vendredi soir ne se range ni
   d'un côté ni de l'autre. Retenu : une étape, des libellés qui disent la semaine et le week-end, et
-  une cinquième réponse, « Presque tous les jours » (5 sorties par semaine).
+  une cinquième réponse, « Presque tous les jours » (5 sorties par semaine). **Écartée pour le MVP** : la personne
+  qui pilote, le 23/10/2026, « on pourra revenir sur cette distinction loisirs week-end et loisirs semaine
+  plus tard si nécessaire ».
 
 - **Les contrastes des barres** (`accentMuted` sur le fond de carte, environ 1,6:1). Chaque barre porte sa
   valeur écrite à côté d'elle : WCAG 1.4.11 n'exige 3:1 que d'un graphique **nécessaire** à la

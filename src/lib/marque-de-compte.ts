@@ -4,7 +4,7 @@
 // dont le jeton est refusé, il ne reste rien à lire : ni session, ni erreur. Sans autre indice, un
 // compte réel qu'on vient de perdre et un visiteur qui n'a jamais rien eu se ressemblent trait pour
 // trait. Et l'événement `SIGNED_OUT` ne suffit pas à les séparer : une session **anonyme** purgée
-// au bout de 90 jours (`purge_stale_anonymous_accounts`), ou révoquée, est refusée exactement de la
+// au bout de 120 jours (`purge_stale_anonymous_accounts`), ou révoquée, est refusée exactement de la
 // même façon — et lui dire « Reconnecte-toi pour retrouver ton bilan », « J'ai déjà un compte »,
 // c'est parler d'un compte qu'elle n'a jamais eu (contre-lecture de la PR #315). La marque dit ce
 // que la session retirée était, puisque `auth-js` ne le dit plus.

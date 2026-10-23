@@ -30,7 +30,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     clause `where` d'`enqueue_checkin_reminders()` (C2.9) ;
 //   - sortie sans ouvrir l'app -> `desinscrire_des_rappels(uuid)` et
 //     `notification_outbox.unsubscribe_token`, page `/rappels/stop` ;
-//   - purge à 90 jours sans activité -> `purge_stale_anonymous_accounts()`, cron quotidien ;
+//   - purge à 120 jours sans activité -> `purge_stale_anonymous_accounts()`, cron quotidien ;
 //   - rétention des rappels (6 mois) et des jetons désactivés (90 jours) ->
 //     `purge_notification_outbox()`, cron quotidien 1h ;
 //   - panne d'affichage enregistrée sans son message -> événement `app_error` de `usage_events` ;
@@ -136,7 +136,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // **Et le même jour, un bilan retiré** (C4.7, décision de la personne qui pilote) : « retirer » peut se
 // lire « effacer », et ce n'en est pas un — la ligne reste, l'export la rend avec son statut
 // (`v1-22` D1). Sans cette phrase, la page laisserait croire à un effacement qui n'a pas lieu. Elle
-// nomme la session anonyme parce que la purge à 90 jours l'emporte aussi, comme le reste. Mise en
+// nomme la session anonyme parce que la purge à 120 jours l'emporte aussi, comme le reste. Mise en
 // ligne à la fusion de C4.7 — la date suit, **heure de Paris** (la fusion a lieu dans la nuit du 27 au
 // 28 : le 27 en UTC, déjà le 28 pour qui lit la page), et la feuille de recette la cite (11.1).
 //
@@ -254,7 +254,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // la définition des sessions, et la liste des durées, qui disait « sans limite de durée ». La session
 // elle-même reste — la fermer déconnecterait la personne. Même jour que l'entrée d'au-dessus, donc même
 // date de mise à jour.
-const UPDATED_AT = '22 octobre 2026';
+//
+// **23/10/2026 : une session anonyme attend 120 jours sans servir, et non plus 90** (décision de la personne
+// qui pilote, `v1-35` étape 4, `20261023090000_la_purge_attend_une_saison.sql`) : une saison dure environ
+// 91 jours, et Ramille promet d'être là à chacune. Deux phrases : ce que devient une session jamais
+// rattachée, et la liste des durées.
+const UPDATED_AT = '23 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -436,7 +441,7 @@ const SECTIONS: LegalSection[] = [
         kind: 'paragraph',
         text:
           'Si tu ne rattaches jamais cette session à un compte, elle et toutes les données associées sont supprimées ' +
-          'automatiquement après 90 jours sans utilisation de l’application. Tant que tu reviens, rien n’est effacé. ' +
+          'automatiquement après 120 jours sans utilisation de l’application. Tant que tu reviens, rien n’est effacé. ' +
           'Si tu crées un compte, ton bilan déjà effectué reste attaché à toi : rien n’est à ressaisir.',
       },
     ],
@@ -581,7 +586,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'bullets',
         items: [
-          'Session anonyme jamais rattachée à un compte : supprimée automatiquement après 90 jours sans utilisation ' +
+          'Session anonyme jamais rattachée à un compte : supprimée automatiquement après 120 jours sans utilisation ' +
             'de l’application. Tant que tu reviens, rien n’est effacé — ouvrir l’application, commencer un bilan, ' +
             'répondre à un point de suivi ou nous envoyer un retour remet le compteur à zéro. La suppression a lieu ' +
             'la nuit, et une garde de sécurité peut l’étaler sur plusieurs nuits si beaucoup de sessions arrivent à ' +

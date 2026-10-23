@@ -271,7 +271,7 @@ export default function RootLayout() {
   // hebdomadaire est le déclencheur principal, c'est le chemin majoritaire.
   //
   // C'est aussi ce qui rend vraie la phrase sur laquelle `purge_stale_anonymous_accounts()`
-  // fonde sa fenêtre de 90 jours (« `app_open` est émis à chaque ouverture », migration
+  // fonde sa fenêtre de 120 jours (« `app_open` est émis à chaque ouverture », migration
   // 20260907093000) : une session anonyme qui revient chaque semaine par le rappel, lit son
   // plan et ne répond pas au point écrit désormais un signe de vie, là où elle redevenait
   // supprimable, bilan compris.

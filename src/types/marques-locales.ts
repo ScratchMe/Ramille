@@ -13,7 +13,7 @@
  * reconnexion par code —, mais une session **anonyme refusée** n'est pas un départ voulu : `auth-js` la
  * retire à l'initialisation, l'app en ouvre une neuve, et la nouvelle lit les marques de l'ancienne
  * comme les siennes. Vu en recette le 02/10/2026 (`v1-13` §20) sur le cas réaliste d'un compte anonyme
- * purgé après 90 jours d'inactivité : la personne revient, sa nouvelle session n'a aucun bilan, et la
+ * purgé après 120 jours d'inactivité : la personne revient, sa nouvelle session n'a aucun bilan, et la
  * marque de bilan l'enverrait au plan au premier démarrage hors ligne.
  *
  * ## La règle
