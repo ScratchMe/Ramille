@@ -17,6 +17,7 @@ import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase
 import { demanderLaConnexion } from '@/lib/auth';
 import { apresUneReconnexion, lireEtatDuCompte } from '@/lib/compte';
 import { lireAdresseDuLien, memoriserAdresseDuLien } from '@/lib/connexion-prefs';
+import { ensureSession } from '@/lib/supabase';
 import { revenirOu, terminerLeFlux } from '@/lib/navigation';
 import {
   adresseSemblePlausible,
@@ -160,7 +161,14 @@ export default function RetrouverMonCompte() {
 
   useEffect(() => {
     let annule = false;
-    lireEtatDuCompte()
+    // **La session d'abord, celle que le layout ouvre en arrivant ici** (23/10/2026). Depuis la page
+    // d'accueil du web, qui n'en ouvre pas, l'écran se montait avant elle : la lecture du compte ne
+    // voyait personne, et `track()` renonçait sans session — la porte `accueil` aurait compté zéro.
+    // `ensureSession()` rejoint la création en cours sans en lancer une seconde ; elle ne crée rien
+    // sur une session refusée, et son échec ne change rien à ce qui suit.
+    ensureSession()
+      .catch(() => null)
+      .then(() => lireEtatDuCompte())
       .then((etat) => {
         if (annule) return;
         const collision = etat.kind === 'anonyme-avec-donnees';

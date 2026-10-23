@@ -71,6 +71,14 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   la session de l'appareil, et le layout ouvre la session dès qu'on en sort pour l'app. Un écran
   ajouté à cette liste ne doit rien lire qui demande une session, ni rien écrire sans
   `ensureSession()` avant ; un écran qui écrit n'y entre pas (`/feedback`).
+- **La racine du web restaure, elle n'ouvre pas** (23/10/2026, `COMPTE.md` §1) : c'est la page d'accueil,
+  pour qui n'a ni bilan ni questionnaire en cours. `src/app/index.tsx` appelle `restaurerLaSession()` sur le
+  web et `ensureSession()` sur natif, d'après `laSessionSOuvreSur('/', plateforme)` ; une absence de session
+  y rend `sansSession` (`suiteDuDemarrage`), dont la lecture est connue sans aller-retour
+  (`LECTURE_SANS_SESSION` : aucun bilan) — et non un repli, où la marque locale de bilan enverrait au plan un
+  navigateur sans session. **Le HTML exporté de la racine reste l'écran de lancement** : la page d'accueil ne
+  s'affiche qu'une fois la session restaurée, pour que qui revient ne la voie pas le temps de charger l'app.
+  **Et un écran que la page d'accueil ouvre ne mesure qu'après la session** : il arrive avant elle.
 - **Une absence de jeton n'accuse personne : c'est la permission qui le dit.** L'absence recouvre
   quatre situations — jamais demandée, refusée, enregistrement échoué, simulateur — qui n'appellent
   pas la même phrase. `lignesDeReglage` **et** `carteAttente` (`src/types/rappels.ts`) reçoivent

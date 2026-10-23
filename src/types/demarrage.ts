@@ -127,8 +127,33 @@ export type Destination =
   | { vers: 'reprise' }
   /** La présentation du produit, qui n'affirme rien et marche sans réseau. */
   | { vers: 'onboarding' }
+  /** La page d'accueil du web, rendue par la racine elle-même (`destinationSurLaPlateforme`). */
+  | { vers: 'accueil' }
   /** L'écran technique, destiné à être recopié. */
   | { vers: 'echec' };
+
+/**
+ * **Ce que la lecture rendrait sans session : aucun bilan** (23/10/2026). La racine du web n'ouvre pas
+ * de session (`laSessionSOuvreSur`, `src/types/session.ts`) : sans session restaurée, elle ne lit rien,
+ * et ce que le serveur aurait répondu à une session neuve est connu d'avance. Écrit comme une lecture
+ * réussie plutôt que comme une coupure : une coupure laisserait décider la marque locale de bilan, qui
+ * enverrait au plan un appareil sans session.
+ */
+export const LECTURE_SANS_SESSION: LectureDuBilan = { etat: 'lue', bilanComplete: false };
+
+/**
+ * **Sur le web, la présentation du produit est la page d'accueil, et elle vit à la racine** (23/10/2026,
+ * étape 5 de `docs/architecture/v1-35-l-audit-en-chantiers.md`). Qui n'a ni bilan ni questionnaire en
+ * cours la voit à l'adresse du site, et son bouton mène à l'onboarding ; qui en a un va comme avant au
+ * plan ou au questionnaire — décidé par la personne qui pilote le 23/10/2026 : la page d'accueil donne
+ * envie à qui ne connaît pas Ramille, et un retour ne paie pas un clic de plus.
+ *
+ * Sur natif, rien ne change : l'onboarding est le premier écran, et il n'y a pas de page d'accueil.
+ */
+export function destinationSurLaPlateforme(destination: Destination, plateforme: Plateforme): Destination {
+  if (plateforme === 'web' && destination.vers === 'onboarding') return { vers: 'accueil' };
+  return destination;
+}
 
 /**
  * La table de décision de `v1-15` §6, et elle est écrite pour être un test.

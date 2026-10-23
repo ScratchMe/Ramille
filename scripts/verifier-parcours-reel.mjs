@@ -799,6 +799,18 @@ async function boutonDuPager(nom, indexDePage) {
   throw new Ecart(`« ${nom} » n'est jamais entré dans la fenêtre du pager (page ${indexDePage})`);
 }
 /**
+ * **La page d'accueil du web** (23/10/2026, étape 5 de `v1-35`) : un navigateur sans bilan ni questionnaire
+ * en cours la voit à la racine, à la place de l'onboarding, et son bouton y mène. Elle n'ouvre pas de
+ * session — l'étape 0 le mesure à froid ; les profils, eux, la traversent comme une personne.
+ */
+const TITRE_DE_L_ACCUEIL = 'Comprendre tes trajets, sans te juger.';
+async function entrerParLaPageDAccueil(onglet = page) {
+  await onglet.getByRole('heading', { name: TITRE_DE_L_ACCUEIL, exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
+  assurer(new URL(onglet.url()).pathname === '/', `la page d’accueil ne s’affiche pas à la racine du site (${onglet.url()})`);
+  await onglet.getByRole('button', { name: 'Découvrir mon impact', exact: true }).first().click({ timeout: ATTENTE });
+  await onglet.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+}
+/**
  * Le questionnaire du cycliste, du premier « Oui » à « Voir mon bilan ». Joué deux fois : au premier
  * bilan de ce profil, et après le retrait de son seul bilan — où il éprouve que le premier parcours
  * ne recommence pas (`ouvreUnPremierParcours`, décision du 27/09/2026).
@@ -1562,23 +1574,101 @@ try {
     const apres = await compterLesComptes();
     assurer(apres === avant, `${apres - avant} compte(s) né(s) d'une visite des surfaces sans compte`);
 
-    // Puis l'app : la politique de confidentialité, ouverte à froid, rend la main par « Retour ».
+    // Puis l'app : la politique de confidentialité, ouverte à froid, rend la main par « Retour ». **Depuis
+    // le 23/10/2026, « Retour » mène à la page d'accueil** (la racine du web), qui n'ouvre pas de session
+    // non plus : aucun compte n'y naît, et c'est « Découvrir mon impact », le premier pas dans l'app, qui
+    // l'ouvre.
     await onglet.goto(`${base}/confidentialite`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     await onglet.getByRole('link', { name: 'Retour', exact: true }).first().click({ timeout: ATTENTE });
-    await onglet.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+    await onglet.getByRole('heading', { name: TITRE_DE_L_ACCUEIL, exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
+    await onglet.waitForTimeout(2_500);
+    assurer(!(await sessionRangee(onglet)), 'la page d’accueil, atteinte par « Retour », a rangé une session dans le navigateur');
+    assurer((await compterLesComptes()) === avant, 'un compte est né sur la page d’accueil, atteinte par « Retour »');
+    await entrerParLaPageDAccueil(onglet);
     await onglet.waitForFunction(
       () => Object.keys(localStorage).some((cle) => cle.startsWith('sb-') && cle.endsWith('-auth-token')),
       null,
       { timeout: ATTENTE }
     );
-    assurer((await compterLesComptes()) === avant + 1, 'quitter la page publique pour l’app n’a pas ouvert une session, et une seule');
+    assurer((await compterLesComptes()) === avant + 1, 'quitter la page d’accueil pour l’app n’a pas ouvert une session, et une seule');
+    await onglet.context().close();
+  }
+
+  // ── 0 bis. La page d'accueil, ouverte à froid (23/10/2026, étape 5 de `v1-35`) ──────────────────
+  // La racine du web n'est pas une surface sans compte, mais elle n'ouvre pas de session : un navigateur
+  // neuf y lit la présentation du produit sans compte anonyme ni captcha. Puis « J'ai déjà un compte » :
+  // l'écran de retrouvaille ouvre la session en arrivant, et **sa vue se compte** avec la provenance
+  // `accueil` — l'écran attend la session avant de mesurer, sans quoi `track()` renonçait et la porte
+  // comptait zéro (`src/app/connexion/retrouver.tsx`). Ni Jest ni l'export ne voient cette course.
+  etape('page d’accueil — ouverte à froid, aucun compte ne naît, et sa porte se mesure');
+  {
+    const avant = await compterLesComptes();
+    const onglet = await nouvelOnglet();
+    const demandes = [];
+    onglet.on('request', (requete) => {
+      if (requete.method() === 'POST' && requete.url().includes('/auth/v1/signup')) demandes.push(requete.url());
+    });
+    await onglet.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await onglet.getByRole('heading', { name: TITRE_DE_L_ACCUEIL, exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
+    await onglet.waitForTimeout(2_500);
+    assurer(!(await sessionRangee(onglet)), 'la page d’accueil, ouverte à froid, a rangé une session dans le navigateur');
+    assurer(demandes.length === 0, `la page d’accueil a demandé ${demandes.length} session(s) anonyme(s)`);
+    assurer((await compterLesComptes()) === avant, 'un compte est né d’une visite de la page d’accueil');
+    // Le film et sa phrase : la vidéo ne se lance pas seule, et son affiche est servie.
+    const film = await onglet.evaluate(async () => {
+      const video = document.querySelector('video');
+      if (!video) return null;
+      const affiche = await fetch(video.getAttribute('poster') ?? '', { method: 'HEAD' });
+      const source = video.querySelector('source')?.getAttribute('src') ?? '';
+      const fichier = await fetch(source, { method: 'HEAD' });
+      return { autoplay: video.autoplay, paused: video.paused, affiche: affiche.status, video: fichier.status, type: fichier.headers.get('content-type') };
+    });
+    assurer(film !== null, 'la page d’accueil ne porte pas le film');
+    assurer(!film.autoplay && film.paused, `le film se lance seul (${JSON.stringify(film)})`);
+    assurer(film.affiche === 200 && film.video === 200, `le film ou son affiche n’est pas servi (${JSON.stringify(film)})`);
+    assurer(String(film.type).startsWith('video/mp4'), `le film n’est pas servi en video/mp4 (${film.type})`);
+    // `\s` et non une espace : `ThemedText` pose une espace fine insécable avant le point-virgule.
+    await onglet
+      .getByText(/Sur Android, Ramille te fait signe par notification\s;\ssur le web, par email\./)
+      .first()
+      .waitFor({ state: 'visible', timeout: ATTENTE });
+
+    await onglet.getByRole('link', { name: 'J’ai déjà un compte', exact: true }).first().click({ timeout: ATTENTE });
+    await onglet.waitForURL(/\/connexion\/retrouver\?source=accueil/, { timeout: ATTENTE });
+    await onglet.waitForFunction(
+      () => Object.keys(localStorage).some((cle) => cle.startsWith('sb-') && cle.endsWith('-auth-token')),
+      null,
+      { timeout: ATTENTE }
+    );
+    const userId = await onglet.evaluate(() => {
+      for (const cle of Object.keys(localStorage)) {
+        if (cle.startsWith('sb-') && cle.endsWith('-auth-token')) return JSON.parse(localStorage.getItem(cle)).user.id;
+      }
+      return null;
+    });
+    const limite = Date.now() + ATTENTE;
+    let vues = [];
+    while (Date.now() < limite) {
+      const reponse = await fetch(
+        `${API}/rest/v1/usage_events?select=props&name=eq.retrouver_view&user_id=eq.${userId}`,
+        { headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` } }
+      );
+      if (!reponse.ok) throw new Ecart(`vues de la retrouvaille : HTTP ${reponse.status} ${await reponse.text()}`);
+      vues = await reponse.json();
+      if (vues.length > 0) break;
+      await onglet.waitForTimeout(250);
+    }
+    assurer(
+      vues.length === 1 && vues[0].props?.source === 'accueil',
+      `la vue de la retrouvaille venue de la page d’accueil ne s’est pas comptée avec sa porte : ${JSON.stringify(vues)}`
+    );
     await onglet.context().close();
   }
 
   // ── 1. L'onboarding, jusqu'au questionnaire ──────────────────────────────────────────────────
   etape('onboarding');
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  await entrerParLaPageDAccueil();
   await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
@@ -2827,7 +2917,7 @@ try {
   await page.context().close();
   page = await nouvelOnglet({ reduire: true });
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  await entrerParLaPageDAccueil();
   await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);
@@ -3316,7 +3406,7 @@ try {
   await page.context().close();
   page = await nouvelOnglet({ reduire: false });
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  await entrerParLaPageDAccueil();
   await boutonDuPager('Découvrir mon impact', 0);
   await boutonDuPager('Continuer', 1);
   await boutonDuPager('Continuer', 2);

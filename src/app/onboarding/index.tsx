@@ -17,6 +17,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useRetourVersLaPhasePrecedente } from '@/hooks/use-retour-vers-la-phase-precedente';
 import { track } from '@/lib/analytics';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME } from '@/lib/focus';
+import { ensureSession } from '@/lib/supabase';
 
 // Onboarding — les quatre étapes dans un seul écran qui se balaie au doigt (issue #68).
 //
@@ -82,7 +83,13 @@ export default function Onboarding() {
     const etape = ETAPES[index];
     if (!etape || vues.current.has(etape)) return;
     vues.current.add(etape);
-    track('onboarding_step_view', { step: etape });
+    // **Après la session, pas au montage** (23/10/2026) : depuis la page d'accueil du web, qui n'en
+    // ouvre pas, c'est en arrivant ici que le layout l'ouvre, et la première étape partait avant elle —
+    // `track()` renonce sans session, et l'entonnoir de l'onboarding perdait sa première marche sur le
+    // web. `ensureSession()` rejoint la création en cours ; sur natif, la racine l'a déjà ouverte.
+    void ensureSession()
+      .then(() => track('onboarding_step_view', { step: etape }))
+      .catch(() => undefined);
   }, [index]);
 
   // **Le focus suit la page, sinon il se perd** (24/09/2026, `v1-29`). « Continuer » rend inerte

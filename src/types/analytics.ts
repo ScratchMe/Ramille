@@ -41,6 +41,7 @@ import type { EtapeSoumission, GenreErreurSoumission } from '@/types/soumission'
 import type { ContexteDuCode } from '@/types/connexion';
 // La règle qui dit sur quelle route la session s'ouvre, pure elle aussi : le rattrapage de l'ouverture
 // la relit au lieu d'en tenir une seconde liste des surfaces sans compte.
+import type { Plateforme } from '@/types/rappels';
 import { laSessionSOuvreSur } from '@/types/session';
 
 export const USAGE_EVENT_NAMES = [
@@ -127,8 +128,15 @@ export type SourceConnexion = (typeof SOURCES_CONNEXION)[number];
 // `retrouver_send` partis de cet écran ne s'enregistrent pas, et aucun autre événement ne porte cette
 // source : un succès de reconnexion n'est pas mesuré. Ne pas lire un zéro ici comme « aucun refus » ;
 // le mesurer demanderait un événement de plus (une migration, `MESURE.md`).
+//
+// **Et `accueil`, la neuvième** (23/10/2026, étape 5 de `v1-35`) : « J'ai déjà un compte » de la page
+// d'accueil du web, la racine du site. Distincte d'`onboarding` (la première page de l'onboarding, sur
+// natif comme sur le web) : la page d'accueil n'existe que sur le web, et l'onboarding y vient après
+// elle. **Sa vue ne se perd pas** alors que la page n'ouvre pas de session : l'écran de retrouvaille
+// attend la session que le layout ouvre en y arrivant, avant de mesurer (`src/app/connexion/retrouver.tsx`).
 export const SOURCES_RETROUVER = [
   'onboarding',
+  'accueil',
   'email',
   'google',
   'lien',
@@ -460,8 +468,11 @@ export function rattraperLOuverture(etat: {
   dejaComptee: boolean;
   /** La route affichée quand la session arrive. */
   chemin: string;
+  plateforme: Plateforme;
 }): boolean {
-  return etat.session && etat.montageSansSession && !etat.dejaComptee && laSessionSOuvreSur(etat.chemin);
+  return (
+    etat.session && etat.montageSansSession && !etat.dejaComptee && laSessionSOuvreSur(etat.chemin, etat.plateforme)
+  );
 }
 
 /**

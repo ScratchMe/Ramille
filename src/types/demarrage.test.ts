@@ -1,6 +1,8 @@
 import {
   destinationDuDemarrage,
+  destinationSurLaPlateforme,
   issueDeLaSession,
+  LECTURE_SANS_SESSION,
   phraseDeLaVerification,
   lireLeBilan,
   prechargeLePlan,
@@ -162,6 +164,43 @@ describe('prechargeLePlan', () => {
     expect(prechargeLePlan({ etat: 'lue', bilanComplete: false }, { vers: 'reprise' })).toBe(false);
     expect(prechargeLePlan({ etat: 'lue', bilanComplete: false }, { vers: 'onboarding' })).toBe(false);
     expect(prechargeLePlan({ etat: 'erreur' }, { vers: 'echec' })).toBe(false);
+  });
+});
+
+/**
+ * La racine du web sans session, et la page d'accueil (23/10/2026, étape 5 de `v1-35`). Éprouvé le
+ * 23/10/2026 : `LECTURE_SANS_SESSION` écrite en coupure (`{ etat: 'coupure' }`) → « sans session, la marque
+ * ne décide pas » tombe, seul ; la condition sur la plateforme retirée (l'accueil partout) → « sur natif,
+ * l'onboarding reste… » tombe, seul ; la condition sur la destination retirée (l'accueil pour toute
+ * destination du web) → « … le plan et la reprise ne passent pas par elle » tombe, seul.
+ */
+describe('la racine du web', () => {
+  const VIDE = { brouillon: false, marqueDeBilan: false };
+
+  it('sans session, aucun bilan : l’accueil, ou la reprise d’un questionnaire en cours', () => {
+    expect(destinationDuDemarrage(LECTURE_SANS_SESSION, VIDE)).toEqual({ vers: 'onboarding' });
+    expect(destinationDuDemarrage(LECTURE_SANS_SESSION, { ...VIDE, brouillon: true })).toEqual({ vers: 'reprise' });
+  });
+
+  // La marque survit à un stockage d'authentification vidé à la main : lue en repli, elle enverrait au plan
+  // un navigateur qui n'a plus de session, où le plan ouvrirait une session neuve et vide.
+  it('sans session, la marque ne décide pas', () => {
+    expect(destinationDuDemarrage(LECTURE_SANS_SESSION, { ...VIDE, marqueDeBilan: true })).toEqual({ vers: 'onboarding' });
+  });
+
+  it('sur le web, la présentation du produit est la page d’accueil', () => {
+    expect(destinationSurLaPlateforme({ vers: 'onboarding' }, 'web')).toEqual({ vers: 'accueil' });
+  });
+
+  it('sur natif, l’onboarding reste le premier écran', () => {
+    expect(destinationSurLaPlateforme({ vers: 'onboarding' }, 'natif')).toEqual({ vers: 'onboarding' });
+  });
+
+  // Décidé le 23/10/2026 : qui revient avec un bilan ou un questionnaire en cours va comme avant à son plan.
+  it('sur le web, le plan, la reprise et l’écran d’échec ne passent pas par elle', () => {
+    for (const vers of ['plan', 'reprise', 'echec'] as const) {
+      expect(destinationSurLaPlateforme({ vers }, 'web')).toEqual({ vers });
+    }
   });
 });
 

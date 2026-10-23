@@ -177,6 +177,19 @@ suppression du compte le font —, sans quoi elle se lirait comme un refus, et l
 s'ouvrirait sur un départ choisi. Et **« Commencer un bilan sur cet appareil » efface les marques du
 compte quitté**, comme une déconnexion : ce sont celles d'un autre propriétaire.
 
+**La page d'accueil du web non plus, sans être une surface sans compte** (23/10/2026, étape 5 de `v1-35`). La
+racine du site présente le produit à qui n'a ni bilan ni questionnaire en cours (`destinationSurLaPlateforme`,
+`src/types/demarrage.ts`) ; elle restaure la session de l'appareil, décide d'après elle qu'on revient — et
+envoie alors au plan ou au questionnaire comme avant —, et n'en crée aucune : la session s'ouvre à
+« Découvrir mon impact », au premier pas dans l'onboarding. **L'écran de reconnexion s'y pose encore** sur un
+refus, parce que qui y revient avec une session refusée a un compte : c'est pourquoi elle n'est pas dans
+`SURFACES_SANS_COMPTE`, et que `laSessionSOuvreSur` prend la plateforme — sur natif, la racine ouvre la session
+comme avant. **Deux écrans mesurent après la session, plus au montage** : l'onboarding
+(`onboarding_step_view`) et la retrouvaille (`retrouver_view`, porte `accueil`) attendent `ensureSession()`,
+qui rejoint la création que le layout lance en y arrivant ; sans cela, la première étape et la porte se
+perdaient, `track()` renonçant sans session (`MESURE.md`). Garde : le parcours réel (étape 0 bis, aucun compte
+né, la vue de la porte comptée) et la section M de `verifier-etats-export.mjs`.
+
 **Les surfaces sans compte n'ouvrent pas de session : elles restaurent celle qui est là** (18/10/2026).
 `/confidentialite`, `/conditions`, `/licences` (depuis le 22/10/2026), `/compte/suppression`,
 `/rappels/stop` et `/status` — la liste de `src/types/session.ts` (`SURFACES_SANS_COMPTE`), la même que celle où l'écran de reconnexion ne se pose pas — ne demandent pas de
@@ -338,9 +351,10 @@ avant d'y toucher :
 
 ## 2. Retrouver un compte existant
 
-`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **huit**
+`/connexion/retrouver`, seul chemin **délibéré** vers un compte existant, s'atteint depuis **neuf**
 endroits, et `SOURCES_RETROUVER` les énumère — le compte ne s'écrit ici que parce que la liste est
-la source, pas ce paragraphe. Quatre sont d'origine : l'accueil de l'onboarding (« J'ai déjà un
+la source, pas ce paragraphe. La neuvième, `accueil`, est le « J'ai déjà un compte » de la page
+d'accueil du web (23/10/2026, §1). Quatre sont d'origine : la première page de l'onboarding (« J'ai déjà un
 compte »), le lien délibéré « J'ai déjà un compte » du formulaire de `/connexion/email` — **et
 non plus l'adresse déjà prise, qui depuis le 21/09/2026 reçoit un code au lieu d'un écran**,
 `v1-28` §7.1 —, `/connexion` sur une collision

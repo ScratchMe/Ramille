@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PageDAccueil } from '@/components/accueil/page-d-accueil';
 import { Button } from '@/components/button';
 import { DUREE_ANIMATION_LANCEMENT, EcranLancement } from '@/components/ecran-lancement';
 import { ThemedText } from '@/components/themed-text';
@@ -10,27 +11,37 @@ import { ThemedView } from '@/components/themed-view';
 import { loadBilanDraft } from '@/lib/bilan-draft';
 import { prechargerLePlan } from '@/lib/lecture-du-plan';
 import { aDejaVuUnBilan, marquerQuIlYAUnBilan } from '@/lib/marque-de-bilan';
-import { ecouterLeRefus, ensureSession, etatDeLaSession, supabase } from '@/lib/supabase';
+import { ecouterLeRefus, ensureSession, etatDeLaSession, restaurerLaSession, supabase } from '@/lib/supabase';
 import { STATUT_DE_BILAN } from '@/types/bilan';
 import { type ErreurAuth } from '@/types/connexion';
 import {
   destinationDuDemarrage,
+  destinationSurLaPlateforme,
   issueDeLaSession,
+  LECTURE_SANS_SESSION,
   lireLeBilan,
   phraseDeLaVerification,
   prechargeLePlan,
   type LectureDuBilan,
 } from '@/types/demarrage';
 import { decrireErreur } from '@/types/erreur';
-import { suiteDuDemarrage } from '@/types/session';
+import type { Plateforme } from '@/types/rappels';
+import { laSessionSOuvreSur, suiteDuDemarrage } from '@/types/session';
 
-// Racine de l'app — jamais un écran visible en pratique (redirection immédiate dès que la
-// session est prête) : remplace l'ancien smoke-test Supabase qui vivait ici (déplacé vers
-// /status) et servait jusqu'ici de landing par défaut, y compris après un retour d'auth
-// Google sur web (redirectTo non explicite -> Supabase revient sur le Site URL configuré,
-// c'est-à-dire cette racine). Décide entre onboarding et plan selon qu'un bilan complété
-// existe déjà pour la session courante (anonyme ou rattachée) : un utilisateur qui vient de
-// se connecter ou qui revient sur l'app doit retomber sur son plan, pas repartir de zéro.
+// Racine de l'app. Sur natif, jamais un écran visible en pratique (redirection immédiate dès que
+// la session est prête) : remplace l'ancien smoke-test Supabase qui vivait ici (déplacé vers
+// /status). Décide entre onboarding et plan selon qu'un bilan complété existe déjà pour la
+// session courante (anonyme ou rattachée) : un utilisateur qui vient de se connecter ou qui
+// revient sur l'app doit retomber sur son plan, pas repartir de zéro.
+//
+// **Sur le web, c'est aussi la page d'accueil du site** (23/10/2026, étape 5 de
+// `docs/architecture/v1-35-l-audit-en-chantiers.md`) : qui n'a ni bilan ni questionnaire en cours
+// la voit ici, à l'adresse du site, au lieu d'être envoyé à l'onboarding — l'équivalent de la fiche
+// Play, avec le film (`PageDAccueil`). La racine n'y ouvre pas de session ; elle restaure celle qui
+// est là, et c'est elle qui décide qu'on revient (`laSessionSOuvreSur`, `src/types/session.ts`). Le
+// HTML exporté reste l'écran de lancement : la page d'accueil ne s'affiche qu'une fois la session
+// restaurée, sans quoi quelqu'un qui revient verrait la présentation le temps de charger l'app,
+// avant d'être envoyé à son plan.
 //
 // **L'échec est un état de l'écran, jamais un silence.** Cet effet n'avait pas de `catch`,
 // et ça a coûté un cycle de build complet le 07/09 : `getSession()` échouait sur Android
@@ -43,6 +54,8 @@ export default function Index() {
   // Le captcha a refusé la création de la session : un écran à lui, ni réseau ni panne du serveur
   // (`issueDeLaSession`, 04/10/2026).
   const [verificationRefusee, setVerificationRefusee] = useState(false);
+  // Le web, sans bilan ni questionnaire en cours : la page d'accueil (`destinationSurLaPlateforme`).
+  const [accueil, setAccueil] = useState(false);
 
   // Le `setState` d'échec vit **après** un `await`, dans une fonction asynchrone : une
   // écriture synchrone depuis le corps d'un effet déclencherait une cascade de rendus, que
@@ -61,9 +74,14 @@ export default function Index() {
         // ne lève donc pas, et on n'interroge pas la base non plus : sans session, la requête
         // partirait en `anon`, qui n'a aucun privilège sur `assessments`, et le `42501` se lirait
         // « erreur serveur » alors que c'est le réseau.
+        //
+        // **Sur le web, la racine n'ouvre pas de session : elle restaure celle qui est là** (23/10/2026).
+        // C'est la page d'accueil, qu'un navigateur neuf lit sans compte anonyme ni captcha ; la session
+        // s'ouvre au premier pas dans l'app (`laSessionSOuvreSur`). `restaurerLaSession()` ne lève pas :
+        // la branche du captcha ci-dessous ne vaut que sur natif.
         let coupureALaSession = false;
         try {
-          await ensureSession();
+          await (laSessionSOuvreSur('/', PLATEFORME) ? ensureSession() : restaurerLaSession());
         } catch (erreurDeSession) {
           const issue = issueDeLaSession(erreurDeSession as ErreurAuth);
           switch (issue) {
@@ -97,6 +115,8 @@ export default function Index() {
         const suite = suiteDuDemarrage(etatDeLaSession());
         if (suite === 'attendre') return;
         if (suite === 'repli') coupureALaSession = true;
+        // Personne n'est passé, et rien n'a été ouvert (la racine du web) : la lecture est connue.
+        const sansSession = suite === 'sansSession';
 
         // **Le brouillon se lit ici, en parallèle** (C3.9, constat A1-10). Quelqu'un qui a
         // interrompu son questionnaire repartait de la racine, donc de l'onboarding : quatre
@@ -107,7 +127,7 @@ export default function Index() {
         // En parallèle et non à la suite : les deux lectures locales ne coûtent rien, et les
         // enchaîner derrière l'aller-retour serveur retarderait le démarrage de tout le monde.
         const [reponse, brouillon, marqueDeBilan] = await Promise.all([
-          coupureALaSession
+          coupureALaSession || sansSession
             ? null
             : supabase
                 .from('assessments')
@@ -126,8 +146,9 @@ export default function Index() {
         // **Toute la décision vit dans `src/types/demarrage.ts`**, qui est pur et testé sur la table
         // de `v1-15` §6 — et non ici, en cascade de `if`, où trois versions successives de ce fichier
         // ont écrit trois raisonnements différents. Ce qui reste ici est de la plomberie.
-        const lecture: LectureDuBilan =
-          reponse === null
+        const lecture: LectureDuBilan = sansSession
+          ? LECTURE_SANS_SESSION
+          : reponse === null
             ? { etat: 'coupure' }
             : lireLeBilan({
                 aUnBilan: reponse.data !== null,
@@ -140,10 +161,13 @@ export default function Index() {
         // seulement si celui-là ne peut rien lire. Sans attendre — elle ne sert à rien tout de suite.
         if (lecture.etat === 'lue' && lecture.bilanComplete) void marquerQuIlYAUnBilan();
 
-        const destination = destinationDuDemarrage(lecture, {
-          brouillon: brouillon !== null,
-          marqueDeBilan,
-        });
+        const destination = destinationSurLaPlateforme(
+          destinationDuDemarrage(lecture, {
+            brouillon: brouillon !== null,
+            marqueDeBilan,
+          }),
+          PLATEFORME
+        );
 
         // **L'écran technique reste, et il reste pour les erreurs serveur** : son registre
         // développeur est une décision explicite, et son message brut est fait pour être recopié.
@@ -177,10 +201,14 @@ export default function Index() {
         // le brouillon ne détourne pas quelqu'un qui a un bilan complété (C3.9), et il passe en
         // revanche devant la marque hors ligne, parce que le questionnaire se remplit sans réseau
         // et le plan non.
+        //
+        // La page d'accueil ne se navigue pas : elle s'affiche **ici**, à l'adresse du site.
         if (destination.vers === 'plan') {
           router.replace('/plan');
         } else if (destination.vers === 'reprise') {
           router.replace({ pathname: '/bilan', params: { reprise: '1' } });
+        } else if (destination.vers === 'accueil') {
+          setAccueil(true);
         } else {
           router.replace('/onboarding');
         }
@@ -263,8 +291,13 @@ export default function Index() {
     );
   }
 
+  if (accueil) return <PageDAccueil />;
+
   return <EcranLancement />;
 }
+
+/** La plateforme, une fois : la racine la passe à la règle de session et à la destination. */
+const PLATEFORME: Plateforme = Platform.OS === 'web' ? 'web' : 'natif';
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

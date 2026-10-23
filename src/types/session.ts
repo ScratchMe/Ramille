@@ -36,6 +36,7 @@
 // `src/lib/session-refusee.test.ts`. Les quatre états sont donc atteignables — aucun n'est décoratif.
 
 import { estPanneDeTransport, type ErreurAuth } from '@/types/connexion';
+import type { Plateforme } from '@/types/rappels';
 
 export type EtatDeSession =
   /** Une session est là, anonyme ou rattachée. Rien à faire. */
@@ -131,8 +132,18 @@ export function lEcranDeReconnexionSePose(chemin: string): boolean {
  * est là ? Il l'ouvre partout sauf sur les surfaces sans compte ; **quitter l'une d'elles pour l'app
  * l'ouvre** — le layout racine relit cette règle à chaque changement de route —, et toute écriture la
  * garantit de toute façon avant de partir (`ensureSession()`).
+ *
+ * **Ni sur la racine du web, depuis qu'elle est une page d'accueil** (23/10/2026, étape 5 de
+ * `docs/architecture/v1-35-l-audit-en-chantiers.md`). Un navigateur neuf y lit la présentation du
+ * produit, et la session s'ouvre au premier pas dans l'app — « Découvrir mon impact » mène à
+ * l'onboarding, où ce montage l'ouvre. Sans quoi chaque visite de ramille.fr, robots compris, créait un
+ * compte anonyme et passait par le captcha. **Elle n'est pas pour autant une surface sans compte** : qui
+ * revient avec une session refusée y voit l'écran de reconnexion, comme avant, parce que c'est une
+ * personne qui a un compte, et la racine décide d'après la session restaurée (`src/app/index.tsx`). Sur
+ * natif, la racine n'affiche rien et ouvre la session comme partout.
  */
-export function laSessionSOuvreSur(chemin: string): boolean {
+export function laSessionSOuvreSur(chemin: string, plateforme: Plateforme): boolean {
+  if (plateforme === 'web' && cheminNu(chemin) === '/') return false;
   return !estUneSurfaceSansCompte(chemin);
 }
 
@@ -145,11 +156,15 @@ export function laSessionSOuvreSur(chemin: string): boolean {
  *   * **`repli`** — la session n'a pas pu se rafraîchir (`indisponible`, réseau coupé ou serveur
  *     d'authentification en panne) : la racine route comme hors ligne, sur ce que l'appareil sait. Elle
  *     lisait le bilan quand même, en `anon`, recevait un `42501`, et disait « Le démarrage a échoué »
- *     là où le repli était dû (`COMPTE.md` §3). Et `absente`, qui ne se voit pas ici — une création
- *     réussie rend `presente`, une création ratée lève —, se replie de même : c'est le côté qui ne lit
- *     rien sans session.
+ *     là où le repli était dû (`COMPTE.md` §3) ;
+ *   * **`sansSession`** — personne n'est passé, et la racine n'a rien ouvert : c'est la racine du web,
+ *     qui ne fait que restaurer (`laSessionSOuvreSur`, 23/10/2026). Il n'y a rien à lire, et la réponse
+ *     est connue sans aller-retour : sans session, aucun bilan n'existe (`LECTURE_SANS_SESSION`,
+ *     `src/types/demarrage.ts`). Ce n'est pas un repli : la marque locale de bilan n'y décide pas, elle
+ *     enverrait au plan quelqu'un qui n'a plus de session. Sur natif, la racine ouvre la session, donc
+ *     `absente` ne s'y voit pas — une création réussie rend `presente`, une création ratée lève.
  */
-export type SuiteDuDemarrage = 'lire' | 'attendre' | 'repli';
+export type SuiteDuDemarrage = 'lire' | 'attendre' | 'repli' | 'sansSession';
 
 export function suiteDuDemarrage(etat: EtatDeSession): SuiteDuDemarrage {
   switch (etat) {
@@ -158,8 +173,9 @@ export function suiteDuDemarrage(etat: EtatDeSession): SuiteDuDemarrage {
     case 'refusee':
       return 'attendre';
     case 'indisponible':
-    case 'absente':
       return 'repli';
+    case 'absente':
+      return 'sansSession';
     default: {
       const inconnu: never = etat;
       throw new Error(`État de session inconnu : ${String(inconnu)}`);

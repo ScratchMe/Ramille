@@ -108,8 +108,13 @@ const DIST = process.argv[2] ?? 'dist';
 // un texte reviendrait soit à figer une copie d'erreur, soit à faire échouer la CI pour une
 // raison étrangère au rendu. La page doit seulement ne pas être vide, et c'est bien ce que ce
 // garde-fou protège.
+//
+// **La racine du web a un marqueur depuis le 23/10/2026** : elle n'ouvre plus de session, elle restaure
+// celle de l'appareil — sans réseau —, et un navigateur neuf y voit la page d'accueil, configuration
+// factice ou non. « Sans compte, sans publicité » est un titre de section qu'elle seule porte (le titre de
+// la page est aussi celui de l'onboarding).
 const ROUTES = [
-  { chemin: '/', marqueur: null },
+  { chemin: '/', marqueur: 'Sans compte, sans publicité' },
   { chemin: '/onboarding', marqueur: 'Moi, c’est Ramille' },
   { chemin: '/confidentialite', marqueur: 'Politique de confidentialité' },
   { chemin: '/conditions', marqueur: 'Conditions d’utilisation' },

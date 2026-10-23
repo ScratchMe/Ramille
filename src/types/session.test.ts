@@ -125,27 +125,57 @@ describe('lEcranDeReconnexionSePose', () => {
  * celle du contenu.
  */
 describe('laSessionSOuvreSur', () => {
+  const PLATEFORMES = ['natif', 'web'] as const;
+
   it('ouvre la session partout où l’app peut écrire, et sur une route neuve', () => {
-    for (const chemin of ['/', '/onboarding', '/bilan', '/plan', '/suivi/bilan', '/compte', '/connexion/retrouver', '/feedback', '/une-route-neuve']) {
-      expect({ chemin, ouvre: laSessionSOuvreSur(chemin) }).toEqual({ chemin, ouvre: true });
+    for (const plateforme of PLATEFORMES) {
+      for (const chemin of ['/onboarding', '/bilan', '/plan', '/suivi/bilan', '/compte', '/connexion/retrouver', '/feedback', '/une-route-neuve']) {
+        expect({ plateforme, chemin, ouvre: laSessionSOuvreSur(chemin, plateforme) }).toEqual({ plateforme, chemin, ouvre: true });
+      }
     }
   });
 
   it('ne crée rien sur les surfaces sans compte — elles ne font que restaurer', () => {
-    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
-      expect({ chemin, ouvre: laSessionSOuvreSur(chemin) }).toEqual({ chemin, ouvre: false });
+    for (const plateforme of PLATEFORMES) {
+      for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
+        expect({ plateforme, chemin, ouvre: laSessionSOuvreSur(chemin, plateforme) }).toEqual({ plateforme, chemin, ouvre: false });
+      }
     }
   });
 
   it('reconnaît une surface sans compte avec ou sans barre finale', () => {
-    expect(laSessionSOuvreSur('/confidentialite/')).toBe(false);
+    expect(laSessionSOuvreSur('/confidentialite/', 'natif')).toBe(false);
     expect(lEcranDeReconnexionSePose('/rappels/stop/')).toBe(false);
   });
 
-  it('suit la même liste que l’écran de reconnexion, hors `/connexion/…`', () => {
+  /**
+   * La racine du web est la page d'accueil (23/10/2026, étape 5 de `v1-35`) : un navigateur neuf la lit sans
+   * compte anonyme ni captcha, et la session s'ouvre au premier pas dans l'app. Sur natif, la racine n'affiche
+   * rien et ouvre la session comme avant. Éprouvé le 23/10/2026 : la condition sur la racine retirée → 3
+   * tombent, ce test, « sur le web, s'en écarte… » et, dans `analytics.test.ts`, « ne rattrape rien sur la
+   * page d'accueil du web… » ; la condition sur la plateforme seule retirée (la racine fermée partout) → 4
+   * tombent, ce test, « suit la même liste… sur natif » et les deux tests de la racine de
+   * `rattraperLOuverture`.
+   */
+  it('n’ouvre rien à la racine du web, qui est la page d’accueil, et l’ouvre à la racine sur natif', () => {
+    expect(laSessionSOuvreSur('/', 'web')).toBe(false);
+    expect(laSessionSOuvreSur('/', 'natif')).toBe(true);
+  });
+
+  it('suit la même liste que l’écran de reconnexion sur natif, hors `/connexion/…`', () => {
     for (const chemin of ['/', '/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
-      expect({ chemin, ouvre: laSessionSOuvreSur(chemin) }).toEqual({ chemin, ouvre: lEcranDeReconnexionSePose(chemin) });
+      expect({ chemin, ouvre: laSessionSOuvreSur(chemin, 'natif') }).toEqual({ chemin, ouvre: lEcranDeReconnexionSePose(chemin) });
     }
+  });
+
+  // **La racine du web n'est pas une surface sans compte** : elle n'ouvre pas de session, mais qui y revient
+  // avec une session refusée y voit l'écran de reconnexion — c'est quelqu'un qui a un compte.
+  it('sur le web, s’en écarte à la seule racine, où l’écran de reconnexion se pose encore', () => {
+    for (const chemin of ['/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
+      expect({ chemin, ouvre: laSessionSOuvreSur(chemin, 'web') }).toEqual({ chemin, ouvre: lEcranDeReconnexionSePose(chemin) });
+    }
+    expect(lEcranDeReconnexionSePose('/')).toBe(true);
+    expect(laSessionSOuvreSur('/', 'web')).toBe(false);
   });
 });
 
@@ -166,8 +196,12 @@ describe('suiteDuDemarrage', () => {
     expect(suiteDuDemarrage('indisponible')).toBe('repli');
   });
 
-  it('une absence ne lit rien non plus : c’est le côté qui ne part jamais sans session', () => {
-    expect(suiteDuDemarrage('absente')).toBe('repli');
+  // 23/10/2026 : l'absence ne se voit qu'à la racine du web, qui restaure sans ouvrir. Elle ne lit rien, et
+  // elle n'est pas un repli : la marque locale de bilan n'y décide pas (`LECTURE_SANS_SESSION`). Éprouvé le
+  // 23/10/2026 : rendue à `repli`, la conduite d'avant → ce test tombe, seul, ici ; et `demarrage.test.ts`
+  // dit ce que la marque en ferait.
+  it('une absence ne lit rien, et dit qu’il n’y a personne plutôt que de se replier', () => {
+    expect(suiteDuDemarrage('absente')).toBe('sansSession');
   });
 });
 
