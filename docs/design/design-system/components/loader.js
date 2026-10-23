@@ -16,7 +16,7 @@
     'illustrations/OnboardingHeroIllustration', 'illustrations/ReassuranceIllustration', 'illustrations/EmptyStateIllustration',
     'onboarding/EtapeAccroche', 'onboarding/EtapeContexte', 'onboarding/EtapeReassurance', 'onboarding/EtapeTransition',
     'connexion/ChampDeCode', 'connexion/SaisieDuCode',
-    'pages/LegalPage', 'pages/ConfigurationManquante', 'pages/ErreurInattendue', 'pages/SessionRefusee',
+    'pages/LegalPage', 'pages/ConfigurationManquante', 'pages/ErreurInattendue', 'pages/SessionRefusee', 'pages/FilmDePresentation', 'pages/PageDAccueil',
     'compte/ChoixDeRappel', 'compte/MonCompte',
   ];
   // Les .jsx servis peuvent arriver déjà transpilés (runtime automatique) : on fournit _jsx/_jsxs/_Fragment.

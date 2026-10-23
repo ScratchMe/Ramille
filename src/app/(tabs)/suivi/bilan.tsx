@@ -623,8 +623,8 @@ export default function BilanResultat() {
       return;
     }
     // **Plus aucun bilan valide : la racine, et la marque locale effacée d'abord** (D3). La racine ne
-    // trouve plus de bilan complété et route vers l'onboarding — ou la reprise d'un questionnaire
-    // commencé. Sans l'effacement, une réouverture hors ligne lirait la marque et enverrait au plan
+    // trouve plus de bilan complété et route vers l'onboarding (sur le web, la page d'accueil, depuis le
+    // 23/10/2026) — ou la reprise d'un questionnaire commencé. Sans l'effacement, une réouverture hors ligne lirait la marque et enverrait au plan
     // d'un compte qui n'a plus de bilan (C4.5).
     if (apresLeRetrait(issue.restants) === 'racine') {
       await effacerLaMarqueDeBilan();

@@ -3348,7 +3348,9 @@ try {
     'la confirmation dit la place lue au chargement (« ancien ») et non celle du toucher (« seul »)'
   );
   await bouton('Retirer ce bilan');
-  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  // La racine ne trouve plus de bilan : sur le web, c'est la page d'accueil (23/10/2026), dont « Découvrir mon
+  // impact » rouvre l'onboarding.
+  await entrerParLaPageDAccueil();
   assurer(
     (await page.evaluate((cle) => localStorage.getItem(cle), MARQUE_DE_BILAN)) === null,
     'la marque locale survit au retrait du seul bilan : une réouverture hors ligne enverrait au plan (C4.5)'
@@ -3565,7 +3567,8 @@ try {
       'par son adresse, il doit la quitter, comme le retour d’Android quitte l’app depuis le plan'
   );
 
-  // Puis la déconnexion, sur le même onglet : l'onboarding, et le retour ne rouvre pas le plan quitté.
+  // Puis la déconnexion, sur le même onglet : la page d'accueil (l'onboarding avant le 23/10/2026), et le
+  // retour ne rouvre pas le plan quitté.
   // « Toi » s'ouvre **depuis le plan**, par son icône : ouvert par son adresse, il serait seul dans la
   // pile, et un `replace` seul n'y laisserait rien — l'assertion passerait sans rien garder.
   await page.goto(`${base}/plan`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -3578,7 +3581,9 @@ try {
   }
   await page.waitForURL(/\/compte/, { timeout: ATTENTE });
   await bouton('Me déconnecter de cet appareil');
-  await page.waitForURL(/\/onboarding/, { timeout: ATTENTE });
+  // Sans session, la racine du web est la page d'accueil (23/10/2026), et elle n'en rouvre pas.
+  await page.getByRole('heading', { name: TITRE_DE_L_ACCUEIL, exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
+  assurer(new URL(page.url()).pathname === '/', `la déconnexion ne mène pas à la page d’accueil (${page.url()})`);
   await page.goBack({ timeout: ATTENTE }).catch(() => {});
   await page.waitForTimeout(1_500);
   const apresLaDeconnexion = page.url().replace(base, '');

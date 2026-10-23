@@ -159,7 +159,7 @@ export default function Compte() {
 
   // **Vers la racine, et pas en arrière** : la racine décide où aller selon qu'un bilan complété
   // existe, et après une déconnexion il n'en existe plus pour cette session — elle route donc vers
-  // l'onboarding. Revenir en arrière aurait ramené sur le plan d'un compte qu'on vient de quitter,
+  // l'onboarding, et sur le web vers la page d'accueil (23/10/2026). Revenir en arrière aurait ramené sur le plan d'un compte qu'on vient de quitter,
   // avec des données encore en mémoire d'écran. **Et la pile se vide avant** (01/10/2026, audit
   // T-1) : un `replace('/')` seul ne remplaçait que « Toi », et le plan quitté restait dessous —
   // le premier retour depuis l'onboarding y ramenait (`terminerLeFlux`).
