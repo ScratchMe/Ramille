@@ -572,6 +572,8 @@ describe('Plan — la feuille des rappels reçoit l’échéance (`v1-33` D14)',
  *     possible sans adresse à montrer ;
  *   - l'adresse jamais passée (`email: null`) → « sur le web, avec une adresse utilisable », seul ;
  *   - la marque jamais lue (`feuilleDejaVue: false`) → « la feuille déjà vue : aucune des deux », seul.
+ *   - (à l'intégration, même jour) la garde de « Sans rappel » retirée de `ouvertureDeLaFeuille` → « « Sans
+ *     rappel » déjà choisi : aucune feuille », seul.
  *   Et, de la dérivation (`rappels.test.ts`), celles qui se voient aussi ici : la liste y est comptée.
  */
 describe('Plan — quelle feuille des rappels s’ouvre au premier engagement', () => {
@@ -614,8 +616,12 @@ describe('Plan — quelle feuille des rappels s’ouvre au premier engagement', 
   }
   const vuesDuCanal = () => mockTrack.mock.calls.filter(([nom]) => nom === 'rappels_view');
 
+  // La préférence par défaut d'une session anonyme est `email` (`20260907230000_rappels_canal.sql`) : c'est
+  // l'état de quelqu'un qui n'a rien réglé. `PREFS` vaut `none`, qui ne se lit que choisi, et qui ne voit
+  // aucune feuille (le cas suivant).
   it('sur le web, sans adresse : la feuille du compte — et ce n’est pas une vue du choix du canal', async () => {
     surPlateforme('web');
+    mockPrefs.mockResolvedValue({ ...PREFS, prefere: 'email' });
     await sEngager();
     await waitFor(() => expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ ouverture: { etape: 'compte' } })));
     // `rappels_view` compte les vues du choix du canal : y verser celle-ci gonflerait l'entonnoir qu'il mesure.
@@ -642,6 +648,18 @@ describe('Plan — quelle feuille des rappels s’ouvre au premier engagement', 
     await sEngager();
     await waitFor(() => expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ ouverture: { etape: 'canal' } })));
     expect(vuesDuCanal()).toHaveLength(1);
+  });
+
+  // **« Sans rappel » déjà choisi : aucune feuille** (23/10/2026) — la feuille du compte demanderait une
+  // adresse pour un rappel refusé. Même lecture d'une absence que le cas suivant.
+  it('sur le web, sans adresse, « Sans rappel » déjà choisi : aucune feuille', async () => {
+    surPlateforme('web');
+    mockPrefs.mockResolvedValue({ ...PREFS, prefere: 'none' });
+    await sEngager();
+    await waitFor(() => expect(mockDejaVue).toHaveBeenCalled());
+    await act(async () => {});
+    expect(mockFeuille).not.toHaveBeenCalled();
+    expect(vuesDuCanal()).toEqual([]);
   });
 
   it('sur le web, sans adresse, la feuille déjà vue : aucune des deux — la marque est commune', async () => {

@@ -930,6 +930,10 @@ export function ouvertureDeLaFeuille({
     const peutRecevoirUnEmail = adresseUtilisable(etat) !== null;
     const demande = { plateforme: etat.plateforme, emailPossible: peutRecevoirUnEmail, dejaProposee: false };
     if (doitProposerLaFeuille(demande)) return { etape: 'canal' };
+    // **Sauf à qui a déjà dit « Sans rappel »** (23/10/2026) : sur web sans compte, « Toi » propose ce
+    // réglage, et la feuille du compte demanderait une adresse pour un rappel que la personne a refusé.
+    // La préférence par défaut d'une session anonyme est `email` : `none` ne se lit que choisi.
+    if (etat.prefere === 'none') return null;
     return doitProposerLeCompte(demande) ? { etape: 'compte' } : null;
   }
   if (!laVeilleSeRepropose(etat)) return null;

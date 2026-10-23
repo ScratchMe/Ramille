@@ -424,7 +424,9 @@ réussi sur la liste.
   technique — sa destination est un brief (`RECETTE.md` §2.4), et elle croise la prop `enAttente`
   que `v1-31` ajoute à `Button`. Hors de ce chantier.
 - **Sur web, la feuille des rappels ne s'ouvre pas** après un premier engagement en session anonyme
-  (`doitProposerLaFeuille`) : voulu, et c'est ce que la recette verra en navigation privée.
+  (`doitProposerLaFeuille`) : voulu, et c'est ce que la recette verra en navigation privée. **Plus vrai
+  depuis le 23/10/2026** : à sa place s'ouvre la feuille du compte, une fois (`v1-35` étape 4,
+  `FRONT-SESSION.md` §2.7).
 
 **La première version de ce plan a été relue par le sous-agent `contre-lecture` avant la PR**, qui
 y a trouvé dix-sept constats, tous corrigés ici. Les plus lourds : une réécriture du bloc 06 de la

@@ -1049,6 +1049,7 @@ describe('sousTitreDesRappels', () => {
 //   | `!etat.veilleDejaProposee` retiré de `laVeilleSeRepropose`    | 2 : « une fois, jamais plus », l'invariant      |
 //   | `etat.poste === 'commute'` retiré                             | 2 : « pas de trajet ne rouvre rien », l'invariant |
 //   | la question seule rendue sans `affichageDeLaVeille`           | 2 : « les conditions tiennent », l'invariant    |
+//   | (23/10/2026) la garde de « Sans rappel » retirée              | 2 : « Sans rappel déjà choisi », l'invariant   |
 //   | la feuille jamais vue court-circuitée (`if (false)`)          | 1 : « feuille jamais vue : le canal »           |
 //   | `CANAUX_ANDROID.veille.id` ramené à `rappels`                 | 2 : la jumelle SQL, « deux canaux distincts »   |
 //   | le `defaultChannel` d'app.json passé à `mot_de_la_veille`     | 1 : « le canal des points est le defaultChannel » |
@@ -1222,10 +1223,12 @@ describe('ouvertureDeLaFeuille', () => {
   // compte, jamais aucune, jamais les deux**, et la marque (`feuilleDejaVue`) ferme les deux. Le compte
   // se lit **exactement** là où aucun rappel ne peut partir par email et où il n'y a pas de notification
   // — le web, sans adresse utilisable —, quels que soient le poste, la préférence, le jeton, la réponse
-  // à la veille et la fenêtre : rien de tout cela ne fait changer ce que dit Ramille ici.
-  it('la première fois : la feuille du canal ou celle du compte, selon la plateforme et l’adresse seules', () => {
+  // à la veille et la fenêtre : rien de tout cela ne fait changer ce que dit Ramille ici. **Une exception
+  // depuis le même jour** : qui a déjà choisi « Sans rappel » ne voit pas la feuille du compte — aucune
+  // feuille, puisque celle du canal ne s'ouvre pas non plus là.
+  it('la première fois : la feuille du canal ou celle du compte, selon la plateforme, l’adresse et « Sans rappel »', () => {
     const fenetres: (FenetreDeLaVeille | null)[] = [ouverte, null];
-    const comptees = { canal: 0, compte: 0, deja: 0 };
+    const comptees = { canal: 0, compte: 0, deja: 0, sansRappel: 0 };
     for (const plateforme of ['natif', 'web'] as const) {
       for (const [emailPossible, email] of [
         [false, null],
@@ -1257,6 +1260,15 @@ describe('ouvertureDeLaFeuille', () => {
                         // La marque ferme les deux feuilles : il ne reste, au plus, que la question de la veille.
                         expect(ouverture === null || ouverture.etape === 'veille').toBe(true);
                         comptees.deja += 1;
+                      } else if (plateforme === 'web' && sansAdresse && prefere === 'none') {
+                        expect({ plateforme, emailPossible, email, prefere, ouverture }).toEqual({
+                          plateforme,
+                          emailPossible,
+                          email,
+                          prefere,
+                          ouverture: null,
+                        });
+                        comptees.sansRappel += 1;
                       } else {
                         const voulue = plateforme === 'web' && sansAdresse ? 'compte' : 'canal';
                         expect({ plateforme, emailPossible, email, ouverture: ouverture?.etape }).toEqual({
@@ -1280,6 +1292,17 @@ describe('ouvertureDeLaFeuille', () => {
     expect(comptees.canal).toBeGreaterThan(0);
     expect(comptees.compte).toBeGreaterThan(0);
     expect(comptees.deja).toBeGreaterThan(0);
+    expect(comptees.sansRappel).toBeGreaterThan(0);
+  });
+
+  it('Sans rappel déjà choisi, sur web et sans compte : aucune feuille — le compte servirait un rappel refusé', () => {
+    expect(
+      ouvertureDeLaFeuille({ ...nominal, feuilleDejaVue: false, plateforme: 'web', emailPossible: false, prefere: 'none' })
+    ).toBeNull();
+    // Le même état, la préférence par défaut d'une session anonyme : la feuille du compte.
+    expect(
+      ouvertureDeLaFeuille({ ...nominal, feuilleDejaVue: false, plateforme: 'web', emailPossible: false, prefere: 'email' })
+    ).toEqual({ etape: 'compte' });
   });
 });
 

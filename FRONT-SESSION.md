@@ -178,9 +178,12 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   - **elle ne se compte pas** : `rappels_view` ne compte que les vues du choix du canal, et un
     événement de plus demanderait une migration (`MESURE.md`). Sa porte se lit à `connexion_view`,
     provenance `rappels` — qui mêle désormais le natif et le web.
-  La décision est **inconditionnelle** : elle s'ouvre aussi chez qui a choisi « Sans rappel » dans
-  « Toi » avant son premier engagement. Ce que « Plus tard » laisse derrière est la carte d'attente du
-  plan, inchangée — « Rattache un compte pour recevoir le mot par email. », avec sa porte vers « Toi ».
+  **Elle ne s'ouvre pas chez qui a déjà choisi « Sans rappel »** dans « Toi » avant son premier
+  engagement (23/10/2026, à l'intégration) : elle lui demanderait une adresse pour un rappel qu'il a
+  refusé. La préférence par défaut d'une session anonyme est `email`, donc `none` ne se lit que choisi ;
+  et la marque n'est pas posée, faute de feuille. Ce que « Plus tard » laisse derrière est la carte
+  d'attente du plan, inchangée — « Rattache un compte pour recevoir le mot par email. », avec sa porte
+  vers « Toi ».
 - **Le mot de la veille ne se propose qu'à qui peut le recevoir, et le réglage dit la pause plutôt
   que de se taire** (C4.2, `v1-25`, `affichageDeLaVeille` dans `src/types/rappels.ts`). La
   proposition exige tout ce qui le fait partir : natif, `canalEffectif` push **sur ce téléphone**,
