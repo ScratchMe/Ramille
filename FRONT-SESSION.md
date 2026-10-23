@@ -144,6 +144,43 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   réparer à la main. La destination est **« Toi » et jamais `/connexion`**, qui imposerait une
   provenance neuve à `SOURCES_CONNEXION`. Et pas la carte entière rendue `Pressable` : trois des
   six variantes n'ont rien à offrir, elles deviendraient une cible morte.
+- **Sur le web, sans adresse, la feuille des rappels n'est plus un silence : une petite feuille dit
+  pourquoi** (décision de la personne qui pilote, 23/10/2026, `v1-35` étape 4 — « le compte comme
+  condition des rappels sur le web »). Le web n'a pas de notification, et l'email exige un compte :
+  sans adresse, il n'y a **aucun** moyen de recevoir un rappel, et la feuille du canal — qui n'aurait
+  rien à proposer — ne s'ouvrait pas (`doitProposerLaFeuille`) ; seule la carte d'attente le disait,
+  plus tard. `ouvertureDeLaFeuille` rend désormais une troisième ouverture, `{ etape: 'compte' }`
+  (`doitProposerLeCompte`, le **complément exact** de `doitProposerLaFeuille` : la première fois, une
+  seule des deux est vraie, sur chaque plateforme et chaque état de l'adresse), et la feuille la rend
+  dans `FeuilleRappels` — pas un composant à part : le cadre, le titre « Les rappels » sans en-tête et
+  la marque sont les siens. Ramille dit `RAMILLE.signeSurLeWebParEmail` (« Sur le web, je ne peux te
+  faire signe que par email. Rattache ton adresse pour recevoir le rappel. »), et deux boutons, du
+  produit et non d'elle (`REPONSES_DE_LA_FEUILLE_DU_COMPTE`) : « Rattacher mon adresse » et
+  « Plus tard ». Cinq points à ne pas défaire :
+  - **la porte est celle de la ligne « Par email », écrite une fois** (`allerRattacher`) :
+    `/connexion` par la provenance `rappels`, **pas une neuve** — `SOURCES_CONNEXION` ne bouge pas.
+    Elle rend la main à l'écran *avant* de naviguer, comme l'autre : sur natif, une route poussée sous
+    un `Modal` ouvert reste dessous. « Plus tard » ne navigue pas, il redescend d'abord (`fermer`) ;
+  - **la marque est la même que celle de la feuille du canal, et elle se pose dès que la feuille
+    s'affiche** — comme la question de la veille, pas à la fermeture : un retour, un toucher sur le
+    voile et la porte la quittent chacun à leur façon, et aucun n'a rien à valider. Les deux feuilles
+    sont **complémentaires, jamais cumulées** : qui rattache une adresse ensuite, ou ferme d'un geste
+    de retour, ne voit pas la feuille du canal lui tomber dessus sur le plan — le réglage est dans
+    « Toi », et la préférence en base vaut `email` par défaut, donc le mot part dès que l'adresse est
+    confirmée ;
+  - **« adresse utilisable » est un seul fait** (`adresseUtilisable` : un compte rattaché et confirmé
+    **qui porte une adresse à montrer**), lu par la ligne « Par email » de `lignesDeReglage` et par
+    `ouvertureDeLaFeuille` — d'où `EtatALEngagement.email`, que l'écran du plan passe en étalant les
+    réglages lus. Un compte dit possible sans adresse vaut un compte absent, ici comme dans « Toi » ;
+  - **le focus va à la phrase** (`TitreDArrivee`) : elle est toute l'explication, et le lecteur d'écran
+    entrerait sinon sur « Rattacher mon adresse » sans savoir pourquoi. Sur web, c'est aussi ce que le
+    `Modal` fait de lui-même (le premier descendant qui accepte le focus, dans l'ordre du DOM) ;
+  - **elle ne se compte pas** : `rappels_view` ne compte que les vues du choix du canal, et un
+    événement de plus demanderait une migration (`MESURE.md`). Sa porte se lit à `connexion_view`,
+    provenance `rappels` — qui mêle désormais le natif et le web.
+  La décision est **inconditionnelle** : elle s'ouvre aussi chez qui a choisi « Sans rappel » dans
+  « Toi » avant son premier engagement. Ce que « Plus tard » laisse derrière est la carte d'attente du
+  plan, inchangée — « Rattache un compte pour recevoir le mot par email. », avec sa porte vers « Toi ».
 - **Le mot de la veille ne se propose qu'à qui peut le recevoir, et le réglage dit la pause plutôt
   que de se taire** (C4.2, `v1-25`, `affichageDeLaVeille` dans `src/types/rappels.ts`). La
   proposition exige tout ce qui le fait partir : natif, `canalEffectif` push **sur ce téléphone**,

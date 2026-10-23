@@ -1,6 +1,7 @@
 import app from '../../app.json';
 import { RAMILLE } from '@/constants/mascotte';
 import {
+  adresseUtilisable,
   affichageDeLaVeille,
   boucleAVenir,
   boucleDeLAction,
@@ -10,6 +11,7 @@ import {
   canalPreselectionne,
   carteAttente,
   doitProposerLaFeuille,
+  doitProposerLeCompte,
   laVeilleSeRepropose,
   leJetonAuDemarrage,
   libelleBouton,
@@ -233,6 +235,85 @@ describe('doitProposerLaFeuille', () => {
     expect(
       doitProposerLaFeuille({ plateforme: 'web', emailPossible: true, dejaProposee: false })
     ).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// La feuille du compte (23/10/2026, `v1-35` étape 4) : sur web, sans adresse, une petite feuille dit
+// que Ramille ne peut faire signe que par email. Elle est le **complément** de la feuille du canal, et
+// la marque qu'elles partagent fait qu'elles ne se cumulent jamais.
+//
+// Mutations jouées le 23/10/2026 (TESTING.md §1.1), une à la fois, le fichier restauré après chacune par
+// l'état d'avant réécrit, sur les quatre fichiers qui la touchent joués ensemble (140 tests, témoin vert) :
+//   | Ce qu'on casse                                                                   | Ce qui tombe                                       |
+//   |----------------------------------------------------------------------------------|----------------------------------------------------|
+//   | `doitProposerLeCompte` sans `!emailPossible` (le web, toujours)                  | 2 : « chaque combinaison », « le complément »      |
+//   | `doitProposerLeCompte` sans la plateforme (le natif sans adresse aussi)          | les mêmes 2                                        |
+//   | `doitProposerLeCompte` qui ignore la marque (`dejaProposee`)                     | les mêmes 2                                        |
+//   | `ouvertureDeLaFeuille` qui lit `emailPossible` seul (l'expression d'avant)       | 3 : « un compte confirmé sans adresse à dire »,    |
+//   |                                                                                  |   « la première fois », et au plan « un compte dit |
+//   |                                                                                  |   possible sans adresse à montrer »                |
+//   | `ouvertureDeLaFeuille` qui rend `null` sur web sans adresse (le silence d'avant) | 6 : quatre ici, deux au plan                       |
+//   | `ouvertureDeLaFeuille` qui ouvre le compte même la marque posée                  | 5 : « déjà vue », « puis un compte rattaché »,     |
+//   |                                                                                  |   « les conditions de la proposition », « la       |
+//   |                                                                                  |   première fois », et au plan « déjà vue »         |
+//   | `adresseUtilisable` sans `&& email` (une adresse vide est une adresse)           | 1 : « une des deux moitiés manque »                |
+//   | `adresseUtilisable` sans `emailPossible` (une adresse non confirmée en est une)  | 2 : la même, et « la première fois »               |
+//   | la phrase de Ramille change d'un mot                                             | 2, au composant : « mot pour mot », « le focus »   |
+//   | la phrase de Ramille porte un chiffre                                            | 3 : la règle de voix de `mascotte.test.ts`, et les |
+//   |                                                                                  |   deux du composant                                |
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
+describe('doitProposerLeCompte', () => {
+  const PLATEFORMES = ['natif', 'web'] as const;
+
+  it('ne s’ouvre que sur web, sans adresse, et une seule fois — chaque combinaison', () => {
+    const attendu = (plateforme: string, emailPossible: boolean, dejaProposee: boolean) =>
+      plateforme === 'web' && !emailPossible && !dejaProposee;
+    let vraies = 0;
+    for (const plateforme of PLATEFORMES) {
+      for (const emailPossible of [true, false]) {
+        for (const dejaProposee of [true, false]) {
+          const voulu = attendu(plateforme, emailPossible, dejaProposee);
+          expect({ plateforme, emailPossible, dejaProposee, rendu: doitProposerLeCompte({ plateforme, emailPossible, dejaProposee }) }).toEqual({
+            plateforme,
+            emailPossible,
+            dejaProposee,
+            rendu: voulu,
+          });
+          if (voulu) vraies += 1;
+        }
+      }
+    }
+    // Une garde de non-vacuité : une dérivation qui ne rendrait jamais vrai passerait la boucle.
+    expect(vraies).toBe(1);
+  });
+
+  it('est le complément de la feuille du canal : jamais les deux, jamais aucune la première fois', () => {
+    for (const plateforme of PLATEFORMES) {
+      for (const emailPossible of [true, false]) {
+        const canal = doitProposerLaFeuille({ plateforme, emailPossible, dejaProposee: false });
+        const compte = doitProposerLeCompte({ plateforme, emailPossible, dejaProposee: false });
+        expect({ plateforme, emailPossible, une: canal !== compte }).toEqual({ plateforme, emailPossible, une: true });
+        // Et la marque commune ferme les deux.
+        expect(doitProposerLaFeuille({ plateforme, emailPossible, dejaProposee: true })).toBe(false);
+        expect(doitProposerLeCompte({ plateforme, emailPossible, dejaProposee: true })).toBe(false);
+      }
+    }
+  });
+});
+
+describe('adresseUtilisable', () => {
+  it('rend l’adresse quand le compte est rattaché et confirmé, et qu’il y en a une à dire', () => {
+    expect(adresseUtilisable({ emailPossible: true, email: 'camille@exemple.fr' })).toBe('camille@exemple.fr');
+  });
+
+  it('rend `null` dès qu’une des deux moitiés manque : un compte non confirmé, une adresse absente', () => {
+    expect(adresseUtilisable({ emailPossible: false, email: 'camille@exemple.fr' })).toBeNull();
+    expect(adresseUtilisable({ emailPossible: true, email: null })).toBeNull();
+    expect(adresseUtilisable({ emailPossible: false, email: null })).toBeNull();
+    // Une adresse vide n'est pas une adresse.
+    expect(adresseUtilisable({ emailPossible: true, email: '' })).toBeNull();
   });
 });
 
@@ -980,6 +1061,7 @@ describe('ouvertureDeLaFeuille', () => {
     prefere: 'push',
     jetonActif: true,
     emailPossible: false,
+    email: null,
     poste: 'commute',
     feuilleDejaVue: true,
     veilleDejaProposee: false,
@@ -993,10 +1075,70 @@ describe('ouvertureDeLaFeuille', () => {
     }
   });
 
-  it('feuille jamais vue, sur web et sans compte : rien, comme avant', () => {
+  // **Sur web sans adresse, la feuille du canal ne s'ouvre pas — c'est celle du compte** (23/10/2026) : le
+  // silence d'avant devient une phrase, une fois. Ce n'est plus `null`.
+  it('feuille jamais vue, sur web et sans compte : la feuille du compte, quel que soit le poste', () => {
+    for (const poste of ['commute', 'travel', 'leisure', null]) {
+      expect(
+        ouvertureDeLaFeuille({ ...nominal, feuilleDejaVue: false, plateforme: 'web', emailPossible: false, poste })
+      ).toEqual({ etape: 'compte' });
+    }
+  });
+
+  it('feuille jamais vue, sur web et avec une adresse utilisable : le choix du canal, comme avant', () => {
     expect(
-      ouvertureDeLaFeuille({ ...nominal, feuilleDejaVue: false, plateforme: 'web', emailPossible: false })
-    ).toBeNull();
+      ouvertureDeLaFeuille({
+        ...nominal,
+        feuilleDejaVue: false,
+        plateforme: 'web',
+        emailPossible: true,
+        email: 'camille@exemple.fr',
+      })
+    ).toEqual({ etape: 'canal' });
+  });
+
+  // L'adresse se lit par `adresseUtilisable`, comme la ligne « Par email » : un compte dit possible
+  // sans adresse à montrer n'ouvre pas une feuille qui proposerait « Par email » sans dire laquelle.
+  it('feuille jamais vue, sur web : un compte confirmé sans adresse à dire vaut un compte absent', () => {
+    expect(
+      ouvertureDeLaFeuille({
+        ...nominal,
+        feuilleDejaVue: false,
+        plateforme: 'web',
+        emailPossible: true,
+        email: null,
+      })
+    ).toEqual({ etape: 'compte' });
+  });
+
+  it('feuille déjà vue, sur web et sans compte : rien — la marque est commune aux deux feuilles', () => {
+    for (const reponse of ['jamais_propose', 'oui', 'refuse', null] as const) {
+      expect(
+        ouvertureDeLaFeuille({ ...nominal, feuilleDejaVue: true, plateforme: 'web', emailPossible: false, reponse })
+      ).toBeNull();
+    }
+  });
+
+  // Le cas que la décision du 23/10/2026 nomme : on a vu la feuille du compte, on rattache une adresse,
+  // on revient s'engager. La feuille du canal ne doit pas tomber sur le plan.
+  it('après la feuille du compte puis un compte rattaché : plus aucune feuille — le réglage est dans « Toi »', () => {
+    const avant = { ...nominal, feuilleDejaVue: false, plateforme: 'web' as const, emailPossible: false, email: null };
+    expect(ouvertureDeLaFeuille(avant)).toEqual({ etape: 'compte' });
+    // La marque est posée (la feuille la pose en s'affichant) ; l'adresse est maintenant là.
+    const apres = { ...avant, feuilleDejaVue: true, emailPossible: true, email: 'camille@exemple.fr' };
+    expect(ouvertureDeLaFeuille(apres)).toBeNull();
+  });
+
+  it('natif : la feuille du canal, adresse ou non — le téléphone a sa notification', () => {
+    for (const [emailPossible, email] of [
+      [false, null],
+      [true, 'camille@exemple.fr'],
+      [true, null],
+    ] as const) {
+      expect(
+        ouvertureDeLaFeuille({ ...nominal, feuilleDejaVue: false, plateforme: 'natif', emailPossible, email })
+      ).toEqual({ etape: 'canal' });
+    }
   });
 
   it('feuille déjà vue, premier engagement de trajet : la seule question de la veille, avec sa date', () => {
@@ -1050,6 +1192,7 @@ describe('ouvertureDeLaFeuille', () => {
                       prefere,
                       jetonActif,
                       emailPossible: true,
+                      email: 'camille@exemple.fr',
                       poste,
                       feuilleDejaVue,
                       veilleDejaProposee,
@@ -1071,6 +1214,72 @@ describe('ouvertureDeLaFeuille', () => {
     }
     // Garde de non-vacuité : une dérivation qui ne rendrait jamais la question passerait la boucle.
     expect(vus).toBeGreaterThan(0);
+  });
+
+  // **La première fois, sur tout l'espace : toujours une feuille, et laquelle** (23/10/2026). Avant la
+  // feuille du compte, le web sans adresse était le seul trou — un silence. L'invariant s'écrit sur le
+  // sens et non sur les branches : la première fois, la personne voit **la feuille du canal ou celle du
+  // compte, jamais aucune, jamais les deux**, et la marque (`feuilleDejaVue`) ferme les deux. Le compte
+  // se lit **exactement** là où aucun rappel ne peut partir par email et où il n'y a pas de notification
+  // — le web, sans adresse utilisable —, quels que soient le poste, la préférence, le jeton, la réponse
+  // à la veille et la fenêtre : rien de tout cela ne fait changer ce que dit Ramille ici.
+  it('la première fois : la feuille du canal ou celle du compte, selon la plateforme et l’adresse seules', () => {
+    const fenetres: (FenetreDeLaVeille | null)[] = [ouverte, null];
+    const comptees = { canal: 0, compte: 0, deja: 0 };
+    for (const plateforme of ['natif', 'web'] as const) {
+      for (const [emailPossible, email] of [
+        [false, null],
+        [false, 'camille@exemple.fr'],
+        [true, null],
+        [true, 'camille@exemple.fr'],
+      ] as const) {
+        for (const feuilleDejaVue of [true, false]) {
+          for (const prefere of ['push', 'email', 'none'] as const) {
+            for (const jetonActif of [true, false]) {
+              for (const poste of ['commute', 'travel', null]) {
+                for (const veilleDejaProposee of [true, false]) {
+                  for (const reponse of ['jamais_propose', 'oui', null] as const) {
+                    for (const fenetre of fenetres) {
+                      const etat: EtatALEngagement = {
+                        plateforme,
+                        prefere,
+                        jetonActif,
+                        emailPossible,
+                        email,
+                        poste,
+                        feuilleDejaVue,
+                        veilleDejaProposee,
+                        reponse,
+                      };
+                      const ouverture = ouvertureDeLaFeuille({ ...etat, fenetre });
+                      const sansAdresse = !(emailPossible && email);
+                      if (feuilleDejaVue) {
+                        // La marque ferme les deux feuilles : il ne reste, au plus, que la question de la veille.
+                        expect(ouverture === null || ouverture.etape === 'veille').toBe(true);
+                        comptees.deja += 1;
+                      } else {
+                        const voulue = plateforme === 'web' && sansAdresse ? 'compte' : 'canal';
+                        expect({ plateforme, emailPossible, email, ouverture: ouverture?.etape }).toEqual({
+                          plateforme,
+                          emailPossible,
+                          email,
+                          ouverture: voulue,
+                        });
+                        comptees[voulue] += 1;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    // Non-vacuité : les trois familles de cas ont été vues.
+    expect(comptees.canal).toBeGreaterThan(0);
+    expect(comptees.compte).toBeGreaterThan(0);
+    expect(comptees.deja).toBeGreaterThan(0);
   });
 });
 

@@ -298,6 +298,19 @@ export const RAMILLE = {
   choixCanal: 'Comment tu préfères que je te fasse signe ?',
 
   /**
+   * La petite feuille du compte (`etape: 'compte'`, décision de la personne qui pilote, 23/10/2026,
+   * `v1-35` étape 4) : sur le web, à qui n'a aucune adresse sur laquelle un rappel pourrait partir. Le
+   * web n'a pas de notification et l'email exige un compte, donc Ramille le dit **au moment de
+   * s'engager**, une seule fois, avec la porte — deux boutons, qui sont du produit et pas d'elle.
+   *
+   * Elle dit ce qu'elle ne peut pas faire, puis ce qui le rend possible : ni reproche ni promesse. Pas
+   * de nombre, ni « tu devrais » ni « il faut » ; « Rattache » est l'impératif de la carte d'attente du
+   * plan (« Rattache un compte pour… »), qui donne la porte avec lui — ici, le premier bouton.
+   */
+  signeSurLeWebParEmail:
+    'Sur le web, je ne peux te faire signe que par email. Rattache ton adresse pour recevoir le rappel.',
+
+  /**
    * Le mot de la veille (C4.2) : la seconde question de la feuille, posée une fois la notification
    * choisie et reçue — d'où « aussi ». Elle ne nomme ni la durée ni le canal, que la ligne du produit
    * juste en dessous porte avec sa date : Ramille ne dit jamais un nombre.

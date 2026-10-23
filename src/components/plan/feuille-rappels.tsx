@@ -29,6 +29,7 @@ import {
   libelleBouton,
   ligneDAttenteDeLaFeuille,
   lignesDeReglage,
+  REPONSES_DE_LA_FEUILLE_DU_COMPTE,
   REPONSES_DE_LA_PROPOSITION,
   type Boucle,
   type CanalPrefere,
@@ -91,6 +92,18 @@ const CONSTAT_D_ECHEC = 'Ton choix n’a pas été enregistré.';
  * décide avant, dans `ouvertureDeLaFeuille` ; la feuille ne fait que partir de l'étape qu'on lui
  * donne. La question posée, par l'un ou l'autre chemin, est marquée sur l'appareil dès qu'elle
  * s'affiche (`marquerLaVeilleProposee`) : elle ne revient pas.
+ *
+ * **Et une troisième ouverture depuis le 23/10/2026 : le compte** (`etape: 'compte'`, décision de la
+ * personne qui pilote, `v1-35` étape 4). Sur le web, sans aucune adresse sur laquelle un rappel pourrait
+ * partir, il n'y a rien à choisir — pas de notification, et l'email exige un compte —, donc la feuille
+ * du canal ne s'ouvre pas ; **à sa place s'ouvre cette petite feuille**, une fois par appareil, qui le
+ * dit de la voix de Ramille et ouvre la porte : « Rattacher mon adresse » mène à `/connexion` par la
+ * provenance `rappels` (la porte de la ligne « Par email », le même `allerRattacher`), « Plus tard »
+ * referme. **Elle pose la même marque que la feuille du canal, dès qu'elle s'affiche** (comme la
+ * question de la veille) : les deux feuilles sont complémentaires, jamais cumulées, donc qui rattache un
+ * compte ensuite — ou ferme d'un geste de retour — ne voit pas la feuille du canal lui tomber dessus sur
+ * le plan. Son réglage est dans « Toi ». Aucun choix à enregistrer : elle ne touche ni à la préférence
+ * ni au jeton, et rend à l'écran ce qu'il lui avait donné.
  */
 export function FeuilleRappels({
   prefs,
@@ -151,6 +164,16 @@ export function FeuilleRappels({
     if (questionAffichee) void marquerLaVeilleProposee();
   }, [questionAffichee]);
 
+  // **La feuille du compte pose la marque de la feuille dès qu'elle s'affiche**, pas quand on la quitte :
+  // elle n'a rien à valider, et un retour, un toucher sur le voile ou la porte vers `/connexion` la
+  // quittent chacun à leur façon — sans la marque, l'un d'eux la ferait revenir au prochain engagement.
+  // C'est aussi ce qui tient quand la personne revient du rattachement avec une adresse : la feuille du
+  // canal, devenue possible, ne s'ouvre pas, la marque étant déjà posée.
+  const surLaFeuilleDuCompte = ouverture.etape === 'compte';
+  useEffect(() => {
+    if (surLaFeuilleDuCompte) void marquerFeuilleDeRappelVue();
+  }, [surLaFeuilleDuCompte]);
+
   // La fenêtre du mot de la veille, demandée dès l'ouverture et seulement si la question peut encore
   // se poser : une réponse déjà donnée ne se repose pas, et sur web le mot n'existe pas. **Une
   // promesse gardée dans une `ref`, et non un état** : `valider` l'attend après le dialogue système,
@@ -172,6 +195,19 @@ export function FeuilleRappels({
   const refermerPuis = (rendre: () => void) => {
     if (feuille.current) feuille.current.fermer(rendre);
     else rendre();
+  };
+
+  /**
+   * **La porte vers le rattachement par email, écrite une fois** pour les deux endroits qui la portent :
+   * le lien « Rattacher un compte » sous la ligne « Par email », et « Rattacher mon adresse » de la
+   * feuille du compte. Elle **navigue** : elle appelle `onFerme` tout de suite, sans attendre la sortie
+   * (`FeuilleDuBas`) — sur natif, une route poussée sous un `Modal` encore ouvert reste dessous. On ne
+   * change pas la préférence : on rend celle qui est déjà là.
+   */
+  const allerRattacher = () => {
+    void marquerFeuilleDeRappelVue();
+    onFerme(prefs.prefere, prefs.jetonActif, prefs.reponseALaVeille);
+    router.push({ pathname: '/connexion', params: { source: 'rappels' } });
   };
 
   const valider = async () => {
@@ -232,6 +268,35 @@ export function FeuilleRappels({
     }
     refermerPuis(() => onFerme(retenu.canal, retenu.jetonActif, reponse));
   };
+
+  if (ouverture.etape === 'compte') {
+    return (
+      <FeuilleDuBas
+        ref={feuille}
+        titre="Les rappels"
+        enTete={false}
+        // Le geste de retour ferme sans rien choisir, comme l'autre feuille : la marque est déjà posée.
+        onFerme={() => onFerme(prefs.prefere, prefs.jetonActif, prefs.reponseALaVeille)}
+      >
+        {/* La phrase est toute l'explication : le focus lui va à l'ouverture (`FRONT.md` §2.4), sans quoi
+            le lecteur d'écran entrerait sur « Rattacher mon adresse » sans savoir pourquoi. Sur web, c'est
+            aussi ce que le `Modal` ferait de lui-même — le premier descendant qui accepte le focus, dans
+            l'ordre du DOM —, donc les deux s'accordent. */}
+        <TitreDArrivee>
+          <RamilleDit ligne={RAMILLE.signeSurLeWebParEmail} mood="calm" size={44} themeColor="text" style={styles.mot} />
+        </TitreDArrivee>
+
+        {/* « Rattacher mon adresse » **navigue** : voir `allerRattacher`. « Plus tard » ne navigue pas, il
+            redescend d'abord. */}
+        <Button title={REPONSES_DE_LA_FEUILLE_DU_COMPTE.rattacher} onPress={allerRattacher} />
+        <Button
+          title={REPONSES_DE_LA_FEUILLE_DU_COMPTE.plusTard}
+          variant="secondary"
+          onPress={() => refermerPuis(() => onFerme(prefs.prefere, prefs.jetonActif, prefs.reponseALaVeille))}
+        />
+      </FeuilleDuBas>
+    );
+  }
 
   if (veille !== null) {
     return (
@@ -339,11 +404,7 @@ export function FeuilleRappels({
               <TextLink
                 label="Rattacher un compte"
                 apparence="action"
-                onPress={() => {
-                  void marquerFeuilleDeRappelVue();
-                  onFerme(prefs.prefere, prefs.jetonActif, prefs.reponseALaVeille);
-                  router.push({ pathname: '/connexion', params: { source: 'rappels' } });
-                }}
+                onPress={allerRattacher}
                 role="link"
                 containerStyle={styles.reglages}
               />

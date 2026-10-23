@@ -171,9 +171,14 @@ export function releverParImage(depuisLeDebut) {
       const entete = [...dialogue.querySelectorAll('h1, h2, h3, [role="heading"]')].find(
         (h) => normaliser(h.innerText) === titre
       );
+      // **Une feuille qui n'affiche pas son titre** (`enTete={false}` : « Les rappels », 23/10/2026) n'a
+      // pas d'en-tête à mesurer : son premier bouton en tient lieu. Il se déplace avec la feuille d'un
+      // seul bloc, et seul compte l'écart entre deux images. L'en-tête garde la préséance — les feuilles
+      // qui en ont un se mesurent comme avant.
+      const repere = entete?.parentElement ?? dialogue.querySelector('[role="button"]');
       return {
         voile: voile ? { opacite: opacite(voile), haut: voile.getBoundingClientRect().top } : null,
-        haut: entete?.parentElement ? entete.parentElement.getBoundingClientRect().top : null,
+        haut: repere ? repere.getBoundingClientRect().top : null,
       };
     },
   };

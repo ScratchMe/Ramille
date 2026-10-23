@@ -57,3 +57,13 @@ export const AvecEchec = () => (
 export const MotDeLaVeille = () => (
   <FeuilleRappels etape="veille" detailVeille="Par notification, jusqu’au 15 novembre." />
 );
+
+/**
+ * La troisième ouverture (23/10/2026, `v1-35` étape 4) : sur le web, sans aucune adresse sur laquelle un
+ * rappel pourrait partir, cette petite feuille s'ouvre à la place du choix du canal — une fois par
+ * appareil, avec la même marque. Ramille dit pourquoi ; « Rattacher mon adresse » mène au rattachement par
+ * email, « Plus tard » referme. Aucun choix à faire, donc ni lignes ni pied.
+ */
+export const SurLeWebSansAdresse = () => (
+  <FeuilleRappels etape="compte" />
+);
