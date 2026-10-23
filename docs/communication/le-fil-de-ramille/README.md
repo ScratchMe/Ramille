@@ -317,10 +317,11 @@ simples.
    le film n'entre pas dans l'app (la décision n° 1 reste vraie sur ce point), qui garde son
    onboarding. C'est l'étape 5 de `docs/architecture/v1-35-l-audit-en-chantiers.md`. Il s'y sert depuis
    le site même, en MP4 (16:9 et 4:5, `public/film/`, avec leur affiche), et non depuis YouTube : la
-   politique de sécurité du site (`frame-src`) n'a pas à s'ouvrir, mais le poids des fichiers entre dans
-   la mesure de chaque déploiement (`VERCEL.md`).
+   politique de sécurité du site (`frame-src`) n'a pas à s'ouvrir. Les fichiers alourdissent le
+   déploiement statique (7,2 Mo pour les quatre), pas les fonctions que `VERCEL.md` §1.2 mesure, et ne
+   se téléchargent qu'à la demande (`preload="none"`, l'affiche seule sinon).
 2. **Sous le film, la page dit : « Sur Android, Ramille te fait signe par notification ; sur le web,
-   par e-mail. »** (décision du 23/10/2026). Le film montre la notification Android du lundi, et sur le
+   par email. »** (décision du 23/10/2026 ; « email » s'écrit comme la ligne du canal, « Par email »). Le film montre la notification Android du lundi, et sur le
    web le rappel n'arrive que par e-mail, avec un compte (étape 4 de `v1-35`, livrée le 23/10/2026) : sans
    cette phrase, quelqu'un qui regarde le film sur le web attendrait une notification qui ne viendra
    pas. Le film, lui, ne change pas : il montre l'app Android.

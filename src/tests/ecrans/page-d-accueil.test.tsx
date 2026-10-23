@@ -73,8 +73,9 @@ describe('la page d’accueil du web', () => {
 
     fireEvent.press(bascule);
     expect(screen.getByRole('button', { name: 'Le film en texte' }).props.accessibilityState).toMatchObject({ expanded: true });
+    // `getAllByText` pour le titre : le troisième chapitre s'appelle comme le produit, que la page signe aussi.
     for (const passage of FILM_EN_TEXTE) {
-      expect(screen.getByText(passage.chapitre)).toBeTruthy();
+      expect(screen.getAllByText(passage.chapitre).length).toBeGreaterThan(0);
       expect(screen.getByText(passage.texte)).toBeTruthy();
     }
   });
@@ -103,3 +104,10 @@ describe('la page d’accueil du web', () => {
 
 // Relevé des mutations, le 23/10/2026, chacune posée dans `page-d-accueil.tsx` puis ce fichier rejoué, la
 // page restaurée ensuite :
+//   - « Découvrir mon impact » vers `/bilan` → « … mène à l'onboarding, en haut comme en bas », seul ;
+//   - la provenance `onboarding` au lieu d'`accueil` → « J'ai déjà un compte… », seul ;
+//   - la ligne sous le film retirée → « sous le film, dit où le rappel arrive… », seul ;
+//   - `expanded` retiré de la bascule → « déplie le film en texte… », seul ;
+//   - le film en texte déplié d'office → le même, seul ;
+//   - « Licences » vers `/conditions` → « son pied mène aux trois pages publiques… », seul ;
+//   - le second « Découvrir mon impact » retiré → « dit le produit… » et « … en haut comme en bas ».

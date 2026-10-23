@@ -105,4 +105,65 @@ export const LARGEUR_DU_FILM_ETROIT = 600;
  * change, cette version change avec lui — aucune garde ne compare les deux, comme aucune ne compare les
  * textes du film à ceux de l'app (le README du film le dit).
  */
-export const FILM_EN_TEXTE: readonly { chapitre: string; texte: string }[] = [];
+export const FILM_EN_TEXTE: readonly { chapitre: string; texte: string }[] = [
+  {
+    chapitre: 'Tes trajets',
+    texte:
+      'Un trait dessine un trajet qui passe chez toi, au travail, le week-end, en vacances. « Chaque jour, tu te ' +
+      'déplaces. Lequel pèse le plus ? »',
+  },
+  {
+    chapitre: 'Ce qu’ils pèsent',
+    texte:
+      '« En France, le transport est le premier poste de l’empreinte carbone » : 2,8 t CO₂e par personne et par ' +
+      'an, en moyenne, devant le logement (2,2 t), l’alimentation (2,1 t), les services (1,5 t) et les équipements ' +
+      '(0,9 t). Source : SDES, données 2017 ; l’empreinte moyenne, tous postes, est de 9,5 t. « Et les tiens, ils ' +
+      'pèsent combien ? »',
+  },
+  {
+    chapitre: APP_NAME,
+    texte:
+      `Le trait devient une feuille, puis le visage de ${APP_NAME}, qui dit : « Moi, c’est ${APP_NAME}. Je serai là à ` +
+      'chaque saison, à ton rythme. » Et dessous : « Comprendre tes trajets, sans te juger. »',
+  },
+  {
+    chapitre: 'Ton bilan',
+    texte:
+      '« Ton bilan, en 5 minutes environ. Quelques questions sur tes déplacements habituels. » Le téléphone montre ' +
+      'quatre des neuf étapes — le trajet régulier, son mode, les loisirs, les vols —, puis le résultat d’un profil ' +
+      'd’exemple, calculé par l’app : 2,1 t CO₂e par an, dont 1,3 t pour le trajet domicile-travail, 333 kg pour ' +
+      'les loisirs et 476 kg pour les voyages longue distance ; le prochain palier à 1,8 t, la moyenne en France à ' +
+      '2,8 t, le repère transport 2050 à 0,6 t. « Tu vois quel déplacement pèse le plus. Et où tu te situes, entre ' +
+      'la moyenne française et le repère 2050. »',
+  },
+  {
+    chapitre: 'Ton plan',
+    texte:
+      '« Puis une action, à ton rythme. Ton plan ne propose que ce qui tient avec tes réponses. » Deux pistes en ' +
+      'tête : passer deux trajets sur cinq en train (− 412 kg CO₂e par an), et faire ce trajet à deux au moins un ' +
+      'jour sur deux (− 320 kg). On choisit la seconde, puis ses jours, lundi, mercredi et vendredi, et « C’est ' +
+      'noté » : elle passe en tête, avec son premier pas. « Tu choisis tes jours. ' +
+      `${APP_NAME} te fait signe lundi. »`,
+  },
+  {
+    chapitre: 'Le point',
+    texte:
+      'Lundi, une notification : « Ton point de la semaine ». « Un point, de temps en temps. Une seule question, ' +
+      'sur ton action » : « Lundi ou mercredi ou vendredi, as-tu fait ce trajet à deux ? » Une semaine, « Oui » : ' +
+      '« Bien joué — chaque changement compte. » La suivante, « Non » : « Pas cette fois-ci. Rien d’obligatoire, on ' +
+      'se repose la question au prochain point. » « Oui, non, ou pas de trajet. Aucune réponse n’est un échec. ' +
+      'Pas de score. Pas de série. Aucun classement. Tes réponses restent privées. »',
+  },
+  {
+    chapitre: 'Au fil des saisons',
+    texte:
+      `« Saison après saison, tu vois ce qui a changé. » ${APP_NAME} porte l’automne, l’hiver, le printemps et ` +
+      'l’été, et dit : « Je note tes réponses dans ton suivi, au fil des saisons. »',
+  },
+  {
+    chapitre: 'À toi',
+    texte:
+      `${APP_NAME}. « Comprendre tes trajets, sans te juger. » « Découvrir mon impact », sur ramille.fr. « Pas de ` +
+      'compte à créer pour commencer. »',
+  },
+];
