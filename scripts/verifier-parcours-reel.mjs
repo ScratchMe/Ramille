@@ -573,6 +573,36 @@
 // garde les deux lectures** : l'image rapportée à la position d'avant, et l'appel de défilement ; une
 // seule suffit à dire « dehors », et aucune ne le dit d'une carte que la relecture laisse en place.
 //
+// **La feuille du compte, traversée au premier engagement du premier profil** (23/10/2026, `v1-35` étape 4 :
+// sur le web, sans adresse, une petite feuille dit que Ramille ne peut faire signe que par email). La
+// phrase mot pour mot, les deux boutons, rien du choix du canal, la marque posée avant tout geste, le focus
+// sur la phrase, « Plus tard » qui la fait redescendre sans écrire la préférence — et, à chaque engagement
+// suivant, aucune feuille (`traverserLaFeuilleDuCompte`, `aucuneFeuilleDesRappels`). Le cycliste, navigateur
+// neuf, a la marque posée d'avance : le `Modal` prendrait sinon le focus que son passage garde. Rejouées une
+// à la fois, un export chacune, l'arbre restauré par l'état d'avant réécrit, le témoin sans mutation vert
+// (7 pas sur 7) :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PF1 — la feuille du compte jamais ouverte (`ouvertureDeLaFeuille` rend `null`, le silence d'avant) | « engagement » : la feuille du compte ne s'est pas ouverte |
+//   | PF2 — la marque n'est plus posée à l'affichage | « engagement » : la feuille est à l'écran mais la marque n'est pas posée |
+//   | PF3 — « Plus tard » démonte la feuille sans la faire redescendre | « engagement » : elle disparaît d'un coup |
+//   | PF4 — `TitreDArrivee` retiré de la phrase | « engagement » : le focus est dans la feuille, sur « Rattacher mon adresse » et non sur la phrase |
+//   | PF5 — la feuille du canal s'ouvre à la place | « engagement » : la feuille ne dit pas la phrase de la décision (« Comment tu préfères… ») |
+//   | PF6 — le plan ne lit pas la marque (`feuilleDejaVue` toujours faux) | « pistes — choisir depuis la liste, à la place » : une feuille des rappels s'est ouverte alors que la marque est posée |
+//   | PF7 — « Plus tard » écrit « Sans rappel » en base | « engagement » : « Plus tard » a écrit la préférence (`none` au lieu de `email`) |
+//   | PF8 — « Plus tard » prend la porte du rattachement | « engagement » : elle disparaît d'un coup — la porte appelle `onFerme` sans attendre la sortie ; le toucher est sur `/connexion?source=rappels` |
+//   | PF8b — « Plus tard » redescend, puis navigue vers le rattachement | « engagement » : « Plus tard » a quitté le plan |
+//   | PF9 — la phrase de Ramille change d'un mot | « engagement » : la feuille ne dit pas la phrase de la décision |
+//
+// **Trois choses que le premier passage a corrigées** : la mesure `feuille` cherchait l'en-tête de la feuille
+// pour en lire le haut, et « Les rappels » n'en affiche pas (`enTete={false}`) — elle retombe sur le premier
+// bouton, sans changer les feuilles qui en ont un ; une attente de la carte d'attente derrière la feuille,
+// écrite sans l'avoir lue, ne pouvait pas tenir (ce premier plan porte encore la carte des deux lieux, qui la
+// remplace le temps de la visite) — retirée ; et PF8 ne tombe pas sur « a quitté le plan » mais plus tôt, sur
+// la disparition d'un coup, ce que PF8b — qui redescend avant de naviguer — corrige : sans lui, l'assertion
+// de l'adresse n'aurait été vue tomber par aucune mutation.
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
