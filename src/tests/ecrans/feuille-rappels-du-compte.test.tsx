@@ -18,8 +18,22 @@
  * le geste sur appareil.
  *
  * **Éprouvé en le cassant, le 23/10/2026** (`TESTING.md` §1.1), `src/components/plan/feuille-rappels.tsx`
- * restauré depuis une copie après chaque mutation, le témoin sans mutation vert :
- *   - voir le tableau ci-dessous, rempli après les mutations.
+ * restauré par l'état d'avant réécrit après chaque mutation, le témoin sans mutation vert (140 tests
+ * avec `rappels.test.ts`, `plan.test.tsx` et `mascotte.test.ts`, joués ensemble) :
+ *   - la marque jamais posée à l'affichage → « afficher la feuille pose la marque », seul ;
+ *   - `allerRattacher` qui ne repose plus la marque au geste → « la porte de la feuille du canal fait
+ *     toujours la même chose », seul — c'est la porte que le partage a touchée ;
+ *   - la provenance `compte` au lieu de `rappels` → « mène à `/connexion` par la provenance `rappels` » et
+ *     la porte de la feuille du canal ;
+ *   - la route poussée avant que la feuille rende la main → « rend la main à l'écran avant de naviguer »,
+ *     seul ;
+ *   - « Plus tard » qui prend la porte du rattachement, ou qui écrit « Sans rappel » → « Plus tard referme…
+ *     sans naviguer ni rien écrire », seul chaque fois ;
+ *   - `TitreDArrivee` retiré de la phrase → « le focus va à la phrase d'ouverture », seul ;
+ *   - la branche du compte qui ne reconnaît plus son étape → huit tests ;
+ *   - le geste de retour qui ne rend plus la main → « le geste de retour ferme de même », seul ;
+ *   - la feuille du canal qui marque aussi à l'affichage → « la feuille du canal ne marque pas à
+ *     l'affichage » (la moitié négative) et la porte du canal.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';

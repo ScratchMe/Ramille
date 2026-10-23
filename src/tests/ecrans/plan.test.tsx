@@ -565,8 +565,14 @@ describe('Plan — la feuille des rappels reçoit l’échéance (`v1-33` D14)',
  * adresse, mais jamais le web avec une adresse ni le natif, et il ne lit pas la mesure.
  *
  * **Éprouvé en le cassant, le 23/10/2026** (`TESTING.md` §1.1), `src/app/(tabs)/plan/index.tsx` restauré
- * depuis une copie après chaque mutation :
- *   - voir le tableau en tête du bloc de tests de la dérivation (`rappels.test.ts`), qui compte les mêmes.
+ * par l'état d'avant réécrit après chaque mutation, le témoin sans mutation vert :
+ *   - le plan qui compte la feuille du compte comme une vue du canal (`etape !== 'veille'`) → « sur le web,
+ *     sans adresse : la feuille du compte — et ce n'est pas une vue du choix du canal », seul ;
+ *   - la plateforme toujours « natif » dans l'appel → deux tests : le web sans adresse, et le compte dit
+ *     possible sans adresse à montrer ;
+ *   - l'adresse jamais passée (`email: null`) → « sur le web, avec une adresse utilisable », seul ;
+ *   - la marque jamais lue (`feuilleDejaVue: false`) → « la feuille déjà vue : aucune des deux », seul.
+ *   Et, de la dérivation (`rappels.test.ts`), celles qui se voient aussi ici : la liste y est comptée.
  */
 describe('Plan — quelle feuille des rappels s’ouvre au premier engagement', () => {
   const sortie = {

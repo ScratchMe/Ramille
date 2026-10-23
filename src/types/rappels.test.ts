@@ -241,8 +241,27 @@ describe('doitProposerLaFeuille', () => {
 // ─────────────────────────────────────────────────────────────────────────────────────────
 // La feuille du compte (23/10/2026, `v1-35` étape 4) : sur web, sans adresse, une petite feuille dit
 // que Ramille ne peut faire signe que par email. Elle est le **complément** de la feuille du canal, et
-// la marque qu'elles partagent fait qu'elles ne se cumulent jamais. Les mutations jouées sont comptées
-// plus bas, avec celles de `ouvertureDeLaFeuille` qui les rejoue.
+// la marque qu'elles partagent fait qu'elles ne se cumulent jamais.
+//
+// Mutations jouées le 23/10/2026 (TESTING.md §1.1), une à la fois, le fichier restauré après chacune par
+// l'état d'avant réécrit, sur les quatre fichiers qui la touchent joués ensemble (140 tests, témoin vert) :
+//   | Ce qu'on casse                                                                   | Ce qui tombe                                       |
+//   |----------------------------------------------------------------------------------|----------------------------------------------------|
+//   | `doitProposerLeCompte` sans `!emailPossible` (le web, toujours)                  | 2 : « chaque combinaison », « le complément »      |
+//   | `doitProposerLeCompte` sans la plateforme (le natif sans adresse aussi)          | les mêmes 2                                        |
+//   | `doitProposerLeCompte` qui ignore la marque (`dejaProposee`)                     | les mêmes 2                                        |
+//   | `ouvertureDeLaFeuille` qui lit `emailPossible` seul (l'expression d'avant)       | 3 : « un compte confirmé sans adresse à dire »,    |
+//   |                                                                                  |   « la première fois », et au plan « un compte dit |
+//   |                                                                                  |   possible sans adresse à montrer »                |
+//   | `ouvertureDeLaFeuille` qui rend `null` sur web sans adresse (le silence d'avant) | 6 : quatre ici, deux au plan                       |
+//   | `ouvertureDeLaFeuille` qui ouvre le compte même la marque posée                  | 5 : « déjà vue », « puis un compte rattaché »,     |
+//   |                                                                                  |   « les conditions de la proposition », « la       |
+//   |                                                                                  |   première fois », et au plan « déjà vue »         |
+//   | `adresseUtilisable` sans `&& email` (une adresse vide est une adresse)           | 1 : « une des deux moitiés manque »                |
+//   | `adresseUtilisable` sans `emailPossible` (une adresse non confirmée en est une)  | 2 : la même, et « la première fois »               |
+//   | la phrase de Ramille change d'un mot                                             | 2, au composant : « mot pour mot », « le focus »   |
+//   | la phrase de Ramille porte un chiffre                                            | 3 : la règle de voix de `mascotte.test.ts`, et les |
+//   |                                                                                  |   deux du composant                                |
 // ─────────────────────────────────────────────────────────────────────────────────────────
 
 describe('doitProposerLeCompte', () => {
