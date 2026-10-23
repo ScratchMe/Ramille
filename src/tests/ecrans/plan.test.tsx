@@ -52,7 +52,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import React from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Platform } from 'react-native';
 
 import Plan from '@/app/(tabs)/plan/index';
 import { Colors } from '@/constants/theme';
@@ -136,13 +136,19 @@ jest.mock('@/lib/compte', () => ({ lireEtatDuRattachement: () => mockEtatDuRatta
 const mockPrefs = jest.fn<Promise<unknown>, []>();
 /** La feuille des rappels déjà vue sur cet appareil ? Vue, sauf où un test dit non. */
 let mockFeuilleVue = true;
+/** Chaque lecture de la marque : un test d'absence s'y accroche pour savoir que l'engagement a été traité. */
+const mockDejaVue = jest.fn(async () => mockFeuilleVue);
 jest.mock('@/lib/notification-prefs', () => ({
   loadReminderPrefs: () => mockPrefs(),
-  aDejaVuLaFeuilleDeRappel: async () => mockFeuilleVue,
+  aDejaVuLaFeuilleDeRappel: () => mockDejaVue(),
   aDejaProposeLaVeille: async () => true,
   lireLaFenetreDuMotDeLaVeille: async () => null,
 }));
 jest.mock('@/lib/rappels', () => ({ lirePermission: async () => 'fermee' }));
+// Le branchement du clavier d'un groupe de choix pose des écouteurs sur un nœud du DOM : ce fichier le
+// rend sous un navigateur simulé (`Platform.OS`, plus bas), où le moteur de test n'a pas de DOM. Le
+// branchement a ses propres gardes (`groupe-au-clavier.test.ts`, le parcours réel).
+jest.mock('@/lib/groupe-au-clavier', () => ({ brancherLeClavierDuGroupe: () => () => {} }));
 // Ce qui dessine — la mascotte, l'illustration, la feuille : rien de ce que ce fichier garde, et
 // `react-native-svg` ne se charge pas ici. La bande n'est plus à l'écran : sa pile la pose (`v1-33` T-13).
 jest.mock('@/components/mascot', () => ({ Mascot: () => null }));
@@ -212,6 +218,7 @@ beforeEach(() => {
   (router.push as jest.Mock).mockClear();
   mockFocus = false;
   mockFeuilleVue = true;
+  mockDejaVue.mockClear();
   mockFeuille.mockReset();
 });
 
@@ -546,5 +553,99 @@ describe('Plan — la feuille des rappels reçoit l’échéance (`v1-33` D14)',
     await waitFor(() =>
       expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ boucle: 'mensuel', echeance: 'le_mois_prochain' }))
     );
+  });
+});
+
+/**
+ * **Quelle feuille s'ouvre au premier engagement, selon la plateforme et l'adresse** (`v1-35` étape 4,
+ * décision de la personne qui pilote, 23/10/2026). `ouvertureDeLaFeuille` décide, et ses tests balaient
+ * toutes les combinaisons ; ce que l'écran ajoute, et que rien d'autre ne garde, est l'**appel** : qu'il
+ * lise la plateforme, qu'il passe l'adresse (`email`, que la dérivation exige maintenant) et la marque, et
+ * qu'il ne compte pas comme un choix du canal ce qui n'en est pas un. Le parcours réel joue le web sans
+ * adresse, mais jamais le web avec une adresse ni le natif, et il ne lit pas la mesure.
+ *
+ * **Éprouvé en le cassant, le 23/10/2026** (`TESTING.md` §1.1), `src/app/(tabs)/plan/index.tsx` restauré
+ * depuis une copie après chaque mutation :
+ *   - voir le tableau en tête du bloc de tests de la dérivation (`rappels.test.ts`), qui compte les mêmes.
+ */
+describe('Plan — quelle feuille des rappels s’ouvre au premier engagement', () => {
+  const sortie = {
+    id: 'a1',
+    action_template_id: 'g1',
+    saving_kg_year: 300,
+    saving_share_percent: 10,
+    detail_text: null,
+    first_step: null,
+    rank: 1,
+    committed_at: null,
+    intention_days: null,
+    intention_timing: null,
+    carried_over_from: null,
+    action_templates: { action_text: 'Faire une sortie sur trois à vélo', poste: 'leisure' },
+  };
+  const AVEC_ADRESSE = { ...PREFS, prefere: 'email', emailPossible: true, email: 'camille@exemple.fr' };
+
+  /** L'appareil est un navigateur, le temps d'un test : `Platform.OS` ne se réassigne pas, il se redéfinit. */
+  const osDOrigine = Platform.OS;
+  const surPlateforme = (os: 'web' | 'ios') =>
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => os });
+  afterEach(() => surPlateforme(osDOrigine as 'web' | 'ios'));
+
+  /** Un premier plan à une action de sorties, engagée jusqu'à « C'est noté ». */
+  async function sEngager({ dejaVue = false } = {}) {
+    mockFocus = true;
+    mockFeuilleVue = dejaVue;
+    lectures({
+      plan_cycles: async () => ({
+        data: [{ ...CYCLE, poste: 'leisure', trip_label: 'Loisirs', baseline_co2_kg_year: 900, plan_actions: [sortie] }],
+        error: null,
+      }),
+    });
+    render(<Plan />);
+    fireEvent.press(await screen.findByText('Je m’y engage'));
+    fireEvent.press(screen.getByText('Le mois prochain'));
+    fireEvent.press(screen.getByText('C’est noté'));
+  }
+  const vuesDuCanal = () => mockTrack.mock.calls.filter(([nom]) => nom === 'rappels_view');
+
+  it('sur le web, sans adresse : la feuille du compte — et ce n’est pas une vue du choix du canal', async () => {
+    surPlateforme('web');
+    await sEngager();
+    await waitFor(() => expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ ouverture: { etape: 'compte' } })));
+    // `rappels_view` compte les vues du choix du canal : y verser celle-ci gonflerait l'entonnoir qu'il mesure.
+    expect(vuesDuCanal()).toEqual([]);
+  });
+
+  it('sur le web, avec une adresse utilisable : le choix du canal, comme avant — et compté', async () => {
+    surPlateforme('web');
+    mockPrefs.mockResolvedValue(AVEC_ADRESSE);
+    await sEngager();
+    await waitFor(() => expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ ouverture: { etape: 'canal' } })));
+    expect(vuesDuCanal()).toHaveLength(1);
+  });
+
+  it('sur le web, un compte dit possible sans adresse à montrer : la feuille du compte, comme la ligne « Par email »', async () => {
+    surPlateforme('web');
+    mockPrefs.mockResolvedValue({ ...AVEC_ADRESSE, email: null });
+    await sEngager();
+    await waitFor(() => expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ ouverture: { etape: 'compte' } })));
+  });
+
+  it('sur natif, sans adresse : le choix du canal — le téléphone a sa notification', async () => {
+    surPlateforme('ios');
+    await sEngager();
+    await waitFor(() => expect(mockFeuille).toHaveBeenCalledWith(expect.objectContaining({ ouverture: { etape: 'canal' } })));
+    expect(vuesDuCanal()).toHaveLength(1);
+  });
+
+  it('sur le web, sans adresse, la feuille déjà vue : aucune des deux — la marque est commune', async () => {
+    surPlateforme('web');
+    await sEngager({ dejaVue: true });
+    // Le test d'une absence laisse au défaut le temps d'arriver (`TESTING.md` §1.1) : l'engagement a été
+    // traité quand la marque a été lue, et la dérivation a eu la main juste après.
+    await waitFor(() => expect(mockDejaVue).toHaveBeenCalled());
+    await act(async () => {});
+    expect(mockFeuille).not.toHaveBeenCalled();
+    expect(vuesDuCanal()).toEqual([]);
   });
 });

@@ -116,6 +116,23 @@ const DETAIL_NOTIFICATION: Record<Permission, string> = {
 };
 
 /**
+ * **L'adresse sur laquelle le mot peut partir, ou `null`** — un compte rattaché **et** confirmé
+ * (`emailPossible`) qui porte une adresse à afficher. Le fait que lisent `lignesDeReglage` — le détail,
+ * le choix et la porte de la ligne « Par email » — et `ouvertureDeLaFeuille` (23/10/2026), qui décide de
+ * ce que la feuille ouvre après « C'est noté » : sans une expression commune, la feuille aurait pu croire
+ * à une adresse là où la ligne en dit une absente.
+ */
+export function adresseUtilisable({
+  emailPossible,
+  email,
+}: {
+  emailPossible: boolean;
+  email: string | null;
+}): string | null {
+  return emailPossible && email ? email : null;
+}
+
+/**
  * Les lignes du réglage de « Toi » (canvas `Toi.dc.html`), pour tout le monde — sessions
  * anonymes comprises, puisque le push n'a pas besoin de compte.
  *
@@ -150,16 +167,16 @@ export function lignesDeReglage(
   // `email` que dans ce cas. Un second producteur qui poserait `emailPossible` sans adresse rendait
   // une ligne **cochable** dont le détail dit qu'elle ne marche pas. Rien n'aurait rougi : le test de
   // partition balayait bien cette combinaison, mais ne regardait pas `choisissable`.
-  const adresseUtilisable = emailPossible && email ? email : null;
+  const adresse = adresseUtilisable({ emailPossible, email });
 
   const courriel: LigneDeReglage = {
     canal: 'email',
     titre: 'Par email',
-    detail: adresseUtilisable ? `À ${adresseUtilisable}.` : 'Rattache un compte pour l’activer.',
-    choisissable: adresseUtilisable !== null,
+    detail: adresse ? `À ${adresse}.` : 'Rattache un compte pour l’activer.',
+    choisissable: adresse !== null,
     choisi: prefere === 'email',
     lienVersLesReglages: false,
-    porteVersLeCompte: adresseUtilisable === null,
+    porteVersLeCompte: adresse === null,
   };
 
   const aucun: LigneDeReglage = {
@@ -444,12 +461,13 @@ export function leJetonAuDemarrage(prefere: CanalPrefere | null): 'inscrire' | '
 }
 
 /**
- * La feuille ne s'ouvre **qu'une fois par appareil**, juste après « C'est noté ». C'est une
- * cérémonie assumée pour la première fois, pas un passage obligé à chaque engagement — après,
- * c'est « Toi » qui porte le réglage.
+ * La feuille **du choix du canal** ne s'ouvre **qu'une fois par appareil**, juste après « C'est
+ * noté ». C'est une cérémonie assumée pour la première fois, pas un passage obligé à chaque
+ * engagement — après, c'est « Toi » qui porte le réglage.
  *
- * Sur web elle ne s'ouvre que si un compte est rattaché : sans push ni adresse, il n'y aurait
- * rien à choisir, et la carte d'attente dit déjà l'essentiel.
+ * Sur web elle ne s'ouvre que si un compte est rattaché : sans push ni adresse, il n'y aurait rien à
+ * choisir. **Depuis le 23/10/2026, ce n'est plus un silence** : c'est une autre feuille qui s'ouvre à sa
+ * place, une fois aussi, et qui dit pourquoi (`doitProposerLeCompte`).
  */
 export function doitProposerLaFeuille({
   plateforme,
@@ -462,6 +480,36 @@ export function doitProposerLaFeuille({
 }): boolean {
   if (dejaProposee) return false;
   return plateforme === 'natif' || emailPossible;
+}
+
+/**
+ * La petite feuille **du compte** : sur web, à qui n'a aucune adresse sur laquelle un rappel pourrait
+ * partir (décision de la personne qui pilote, 23/10/2026, `v1-35` étape 4 — « le compte comme condition
+ * des rappels sur le web »).
+ *
+ * Le web n'a pas de notification, et l'email exige un compte : sans adresse, la personne n'a **aucun**
+ * moyen de recevoir un rappel, et la feuille des rappels ne s'ouvrait pas — seule la carte d'attente du
+ * plan le disait, plus tard (« Rattache un compte pour recevoir le mot par email. »). Elle le dit
+ * désormais au moment même de s'engager, une seule fois par appareil, et avec la même marque que la
+ * feuille du canal (`feuilleDejaVue`) : **les deux feuilles sont complémentaires, jamais cumulées**. Sur
+ * un appareil, une seule des deux s'ouvre au premier engagement, et la marque posée par l'une ferme
+ * l'autre — qui rattache ensuite un compte ne voit donc pas la feuille du canal lui tomber dessus, son
+ * réglage est dans « Toi ».
+ *
+ * Exactement le complément de `doitProposerLaFeuille` : à `dejaProposee` faux, l'une est vraie quand
+ * l'autre est fausse, sur chaque plateforme et chaque état de l'adresse (un test l'épingle).
+ */
+export function doitProposerLeCompte({
+  plateforme,
+  emailPossible,
+  dejaProposee,
+}: {
+  plateforme: Plateforme;
+  emailPossible: boolean;
+  dejaProposee: boolean;
+}): boolean {
+  if (dejaProposee) return false;
+  return plateforme === 'web' && !emailPossible;
 }
 
 /**
@@ -700,6 +748,13 @@ export const GROUPE_DE_LA_VEILLE = 'Le mot de la veille';
 export const REPONSES_DE_LA_PROPOSITION = { oui: 'Oui, la veille aussi', non: 'Non merci' } as const;
 
 /**
+ * Les deux boutons de la feuille du compte (`etape: 'compte'`, 23/10/2026) : le premier mène au
+ * rattachement par email, par la porte que la feuille du canal ouvre déjà (`/connexion`, provenance
+ * `rappels`) ; le second referme, sans rien écrire en base. Du produit et non de Ramille : ce sont des actions.
+ */
+export const REPONSES_DE_LA_FEUILLE_DU_COMPTE = { rattacher: 'Rattacher mon adresse', plusTard: 'Plus tard' } as const;
+
+/**
  * La règle, dite telle qu'elle est — la phrase qui reste vraie quand on ne sait pas si la fenêtre
  * est ouverte (lecture en échec) ou qu'elle ne l'est pas. « La première que tu choisis dans la
  * saison » et non « ton action » : un second choix de trajet ne rouvre rien (D4), donc quelqu'un qui a
@@ -811,10 +866,11 @@ export function sousTitreDesRappels({
 
 /**
  * Ce que la feuille des rappels ouvre après un engagement — **le choix du canal**, **la seule
- * question de la veille**, ou rien (`null`).
+ * question de la veille**, **le compte** (sur web, sans adresse) ou rien (`null`).
  *
- * La feuille entière ne s'ouvre qu'une fois par appareil (`doitProposerLaFeuille`), et sa seconde
- * étape demande une action de trajet. Quelqu'un qui choisit d'abord un vol voit donc la feuille sans
+ * La feuille entière ne s'ouvre qu'une fois par appareil (`doitProposerLaFeuille`, ou
+ * `doitProposerLeCompte` à sa place sur web sans adresse), et sa seconde étape demande une action de
+ * trajet. Quelqu'un qui choisit d'abord un vol voit donc la feuille sans
  * la question de la veille ; et quand il choisit ensuite une action de trajet, la feuille est déjà
  * vue. **D'où la réouverture, une fois, sur la seule question de la veille** (arbitrage du
  * 27/09/2026) : à un engagement sur une action de trajet, si la question n'a jamais été posée sur
@@ -829,10 +885,18 @@ export function sousTitreDesRappels({
  * s'affiche, dans la feuille entière comme dans la réouverture : refermer sans répondre ne répond
  * rien — la question reste dans « Toi » —, mais elle ne revient pas en travers du plan.
  */
-export type OuvertureDeLaFeuille = { etape: 'canal' } | { etape: 'veille'; detail: string };
+export type OuvertureDeLaFeuille =
+  | { etape: 'canal' }
+  | { etape: 'veille'; detail: string }
+  | { etape: 'compte' };
 
 export type EtatALEngagement = EtatDesRappels & {
   plateforme: Plateforme;
+  /**
+   * L'adresse à afficher, quand elle est utilisable (`adresseUtilisable`) : c'est elle, avec
+   * `emailPossible`, qui dit si un rappel peut partir par email — donc, sur web, quelle feuille s'ouvre.
+   */
+  email: string | null;
   /** Le poste de l'action qu'on vient d'engager (`commute` pour le trajet domicile-travail). */
   poste: string | null;
   /** La feuille entière a déjà été proposée sur cet appareil. */
@@ -862,12 +926,11 @@ export function ouvertureDeLaFeuille({
   ...etat
 }: EtatALEngagement & { fenetre: FenetreDeLaVeille | null }): OuvertureDeLaFeuille | null {
   if (!etat.feuilleDejaVue) {
-    const proposer = doitProposerLaFeuille({
-      plateforme: etat.plateforme,
-      emailPossible: etat.emailPossible,
-      dejaProposee: false,
-    });
-    return proposer ? { etape: 'canal' } : null;
+    // **Le même fait pour les deux feuilles** : une adresse sur laquelle un rappel peut partir.
+    const peutRecevoirUnEmail = adresseUtilisable(etat) !== null;
+    const demande = { plateforme: etat.plateforme, emailPossible: peutRecevoirUnEmail, dejaProposee: false };
+    if (doitProposerLaFeuille(demande)) return { etape: 'canal' };
+    return doitProposerLeCompte(demande) ? { etape: 'compte' } : null;
   }
   if (!laVeilleSeRepropose(etat)) return null;
   const affichage = affichageDeLaVeille({ ...etat, fenetre });
