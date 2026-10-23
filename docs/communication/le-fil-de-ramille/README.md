@@ -1,9 +1,13 @@
 # Le fil de Ramille — le film de présentation
 
-**Statut** : validé par la personne qui pilote le 03/10/2026, **pas encore diffusé** — il attend la
-publication sur Google Play. Ce qui a été décidé, et ce qu'il reste à faire ce jour-là, est en fin
-de document. Le 4:5, les chiffres recalculés et les trois jours du covoiturage, venus après, ont été
-validés le même jour.
+**Statut** : validé par la personne qui pilote le 03/10/2026, **repris le 23/10/2026** pour le jour de
+sa diffusion — l'écran du plan et l'étape des loisirs suivent de nouveau l'app (« Ce que le film a
+repris de l'app le 23/10/2026 », plus bas) —, et **destiné à la page d'accueil du site web**, décidé le
+22/10/2026 (« Décidé le 23/10/2026 », en fin de document). **Pas encore diffusé** : la page d'accueil se
+construit dans l'app (étape 5 de `docs/architecture/v1-35-l-audit-en-chantiers.md`), et le badge de
+Google Play viendra à la publication. Ce qui a été décidé, et ce qu'il reste à faire, est en fin de
+document. Le 4:5, les chiffres recalculés et les trois jours du covoiturage, venus après le 03/10/2026,
+ont été validés le même jour.
 
 ## Ce que c'est
 
@@ -12,7 +16,8 @@ envie de faire son bilan, en trois formats tirés de la même source : **16:9** 
 Play), **9:16** (les Stories, Reels, Shorts et TikTok) et **4:5** (les fils d'Instagram, de Facebook
 et de LinkedIn). Le 4:5 a été ajouté le 03/10/2026, sur une question de la personne qui pilote : posté
 dans un fil, le 9:16 y est recadré au centre et ses titres sortent du cadre, et le 16:9 y reste
-petit.
+petit. **Depuis le 23/10/2026, le 16:9 et le 4:5 ont aussi une version pour le web**, plus légère,
+versionnée dans `public/film/` : la page d'accueil du site les sert (« Les fichiers », plus bas).
 
 **L'idée tient en un trait.** Le logo le dit déjà : la nervure de la feuille est un itinéraire
 tracé jusqu'à un point d'arrivée (commentaire de `assets/images/logo-mark.svg`). Le film prend ce
@@ -71,11 +76,42 @@ page elle-même : c'est aussi sa version texte.
   de pouvoir l'écouter dans l'environnement où elle a été écrite. **Jugée à l'oreille le 03/10/2026
   par la personne qui pilote : elle convient.** Elle se remplacerait sans toucher au film.
 - **`exporter.mjs`** — l'export vidéo, image par image et en musique (Playwright, déjà dans les
-  dépendances de développement, et `ffmpeg`). Les MP4 s'écrivent dans le dossier temporaire du
-  système, jamais dans le dépôt : ils se régénèrent après toute retouche, en un peu plus d'une
-  minute par format. Spline Sans y est servie par les fichiers du kit, et l'export refuse de partir
+  dépendances de développement, et `ffmpeg`). Ses MP4 s'écrivent dans le dossier temporaire du
+  système, jamais dans le dépôt : ils se régénèrent après toute retouche, en quelques minutes
+  par format (CRF 18 : 6,4 Mo en 16:9, 6,1 Mo en 4:5). **Ce sont les masters** : les versions du web, versionnées
+  elles, en sont tirées (`public/film/`, ci-dessous). Spline Sans y est servie par les fichiers du kit, et l'export refuse de partir
   si l'une des quatre graisses manque ; la chasse fixe, absente du dépôt, prend celle du système sur
   les trois lignes qui l'emploient.
+- **`public/film/`** (hors de ce dossier) — **les versions du web, versionnées**, parce que le site les
+  sert : la page d'accueil de ramille.fr (décision du 22/10/2026). Quatre fichiers, 7,2 Mo en tout :
+  `le-fil-de-ramille-16x9.mp4` (1920 × 1080, 3,6 Mo) et `le-fil-de-ramille-4x5.mp4` (1080 × 1350,
+  3,4 Mo), chacun avec son **affiche** `.jpg` de 72 et de 78 Ko, tirée du film à **27,2 s** — le chapitre
+  « Ramille », une fois les mots posés : la mascotte qui sourit, son nom, sa réplique et « Comprendre tes
+  trajets, sans te juger. », sans aucun chiffre à côté d'elle (`FRONT-MASCOTTE.md` §2.3), et lisible
+  sans le film. Chaque vidéo est du H.264 High 4.1 en `yuv420p`, `faststart`, de 87,4 s à 30 i/s, avec
+  la musique en AAC à 96 kbit/s ; elles sont **sous les 4 Mo**. **Pleine définition plutôt que 1280 × 720
+  et 864 × 1080** : à CRF 24 les deux tiennent déjà sous 4 Mo, et la plus petite ligne du film, la source
+  en chasse fixe à 18 px en 1080p, y reste aussi nette que sur le master (SSIM de 0,9994 et de 0,9992) ;
+  à 720p elle est molle. Ces fichiers **ne s'éditent pas, ils se régénèrent**, de leurs masters (les
+  exports de `exporter.mjs`, que `os.tmpdir()` désigne : `/tmp` sous Linux), avec `ffmpeg`, après toute
+  retouche du film — **rien dans la CI ne compare ces MP4 à `film.html`** :
+
+  ```bash
+  node docs/communication/le-fil-de-ramille/exporter.mjs paysage       # → /tmp/le-fil-de-ramille-16x9.mp4
+  node docs/communication/le-fil-de-ramille/exporter.mjs quatre-cinq   # → /tmp/le-fil-de-ramille-4x5.mp4
+  # Puis, pour chaque format F (16x9, 4x5) : la vidéo, et son affiche à 27,2 s.
+  ffmpeg -y -i /tmp/le-fil-de-ramille-F.mp4 -c:v libx264 -preset slow -crf 24 -profile:v high -level 4.1 \
+    -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart \
+    -fflags +bitexact -flags:v +bitexact -flags:a +bitexact -map_metadata -1 public/film/le-fil-de-ramille-F.mp4
+  ffmpeg -y -ss 27.2 -i /tmp/le-fil-de-ramille-F.mp4 -frames:v 1 -q:v 2 -fflags +bitexact public/film/le-fil-de-ramille-F.jpg
+  ```
+
+  Les options `bitexact` rendent la commande déterministe : rejouée sur le même master, avec le même
+  `ffmpeg` (6.1.1 le 23/10/2026), elle rend les mêmes octets — vérifié sur les deux vidéos. Les essais du
+  23/10/2026, en bref — 16:9 : 1080p CRF 22 4,04 Mo, **24 3,61 Mo**, 26 3,26 Mo, 30 2,75 Mo, 720p CRF 22 2,96 Mo, 26 2,46 Mo, 28 2,28 Mo ;
+  4:5 : 1080 × 1350 CRF 22 3,82 Mo, **24 3,42 Mo**, 26 3,09 Mo, 30 2,60 Mo, 864 × 1080 CRF 22 3,23 Mo,
+  26 2,64 Mo, 28 2,42 Mo. Le CRF 22 aurait tenu sous 5 Mo ; le 24 garde 1,4 Mo de marge pour une page
+  d'accueil, sans que le texte le plus petit s'en ressente.
 - **`verifier.mjs`** — chaque quart de seconde, dans les trois formats, à la taille de l'export et
   à trois tailles de lecteur : rien ne déborde ni ne se chevauche, aucune étiquette ne touche le
   trait, le cadre ne coupe ni un appui ni ce que le téléphone doit montrer, et le doigt tombe sur sa
@@ -97,10 +133,11 @@ page elle-même : c'est aussi sa version texte.
 
 ## Ce que le film reprend de l'app, et d'où
 
-Rien n'y est inventé — **sauf la mise en forme de l'écran du plan, qui ne suit plus l'app** (fin de
-cette section) : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
+Rien n'y est inventé : quand l'app change, le film doit suivre, et **aucune garde ne vérifie ses
 textes** (`verifier.mjs` voit la mise en page et le temps, pas ce qui est écrit) — c'est à relire
-avant chaque diffusion.
+avant chaque diffusion. Il **suit l'app au 23/10/2026** (fin de cette section) ; il ne montre pas, en
+revanche, les lignes d'aide que l'app pose sous certains titres (« Sport, sorties, visites à la
+famille. », « Un aller-retour compte pour deux vols. »), ce qu'il ne faisait pas non plus le 03/10/2026.
 
 - **Les répliques de Ramille** sont recopiées mot pour mot de `RAMILLE`
   (`src/constants/mascotte.ts`) : `presentation`, `calcul`, `checkinOui`, `checkinNon`,
@@ -141,43 +178,65 @@ avant chaque diffusion.
   la stack locale, et imprime tout ce que le film recopie — le bilan, le palier, la largeur de
   chaque barre, les pistes dans l'ordre du plan et leurs gains. Leur forme est celle des écrans :
   `formatTonnes`, `formatTonnesShort`, `ligneDuGain`. **Quand le calcul change, on le rejoue, et le
-  film suit** ; les chiffres du jour sont dans la décision datée, plus bas.
-- **Ce qui ne suit plus l'app : l'écran du plan** (relevé par la contre-lecture du 03/10/2026, **repris
-  le jour de la diffusion**, décision n° 9 plus bas). Ses textes et ses chiffres sont justes ; sa forme, non. Le film a simplifié cet
-  écran dès sa composition, et l'app l'a encore changé les 02 et 03/10/2026 (#331, #343). Or l'image
-  porte « Écrans de l'app » : chaque écart est à reprendre **avant la diffusion**, et la liste de
-  contrôle de Play le rappelle (`docs/exploitation/README.md` §4). Comparé à
-  `src/components/plan/action-commitment.tsx` et `action-card.tsx` :
-  - **le choix des jours** : dans l'app, il **remplace** « Je m'y engage » par un encart gris, où
-    « Quels jours ? » s'écrit en petit ; les jours vont sur une **grille de quatre colonnes**, chacun
-    avec sa **case à cocher** et une seule graisse, cochés en vert plein ; « Annuler » se tient à côté
-    de « C'est noté », qui reste **en attente** — grisé, posé sur l'encart — tant qu'aucun jour n'est
-    choisi. Le film garde « Je m'y engage » au-dessus, aligne les sept jours sur une rangée sans case
-    et montre « C'est noté » vert d'emblée ;
-  - **« Je m'y engage » et « Choisir celle-ci à la place »** sont des boutons secondaires pleine
-    largeur (54 dp, fond gris, texte noir) ; le film en fait des pastilles à filet, texte vert ;
-  - **la carte d'une piste** porte le gain seul sur sa ligne, en 20 dp, « par an · … » dessous, puis
-    le détail « Sur tes 5 trajets par semaine. » ; le film met le gain et la ligne côte à côte, sans
-    le détail ;
-  - **la carte engagée** porte en plus le premier pas — « PREMIER PAS · Demande autour de toi qui
-    fait le même trajet, avant de choisir un jour. » — et les liens « Modifier les jours » et
-    « Changer d'avis ».
-
-  Le détail et le premier pas de chaque piste sont imprimés par `profil-d-exemple.sql`. Reprendre
-  ces écarts allonge le choix des jours et la carte engagée : le défilement du plan et les appuis
-  du doigt se recalent, et `verifier.mjs` dit où.
-- **Ce qui ne suit plus l'app depuis le 22/10/2026 : l'étape des loisirs** (étape 3 de
-  `docs/architecture/v1-35-l-audit-en-chantiers.md`). Les loisirs couvrent désormais la semaine et le
-  week-end, en une seule étape. Le film montre encore l'ancienne question, quatre réponses et le
-  poste « Loisirs du week-end » (`film.html`, vers les lignes 416, 417, 431 et 1315). Deux autres
-  endroits portent le week-end, et les changer est un choix de communication, pas une mise à jour : le
-  sous-titre « Chez toi, au travail, le week-end, en vacances. », qui fait répondre un moment à chaque
-  poste, et l'étiquette « Le week-end » d'`ETIQ_ARRETS` (vers les lignes 638 et 939). Dans l'app, la
-  question est « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en
-  semaine ? » (`src/components/bilan/steps/leisure-frequency.tsx`), il y a **cinq** réponses, la
-  dernière étant « Presque tous les jours », et le poste s'appelle « Loisirs ». À reprendre avant la
-  diffusion, comme l'écran du plan. Le titre tient sur quatre lignes au lieu de trois, et la
-  cinquième rangée allonge l'étape : `verifier.mjs` dira si le téléphone du film déborde.
+  film suit** ; les chiffres du 23/10/2026 sont à la dernière puce de cette section.
+- **Ce que le film a repris de l'app le 23/10/2026** (ancienne section « Ce qui ne suit plus l'app »,
+  écrite le 03/10/2026 après la contre-lecture, et le 22/10/2026 pour les loisirs). Le jour de la
+  diffusion est arrivé avec la décision de le mettre sur la page d'accueil du web (décision n° 9 : on
+  n'alignait pas avant). Comparé à `src/components/plan/action-commitment.tsx`, `action-card.tsx`,
+  `carte-de-piste.tsx`, `src/components/button.tsx`, `src/components/bilan/chip.tsx`,
+  `groupe-de-choix.tsx` et `text-link.tsx` — **l'app fait foi** : elle avait encore changé depuis la
+  liste du 03/10/2026 (la carte de l'action engagée, l'estompage, le lien « Voir toutes les pistes »,
+  la hauteur du point), et le film en a suivi plus que cette liste.
+  - **L'écran du plan.**
+    - **Le choix des jours** remplace « Je m'y engage » (le bouton se replie pendant que l'encart se
+      déplie), dans un encart gris : « Quels jours ? » en petit, les jours sur **quatre colonnes** (L M M J
+      / V S D), chacun avec sa **case** de 18 et une seule graisse, cochés en vert plein, sur fond blanc
+      quand ils ne le sont pas ; « Annuler » à côté de « C'est noté », **en attente** — blanc, à filet,
+      encre tertiaire — tant qu'aucun jour n'est choisi, puis vert plein dès le lundi coché.
+    - **« Je m'y engage » et « Choisir celle-ci à la place »** sont des boutons secondaires pleine
+      largeur (54 dp, fond gris, texte noir en 500) ; « Oui » et « Non » du point, qui sont le même
+      composant posé sur une carte teintée, prennent les mêmes mesures (ils étaient à 46, en 600).
+    - **La carte d'une piste** : le titre en 17/24, le gain **seul** sur sa ligne en 20/26 (« − 412 kg
+      CO₂e »), « par an · 20 % de ton empreinte » dessous en encre secondaire, puis le détail « Sur tes
+      5 trajets par semaine. » ; 20 de marge, 10 entre deux cartes, 24 de marge d'écran.
+    - **La carte engagée** : la coche et « TON ENGAGEMENT » en tête, **« PREMIER PAS · Demande autour de
+      toi qui fait le même trajet, avant de choisir un jour. »** dans un creux blanc, et **les liens
+      « Modifier les jours » et « Changer d'avis »** à la place du bouton ; la carte de l'autre piste
+      garde son cadre estompé et « Choisir celle-ci à la place ».
+    - **Le lien « Voir toutes les pistes · 9 »** est un lien d'action : accent, 600, centré, sans
+      soulignement au repos. Il était souligné et à gauche.
+    - **Le point** : la carte prend 18 de marge et 10 entre ses éléments, la question 16/23, les deux
+      liens (« Pas de trajet la semaine dernière », « Modifier ma réponse ») sont **soulignés en encre
+      tertiaire** et non en vert — le premier centré, le second à gauche —, et la réplique de Ramille est
+      en encre secondaire. La carte **suit la hauteur de ce qu'elle montre** (`HauteurSuivie`) : elle
+      se resserre sur la réplique, puis reprend celle de la question.
+    - **Le plan défile deux fois.** Une première pour que « Je m'y engage » arrive sous le doigt — la
+      carte d'une piste est plus haute que ce que le film simplifiait, et le téléphone du 16:9 est coupé
+      par le bas : c'est propre au film —, puis, comme l'app (`onOuvert`), le temps du choix pour que
+      « C'est noté » finisse dans le cadre. Les appuis du doigt se sont recalés d'eux-mêmes (ils lisent la
+      cible là où elle est rendue), et `verifier.mjs` le confirme.
+    - **Le nombre du lien est 9 et non 10**, et c'est le calcul qui a changé, pas le film : depuis la
+      migration du 19/10/2026, « Remplacer un aller-retour en avion par le train » ne se propose qu'à
+      qui a déclaré deux vols, et le profil d'exemple en déclare un. `profil-d-exemple.sql` imprime
+      désormais ce nombre (`nombre_de_pistes`).
+  - **L'étape des loisirs** (étape 3 de `docs/architecture/v1-35-l-audit-en-chantiers.md`) : la question
+    « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en semaine ? »
+    (`src/components/bilan/steps/leisure-frequency.tsx`), les **cinq** réponses de
+    `REPONSES_FREQUENCE_DES_LOISIRS` (la dernière, « Presque tous les jours »), et le poste qui s'appelle
+    **« Loisirs »** — en tête de section et dans la répartition de la restitution. Le titre tient sur
+    **quatre lignes** dans les trois formats (trois avant) et la cinquième rangée allonge l'étape ; le
+    téléphone ne déborde pas, `verifier.mjs` le confirme. **« week-end » reste d'un bloc** dans le film
+    (`white-space: nowrap`) : le film compose ses titres de question à 22 dp (`TypeScale.question`) là où
+    l'app pose `screenTitle`, 26/32 (`TitreDEtape`) — un écart d'avant le 03/10/2026, qui n'est pas repris
+    ici —, et à 22 dp la ligne coupait « week- » / « end ». L'app, à 26 dp, ne le coupe pas de 320 à 412 de
+    large et le coupe à 430 (`v1-27` §12.42). **Gardés tels quels**, parce qu'ils restent vrais et que les
+    changer serait un choix de communication : le sous-titre « Chez toi, au travail, le week-end, en
+    vacances. » (le scénario sous le film) et l'étiquette « Le week-end » de la frise du début.
+  - **Les chiffres n'ont pas bougé** : `profil-d-exemple.sql` rejoué le 23/10/2026 rend le bilan 2 089 kg
+    (2,1 t), le domicile-travail 1 280 kg (1,3 t), les loisirs 333 kg, les voyages 476 kg, le palier
+    1 833 kg (1,8 t), les barres de 61,28 / 15,93 / 22,79 % et de 63,43 / 55,65 / 85 / 18,21 %, les deux
+    pistes à − 412 kg (20 %) et − 320 kg (15 %), « Sur tes 5 trajets par semaine. » pour toutes les deux.
+    La réponse de loisirs du profil, « Une fois par semaine » (`weekly`), est toujours admise.
 
 ## Décidé le 03/10/2026
 
@@ -197,7 +256,9 @@ date, on maintient pas de score, pas de série, pas de classement. »
    soit un emplacement à créer ; et l'intégrer depuis YouTube demanderait d'ouvrir la politique de
    sécurité du site (`frame-src`, `vercel.json`) et une ligne dans la page de confidentialité, quand
    un MP4 servi par le site serait un poids de plus à mesurer (`VERCEL.md`). C'est ce qu'il faudra
-   rouvrir si la question revient.
+   rouvrir si la question revient. **Rouverte le 22/10/2026** : le film va sur la page d'accueil du
+   site web (« Décidé le 23/10/2026 », plus bas) ; les deux paragraphes qui précèdent disent ce que la
+   décision du 03/10/2026 écartait, et pourquoi.
 2. **Quand.** À la publication sur Google Play, **avec le badge du store en fin de film** : le film
    montre l'app Android (la notification du lundi), alors que sa fin renvoie aujourd'hui à
    ramille.fr seul. Diffusé avant, il ferait une promesse que la personne qui suit l'appel ne
@@ -236,7 +297,40 @@ date, on maintient pas de score, pas de série, pas de classement. »
    contre-lecture qui a relevé ses écarts) : l'app changeait encore ce composant ces jours-là, et le
    film se réexporte de toute façon ce jour-là pour le badge. Les vidéos du 03/10/2026 gardent donc
    l'écran simplifié ; elles ne se diffusent pas. Écarté : aligner tout de suite, au risque de le
-   refaire au prochain changement de l'app.
+   refaire au prochain changement de l'app. **Fait le 23/10/2026**, le jour où le film a reçu sa
+   place sur la page d'accueil (« Ce que le film a repris de l'app le 23/10/2026 »).
 
-**Les MP4 ne sont pas versionnés** : `exporter.mjs` les rend depuis la source, en un peu plus d'une
-minute par format — c'est l'export du jour de la diffusion, badge compris, qui comptera.
+**Les MP4 de `exporter.mjs` ne sont pas versionnés** : il les rend depuis la source, en un peu plus
+d'une minute par format, dans le dossier temporaire du système — c'est l'export du jour de la
+diffusion, badge compris, qui comptera. **Seules les deux versions du web le sont**, dans
+`public/film/` : plus légères, elles sont servies par le site, donc elles voyagent avec lui (« Les
+fichiers », plus haut).
+
+## Décidé le 23/10/2026
+
+La personne qui pilote a placé le film sur la page d'accueil du site web (22/10/2026), puis, le
+23/10/2026, tranché deux points et confirmé un troisième. Les quatre se lisent ici, en phrases
+simples.
+
+1. **Le film va sur la page d'accueil de ramille.fr** (décision du 22/10/2026, qui **rouvre la
+   décision n° 1** du 03/10/2026). La page d'accueil est la racine du site web, et **seulement du web** :
+   le film n'entre pas dans l'app (la décision n° 1 reste vraie sur ce point), qui garde son
+   onboarding. C'est l'étape 5 de `docs/architecture/v1-35-l-audit-en-chantiers.md`. Il s'y sert depuis
+   le site même, en MP4 (16:9 et 4:5, `public/film/`, avec leur affiche), et non depuis YouTube : la
+   politique de sécurité du site (`frame-src`) n'a pas à s'ouvrir, mais le poids des fichiers entre dans
+   la mesure de chaque déploiement (`VERCEL.md`).
+2. **Sous le film, la page dit : « Sur Android, Ramille te fait signe par notification ; sur le web,
+   par e-mail. »** (décision du 23/10/2026). Le film montre la notification Android du lundi, et sur le
+   web le rappel n'arrive que par e-mail, avec un compte (étape 4 de `v1-35`, livrée le 23/10/2026) : sans
+   cette phrase, quelqu'un qui regarde le film sur le web attendrait une notification qui ne viendra
+   pas. Le film, lui, ne change pas : il montre l'app Android.
+3. **« Pas de série » est gardé, à côté de la phrase « Deuxième semaine de suite que tu fais ce trajet
+   autrement. » de l'app** (décision du 23/10/2026). Cette phrase (`phraseDeSecondRenforcement`,
+   `src/types/checkin.ts`) **ne se dit qu'une fois**, au deuxième « oui » consécutif ; elle **ne
+   compte rien** et **ne se perd pas**. Elle n'est donc pas une série au sens du manifeste du film,
+   et les deux se tiennent.
+   **La question se rouvre à l'étape 6a de `v1-35`** (le progrès visible), qui pourrait compter les
+   « oui » : si elle les compte, « Pas de série » cesse d'être vrai, et le film se retouche avec elle
+   (rappel déjà écrit en décision n° 3 et en `docs/architecture/produit.md` §5).
+4. **Le badge de Google Play viendra à la publication, comme prévu** : la décision n° 2 est inchangée
+   pour la fiche Play et les réseaux.

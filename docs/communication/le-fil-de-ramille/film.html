@@ -270,14 +270,24 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .choix { display: flex; align-items: center; min-height: calc(var(--dp) * 52); padding: calc(var(--dp) * 8) calc(var(--dp) * 16); border-radius: calc(var(--dp) * 14); background: var(--f-element); border: calc(var(--dp) * 1.5) solid transparent; font-weight: 400; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: #131612; }
 .puces { margin-top: calc(var(--dp) * 20); display: flex; flex-wrap: wrap; gap: calc(var(--dp) * 8); }
 .puce { display: inline-flex; align-items: center; justify-content: center; min-width: calc(var(--dp) * 52); height: calc(var(--dp) * 44); padding: 0 calc(var(--dp) * 14); border-radius: calc(var(--dp) * 22); background: var(--f-element); border: calc(var(--dp) * 1.5) solid transparent; font-weight: 500; font-size: calc(var(--dp) * 15); color: #131612; }
-.puce-jour { border-radius: calc(var(--dp) * 14); height: calc(var(--dp) * 40); min-width: 0; flex: 1; padding: 0; font-size: calc(var(--dp) * 14); }
+/* Un jour de l'engagement (`Chip`, rôle case à cocher) : 48 de haut, rayon 14, posé sur l'encart gris donc blanc ;
+   la case de 18, vide ou cochée ; une seule graisse, cochée ou non ; coché, il est vert plein. */
+.puce-jour { gap: calc(var(--dp) * 6); border-radius: calc(var(--dp) * 14); height: calc(var(--dp) * 48); min-width: 0; padding: 0 calc(var(--dp) * 4); background: #FFFFFF; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 20); }
+.case { flex: none; display: grid; place-items: center; width: calc(var(--dp) * 18); height: calc(var(--dp) * 18); border-radius: calc(var(--dp) * 5); border: calc(var(--dp) * 1.5) solid var(--f-champ); background: #FFFFFF; }
+.case svg { width: calc(var(--dp) * 12); height: calc(var(--dp) * 12); fill: none; stroke: var(--f-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.puce-jour.choisi { background: var(--f-accent) !important; border-color: transparent !important; color: #FFFFFF; font-weight: 500 !important; }
+.puce-jour.choisi .case { border-color: #FFFFFF; }
+.puce-jour.choisi .case svg { opacity: 1; }
 .choisi { background: var(--f-teinte) !important; border-color: var(--f-accent) !important; font-weight: 600 !important; }
 .appui { background: var(--f-appui) !important; }
 .appui.choisi { background: var(--f-appui-choisi) !important; }
 .pied { position: absolute; left: 0; right: 0; bottom: 0; padding: calc(var(--dp) * 16) calc(var(--dp) * 24) calc(var(--dp) * 24); background: #FFFFFF; }
 .bouton { display: flex; align-items: center; justify-content: center; height: calc(var(--dp) * 54); border-radius: calc(var(--dp) * 27); background: var(--f-accent); color: #FFFFFF; font-weight: 600; font-size: calc(var(--dp) * 16); }
 .bouton.appui { background: var(--f-accent-appui) !important; }
-.bouton-2 { background: #FFFFFF; color: #131612; box-shadow: inset 0 0 0 calc(var(--dp) * 1) var(--f-filet); }
+/* Le bouton secondaire (`Button`, variante secondaire) : gris, encre noire, 500 ; posé sur une carte teintée
+   (« Oui » et « Non » du point), il prend le fond de l'écran et un filet. */
+.bouton-2 { background: var(--f-element); color: #131612; font-weight: 500; }
+.bouton-2.sur-panneau { background: #FFFFFF; box-shadow: inset 0 0 0 calc(var(--dp) * 1) var(--f-filet); }
 .bouton-2.appui { background: var(--f-appui) !important; }
 .ecr-calcul { display: grid; align-content: start; justify-content: center; justify-items: center; gap: calc(var(--dp) * 20); padding-top: calc(var(--dp) * 200); }
 .slot-calcul { width: calc(var(--dp) * 72); height: calc(var(--dp) * 72); }
@@ -297,40 +307,70 @@ code { font: 500 13px/20px var(--police-mono); color: var(--encre); background: 
 .b-source { font-family: var(--police-mono); font-size: calc(var(--dp) * 11); line-height: calc(var(--dp) * 16); color: var(--f-encre-3); }
 .bande { height: calc(var(--dp) * 52); display: grid; place-items: center; position: relative; border-bottom: 1px solid var(--f-filet); font-weight: 600; font-size: calc(var(--dp) * 17); }
 .bande svg { position: absolute; right: calc(var(--dp) * 14); top: calc(var(--dp) * 15); width: calc(var(--dp) * 22); height: calc(var(--dp) * 22); fill: none; stroke: #131612; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.plan-corps { padding: calc(var(--dp) * 18) calc(var(--dp) * 20); display: grid; gap: calc(var(--dp) * 12); position: relative; }
+#e-plan { overflow: hidden; }
+.plan-corps { padding: calc(var(--dp) * 18) calc(var(--dp) * 24); display: grid; gap: calc(var(--dp) * 12); position: relative; }
 .bande { z-index: 1; background: #FFFFFF; }
 .p-titre { font-weight: 600; font-size: calc(var(--dp) * 26); line-height: calc(var(--dp) * 32); letter-spacing: calc(var(--dp) * -0.26); margin-bottom: calc(var(--dp) * 2) !important; }
-.carte { border: 1px solid var(--f-filet); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 14) calc(var(--dp) * 16); display: grid; gap: calc(var(--dp) * 6); background: #FFFFFF; }
-.carte.engagee { border: calc(var(--dp) * 2) solid var(--f-accent); background: var(--f-teinte-2); padding: calc(var(--dp) * 13) calc(var(--dp) * 15); }
+/* La carte d'une piste, telle que `action-card.tsx` la compose (relevée le 23/10/2026) : 20 de marge, 8
+   entre le titre, le gain et le détail ; le gain seul sur sa ligne, en 20, « par an · … » dessous ; le
+   détail en petit tertiaire. Engagée, elle prend une bordure de 2, le fond teinté, l'étiquette, le
+   premier pas, puis deux liens à la place du bouton. */
+.carte { border: 1px solid var(--f-filet); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 20); display: grid; align-content: start; background: #FFFFFF; }
+.carte.engagee { border: calc(var(--dp) * 2) solid var(--f-accent); background: var(--f-teinte-2); }
 .carte.estompee { border-color: var(--f-element); }
-.c-etiq { display: none; align-items: center; gap: calc(var(--dp) * 8); font-weight: 700; font-size: calc(var(--dp) * 13); line-height: calc(var(--dp) * 18); letter-spacing: calc(var(--dp) * 0.3); text-transform: uppercase; color: var(--f-accent-texte); }
+.c-bloc { display: grid; gap: calc(var(--dp) * 8); }
+.c-etiq { display: none; align-items: center; gap: calc(var(--dp) * 8); font-weight: 700; font-size: calc(var(--dp) * 13); line-height: calc(var(--dp) * 18); letter-spacing: calc(var(--dp) * 0.3); color: var(--f-accent-texte); }
 .engagee .c-etiq { display: flex; }
 .pastille { width: calc(var(--dp) * 20); height: calc(var(--dp) * 20); border-radius: 50%; background: var(--f-accent); display: grid; place-items: center; }
 .pastille svg { width: calc(var(--dp) * 12); height: calc(var(--dp) * 12); fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.c-titre { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 23); }
-.c-gain { font-weight: 600; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: var(--f-accent-texte); }
-.c-gain span { font-weight: 400; color: var(--f-encre-3); }
-.pastille-bord { justify-self: start; display: inline-flex; align-items: center; height: calc(var(--dp) * 32); padding: 0 calc(var(--dp) * 14); border-radius: calc(var(--dp) * 16); box-shadow: inset 0 0 0 1px var(--f-champ); font-weight: 600; font-size: calc(var(--dp) * 14); color: var(--f-accent-texte); margin-top: calc(var(--dp) * 4); }
-.pastille-bord.appui { background: var(--f-appui); }
-.engagee .pastille-bord { display: none; }
+.c-titre { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 24); }
+.c-gain { display: grid; gap: calc(var(--dp) * 2); }
+.c-gain-val { font-weight: 600; font-size: calc(var(--dp) * 20); line-height: calc(var(--dp) * 26); color: var(--f-accent-texte); font-variant-numeric: tabular-nums; }
+.c-gain-ligne { font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-2); }
+.c-detail { font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); }
+/* Le premier pas ne se montre qu'une fois l'action engagée : un creux blanc dans la carte teintée. */
+.c-pas { overflow: hidden; height: 0; }
+.c-pas-dedans { padding-top: calc(var(--dp) * 8); }
+.premier-pas { background: #FFFFFF; border-radius: calc(var(--dp) * 16); padding: calc(var(--dp) * 12) calc(var(--dp) * 16); display: grid; gap: calc(var(--dp) * 2); }
+.pp-titre { font-weight: 600; font-size: calc(var(--dp) * 13); line-height: calc(var(--dp) * 18); letter-spacing: calc(var(--dp) * 0.3); color: var(--f-encre-3); }
+.pp-texte { font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: #131612; }
+/* Le pied de la carte : 8 d'écart plus 16 de marge sous ce qui précède. Le bouton, le sélecteur et les
+   deux liens s'y remplacent l'un l'autre, comme dans `action-commitment.tsx`. */
+.c-pied { margin-top: calc(var(--dp) * 24); }
+.c-bouton-h { overflow: hidden; }
+.engagee .c-bouton-h { display: none; }
 .depliage { overflow: hidden; height: 0; }
-.depliage-dedans { padding-top: calc(var(--dp) * 8); display: grid; gap: calc(var(--dp) * 10); }
-.depliage-dedans > p { font-weight: 600; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); }
-.jours { display: flex; gap: calc(var(--dp) * 5); }
+.liens-h { overflow: hidden; height: 0; }
+.liens { display: flex; flex-wrap: wrap; align-items: center; column-gap: calc(var(--dp) * 24); }
+.lien-t { display: flex; align-items: center; min-height: calc(var(--dp) * 48); font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); }
+/* Le choix des jours : un encart gris qui prend la place du bouton. « Quels jours ? » en petit, les jours
+   sur quatre colonnes, chacun avec sa case et une seule graisse, cochés en vert plein ; « Annuler » à côté
+   de « C'est noté », qui reste en attente — blanc, à filet — tant qu'aucun jour n'est choisi. */
+.selecteur { background: var(--f-element); border-radius: calc(var(--dp) * 16); padding: calc(var(--dp) * 24); display: grid; gap: calc(var(--dp) * 16); }
+.sel-q { font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); }
+.jours { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(var(--dp) * 8); }
+.sel-actions { display: flex; align-items: center; gap: calc(var(--dp) * 24); }
+.sel-actions .bouton { flex: 1; min-width: 0; }
+.annuler { display: flex; align-items: center; min-height: calc(var(--dp) * 48); font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); }
+.bouton.en-attente { background: #FFFFFF; box-shadow: inset 0 0 0 calc(var(--dp) * 1) var(--f-filet); color: var(--f-encre-3); }
 .point-hauteur { overflow: hidden; height: 0; }
-.point { background: var(--f-teinte); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 16); display: grid; margin-bottom: calc(var(--dp) * 4); }
+.point { background: var(--f-teinte); border-radius: calc(var(--dp) * 18); padding: calc(var(--dp) * 18); display: grid; grid-template-rows: minmax(0, 1fr); margin-bottom: calc(var(--dp) * 4); }
 .point > div { grid-area: 1 / 1; }
-.lien-pistes { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); padding: calc(var(--dp) * 4) 0; }
-.pistes { display: grid; gap: calc(var(--dp) * 12); }
+/* « Voir toutes les pistes · N » : un lien d'action — accent, 600, centré, sans soulignement au repos. */
+.lien-pistes { display: flex; align-items: center; justify-content: center; min-height: calc(var(--dp) * 48); font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); text-align: center; }
+.pistes { display: grid; gap: calc(var(--dp) * 10); }
 .pt-label { font-weight: 600; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); }
 .pt-label.repondu { color: var(--f-encre-3); }
-.pt-q { font-weight: 600; font-size: calc(var(--dp) * 17); line-height: calc(var(--dp) * 23); margin-top: calc(var(--dp) * 6) !important; }
-.pt-boutons { display: flex; gap: calc(var(--dp) * 8); margin-top: calc(var(--dp) * 14); }
-.pt-boutons .bouton { flex: 1; height: calc(var(--dp) * 46); border-radius: calc(var(--dp) * 23); font-size: calc(var(--dp) * 15); }
-.lien { margin-top: calc(var(--dp) * 10) !important; font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-accent-texte); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); }
-.rep { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--dp) * 12); align-items: start; align-content: center; }
+.pt-q { font-weight: 600; font-size: calc(var(--dp) * 16); line-height: calc(var(--dp) * 23); margin-top: calc(var(--dp) * 10) !important; }
+.pt-boutons { display: flex; gap: calc(var(--dp) * 8); margin-top: calc(var(--dp) * 10); }
+.pt-boutons .bouton { flex: 1; }
+.lien { display: flex; align-items: center; min-height: calc(var(--dp) * 48); margin-top: calc(var(--dp) * 10) !important; font-weight: 500; font-size: calc(var(--dp) * 14); line-height: calc(var(--dp) * 20); color: var(--f-encre-3); text-decoration: underline; text-underline-offset: calc(var(--dp) * 3); }
+.lien.centre { justify-content: center; }
+.rep .lien { margin-top: 0 !important; }
+.rep { display: grid; gap: calc(var(--dp) * 10); align-content: center; }
+.rep-ligne { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--dp) * 8); align-items: center; }
 .slot-rep { width: calc(var(--dp) * 40); height: calc(var(--dp) * 40); }
-.rep p.r { font-weight: 500; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: #131612; }
+.rep p.r { font-weight: 500; font-size: calc(var(--dp) * 15); line-height: calc(var(--dp) * 22); color: var(--f-encre-2); }
 .notif { position: absolute; top: calc(var(--dp) * 36); left: calc(var(--dp) * 10); right: calc(var(--dp) * 10); background: var(--f-element); border-radius: calc(var(--dp) * 22); padding: calc(var(--dp) * 12) calc(var(--dp) * 14); display: grid; grid-template-columns: auto 1fr; gap: calc(var(--dp) * 12); box-shadow: 0 calc(var(--dp) * 8) calc(var(--dp) * 24) rgba(19, 22, 18, 0.16); }
 .notif .ico { width: calc(var(--dp) * 38); height: calc(var(--dp) * 38); border-radius: calc(var(--dp) * 10); background: #FFFFFF; padding: calc(var(--dp) * 2); }
 .notif .ico svg { width: 100%; height: 100%; display: block; }
@@ -413,8 +453,8 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                   <div class="choix-liste"><div class="choix" id="q1-oui">Oui</div><div class="choix">Non</div></div></div>
                 <div class="q" id="q2"><p class="q-titre">Quel est ton mode de transport principal pour ce trajet&nbsp;?</p>
                   <div class="choix-liste"><div class="choix" id="q2-voiture">Voiture (seul)</div><div class="choix">Voiture (covoiturage)</div><div class="choix">Deux-roues motorisé</div><div class="choix">Bus</div><div class="choix">Train</div></div></div>
-                <div class="q" id="q3"><p class="q-titre">À quelle fréquence fais-tu des trajets loisirs le week-end&nbsp;?</p>
-                  <div class="choix-liste"><div class="choix">Rarement — une fois par mois ou moins</div><div class="choix">Deux ou trois fois par mois</div><div class="choix" id="q3-une">Une fois par semaine</div><div class="choix">Plusieurs fois par semaine</div></div></div>
+                <div class="q" id="q3"><p class="q-titre">À quelle fréquence fais-tu des trajets pour tes loisirs, le <span style="white-space: nowrap">week-end</span> comme en semaine&nbsp;?</p>
+                  <div class="choix-liste"><div class="choix">Rarement — une fois par mois ou moins</div><div class="choix">Deux ou trois fois par mois</div><div class="choix" id="q3-une">Une fois par semaine</div><div class="choix">Plusieurs fois par semaine</div><div class="choix">Presque tous les jours</div></div></div>
                 <div class="q" id="q4"><p class="q-titre">Combien de vols prends-tu dans une année type&nbsp;?</p>
                   <div class="puces"><div class="puce">0</div><div class="puce" id="q4-un">1</div><div class="puce">2</div><div class="puce">3</div><div class="puce">4</div></div></div>
               </div>
@@ -428,7 +468,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
               <div class="bb" id="bb2"><p class="b-label">Répartition par poste</p>
                 <div class="b-lignes">
                   <div class="b-ligne"><b>Trajet domicile-travail</b><b>1,3&nbsp;t&nbsp;CO₂e</b><div class="b-barre"><i class="fort" style="width:61.28%"></i></div></div>
-                  <div class="b-ligne"><span>Loisirs du week-end</span><span>333&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:15.93%"></i></div></div>
+                  <div class="b-ligne"><span>Loisirs</span><span>333&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:15.93%"></i></div></div>
                   <div class="b-ligne"><span>Voyages longue distance</span><span>476&nbsp;kg&nbsp;CO₂e</span><div class="b-barre"><i style="width:22.79%"></i></div></div>
                 </div></div>
               <div class="bb" id="bb3"><p class="b-label">Où tu te situes</p>
@@ -450,28 +490,42 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
                     <div id="pt-q">
                       <p class="pt-label" id="pt-label">Semaine du 05/10</p>
                       <p class="pt-q">Lundi ou mercredi ou vendredi, as-tu fait ce trajet à deux&nbsp;?</p>
-                      <div class="pt-boutons"><div class="bouton bouton-2" id="pt-non">Non</div><div class="bouton bouton-2" id="pt-oui">Oui</div></div>
-                      <p class="lien">Pas de trajet la semaine dernière</p>
+                      <div class="pt-boutons"><div class="bouton bouton-2 sur-panneau" id="pt-non">Non</div><div class="bouton bouton-2 sur-panneau" id="pt-oui">Oui</div></div>
+                      <p class="lien centre">Pas de trajet la semaine dernière</p>
                     </div>
-                    <div class="rep" id="pt-r1"><div class="slot-rep" id="slot-rep1"></div><div><p class="r">Bien joué — chaque changement compte.</p><p class="lien">Modifier ma réponse</p></div></div>
-                    <div class="rep" id="pt-r2"><div class="slot-rep" id="slot-rep2"></div><div><p class="r">Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.</p><p class="lien">Modifier ma réponse</p></div></div>
+                    <div class="rep" id="pt-r1"><div class="rep-ligne"><div class="slot-rep" id="slot-rep1"></div><p class="r">Bien joué — chaque changement compte.</p></div><p class="lien">Modifier ma réponse</p></div>
+                    <div class="rep" id="pt-r2"><div class="rep-ligne"><div class="slot-rep" id="slot-rep2"></div><p class="r">Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.</p></div><p class="lien">Modifier ma réponse</p></div>
                   </div>
                 </div>
                 <div class="pistes" id="pistes">
-                  <div class="carte" id="c1"><p class="c-titre">Passer deux trajets sur cinq en train</p><p class="c-gain">−&nbsp;412&nbsp;kg&nbsp;CO₂e <span>par an · 20&nbsp;% de ton empreinte</span></p><span class="pastille-bord" id="c1-choix">Je m’y engage</span></div>
+                  <div class="carte" id="c1">
+                    <div class="c-bloc">
+                      <p class="c-titre">Passer deux trajets sur cinq en train</p>
+                      <div class="c-gain"><p class="c-gain-val">−&nbsp;412&nbsp;kg&nbsp;CO₂e</p><p class="c-gain-ligne">par an · 20&nbsp;% de ton empreinte</p></div>
+                      <p class="c-detail">Sur tes 5&nbsp;trajets par semaine.</p>
+                    </div>
+                    <div class="c-pied"><div class="bouton bouton-2" id="c1-choix">Je m’y engage</div></div>
+                  </div>
                   <div class="carte" id="c2">
-                    <p class="c-etiq"><span class="pastille"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.6 6.3 5 8.6l4.4-5"/></svg></span>Ton engagement</p>
-                    <p class="c-titre">Faire ce trajet à deux au moins un jour sur deux</p>
-                    <p class="c-gain">−&nbsp;320&nbsp;kg&nbsp;CO₂e <span id="c2-ligne">par an · 15&nbsp;% de ton empreinte</span></p>
-                    <span class="pastille-bord" id="c2-engage">Je m’y engage</span>
-                    <div class="depliage" id="c2-dep"><div class="depliage-dedans" id="c2-dep-dedans">
-                      <p>Quels jours&nbsp;?</p>
-                      <div class="jours"><span class="puce puce-jour" id="j-lun">L</span><span class="puce puce-jour">M</span><span class="puce puce-jour" id="j-mer">M</span><span class="puce puce-jour">J</span><span class="puce puce-jour" id="j-ven">V</span><span class="puce puce-jour">S</span><span class="puce puce-jour">D</span></div>
-                      <div class="bouton" id="c2-note">C’est noté</div>
-                    </div></div>
+                    <div class="c-bloc">
+                      <p class="c-etiq"><span class="pastille"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></span>TON ENGAGEMENT</p>
+                      <p class="c-titre">Faire ce trajet à deux au moins un jour sur deux</p>
+                      <div class="c-gain"><p class="c-gain-val">−&nbsp;320&nbsp;kg&nbsp;CO₂e</p><p class="c-gain-ligne" id="c2-ligne">par an · 15&nbsp;% de ton empreinte</p></div>
+                      <p class="c-detail">Sur tes 5&nbsp;trajets par semaine.</p>
+                    </div>
+                    <div class="c-pas" id="c2-pas"><div class="c-pas-dedans" id="c2-pas-dedans"><div class="premier-pas"><p class="pp-titre">PREMIER PAS</p><p class="pp-texte">Demande autour de toi qui fait le même trajet, avant de choisir un jour.</p></div></div></div>
+                    <div class="c-pied">
+                      <div class="c-bouton-h" id="c2-bouton-h"><div class="bouton bouton-2" id="c2-engage">Je m’y engage</div></div>
+                      <div class="depliage" id="c2-dep"><div class="selecteur" id="c2-dep-dedans">
+                        <p class="sel-q">Quels jours&nbsp;?</p>
+                        <div class="jours"><span class="puce puce-jour" id="j-lun"><i class="case"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></i>L</span><span class="puce puce-jour"><i class="case"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></i>M</span><span class="puce puce-jour" id="j-mer"><i class="case"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></i>M</span><span class="puce puce-jour"><i class="case"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></i>J</span><span class="puce puce-jour" id="j-ven"><i class="case"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></i>V</span><span class="puce puce-jour"><i class="case"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></i>S</span><span class="puce puce-jour"><i class="case"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></i>D</span></div>
+                        <div class="sel-actions"><span class="annuler">Annuler</span><div class="bouton en-attente" id="c2-note">C’est noté</div></div>
+                      </div></div>
+                      <div class="liens-h" id="c2-liens-h"><div class="liens" id="c2-liens-dedans"><span class="lien-t">Modifier les jours</span><span class="lien-t">Changer d’avis</span></div></div>
+                    </div>
                   </div>
                 </div>
-                <p class="lien-pistes" id="lien-pistes">Voir toutes les pistes · 10</p>
+                <p class="lien-pistes" id="lien-pistes">Voir toutes les pistes · 9</p>
               </div>
             </div>
 
@@ -629,6 +683,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   // de mise en page. Appuyé 0,1 s avant, il partait avec elles (contre-lecture du 03/10/2026).
   const LEVE = 0.22;
   T.tapNotif = T.notifSortie[0] - LEVE;
+  // Le plan défile pour amener « Je m'y engage » dans le cadre avant que le doigt ne le touche : il finit
+  // 0,05 s avant que le doigt n'apparaisse (qui suit sa cible, et ne doit pas bouger pendant son appui).
+  T.defileBouton = [T.plan + 0.75, T.plan + 1.25];
 
   // Le scénario rendu sous le film, qui en est aussi la version texte. Les insécables s'écrivent
   // ici à la main : ce texte n'est pas rendu par `ThemedText`, qui les pose dans l'app.
@@ -1062,7 +1119,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
   // donnait trois images différentes pour le même instant.
   function mesurer() {
     const garde = tCourant;
-    M = { dp: $('tel-ecran').clientWidth / 360, defilePlan: 0 };
+    M = { dp: $('tel-ecran').clientWidth / 360, defilePlan: 0, defileBouton: 0, bouton: 0, pas: 0, liens: 0, point: 0, pointRep: 0 };
     const cta = $('s8-cta');
     M.cta = { w: cta.offsetWidth, h: cta.offsetHeight };
     const r = posStatique(cta);
@@ -1072,16 +1129,37 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     // La restitution, téléphone à sa taille : ce que le cadre coupe de son bas.
     const ecr = posStatique($('tel-ecran'));
     M.defile = Math.max(0, ecr.y + 30 * M.dp + $('bilan-defile').offsetHeight + 12 * M.dp - Math.min(G.H, ecr.y + ecr.h));
-    // Le choix des jours, déplié, avant l'engagement : « C'est noté » doit entrer dans le cadre.
+    // Le choix des jours, déplié, avant l'engagement : « C'est noté » doit entrer dans le cadre. Le cadre
+    // qui coupe est le plus bas de la scène et de l'écran du téléphone : en portrait, c'est l'écran.
     rendre(T.depliage[1] + 0.05);
+    // Ces trois positions se lisent au pixel près (`posVivante`), pas par la chaîne des `offset*` : elle arrondit
+    // à chaque niveau, et six niveaux faisaient manquer la marge promise de deux pixels. Le téléphone est à
+    // sa taille et le plan n'a pas défilé à cet instant — `M` vient d'être remis à zéro.
+    const ecrV = posVivante($('tel-ecran'));
+    const bas = Math.min(G.H, ecrV.y + ecrV.h);
     M.dep = $('c2-dep-dedans').offsetHeight;
-    const d = posStatique($('c2-dep-dedans'));
-    M.defilePlan = Math.max(0, d.y + d.h + 16 * M.dp - G.H);
+    const d = posVivante($('c2-dep-dedans'));
+    M.defilePlan = Math.max(0, d.y + d.h + 16 * M.dp - bas);
+    // Le bouton « Je m'y engage » de la seconde carte, avant que le choix ne le remplace : il doit être
+    // dans le cadre au moment où le doigt le touche — le plan défile avant, d'autant que la carte
+    // d'une piste est plus haute que celle que le film simplifiait.
+    M.bouton = $('c2-engage').offsetHeight;
+    const b = posVivante($('c2-engage'));
+    // Et il va jusqu'à cacher « Ton plan » sous la bande : un titre à moitié mangé se lit comme un défaut.
+    const titre = posVivante($('p-titre'));
+    M.defileBouton = Math.max(0, b.y + b.h + 16 * M.dp - bas, titre.y + titre.h + 2 * M.dp - (ecrV.y + 82 * M.dp));
+    // Ce que l'engagement ajoute à la carte : le premier pas, et les deux liens à la place du bouton.
+    M.pas = $('c2-pas-dedans').offsetHeight;
+    M.liens = $('c2-liens-dedans').offsetHeight;
     // L'engagement pris, juste avant que les deux cartes échangent leur place.
     rendre(T.enTete[0] - 0.01);
     M.cartes = { h1: $('c1').offsetHeight, h2: $('c2').offsetHeight, ecart: parseFloat(getComputedStyle($('pistes')).rowGap) || 0 };
     rendre(T.point[1]);
     M.point = $('point').offsetHeight;
+    // Répondue, la carte prend la hauteur de la réplique et de son lien, comme `HauteurSuivie` : la plus
+    // haute des deux répliques (celle du « Non » tient sur trois lignes), plus les marges de la carte.
+    const reponse = (id) => $(id).firstElementChild.offsetHeight + $(id).lastElementChild.offsetHeight + 10 * M.dp;
+    M.pointRep = Math.max(reponse('pt-r1'), reponse('pt-r2')) + 36 * M.dp;
     tCourant = garde;
   }
 
@@ -1312,7 +1390,7 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     S($('rail'), 'width', `${fx(largeur * 100)}%`);
     const n = t < Q[1] ? 0 : t < Q[2] ? 1 : t < Q[3] ? 2 : 3;
     texte($('q-etape'), `Étape ${[1, 3, 5, 7][n]} sur 9`);
-    texte($('q-section'), ['Domicile-travail', 'Domicile-travail', 'Loisirs du week-end', 'Voyages longue distance'][n]);
+    texte($('q-section'), ['Domicile-travail', 'Domicile-travail', 'Loisirs', 'Voyages longue distance'][n]);
     S($('slot-entete'), 'opacity', fx(p(t, T.vol[1] - 0.1, T.vol[1] + 0.1, E.lin)));
 
     // Le calcul, puis la restitution, qui défile si le cadre coupe l'écran
@@ -1328,13 +1406,25 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     ecran('e-plan', t, T.plan, null);
     entreeDp($('p-titre'), t, T.plan + 0.2, null);
     entreeDp($('lien-pistes'), t, T.plan + 0.65, null);
-    const ouvert = p(t, ...T.depliage) * (1 - p(t, ...T.repli));
-    if (ouvert > 0 && ouvert < 1) S($('c2-dep'), 'height', `${fx(M.dep * ouvert)}px`);
-    else S($('c2-dep'), 'height', ouvert >= 1 ? 'auto' : '0px');
+    // Le choix des jours prend la place du bouton « Je m'y engage », qui se replie et s'efface pendant
+    // que l'encart se déplie ; à l'engagement, l'encart se replie à son tour, et le premier pas et les
+    // deux liens se déplient. Chaque hauteur est une fonction du temps, jamais de l'image d'avant.
+    const ouvre = p(t, ...T.depliage), ouvert = ouvre * (1 - p(t, ...T.repli));
+    const hauteur = (el, k, plein, cache = '0px') => S(el, 'height', k > 0 && k < 1 ? `${fx(plein * k)}px` : k >= 1 ? 'auto' : cache);
+    hauteur($('c2-dep'), ouvert, M.dep);
+    S($('c2-bouton-h'), 'height', ouvre > 0 && ouvre < 1 ? `${fx(M.bouton * (1 - ouvre))}px` : ouvre >= 1 ? '0px' : 'auto');
+    S($('c2-engage'), 'opacity', fx(1 - p(t, T.depliage[0], T.depliage[0] + 0.25, E.lin)));
+    const apparait = p(t, ...T.repli);
+    hauteur($('c2-pas'), apparait, M.pas);
+    hauteur($('c2-liens-h'), apparait, M.liens);
+    S($('c2-pas-dedans'), 'opacity', fx(apparait));
+    S($('c2-liens-dedans'), 'opacity', fx(apparait));
+    // « C'est noté » attend un premier jour : blanc, à filet, il agit et demande ce qui manque.
+    C($('c2-note'), 'en-attente', t < TAPES.find((x) => x.id === 'j-lun').t + 0.14);
     const engagee = t >= T.engagee;
     C($('c2'), 'engagee', engagee);
     C($('c1'), 'estompee', engagee);
-    texte($('c2-ligne'), engagee ? 'par an · le lundi, le mercredi et le vendredi · 15 % de ton empreinte' : 'par an · 15 % de ton empreinte');
+    texte($('c2-ligne'), engagee ? 'par an · le lundi, le mercredi et le vendredi · 15 % de ton empreinte' : 'par an · 15 % de ton empreinte');
     texte($('c1-choix'), engagee ? 'Choisir celle-ci à la place' : 'Je m’y engage');
     // L'action engagée passe en tête (`ordonnerLesPistes`) : les deux cartes échangent leur place.
     const c1 = $('c1'), c2 = $('c2');
@@ -1354,9 +1444,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     }
     entreeDp(c1, t, T.plan + 0.35, null, { decal: dy1 });
     entreeDp(c2, t, T.plan + 0.5, null, { decal: dy2 });
-    // Le dépliage pousse « C'est noté » vers le bas ; si le cadre le coupe, le plan défile le temps
-    // du choix, puis revient quand l'engagement remonte en tête.
-    const defilePlan = M.defilePlan * p(t, T.depliage[0], T.depliage[1] + 0.1) * (1 - p(t, ...T.enTete));
+    // Le plan défile comme l'app : d'abord pour que « Je m'y engage » soit sous le doigt, puis le temps du
+    // choix pour que « C'est noté » finisse dans le cadre, et il revient quand l'engagement remonte en tête.
+    const defilePlan = Math.max(M.defileBouton * p(t, ...T.defileBouton, E.inOutCubic), M.defilePlan * p(t, T.depliage[0], T.depliage[1] + 0.1)) * (1 - p(t, ...T.enTete));
     S($('plan-corps'), 'transform', `translateY(${fx(-defilePlan)}px)`);
 
     // La notification, puis le point de la semaine
@@ -1372,6 +1462,9 @@ html.export .scene { width: 100vw !important; height: 100vh !important; aspect-r
     entreeDp($('pt-q'), t, semaine2 ? T.question2[0] : T.question1[0], semaine2 ? T.question2[1] : T.question1[1], { dy: 6, dout: 0.2 });
     entreeDp($('pt-r1'), t, T.question1[1], T.semaineSuivante, { dy: 6, dout: 0.25 });
     entreeDp($('pt-r2'), t, T.question2[1], null, { dy: 6 });
+    // La carte suit la hauteur de ce qu'elle montre : la question, puis la réplique, et ainsi de suite.
+    const repondu = p(t, SYNC.reponses[1], SYNC.reponses[1] + 0.45, E.inOutCubic) * (1 - p(t, T.semaineSuivante, T.semaineSuivante + 0.45, E.inOutCubic)) + p(t, SYNC.reponses[2], SYNC.reponses[2] + 0.45, E.inOutCubic);
+    S($('point'), 'height', repondu > 0 ? `${fx(lerp(M.point, M.pointRep, repondu))}px` : 'auto');
     texte($('pt-label'), semaine2 ? 'Semaine du 12/10' : 'Semaine du 05/10');
     C($('pt-label'), 'repondu', (t >= T.question1[1] && t < T.semaineSuivante) || t >= T.question2[1]);
 
