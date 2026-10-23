@@ -1602,6 +1602,14 @@ try {
   // geste ouvre la session **avant** de mener à la retrouvaille (`allerVers`, `src/app/index.tsx`), et **sa vue
   // se compte** avec la provenance `accueil` — sans cela, l'écran se montait avant la session que le layout
   // ouvre en y arrivant, et `track()` renonçait. Ni Jest ni l'export ne voient cette course.
+  //
+  // Éprouvé en le cassant le 23/10/2026, par `node scripts/rejouer-la-ci.mjs base parcours` sur la source
+  // mutée, restaurée après chaque passage :
+  //   - `laSessionSOuvreSur` qui ouvre la session à la racine du web (sa condition retirée) → le parcours
+  //     s'arrête à l'étape 0, « la page d'accueil, atteinte par « Retour », a rangé une session dans le
+  //     navigateur » — la première assertion qui la voit ;
+  //   - `allerVers` qui navigue sans ouvrir la session d'abord → il s'arrête ici, « la vue de la
+  //     retrouvaille venue de la page d'accueil ne s'est pas comptée avec sa porte : [] ».
   etape('page d’accueil — ouverte à froid, aucun compte ne naît, et sa porte se mesure');
   {
     const avant = await compterLesComptes();

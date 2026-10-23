@@ -112,7 +112,10 @@ const DIST = process.argv[2] ?? 'dist';
 // **La racine du web a un marqueur depuis le 23/10/2026** : elle n'ouvre plus de session, elle restaure
 // celle de l'appareil — sans réseau —, et un navigateur neuf y voit la page d'accueil, configuration
 // factice ou non. « Sans compte, sans publicité » est un titre de section qu'elle seule porte (le titre de
-// la page est aussi celui de l'onboarding).
+// la page est aussi celui de l'onboarding). Éprouvé le 23/10/2026, sur un export où la racine du web mène à
+// l'onboarding (`destinationSurLaPlateforme` sans sa condition) : une ligne ici, « / : « Sans compte, sans
+// publicité » est absent de la page », et une dans `verifier-etats-export.mjs` (section M), l'onboarding
+// ouvrant la session.
 const ROUTES = [
   { chemin: '/', marqueur: 'Sans compte, sans publicité' },
   { chemin: '/onboarding', marqueur: 'Moi, c’est Ramille' },
