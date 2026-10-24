@@ -103,6 +103,13 @@ Ramille ; ce qui voyage est en `FRONT.md` §1, et le design system se lit par le
   redessiner, par la prop `tilt` : une feuille penchée regarde, une feuille droite accompagne.
   **La mascotte n'apparaît jamais à côté d'un chiffre lourd** — ni près du total, ni près d'une
   empreinte élevée : y mettre un visage serait commenter, et le produit ne commente pas.
+  **Une exception, décidée par la personne qui pilote le 24/10/2026** (`v1-35` étape 6a) : sur la carte
+  du point répondu, « Au moins … kg CO₂e évités. » se tient sous la réplique d'un « oui ». Ce n'est pas une
+  empreinte qu'on jugerait mais le minimum de ce que la personne a fait, et la ligne arrive là où elle
+  répond. Elle reste **voix produit**, sous la bulle et jamais dedans — Ramille ne dit toujours aucun
+  nombre. Le risque accepté, à surveiller en recette : qu'on lise Ramille féliciter un nombre, comme un
+  score. L'exception ne s'étend à rien d'autre : le total de la saison, sur le plan, reste loin de son
+  visage (sous le titre, au-dessus des points et de la carte d'attente).
   **Depuis le 01/10/2026, le total suit la carte dominante** (`v1-33` D9) : au profil sans émission,
   dont la carte porte Ramille (`bilanSansEmissions`), son voisin est donc le total — « 0 kg CO₂e »,
   cette variante n'existant que pour un total nul. La règle tient parce que ce voisin est le

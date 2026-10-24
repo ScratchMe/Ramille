@@ -442,9 +442,10 @@ export function CheckinCard({
               Ramille ne compte jamais. Jamais un badge, jamais un compteur, jamais au-delà de deux. */}
           {renforcement && <ThemedText type="body">{renforcement}</ThemedText>}
           {/* **Les kilos du « oui »** (étape 6a de `v1-35`). Voix produit, comme le renforcement : Ramille
-              ne dit jamais de nombre. Un minimum évité n'est pas le « chiffre lourd » que la règle de la
-              mascotte vise (`FRONT-MASCOTTE.md` §2.3) — une empreinte, un total —, et il se tient sous
-              sa phrase, jamais dans sa bulle. */}
+              ne dit jamais de nombre. **Sous sa réplique par décision de la personne qui pilote**
+              (24/10/2026), et c'est l'exception écrite à la règle de la mascotte (`FRONT-MASCOTTE.md`
+              §2.3) : le minimum de ce qui a été fait, là où l'on répond — sous sa phrase, jamais dans sa
+              bulle. */}
           {kilos && (
             <ThemedText type="body" themeColor="textSecondary">
               {kilos}
