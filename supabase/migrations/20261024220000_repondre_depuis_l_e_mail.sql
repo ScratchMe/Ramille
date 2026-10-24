@@ -27,17 +27,19 @@
 -- 2. `libelle_sans_objet(loop_type, poste, period_start)` : le libellé de la troisième réponse, **jumelle
 --    SQL de `libelleSansObjet`** (`src/types/checkin.ts`), à toucher ensemble — l'e-mail et la carte
 --    doivent nommer la même réponse dans les mêmes mots, comme ils posent la même question.
--- 3. `ecrire_la_reponse_du_point(user_id, checkin_id, réponse)` : le corps de `repondre_au_checkin`, déplacé
---    tel quel (empreinte `caf3f81257bea9df065a8ed73c74875d`, la même en local et sur le distant le
---    24/10/2026), le propriétaire passé en argument au lieu d'être lu dans la session. `repondre_au_checkin`
---    l'appelle avec `auth.uid()`, `repondre_par_le_lien` avec le propriétaire du jeton : **un seul écrivain
---    des réponses**, une seule borne de correction, une seule annonce au trigger
---    (`ramille.correction_du_point`). Fermée à tout client.
+-- 3. `ecrire_la_reponse_du_point(user_id, checkin_id, réponse)` : le corps de `repondre_au_checkin`
+--    (empreinte `caf3f81257bea9df065a8ed73c74875d`, la même en local et sur le distant le 24/10/2026), le
+--    propriétaire passé en argument au lieu d'être lu dans la session, et sa borne lue dans
+--    `debut_de_la_periode_interrogee(loop_type)` — la formule qu'il écrivait en ligne, que la lecture par le
+--    lien lit aussi. `repondre_au_checkin` l'appelle avec `auth.uid()`, `repondre_par_le_lien` avec le
+--    propriétaire du jeton : **un seul écrivain des réponses**, une seule borne de correction, une seule
+--    annonce au trigger (`ramille.correction_du_point`). Fermée à tout client.
 -- 4. `le_point_du_lien(jeton)` et `repondre_par_le_lien(jeton, réponse)`, ouvertes à `anon` : **le jeton
---    est l'autorisation**, comme celui de la désinscription. Il ne peut rien d'autre que lire la question de
---    ce point-là et y répondre — jamais un autre point, jamais le compte —, et il sert jusqu'à la fin de la
---    période (la borne de la correction) : répondre « oui » puis toucher « Non » dans le même e-mail corrige,
---    comme « Modifier ma réponse » sur la carte. La lecture ne rend ni identifiant ni adresse.
+--    est l'autorisation**, comme celui de la désinscription, **et il ne vaut que le temps de la période**
+--    (la borne de la correction). Pendant ce temps, il lit la question de ce point-là, sa réponse et ce
+--    qu'elle a évité, et y répond — un second lien du même e-mail propose de corriger. Ensuite, la lecture ne
+--    rend plus que la question, et la réponse est refusée. Jamais un autre point, jamais le compte, ni
+--    identifiant ni adresse.
 -- 5. `enqueue_checkin_reminders` : le jeton, et les trois liens dans le corps — quatre substitutions
 --    vérifiées sur le corps installé (empreinte `64404495b2c940bfe29c71d888baa0ca`, la même des deux côtés).
 --    Le lien vers le plan reste, en dernier : sur Android, c'est lui qu'ouvre l'app (`/plan?rappel=1`, le
@@ -68,9 +70,9 @@ alter table public.notification_outbox add constraint notification_outbox_jeton_
   check (jeton_de_reponse is null or genre = 'point');
 
 comment on column public.notification_outbox.jeton_de_reponse is
-  'Le jeton des trois liens de réponse du message (`/point?reponse=…&jeton=…`, étape 6b de v1-35). Il autorise '
-  'à lire la question de ce point et à y répondre, sans session, jusqu''à la fin de sa période. Nul sur le mot '
-  'de la veille et sur les rappels mis en file avant le 24/10/2026.';
+  'Le jeton des trois liens de réponse du message (`/point?jeton=…&reponse=…`, étape 6b de v1-35). Il autorise, '
+  'sans session et jusqu''à la fin de la période du point, à lire sa question et sa réponse et à y répondre ; '
+  'ensuite, la question seule. Nul sur le mot de la veille et sur les rappels mis en file avant le 24/10/2026.';
 comment on column public.notification_outbox.lien_de_reponse_utilise_le is
   'L''heure de la dernière réponse donnée par le lien de ce message (`repondre_par_le_lien`). Nulle tant que '
   'personne n''a répondu depuis l''e-mail.';
@@ -95,7 +97,32 @@ as $function$
   end;
 $function$;
 
+comment on function public.libelle_sans_objet(text, text, date) is
+  'Jumelle de libelleSansObjet (src/types/checkin.ts) — à toucher ensemble : l''e-mail du point et la carte '
+  'nomment la troisième réponse dans les mêmes mots (étape 6b de v1-35, test 64).';
+
 revoke execute on function public.libelle_sans_objet(text, text, date) from public, anon, authenticated;
+
+-- 2 bis. Le début de la période que les générateurs interrogent en ce moment — jumelle de
+-- `debutDePeriodeInterrogee` (`src/types/checkin.ts`). L'écrivain y borne la correction, la lecture par le
+-- lien ce qu'elle rend : une seule formule pour les deux, celle des deux générateurs, qui gardent la leur.
+create or replace function public.debut_de_la_periode_interrogee(p_loop_type text)
+ returns date
+ language sql
+ stable
+ set search_path to 'public'
+as $function$
+  select case p_loop_type
+    when 'commute' then date_trunc('week', now())::date - 7
+    else (date_trunc('month', now()) - interval '1 month')::date
+  end;
+$function$;
+
+comment on function public.debut_de_la_periode_interrogee(text) is
+  'Jumelle de debutDePeriodeInterrogee (src/types/checkin.ts) et des formules de generate_commute_checkins et '
+  'generate_extras_checkins — à toucher ensemble. Lue par ecrire_la_reponse_du_point et le_point_du_lien.';
+
+revoke execute on function public.debut_de_la_periode_interrogee(text) from public, anon, authenticated;
 
 -- 3. Le seul écrivain des réponses : le corps de `repondre_au_checkin`, le propriétaire en argument.
 create or replace function public.ecrire_la_reponse_du_point(p_user_id uuid, p_checkin_id uuid, p_reponse text)
@@ -118,9 +145,9 @@ begin
   -- La correction (`v1-33` §6, 02/10/2026) : un point déjà répondu se réécrit tant qu'il est celui de la
   -- période interrogée — jusqu'à la fin de sa période, minuit UTC. Le début de cette période est celui des deux
   -- générateurs (`generate_commute_checkins`, `generate_extras_checkins`) et de
-  -- `debutDePeriodeInterrogee` côté client, qui borne l'affichage de la carte répondue : les trois se
-  -- touchent ensemble. Le trigger n'accepte la réécriture que sur ce réglage, posé le temps de
-  -- l'`update` et retiré aussitôt.
+  -- `debutDePeriodeInterrogee` côté client, qui borne l'affichage de la carte répondue : il se lit dans
+  -- `debut_de_la_periode_interrogee`, que la lecture par le lien partage. Le trigger n'accepte la réécriture
+  -- que sur ce réglage, posé le temps de l'`update` et retiré aussitôt.
   perform set_config('ramille.correction_du_point', 'oui', true);
 
   update public.engagement_checkins
@@ -132,11 +159,7 @@ begin
   where id = p_checkin_id
     and user_id = p_user_id
     and (status = 'pending'
-         or (status = 'answered'
-             and period_start >= case loop_type
-                                   when 'commute' then date_trunc('week', now())::date - 7
-                                   else (date_trunc('month', now()) - interval '1 month')::date
-                                 end));
+         or (status = 'answered' and period_start >= public.debut_de_la_periode_interrogee(loop_type)));
 
   get diagnostics v_lignes = row_count;
   perform set_config('ramille.correction_du_point', '', true);
@@ -184,7 +207,8 @@ as $function$
 begin
   -- Le corps vit dans `ecrire_la_reponse_du_point` depuis le 24/10/2026 (étape 6b de `v1-35`) : la réponse
   -- donnée depuis l'e-mail passe par le même écrivain, avec le propriétaire du jeton au lieu de la session.
-  -- Sans session, `auth.uid()` est nul, aucune ligne ne correspond, et le refus est `P0002`, comme avant.
+  -- Sans session, c'est le privilège qui refuse (`42501`) ; un `auth.uid()` nul — celui de `service_role` —
+  -- ne trouve aucune ligne, et le refus est `P0002`, comme avant.
   return public.ecrire_la_reponse_du_point(auth.uid(), p_checkin_id, p_reponse);
 end;
 $function$;
@@ -200,10 +224,11 @@ create or replace function public.le_point_du_lien(p_jeton uuid)
    period_label text,
    trip_label text,
    question text,
-   committed_saving_kg_once numeric,
+   ouvert boolean,
    status text,
    response_kind text,
    responded_at timestamptz,
+   committed_saving_kg_once numeric,
    boucle_tourne boolean
  )
  language sql
@@ -213,19 +238,33 @@ create or replace function public.le_point_du_lien(p_jeton uuid)
 as $function$
   -- Ce que la page `/point` affiche, et rien d'autre : ni l'identifiant du point, ni celui du compte, ni
   -- l'adresse. La question est celle que le message a portée — figée, ou recomposée pour une ligne d'avant
-  -- C2.1 par la même fonction que `enqueue_checkin_reminders`. `boucle_tourne` dit si la réplique et le pied
-  -- ont le droit de donner rendez-vous (`laBoucleDuPointTourne`, décision du 30/09/2026).
+  -- C2.1 par la même fonction que `enqueue_checkin_reminders`.
+  --
+  -- **Le reste ne se lit que tant que le point accepte une réponse** (`ouvert`, la borne de l'écrivain) :
+  -- son état, sa réponse, son heure, ce qu'elle a évité, et si sa boucle tourne — pour que la réplique et le
+  -- pied ne donnent pas rendez-vous à tort. Passé la période, le jeton ne rend plus que la question : un
+  -- e-mail gardé six mois, ou transféré, ne dit pas ce qui a été répondu, ni qu'un bilan a été retiré
+  -- (contre-lecture du 24/10/2026).
   select c.loop_type, c.poste, c.question_kind, c.mode, c.period_start, c.period_label, c.trip_label,
          coalesce(
            c.committed_question,
            public.checkin_question(c.loop_type, c.question_kind, c.poste, c.mode, c.period_start)
          ),
-         c.committed_saving_kg_once, c.status, c.response_kind, c.responded_at,
-         exists (
+         a.ouvert,
+         case when a.ouvert then c.status end,
+         case when a.ouvert then c.response_kind end,
+         case when a.ouvert then c.responded_at end,
+         case when a.ouvert then c.committed_saving_kg_once end,
+         a.ouvert and exists (
            select 1 from public.boucles_du_dernier_bilan(c.user_id) b where b.loop_type = c.loop_type
          )
   from public.notification_outbox o
   join public.engagement_checkins c on c.id = o.checkin_id
+  cross join lateral (
+    select c.status = 'pending'
+           or (c.status = 'answered' and c.period_start >= public.debut_de_la_periode_interrogee(c.loop_type))
+           as ouvert
+  ) a
   where o.jeton_de_reponse = p_jeton;
 $function$;
 
@@ -291,14 +330,17 @@ begin
        $a$    o.unsubscribe_token$a$,
        $r$    o.unsubscribe_token,
     o.jeton_de_reponse$r$),
-      -- Les trois réponses de la carte, dans ses mots, puis le plan — que l'app ouvre sur Android.
+      -- Les trois réponses de la carte, dans ses mots, puis le plan — que l'app ouvre sur Android. Le jeton
+      -- d'abord : un lien coupé à l'esperluette perd la réponse, et la page propose alors les trois, au lieu de
+      -- perdre le jeton et de dire que le lien n'est plus valable (contre-lecture du 24/10/2026). « Pour me
+      -- répondre » et non « en un geste » : le lien, puis l'envoi, en font deux.
       (4, 'public.enqueue_checkin_reminders()',
        $a$      || 'Réponds-moi en un geste : ' || v_app_url || '/plan?rappel=1' || E'\n\n'$a$,
-       $r$      || 'Réponds-moi en un geste :' || E'\n'
-      || 'Oui : ' || v_app_url || '/point?reponse=oui&jeton=' || o.jeton_de_reponse::text || E'\n'
-      || 'Non : ' || v_app_url || '/point?reponse=non&jeton=' || o.jeton_de_reponse::text || E'\n'
+       $r$      || 'Pour me répondre :' || E'\n'
+      || 'Oui : ' || v_app_url || '/point?jeton=' || o.jeton_de_reponse::text || '&reponse=oui' || E'\n'
+      || 'Non : ' || v_app_url || '/point?jeton=' || o.jeton_de_reponse::text || '&reponse=non' || E'\n'
       || public.libelle_sans_objet(c.loop_type, c.poste, c.period_start) || ' : ' || v_app_url
-      || '/point?reponse=sans_objet&jeton=' || o.jeton_de_reponse::text || E'\n\n'
+      || '/point?jeton=' || o.jeton_de_reponse::text || '&reponse=sans_objet' || E'\n\n'
       || 'Ou ouvre ton plan : ' || v_app_url || '/plan?rappel=1' || E'\n\n'$r$),
       -- L'export rend l'usage du lien, à côté de celui de la désinscription.
       (5, 'public.export_my_data()',
@@ -333,7 +375,7 @@ begin
   v_corps := regexp_replace(pg_get_functiondef('public.enqueue_checkin_reminders()'::regprocedure), '--[^\n]*', '', 'g');
   if position('gen_random_uuid() as jeton_de_reponse' in v_corps) = 0
      or position('o.jeton_de_reponse' in v_corps) = 0
-     or (length(v_corps) - length(replace(v_corps, '/point?reponse=', ''))) / length('/point?reponse=') <> 3
+     or (length(v_corps) - length(replace(v_corps, '/point?jeton=', ''))) / length('/point?jeton=') <> 3
      or position('public.libelle_sans_objet(c.loop_type, c.poste, c.period_start)' in v_corps) = 0
      or position('/plan?rappel=1' in v_corps) = 0 then
     raise exception 'enqueue_checkin_reminders ne met pas les trois liens de réponse dans le message';
@@ -343,6 +385,12 @@ begin
   if position('public.ecrire_la_reponse_du_point(auth.uid(), p_checkin_id, p_reponse)' in v_corps) = 0
      or position('update public.engagement_checkins' in v_corps) > 0 then
     raise exception 'repondre_au_checkin écrit encore lui-même : un second écrivain des réponses';
+  end if;
+
+  v_corps := regexp_replace(pg_get_functiondef('public.le_point_du_lien(uuid)'::regprocedure), '--[^\n]*', '', 'g');
+  if position('case when a.ouvert then c.response_kind end' in v_corps) = 0
+     or position('public.debut_de_la_periode_interrogee(c.loop_type)' in v_corps) = 0 then
+    raise exception 'le_point_du_lien rend la réponse d''un point dont la période est passée';
   end if;
 
   v_corps := pg_get_functiondef('public.export_my_data()'::regprocedure);
@@ -357,6 +405,7 @@ begin
     raise exception 'la page sans compte ne peut ni lire ni répondre';
   end if;
   if has_function_privilege('anon', 'public.ecrire_la_reponse_du_point(uuid, uuid, text)', 'execute')
+     or has_function_privilege('anon', 'public.debut_de_la_periode_interrogee(text)', 'execute')
      or has_function_privilege('authenticated', 'public.ecrire_la_reponse_du_point(uuid, uuid, text)', 'execute')
      or has_function_privilege('anon', 'public.repondre_au_checkin(uuid, text)', 'execute') then
     raise exception 'un client peut répondre pour un autre compte';

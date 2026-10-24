@@ -16,11 +16,11 @@ import { useApresHydratation } from '@/hooks/use-apres-hydratation';
 import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from '@/lib/focus';
 import { gardeDuJetonPourLOnglet } from '@/lib/jeton-de-l-onglet';
 import { lireLePointDuLien, repondreParLeLien } from '@/lib/reponse-par-le-lien';
-import { genreDeReponse, phraseDeLaReponseEnPlace } from '@/types/checkin';
-import { jetonARetenir, jetonDuLien } from '@/types/desinscription';
-import { phraseDuOui } from '@/types/kilos-evites';
+import { STATUT_DU_POINT } from '@/types/checkin';
+import { jetonDuLien } from '@/types/desinscription';
 import {
   etatDeLaPageDuPoint,
+  jetonDuPoint,
   phraseDeLaLectureDuPoint,
   reponseDuLien,
   type LectureDuPoint,
@@ -73,7 +73,8 @@ function carteDuPoint(jeton: string, point: PointDuLien): EngagementCheckin {
     committed_question: point.question,
     committed_action_text: null,
     committed_saving_kg_once: point.committed_saving_kg_once,
-    status: point.status,
+    // Ouvert, le serveur rend toujours l'état ; la carte ne se compose que pour un point ouvert.
+    status: point.status ?? STATUT_DU_POINT.enAttente,
     response_kind: point.response_kind,
     responded_at: point.responded_at,
   };
@@ -88,19 +89,22 @@ export default function RepondreAuPoint() {
   const reponseProposee = reponseDuLien(reponse);
 
   // **Le jeton est lu une fois, puis retiré de l'adresse s'il a pu être gardé pour l'onglet** — le
-  // mécanisme de `/rappels/stop`, mot pour mot, et pour les mêmes raisons (`src/lib/jeton-de-l-onglet.ts`,
+  // mécanisme de `/rappels/stop`, et pour les mêmes raisons (`src/lib/jeton-de-l-onglet.ts`,
   // `src/lib/jeton-de-desinscription.ts`) : le `Referer` des requêtes qui suivent, l'historique de
   // l'onglet, et un rechargement qui ne doit pas dire « plus valable ». Capté au premier passage de
-  // l'effet, que retirer le paramètre relance.
+  // l'effet, que retirer le paramètre relance — avec le fait que l'adresse en portait un : un lien abîmé ne
+  // retombe pas sur le jeton d'un autre e-mail (`jetonDuPoint`).
   const [retenu, setRetenu] = useState<{ jeton: string | null } | null>(null);
-  const jetonCapte = useRef<string | null | undefined>(undefined);
+  const jetonCapte = useRef<{ parametre: string | string[] | undefined; duLien: string | null } | undefined>(
+    undefined
+  );
   useEffect(() => {
     if (retenu) return;
     let annule = false;
-    if (jetonCapte.current === undefined) jetonCapte.current = duLien;
-    const duPremierLien = jetonCapte.current;
+    if (jetonCapte.current === undefined) jetonCapte.current = { parametre: brut, duLien };
+    const duPremierLien = jetonCapte.current.duLien;
     const garde = duPremierLien ? JETON_DE_LA_PAGE.garder(duPremierLien) : false;
-    const jetonRetenu = jetonARetenir(duPremierLien, JETON_DE_LA_PAGE.relire());
+    const jetonRetenu = jetonDuPoint(jetonCapte.current.parametre, duPremierLien, JETON_DE_LA_PAGE.relire());
     void Promise.resolve().then(() => {
       if (annule) return;
       setRetenu({ jeton: jetonRetenu });
@@ -109,7 +113,7 @@ export default function RepondreAuPoint() {
     return () => {
       annule = true;
     };
-  }, [duLien, retenu]);
+  }, [brut, duLien, retenu]);
   const jeton = retenu?.jeton ?? null;
 
   // La lecture du point : sans effet, elle part dès que le jeton est retenu. Une clé d'essai pour
@@ -198,9 +202,10 @@ export default function RepondreAuPoint() {
 
             {etat === 'clos' && point && (
               <>
-                {/* La question reste lisible, et ce qui a été répondu aussi — dans les mots de la carte
-                    répondue. Plus de boutons : le serveur refuserait, et deux boutons qui ne peuvent plus
-                    aboutir valent moins qu'une phrase qui dit où en est le point. */}
+                {/* La question reste lisible, et rien d'autre : passé la période, la lecture ne rend ni la
+                    réponse ni ses kilos (`le_point_du_lien`). La phrase est celle du refus de la carte, sans le
+                    rendez-vous — la lecture ne dit plus si la boucle tourne. Plus de boutons : deux boutons
+                    qui ne peuvent plus aboutir valent moins qu'une phrase qui dit où en est le point. */}
                 <ThemedView type="backgroundElement" style={styles.carte}>
                   <ThemedText type="small" themeColor="textTertiary" weight={600}>
                     {point.period_label}
@@ -209,9 +214,8 @@ export default function RepondreAuPoint() {
                     {point.question}
                   </ThemedText>
                   <ThemedText themeColor="textSecondary" {...focalisable}>
-                    Ce point n’attend plus de réponse : sa période est passée.
+                    Ce point de suivi n’attend plus de réponse.
                   </ThemedText>
-                  <ReponseDuPointClos point={point} />
                 </ThemedView>
                 {ouvrirLePlan}
               </>
@@ -219,10 +223,11 @@ export default function RepondreAuPoint() {
 
             {etat === 'lien-invalide' && (
               <>
-                {/* Un jeton inconnu — le message a plus de six mois, le lien a été abîmé en chemin — et un
-                    lien sans jeton aboutissent ici. Le plan reste le chemin de la question. */}
+                {/* Un jeton inconnu — le message a plus de six mois, le lien a été abîmé en chemin, le compte
+                    a été supprimé — et un lien sans jeton aboutissent ici. Rien n'y promet une réponse
+                    possible : le point peut être clos depuis longtemps. Le plan reste à un toucher. */}
                 <ThemedText themeColor="textSecondary" style={styles.corps} {...focalisable}>
-                  Ce lien n’est plus valable. Tu peux répondre depuis ton plan.
+                  Ce lien n’est plus valable.
                 </ThemedText>
                 {ouvrirLePlan}
               </>
@@ -254,25 +259,6 @@ export default function RepondreAuPoint() {
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
-  );
-}
-
-/** Ce qu'un point clos a reçu : sa réponse, et pour un « oui » ce qu'il a évité, au moins. */
-function ReponseDuPointClos({ point }: { point: PointDuLien }) {
-  const reponse = genreDeReponse(point.response_kind);
-  if (reponse === null) return null;
-  const kilos = phraseDuOui(reponse, point.committed_saving_kg_once);
-  return (
-    <>
-      <ThemedText type="small" themeColor="textTertiary">
-        {phraseDeLaReponseEnPlace(point, reponse)}
-      </ThemedText>
-      {kilos && (
-        <ThemedText type="body" themeColor="textSecondary">
-          {kilos}
-        </ThemedText>
-      )}
-    </>
   );
 }
 

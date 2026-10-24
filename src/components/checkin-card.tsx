@@ -80,14 +80,23 @@ export type EngagementCheckin = {
 //     simplement plus vieille que la session — un lien de connexion ouvert entre-temps a changé
 //     d'utilisateur, ou le point a disparu. Le plan se relit au retour sur l'onglet.
 //
+// **Et la réponse par le lien d'un e-mail** (`/point`, étape 6b de `v1-35`, `repondre`) rend les mêmes :
+// `22023` pour un point clos, et aussi pour un jeton inconnu (« Ce lien de réponse n'est plus valable ») —
+// il n'y a rien à réessayer non plus. Elle ne rend jamais `P0002` : le point vient du jeton, pas d'une carte.
+//
 // Tout le reste — un code absent, un transport qui n'aboutit pas — garde les boutons actifs.
 const CODE_POINT_CLOS = '22023';
 const CODE_POINT_INTROUVABLE = 'P0002';
 
-const REFUS_DU_RPC: Record<string, string | undefined> = {
-  [CODE_POINT_CLOS]:
-    'Ce point de suivi n’attend plus de réponse. La question revient à la prochaine période.',
-  [CODE_POINT_INTROUVABLE]:
+// **La question ne revient que si la boucle tourne** (contre-lecture du 24/10/2026) : la règle du
+// 30/09/2026 pour la réplique et le pied, que le refus oubliait — `/point` l'atteint plus souvent que le
+// plan, une période qui se ferme entre la lecture et le toucher.
+const REFUS_DU_RPC: Record<string, ((boucleTourne: boolean) => string) | undefined> = {
+  [CODE_POINT_CLOS]: (boucleTourne) =>
+    boucleTourne
+      ? 'Ce point de suivi n’attend plus de réponse. La question revient à la prochaine période.'
+      : 'Ce point de suivi n’attend plus de réponse.',
+  [CODE_POINT_INTROUVABLE]: () =>
     'Ce point de suivi n’est plus rattaché à ton compte. Il disparaîtra de ton plan à la prochaine relecture.',
 };
 
@@ -141,10 +150,13 @@ export function CheckinCard({
   onReponse?: (point: EngagementCheckin, reponse: ReponseDuPoint) => void;
   /**
    * La réponse choisie dans l'e-mail, à confirmer (étape 6b de `v1-35`, 24/10/2026) — `/point` seulement.
-   * Tant que le point n'est pas répondu, la carte la dit (« Tu as choisi : oui. ») et offre « Envoyer ma
-   * réponse » au lieu des trois réponses, que « Choisir une autre réponse » rouvre. **Le geste reste à la
-   * personne** : l'analyseur de liens d'une messagerie ouvre les trois liens de l'e-mail, donc rien ne part
-   * sans ce toucher.
+   * Tant qu'elle n'est pas celle du point, la carte la dit (« Tu as choisi : oui. ») et offre « Envoyer ma
+   * réponse » au lieu des trois réponses, que « Choisir une autre réponse » rouvre. **Sur un point déjà
+   * répondu autrement** — le second lien du même e-mail, touché pour se corriger —, elle dit d'abord la
+   * réponse en place (« Ta réponse : oui. »), et « Garder ma réponse » referme sur la carte répondue
+   * (contre-lecture du 24/10/2026 : la carte répondue seule disait « Bien joué » à qui voulait dire « non »).
+   * **Le geste reste à la personne** : l'analyseur de liens d'une messagerie ouvre les trois liens de
+   * l'e-mail, donc rien ne part sans ce toucher.
    */
   reponseProposee?: ReponseDuPoint | null;
   /**
@@ -178,7 +190,10 @@ export function CheckinCard({
   const [correction, setCorrection] = useState(false);
   /** Les réponses données ici : chacune rend le focus à la réplique, même une correction identique. */
   const [reponsesDonnees, setReponsesDonnees] = useState(0);
-  /** « Choisir une autre réponse » a rouvert les trois réponses à la place de celle de l'e-mail. */
+  /**
+   * La réponse de l'e-mail est écartée : « Choisir une autre réponse » a rouvert les trois réponses, ou
+   * « Garder ma réponse » a refermé sur la carte répondue.
+   */
   const [autreReponse, setAutreReponse] = useState(false);
 
   /**
@@ -210,10 +225,15 @@ export function CheckinCard({
     if (vient === 'ouvrir' && correction) donnerLeFocus(laQuestion.current);
     if (vient === 'annuler' && !correction) donnerLeFocus(leLienModifier.current);
   }, [correction]);
-  // « Choisir une autre réponse » disparaît sous le doigt : le focus va à la question, au-dessus des trois
-  // réponses qu'il vient d'ouvrir. L'état ne passe à `true` que par ce geste, jamais au montage.
+  // Le lien touché disparaît sous le doigt : le focus va à la question, au-dessus des trois réponses que
+  // « Choisir une autre réponse » vient d'ouvrir, ou à la réplique que « Garder ma réponse » vient de rendre.
+  // L'état ne passe à `true` que par l'un de ces gestes, jamais au montage.
+  const gesteDeProposition = useRef<'autre' | 'garder' | null>(null);
   useEffect(() => {
-    if (autreReponse) donnerLeFocus(laQuestion.current);
+    const vient = gesteDeProposition.current;
+    gesteDeProposition.current = null;
+    if (vient === 'autre') donnerLeFocus(laQuestion.current);
+    if (vient === 'garder') donnerLeFocus(replique.current);
   }, [autreReponse]);
 
   // Comparaison de libellés et non d'identifiants : la carte ne porte pas l'identifiant du gabarit,
@@ -268,9 +288,10 @@ export function CheckinCard({
   // change le « oui » en « non ».
   const kilos = phraseDuOui(reponse, checkin.committed_saving_kg_once);
 
-  // La réponse de l'e-mail, tant qu'il n'y en a pas d'autre : ni donnée, ni en correction, ni écartée par
-  // « Choisir une autre réponse ». Un point déjà répondu montre sa réponse, comme partout.
-  const proposition = reponse === null && !correction && !autreReponse ? (reponseProposee ?? null) : null;
+  // La réponse de l'e-mail, tant qu'elle n'est pas celle du point et qu'elle n'a pas été écartée — ni en
+  // correction. Un point déjà répondu de la même façon montre sa carte répondue, comme partout.
+  const proposition =
+    reponseProposee && reponseProposee !== reponse && !correction && !autreReponse ? reponseProposee : null;
 
   // La réponse passe par un RPC, jamais par un `update` : `engagement_checkins` porte des
   // libellés snapshotés (`trip_label`, `period_label`) et la clé d'idempotence de la génération
@@ -301,7 +322,7 @@ export function CheckinCard({
 
     const refusDuRpc = REFUS_DU_RPC[error.code];
     if (refusDuRpc) {
-      setRefus(refusDuRpc);
+      setRefus(refusDuRpc(boucleTourne));
       return;
     }
 
@@ -331,7 +352,7 @@ export function CheckinCard({
           qu'`entering` de reanimated empêchait sur web en masquant la réplique (`src/lib/mouvement.tsx`). */}
       <HauteurSuivie styleDuContenu={styles.corps}>
       <SansApparitionAuMontage>
-      {reponse === null || correction ? (
+      {reponse === null || correction || proposition !== null ? (
         <>
           {/* **La question vient de `src/types/checkin.ts`, et c'est la même qu'au rappel.**
               Elle vivait ici, au présent et avec le libellé snapshoté collé après la préposition :
@@ -380,18 +401,47 @@ export function CheckinCard({
             // vient de choisir. « Choisir une autre réponse » rouvre les trois, comme « Modifier ma
             // réponse ».
             <>
+              {reponse !== null && (
+                <ThemedText type="small" themeColor="textTertiary">
+                  {phraseDeLaReponseEnPlace(checkin, reponse)}
+                </ThemedText>
+              )}
               <ThemedText type="small" themeColor="textTertiary">
                 {phraseDeLaReponseChoisie(checkin, proposition)}
               </ThemedText>
-              <Button title="Envoyer ma réponse" onPress={() => answer(proposition)} disabled={saving} />
-              <TextLink
-                label="Choisir une autre réponse"
-                apparence="souligne"
-                hint="Rouvre les trois réponses de ce point"
-                onPress={() => setAutreReponse(true)}
+              {/* `onPanel` : posé sur la carte, grisé pendant l'envoi, il y perdrait sa forme sans lui
+                  (`button.tsx`). Et son indice dit sur quoi porte la réponse, comme ceux de « Oui » et « Non ». */}
+              <Button
+                title="Envoyer ma réponse"
+                onPress={() => answer(proposition)}
                 disabled={saving}
-                containerStyle={styles.sansObjet}
+                onPanel
+                accessibilityHint={`Envoyer ta réponse pour ${formeInserable(checkin.poste, checkin.loop_type)}`}
               />
+              {reponse === null ? (
+                <TextLink
+                  label="Choisir une autre réponse"
+                  apparence="souligne"
+                  hint="Rouvre les trois réponses de ce point"
+                  onPress={() => {
+                    gesteDeProposition.current = 'autre';
+                    setAutreReponse(true);
+                  }}
+                  disabled={saving}
+                  containerStyle={styles.sansObjet}
+                />
+              ) : (
+                <TextLink
+                  label="Garder ma réponse"
+                  apparence="souligne"
+                  onPress={() => {
+                    gesteDeProposition.current = 'garder';
+                    setAutreReponse(true);
+                  }}
+                  disabled={saving}
+                  containerStyle={styles.sansObjet}
+                />
+              )}
               <MessageInline message={erreur} />
             </>
           ) : (

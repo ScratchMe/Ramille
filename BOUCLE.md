@@ -557,9 +557,10 @@ renvoyait à « Toi » : inutilisable sans l'app, et **pire** sur un appareil ne
 préférence de la session anonyme vide que l'ouverture venait de créer. Le jeton vit sur la ligne
 d'outbox, ne sert qu'une fois, et ne peut rien d'autre que couper les rappels du compte qui a reçu
 ce message-là. C'était **le seul RPC qui écrit et que `anon` peut appeler** jusqu'au 24/10/2026 — la
-réponse par le lien du même e-mail l'a rejoint (`repondre_par_le_lien`, plus bas) ; les autres fonctions
-accessibles à ce rôle sont pures (`emission_factor`, `resolve_*`, `season_bounds`, les deux `check_*`), et
-la liste blanche du test `54` les nomme toutes. Ici le `grant` est explicite et le jeton *est*
+réponse par le lien du même e-mail l'a rejoint (`repondre_par_le_lien`, plus bas), avec la lecture qui la
+précède (`le_point_du_lien`, la seule fonction ouverte à ce rôle qui lise des données de compte, le jeton
+autorisant elle aussi) ; les autres sont pures ou des gardes de `check` (`emission_factor`, `resolve_*`,
+`season_bounds`, `rolling_quarter_bounds`, les `check_*`), et la liste blanche du test `54` les nomme toutes. Ici le `grant` est explicite et le jeton *est*
 l'autorisation. Ces pièges, et ces choix :
 - **le jeton est écrit explicitement dans l'`insert`** de la mise en file. Laissé au `default` de la
   colonne, il aurait tiré un second uuid, différent de celui que le corps du message venait
@@ -619,8 +620,9 @@ l'autorisation. Ces pièges, et ces choix :
 du compte : sur un autre appareil ou sans l'app, répondre voulait dire retrouver son compte par un code reçu
 par e-mail. Le corps porte désormais les trois réponses de la carte — « Oui », « Non » et la troisième, dans
 ses mots (`libelle_sans_objet`, jumelle de `libelleSansObjet`) —, chacune vers
-`/point?reponse=…&jeton=…`, puis le lien du plan, gardé : c'est lui qu'ouvre l'app sur Android, et `09`
-l'épingle. Sept points à ne pas défaire :
+`/point?jeton=…&reponse=…` — le jeton d'abord, pour qu'un lien coupé à l'esperluette perde la réponse et non
+le jeton —, puis le lien du plan, gardé : c'est lui qu'ouvre l'app sur Android, et `09` l'épingle. Ce qu'il ne
+faut pas défaire :
 
 - **la page demande le geste, comme `/rappels/stop`** : elle lit le point à l'ouverture
   (`le_point_du_lien`, une lecture sans effet), dit « Tu as choisi : oui. », et n'écrit qu'au toucher
@@ -630,19 +632,25 @@ l'épingle. Sept points à ne pas défaire :
   relit la base au repos (étape 12 ter) ;
 - **un seul écrivain des réponses** : le corps de `repondre_au_checkin` vit dans
   `ecrire_la_reponse_du_point(user_id, checkin_id, réponse)`, fermée à tout client, que la session appelle
-  avec `auth.uid()` et le lien avec le propriétaire du jeton. Une seule borne de correction, une seule annonce
-  au trigger, et les refus de la carte (`22023`) valent pour les deux ;
+  avec `auth.uid()` et le lien avec le propriétaire du jeton. Une seule borne de correction —
+  `debut_de_la_periode_interrogee`, jumelle de `debutDePeriodeInterrogee`, que la lecture par le lien lit
+  aussi —, une seule annonce au trigger, et les refus de la carte (`22023`) valent pour les deux ;
 - **le jeton sert jusqu'à la fin de la période**, pas une fois : toucher « Non » dans l'e-mail après avoir
-  envoyé « oui » corrige, comme « Modifier ma réponse ». Il vit sur la ligne d'outbox
+  envoyé « oui » ouvre la page sur « Ta réponse : oui. », puis « Tu as choisi : non. » et « Envoyer ma
+  réponse » — ou « Garder ma réponse » (`reponseProposee`, `checkin-card.tsx`). Il vit sur la ligne d'outbox
   (`jeton_de_reponse`, tiré dans la même sous-requête que celui de la désinscription, qui nomme la ligne), un
   par message, distinct de l'autre — l'un ne peut pas servir à l'autre — et disparaît avec la ligne, six mois
   après sa mise en file. Le mot de la veille n'en porte pas : il n'a pas de question (contrainte) ;
-- **la lecture ne rend rien qui désigne un compte** : ni l'identifiant du point, ni celui du compte, ni
-  l'adresse — la question du message, l'état du point, son gain d'une fois et si sa boucle tourne
-  (`boucle_tourne`, pour que la réplique et le pied ne donnent pas rendez-vous à tort). La page répond par le
-  jeton, jamais par un identifiant ;
+- **la lecture ne rend rien qui désigne un compte, et presque rien passé la période** : ni l'identifiant du
+  point, ni celui du compte, ni l'adresse. Tant que le point accepte une réponse (`ouvert`, la borne de
+  l'écrivain), la question du message, l'état du point, sa réponse, son gain d'une fois et si sa boucle
+  tourne (`boucle_tourne`, pour que la réplique et le pied ne donnent pas rendez-vous à tort) ; ensuite, la
+  question seule — un e-mail gardé six mois, ou transféré, ne dit plus ce qui a été répondu, ni qu'un bilan a
+  été retiré (contre-lecture du 24/10/2026). La page n'a pas de borne à elle : elle lit `ouvert`. Elle répond
+  par le jeton, jamais par un identifiant ;
 - **qui a l'e-mail peut répondre**, et c'est le compromis de la désinscription : un e-mail transféré laisse
-  répondre au point de ce message-là, rien de plus, et pas au-delà de sa période. Pas de plafond de débit pour
+  lire et répondre au point de ce message-là, rien de plus, et pas au-delà de sa période. La page de
+  confidentialité le dit. Pas de plafond de débit pour
   la même raison qu'elle — rien à stocker, une ligne au plus à réécrire ;
 - **l'usage du lien se lit sur son message** (`lien_de_reponse_utilise_le`, l'heure de la dernière réponse
   par ce lien), jumelle d'`unsubscribe_used_at` : c'est là, et non dans un événement d'usage, que se lit ce

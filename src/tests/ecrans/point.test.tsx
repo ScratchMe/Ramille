@@ -13,7 +13,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import React from 'react';
 
 import RepondreAuPoint from '@/app/point';
-import { debutDePeriodeInterrogee, periodePrecedente, repliqueDuPoint } from '@/types/checkin';
+import { debutDePeriodeInterrogee, repliqueDuPoint } from '@/types/checkin';
 import type { LectureDuPoint, PointDuLien } from '@/types/reponse-par-le-lien';
 
 const JETON = '3bb3de17-8df3-4910-9e77-1381d9ee90f7';
@@ -53,6 +53,7 @@ const point = (surcharge: Partial<PointDuLien> = {}): PointDuLien => ({
   period_label: 'Semaine dernière',
   trip_label: 'Trajet domicile-travail',
   question: 'Mardi ou jeudi, as-tu fait ce trajet en train ?',
+  ouvert: true,
   committed_saving_kg_once: 2.29,
   status: 'pending',
   response_kind: null,
@@ -131,7 +132,7 @@ it('sans jeton, dit que le lien n’est plus valable sans rien lire', async () =
 
   render(<RepondreAuPoint />);
 
-  expect(await screen.findByText('Ce lien n’est plus valable. Tu peux répondre depuis ton plan.')).toBeTruthy();
+  expect(await screen.findByText('Ce lien n’est plus valable.')).toBeTruthy();
   expect(mockLire).not.toHaveBeenCalled();
 });
 
@@ -141,30 +142,52 @@ it('un jeton que le serveur ne connaît pas mène au même endroit, et le plan s
 
   render(<RepondreAuPoint />);
 
-  expect(await screen.findByText('Ce lien n’est plus valable. Tu peux répondre depuis ton plan.')).toBeTruthy();
+  expect(await screen.findByText('Ce lien n’est plus valable.')).toBeTruthy();
   fireEvent.press(screen.getByText('Ouvrir mon plan'));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/plan', params: { rappel: '1' } });
 });
 
-it('un point clos garde sa question et sa réponse, sans bouton', async () => {
+// Passé la période, la lecture ne rend plus que la question (`le_point_du_lien`) : la page n'a rien d'autre à
+// dire, et ne promet pas de rendez-vous.
+it('un point clos garde sa question, et rien de ce qui a été répondu', async () => {
   mockParams = { jeton: JETON, reponse: 'non' };
   mockLire.mockResolvedValue({
     ok: true,
     point: point({
-      period_start: periodePrecedente('commute', SEMAINE),
-      status: 'answered',
-      response_kind: 'oui',
-      responded_at: '2026-10-01T08:00:00Z',
+      ouvert: false,
+      status: null,
+      response_kind: null,
+      responded_at: null,
+      committed_saving_kg_once: null,
+      boucle_tourne: false,
     }),
   });
 
   render(<RepondreAuPoint />);
 
-  expect(await screen.findByText('Ce point n’attend plus de réponse : sa période est passée.')).toBeTruthy();
-  expect(screen.getByText('Ta réponse : oui.')).toBeTruthy();
-  expect(screen.getByText('Au moins 2,2 kg CO₂e évités.')).toBeTruthy();
+  expect(await screen.findByText('Ce point de suivi n’attend plus de réponse.')).toBeTruthy();
+  expect(screen.getByText(phrase('Mardi ou jeudi, as-tu fait ce trajet en train ?'))).toBeTruthy();
   expect(screen.queryByText('Envoyer ma réponse')).toBeNull();
-  expect(screen.queryByText('Modifier ma réponse')).toBeNull();
+  expect(screen.queryByText(/Tu as choisi/)).toBeNull();
+});
+
+// Le second lien du même e-mail, touché pour se corriger : la page dit ce qui est en base, puis le choix du
+// lien — et non la carte répondue seule, qui félicitait le « oui » de qui voulait dire « non ».
+it('sur un point répondu autrement, dit la réponse en place, puis propose celle du lien', async () => {
+  mockParams = { jeton: JETON, reponse: 'non' };
+  mockLire.mockResolvedValue({
+    ok: true,
+    point: point({ status: 'answered', response_kind: 'oui', responded_at: `${SEMAINE}T08:00:00Z` }),
+  });
+  mockRepondre.mockResolvedValue({ error: null, status: 200 });
+
+  render(<RepondreAuPoint />);
+
+  expect(await screen.findByText('Ta réponse : oui.')).toBeTruthy();
+  expect(screen.getByText('Tu as choisi : non.')).toBeTruthy();
+  expect(mockRepondre).not.toHaveBeenCalled();
+  fireEvent.press(screen.getByText('Envoyer ma réponse'));
+  await waitFor(() => expect(mockRepondre).toHaveBeenCalledWith(JETON, 'non'));
 });
 
 it('une panne de lecture se dit, et « Réessayer » relit', async () => {
@@ -181,12 +204,11 @@ it('une panne de lecture se dit, et « Réessayer » relit', async () => {
   expect(mockLire).toHaveBeenCalledTimes(2);
 });
 
-// Relevé des mutations, le 24/10/2026 :
-//   - la réponse du lien non passée à la carte → les quatre tests qui attendent « Tu as choisi » ;
-//   - l'appel du jeton non passé à la carte, qui répond alors par la session → les deux tests qui envoient ;
+// Relevé des mutations, le 24/10/2026, rejoué après la contre-lecture du même soir :
+//   - la réponse du lien non passée à la carte → les cinq tests qui attendent « Tu as choisi » ;
+//   - l'appel du jeton non passé à la carte, qui répond alors par la session → les trois tests qui envoient ;
 //   - la boucle dite toujours en train de tourner → « sans boucle qui tourne… », seul (sur « non », il restait
 //     vert : voir son commentaire) ;
 //   - la lecture lancée sans jeton → « sans jeton… » et la panne, qui relit un jeton nul ;
 //   - « Ouvrir mon plan » sans `?rappel=1` → le jeton inconnu, seul ;
-//   - la réponse du point clos retirée → « un point clos garde sa question et sa réponse », seul ;
 //   - « Réessayer » sans nouvel essai → la panne, seule.

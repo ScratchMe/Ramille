@@ -872,7 +872,7 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
 // rechargement le retrouve ; « Envoyer ma réponse » fait partir **ce** jeton avec **cette** réponse ; et
 // le focus suit le geste.
 {
-  const chemin = `/point?reponse=oui&jeton=${JETON_DE_FORME_VALIDE}`;
+  const chemin = `/point?jeton=${JETON_DE_FORME_VALIDE}&reponse=oui`;
   const requetes = [];
   const exceptions = [];
   const POINT = {
@@ -884,8 +884,9 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
     period_label: 'Semaine du 12/10',
     trip_label: 'Trajet domicile-travail',
     question: 'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
+    // Ouvert, en attente : c'est le serveur qui dit si le point accepte une réponse.
+    ouvert: true,
     committed_saving_kg_once: null,
-    // En attente : un point en attente accepte une réponse quelle que soit la date du passage.
     status: 'pending',
     response_kind: null,
     responded_at: null,

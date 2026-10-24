@@ -1415,6 +1415,11 @@ export type Database = {
         Args: { p_assessment_id: string }
         Returns: undefined
       }
+      // Étape 6b de v1-35 : la borne de la correction, partagée par l'écrivain et la lecture par le lien
+      debut_de_la_periode_interrogee: {
+        Args: { p_loop_type: string }
+        Returns: string
+      }
       delete_my_account: { Args: never; Returns: undefined }
       dernier_signe_de_vie: {
         Args: { p_loop_type: string; p_user_id: string }
@@ -1498,6 +1503,8 @@ export type Database = {
           committed_saving_kg_once: number | null
           loop_type: string
           mode: string | null
+          // Passé la période, la lecture ne rend que la question : les cinq champs du point ouvert sont nuls
+          ouvert: boolean
           period_label: string
           period_start: string
           poste: string | null
@@ -1505,7 +1512,7 @@ export type Database = {
           question_kind: string
           responded_at: string | null
           response_kind: string | null
-          status: string
+          status: string | null
           trip_label: string
         }[]
       }

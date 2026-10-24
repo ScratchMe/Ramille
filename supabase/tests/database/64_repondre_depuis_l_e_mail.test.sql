@@ -7,7 +7,7 @@
 --   2. `libelle_sans_objet`, la jumelle SQL de `libelleSansObjet` — les mêmes chaînes que
 --      `src/types/checkin.test.ts` ;
 --   3. la lecture par le jeton, sans session : la question du message, l'état du point, la boucle qui tourne
---      ou non, et rien qui désigne un compte ;
+--      ou non, et rien qui désigne un compte — puis, la période passée, la question seule ;
 --   4. la réponse par le jeton, sans session : elle écrit le seul point du jeton, se corrige jusqu'à la fin de
 --      la période, refuse un point clos, un point répondu dont la période est passée, un jeton inconnu, et
 --      marque l'usage du lien ;
@@ -19,7 +19,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(29);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────────────────
 -- A a un bilan qui fait tourner les deux boucles (un trajet, des sorties chaque semaine) ; B n'en a pas.
@@ -89,8 +89,8 @@ select ok(
 
 select ok(
   (select bool_and(
-     body like '%Oui : %/point?reponse=oui&jeton=' || jeton_de_reponse::text || '%'
-     and body like '%Non : %/point?reponse=non&jeton=' || jeton_de_reponse::text || '%')
+     body like '%Oui : %/point?jeton=' || jeton_de_reponse::text || '&reponse=oui' || E'\n%'
+     and body like '%Non : %/point?jeton=' || jeton_de_reponse::text || '&reponse=non' || E'\n%')
    from public.notification_outbox
    where user_id in ('f6400000-0000-0000-0000-00000000000a', 'f6400000-0000-0000-0000-00000000000b')),
   'chaque lien dit la réponse qu''il porte, dans les mots des boutons de la carte'
@@ -99,7 +99,7 @@ select ok(
 select ok(
   (select bool_and(
      body like '%' || public.libelle_sans_objet(c.loop_type, c.poste, c.period_start)
-       || ' : %/point?reponse=sans_objet&jeton=' || o.jeton_de_reponse::text || '%')
+       || ' : %/point?jeton=' || o.jeton_de_reponse::text || '&reponse=sans_objet' || E'\n%')
    from public.notification_outbox o join public.engagement_checkins c on c.id = o.checkin_id
    where o.user_id in ('f6400000-0000-0000-0000-00000000000a', 'f6400000-0000-0000-0000-00000000000b')),
   'la troisième réponse est nommée comme sous les boutons de la carte, période comprise'
@@ -113,7 +113,7 @@ select ok(
   'un jeton par message, distinct de celui de la désinscription : l''un ne peut pas servir à l''autre'
 );
 
--- ── 2. La jumelle de `libelleSansObjet` ─────────────────────────────────────────────────
+-- ── 2. Les jumelles de `libelleSansObjet` et de `debutDePeriodeInterrogee` ───────────────────
 
 select results_eq(
   $$ select public.libelle_sans_objet(l, p, '2026-09-01')
@@ -123,6 +123,13 @@ select results_eq(
   $$ values ('Pas de trajet la semaine dernière'), ('Pas de sortie en septembre'),
             ('Pas de voyage en septembre'), ('Pas de déplacement en septembre') $$,
   'libelle_sans_objet rend les chaînes de libelleSansObjet, mot pour mot'
+);
+
+-- La borne que l'écrivain et la lecture partagent : la formule des deux générateurs, écrite une fois.
+select results_eq(
+  $$ select public.debut_de_la_periode_interrogee('commute'), public.debut_de_la_periode_interrogee('extras') $$,
+  $$ select date_trunc('week', now())::date - 7, (date_trunc('month', now()) - interval '1 month')::date $$,
+  'debut_de_la_periode_interrogee rend le lundi d''avant et le premier du mois d''avant, comme les générateurs'
 );
 
 -- ── 3. La lecture, sans session ─────────────────────────────────────────────────────────
@@ -136,9 +143,9 @@ select set_config('test.question_a1',
 set local role anon;
 
 select results_eq(
-  $$ select question, status, response_kind, boucle_tourne
+  $$ select question, ouvert, status, response_kind, boucle_tourne
      from public.le_point_du_lien(current_setting('test.pa1')::uuid) $$,
-  $$ values (current_setting('test.question_a1'), 'pending'::text, null::text, true) $$,
+  $$ values (current_setting('test.question_a1'), true, 'pending'::text, null::text, true) $$,
   'la lecture rend la question du message et l''état du point, et la boucle de A tourne'
 );
 
@@ -148,10 +155,18 @@ select is(
   'sans bilan, la boucle ne tourne pas : la page ne donnera pas rendez-vous'
 );
 
-select is(
-  (select status from public.le_point_du_lien(current_setting('test.pa3')::uuid)),
-  'expired',
-  'un point clos se lit comme clos'
+-- **Passé la période, le jeton ne rend plus que la question** : un e-mail gardé six mois, ou transféré, ne dit
+-- ni la réponse, ni son heure, ni les kilos, ni qu'un bilan a été retiré. P4 a été répondu « oui » sur une
+-- période passée, P3 a été clos sans réponse : les deux se lisent pareil.
+select results_eq(
+  $$ select checkin_id, l.question is not null, l.ouvert, l.status, l.response_kind, l.responded_at,
+            l.committed_saving_kg_once, l.boucle_tourne
+     from (values ('a3', current_setting('test.pa3')), ('a4', current_setting('test.pa4'))) v(checkin_id, jeton)
+     cross join lateral public.le_point_du_lien(v.jeton::uuid) l
+     order by checkin_id $$,
+  $$ values ('a3'::text, true, false, null::text, null::text, null::timestamptz, null::numeric, false),
+            ('a4'::text, true, false, null::text, null::text, null::timestamptz, null::numeric, false) $$,
+  'passé la période, la lecture ne rend que la question : ni réponse, ni heure, ni kilos, ni boucle'
 );
 
 select is_empty(
@@ -293,8 +308,10 @@ select ok(
   not has_function_privilege('anon', 'public.ecrire_la_reponse_du_point(uuid, uuid, text)', 'execute')
     and not has_function_privilege('authenticated', 'public.ecrire_la_reponse_du_point(uuid, uuid, text)', 'execute')
     and not has_function_privilege('anon', 'public.libelle_sans_objet(text, text, date)', 'execute')
-    and not has_function_privilege('authenticated', 'public.libelle_sans_objet(text, text, date)', 'execute'),
-  'l''écrivain, qui prend le compte en argument, est fermé à tout client — comme la composition du libellé'
+    and not has_function_privilege('authenticated', 'public.libelle_sans_objet(text, text, date)', 'execute')
+    and not has_function_privilege('anon', 'public.debut_de_la_periode_interrogee(text)', 'execute')
+    and not has_function_privilege('authenticated', 'public.debut_de_la_periode_interrogee(text)', 'execute'),
+  'l''écrivain, qui prend le compte en argument, est fermé à tout client — comme le libellé et la borne'
 );
 
 select set_config('request.jwt.claims',
@@ -323,9 +340,12 @@ select throws_ok(
 select * from finish();
 rollback;
 
--- Relevé des mutations, le 24/10/2026, une à la fois (`scratchpad/muter-sql.sh`) :
+-- Relevé des mutations, le 24/10/2026, une à la fois (`scratchpad/muter-sql.sh`), puis rejouées après la
+-- contre-lecture du même soir sur la lecture bornée, la borne partagée et les liens au jeton d'abord :
 --   - la lecture sans le filtre du jeton (`where p_jeton is not null`) → « la lecture rend la question du
 --     message », puis la suite s'arrête sur « plus d'un rang » ;
+--   - la lecture qui rend la réponse d'un point passé (`c.response_kind` sans la borne) → « passé la période,
+--     la lecture ne rend que la question », seule ; la boucle rendue sans la borne → la même, seule ;
 --   - la réponse qui ne marque pas l'usage du lien → « l'usage du lien est marqué » et l'export ;
 --   - le jeton de réponse égal à celui de la désinscription → « trois liens… le jeton de SA ligne » et « un
 --     jeton par message, distinct » ;
@@ -333,6 +353,8 @@ rollback;
 --     message et la jumelle se suivent, et c'est le test Jest de `libelleSansObjet` qui tient l'autre moitié ;
 --   - l'écrivain sans la borne de la correction → « ne se corrige plus par le lien » et « le refus n'a rien
 --     écrit » ;
+--   - la borne partagée reculée d'une semaine → sa propre assertion, « passé la période… », et les deux du
+--     point passé : l'écrivain et la lecture la lisent bien tous les deux ;
 --   - la réponse par le lien écrite au nom d'un compte nul → la première réponse lève `P0002`, la suite
 --     s'arrête ;
 --   - la boucle dite toujours en train de tourner → « sans bilan, la boucle ne tourne pas », seule ;

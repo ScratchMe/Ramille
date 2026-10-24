@@ -11,13 +11,15 @@ import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 // la carte n'est affichée que le temps de la période interrogée — la borne même que le RPC vérifie.
 // **La réponse choisie dans l'e-mail** (24/10/2026, `v1-35` étape 6b) : sur la page `/point`, la carte dit « Tu as
 // choisi : oui. » (`reponseChoisie`) et offre « Envoyer ma réponse », au lieu des trois réponses que « Choisir une
-// autre réponse » rouvre. Rien ne part sans ce toucher : une messagerie ouvre les trois liens de l'e-mail.
+// autre réponse » rouvre. Rien ne part sans ce toucher : une messagerie ouvre les trois liens de l'e-mail. Sur un
+// point déjà répondu autrement — le second lien, touché pour se corriger —, la réponse en place vient d'abord
+// (`reponseEnPlace`), et « Garder ma réponse » referme sur la carte répondue (`onKeep`).
 const RETOURS = {
   oui: { mood: 'happy', ligne: 'Bien joué — chaque changement compte.' },
   non: { mood: 'encouraging', ligne: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.' },
   sans_objet: { mood: 'calm', ligne: 'Pas de trajet, pas de question. On se retrouve lundi.' },
 };
-export function CheckinCard({ periodLabel, question, emphasize = true, answered = null, onAnswer, sansObjet = 'Pas de trajet la semaine dernière', actionQuittee = null, refus = null, erreur = null, retour, renforcement = null, kilos = null, pied, correction = false, reponseEnPlace = null, onModify, onCancel, reponseChoisie = null, onSend, onOtherAnswer }) {
+export function CheckinCard({ periodLabel, question, emphasize = true, answered = null, onAnswer, sansObjet = 'Pas de trajet la semaine dernière', actionQuittee = null, refus = null, erreur = null, retour, renforcement = null, kilos = null, pied, correction = false, reponseEnPlace = null, onModify, onCancel, reponseChoisie = null, onSend, onOtherAnswer, onKeep }) {
   // `true` / `false` : la forme d'avant la troisième réponse, que `ui_kits/ramille/` passe encore.
   const reponse = answered === true ? 'oui' : answered === false ? 'non' : answered;
   // L'accent désigne la question à regarder d'abord — celle de l'engagement quand deux points sont ouverts, celle du
@@ -34,23 +36,27 @@ export function CheckinCard({ periodLabel, question, emphasize = true, answered 
   return (
     <div style={{ background: accent ? 'var(--color-background-selected)' : 'var(--color-background-element)', borderRadius: 18, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <ThemedText type="small" weight={600} themeColor={accent ? 'accentText' : 'textTertiary'}>{periodLabel}</ThemedText>
-      {reponse === null || correction ? (
+      {reponse === null || correction || (reponseChoisie && !correction) ? (
         <>
           <ThemedText weight={600} style={{ fontSize: 16, lineHeight: '23px' }}>{question}</ThemedText>
           {/* La question est figée à sa génération : changer d'action ensuite ne la réécrit pas, et la carte le dit. */}
           {actionQuittee && <ThemedText type="small" themeColor="textTertiary">Cette question porte sur l’action que tu suivais alors : {actionQuittee}.</ThemedText>}
           {/* La réponse en place, dans les mots des boutons : ils n'ont pas d'état « choisi », et c'est voulu. */}
-          {correction && reponseEnPlace && <ThemedText type="small" themeColor="textTertiary">{reponseEnPlace}</ThemedText>}
+          {(correction || (reponseChoisie && reponse !== null)) && reponseEnPlace && <ThemedText type="small" themeColor="textTertiary">{reponseEnPlace}</ThemedText>}
           {refus ? (
             // Le point n'accepte plus de réponse : la question reste lisible, les boutons partent.
             <MessageInline message={refus} />
-          ) : reponseChoisie && reponse === null && !correction ? (
+          ) : reponseChoisie && !correction ? (
             // La réponse choisie dans l'e-mail, et le geste qui l'envoie : un bouton plein, qui confirme le choix
             // de la personne — il ne désigne pas une bonne réponse.
             <>
               <ThemedText type="small" themeColor="textTertiary">{reponseChoisie}</ThemedText>
-              <Button title="Envoyer ma réponse" onPress={() => onSend && onSend()} />
-              <TextLink label="Choisir une autre réponse" apparence="souligne" onPress={() => onOtherAnswer && onOtherAnswer()} containerStyle={{ alignItems: 'center' }} />
+              <Button title="Envoyer ma réponse" onPanel onPress={() => onSend && onSend()} />
+              {reponse === null ? (
+                <TextLink label="Choisir une autre réponse" apparence="souligne" onPress={() => onOtherAnswer && onOtherAnswer()} containerStyle={{ alignItems: 'center' }} />
+              ) : (
+                <TextLink label="Garder ma réponse" apparence="souligne" onPress={() => onKeep && onKeep()} containerStyle={{ alignItems: 'center' }} />
+              )}
               <MessageInline message={erreur} />
             </>
           ) : (

@@ -510,10 +510,10 @@ describe('CheckinCard — la réponse choisie dans l’e-mail', () => {
     expect(screen.queryByText('Envoyer ma réponse')).toBeNull();
   });
 
-  it('sur un point déjà répondu, montre sa réponse et non celle du lien', () => {
+  it('sur un point déjà répondu de la même façon, montre la carte répondue', () => {
     render(
       <CheckinCard
-        checkin={point({ status: 'answered', response_kind: 'non', responded_at: '2026-09-21T08:00:00Z' })}
+        checkin={point({ status: 'answered', response_kind: 'oui', responded_at: '2026-09-21T08:00:00Z' })}
         emphasize={false}
         boucleTourne
         reponseProposee="oui"
@@ -523,4 +523,50 @@ describe('CheckinCard — la réponse choisie dans l’e-mail', () => {
     expect(screen.queryByText('Tu as choisi : oui.')).toBeNull();
     expect(screen.getByText('Modifier ma réponse')).toBeTruthy();
   });
+
+  // Le second lien du même e-mail, touché pour se corriger (contre-lecture du 24/10/2026) : la carte répondue
+  // seule félicitait le « oui » de qui voulait dire « non ».
+  it('sur un point répondu autrement, dit la réponse en place, propose celle du lien, et « Garder » referme', () => {
+    const repondre = jest.fn();
+    render(
+      <CheckinCard
+        checkin={point({ status: 'answered', response_kind: 'non', responded_at: '2026-09-21T08:00:00Z' })}
+        emphasize={false}
+        boucleTourne
+        reponseProposee="oui"
+        repondre={repondre}
+      />
+    );
+    expect(screen.getByText('Ta réponse : non.')).toBeTruthy();
+    expect(screen.getByText('Tu as choisi : oui.')).toBeTruthy();
+    expect(screen.queryByText('Choisir une autre réponse')).toBeNull();
+
+    fireEvent.press(screen.getByText('Garder ma réponse'));
+
+    expect(screen.queryByText('Tu as choisi : oui.')).toBeNull();
+    expect(screen.getByText('Modifier ma réponse')).toBeTruthy();
+    expect(repondre).not.toHaveBeenCalled();
+    // Le lien disparu, le focus va à la réplique de la réponse gardée.
+    const attendue = repliqueDuPoint(point(), 'non', true).ligne;
+    expect((focus.mock.calls.at(-1)?.[0] as NoeudDeTest).props.children?.props.ligne).toBe(attendue);
+  });
+
+  it('sans boucle qui tourne, le refus d’un point clos ne promet pas la question suivante', async () => {
+    const repondre = jest.fn().mockResolvedValue({ error: { code: '22023' }, status: 400 });
+    render(<CheckinCard checkin={point()} emphasize={false} boucleTourne={false} reponseProposee="oui" repondre={repondre} />);
+
+    fireEvent.press(screen.getByText('Envoyer ma réponse'));
+
+    await waitFor(() => expect(screen.getByText('Ce point de suivi n’attend plus de réponse.')).toBeTruthy());
+  });
 });
+
+// Relevé des mutations de « la réponse choisie dans l'e-mail », le 24/10/2026, rejoué après la contre-lecture
+// du même soir (`scratchpad/muter.sh`) :
+//   - la proposition ignorée → les six tests qui passent par elle, et cinq de `point.test.tsx` ;
+//   - la proposition réservée aux points sans réponse (la règle d'avant) → « sur un point répondu
+//     autrement… », ici et dans `point.test.tsx` ;
+//   - le geste parti par la session → les quatre tests de la carte qui envoient, et trois de `/point` ;
+//   - le focus qui ne suit pas « Choisir une autre réponse » → le troisième, seul ; ni « Garder ma réponse »
+//     → « sur un point répondu autrement… », seul ;
+//   - le refus qui promet toujours la question suivante → « sans boucle qui tourne… », seul.

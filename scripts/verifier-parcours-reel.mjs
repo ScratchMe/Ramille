@@ -3725,9 +3725,9 @@ try {
       SERVICE
     );
     assurer(message?.channel === 'email' && message.jeton_de_reponse, `rappel mis en file : ${JSON.stringify(message)}`);
-    const lienDuOui = message.body.match(/^Oui : \S+?(\/point\?reponse=oui&jeton=[0-9a-f-]{36})$/m)?.[1];
+    const lienDuOui = message.body.match(/^Oui : \S+?(\/point\?jeton=[0-9a-f-]{36}&reponse=oui)$/m)?.[1];
     assurer(
-      lienDuOui?.endsWith(message.jeton_de_reponse),
+      lienDuOui?.includes(message.jeton_de_reponse),
       `le message ne porte pas le lien du « oui », avec son jeton : ${message.body.slice(0, 300)}`
     );
 

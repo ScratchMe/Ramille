@@ -1,21 +1,23 @@
 /**
  * Répondre au point depuis l'e-mail — étape 6b de `v1-35` (24/10/2026), les dérivations de la page `/point`.
  *
- * Trois choses gardées : **la réponse du lien** (une des trois, sinon aucune), **la borne** (la page dit
- * « clos » exactement quand le serveur refuserait), et **l'état de la page**, qui ne dit jamais « plus
- * valable » avant d'avoir cherché le jeton, ni sur une panne.
+ * Trois choses gardées : **la réponse du lien** (une des trois, sinon aucune), **le jeton retenu** (celui du
+ * lien, ou celui de l'onglet sur un rechargement, jamais sur un lien abîmé), et **l'état de la page**, qui ne
+ * dit jamais « plus valable » avant d'avoir cherché le jeton, ni sur une panne — et dont la borne vient du
+ * serveur (`ouvert`), sans copie ici.
  *
  * Éprouvé en le cassant, le 24/10/2026 — voir le relevé au pied.
  */
 import {
   etatDeLaPageDuPoint,
-  leLienAccepteUneReponse,
+  jetonDuPoint,
   phraseDeLaLectureDuPoint,
   reponseDuLien,
   type PointDuLien,
 } from '@/types/reponse-par-le-lien';
 
-const MERCREDI = new Date('2026-10-07T10:00:00Z');
+const JETON = '3bb3de17-8df3-4910-9e77-1381d9ee90f7';
+const AUTRE = '766ae1bd-4966-43f8-8d1a-9f6a35dfd5b9';
 
 const point = (surcharge: Partial<PointDuLien> = {}): PointDuLien => ({
   loop_type: 'commute',
@@ -27,6 +29,7 @@ const point = (surcharge: Partial<PointDuLien> = {}): PointDuLien => ({
   period_label: 'Semaine du 28/09',
   trip_label: 'Trajet domicile-travail',
   question: 'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
+  ouvert: true,
   committed_saving_kg_once: null,
   status: 'pending',
   response_kind: null,
@@ -51,27 +54,21 @@ describe('reponseDuLien', () => {
   });
 });
 
-describe('leLienAccepteUneReponse — la borne du serveur', () => {
-  it('accepte un point en attente, quelle que soit sa période', () => {
-    expect(leLienAccepteUneReponse(point(), MERCREDI)).toBe(true);
-    expect(leLienAccepteUneReponse(point({ period_start: '2026-09-14' }), MERCREDI)).toBe(true);
+describe('jetonDuPoint', () => {
+  it('prend le jeton du lien', () => {
+    expect(jetonDuPoint(JETON, JETON, AUTRE)).toBe(JETON);
   });
 
-  it('accepte la correction d’un point répondu tant que sa période est celle qu’on interroge', () => {
-    expect(leLienAccepteUneReponse(point({ status: 'answered' }), MERCREDI)).toBe(true);
-    expect(leLienAccepteUneReponse(point({ status: 'answered', period_start: '2026-09-21' }), MERCREDI)).toBe(false);
+  it('sans paramètre dans l’adresse — un rechargement —, retrouve celui de l’onglet', () => {
+    expect(jetonDuPoint(undefined, null, JETON)).toBe(JETON);
+    expect(jetonDuPoint(undefined, null, 'pas-un-uuid')).toBeNull();
+    expect(jetonDuPoint(undefined, null, null)).toBeNull();
   });
 
-  it('refuse un point clos', () => {
-    expect(leLienAccepteUneReponse(point({ status: 'expired' }), MERCREDI)).toBe(false);
-  });
-
-  // La borne lit l'UTC, comme le serveur : le lundi 5 octobre à 1 h à Paris est encore le dimanche en UTC,
-  // donc la semaine interrogée est toujours celle du 21 septembre.
-  it('suit la bascule du lundi à minuit UTC, pas à minuit à Paris', () => {
-    const repondu = point({ status: 'answered', period_start: '2026-09-21' });
-    expect(leLienAccepteUneReponse(repondu, new Date('2026-10-04T23:30:00Z'))).toBe(true);
-    expect(leLienAccepteUneReponse(repondu, new Date('2026-10-05T00:30:00Z'))).toBe(false);
+  // Un lien abîmé ne lit pas le point d'un autre e-mail, avec la réponse du lien touché.
+  it('sur un lien abîmé, ne retombe jamais sur le jeton gardé d’un autre e-mail', () => {
+    expect(jetonDuPoint('3bb3de17-8df3', null, AUTRE)).toBeNull();
+    expect(jetonDuPoint('', null, AUTRE)).toBeNull();
   });
 });
 
@@ -93,14 +90,13 @@ describe('etatDeLaPageDuPoint', () => {
     expect(etatDeLaPageDuPoint({ pret: true, jeton: 'j', lecture: { ok: true, point: null } })).toBe('lien-invalide');
   });
 
-  it('ouvre la carte quand le point accepte une réponse, et la ferme sinon', () => {
-    expect(etatDeLaPageDuPoint({ pret: true, jeton: 'j', lecture: ok, maintenant: MERCREDI })).toBe('ouvert');
+  it('ouvre la carte quand le serveur dit le point ouvert, et la ferme sinon — sans borne à lui', () => {
+    expect(etatDeLaPageDuPoint({ pret: true, jeton: 'j', lecture: ok })).toBe('ouvert');
     expect(
       etatDeLaPageDuPoint({
         pret: true,
         jeton: 'j',
-        lecture: { ok: true, point: point({ status: 'expired' }) },
-        maintenant: MERCREDI,
+        lecture: { ok: true, point: point({ ouvert: false, status: null }) },
       })
     ).toBe('clos');
   });
@@ -115,15 +111,15 @@ describe('phraseDeLaLectureDuPoint', () => {
   });
 });
 
-// Relevé des mutations, le 24/10/2026 :
-//   - un point répondu toujours accepté (la borne retirée) → « accepte la correction… » et « suit la bascule
-//     du lundi à minuit UTC » ;
+// Relevé des mutations, le 24/10/2026, rejoué après la contre-lecture du même soir :
 //   - « plus valable » dit avant d'être prête, sans jeton → « charge tant qu'elle n'est pas prête », seul ;
 //   - la panne lue comme un lien invalide → « distingue la panne du jeton inconnu », seul ;
+//   - l'état ouvert sans lire `ouvert` (toujours « ouvert ») → « ouvre la carte… et la ferme sinon », seul ;
+//   - `jetonDuPoint` qui retombe sur le jeton gardé quand le lien est abîmé (la règle de `jetonARetenir`) →
+//     « sur un lien abîmé… », seul ;
 //   - la réponse du lien sans `trim` → « rend une des trois réponses », seul ;
 //   - la connexion nommée sur une erreur du serveur → « ne nomme la connexion que hors ligne », seul ;
 //   - `/point` retiré des surfaces sans compte (`src/types/session.ts`) → les deux tests de
 //     `session.test.ts` qui énumèrent la liste.
-// Et dans `checkin-card.tsx`, la proposition ignorée → les quatre premiers tests de « la réponse choisie
-// dans l'e-mail » ; le geste parti par la session → les trois qui envoient ; le focus qui ne suit pas
-// « Choisir une autre réponse » → le troisième, seul.
+// Et dans `checkin-card.tsx` : voir le relevé de `checkin-card.test.tsx`, « la réponse choisie dans
+// l'e-mail ».

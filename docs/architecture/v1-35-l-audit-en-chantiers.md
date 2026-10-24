@@ -107,14 +107,13 @@
   - **le gain d'un « oui » ne dit pas les jours** : « Mardi ou jeudi » vaut un aller, même si la personne a
     fait les deux. Compter les fois, c'est C4.1, fermé pour la V1 (`v1-23`).
 - **Étape 6b, ce que la réponse depuis l'e-mail ne fait pas, et pourquoi** :
-  - **toucher « Non » dans l'e-mail après avoir envoyé « oui »** ouvre la carte répondue (« Ta réponse :
-    oui. », « Modifier ma réponse »), pas « Tu as choisi : non. » : la page montre ce qui est en base, et
-    la correction est à un geste. Proposer de remplacer une réponse donnée par celle du second lien serait
-    une phrase de plus, pour un cas rare ;
+  - **passé la période, le lien ne montre plus que la question** : ni la réponse donnée, ni son heure, ni ses
+    kilos, ni si la boucle tourne (contre-lecture du 24/10/2026). Un e-mail se garde des mois, et se
+    transfère : la portée du jeton est celle de la période, en lecture comme en écriture ;
   - **« Deuxième semaine de suite » ne se dit pas sur la page** : la lecture par le jeton ne rend pas les
     périodes d'avant, et n'a pas à les rendre. Le signal se dérive à la lecture, donc la carte du plan le dit
     à la prochaine ouverture de l'app, pendant la période ;
-  - **qui a l'e-mail peut répondre** au point de ce message — un e-mail transféré compris —, comme il
+  - **qui a l'e-mail peut lire et répondre** au point de ce message — un e-mail transféré compris —, comme il
     pourrait se désinscrire : rien d'autre, et pas au-delà de la période. C'est le compromis de
     `/rappels/stop`, écrit au registre (fiche 3) et sur la page de confidentialité ;
   - **sur Android, les liens de réponse s'ouvrent dans le navigateur** : l'app ne revendique que `/plan`,

@@ -272,6 +272,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // étape 6a, `ce_qu_un_oui_a_evite`). Le plan et le suivi disent des kilos de CO₂e évités, calculés depuis
 // les réponses au bilan et aux points : un résultat calculé de plus, que la définition nomme. Rien de
 // nouveau n'est demandé à la personne, et l'export le rend.
+//
+// **Et le même jour, répondre depuis l'e-mail** (`v1-35` étape 6b, `repondre_depuis_l_e_mail`) : l'e-mail du
+// point porte trois liens de réponse, qui agissent sans connexion. Quatre phrases : ce que font ces liens et
+// leur portée — la question de cet e-mail, sa réponse pendant sa période, rien après —, qu'un e-mail transféré
+// laisse en faire autant, la page de réponse parmi celles qui n'ouvrent pas de session, et l'heure d'usage du
+// lien dans la trace d'un rappel. Même date.
 const UPDATED_AT = '24 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -391,9 +397,11 @@ const SECTIONS: LegalSection[] = [
           'notification, que nous ne demandons que si tu choisis les notifications, en relève aussi : sans lui, elles ' +
           'ne peuvent pas t’arriver. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
           'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
-          'que tu aies à te connecter. Les liens de réponse du même email aussi : ils enregistrent ta réponse à la ' +
-          'question de cet email, et à elle seule, jusqu’à la fin de sa période — une fois que tu l’as confirmée sur la ' +
-          'page qu’ils ouvrent.',
+          'que tu aies à te connecter. Les liens de réponse du même email aussi : tant que la période de sa question ' +
+          'n’est pas finie, ils montrent cette question, la réponse que tu y as donnée et ce qu’elle a évité, et ils ' +
+          'enregistrent ta réponse — une fois que tu l’as confirmée sur la page qu’ils ouvrent. Ensuite, ils ne ' +
+          'montrent plus que la question. Comme le lien de désinscription, ils valent pour qui a l’email : si tu le ' +
+          'transfères, la personne qui le reçoit peut en faire autant.',
       },
       {
         kind: 'paragraph',
@@ -447,7 +455,8 @@ const SECTIONS: LegalSection[] = [
         text:
           'Dès l’ouverture de l’application, une session anonyme est créée pour que ton bilan puisse être enregistré et te ' +
           'revenir si tu fermes puis rouvres l’app. Lire cette page, la page d’accueil du site, les conditions ' +
-          'd’utilisation, la page de suppression de compte ou celle qui coupe les rappels n’en crée pas. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
+          'd’utilisation, la page de suppression de compte, celle qui coupe les rappels ou celle qui reçoit ta ' +
+          'réponse depuis un email n’en crée pas. Cette session n’est reliée à aucune identité : ni email, ni nom, ni ' +
           'numéro de téléphone — sauf l’adresse que tu saisis pour recevoir un code, gardée même si tu ne vas pas au ' +
           'bout, jusqu’à ce que tu la confirmes, en saisisses une autre ou que la session soit supprimée. Comme toute ' +
           'session, elle garde l’adresse IP et l’appareil de sa dernière utilisation, et l’identifiant de ' +
@@ -624,7 +633,7 @@ const SECTIONS: LegalSection[] = [
             'dans tous les cas avec la suppression de ton compte et avec la suppression automatique d’une session ' +
             'anonyme.',
           'Rappels envoyés : une fois le rappel parti (ou abandonné), sa trace — période concernée, canal, date ' +
-            'd’envoi, message — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
+            'd’envoi, message, et l’heure de la dernière réponse donnée par ses liens — est gardée six mois, le temps de pouvoir vérifier qu’un rappel est bien parti quand ' +
             'tu nous dis ne pas l’avoir reçu. Elle est supprimée ensuite.',
           'Demandes de code de connexion par e-mail : pour chacune, nous gardons deux jours une trace — le compte ' +
             'concerné, la date, ce qu’il en est advenu et une empreinte de l’adresse, jamais l’adresse elle-même — le ' +

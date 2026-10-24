@@ -592,7 +592,8 @@ exactement ce qui avait laissé passer le mauvais caractère.
   instant », « C'est fait », la panne, ou le lien refusé —, jamais avant le geste. Gardé par le bloc
   du geste de la section D de `verifier-etats-export.mjs`. **Et `/point`, depuis le 24/10/2026** (la
   réponse au point depuis l'e-mail) : « Envoyer ma réponse » rend le focus à la réplique, comme la carte du
-  plan ; « Choisir une autre réponse » à la question ; « Réessayer » à la première phrase de ce qui arrive,
+  plan ; « Choisir une autre réponse » à la question, « Garder ma réponse » à la réplique de la réponse gardée ;
+  « Réessayer » à la première phrase de ce qui arrive,
   ou au titre quand c'est la carte. Gardé par `checkin-card.test.tsx` et le bloc de `/point` de la section D.
 - **Le focus d'un champ est une forme, pas une couleur** (01/10/2026, `v1-33` Q-12, `cadreDuChamp`
   dans `src/components/cadre-du-champ.ts` depuis le 02/10/2026). La bordure passe à l'accent au focus comme au

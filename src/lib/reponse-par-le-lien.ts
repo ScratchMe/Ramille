@@ -3,6 +3,7 @@
 // **Module à part**, pour la raison de `src/lib/desinscription.ts` : ce chemin s'exerce dans un
 // navigateur, sans session, chez quelqu'un qui n'a peut-être pas l'app, et n'a besoin ni de
 // `expo-notifications` ni de la lecture du plan. Le jeton du lien porte à lui seul l'autorisation.
+import { boucleLue } from '@/constants/postes';
 import { supabase } from '@/lib/supabase';
 import type { ReponseDuPoint } from '@/types/checkin';
 import { genreDeLEchec } from '@/types/lecture-en-echec';
@@ -14,11 +15,12 @@ export async function lireLePointDuLien(jeton: string): Promise<LectureDuPoint> 
 
   const ligne = data?.[0];
   if (!ligne) return { ok: true, point: null };
-  // La colonne n'accepte que ces deux valeurs (`check` de `engagement_checkins.loop_type`) : une autre
-  // serait une base qui a changé d'avis, et la page n'aurait pas de quoi composer la carte. Elle le dit
-  // comme une panne du serveur, jamais comme un lien abîmé.
-  if (ligne.loop_type !== 'commute' && ligne.loop_type !== 'extras') return { ok: false, genre: 'serveur' };
-  return { ok: true, point: { ...ligne, loop_type: ligne.loop_type } };
+  // Une boucle que `LOOP_TYPES` ne connaît pas serait une base qui a changé d'avis — le contrôle des miroirs
+  // le dirait en CI —, et la page n'aurait pas de quoi composer la carte. Elle le dit comme une panne du
+  // serveur, jamais comme un lien abîmé.
+  const boucle = boucleLue(ligne.loop_type);
+  if (boucle === null) return { ok: false, genre: 'serveur' };
+  return { ok: true, point: { ...ligne, loop_type: boucle } };
 }
 
 /**
