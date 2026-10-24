@@ -31,6 +31,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     clause `where` d'`enqueue_checkin_reminders()` (C2.9) ;
 //   - sortie sans ouvrir l'app -> `desinscrire_des_rappels(uuid)` et
 //     `notification_outbox.unsubscribe_token`, page `/rappels/stop` ;
+//   - réponse au point depuis l'email, sans se connecter, au geste et jusqu'à la fin de sa période
+//     (24/10/2026) -> `repondre_par_le_lien(uuid, text)` et `notification_outbox.jeton_de_reponse`, page
+//     `/point` ; l'heure de la dernière réponse par ce lien -> `lien_de_reponse_utilise_le`, rendue par
+//     l'export ;
 //   - purge à 120 jours sans activité -> `purge_stale_anonymous_accounts()`, cron quotidien ;
 //   - rétention des rappels (6 mois) et des jetons désactivés (90 jours) ->
 //     `purge_notification_outbox()`, cron quotidien 1h ;
@@ -387,7 +391,9 @@ const SECTIONS: LegalSection[] = [
           'notification, que nous ne demandons que si tu choisis les notifications, en relève aussi : sans lui, elles ' +
           'ne peuvent pas t’arriver. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
           'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
-          'que tu aies à te connecter.',
+          'que tu aies à te connecter. Les liens de réponse du même email aussi : ils enregistrent ta réponse à la ' +
+          'question de cet email, et à elle seule, jusqu’à la fin de sa période — une fois que tu l’as confirmée sur la ' +
+          'page qu’ils ouvrent.',
       },
       {
         kind: 'paragraph',

@@ -215,6 +215,16 @@ hors Brevo, et la stack locale n'a pas de clé Brevo —, partagé avec
 jamais dans Mailpit et le parcours expire sans erreur ; `supabase db reset` le vide (le rejeu de la CI
 repart d'une stack neuve). Le plafond local de 30 par heure de Supabase ne compte plus hook allumé.
 
+**Depuis le 24/10/2026, ce compte rattaché répond à un point par le lien de son e-mail** (étape 12 ter,
+étape 6b de `v1-35`). C'est le seul profil qui a une adresse confirmée, et il n'a pas de boucle : le point
+est donc **posé à la main** — la seule fixture de l'étape —, puis tout suit le chemin du cron : la mise en
+file compose le message, le lien du « oui » se lit **dans son corps**, et s'ouvre dans un navigateur neuf,
+sans session. Le parcours relit la base **au repos** (le point toujours en attente : rien ne répond à
+l'ouverture), vérifie que le jeton a quitté l'adresse, touche « Envoyer ma réponse », puis relit la réponse,
+la marque d'usage sur le message, le pied sans rendez-vous (pas de boucle), et qu'aucun compte ni aucune
+session n'est né. Ce qu'aucune autre suite ne joue ensemble : le message, la page exportée, les privilèges
+d'`anon`, la CSP et la base.
+
 **Depuis le 01/10/2026, le parcours répond aussi aux vols et aux longs trajets** (`v1-33` D1) —
 profil 1 : ses deux vols, puis « Oui » ; cycliste et profil sans boucle : « 0 », puis « Non » — et
 garde l'arrivée sur les vols (aucune puce cochée, « Suivant » qui demande le nombre de vols), et la
@@ -536,7 +546,11 @@ props que le code **passe**, pas les attributs que la bibliothèque **écrit**.
   sur ce qui arrive et le bouton inerte dans le HTML statique, avant tout gestionnaire — et, depuis le
 06/10/2026 (seconde passe de sécurité), le jeton parti de l'adresse une fois la page montée, un
 rechargement qui le retrouve, puis une page au `sessionStorage` bloqué où il reste dans l'adresse et
-où le geste marche encore. La même passe
+où le geste marche encore. **Et depuis le 24/10/2026, `/point`** (la réponse au point depuis l'e-mail) a son
+bloc, sur le même modèle : la lecture du point est servie par le script (`intercepter`), la page dit « Tu as
+choisi : oui. », rien ne répond au repos, le jeton part de l'adresse et revient au rechargement, le toucher
+porte le jeton et la réponse, le focus suit — et son HTML statique dit « Chargement de ta question… », jamais
+« plus valable ». La même passe
   y a ajouté **la page introuvable**, que le serveur des gardes sert désormais comme Vercel
   (`404.html`, en statut 404, à l'adresse demandée) : elle s'hydrate sur une adresse qui n'est pas la
   sienne, et « Revenir à l'accueil » la quitte. Ce serveur-là affaiblissait en silence le contrôle de

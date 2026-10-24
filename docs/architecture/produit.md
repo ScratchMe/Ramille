@@ -114,8 +114,9 @@ question à la personne qui pilote — la table du document dit lesquelles. **De
 web s'ouvre sur une page d'accueil** — la fiche Play et le film, pour qui n'a ni bilan ni questionnaire en
 cours ; qui revient va à son plan comme avant. **Depuis l'étape 6a (24/10/2026), un « oui » au point dit ce
 qu'il a évité, au moins** — compté une fois, la plus petite chose qu'il affirme —, sous la réplique, et le plan
-en fait le total de la saison, le suivi celui de chaque saison (`BOUCLE.md` §2). Ce qui suit est
-l'histoire de la feuille de route d'avant.
+en fait le total de la saison, le suivi celui de chaque saison (`BOUCLE.md` §2). **Depuis l'étape 6b (24/10/2026),
+l'e-mail du point porte ses trois réponses**, chacune vers une page sans compte qui demande de confirmer
+(`/point`, `BOUCLE.md` §3). Ce qui suit est l'histoire de la feuille de route d'avant.
 
 **Feuille de route courante : `v1-13-audit-et-chantiers.md`** (audit du 09/09/2026, 283 constats
 contre-vérifiés, 54 chantiers ordonnés en cinq lots, les dix-huit arbitrages rendus le 10/09/2026 en §1, une

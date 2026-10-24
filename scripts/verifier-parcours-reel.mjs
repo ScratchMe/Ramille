@@ -1561,7 +1561,7 @@ try {
   // elle — la page des licences ne lit ni n'écrit rien, et rien dans cette étape n'y est propre à elle.
   etape('surfaces sans compte — ouvertes à froid, aucun compte ne naît');
   {
-    const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/status'];
+    const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/point', '/status'];
     const avant = await compterLesComptes();
     const onglet = await nouvelOnglet();
     const demandes = [];
@@ -3681,6 +3681,84 @@ try {
     `le retour, juste après « Me déconnecter », rouvre l’app (${apresLaDeconnexion}) — sur ce qu’a laissé la` +
       ' session quittée : la pile n’a pas été vidée — `terminerLeFlux`, src/app/compte/index.tsx'
   );
+
+  // ── 12 ter. Le point répondu depuis l'e-mail, sans session (24/10/2026, étape 6b de `v1-35`) ────────
+  //
+  // Le compte vient d'être rattaché par code : une adresse confirmée, donc un rappel par e-mail. Le lien du
+  // « oui » se lit **dans le corps que la mise en file compose** (`enqueue_checkin_reminders`), puis s'ouvre
+  // dans un navigateur neuf, sans session — la page `/point` répond par le jeton, et rien d'autre. Ce qu'aucune
+  // autre suite ne joue ensemble : le message, la page exportée, les privilèges d'`anon`, la CSP et la base.
+  //
+  // **Le point est posé à la main, et c'est la seule fixture de l'étape** : ce profil n'a pas de boucle — la
+  // prémisse de la section 12 —, donc le générateur ne lui en pose aucun, et les deux autres profils n'ont
+  // pas d'adresse quand leur point arrive. Le reste suit le chemin du cron. Sans boucle, la page ne donne pas
+  // rendez-vous : c'est ce qu'elle lit au serveur (`boucle_tourne`).
+  etape('point — répondu depuis l’e-mail, sans session');
+  {
+    const maintenant = new Date();
+    // La semaine que les générateurs interrogent : le lundi d'avant celui de cette semaine, en UTC.
+    const semaine = new Date(
+      Date.UTC(
+        maintenant.getUTCFullYear(),
+        maintenant.getUTCMonth(),
+        maintenant.getUTCDate() - ((maintenant.getUTCDay() + 6) % 7) - 7
+      )
+    )
+      .toISOString()
+      .slice(0, 10);
+    const pose = await fetch(`${API}/rest/v1/engagement_checkins`, {
+      method: 'POST',
+      headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        user_id: sansBoucle.userId,
+        loop_type: 'commute',
+        period_start: semaine,
+        period_label: 'Semaine dernière',
+        trip_label: 'Trajet domicile-travail',
+        poste: 'commute',
+      }),
+    });
+    if (!pose.ok) throw new Ecart(`point posé : HTTP ${pose.status} ${await pose.text()}`);
+    await rpc('enqueue_checkin_reminders', SERVICE);
+    const [message] = await lire(
+      `notification_outbox?select=body,channel,jeton_de_reponse&user_id=eq.${sansBoucle.userId}`,
+      SERVICE
+    );
+    assurer(message?.channel === 'email' && message.jeton_de_reponse, `rappel mis en file : ${JSON.stringify(message)}`);
+    const lienDuOui = message.body.match(/^Oui : \S+?(\/point\?reponse=oui&jeton=[0-9a-f-]{36})$/m)?.[1];
+    assurer(
+      lienDuOui?.endsWith(message.jeton_de_reponse),
+      `le message ne porte pas le lien du « oui », avec son jeton : ${message.body.slice(0, 300)}`
+    );
+
+    const comptesAvant = await compterLesComptes();
+    const onglet = await nouvelOnglet();
+    await onglet.goto(`${base}${lienDuOui}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await onglet.getByText('Tu as choisi : oui.').first().waitFor({ state: 'visible', timeout: ATTENTE });
+    // Au repos, rien n'est parti : un analyseur de liens qui ouvre la page ne répond pas.
+    await onglet.waitForTimeout(1_500);
+    const [auRepos] = await lire(`engagement_checkins?select=status&user_id=eq.${sansBoucle.userId}`, SERVICE);
+    assurer(auRepos?.status === 'pending', `le point est « ${auRepos?.status} » avant le geste : la page a répondu à l’ouverture`);
+    assurer(!onglet.url().includes(message.jeton_de_reponse), 'le jeton est resté dans l’adresse une fois la page montée');
+
+    await onglet.getByRole('button', { name: 'Envoyer ma réponse', exact: true }).click({ timeout: ATTENTE });
+    await onglet.getByText('Modifier ma réponse').first().waitFor({ state: 'visible', timeout: ATTENTE });
+    const texte = await onglet.evaluate(() => document.body.innerText);
+    assurer(/Répondu\s\S+\./.test(texte) && !texte.includes('Prochain point'), `le pied, sans boucle : « ${texte.slice(0, 300)} »`);
+    const [repondu] = await lire(`engagement_checkins?select=status,response_kind&user_id=eq.${sansBoucle.userId}`, SERVICE);
+    assurer(
+      repondu?.status === 'answered' && repondu.response_kind === 'oui',
+      `réponse enregistrée par le lien : ${JSON.stringify(repondu)}`
+    );
+    const [marque] = await lire(
+      `notification_outbox?select=lien_de_reponse_utilise_le&user_id=eq.${sansBoucle.userId}`,
+      SERVICE
+    );
+    assurer(marque?.lien_de_reponse_utilise_le, 'l’usage du lien de réponse n’est pas marqué sur son message');
+    assurer(!(await sessionRangee(onglet)), 'la page de réponse a rangé une session dans le navigateur');
+    assurer((await compterLesComptes()) === comptesAvant, 'un compte est né d’une réponse donnée depuis l’e-mail');
+    await onglet.context().close();
+  }
   await rpc('delete_my_account', sansBoucle.jeton);
 
   assurer(exceptions.length === 0, `exceptions dans la page :\n${exceptions.join('\n')}`);
@@ -3700,7 +3778,7 @@ try {
       `puis la racine et la marque locale effacée, et la carte d'attente qui nomme le lundi — puis un ` +
       `profil sans boucle, à qui ni le plan ni le suivi ne promettent rien, et qui rattache son compte ` +
       `par code — Entrée envoie, le focus suit, et le retour ne rouvre ni le flux fini ni la session ` +
-      `quittée. Chaque choix rendu répond à ` +
+      `quittée, puis répond à un point par le lien de son e-mail, sans session. Chaque choix rendu répond à ` +
       `son groupe nommé. Aucune infraction à la CSP de production.`
   );
 } catch (erreur) {

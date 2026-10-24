@@ -43,5 +43,13 @@ export interface CheckinCardProps {
   reponseEnPlace?: string | null;
   onModify?: () => void;
   onCancel?: () => void;
+  /**
+   * La réponse choisie dans l'e-mail, à confirmer — « Tu as choisi : oui. » (24/10/2026, `v1-35` étape 6b) : la page
+   * `/point`, que les trois liens de l'e-mail ouvrent. Tant que le point n'est pas répondu, elle remplace les trois réponses
+   * par « Envoyer ma réponse » (`onSend`) et « Choisir une autre réponse » (`onOtherAnswer`), qui les rouvre.
+   */
+  reponseChoisie?: string | null;
+  onSend?: () => void;
+  onOtherAnswer?: () => void;
 }
 export declare function CheckinCard(props: CheckinCardProps): JSX.Element;

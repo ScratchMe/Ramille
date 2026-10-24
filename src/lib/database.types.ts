@@ -730,9 +730,12 @@ export type Database = {
           // C4.2 — le mot de la veille (20260928075453)
           genre: string
           id: string
+          // Étape 6b de v1-35 — répondre depuis l'e-mail (repondre_depuis_l_e_mail)
+          jeton_de_reponse: string | null
           // C4.2 — le mot de la veille (20260928075453)
           jour_vise: string | null
           last_error: string | null
+          lien_de_reponse_utilise_le: string | null
           provider_ticket: Json | null
           push_body: string | null
           receipts_checked_at: string | null
@@ -754,9 +757,12 @@ export type Database = {
           // C4.2 — le mot de la veille (20260928075453)
           genre?: string
           id?: string
+          // Étape 6b de v1-35 — répondre depuis l'e-mail (repondre_depuis_l_e_mail)
+          jeton_de_reponse?: string | null
           // C4.2 — le mot de la veille (20260928075453)
           jour_vise?: string | null
           last_error?: string | null
+          lien_de_reponse_utilise_le?: string | null
           provider_ticket?: Json | null
           push_body?: string | null
           receipts_checked_at?: string | null
@@ -778,9 +784,12 @@ export type Database = {
           // C4.2 — le mot de la veille (20260928075453)
           genre?: string
           id?: string
+          // Étape 6b de v1-35 — répondre depuis l'e-mail (repondre_depuis_l_e_mail)
+          jeton_de_reponse?: string | null
           // C4.2 — le mot de la veille (20260928075453)
           jour_vise?: string | null
           last_error?: string | null
+          lien_de_reponse_utilise_le?: string | null
           provider_ticket?: Json | null
           push_body?: string | null
           receipts_checked_at?: string | null
@@ -1412,6 +1421,11 @@ export type Database = {
         Returns: string
       }
       desinscrire_des_rappels: { Args: { p_jeton: string }; Returns: boolean }
+      // Étape 6b de v1-35 : le seul écrivain des réponses, serveur seulement
+      ecrire_la_reponse_du_point: {
+        Args: { p_checkin_id: string; p_reponse: string; p_user_id: string }
+        Returns: number
+      }
       emission_factor: {
         Args: { p_mode_id: string; p_on_date: string }
         Returns: number
@@ -1476,9 +1490,33 @@ export type Database = {
       }
       generate_plan_cycles: { Args: never; Returns: undefined }
       jours_francais: { Args: { p_days: number[] }; Returns: string }
+      // Étape 6b de v1-35 : la page /point lit le point par le jeton du lien, sans session
+      le_point_du_lien: {
+        Args: { p_jeton: string }
+        Returns: {
+          boucle_tourne: boolean
+          committed_saving_kg_once: number | null
+          loop_type: string
+          mode: string | null
+          period_label: string
+          period_start: string
+          poste: string | null
+          question: string
+          question_kind: string
+          responded_at: string | null
+          response_kind: string | null
+          status: string
+          trip_label: string
+        }[]
+      }
       le_soir_du_mot_est_venu: {
         Args: { p_maintenant: string }
         Returns: boolean
+      }
+      // Étape 6b de v1-35 : la jumelle de libelleSansObjet, serveur seulement
+      libelle_sans_objet: {
+        Args: { p_loop_type: string; p_period_start: string; p_poste: string | null }
+        Returns: string
       }
       // Le ménage d'Auth que GoTrue ne fait pas (20261006140000) : serveur seulement.
       menage_des_jetons_d_auth: { Args: never; Returns: Json }
@@ -1538,6 +1576,11 @@ export type Database = {
       }
       repondre_au_checkin: {
         Args: { p_checkin_id: string; p_reponse: string }
+        Returns: number
+      }
+      // Étape 6b de v1-35 : la réponse par le jeton du lien, sans session
+      repondre_par_le_lien: {
+        Args: { p_jeton: string; p_reponse: string }
         Returns: number
       }
       requete_d_e_mail_d_auth: {

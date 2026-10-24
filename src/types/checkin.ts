@@ -515,6 +515,11 @@ function cleDuSansObjet(
  * Le mois est celui de la période **interrogée** et vient de `period_start`, comme la question
  * elle-même (C2.3) : lu sur l'horloge, il dirait le mois courant sur un point ouvert avec un jour
  * de retard, donc un mois différent de celui de la question juste au-dessus.
+ *
+ * **Jumelle de `public.libelle_sans_objet`**, à toucher ensemble (étape 6b de `v1-35`, 24/10/2026) :
+ * l'e-mail du point porte les trois réponses, la troisième dans ces mots-là, et la page `/point` qui
+ * les reçoit les redit sous les boutons — le même raisonnement que `mois_francais` et `MOIS_FRANCAIS`.
+ * Le test `64` épingle les mêmes chaînes côté SQL.
  */
 export function libelleSansObjet(point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>): string {
   // **« la semaine dernière » et non « cette semaine »**, écart au canvas consigné en `v1-14` §10 :
@@ -546,11 +551,32 @@ export function phraseDeLaReponseEnPlace(
   point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
   reponse: ReponseDuPoint
 ): string {
-  if (reponse === 'sans_objet') {
-    const libelle = libelleSansObjet(point);
-    return `Ta réponse : ${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}.`;
-  }
-  return `Ta réponse : ${reponse}.`;
+  return `Ta réponse : ${reponseEnMots(point, reponse)}.`;
+}
+
+/**
+ * La réponse choisie dans l'e-mail, au-dessus d'« Envoyer ma réponse » : « Tu as choisi : oui. »
+ * (étape 6b de `v1-35`, 24/10/2026).
+ *
+ * **Le choix est fait, pas la réponse** : la page `/point` demande le geste avant d'écrire, parce que
+ * l'analyseur de liens d'une messagerie ouvre les trois liens de l'e-mail. « Ta réponse : oui. » dirait
+ * qu'elle est déjà partie. Dans les mots des boutons, comme `phraseDeLaReponseEnPlace`.
+ */
+export function phraseDeLaReponseChoisie(
+  point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
+  reponse: ReponseDuPoint
+): string {
+  return `Tu as choisi : ${reponseEnMots(point, reponse)}.`;
+}
+
+/** « oui », « non », ou le libellé du lien sans objet en minuscule — les mots des boutons. */
+function reponseEnMots(
+  point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
+  reponse: ReponseDuPoint
+): string {
+  if (reponse !== 'sans_objet') return reponse;
+  const libelle = libelleSansObjet(point);
+  return `${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}`;
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   estDeuxiemeFoisDeSuite,
   genreDeReponse,
   libelleSansObjet,
+  phraseDeLaReponseChoisie,
   phraseDeLaReponseEnPlace,
   phraseDeSecondRenforcement,
   piedDuPointRepondu,
@@ -107,6 +108,8 @@ export function CheckinCard({
   historique,
   boucleTourne,
   onReponse,
+  reponseProposee,
+  repondre,
 }: {
   checkin: EngagementCheckin;
   emphasize: boolean;
@@ -136,6 +139,20 @@ export function CheckinCard({
    * `responded_at` compris, pour que le plan reconnaisse, comme la carte, une ligne relue depuis.
    */
   onReponse?: (point: EngagementCheckin, reponse: ReponseDuPoint) => void;
+  /**
+   * La réponse choisie dans l'e-mail, à confirmer (étape 6b de `v1-35`, 24/10/2026) — `/point` seulement.
+   * Tant que le point n'est pas répondu, la carte la dit (« Tu as choisi : oui. ») et offre « Envoyer ma
+   * réponse » au lieu des trois réponses, que « Choisir une autre réponse » rouvre. **Le geste reste à la
+   * personne** : l'analyseur de liens d'une messagerie ouvre les trois liens de l'e-mail, donc rien ne part
+   * sans ce toucher.
+   */
+  reponseProposee?: ReponseDuPoint | null;
+  /**
+   * L'appel qui enregistre la réponse. Par défaut `repondre_au_checkin`, sous la session ; `/point` passe
+   * celui du jeton de l'e-mail (`repondreParLeLien`), qui rend les mêmes refus — un seul écrivain côté
+   * serveur (`ecrire_la_reponse_du_point`), donc une seule lecture de ses refus ici.
+   */
+  repondre?: (reponse: ReponseDuPoint) => PromiseLike<{ error: { code: string } | null; status: number }>;
 }) {
   /**
    * La réponse donnée ici, son instant, et ce que la ligne portait au moment du geste
@@ -161,6 +178,8 @@ export function CheckinCard({
   const [correction, setCorrection] = useState(false);
   /** Les réponses données ici : chacune rend le focus à la réplique, même une correction identique. */
   const [reponsesDonnees, setReponsesDonnees] = useState(0);
+  /** « Choisir une autre réponse » a rouvert les trois réponses à la place de celle de l'e-mail. */
+  const [autreReponse, setAutreReponse] = useState(false);
 
   /**
    * **La réplique prend le focus quand elle remplace les boutons** (24/09/2026, `v1-29`). La carte
@@ -191,6 +210,11 @@ export function CheckinCard({
     if (vient === 'ouvrir' && correction) donnerLeFocus(laQuestion.current);
     if (vient === 'annuler' && !correction) donnerLeFocus(leLienModifier.current);
   }, [correction]);
+  // « Choisir une autre réponse » disparaît sous le doigt : le focus va à la question, au-dessus des trois
+  // réponses qu'il vient d'ouvrir. L'état ne passe à `true` que par ce geste, jamais au montage.
+  useEffect(() => {
+    if (autreReponse) donnerLeFocus(laQuestion.current);
+  }, [autreReponse]);
 
   // Comparaison de libellés et non d'identifiants : la carte ne porte pas l'identifiant du gabarit,
   // et le libellé est ce que la personne a lu en choisissant. Deux actions de libellés identiques
@@ -244,6 +268,10 @@ export function CheckinCard({
   // change le « oui » en « non ».
   const kilos = phraseDuOui(reponse, checkin.committed_saving_kg_once);
 
+  // La réponse de l'e-mail, tant qu'il n'y en a pas d'autre : ni donnée, ni en correction, ni écartée par
+  // « Choisir une autre réponse ». Un point déjà répondu montre sa réponse, comme partout.
+  const proposition = reponse === null && !correction && !autreReponse ? (reponseProposee ?? null) : null;
+
   // La réponse passe par un RPC, jamais par un `update` : `engagement_checkins` porte des
   // libellés snapshotés (`trip_label`, `period_label`) et la clé d'idempotence de la génération
   // (`period_start`), et une policy UPDATE les aurait tous ouverts d'un coup — la RLS filtre des
@@ -258,10 +286,9 @@ export function CheckinCard({
     if (saving) return;
     setSaving(true);
     setErreur(null);
-    const { error, status } = await supabase.rpc('repondre_au_checkin', {
-      p_checkin_id: checkin.id,
-      p_reponse: response,
-    });
+    const { error, status } = await (repondre
+      ? repondre(response)
+      : supabase.rpc('repondre_au_checkin', { p_checkin_id: checkin.id, p_reponse: response }));
     setSaving(false);
 
     if (!error) {
@@ -346,6 +373,27 @@ export function CheckinCard({
             // La question reste lisible, mais elle n'attend plus rien : deux boutons qui ne
             // peuvent plus aboutir valent moins qu'une phrase qui dit où en est le point.
             <MessageInline message={refus} />
+          ) : proposition !== null ? (
+            // **La réponse choisie dans l'e-mail, et le geste qui l'envoie** (étape 6b de `v1-35`). Un
+            // bouton plein pour « Envoyer ma réponse » : il ne désigne pas une bonne réponse — la règle du
+            // 24/09/2026 qui garde « Oui » et « Non » au même poids —, il confirme celle que la personne
+            // vient de choisir. « Choisir une autre réponse » rouvre les trois, comme « Modifier ma
+            // réponse ».
+            <>
+              <ThemedText type="small" themeColor="textTertiary">
+                {phraseDeLaReponseChoisie(checkin, proposition)}
+              </ThemedText>
+              <Button title="Envoyer ma réponse" onPress={() => answer(proposition)} disabled={saving} />
+              <TextLink
+                label="Choisir une autre réponse"
+                apparence="souligne"
+                hint="Rouvre les trois réponses de ce point"
+                onPress={() => setAutreReponse(true)}
+                disabled={saving}
+                containerStyle={styles.sansObjet}
+              />
+              <MessageInline message={erreur} />
+            </>
           ) : (
             <>
               <View style={styles.actions}>

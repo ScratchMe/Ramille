@@ -590,7 +590,10 @@ exactement ce qui avait laissé passer le mauvais caractère.
   **`/rappels/stop` aussi, depuis le 04/10/2026** (seconde passe de la revue finale) : « Couper mes
   rappels » sort de l'arbre au toucher, et le focus va à la première phrase de ce qui arrive — « Un
   instant », « C'est fait », la panne, ou le lien refusé —, jamais avant le geste. Gardé par le bloc
-  du geste de la section D de `verifier-etats-export.mjs`.
+  du geste de la section D de `verifier-etats-export.mjs`. **Et `/point`, depuis le 24/10/2026** (la
+  réponse au point depuis l'e-mail) : « Envoyer ma réponse » rend le focus à la réplique, comme la carte du
+  plan ; « Choisir une autre réponse » à la question ; « Réessayer » à la première phrase de ce qui arrive,
+  ou au titre quand c'est la carte. Gardé par `checkin-card.test.tsx` et le bloc de `/point` de la section D.
 - **Le focus d'un champ est une forme, pas une couleur** (01/10/2026, `v1-33` Q-12, `cadreDuChamp`
   dans `src/components/cadre-du-champ.ts` depuis le 02/10/2026). La bordure passe à l'accent au focus comme au
   remplissage, à la même épaisseur (`Stroke.field`) — mais gris contre vert, le changement ne tient
@@ -742,7 +745,8 @@ exactement ce qui avait laissé passer le mauvais caractère.
   gris, quatre lignes qui n'attendaient pas : le délai était une règle que chaque écran recopiait.
   Le composant porte la forme (`body`, `textSecondary`) et le délai ; `demandee` pour le chargement
   d'un « Réessayer », `immediate` pour une page ouverte à froid dont le HTML statique doit la porter
-  — la restitution seule (`v1-30` §5.8). Les pages de service qui disent « Un instant, on … »
+  — la restitution, et depuis le 24/10/2026 `/point`, ouverte à froid par le lien d'un e-mail
+  (« Chargement de ta question… », `v1-30` §5.8). Les pages de service qui disent « Un instant, on … »
   n'en sont pas : sur `/compte/suppression`, la phrase est la première de la page, et le résultat la
   remplace au même corps ; sur `/rappels/stop`, depuis le 04/10/2026, elle ne vient qu'après le
   toucher de « Couper mes rappels » — la page s'ouvre sur la confirmation (`BOUCLE.md`), et le

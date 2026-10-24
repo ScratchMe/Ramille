@@ -863,6 +863,104 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
   }
 }
 
+// **`/point` : la réponse part au geste, et à lui seul** (étape 6b de `v1-35`, 24/10/2026). L'e-mail du
+// point porte trois liens de réponse, et l'analyseur de liens d'une messagerie les ouvre tous : une page
+// qui répondait à l'ouverture répondrait à la place de la personne, trois fois, la dernière l'emportant.
+// La lecture du point est **servie par ce script** (`intercepter`) — l'export n'a pas de base, et la page
+// n'affiche rien à confirmer sans point —, la réponse aussi. Cinq choses, dans l'ordre où la personne les
+// vit : la lecture part, et porte le jeton ; rien ne répond au repos ; le jeton quitte l'adresse, et un
+// rechargement le retrouve ; « Envoyer ma réponse » fait partir **ce** jeton avec **cette** réponse ; et
+// le focus suit le geste.
+{
+  const chemin = `/point?reponse=oui&jeton=${JETON_DE_FORME_VALIDE}`;
+  const requetes = [];
+  const exceptions = [];
+  const POINT = {
+    loop_type: 'commute',
+    poste: 'commute',
+    question_kind: 'generique',
+    mode: 'voiture_thermique',
+    period_start: '2026-10-12',
+    period_label: 'Semaine du 12/10',
+    trip_label: 'Trajet domicile-travail',
+    question: 'La semaine dernière, as-tu changé de mode de transport pour ton trajet domicile-travail ?',
+    committed_saving_kg_once: null,
+    // En attente : un point en attente accepte une réponse quelle que soit la date du passage.
+    status: 'pending',
+    response_kind: null,
+    responded_at: null,
+    boucle_tourne: true,
+  };
+  const intercepter = async (page) => {
+    await page.route('**/rest/v1/rpc/le_point_du_lien', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([POINT]) })
+    );
+    await page.route('**/rest/v1/rpc/repondre_par_le_lien', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '1' })
+    );
+  };
+  const lecture = ({ url, corps }) => url.includes('/rest/v1/rpc/le_point_du_lien') && corps.includes(JETON_DE_FORME_VALIDE);
+  const reponse = ({ url, corps }) =>
+    url.includes('/rest/v1/rpc/repondre_par_le_lien') && corps.includes(JETON_DE_FORME_VALIDE) && /"oui"/.test(corps);
+  const repondre = ({ url }) => url.includes('/rest/v1/rpc/repondre_par_le_lien');
+  const proposee = () => document.body.innerText.replace(/\s+/g, ' ').includes('Tu as choisi : oui.');
+  const page = await ouvrir(chemin, {}, { requetes, exceptions, intercepter });
+  try {
+    await page.waitForFunction(proposee, null, { timeout: ATTENTE }).catch(() => {});
+    await page.waitForTimeout(1_000);
+    const hydratation = exceptions.filter((e) => HYDRATATION.test(e));
+    if (hydratation.length > 0) {
+      echecs.push(`/point : l’hydratation échoue (${hydratation[0].slice(0, 90)}…) — la chaîne de requête lue au premier rendu.`);
+    } else if (!(await page.evaluate(proposee))) {
+      const texte = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
+      echecs.push(`/point : la réponse du lien n’est pas proposée (« Tu as choisi : oui. »). Rendu : « ${texte.slice(0, 160)}… »`);
+    } else if (!requetes.some(lecture)) {
+      echecs.push('/point : la page affiche un point sans l’avoir lu par le jeton du lien.');
+    } else if (requetes.some(repondre)) {
+      echecs.push(
+        '/point : la page a répondu sans geste. Un analyseur de liens qui ouvre les trois liens de l’e-mail' +
+          ' répondrait à la place de la personne (`reponseProposee`, `CheckinCard`).'
+      );
+    } else if (page.url().includes(JETON_DE_FORME_VALIDE)) {
+      echecs.push('/point : le jeton est encore dans l’adresse une fois la page montée (`gardeDuJetonPourLOnglet`).');
+    } else {
+      await page.reload({ waitUntil: 'load' });
+      await page.waitForFunction(proposee, null, { timeout: ATTENTE }).catch(() => {});
+      if (!(await page.evaluate(proposee))) {
+        echecs.push('/point : rechargée sans le jeton dans l’adresse, la page ne le retrouve plus (`gardeDuJetonPourLOnglet`).');
+      } else {
+        await page.getByRole('button', { name: 'Envoyer ma réponse' }).click({ timeout: ATTENTE });
+        await page
+          .waitForFunction(() => !document.body.innerText.includes('Envoyer ma réponse'), null, { timeout: ATTENTE })
+          .catch(() => {});
+        if (!requetes.some(reponse)) {
+          echecs.push('/point : « Envoyer ma réponse » touché, et aucun appel ne porte le jeton et la réponse du lien.');
+        } else {
+          const focus = await page.evaluate(() => {
+            const actif = document.activeElement;
+            return !actif || actif === document.body ? null : actif.innerText.replace(/\s+/g, ' ').trim();
+          });
+          if (!focus) {
+            echecs.push('/point : après « Envoyer ma réponse », le focus est retombé sur le document (`FRONT.md` §2.4).');
+          }
+        }
+      }
+    }
+  } catch (erreur) {
+    echecs.push(`/point : ${String(erreur).slice(0, 180)}`);
+  } finally {
+    await page.close();
+  }
+
+  // Et ce que lit la personne avant que l'app ne démarre : la ligne d'attente, jamais « plus valable ».
+  const html = readFileSync(join(DIST, 'point.html'), 'utf8');
+  if (html.includes('plus valable')) {
+    echecs.push('/point : le HTML statique annonce « Ce lien n’est plus valable » à quiconque ouvre un lien de réponse (FRONT.md §1.3).');
+  } else if (!html.includes('Chargement de ta question')) {
+    echecs.push('/point : le HTML statique ne porte plus « Chargement de ta question… ».');
+  }
+}
+
 // **La page introuvable, sur une adresse inconnue, comme Vercel la sert** (04/10/2026, seconde passe
 // de la revue finale) : `404.html`, en statut 404, à l'adresse demandée (`servir-export.mjs`). Sa pose
 // était vérifiée à l'octet près (`verifier-titres-export.mjs`), mais personne ne l'ouvrait : qu'elle
@@ -2701,7 +2799,7 @@ async function attendreLeTexte(page, texte) {
 // condition retirée) : une seule ligne, « M : / (la page d'accueil), ouverte à froid, a demandé une session
 // anonyme » — les six surfaces et le témoin restent verts.
 {
-  const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/status'];
+  const SURFACES_SANS_COMPTE = ['/confidentialite', '/conditions', '/licences', '/compte/suppression', '/rappels/stop', '/point', '/status'];
   const SANS_SESSION_OUVERTE = [...SURFACES_SANS_COMPTE, '/'];
   const nommer = (chemin) => (chemin === '/' ? '/ (la page d’accueil)' : chemin);
   const cle = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() || null;

@@ -465,8 +465,8 @@ sa place dans cette pile, qui garde la barre visible.
 Tout le reste vit hors du groupe et s'affiche en plein écran, sans barre : `/onboarding` et
 `/bilan` sont des **flux**, `/compte/*`, `/connexion/*` et `/contexte` (les quatre réponses B4,
 corrigeables seules depuis C6.4) des détours, `/confidentialite`,
-`/conditions`, `/compte/suppression`, `/rappels/stop` et `/feedback` des surfaces publiques ou de
-service. Les
+`/conditions`, `/compte/suppression`, `/rappels/stop`, `/point` (la réponse au point depuis l'e-mail) et
+`/feedback` des surfaces publiques ou de service. Les
 deux règles qui vont avec ce découpage (ajouter une route dans `(tabs)/` lui donne un onglet ;
 jamais de route dynamique `[id]`) sont rappelées en fin de fichier et détaillées dans
 `FRONT.md`, pas ici.
@@ -547,7 +547,7 @@ visiteur reçoit une session Supabase Auth anonyme dès l'ouverture de l'app**
 (`ensureSession()` dans `src/lib/supabase.ts`, appelée en fire-and-forget dans
 `src/app/_layout.tsx`), pas un bilan stocké en local puis rattaché à la connexion — **sauf sur les
 surfaces sans compte** (`/confidentialite`, `/conditions`, `/licences`, `/compte/suppression`,
-`/rappels/stop`, `/status` — `SURFACES_SANS_COMPTE`), qui ne font que restaurer une session existante, et l'ouvrent dès qu'on les quitte pour
+`/rappels/stop`, `/point`, `/status` — `SURFACES_SANS_COMPTE`), qui ne font que restaurer une session existante, et l'ouvrent dès qu'on les quitte pour
 l'app (`COMPTE.md`, depuis le 18/10/2026) — **et sur la racine du web**, la page d'accueil, qui restaure
 sans ouvrir sans être une surface sans compte (`laSessionSOuvreSur` prend la plateforme, 23/10/2026). Le bilan
 anonyme vit donc normalement dans `assessments`/`assessment_answers` etc., protégé par les
@@ -664,7 +664,9 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
 - un point, un message (`unique(checkin_id)`) ; ce qui s'espace est le message, jamais le point ;
 - les deux boucles partent du dernier bilan valide, par `boucles_du_dernier_bilan`.
 - un « oui » se compte **au moins une fois** : le gain d'une fois vient de l'estimateur, se fige sur
-  l'action puis sur le point (`committed_saving_kg_once`), et le client l'additionne sans rien calculer.
+  l'action puis sur le point (`committed_saving_kg_once`), et le client l'additionne sans rien calculer ;
+- un point se répond aussi par les liens de l'e-mail, sans session : le jeton du message autorise, la page
+  `/point` demande le geste, et un seul écrivain sert les deux chemins (`ecrire_la_reponse_du_point`).
 
 **`COMPTE.md`** — la connexion, la session, le hors-ligne et la suppression :
 - pas de mot de passe : par e-mail, le rattachement et la reconnexion passent par un code à

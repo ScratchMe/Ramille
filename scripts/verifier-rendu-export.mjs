@@ -134,6 +134,9 @@ const ROUTES = [
   // l'app. Le marqueur est son titre visible, présent dans les quatre états : ouverte sans jeton —
   // ce que fait l'export — elle n'appelle rien, donc le rendu ne dépend pas du réseau.
   { chemin: '/rappels/stop', marqueur: 'Ne plus recevoir de rappels' },
+  // La réponse au point par les liens de l'e-mail (étape 6b de `v1-35`), même régime : ouverte sans jeton,
+  // elle n'appelle rien, et son titre visible est présent dans tous ses états.
+  { chemin: '/point', marqueur: 'Ton point' },
   // Les écrans d'application, tous sans marqueur. La panne du 08/09/2026 était dans le layout
   // racine, donc les cinq routes ci-dessus la voyaient toutes — mais une exception confinée à
   // `(tabs)/_layout.tsx` ou à un écran d'onglet n'apparaîtrait sur aucune d'elles. Ces six-là

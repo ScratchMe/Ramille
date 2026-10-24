@@ -9,12 +9,15 @@ import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 // **La réponse se corrige jusqu'au point suivant** (02/10/2026, `v1-33` §6) : la carte répondue porte « Modifier ma
 // réponse », qui rouvre les trois réponses sous « Ta réponse : oui. » (`reponseEnPlace`), avec « Annuler ». Dans le dépôt,
 // la carte n'est affichée que le temps de la période interrogée — la borne même que le RPC vérifie.
+// **La réponse choisie dans l'e-mail** (24/10/2026, `v1-35` étape 6b) : sur la page `/point`, la carte dit « Tu as
+// choisi : oui. » (`reponseChoisie`) et offre « Envoyer ma réponse », au lieu des trois réponses que « Choisir une
+// autre réponse » rouvre. Rien ne part sans ce toucher : une messagerie ouvre les trois liens de l'e-mail.
 const RETOURS = {
   oui: { mood: 'happy', ligne: 'Bien joué — chaque changement compte.' },
   non: { mood: 'encouraging', ligne: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.' },
   sans_objet: { mood: 'calm', ligne: 'Pas de trajet, pas de question. On se retrouve lundi.' },
 };
-export function CheckinCard({ periodLabel, question, emphasize = true, answered = null, onAnswer, sansObjet = 'Pas de trajet la semaine dernière', actionQuittee = null, refus = null, erreur = null, retour, renforcement = null, kilos = null, pied, correction = false, reponseEnPlace = null, onModify, onCancel }) {
+export function CheckinCard({ periodLabel, question, emphasize = true, answered = null, onAnswer, sansObjet = 'Pas de trajet la semaine dernière', actionQuittee = null, refus = null, erreur = null, retour, renforcement = null, kilos = null, pied, correction = false, reponseEnPlace = null, onModify, onCancel, reponseChoisie = null, onSend, onOtherAnswer }) {
   // `true` / `false` : la forme d'avant la troisième réponse, que `ui_kits/ramille/` passe encore.
   const reponse = answered === true ? 'oui' : answered === false ? 'non' : answered;
   // L'accent désigne la question à regarder d'abord — celle de l'engagement quand deux points sont ouverts, celle du
@@ -41,6 +44,15 @@ export function CheckinCard({ periodLabel, question, emphasize = true, answered 
           {refus ? (
             // Le point n'accepte plus de réponse : la question reste lisible, les boutons partent.
             <MessageInline message={refus} />
+          ) : reponseChoisie && reponse === null && !correction ? (
+            // La réponse choisie dans l'e-mail, et le geste qui l'envoie : un bouton plein, qui confirme le choix
+            // de la personne — il ne désigne pas une bonne réponse.
+            <>
+              <ThemedText type="small" themeColor="textTertiary">{reponseChoisie}</ThemedText>
+              <Button title="Envoyer ma réponse" onPress={() => onSend && onSend()} />
+              <TextLink label="Choisir une autre réponse" apparence="souligne" onPress={() => onOtherAnswer && onOtherAnswer()} containerStyle={{ alignItems: 'center' }} />
+              <MessageInline message={erreur} />
+            </>
           ) : (
             <>
               <div style={{ display: 'flex', gap: 8 }}>
