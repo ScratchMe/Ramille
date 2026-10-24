@@ -146,8 +146,11 @@ export async function lireLePlan(annulee: () => boolean = () => false) {
     // que la branche à gabarit de `composerQuestionDuPoint`, qu'aucune requête de l'app ne
     // peut atteindre — le gabarit vit sur `action_templates`. La carte n'a besoin que de la
     // question figée.
+    //
+    // `committed_saving_kg_once` (étape 6a de `v1-35`) : le gain d'une fois de l'action, figé avec la
+    // question. La carte en dit le minimum après un « oui », le plan en fait le total de la saison.
     .select(
-      'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, status, response_kind, responded_at'
+      'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_saving_kg_once, status, response_kind, responded_at'
     )
     // **`answered` autant que `pending` depuis C2.4.** La carte répondue reste le temps de la
     // période : sans les lignes répondues, le renforcement vivait dans un `useState` et

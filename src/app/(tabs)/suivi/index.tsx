@@ -44,6 +44,7 @@ import {
   type CheckinRecord,
   type DecisionDeSaison,
 } from '@/types/suivi';
+import { phraseDuGroupe } from '@/types/kilos-evites';
 import { formatTonnes } from '@/lib/format';
 import { FRANCE_AVERAGE_TRANSPORT_T, TARGET_2050_TRANSPORT_T } from '@/constants/carbon-reference';
 import { ligneDHorizon2050 } from '@/types/palier';
@@ -649,6 +650,7 @@ export default function Suivi() {
             {groupes.map((groupe) => {
               const deplie = groupesDeplies.includes(groupe.libelle);
               const visibles = deplie ? groupe.points : groupe.points.slice(0, POINTS_VISIBLES);
+              const kilos = phraseDuGroupe(groupe.points);
               return (
                 <View key={groupe.libelle} style={styles.groupe}>
                   <View style={styles.groupeEntete}>
@@ -659,6 +661,15 @@ export default function Suivi() {
                       {groupe.points.length} point{groupe.points.length > 1 ? 's' : ''}
                     </ThemedText>
                   </View>
+                  {/* **Ce que les « oui » de la saison ont évité, au moins** (étape 6a de `v1-35`). Le
+                      plan dit le total de la saison en cours ; le suivi le garde une fois la saison
+                      passée, groupe par groupe — sans lui, le progrès s'effacerait à chaque bascule. Sur
+                      **tous** les points du groupe, repliés compris, et jamais un zéro. */}
+                  {kilos && (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {kilos}
+                    </ThemedText>
+                  )}
                   <View style={styles.checkinList}>
                     {visibles.map((checkin) => (
                       <View key={checkin.id} style={styles.checkinRow}>

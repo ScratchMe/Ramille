@@ -33,7 +33,7 @@
 | 3 | **Le périmètre du bilan** | Oui : libellés élargis sur une étape, ou deux étapes. **Tranchée le 22/10/2026 : une étape**, des libellés qui disent la semaine et le week-end, et une cinquième réponse, « Presque tous les jours » (5 sorties par semaine). La question : « À quelle fréquence fais-tu des trajets pour tes loisirs, le week-end comme en semaine ? » — l'ordre inversé après coup, pour ne pas couper « week-end » au milieu (`FRONT-QUESTIONNAIRE.md`). Le poste s'appelle « Loisirs » | Questionnaire, calcul, méthodologie, kit, recettes (`v1-13` §11.39) | **Livrée le 22/10/2026** (#386). Migration `20261022201848`, appliquée en production avant la fusion ; test `60`. Le kit suit ; le film, non diffusé, attend l'étape 5 (§4) |
 | 4 | **Le web et l'iPhone** : le compte comme condition des rappels sur le web ; la purge des sessions anonymes à 120 jours | Une, posée en chemin le 23/10/2026 : **une feuille, une seule fois**, au premier engagement sur le web sans compte — « Sur le web, je ne peux te faire signe que par email. Rattache ton adresse pour recevoir le rappel. » (« Rattacher mon adresse », « Plus tard ») ; pas chez qui a déjà choisi « Sans rappel » | Feuille des rappels, migration, registre, confidentialité, conditions | **Livrée le 23/10/2026** (#387). Migration `20261023174656` (purge), appliquée en production avant la fusion ; test `61` ; recette web `v1-13` §11.W.10 |
 | 5 | **La page d'accueil du web**, avec le film | Quatre, **tranchées le 23/10/2026** : qui revient avec un bilan ou un questionnaire en cours **va directement à son plan** ; « Pas de série » **reste** à côté de « Deuxième semaine de suite… », qui ne se dit qu'une fois et ne compte rien — à rouvrir à l'étape 6a ; **sous le film, une ligne** : « Sur Android, Ramille te fait signe par notification ; sur le web, par email. » ; et, posée en chemin sur la contre-lecture, **depuis la page d'accueil l'onboarding s'ouvre à sa deuxième page** (« 9,5 tonnes en moyenne, 2 tonnes visées en 2050 »), la première redisant la page d'accueil | Racine du web, session ouverte au geste, mesure, onboarding, film (loisirs et écran du plan repris, `public/film/`), confidentialité, recette web (`v1-13` §11.W.11) | **Livrée le 23/10/2026** (#388). Migration `20261023233954` (la porte `accueil`), appliquée en production avant la fusion ; test `62` ; recette web `v1-13` §11.W.11 |
-| 6a | **Le progrès visible : le chiffre** | Oui : un « oui » ne dit pas combien de fois, et `v1-23` §3.2 refuse un second chiffre concurrent du bilan | Plan, suivi | À faire |
+| 6a | **Le progrès visible : le chiffre** | Oui : un « oui » ne dit pas combien de fois, et `v1-23` §3.2 refuse un second chiffre concurrent du bilan. **Tranchée le 24/10/2026 : des kilos de CO₂ évités, comptés « au moins une fois »** — un « oui » compte la plus petite chose qu'il veut dire, un seul trajet, donc le chiffre est toujours vrai et le prochain bilan ne le dément jamais ; une ligne après chaque « oui », un total pour la saison, séparés du bilan | Plan, suivi | En cours |
 | 6b | **Répondre au point depuis l'e-mail** | Non | Gabarit, page de confirmation (les antivirus de messagerie cliquent sur les liens) | À faire |
 | 6c | **Répondre au point depuis la notification Android** | Non | Natif : un build EAS | À faire |
 | 7 | **Le ménage**, facultatif : le bundle web d'un seul fichier, l'écran du plan | Oui : le faire ou pas | Refontes | À faire |
@@ -82,3 +82,13 @@
     chiffres sont ceux de l'app ; sa mise en page de ces quatre écrans, pas tout à fait. À reprendre au
     prochain export, celui du badge.
 - **Étape 3, la coupure du titre à 430 de large** : au relevé de la dette (`v1-27` §12.42).
+- **Étape 6a, ce que les kilos évités ne font pas, et pourquoi** :
+  - **un point répondu avant le 24/10/2026 ne compte rien** : la migration a rattrapé les actions de plan et
+    les points en attente, pas les points déjà répondus, que le trigger des réponses ferme. Le minimum n'en
+    est que plus bas, et seuls des comptes de test sont concernés ;
+  - **« Pas de score. Pas de série. » reste dans le film** (décision 2 de l'étape 5, à rouvrir ici) : un
+    minimum en kilos n'est ni un score — rien ne se classe, rien ne se compare, aucun manque ne se compte — ni
+    une série — « Deuxième semaine de suite » ne se dit toujours qu'une fois. La phrase reste vraie, donc elle
+    ne change pas ;
+  - **le gain d'un « oui » ne dit pas les jours** : « Mardi ou jeudi » vaut un aller, même si la personne a
+    fait les deux. Compter les fois, c'est C4.1, fermé pour la V1 (`v1-23`).

@@ -481,6 +481,66 @@ describe('Plan — l’accent des deux points ouverts', () => {
   });
 });
 
+/**
+ * **Ce que les « oui » de la saison ont évité, au moins** (étape 6a de `v1-35`, 24/10/2026).
+ * `kilosDeLaPeriodeEnMots` et `avecLesGestes` ont leurs tests ; ce qui ne se voit qu'ici est l'**appel** :
+ * que l'écran additionne tous les points lus — affichés ou non —, dans les bornes du cycle affiché, et
+ * qu'une réponse donnée sur sa carte entre dans le total sans attendre la relecture.
+ *
+ * Éprouvé en le cassant, le 24/10/2026, sur `src/app/(tabs)/plan/index.tsx` : le total pris sur les seuls
+ * points affichés → les deux ; les gestes ignorés → le second, seul. Et la carte qui ne signale pas sa
+ * réponse (`checkin-card.tsx`) → le second ici.
+ */
+describe('Plan — les kilos évités de la saison', () => {
+  const point = (surcharge: Record<string, unknown>) => ({
+    loop_type: 'commute',
+    period_label: 'Semaine du 22 septembre',
+    trip_label: CYCLE.trip_label,
+    poste: 'commute',
+    period_start: '2026-09-22',
+    question_kind: 'engagement',
+    mode: null,
+    committed_question: 'Mardi ou jeudi, as-tu fait ce trajet en train ?',
+    committed_action_text: 'Passer deux trajets sur cinq en train',
+    committed_saving_kg_once: 2.29,
+    status: 'answered',
+    response_kind: 'oui',
+    responded_at: '2026-09-29T08:00:00Z',
+    ...surcharge,
+  });
+  // Le plus récent d'abord, comme la requête les ordonne : la carte affichée est le point en attente.
+  const POINTS = [
+    point({ id: 'p4', period_start: '2026-10-13', period_label: 'Semaine du 13 octobre', status: 'pending', response_kind: null, responded_at: null, committed_saving_kg_once: 5.69 }),
+    point({ id: 'p3', period_start: '2026-10-06', response_kind: 'non' }),
+    point({ id: 'p2', period_start: '2026-09-29' }),
+    point({ id: 'p1', period_start: '2026-09-22', committed_saving_kg_once: 1.71 }),
+    // L'été : hors des bornes du cycle, il ne compte pas dans l'automne.
+    point({ id: 'p0', period_start: '2026-08-25', committed_saving_kg_once: 40 }),
+  ];
+
+  it('additionne les « oui » de la saison, et rien d’autre', async () => {
+    lectures({ engagement_checkins: async () => ({ data: POINTS, error: null }) });
+    render(<Plan />);
+    // 2,29 + 1,71 : le « non » n'évite rien, l'été est hors du cycle, le point en attente pas encore répondu.
+    expect(await screen.findByText('Cet automne, d’après tes réponses : au moins 4 kg CO₂e évités.')).toBeTruthy();
+  });
+
+  it('compte un « oui » donné sur la carte sans attendre la relecture', async () => {
+    lectures({
+      engagement_checkins: async () => ({ data: POINTS, error: null }),
+      'rpc:repondre_au_checkin': async () => ({ data: null, error: null }),
+    });
+    render(<Plan />);
+    await screen.findByText('Cet automne, d’après tes réponses : au moins 4 kg CO₂e évités.');
+
+    fireEvent.press(screen.getByText('Oui'));
+
+    // 4 + 5,69 : le total suit le geste, et la carte dit le sien.
+    expect(await screen.findByText('Cet automne, d’après tes réponses : au moins 9,6 kg CO₂e évités.')).toBeTruthy();
+    expect(screen.getByText('Au moins 5,6 kg CO₂e évités.')).toBeTruthy();
+  });
+});
+
 // ── Le rattachement constaté, et ce qui se compte ─────────────────────────────────────────────
 
 describe('Plan — un rattachement se compte, une reconnexion non (`v1-27` §12.28)', () => {

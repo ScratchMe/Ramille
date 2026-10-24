@@ -13,6 +13,12 @@ L'accent (fond `backgroundSelected`, étiquette `accentText`) désigne le point 
 
 **Une fois répondu, et seulement la deuxième période de suite, une phrase du produit s'ajoute** (`renforcement`) : « Deuxième semaine de suite que tu fais ce trajet autrement. », « Deuxième mois de suite que tu voyages autrement. » Elle marque le passage d'un geste à une habitude, puis se tait — à la cinquième elle serait fausse, et chaque semaine elle deviendrait du papier peint. Elle se compte sur les périodes, pas sur les lignes, et ce n'est pas Ramille qui la dit : Ramille ne compte jamais.
 
+**Après un « oui », ce qu'il a évité, au moins** (`kilos`, 24/10/2026, `v1-35` étape 6a, décidé avec la personne qui pilote) : « Au moins 2,2 kg CO₂e évités. », en `body` secondaire sous le renforcement. Un « oui » se compte **une fois** — un aller, une journée de télétravail, une sortie, un voyage : la plus petite chose qu'il veut dire —, donc le chiffre est toujours vrai et le prochain bilan ne le dément jamais. Il ne se dit qu'après un « oui » sur un point qui porte une action, arrondi vers le bas, et jamais dans la bulle de Ramille, qui ne dit pas de nombre. Le plan en fait le total de la saison, sous son titre ; le suivi le garde, saison par saison.
+
+```jsx
+<CheckinCard periodLabel="Semaine du 13/10" question="Mardi ou jeudi, as-tu fait ce trajet en train ?" answered="oui" kilos="Au moins 2,2 kg CO₂e évités." pied="Répondu lundi. Prochain point : lundi 27 octobre." />
+```
+
 **Une question figée peut nommer une action qu'on ne suit plus** : elle est composée à la génération du point, et changer d'avis ensuite ne la réécrit pas. `actionQuittee` ajoute sous elle « Cette question porte sur l’action que tu suivais alors : … ». Recomposer la question la ferait différer de la notification qu'on vient d'ouvrir.
 
 **Une boucle arrêtée ne donne pas rendez-vous** (30/09/2026) : un nouveau bilan peut arrêter la boucle d'un point pendant que sa carte répondue reste affichée. Le `pied` dit alors « Répondu lundi. » seul, et le `retour` de Ramille est une réplique sans rendez-vous — l'originale pour le « Oui », « Une semaine sans, ce n'est pas un retour en arrière. » pour le « Non » (« Un mois sans… » sur la boucle mensuelle ; un point de maintien garde `maintienNon`, qui ne promet rien), « Pas de trajet, pas de question. » pour la troisième réponse (« Pas de sortie… », « Pas de voyage… » selon le poste). Le visage ne change pas.
@@ -21,7 +27,7 @@ L'accent (fond `backgroundSelected`, étiquette `accentText`) désigne le point 
 
 **Deux échecs, deux places** : un `refus` (le point est clos) remplace les boutons, qui ne pourraient plus aboutir ; une `erreur` (la réponse n'est pas partie) s'ajoute sous eux, qui restent. La réplique de Ramille prend le focus quand elle remplace les boutons — jamais au chargement.
 
-Dans le texte, c'est **« le point »**, jamais « check-in » : `CheckinCard` est un nom de code. Pas de streak, pas de score. Un point sans réponse expire et n’est jamais relu.
+Dans le texte, c'est **« le point »**, jamais « check-in » : `CheckinCard` est un nom de code. Pas de streak, pas de score — les kilos évités ne sont ni l'un ni l'autre : le minimum de ce qui a été fait, sans classement ni comparaison, et jamais de manque. Un point sans réponse expire et n’est jamais relu.
 
 **La réponse se corrige jusqu’au point suivant** (02/10/2026, `v1-33` §6, décidé avec la personne qui pilote) : « Non » et « Oui » sont à 8 px l’un de l’autre, et un toucher erroné était définitif. La carte répondue porte, sous le pied, le lien « Modifier ma réponse » — souligné, tertiaire, comme « Changer d’avis ». Il rouvre la question et les trois réponses sous « Ta réponse : oui. » (`small` tertiaire, dans les mots des boutons — ils n’ont pas d’état « choisi », et c’est voulu), avec « Annuler » dessous. La nouvelle réponse reçoit sa réplique, le pied dit le jour de la correction, et « deux fois de suite » la suit. La correction tient le temps que la carte est affichée, jusqu’au point suivant.
 

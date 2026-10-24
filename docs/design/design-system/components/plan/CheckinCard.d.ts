@@ -27,6 +27,11 @@ export interface CheckinCardProps {
   retour?: { mood: 'calm' | 'happy' | 'encouraging'; ligne: string };
   /** Le second renforcement, sous la réplique — voix du produit : « Deuxième semaine de suite que tu fais ce trajet autrement. » Une seule fois. */
   renforcement?: string | null;
+  /**
+   * Ce que le « oui » a évité, au moins, sous la réplique — voix du produit : « Au moins 2,2 kg CO₂e évités. » (24/10/2026,
+   * `v1-35` étape 6a). Seulement après un « oui » sur un point qui porte une action ; le dépôt le dit au plancher du gain figé.
+   */
+  kilos?: string | null;
   /** Le pied de la carte répondue, du produit et non de Ramille : « Répondu lundi. Prochain point : lundi 21 septembre. » — « Répondu lundi. » seul quand la boucle du point ne tourne plus (30/09/2026). */
   pied?: string | null;
   /**

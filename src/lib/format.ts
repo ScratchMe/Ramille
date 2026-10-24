@@ -130,6 +130,49 @@ export function formatKm(km: number): string {
 }
 
 /**
+ * Un minimum, dans l'unité qui le rend lisible : « 2,2 kg CO₂e », « 27 kg CO₂e », « 1,6 t CO₂e »
+ * (étape 6a de `v1-35`, 24/10/2026).
+ *
+ * C'est la forme des kilos évités, qu'un « oui » au point compte **au moins une fois** : un chiffre
+ * qui dit « au moins » doit rester vrai jusqu'au dernier chiffre affiché. D'où deux écarts à
+ * `formatTonnes`, et seulement deux :
+ *
+ *   - **l'arrondi descend toujours** — 2,29 kg s'écrit « 2,2 » et jamais « 2,3 », 999,6 kg reste
+ *     « 999 kg » : arrondir au plus proche écrirait parfois plus que ce que le « oui » assure ;
+ *   - **un dixième sous 10 kg** : un seul aller sur un trajet court vaut moins de deux kilos, et
+ *     l'entier y écrirait « 1 kg » pour 1,9, ou rien du tout sous le kilo. Au-dessus, l'entier ; au
+ *     delà de la tonne, le dixième de tonne, comme partout.
+ *
+ * Le plancher se prend sur les **centièmes**, avec une marge d'un millionième : les gains viennent de
+ * la base au centième, et `0.29 * 100` vaut 28,999… en virgule flottante — un plancher nu perdrait un
+ * centième qu'aucun test sur des valeurs rondes ne montrerait.
+ *
+ * Rend aussi la **valeur écrite et son unité** : l'accord de la phrase qui le porte en dépend (« 1,4 kg
+ * évité », « 2 kg évités », « 1,6 t évitée »), et le relire dans le texte serait une seconde lecture
+ * de la même forme. `null` quand le minimum, à cette précision, est nul : « au moins 0 kg » ne dit rien.
+ */
+export function formatAuMoins(kg: number): { texte: string; valeur: number; unite: 'kg' | 't' } | null {
+  const centiemes = Math.floor(kg * 100 + 1e-6);
+  if (centiemes < 1000) {
+    const dixiemes = Math.floor(centiemes / 10);
+    if (dixiemes <= 0) return null;
+    const reste = dixiemes % 10;
+    const nombre = `${Math.floor(dixiemes / 10)}${reste === 0 ? '' : `,${reste}`}`;
+    return { texte: `${nombre} kg CO₂e`, valeur: dixiemes / 10, unite: 'kg' };
+  }
+  if (centiemes < 100000) {
+    const kilos = Math.floor(centiemes / 100);
+    return { texte: `${kilos} kg CO₂e`, valeur: kilos, unite: 'kg' };
+  }
+  const dixiemesDeTonne = Math.floor(centiemes / 10000);
+  return {
+    texte: `${Math.floor(dixiemesDeTonne / 10)},${dixiemesDeTonne % 10} t CO₂e`,
+    valeur: dixiemesDeTonne / 10,
+    unite: 't',
+  };
+}
+
+/**
  * Le nombre et son unité, une fois pour les deux formes.
  *
  * Extrait plutôt que recopié, ou pire, obtenu par un `.replace` sur la sortie de l'autre : c'est le

@@ -65,6 +65,7 @@ import {
   estDansLouverture,
   estPremierPlan,
   finDePeriodeEnMots,
+  kilosDeLaPeriodeEnMots,
   ouvertureDeSaison,
   ouvertureDuPremierPlan,
   progressionDeLaPeriode,
@@ -103,8 +104,10 @@ import {
   estDeLaPeriodeCourante,
   genreDeReponse,
   type PointRepondu,
+  type ReponseDuPoint,
   STATUT_DU_POINT,
 } from '@/types/checkin';
+import { avecLesGestes, type GesteSurLePoint } from '@/types/kilos-evites';
 import {
   boucleAVenir,
   boucleDeLAction,
@@ -218,6 +221,7 @@ function pointDeSaison(checkin: EngagementCheckin): PointDeSaison {
     periodStart: checkin.period_start,
     status: checkin.status,
     reponse: genreDeReponse(checkin.response_kind),
+    gainDUneFois: checkin.committed_saving_kg_once,
   };
 }
 
@@ -283,6 +287,12 @@ type LoadState =
        */
       historique: Record<EngagementCheckin['loop_type'], PointRepondu[]>;
       /**
+       * Tous les points de la fenêtre lue, affichés ou non (étape 6a de `v1-35`) : le total des kilos
+       * évités de la saison les additionne. La fenêtre couvre le cycle affiché en entier — elle part au
+       * plus tard du début du cycle précédent (`fenetreDesPoints`).
+       */
+      points: EngagementCheckin[];
+      /**
        * Est-ce le tout premier plan de cette personne ? (C5.6, `estPremierPlan`.)
        *
        * **Dans le `LoadState` et non dans un état à part**, parce que c'est un fait lu en base au
@@ -345,6 +355,16 @@ export default function Plan() {
   useTrackFocus('plan_view');
 
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  /**
+   * Les réponses données sur les cartes de cet écran depuis sa dernière lecture (étape 6a de `v1-35`).
+   * Le total de la saison les compte tant que la ligne relue ne les a pas rattrapées — la règle de la
+   * carte, dans `avecLesGestes`. Elles ne se vident pas : un geste dont la ligne a été relue ne
+   * s'applique plus de lui-même.
+   */
+  const [gestes, setGestes] = useState<Record<string, GesteSurLePoint>>({});
+  const noterLeGeste = useCallback((point: EngagementCheckin, reponse: ReponseDuPoint) => {
+    setGestes((avant) => ({ ...avant, [point.id]: { reponse, ligneAvant: point.responded_at } }));
+  }, []);
   // **Hors du `LoadState`, et pas par commodité** : la dernière relecture peut échouer
   // au-dessus de n'importe quel écran issu d'une lecture réussie — le plan, mais aussi
   // « en préparation » et « pas encore de bilan ». Porté par la variante `ok` seule, le drapeau
@@ -1035,6 +1055,7 @@ export default function Plan() {
           contexte: contexte ?? null,
           checkins: affiches,
           historique: historiqueParBoucle(points, affiches),
+          points,
           premierPlan,
         });
         planLu = true;
@@ -1299,7 +1320,7 @@ export default function Plan() {
     );
   }
 
-  const { cycle, assessmentId, assessmentDate, checkins, historique, premierPlan } = state;
+  const { cycle, assessmentId, assessmentDate, checkins, historique, points, premierPlan } = state;
   const actionsCount = cycle.plan_actions.length;
   // Lue avant les retours anticipés (`idEngage`) : l'effet qui montre la carte engagée la lit aussi.
   const committedActionId = idEngage;
@@ -1397,6 +1418,17 @@ export default function Plan() {
   const cadenceDeSaison = cadenceNommeUneSaison(cycle.cadence_type);
   const finDeLaPeriode = finDePeriodeEnMots(cycle.period_end);
   const progression = progressionDeLaPeriode(cycle.period_start, cycle.period_end, aujourdhui);
+
+  // **Ce que les « oui » de la saison ont évité, au moins** (étape 6a de `v1-35`, décidée le
+  // 24/10/2026). La somme des gains figés sur les points, réponses données ici comprises — jamais un
+  // calcul, jamais un zéro (`kilosDeLaPeriodeEnMots`). Les bornes sont celles du cycle affiché, celles
+  // que la carte d'ouverture relira à la saison suivante pour dire le total de celle-ci.
+  const kilosDeLaSaison = kilosDeLaPeriodeEnMots({
+    debut: cycle.period_start,
+    fin: cycle.period_end,
+    cadence: cycle.cadence_type,
+    points: avecLesGestes(points, gestes).map(pointDeSaison),
+  });
 
   // Les quatre sorties de la carte d'ouverture, dérivées plutôt qu'écrites dans le composant : le
   // canvas suppose une action engagée et reconduite, et deux cas de production ne peuvent pas
@@ -1828,6 +1860,17 @@ export default function Plan() {
               qu’on tient un cap.
             </ThemedText>
           )}
+          {/* **Le progrès de la saison, en tête** (étape 6a de `v1-35`). Sous le principe et au-dessus
+              des points : c'est la première chose qu'on relit en revenant, et elle répond à « où j'en
+              suis ? » avant la question de la semaine. **Pas près de Ramille** : la carte d'attente, qui
+              porte son visage, vient après les points — un chiffre juste au-dessus d'elle se lirait
+              comme son commentaire (`FRONT-MASCOTTE.md` §2.3). Voix produit, et la provenance dite
+              (« d’après tes réponses ») : ce n'est pas une mesure. */}
+          {kilosDeLaSaison !== null && (
+            <ThemedText type="body" themeColor="textSecondary">
+              {kilosDeLaSaison}
+            </ThemedText>
+          )}
         </View>
 
         {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est
@@ -1848,6 +1891,7 @@ export default function Plan() {
                 actionEngagee={actionEngageeTexte}
                 historique={historique[checkin.loop_type]}
                 boucleTourne={laBoucleDuPointTourne(boucles, checkin.loop_type)}
+                onReponse={noterLeGeste}
               />
             ))}
           </View>

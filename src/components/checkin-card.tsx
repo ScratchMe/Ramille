@@ -13,6 +13,7 @@ import { donnerLeFocus, FOCALISABLE_PAR_PROGRAMME, type TitreFocalisable } from 
 import { Apparition, HauteurSuivie, SansApparitionAuMontage } from '@/lib/mouvement';
 import { supabase } from '@/lib/supabase';
 import { messageDEcriture } from '@/types/ecriture-en-echec';
+import { phraseDuOui } from '@/types/kilos-evites';
 import { genreDeLEchec } from '@/types/lecture-en-echec';
 import {
   estDeuxiemeFoisDeSuite,
@@ -48,6 +49,11 @@ export type EngagementCheckin = {
   committed_question: string | null;
   /** Le libellé de l'action engagée au moment de la génération (C2.1), figé comme `trip_label`. */
   committed_action_text: string | null;
+  /**
+   * Le gain d'une fois de cette action, figé à la génération comme la question (étape 6a de `v1-35`,
+   * 24/10/2026) : ce qu'un « oui » a évité **au moins**. Nul sans action, ou sur un point d'avant.
+   */
+  committed_saving_kg_once: number | null;
   /**
    * `pending` | `answered` — `expired` n'arrive pas jusqu'ici, l'écran ne lit pas les points clos.
    * Depuis C2.4 la carte reste affichée après la réponse, le temps de la période : c'est donc le
@@ -100,6 +106,7 @@ export function CheckinCard({
   actionEngagee,
   historique,
   boucleTourne,
+  onReponse,
 }: {
   checkin: EngagementCheckin;
   emphasize: boolean;
@@ -122,6 +129,13 @@ export function CheckinCard({
    * passé la période d'avant, l'écran du plan lit déjà la fenêtre.
    */
   historique?: PointRepondu[];
+  /**
+   * Une réponse est partie d'ici (étape 6a de `v1-35`). Le plan en a besoin pour son total de la
+   * saison, qui ne relit pas la base à chaque geste : sans elle, la carte dirait « Au moins 2,2 kg »
+   * au-dessus d'un total qui ne le compte pas encore. Le point est passé tel qu'il était au geste —
+   * `responded_at` compris, pour que le plan reconnaisse, comme la carte, une ligne relue depuis.
+   */
+  onReponse?: (point: EngagementCheckin, reponse: ReponseDuPoint) => void;
 }) {
   /**
    * La réponse donnée ici, son instant, et ce que la ligne portait au moment du geste
@@ -224,6 +238,12 @@ export function CheckinCard({
       ? phraseDeSecondRenforcement(checkin)
       : null;
 
+  // **Ce que le « oui » a évité, au moins** (étape 6a de `v1-35`, décidée le 24/10/2026). Le gain est
+  // figé sur le point ; la carte ne calcule rien. Sur la réponse affichée — l'état local pendant
+  // l'aller-retour —, pour que la ligne arrive avec le geste, et reparte si « Modifier ma réponse »
+  // change le « oui » en « non ».
+  const kilos = phraseDuOui(reponse, checkin.committed_saving_kg_once);
+
   // La réponse passe par un RPC, jamais par un `update` : `engagement_checkins` porte des
   // libellés snapshotés (`trip_label`, `period_label`) et la clé d'idempotence de la génération
   // (`period_start`), et une policy UPDATE les aurait tous ouverts d'un coup — la RLS filtre des
@@ -248,6 +268,7 @@ export function CheckinCard({
       setGeste({ reponse: response, instant: new Date().toISOString(), ligneAvant: checkin.responded_at });
       setCorrection(false);
       setReponsesDonnees((n) => n + 1);
+      onReponse?.(checkin, response);
       return;
     }
 
@@ -420,6 +441,15 @@ export function CheckinCard({
               part. Voix produit et non celle de Ramille — elle constate un fait sur deux périodes, et
               Ramille ne compte jamais. Jamais un badge, jamais un compteur, jamais au-delà de deux. */}
           {renforcement && <ThemedText type="body">{renforcement}</ThemedText>}
+          {/* **Les kilos du « oui »** (étape 6a de `v1-35`). Voix produit, comme le renforcement : Ramille
+              ne dit jamais de nombre. Un minimum évité n'est pas le « chiffre lourd » que la règle de la
+              mascotte vise (`FRONT-MASCOTTE.md` §2.3) — une empreinte, un total —, et il se tient sous
+              sa phrase, jamais dans sa bulle. */}
+          {kilos && (
+            <ThemedText type="body" themeColor="textSecondary">
+              {kilos}
+            </ThemedText>
+          )}
           {/* Le pied est **du produit, pas d'elle** : il porte deux dates, et Ramille ne dit jamais
               de nombre. D'où le petit tertiaire sous sa phrase. */}
           {pied && (

@@ -663,6 +663,8 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
   touchent ensemble, et leur nombre ne s'écrit nulle part ;
 - un point, un message (`unique(checkin_id)`) ; ce qui s'espace est le message, jamais le point ;
 - les deux boucles partent du dernier bilan valide, par `boucles_du_dernier_bilan`.
+- un « oui » se compte **au moins une fois** : le gain d'une fois vient de l'estimateur, se fige sur
+  l'action puis sur le point (`committed_saving_kg_once`), et le client l'additionne sans rien calculer.
 
 **`COMPTE.md`** — la connexion, la session, le hors-ligne et la suppression :
 - pas de mot de passe : par e-mail, le rattachement et la reconnexion passent par un code à
@@ -697,7 +699,7 @@ avant de toucher à ce qu'elle garde. Chacune a coûté quelque chose avant d'ê
 autres fichiers d'outil : ce qui est propre à **un sujet** s'ouvre sur déclencheur, et la
 table en tête de ce fichier dit lesquels.
 
-Ce qui y est : les repères chiffrés et leurs trois formateurs, le palier, le vocabulaire des postes
+Ce qui y est : les repères chiffrés et leurs quatre formateurs, le palier, le vocabulaire des postes
 et ses quatre registres, la saison côté client, l'accessibilité, les deux onglets et leurs états de
 chargement, et ce que `api/` duplique de `src/`. **Et depuis le 01/10/2026, la famille `FRONT-*`**
 porte le reste — la mascotte, le questionnaire, la session et le démarrage, le suivi, le mouvement —,

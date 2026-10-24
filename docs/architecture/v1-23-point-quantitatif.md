@@ -13,6 +13,14 @@
 > tout**, sur un seul compte, tous deux « non » — la question « une réponse binaire perd-elle
 > quelque chose ? » n'a toujours aucune réponse observée. §6 est exécuté : `v1-07` §3.6 porte la
 > ligne, et l'issue #143 est fermée en renvoyant ici.
+>
+> **Rouvert en partie le 24/10/2026, sans compter les fois** (étape 6a de
+> `docs/architecture/v1-35-l-audit-en-chantiers.md`, décision de la personne qui pilote sur l'audit du
+> 18/10/2026). D1 reste fermé : la réponse reste « oui », « non » ou « sans objet ». Mais un « oui » dit
+> désormais ce qu'il a évité **au moins** — compté une fois, la plus petite chose qu'il affirme —, une
+> ligne sous la réplique et un total pour la saison. §3.2 tient : ce chiffre ne se retranche pas du bilan,
+> il n'est pas une empreinte vivante mais un minimum, toujours vrai, que le prochain bilan ne dément pas.
+> D3 aussi, pour sa moitié qui compte : Ramille ne porte pas le chiffre, et aucun « 0 » ne se dit.
 
 ## 1. D'où ça vient
 

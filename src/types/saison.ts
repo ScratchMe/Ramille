@@ -34,6 +34,7 @@
  */
 
 import { jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint, STATUT_DU_POINT } from '@/types/checkin';
+import { kilosEvites, kilosEvitesEnMots } from '@/types/kilos-evites';
 
 export const SAISONS = ['hiver', 'printemps', 'ete', 'automne'] as const;
 
@@ -190,6 +191,11 @@ export type PointDeSaison = {
    * `null` vaut donc uniquement « pas de réponse », et un point `answered` en porte toujours une.
    */
   reponse: ReponseDuPoint | null;
+  /**
+   * Le gain d'une fois de l'action que le point interroge, figé à sa génération
+   * (`committed_saving_kg_once`, étape 6a de `v1-35`). Nul sans action, ou sur un point d'avant.
+   */
+  gainDUneFois: number | null;
 };
 
 export type RecapDeSaison = {
@@ -197,6 +203,12 @@ export type RecapDeSaison = {
   repondus: number;
   /** Les « oui » — un trajet fait autrement. */
   changements: number;
+  /**
+   * Les kilos de CO₂e que ces « oui » ont évités, **au moins** (étape 6a de `v1-35`) : la somme des
+   * gains d'une fois, au centième exact. Zéro quand aucun « oui » ne porte de gain — et c'est aux
+   * phrases de taire le zéro, pas à ce compte.
+   */
+  kilosEvites: number;
 };
 
 /**
@@ -237,6 +249,7 @@ export function recapDeLaPeriode(
 ): RecapDeSaison {
   let repondus = 0;
   let changements = 0;
+  const comptes: PointDeSaison[] = [];
 
   for (const point of points) {
     if (point.status !== STATUT_DU_POINT.repondu) continue;
@@ -244,9 +257,10 @@ export function recapDeLaPeriode(
     if (jour < debut.slice(0, 10) || jour > fin.slice(0, 10)) continue;
     repondus += 1;
     if (point.reponse === 'oui') changements += 1;
+    comptes.push(point);
   }
 
-  return { repondus, changements };
+  return { repondus, changements, kilosEvites: kilosEvites(comptes) };
 }
 
 /**
@@ -502,7 +516,11 @@ function recapEnMots(
 ): string | null {
   if (!precedente) return null;
 
-  const { repondus, changements } = recapDeLaPeriode(points, precedente.debut, precedente.fin);
+  const { repondus, changements, kilosEvites: kilos } = recapDeLaPeriode(
+    points,
+    precedente.debut,
+    precedente.fin
+  );
   if (repondus === 0) return null;
 
   const saisonEcoulee = cadenceNommeUneSaison(precedente.cadence)
@@ -516,7 +534,41 @@ function recapEnMots(
   if (changements === 0) return `${sujet} : ${pointsRepondus}.`;
 
   // « fois » est invariable — un seul gabarit pour 1 comme pour 8.
-  return `${sujet} : ${pointsRepondus}, ${changements} fois où tu as changé quelque chose.`;
+  const recap = `${sujet} : ${pointsRepondus}, ${changements} fois où tu as changé quelque chose.`;
+
+  // Les kilos évités de la saison qui s'achève (étape 6a de `v1-35`), en seconde phrase : la première
+  // compte des réponses, celle-ci un minimum de CO₂e — deux unités dans une phrase se lisaient comme
+  // une seule mesure. Elle tombe quand aucun « oui » ne porte de gain, jamais « au moins 0 kg ».
+  const enMots = kilosEvitesEnMots(kilos);
+  return enMots === null ? recap : `${recap} ${enMots.charAt(0).toUpperCase()}${enMots.slice(1)}.`;
+}
+
+/**
+ * La ligne des kilos évités de la période en cours, sur le plan : « Cet automne, d’après tes
+ * réponses : au moins 27 kg CO₂e évités. » (étape 6a de `v1-35`, 24/10/2026).
+ *
+ * La période est celle du **cycle affiché**, bornes lues sur sa ligne, comme le récapitulatif de la
+ * carte d'ouverture lit celles du cycle précédent : les deux comptent donc les mêmes points, et la
+ * saison qui s'achève dit à son ouverture le total que le plan affichait la veille. Le sujet suit la
+ * cadence — un trimestre glissant n'a pas de saison, et dit « Ces trois mois ».
+ *
+ * « d’après tes réponses » dit d'où vient le chiffre : il n'est pas mesuré, il est le minimum de ce
+ * que les « oui » affirment. `null` quand il n'y a rien à dire — jamais un zéro, jamais un manque.
+ */
+export function kilosDeLaPeriodeEnMots(params: {
+  /** `plan_cycles.period_start` / `.period_end` / `.cadence_type` du cycle affiché. */
+  debut: string;
+  fin: string;
+  cadence: string;
+  points: PointDeSaison[];
+}): string | null {
+  const { kilosEvites: kilos } = recapDeLaPeriode(params.points, params.debut, params.fin);
+  const enMots = kilosEvitesEnMots(kilos);
+  if (enMots === null) return null;
+
+  const saison = cadenceNommeUneSaison(params.cadence) ? saisonDuJour(params.debut) : null;
+  const sujet = saison ? DEMONSTRATIF[saison.saison] : 'Ces trois mois';
+  return `${sujet}, d’après tes réponses : ${enMots}.`;
 }
 
 /**

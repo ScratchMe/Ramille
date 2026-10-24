@@ -232,7 +232,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   `TARGET_2050_TRANSPORT_T` est une **dérivation** explicitement signalée — aucune source
   publique ne donne d'objectif 2050 par poste d'empreinte individuelle — d'où le libellé
   « Repère » et non « Objectif » à l'écran.
-  **Trois formateurs, et ils ne disent pas la même chose.** `formatTonnes` (`src/lib/format.ts`)
+  **Quatre formateurs, et ils ne disent pas la même chose.** `formatTonnes` (`src/lib/format.ts`)
   bascule : kilos arrondis sous la tonne, dixième de tonne au-dessus — sans quoi tout ce qui vaut
   moins de 50 kg s'affichait « 0,0 t CO₂e », c'est-à-dire les postes secondaires de n'importe quel
   bilan et la phrase « Le repère 2050 est à ta portée : 0,0 t CO₂e de moins sur l'année »,
@@ -263,6 +263,15 @@ exactement ce qui avait laissé passer le mauvais caractère.
   (`variationDepuisLeBilanPrecedent`), là où deux bilans à 1 240 puis 1 180 kg s'affichaient tous
   deux « 1,2 t ». Le remède était bien une décision d'écran, pas une forme de plus dans le
   formateur du total.
+  **Le quatrième est `formatAuMoins`** (24/10/2026, étape 6a de `v1-35`) : la forme des kilos qu'un
+  « oui » a évités, **au moins**. Deux écarts à `formatTonnes`, et seulement deux : l'arrondi **descend
+  toujours** (2,29 kg s'écrit « 2,2 », 999,6 kg « 999 ») — un minimum arrondi au plus proche écrirait
+  parfois plus que ce que le « oui » assure —, et **un dixième sous 10 kg**, parce qu'un seul aller sur un
+  trajet court pèse moins de deux kilos. Il rend aussi la valeur écrite et son unité, dont l'accord dépend :
+  « 1,4 kg CO₂e évité », « 2 kg CO₂e évités », « 1,6 t CO₂e évitée » — la tonne est féminine, et un
+  « oui » sur un vol long-courrier la passe. Le plancher se prend sur les centièmes, à un millionième près :
+  `0.29 * 100` vaut 28,999… en virgule flottante. Les phrases qui le portent vivent dans
+  `src/types/kilos-evites.ts`, et ce que la boucle en fait, dans `BOUCLE.md` §2.
 - **Le palier de la restitution est le cap de la saison, jamais une marche inventée**
   (`src/types/palier.ts`). La barre « Repère 2050 » lui a cédé sa place : afficher 15,8 t à côté
   de 0,6 t donnait un rapport de 1 à 26 que le texte ne rattrape pas, et 2050 tient désormais
