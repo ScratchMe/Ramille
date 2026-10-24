@@ -14,7 +14,7 @@ const RETOURS = {
   non: { mood: 'encouraging', ligne: 'Pas cette fois-ci. Rien d’obligatoire, on se repose la question au prochain point.' },
   sans_objet: { mood: 'calm', ligne: 'Pas de trajet, pas de question. On se retrouve lundi.' },
 };
-export function CheckinCard({ periodLabel, question, emphasize = true, answered = null, onAnswer, sansObjet = 'Pas de trajet la semaine dernière', actionQuittee = null, refus = null, erreur = null, retour, renforcement = null, pied, correction = false, reponseEnPlace = null, onModify, onCancel }) {
+export function CheckinCard({ periodLabel, question, emphasize = true, answered = null, onAnswer, sansObjet = 'Pas de trajet la semaine dernière', actionQuittee = null, refus = null, erreur = null, retour, renforcement = null, kilos = null, pied, correction = false, reponseEnPlace = null, onModify, onCancel }) {
   // `true` / `false` : la forme d'avant la troisième réponse, que `ui_kits/ramille/` passe encore.
   const reponse = answered === true ? 'oui' : answered === false ? 'non' : answered;
   // L'accent désigne la question à regarder d'abord — celle de l'engagement quand deux points sont ouverts, celle du
@@ -65,6 +65,8 @@ export function CheckinCard({ periodLabel, question, emphasize = true, answered 
           {/* Le second renforcement : voix du produit, pas de Ramille — il constate un fait sur deux périodes, et
               elle ne compte jamais. Une fois, jamais au-delà de deux, jamais un badge. */}
           {renforcement && <ThemedText type="body">{renforcement}</ThemedText>}
+          {/* Ce que le « oui » a évité, au moins (24/10/2026) : voix du produit, sous la réplique, jamais dans sa bulle. */}
+          {kilos && <ThemedText type="body" themeColor="textSecondary">{kilos}</ThemedText>}
           {pied && <ThemedText type="small" themeColor="textTertiary">{pied}</ThemedText>}
           <TextLink label="Modifier ma réponse" apparence="souligne" onPress={() => onModify && onModify()} />
         </>

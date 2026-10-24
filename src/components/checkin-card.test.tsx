@@ -61,6 +61,7 @@ function point(surcharge: Partial<EngagementCheckin> = {}): EngagementCheckin {
     period_start: '2026-09-14',
     committed_question: 'Mardi ou jeudi, as-tu fait ce trajet en train ?',
     committed_action_text: 'Passer deux trajets sur cinq en train',
+    committed_saving_kg_once: 2.29,
     status: 'pending',
     response_kind: null,
     responded_at: null,
@@ -380,5 +381,68 @@ describe('CheckinCard — corriger sa réponse', () => {
     fireEvent.press(screen.getByText('Modifier ma réponse'));
     expect(screen.getByText('Oui')).toBeTruthy();
     expect(screen.queryByText(/^Ce point de suivi n’attend plus de réponse/)).toBeNull();
+  });
+});
+
+// **Ce que le « oui » a évité, au moins** (étape 6a de `v1-35`, 24/10/2026). `phraseDuOui` est gardée
+// par son test ; ici, ce que la carte lui passe — la réponse affichée et le gain figé du point — et
+// ce qu'elle transmet au plan pour son total.
+//
+// Éprouvé en le cassant, le 24/10/2026 : la réponse lue sur la ligne au lieu de la réponse affichée →
+// « dès le oui » et « part quand la correction dit non » ici, et le geste du plan (`plan.test.tsx`) ;
+// le signal au plan retiré → « dès le oui » ici, et le geste du plan.
+describe('CheckinCard — les kilos du « oui »', () => {
+  it('dit le minimum évité dès le « oui », et le transmet au plan', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+    const onReponse = jest.fn();
+    const checkin = point();
+    render(<CheckinCard checkin={checkin} emphasize boucleTourne onReponse={onReponse} />);
+
+    fireEvent.press(screen.getByText('Oui'));
+
+    await waitFor(() => expect(screen.getByText('Au moins 2,2 kg CO₂e évités.')).toBeTruthy());
+    expect(onReponse).toHaveBeenCalledWith(checkin, 'oui');
+  });
+
+  it('ne dit rien après un « non », ni sur un point sans action', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+    render(<CheckinCard checkin={point()} emphasize boucleTourne />);
+    fireEvent.press(screen.getByText('Non'));
+    await waitFor(() => expect(screen.getByText('Modifier ma réponse')).toBeTruthy());
+    expect(screen.queryByText(/kg CO₂e/)).toBeNull();
+
+    render(
+      <CheckinCard
+        checkin={point({
+          id: 'p2',
+          question_kind: 'generique',
+          committed_saving_kg_once: null,
+          status: 'answered',
+          response_kind: 'oui',
+          responded_at: '2026-09-21T08:00:00Z',
+        })}
+        emphasize
+        boucleTourne
+      />
+    );
+    expect(screen.queryByText(/kg CO₂e/)).toBeNull();
+  });
+
+  it('se relit sur une carte déjà répondue « oui », et part quand la correction dit « non »', async () => {
+    mockRpc.mockResolvedValue({ error: null });
+    render(
+      <CheckinCard
+        checkin={point({ status: 'answered', response_kind: 'oui', responded_at: '2026-09-21T08:00:00Z' })}
+        emphasize
+        boucleTourne
+      />
+    );
+    expect(screen.getByText('Au moins 2,2 kg CO₂e évités.')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Modifier ma réponse'));
+    fireEvent.press(screen.getByText('Non'));
+
+    await waitFor(() => expect(screen.getByText('Modifier ma réponse')).toBeTruthy());
+    expect(screen.queryByText(/kg CO₂e/)).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import {
   estDansLouverture,
   estPremierPlan,
   finDePeriodeEnMots,
+  kilosDeLaPeriodeEnMots,
   JOURS_DOUVERTURE,
   ouvertureDeSaison,
   ouvertureDuPremierPlan,
@@ -100,8 +101,9 @@ describe('recapDeSaison', () => {
   const point = (
     periodStart: string,
     status: string,
-    reponse: PointDeSaison['reponse']
-  ): PointDeSaison => ({ periodStart, status, reponse });
+    reponse: PointDeSaison['reponse'],
+    gainDUneFois: number | null = null
+  ): PointDeSaison => ({ periodStart, status, reponse, gainDUneFois });
 
   it('compte les répondus et les oui de la période', () => {
     const r = recapDeSaison(
@@ -112,7 +114,7 @@ describe('recapDeSaison', () => {
       ],
       automne
     );
-    expect(r).toEqual({ repondus: 3, changements: 2 });
+    expect(r).toEqual({ repondus: 3, changements: 2, kilosEvites: 0 });
   });
 
   // **Aucune mécanique d'échec** : les points non répondus ne sont pas comptés, et il n'y a
@@ -127,8 +129,27 @@ describe('recapDeSaison', () => {
       ],
       automne
     );
-    expect(r).toEqual({ repondus: 1, changements: 1 });
-    expect(Object.keys(r)).toEqual(['repondus', 'changements']);
+    expect(r).toEqual({ repondus: 1, changements: 1, kilosEvites: 0 });
+    // Le troisième champ (étape 6a de `v1-35`) compte ce que les « oui » ont évité : encore ce qui a été
+    // fait, jamais ce qui a été laissé passer.
+    expect(Object.keys(r)).toEqual(['repondus', 'changements', 'kilosEvites']);
+  });
+
+  // **Les kilos évités** (étape 6a de `v1-35`, 24/10/2026) : la somme des gains figés des seuls « oui »
+  // répondus de la période, au centième exact.
+  it('additionne les gains d’une fois des « oui » répondus de la période', () => {
+    const r = recapDeSaison(
+      [
+        point('2026-09-07', 'answered', 'oui', 2.29),
+        point('2026-09-14', 'answered', 'non', 2.29),
+        point('2026-09-21', 'answered', 'oui', 5.69),
+        point('2026-09-28', 'pending', null, 2.29),
+        point('2026-12-07', 'answered', 'oui', 2.29),
+        point('2026-10-05', 'answered', 'oui', null),
+      ],
+      automne
+    );
+    expect(r).toEqual({ repondus: 4, changements: 3, kilosEvites: 7.98 });
   });
 
   // Le filtre est `status = 'answered'`, **jamais** la réponse elle-même : c'est ce qui a rendu le
@@ -136,7 +157,7 @@ describe('recapDeSaison', () => {
   // qui est un point bel et bien répondu.
   it('compte un point répondu sans objet, sans le compter comme un changement', () => {
     const r = recapDeSaison([point('2026-10-12', 'answered', 'sans_objet')], automne);
-    expect(r).toEqual({ repondus: 1, changements: 0 });
+    expect(r).toEqual({ repondus: 1, changements: 0, kilosEvites: 0 });
   });
 
   it('exclut ce qui tombe hors des bornes, veilles comprises', () => {
@@ -149,7 +170,7 @@ describe('recapDeSaison', () => {
       ],
       automne
     );
-    expect(r).toEqual({ repondus: 2, changements: 2 });
+    expect(r).toEqual({ repondus: 2, changements: 2, kilosEvites: 0 });
   });
 
   it('accepte un horodatage complet et n’en lit que le jour', () => {
@@ -158,7 +179,7 @@ describe('recapDeSaison', () => {
   });
 
   it('rend zéro sur une saison vide', () => {
-    expect(recapDeSaison([], automne)).toEqual({ repondus: 0, changements: 0 });
+    expect(recapDeSaison([], automne)).toEqual({ repondus: 0, changements: 0, kilosEvites: 0 });
   });
 });
 
@@ -279,9 +300,57 @@ describe('estDansLouverture', () => {
   });
 });
 
+// **Les kilos évités de la période** (étape 6a de `v1-35`, 24/10/2026). Éprouvé en le cassant le même
+// jour, une mutation à la fois sur `src/types/saison.ts` : les kilos comptés hors des bornes de la période
+// → « additionne les gains… de la période » et « nomme la saison du cycle » ; la saison nommée sur un
+// trimestre glissant → « Ces trois mois », seul ; le récapitulatif de l'ouverture sans sa phrase des kilos →
+// « ajoute ce que les oui… », seul ; un zéro dit → « ne dit rien… », seul.
+describe('kilosDeLaPeriodeEnMots', () => {
+  const oui = (periodStart: string, gainDUneFois: number | null): PointDeSaison => ({
+    periodStart,
+    status: 'answered',
+    reponse: 'oui',
+    gainDUneFois,
+  });
+
+  it('nomme la saison du cycle et dit d’où vient le chiffre', () => {
+    expect(
+      kilosDeLaPeriodeEnMots({
+        debut: '2026-09-01',
+        fin: '2026-11-30',
+        cadence: 'season',
+        points: [oui('2026-09-07', 2.29), oui('2026-10-05', 25.2), oui('2026-08-25', 40)],
+      })
+    ).toBe('Cet automne, d’après tes réponses : au moins 27 kg CO₂e évités.');
+  });
+
+  it('dit « Ces trois mois » sur un trimestre glissant, qui n’a pas de saison', () => {
+    expect(
+      kilosDeLaPeriodeEnMots({
+        debut: '2026-09-15',
+        fin: '2026-12-14',
+        cadence: 'rolling_quarter',
+        points: [oui('2026-09-21', 5.69)],
+      })
+    ).toBe('Ces trois mois, d’après tes réponses : au moins 5,6 kg CO₂e évités.');
+  });
+
+  // Jamais un zéro : sans « oui » qui porte un gain, la ligne ne se rend pas.
+  it('ne dit rien quand aucun « oui » ne porte de gain', () => {
+    expect(
+      kilosDeLaPeriodeEnMots({
+        debut: '2026-09-01',
+        fin: '2026-11-30',
+        cadence: 'season',
+        points: [oui('2026-09-07', null), { ...oui('2026-09-14', 2.29), reponse: 'non' }],
+      })
+    ).toBeNull();
+  });
+});
+
 describe('ouvertureDeSaison', () => {
   const points = (...jours: string[]): PointDeSaison[] =>
-    jours.map((periodStart) => ({ periodStart, status: 'answered', reponse: 'oui' as const }));
+    jours.map((periodStart) => ({ periodStart, status: 'answered', reponse: 'oui' as const, gainDUneFois: null }));
 
   const ete = { debut: '2026-06-01', fin: '2026-08-31', cadence: 'season' };
 
@@ -329,12 +398,28 @@ describe('ouvertureDeSaison', () => {
       cadence: 'season',
       precedente: ete,
       points: [
-        { periodStart: '2026-06-08', status: 'expired', reponse: null },
-        { periodStart: '2026-07-06', status: 'pending', reponse: null },
+        { periodStart: '2026-06-08', status: 'expired', reponse: null, gainDUneFois: null },
+        { periodStart: '2026-07-06', status: 'pending', reponse: null, gainDUneFois: null },
       ],
     });
     expect(r.titre).toBe('L’automne commence.');
     expect(r.corps).toBeNull();
+  });
+
+  // **Les kilos de la saison qui s'achève, en seconde phrase** (étape 6a de `v1-35`).
+  it('ajoute ce que les « oui » de la saison écoulée ont évité, au moins', () => {
+    const r = ouvertureDeSaison({
+      debutDuCycle: '2026-09-01',
+      cadence: 'season',
+      precedente: ete,
+      points: [
+        { periodStart: '2026-06-08', status: 'answered', reponse: 'oui', gainDUneFois: 2.29 },
+        { periodStart: '2026-07-06', status: 'answered', reponse: 'oui', gainDUneFois: 1601 },
+      ],
+    });
+    expect(r.corps).toBe(
+      'Cet été : 2 points répondus, 2 fois où tu as changé quelque chose. Au moins 1,6 t CO₂e évitée.'
+    );
   });
 
   // Aucun changement n'est pas un échec : la seconde moitié de la phrase tombe, le décompte des
@@ -345,8 +430,8 @@ describe('ouvertureDeSaison', () => {
       cadence: 'season',
       precedente: ete,
       points: [
-        { periodStart: '2026-06-08', status: 'answered', reponse: 'non' },
-        { periodStart: '2026-07-06', status: 'answered', reponse: 'sans_objet' },
+        { periodStart: '2026-06-08', status: 'answered', reponse: 'non', gainDUneFois: null },
+        { periodStart: '2026-07-06', status: 'answered', reponse: 'sans_objet', gainDUneFois: null },
       ],
     });
     expect(r.corps).toBe('Cet été : 2 points répondus.');
@@ -415,11 +500,11 @@ describe('recapDeLaPeriode', () => {
   // horodatage complet ne doit pas décaler la comparaison.
   it('accepte des bornes horodatées et n’en lit que le jour', () => {
     const r = recapDeLaPeriode(
-      [{ periodStart: '2026-06-01', status: 'answered', reponse: 'oui' }],
+      [{ periodStart: '2026-06-01', status: 'answered', reponse: 'oui', gainDUneFois: null }],
       '2026-06-01T00:00:00.000Z',
       '2026-08-31T00:00:00.000Z'
     );
-    expect(r).toEqual({ repondus: 1, changements: 1 });
+    expect(r).toEqual({ repondus: 1, changements: 1, kilosEvites: 0 });
   });
 });
 

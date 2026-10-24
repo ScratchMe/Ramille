@@ -603,6 +603,16 @@
 // la disparition d'un coup, ce que PF8b — qui redescend avant de naviguer — corrige : sans lui, l'assertion
 // de l'adresse n'aurait été vue tomber par aucune mutation.
 //
+// **Les kilos du « oui »** (24/10/2026, `v1-35` étape 6a) : le point engagé porte un gain d'une fois figé, la
+// carte en dit le plancher au dixième dès le geste, et le plan en fait le total de la saison sans relecture
+// — quand la semaine interrogée est dans le cycle. Rejouées une à la fois, un export chacune :
+//
+//   | Ce qu'on casse | Où le parcours s'arrête, et sur quoi |
+//   |---|---|
+//   | PK1 — la carte ne rend pas la ligne des kilos | « point » : « Au moins … » n'est jamais apparu |
+//   | PK2 — la carte ne signale pas sa réponse au plan | « point » : le total de la saison n'apparaît qu'à la relecture |
+//   | PK3 — le total rendu sans `Depliage` | « point » : le total apparaît d'un coup |
+//
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
 import { readFileSync } from 'node:fs';
@@ -2138,9 +2148,18 @@ try {
   // ── 7. Un point généré comme le cron le ferait, puis répondu ────────────────────────────────
   etape('point — génération (service_role) puis réponse');
   await rpc('generate_commute_checkins', SERVICE);
-  const [point] = await lire('engagement_checkins?select=id,status,question_kind,committed_question', jeton);
+  const [point] = await lire(
+    'engagement_checkins?select=id,status,question_kind,committed_question,committed_saving_kg_once,period_start',
+    jeton
+  );
   assurer(point && point.status === 'pending', `point lu : ${JSON.stringify(point)}`);
   assurer(point.question_kind === 'engagement', `genre du point ${point.question_kind}, attendu engagement`);
+  // Le gain d'une fois de l'action engagée, figé sur le point par le générateur (étape 6a de `v1-35`) :
+  // c'est ce que la carte dira après le « oui ».
+  assurer(
+    Number(point.committed_saving_kg_once) > 0,
+    `le point engagé ne porte pas de gain d’une fois (${point.committed_saving_kg_once}) : le générateur ne l’a pas figé`
+  );
   assurer(
     /^Mardi ou jeudi, /.test(point.committed_question ?? ''),
     `question figée « ${point.committed_question} », attendue sur « Mardi ou jeudi, … »`
@@ -2200,7 +2219,14 @@ try {
       ' doit laisser de la place autour du contenu (`MARGE_DE_DECOUPE`, src/lib/mouvement.tsx)'
   );
   const avantLaReponse = await mesurer(page, 'texte', CAP);
-  const reponse = await releverPendant(page, { cap: ['texte', CAP] }, () => oui.click());
+  // Le total de la saison, absent avant ce premier « oui » ; il se déplie pendant (plus bas).
+  const TOTAL_DE_LA_SAISON = 'd’après tes réponses';
+  const totalAvantLaReponse = await mesurer(page, 'depli', TOTAL_DE_LA_SAISON);
+  const reponse = await releverPendant(
+    page,
+    { cap: ['texte', CAP], total: ['depli', TOTAL_DE_LA_SAISON] },
+    () => oui.click()
+  );
   const apresLaReponse = await mesurer(page, 'texte', CAP);
   assurer(
     avantLaReponse && apresLaReponse && Math.abs(apresLaReponse.haut - avantLaReponse.haut) > 1,
@@ -2223,6 +2249,41 @@ try {
     repondu.status === 'answered' && repondu.response_kind === 'oui' && repondu.response === true,
     `réponse enregistrée : ${JSON.stringify(repondu)}`
   );
+
+  // **Ce que le « oui » a évité, au moins** (étape 6a de `v1-35`, 24/10/2026) : la carte le dit dès le
+  // geste, au plancher du gain figé — jamais au-dessus, et à moins d'un dixième en dessous. Et le plan en
+  // fait le total de la saison sans attendre de relecture, quand la semaine interrogée est dans le cycle :
+  // la première semaine d'une saison interroge la dernière de la précédente, qui ne compte pas ici.
+  const minimumAffiche = async (motif) => {
+    await attendreTexte(motif);
+    const texte = (await page.getByText(motif).first().textContent()) ?? '';
+    return Number(texte.match(motif)?.[1].replace(',', '.'));
+  };
+  const gain = Number(point.committed_saving_kg_once);
+  const duOui = await minimumAffiche(/^Au\smoins\s(\d+(?:,\d)?)\skg\sCO₂e\sévités?\.$/);
+  assurer(
+    duOui <= gain && gain - duOui < 0.1 + 1e-9,
+    `la carte dit « au moins ${duOui} kg » d’un gain figé à ${gain} kg : le minimum doit en être le plancher au dixième`
+  );
+  const [cycleDuPlan] = await lire('plan_cycles?select=period_start&order=period_start.desc&limit=1', jeton);
+  if (point.period_start >= cycleDuPlan.period_start) {
+    const deLaSaison = await minimumAffiche(
+      /^Ce(?:t)?\s\S+, d’après tes réponses\s?:\sau\smoins\s(\d+(?:,\d)?)\skg\sCO₂e\sévités?\.$/
+    );
+    assurer(
+      deLaSaison === duOui,
+      `le total de la saison dit ${deLaSaison} kg, la carte ${duOui} : le seul « oui » de la saison doit faire les deux`
+    );
+    // **Et il s'est déplié**, au-dessus de la carte qu'on vient de toucher, au lieu d'apparaître d'un coup :
+    // absent avant le geste, puis une découpe strictement entre zéro et sa hauteur posée (`Depliage`).
+    assurer(totalAvantLaReponse === null, 'le total de la saison était déjà là avant le premier « oui » de la saison');
+    const totalPose = await mesurer(page, 'depli', TOTAL_DE_LA_SAISON);
+    assurer(
+      reponse.some((e) => e.total?.decoupe && e.total.hauteur > 0.5 && e.total.hauteur < totalPose.hauteur - 0.5),
+      `le total de la saison apparaît d'un coup (${totalPose.hauteur} px, sans hauteur intermédiaire) au-dessus de la` +
+        ' carte du point : il doit se déplier (`Depliage`, src/app/(tabs)/plan/index.tsx)'
+    );
+  }
 
   // ── 8. Le suivi ────────────────────────────────────────────────────────────────────────────
   etape('suivi');

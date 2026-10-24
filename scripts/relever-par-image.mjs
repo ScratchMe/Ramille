@@ -118,6 +118,24 @@ export function releverParImage(depuisLeDebut) {
       }
       return null;
     },
+    // **Un dépli qui porte un texte** (`Depliage`, 24/10/2026) : la hauteur de sa découpe pendant qu'il
+    // s'ouvre — le premier ancêtre proche qui ne laisse rien dépasser —, ou celle du texte une fois libre.
+    // Le texte se cherche par un **fragment** : celui du total de la saison change de nombre et de saison.
+    // Quatre ancêtres au plus : au-delà, la découpe serait celle d'un cadre qui n'a rien à voir.
+    depli: (fragment) => {
+      const n = [...document.querySelectorAll('body *')].find(
+        (e) =>
+          visible(e) &&
+          normaliser(e.innerText).includes(fragment) &&
+          ![...e.children].some((c) => normaliser(c.innerText).includes(fragment))
+      );
+      if (!n) return null;
+      let a = n.parentElement;
+      for (let i = 0; a && i < 4; i += 1, a = a.parentElement) {
+        if (getComputedStyle(a).overflowY === 'hidden') return { hauteur: a.getBoundingClientRect().height, decoupe: true };
+      }
+      return { hauteur: n.getBoundingClientRect().height, decoupe: false };
+    },
     // **Une carte ouverte dans la fenêtre qui défile** (`v1-32`, 29/09/2026) : le haut de son titre et
     // le bas de son bouton, comptés depuis le haut de la fenêtre de défilement — c'est-à-dire sous la
     // bande haute —, la hauteur de cette fenêtre, et sa position de défilement. Le titre se trouve

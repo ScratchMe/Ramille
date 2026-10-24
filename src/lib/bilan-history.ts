@@ -120,7 +120,9 @@ export async function loadAssessmentHistory(): Promise<LectureQuiDitPourquoi<Ass
 export async function loadAnsweredCheckins(): Promise<LectureQuiDitPourquoi<CheckinRecord[]>> {
   const { data, error, status } = await supabase
     .from('engagement_checkins')
-    .select('id, loop_type, period_label, period_start, response_kind, responded_at')
+    // `committed_saving_kg_once` : le gain d'une fois figé sur le point (étape 6a de `v1-35`), dont
+    // chaque groupe de saison dit le total des « oui ».
+    .select('id, loop_type, period_label, period_start, response_kind, responded_at, committed_saving_kg_once')
     .eq('status', STATUT_DU_POINT.repondu)
     .order('period_start', { ascending: false });
 
@@ -138,6 +140,7 @@ export async function loadAnsweredCheckins(): Promise<LectureQuiDitPourquoi<Chec
             periodStart: checkin.period_start,
             reponse,
             respondedAt: checkin.responded_at,
+            gainDUneFois: checkin.committed_saving_kg_once,
           },
         ];
   });

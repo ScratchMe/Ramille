@@ -44,6 +44,11 @@ export type CheckinRecord = {
    */
   reponse: ReponseDuPoint;
   respondedAt: string;
+  /**
+   * Le gain d'une fois de l'action interrogée, figé à la génération du point (étape 6a de `v1-35`).
+   * Nul sans action, ou sur un point d'avant. Un « oui » vaut au moins ce chiffre.
+   */
+  gainDUneFois: number | null;
 };
 
 /**

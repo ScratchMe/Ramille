@@ -45,6 +45,12 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   reconnaissance vit dans le compteur et dans le mot de Ramille, pas dans la couleur d'une ligne.
   La liste est **groupée par saison**, chaque groupe portant son vrai total — elle était tronquée à
   huit **en silence** sous un compteur global qui en annonçait davantage.
+  **Et chaque groupe dit ce que ses « oui » ont évité, au moins** (24/10/2026, étape 6a de `v1-35`) :
+  « Au moins 27 kg CO₂e évités, d’après tes réponses. », sous son en-tête, sur **tous** ses points —
+  repliés compris — et jamais un zéro (`phraseDuGroupe`). La saison en cours comprise, et c'est surtout pour
+  les saisons passées que le suivi le porte : le plan ne dit que le total de la saison en cours, et sans le
+  suivi le progrès s'effacerait à chaque bascule. Ce n'est pas
+  une mesure, c'est la somme des gains figés sur les points (`BOUCLE.md` §2), d'où la provenance dite.
 - **`keepLatestPerDay` regroupe sur le jour LOCAL** (C2.7). Les dix premiers caractères d'un
   `timestamptz` sont son jour **UTC** : un bilan soumis le 10 mars à 23 h 00 UTC et sa correction le
   11 à 00 h 30 UTC sont le même 11 mars à Paris, et l'ancien regroupement en faisait deux barres

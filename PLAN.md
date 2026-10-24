@@ -37,6 +37,23 @@ n'a pas coché près de chez elle. L'estimateur lit l'instantané par segment fi
 jamais recalculer les km ailleurs**, les deux implémentations divergeraient. Les gains sont
 ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
 
+**L'estimateur rend aussi le gain d'une seule fois** (`saving_kg_once`, 24/10/2026, étape 6a de `v1-35`) :
+ce qu'un « oui » au point veut dire au minimum — un aller, une journée de télétravail, un aller ou une
+sortie entière pour les loisirs, l'action entière pour un voyage que sa question nomme. La part d'un aller se lit sur l'instantané
+(`commute_trip_distance_km` sur les kilomètres annuels **des deux jambes**, `leisure_trip_distance_km` sur
+ceux des loisirs), donc ni les 45 semaines ni les fréquences ne sont recopiées, et le facteur de réduction
+est celui du gain annuel. **Tronqué au centième, jamais arrondi vers le haut**, pour les voyages comme pour le
+reste : le point d'un voyage peut donc dire un kilo de moins que la carte du plan, jamais un de plus. Une
+contrainte le garde sous le gain annuel — et le gain d'une fois prend le plus petit de sa troncature et de l'arrondi du
+gain annuel, sans quoi un voyage (où les deux sont presque égaux) ferait refuser le plan **entier** par
+cette contrainte, en silence, à chaque génération. Le test `63` vérifie, sans recopier la formule, que le
+gain d'une fois multiplié par le nombre de fois de l'année rend le gain annuel. **Il est nul quand la
+question du gabarit ne nomme pas ce qu'un « oui » compte** (`action_templates.oui_se_compte`, sans valeur
+par défaut : un gabarit ajouté choisit). **Et il se fige à la génération du plan, alors que la question se
+fige à celle du point, depuis le gabarit courant** : changer la question ou les `trips` d'un gabarit impose
+de revoir `saving_kg_once` des actions déjà figées sur lui, sans quoi une question neuve porterait un gain
+ancien. Ce qu'en fait la boucle : `BOUCLE.md` §2.
+
 **Le plan fige TOUTES les actions au gain suffisant, et c'est l'écran qui en montre deux** (C4.6,
 `20260913110000_pistes_et_premier_pas.sql`). `generate_plan_cycle_for_user` portait un `limit 2` — un
 choix d'écran écrit dans le SQL — qui jetait les autres leviers avant même de les écrire, alors que

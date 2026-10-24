@@ -263,7 +263,12 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //
 // **Et le même jour, la page d'accueil du site** (`v1-35` étape 5) : la racine du web présente le produit
 // sans ouvrir de session, et la phrase qui nomme les pages qui n'en créent pas la compte. Même date.
-const UPDATED_AT = '23 octobre 2026';
+//
+// **24/10/2026 : ce que les « oui » ont évité, au moins** (décision de la personne qui pilote, `v1-35`
+// étape 6a, `ce_qu_un_oui_a_evite`). Le plan et le suivi disent des kilos de CO₂e évités, calculés depuis
+// les réponses au bilan et aux points : un résultat calculé de plus, que la définition nomme. Rien de
+// nouveau n'est demandé à la personne, et l'export le rend.
+const UPDATED_AT = '24 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -312,7 +317,8 @@ const SECTIONS: LegalSection[] = [
             term: 'Les résultats calculés',
             text:
               'Le total annuel estimé, sa répartition par poste, le poste qui pèse le plus, et le plan de réduction associé. ' +
-              'Ces résultats sont figés au moment du calcul pour rester comparables dans le temps.',
+              'Ces résultats sont figés au moment du calcul pour rester comparables dans le temps. Quand tu réponds « oui » ' +
+              'à un point de suivi, le gain d’une seule fois de ton action donne aussi ce que tu as évité, au moins.',
           },
           {
             term: 'Tes réponses aux points de suivi',

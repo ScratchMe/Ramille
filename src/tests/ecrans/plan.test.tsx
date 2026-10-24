@@ -398,6 +398,50 @@ describe('Plan — la carte de saison, « Choisir une action »', () => {
     fireEvent.press(await screen.findByRole('button', { name: 'Choisir une autre' }));
     expect(router.push).toHaveBeenCalledWith('/plan/pistes');
   });
+
+  // **Le « oui » du début de saison compte dans le récapitulatif de la saison écoulée** (étape 6a de
+  // `v1-35`, contre-lecture du 24/10/2026). Le dernier point d'une saison se répond dans la suivante,
+  // pendant que la carte d'ouverture est à l'écran : il appartient à la saison qu'elle récapitule, pas à
+  // celle du total du plan. Éprouvé en le cassant, le 24/10/2026 : la carte rendue sur son contenu du
+  // chargement (`ouverture` au lieu de `ouvertureAffichee`) → ce test, seul.
+  it('compte dans la carte d’ouverture un « oui » donné sur le dernier point de la saison écoulée', async () => {
+    lectures({
+      plan_cycles: async () => ({ data: cycles(true), error: null }),
+      engagement_checkins: async () => ({
+        data: [
+          {
+            id: 'p1',
+            loop_type: 'commute',
+            period_label: 'Semaine du dernier lundi',
+            trip_label: CYCLE.trip_label,
+            poste: 'commute',
+            period_start: jour(-2),
+            question_kind: 'engagement',
+            mode: null,
+            committed_question: 'Mardi, as-tu fait ce trajet en train ?',
+            committed_action_text: 'Passer deux trajets sur cinq en train',
+            committed_saving_kg_once: 5.69,
+            status: 'pending',
+            response_kind: null,
+            responded_at: null,
+          },
+        ],
+        error: null,
+      }),
+      'rpc:repondre_au_checkin': async () => ({ data: null, error: null }),
+    });
+    render(<Plan />);
+    await screen.findByRole('button', { name: 'Choisir une autre' });
+    expect(screen.queryByText(/Au moins 5,6 kg CO₂e évités\.$/)).toBeNull();
+
+    fireEvent.press(screen.getByText('Oui'));
+
+    expect(
+      await screen.findByText(/1 point répondu, 1 fois où tu as changé quelque chose\. Au moins 5,6 kg CO₂e évités\.$/)
+    ).toBeTruthy();
+    // Il n'entre pas dans le total de la saison qui commence : sa semaine est dans l'autre.
+    expect(screen.queryByText(/d’après tes réponses/)).toBeNull();
+  });
 });
 
 /**
@@ -478,6 +522,66 @@ describe('Plan — l’accent des deux points ouverts', () => {
     };
     expect(await couleur('Septembre 2026')).toBe(Colors.light.accentText);
     expect(await couleur('Semaine du 22 septembre')).toBe(Colors.light.textTertiary);
+  });
+});
+
+/**
+ * **Ce que les « oui » de la saison ont évité, au moins** (étape 6a de `v1-35`, 24/10/2026).
+ * `kilosDeLaPeriodeEnMots` et `avecLesGestes` ont leurs tests ; ce qui ne se voit qu'ici est l'**appel** :
+ * que l'écran additionne tous les points lus — affichés ou non —, dans les bornes du cycle affiché, et
+ * qu'une réponse donnée sur sa carte entre dans le total sans attendre la relecture.
+ *
+ * Éprouvé en le cassant, le 24/10/2026, sur `src/app/(tabs)/plan/index.tsx` : le total pris sur les seuls
+ * points affichés → les deux ; les gestes ignorés → le second, seul. Et la carte qui ne signale pas sa
+ * réponse (`checkin-card.tsx`) → le second ici.
+ */
+describe('Plan — les kilos évités de la saison', () => {
+  const point = (surcharge: Record<string, unknown>) => ({
+    loop_type: 'commute',
+    period_label: 'Semaine du 22 septembre',
+    trip_label: CYCLE.trip_label,
+    poste: 'commute',
+    period_start: '2026-09-22',
+    question_kind: 'engagement',
+    mode: null,
+    committed_question: 'Mardi ou jeudi, as-tu fait ce trajet en train ?',
+    committed_action_text: 'Passer deux trajets sur cinq en train',
+    committed_saving_kg_once: 2.29,
+    status: 'answered',
+    response_kind: 'oui',
+    responded_at: '2026-09-29T08:00:00Z',
+    ...surcharge,
+  });
+  // Le plus récent d'abord, comme la requête les ordonne : la carte affichée est le point en attente.
+  const POINTS = [
+    point({ id: 'p4', period_start: '2026-10-13', period_label: 'Semaine du 13 octobre', status: 'pending', response_kind: null, responded_at: null, committed_saving_kg_once: 5.69 }),
+    point({ id: 'p3', period_start: '2026-10-06', response_kind: 'non' }),
+    point({ id: 'p2', period_start: '2026-09-29' }),
+    point({ id: 'p1', period_start: '2026-09-22', committed_saving_kg_once: 1.71 }),
+    // L'été : hors des bornes du cycle, il ne compte pas dans l'automne.
+    point({ id: 'p0', period_start: '2026-08-25', committed_saving_kg_once: 40 }),
+  ];
+
+  it('additionne les « oui » de la saison, et rien d’autre', async () => {
+    lectures({ engagement_checkins: async () => ({ data: POINTS, error: null }) });
+    render(<Plan />);
+    // 2,29 + 1,71 : le « non » n'évite rien, l'été est hors du cycle, le point en attente pas encore répondu.
+    expect(await screen.findByText('Cet automne, d’après tes réponses : au moins 4 kg CO₂e évités.')).toBeTruthy();
+  });
+
+  it('compte un « oui » donné sur la carte sans attendre la relecture', async () => {
+    lectures({
+      engagement_checkins: async () => ({ data: POINTS, error: null }),
+      'rpc:repondre_au_checkin': async () => ({ data: null, error: null }),
+    });
+    render(<Plan />);
+    await screen.findByText('Cet automne, d’après tes réponses : au moins 4 kg CO₂e évités.');
+
+    fireEvent.press(screen.getByText('Oui'));
+
+    // 4 + 5,69 : le total suit le geste, et la carte dit le sien.
+    expect(await screen.findByText('Cet automne, d’après tes réponses : au moins 9,6 kg CO₂e évités.')).toBeTruthy();
+    expect(screen.getByText('Au moins 5,6 kg CO₂e évités.')).toBeTruthy();
   });
 });
 

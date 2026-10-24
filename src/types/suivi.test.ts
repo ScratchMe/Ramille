@@ -739,6 +739,7 @@ describe('pointsParSaison', () => {
     periodStart,
     reponse: 'oui',
     respondedAt: `${periodStart}T10:00:00Z`,
+    gainDUneFois: null,
   });
 
   it('regroupe par saison et garde l’ordre de lecture', () => {

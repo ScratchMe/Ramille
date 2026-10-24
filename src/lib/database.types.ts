@@ -20,6 +20,7 @@ export type Database = {
           max_distance_km: number | null
           min_distance_km: number | null
           operation: string | null
+          oui_se_compte: boolean
           // C4.2 — le mot de la veille (20260928075453)
           phrase_de_la_veille: string | null
           poste: string | null
@@ -44,6 +45,7 @@ export type Database = {
           max_distance_km?: number | null
           min_distance_km?: number | null
           operation?: string | null
+          oui_se_compte: boolean
           // C4.2 — le mot de la veille (20260928075453)
           phrase_de_la_veille?: string | null
           poste?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           max_distance_km?: number | null
           min_distance_km?: number | null
           operation?: string | null
+          oui_se_compte?: boolean
           // C4.2 — le mot de la veille (20260928075453)
           phrase_de_la_veille?: string | null
           poste?: string | null
@@ -551,6 +554,7 @@ export type Database = {
           committed_intention_days: number[] | null
           committed_intention_timing: string | null
           committed_question: string | null
+          committed_saving_kg_once: number | null
           created_at: string
           id: string
           loop_type: string
@@ -571,6 +575,7 @@ export type Database = {
           committed_intention_days?: number[] | null
           committed_intention_timing?: string | null
           committed_question?: string | null
+          committed_saving_kg_once?: number | null
           created_at?: string
           id?: string
           loop_type: string
@@ -591,6 +596,7 @@ export type Database = {
           committed_intention_days?: number[] | null
           committed_intention_timing?: string | null
           committed_question?: string | null
+          committed_saving_kg_once?: number | null
           created_at?: string
           id?: string
           loop_type?: string
@@ -878,6 +884,7 @@ export type Database = {
           intention_timing: string | null
           plan_cycle_id: string
           rank: number | null
+          saving_kg_once: number | null
           saving_kg_year: number | null
           saving_share_percent: number | null
         }
@@ -893,6 +900,7 @@ export type Database = {
           intention_timing?: string | null
           plan_cycle_id: string
           rank?: number | null
+          saving_kg_once?: number | null
           saving_kg_year?: number | null
           saving_share_percent?: number | null
         }
@@ -908,6 +916,7 @@ export type Database = {
           intention_timing?: string | null
           plan_cycle_id?: string
           rank?: number | null
+          saving_kg_once?: number | null
           saving_kg_year?: number | null
           saving_share_percent?: number | null
         }
@@ -1616,6 +1625,8 @@ export type Database = {
         action_text: string | null
         detail_text: string | null
         saving_kg_year: number | null
+        // Étape 6a de v1-35 (24/10/2026) : le gain d'une seule fois.
+        saving_kg_once: number | null
       }
     }
   }
