@@ -11,25 +11,31 @@
 --      près. Le nombre de fois se lit sur le gabarit et les deux hypothèses du calcul (45 semaines de
 --      trajet domicile-travail, 52 de loisirs, `HYPOTHESES` dans `src/constants/methodologie.ts`) ;
 --      aucun facteur n'y est relu. Une unité fausse (un aller-retour pour un aller, une jambe pour le
---      trajet entier) la fait tomber d'un facteur deux. Pour les voyages, le gain d'une fois **est** le
---      gain annuel.
+--      trajet entier) la fait tomber d'un facteur deux. Pour un voyage que sa question nomme, le gain
+--      d'une fois est le gain annuel, tronqué et jamais au-dessus de l'arrondi ; **pour les trois
+--      gabarits dont la question ne nomme pas le trajet** (`oui_se_compte`), il est nul.
 --   2. **Le plan le fige** sur `plan_actions`, comme le gain annuel.
 --   3. **Le point le fige** sur `engagement_checkins`, et seulement quand il porte l'action engagée :
---      ni le maintien d'un cycliste, ni la question générique, ni une action choisie pour « Le mois
---      prochain » que le point ne retient pas encore (`v1-33` D14).
+--      ni le maintien — une trottinette peut s'engager sur une action, et son point reste un point de
+--      maintien —, ni la question générique, ni une action choisie pour « Le mois prochain » que le point
+--      ne retient pas encore (`v1-33` D14).
 --
--- **Six profils.** A — voiture, 20 km, cinq jours, deux vols courts, sorties chaque semaine en voiture
--- (10 km), le train et deux jours de télétravail possibles : toutes les opérations sauf les deux jambes ;
+-- **Sept profils.** A — voiture, 20 km, cinq jours, deux vols courts et un long, deux longs trajets en
+-- autocar, sorties chaque semaine en voiture (10 km), le train et deux jours de télétravail possibles :
+-- toutes les opérations sauf les deux jambes, et les trois gabarits qui ne comptent pas le « oui » ;
 -- engagé sur le train. B — deux jambes, voiture puis train à moitié : le dénominateur du trajet entier.
 -- C — à vélo : le maintien. D — les réponses de A, sans engagement : la question générique. E — les
 -- réponses de A, une sortie regroupée choisie pour « Le mois prochain » ce mois-ci. F — les réponses de
--- A, la même sortie, à la prochaine occasion : le point du mois la retient.
+-- A, la même sortie, à la prochaine occasion : le point du mois la retient. G — en trottinette, 10 km,
+-- cinq jours, un jour de télétravail possible, engagée sur lui : la catégorie vélo-marche fait gagner le
+-- maintien, et c'est le seul profil où la condition du genre porte la vérité (contre-lecture du
+-- 24/10/2026 : elle passait pour défensive).
 --
 -- **Éprouvé en le cassant, le 24/10/2026** — voir le relevé des mutations au pied.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(14);
 
 -- ── Fixtures ─────────────────────────────────────────────────────────────────────────────
 
@@ -37,25 +43,25 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
                         email_confirmed_at, is_anonymous, created_at, updated_at)
 select ('f6300000-0000-0000-0000-00000000000' || p)::uuid, '00000000-0000-0000-0000-000000000000',
        'authenticated', 'authenticated', 'pgtap-oui-' || p || '@test.local', 'x', now(), false, now(), now()
-from unnest(array['a', 'b', 'c', 'd', 'e', 'f']) p;
+from unnest(array['a', 'b', 'c', 'd', 'e', 'f', '7']) p;
 
 insert into public.assessments (id, user_id, status, submitted_at)
 select ('f6310000-0000-0000-0000-00000000000' || p)::uuid, ('f6300000-0000-0000-0000-00000000000' || p)::uuid,
        'completed', now()
-from unnest(array['a', 'b', 'c', 'd', 'e', 'f']) p;
+from unnest(array['a', 'b', 'c', 'd', 'e', 'f', '7']) p;
 
 -- A, D, E et F : les mêmes réponses.
 insert into public.assessment_answers (
   assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
   commute_car_engine, commute_is_carpool, commute_second_mode_used,
   leisure_frequency, leisure_mode, leisure_distance_km, leisure_car_engine,
-  flights_total_per_year, flights_short_per_year,
+  flights_total_per_year, flights_short_per_year, coach_long_trips_per_year,
   household_vehicles, zone_type, transports_proches, teletravail
 )
 select ('f6310000-0000-0000-0000-00000000000' || p)::uuid, true, 5, 20, 'voiture',
        'thermique', false, false,
        'weekly', 'voiture', 10, 'thermique',
-       2, 2,
+       3, 2, 2,
        '1', 'periurbain', array['train'], 'deux_ou_plus'
 from unnest(array['a', 'd', 'e', 'f']) p;
 
@@ -79,8 +85,27 @@ insert into public.assessment_answers (
 values ('f6310000-0000-0000-0000-00000000000c', true, 5, 5, 'velo',
         'mecanique', false, 'rarely', '0', 'urbain_dense', array['metro_tram']);
 
+-- G (l'identifiant finit par 7 : `g` n'est pas hexadécimal) : en trottinette, 10 km, cinq jours, un jour de
+-- télétravail possible.
+insert into public.assessment_answers (
+  assessment_id, commute_has_regular_trip, commute_days_per_week, commute_distance_km, commute_mode,
+  commute_second_mode_used, leisure_frequency, household_vehicles, zone_type, transports_proches,
+  teletravail
+)
+values ('f6310000-0000-0000-0000-000000000007', true, 5, 10, 'trottinette',
+        false, 'rarely', '0', 'urbain_dense', array['metro_tram'], 'un_jour');
+
 select public.recompute_assessment_results(('f6310000-0000-0000-0000-00000000000' || p)::uuid)
-from unnest(array['a', 'b', 'c', 'd', 'e', 'f']) p;
+from unnest(array['a', 'b', 'c', 'd', 'e', 'f', '7']) p;
+
+-- La part du vol court que le train ne consomme pas : le rapport même de l'estimateur, relu des facteurs à
+-- la date du bilan (fichier `57`). Le gain exact d'un aller-retour en sort, avant tout arrondi.
+select set_config(
+  'ramille.part_evitee',
+  (1 - public.emission_factor('train_longue_distance', current_date)
+       / public.emission_factor('avion_court_moyen_courrier', current_date))::text,
+  true
+);
 
 -- ── 1. L'estimateur ──────────────────────────────────────────────────────────────────────
 
@@ -121,19 +146,54 @@ select is_empty(
   'le gain d''une fois, multiplié par le nombre de fois de l''année, rend le gain annuel — trajet à une ou deux jambes, sorties'
 );
 
--- Les voyages : une fois est l'action entière, au kilo près comme la carte du plan.
+-- Les voyages : une fois est l'action entière quand la question la nomme — jamais au-dessus du gain
+-- annuel arrondi, à moins d'un kilo en dessous —, et rien quand elle ne la nomme pas.
 select is_empty(
   $$ select e.action_text
      from public.estimate_action_savings('f6310000-0000-0000-0000-00000000000a') e
-     where e.poste = 'travel' and e.saving_kg_once is distinct from e.saving_kg_year $$,
-  'un voyage : le gain d''une fois est le gain annoncé, au même arrondi'
+     join public.action_templates t on t.id = e.action_template_id
+     where e.poste = 'travel'
+       and case when t.oui_se_compte
+             then e.saving_kg_once is null or e.saving_kg_once > e.saving_kg_year
+                  or e.saving_kg_year - e.saving_kg_once >= 1
+             else e.saving_kg_once is not null
+           end $$,
+  'un voyage que sa question nomme compte l''action entière, sans dépasser le gain annoncé ; les autres ne comptent rien'
 );
 
-select is(
-  (select count(*)::int from public.estimate_action_savings('f6310000-0000-0000-0000-00000000000a')
-   where poste = 'travel'),
-  2,
-  'prémisse : A reçoit les deux actions des vols courts'
+select results_eq(
+  $$ select e.action_text, t.oui_se_compte
+     from public.estimate_action_savings('f6310000-0000-0000-0000-00000000000a') e
+     join public.action_templates t on t.id = e.action_template_id
+     where e.poste = 'travel' order by 1 $$,
+  $$ values ('Remplacer un aller-retour en avion par le train'::text, true),
+            ('Remplacer un de tes longs trajets en autocar par le train', false),
+            ('Renoncer à un vol court ou moyen-courrier cette année', false),
+            ('Renoncer à un vol long-courrier cette année', false) $$,
+  'prémisse : A reçoit les quatre actions de voyage, dont les trois dont la question ne nomme pas le trajet'
+);
+
+-- **Jamais au-dessus** du gain exact, et à moins d'un kilo dessous : « au moins » doit rester vrai jusqu'au
+-- dernier chiffre — l'arrondi au kilo du gain annuel le dépasserait d'un demi-kilo au plus, et c'est
+-- pourquoi le gain d'une fois prend le plus petit des deux, la troncature ou cet arrondi.
+select ok(
+  (select e.saving_kg_once <= ar.travel_flight_short_co2_kg_year * current_setting('ramille.part_evitee')::numeric
+      and e.saving_kg_once > ar.travel_flight_short_co2_kg_year * current_setting('ramille.part_evitee')::numeric - 1
+     from public.estimate_action_savings('f6310000-0000-0000-0000-00000000000a') e,
+          public.assessment_results ar
+    where e.action_text = 'Remplacer un aller-retour en avion par le train'
+      and ar.assessment_id = 'f6310000-0000-0000-0000-00000000000a'),
+  'l''aller-retour remplacé ne compte jamais plus que son gain exact, et à moins d''un kilo près'
+);
+
+-- Les trois gabarits qui ne comptent pas le « oui » sont ceux dont la question ne nomme pas le trajet.
+-- Un jugement de produit, épinglé : réécrire l'une de ces questions pour qu'elle le nomme, c'est revenir ici.
+select results_eq(
+  $$ select action_text from public.action_templates where not oui_se_compte order by 1 $$,
+  $$ values ('Remplacer un de tes longs trajets en autocar par le train'::text),
+            ('Renoncer à un vol court ou moyen-courrier cette année'),
+            ('Renoncer à un vol long-courrier cette année') $$,
+  'trois gabarits ne comptent pas le « oui » : leur question ne dit pas quel trajet'
 );
 
 -- ── 2. Le plan le fige ───────────────────────────────────────────────────────────────────
@@ -175,9 +235,18 @@ update public.plan_actions pa
  where pc.id = pa.plan_cycle_id and t.id = pa.action_template_id
    and (pc.user_id, t.action_text) in (
      ('f6300000-0000-0000-0000-00000000000a'::uuid, 'Passer deux trajets sur cinq en train'),
+     ('f6300000-0000-0000-0000-000000000007'::uuid, 'Travailler depuis chez toi un jour par semaine'),
      ('f6300000-0000-0000-0000-00000000000e'::uuid, 'Regrouper deux sorties en une seule, une fois sur cinq'),
      ('f6300000-0000-0000-0000-00000000000f'::uuid, 'Regrouper deux sorties en une seule, une fois sur cinq')
    );
+
+-- G s'est bien engagé, sur une action qui porte un gain : sans quoi son point de maintien serait sans gain
+-- pour la mauvaise raison.
+select ok(
+  (select pa.saving_kg_once > 0 from public.plan_actions pa join public.plan_cycles pc on pc.id = pa.plan_cycle_id
+    where pc.user_id = 'f6300000-0000-0000-0000-000000000007' and pa.committed_at is not null),
+  'prémisse de G : la trottinette s''est engagée sur le télétravail, qui porte un gain d''une fois'
+);
 
 -- Les points interrogent la semaine et le mois **écoulés** : le cycle y est ramené, pour que les deux y
 -- tombent quel que soit le jour où la suite tourne (fichiers 20 et 40).
@@ -207,6 +276,7 @@ select results_eq(
        ('d', 'extras', 'generique', null),
        ('e', 'commute', 'generique', null),
        ('e', 'extras', 'generique', null),
+       ('7', 'commute', 'maintien', null),
        ('f', 'commute', 'generique', null),
        ('f', 'extras', 'occasion',
         (select pa.saving_kg_once from public.plan_actions pa
@@ -266,22 +336,28 @@ reset role;
 select * from finish();
 rollback;
 
--- Relevé des mutations, le 24/10/2026 : chacune posée sur la stack locale par une substitution dans le
--- corps installé, ce fichier rejoué, puis le corps restauré et son empreinte relue.
+-- Relevé des mutations, le 24/10/2026 (rejoué le même jour après la contre-lecture, sur la migration
+-- corrigée) : chacune posée sur la stack locale par une substitution dans le corps installé, ce fichier
+-- rejoué, puis le corps restauré et son empreinte relue.
 --   - M1, une journée de télétravail comptée comme un aller → 2, seule ;
 --   - M2, le dénominateur du trajet sans la seconde jambe → 2, seule (les lignes de B) ;
 --   - M3, une sortie regroupée comptée comme un aller → 2, seule ;
---   - M4, le gain d'un voyage tronqué au lieu d'arrondi → 3 ; et la contrainte de `plan_actions` refuse
---     alors le plan entier (le gain d'une fois y dépasse le gain annuel de quelques centièmes), d'où 6 à
---     9, qui lisent des plans vides ;
+--   - M4, le gain d'un voyage tronqué sans le plafond de l'arrondi → 3 ; et la contrainte de
+--     `plan_actions` refuse alors le plan entier (545,19 au-dessus de 545), d'où 8, 10, 11 et 12, qui lisent
+--     des plans vides. C'est la raison du `least` : sans lui, un cycle ne se génère plus ;
+--   - M4b, le gain d'un voyage arrondi au kilo → **rien ne tombe**, et c'est une limite de la fixture :
+--     l'aller-retour de A vaut 545,19, que l'arrondi abaisse. Une valeur dont les centièmes passent ,50
+--     ferait tomber 5. Aucune fixture simple ne l'atteint (la quantité est bornée à deux vols) ;
 --   - M5, un aller compté comme un aller-retour → 2, seule ;
---   - M6, le plan qui ne fige pas → 5, 6, 8 et 9 ; 7 passe, nul contre nul, et c'est ce que 8 existe
+--   - M6, le plan qui ne fige pas → 7, 8, 9, 11 et 12 ; 10 passe, nul contre nul, et c'est ce que 11 existe
 --     pour dire ;
---   - M7, le point du mois qui copie le gain sans regarder le genre → 7, seule (E, le mois pas encore
+--   - M7, le point du mois qui copie le gain sans regarder le genre → 10, seule (E, le mois pas encore
 --     venu) ;
---   - M8, le point de la semaine qui copie sans regarder le genre → **rien ne tombe**, et c'est attendu :
---     le genre n'y écarte que le maintien, et un cycliste n'a aucune action sur son trajet — l'estimateur
---     ne lui en propose aucune (un facteur nul ou un gain sous 5 kg). La condition est défensive ; une
---     fixture qui engagerait un cycliste écrirait un état que la production ne produit pas ;
---   - M9, le point du mois qui ne fige pas → 7 et 8 ;
---   - M10, l'export qui tait le gain du point → 10, seule.
+--   - M8, le point de la semaine qui copie sans regarder le genre → 10, seule (G, la trottinette engagée).
+--     Elle passait avant le profil G, et la condition se croyait défensive ;
+--   - M9, le point du mois qui ne fige pas → 10 et 11 ;
+--   - M10, l'export qui tait le gain du point → 13, seule ;
+--   - M11, tout « oui » compté, `oui_se_compte` ignoré → 3, seule ;
+--   - M12, le trajet et les sorties arrondis au centième au lieu d'être tronqués → **rien ne tombe** : la
+--     tolérance de 2 (un centième par fois de l'année) couvre cet écart. Ce qui le garde est la lecture du
+--     corps par le contrôle de la migration, qui exige la troncature.

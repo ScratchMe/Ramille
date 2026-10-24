@@ -9,7 +9,8 @@
 // interdit.
 //
 // **Un « oui » se compte au moins une fois**, décision de la personne qui pilote : un aller, une
-// journée de télétravail, une sortie, un voyage — la plus petite chose qu'il veut dire. Le chiffre est
+// journée de télétravail, un aller pour une sortie faite autrement ou une sortie regroupée, un voyage
+// que sa question nomme — la plus petite chose qu'il veut dire. Le chiffre est
 // donc toujours vrai, et un bilan refait ne le dément jamais. Il ne se retranche de rien : ce n'est pas
 // l'« empreinte vivante » que `v1-23` §3.2 refuse, c'est un minimum, séparé du bilan.
 
@@ -24,7 +25,9 @@ export type GesteSurLePoint = { reponse: ReponseDuPoint; ligneAvant: string | nu
  *
  * Le plan lit ses points une fois par visite ; une réponse donnée sur sa carte ne le relit pas. Sans
  * ceci, la carte dirait « Au moins 2,2 kg CO₂e évités. » au-dessus d'un total de la saison qui ne le
- * compte pas encore. **La règle est celle de la carte** (`checkin-card.tsx`) : le geste vaut tant que
+ * compte pas encore — ou, en début de saison, sous une carte d'ouverture dont le récapitulatif l'ignore :
+ * la dernière semaine et le dernier mois d'une saison se répondent dans la suivante, et c'est la carte
+ * d'ouverture qui les compte, pas le total de la saison qui commence. **La règle est celle de la carte** (`checkin-card.tsx`) : le geste vaut tant que
  * la ligne porte ce qu'elle portait au geste, et la ligne relue l'emporte ensuite — une correction
  * faite sur un autre appareil n'est donc pas masquée par un geste plus ancien.
  */
@@ -83,6 +86,15 @@ export function kilosEvitesEnMots(kg: number): string | null {
 }
 
 /**
+ * Une phrase entière : « Au moins 27 kg CO₂e évités. » — le total d'une saison écoulée, que la carte
+ * d'ouverture ajoute à son récapitulatif, et la ligne d'un « oui ». `null` quand il n'y a rien à dire.
+ */
+export function phraseDesKilos(kg: number): string | null {
+  const enMots = kilosEvitesEnMots(kg);
+  return enMots === null ? null : `${majuscule(enMots)}.`;
+}
+
+/**
  * La ligne sous la réplique d'un « oui » : « Au moins 2,2 kg CO₂e évités. »
  *
  * **Voix produit et non celle de Ramille**, comme « Deuxième semaine de suite » juste au-dessus :
@@ -93,8 +105,7 @@ export function kilosEvitesEnMots(kg: number): string | null {
  * et c'est elle que la question interroge (`BOUCLE.md` §2).
  */
 export function phraseDuOui(reponse: ReponseDuPoint | null, gainDUneFois: number | null): string | null {
-  const enMots = kilosEvitesEnMots(kilosEvites([{ reponse, gainDUneFois }]));
-  return enMots === null ? null : `${majuscule(enMots)}.`;
+  return phraseDesKilos(kilosEvites([{ reponse, gainDUneFois }]));
 }
 
 /**

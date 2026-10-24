@@ -44,8 +44,15 @@ sortie entière pour les loisirs, l'action entière pour un voyage. La part d'un
 ceux des loisirs), donc ni les 45 semaines ni les fréquences ne sont recopiées, et le facteur de réduction
 est celui du gain annuel. **Tronqué au centième, jamais arrondi vers le haut** — sauf pour les voyages, où il
 vaut le gain annuel arrondi comme lui, pour que la carte et le point disent le même nombre. Une contrainte le
-garde sous le gain annuel ; le test `63` vérifie, sans recopier la formule, que le gain d'une fois multiplié
-par le nombre de fois de l'année rend le gain annuel. Ce qu'en fait la boucle : `BOUCLE.md` §2.
+garde sous le gain annuel — et le gain d'une fois prend le plus petit de sa troncature et de l'arrondi du
+gain annuel, sans quoi un voyage (où les deux sont presque égaux) ferait refuser le plan **entier** par
+cette contrainte, en silence, à chaque génération. Le test `63` vérifie, sans recopier la formule, que le
+gain d'une fois multiplié par le nombre de fois de l'année rend le gain annuel. **Il est nul quand la
+question du gabarit ne nomme pas ce qu'un « oui » compte** (`action_templates.oui_se_compte`, sans valeur
+par défaut : un gabarit ajouté choisit). **Et il se fige à la génération du plan, alors que la question se
+fige à celle du point, depuis le gabarit courant** : changer la question ou les `trips` d'un gabarit impose
+de revoir `saving_kg_once` des actions déjà figées sur lui, sans quoi une question neuve porterait un gain
+ancien. Ce qu'en fait la boucle : `BOUCLE.md` §2.
 
 **Le plan fige TOUTES les actions au gain suffisant, et c'est l'écran qui en montre deux** (C4.6,
 `20260913110000_pistes_et_premier_pas.sql`). `generate_plan_cycle_for_user` portait un `limit 2` — un

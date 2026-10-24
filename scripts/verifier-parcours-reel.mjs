@@ -611,6 +611,7 @@
 //   |---|---|
 //   | PK1 — la carte ne rend pas la ligne des kilos | « point » : « Au moins … » n'est jamais apparu |
 //   | PK2 — la carte ne signale pas sa réponse au plan | « point » : le total de la saison n'apparaît qu'à la relecture |
+//   | PK3 — le total rendu sans `Depliage` | « point » : le total apparaît d'un coup |
 //
 // Usage : node scripts/verifier-parcours-reel.mjs [dist]
 
@@ -2218,7 +2219,14 @@ try {
       ' doit laisser de la place autour du contenu (`MARGE_DE_DECOUPE`, src/lib/mouvement.tsx)'
   );
   const avantLaReponse = await mesurer(page, 'texte', CAP);
-  const reponse = await releverPendant(page, { cap: ['texte', CAP] }, () => oui.click());
+  // Le total de la saison, absent avant ce premier « oui » ; il se déplie pendant (plus bas).
+  const TOTAL_DE_LA_SAISON = 'd’après tes réponses';
+  const totalAvantLaReponse = await mesurer(page, 'depli', TOTAL_DE_LA_SAISON);
+  const reponse = await releverPendant(
+    page,
+    { cap: ['texte', CAP], total: ['depli', TOTAL_DE_LA_SAISON] },
+    () => oui.click()
+  );
   const apresLaReponse = await mesurer(page, 'texte', CAP);
   assurer(
     avantLaReponse && apresLaReponse && Math.abs(apresLaReponse.haut - avantLaReponse.haut) > 1,
@@ -2265,6 +2273,15 @@ try {
     assurer(
       deLaSaison === duOui,
       `le total de la saison dit ${deLaSaison} kg, la carte ${duOui} : le seul « oui » de la saison doit faire les deux`
+    );
+    // **Et il s'est déplié**, au-dessus de la carte qu'on vient de toucher, au lieu d'apparaître d'un coup :
+    // absent avant le geste, puis une découpe strictement entre zéro et sa hauteur posée (`Depliage`).
+    assurer(totalAvantLaReponse === null, 'le total de la saison était déjà là avant le premier « oui » de la saison');
+    const totalPose = await mesurer(page, 'depli', TOTAL_DE_LA_SAISON);
+    assurer(
+      reponse.some((e) => e.total?.decoupe && e.total.hauteur > 0.5 && e.total.hauteur < totalPose.hauteur - 0.5),
+      `le total de la saison apparaît d'un coup (${totalPose.hauteur} px, sans hauteur intermédiaire) au-dessus de la` +
+        ' carte du point : il doit se déplier (`Depliage`, src/app/(tabs)/plan/index.tsx)'
     );
   }
 

@@ -20,21 +20,30 @@
 --     des deux trajets, ni aucune des deux jambes ;
 --   - **un aller** pour une sortie faite autrement, et **une sortie entière** pour deux sorties regroupées
 --     en une — c'est une sortie qui n'a pas lieu ;
---   - **l'action entière** pour les voyages : un long trajet, un vol, un aller-retour, chacun nommé tel
---     quel par sa question. Le gain d'une fois y est le gain annoncé par le plan, arrondi comme lui, pour
---     que le point et la carte disent le même nombre.
+--   - **l'action entière** pour un voyage, quand sa question la nomme : « as-tu fait un long trajet en
+--     train plutôt qu'en voiture ? », « as-tu remplacé un aller-retour en avion par le train ? » ;
+--   - **et rien** quand elle ne la nomme pas. « As-tu eu un déplacement où tu as choisi autre chose que
+--     l'avion ? », la question des deux « Renoncer à un vol … cette année », ne dit ni quel vol ni même
+--     qu'il y en avait un — et posée chaque mois, un « oui » y aurait compté le vol entier à chaque fois,
+--     au-delà de ce que le bilan déclare (contre-lecture du 24/10/2026). « As-tu remplacé un trajet en
+--     autocar par le train ? » ne dit pas qu'il était long. `action_templates.oui_se_compte` le dit gabarit
+--     par gabarit, **sans valeur par défaut** : un gabarit ajouté demain choisit, et ce choix se relit sur
+--     sa question.
 --
 -- La part d'un aller se lit sur l'instantané figé du bilan (`commute_trip_distance_km` sur les kilomètres
 -- annuels des deux jambes, `leisure_trip_distance_km` sur ceux des loisirs) : elle vaut 1 / (2 × jours ×
 -- semaines) sans recopier ni les 45 semaines ni les fréquences du calcul (`PLAN.md` §1 : ne jamais
 -- recalculer les kilomètres ailleurs). Le facteur de réduction est celui du gain annuel, donc les deux ne
--- peuvent pas diverger. Le gain d'une fois est **tronqué** au centième, jamais arrondi vers le haut, sauf
--- pour les voyages (plus haut) : « au moins » doit rester vrai jusqu'au dernier chiffre.
+-- peuvent pas diverger. Le gain d'une fois est **tronqué** au centième, jamais arrondi vers le haut :
+-- « au moins » doit rester vrai jusqu'au dernier chiffre. Et il ne dépasse jamais le gain annuel arrondi
+-- (`least(…, round(v_saving))`) — pour un voyage, les deux sont presque égaux, et la contrainte de
+-- `plan_actions` refuserait sinon le plan entier, en silence, à chaque génération.
 --
 -- ## Ce que fait cette migration
 --
--- 1. `estimate_action_savings` rend une colonne de plus, `saving_kg_once` — un attribut ajouté au type
---    composite `action_saving`, et sept substitutions vérifiées sur le corps installé (`SUPABASE.md` §2.3).
+-- 1. `action_templates.oui_se_compte` (plus haut), puis `estimate_action_savings` rend une colonne de plus,
+--    `saving_kg_once` — un attribut ajouté au type composite `action_saving`, et six substitutions
+--    vérifiées sur le corps installé (`SUPABASE.md` §2.3).
 -- 2. `plan_actions.saving_kg_once` le fige à la génération, comme `saving_kg_year` : deux substitutions
 --    dans `generate_plan_cycle_for_user`. Une contrainte le garde positif et jamais au-dessus du gain
 --    annuel.
@@ -46,7 +55,7 @@
 -- 4. L'export rend les deux colonnes (`gain_d_une_fois_kg`), à côté du gain annuel qu'il rendait déjà.
 -- 5. Un rattrapage, à la valeur et sans rien écraser : les actions de plan déjà générées, quand
 --    l'estimateur rend pour le dernier bilan le gain annuel qu'elles portent (sinon elles viennent d'un
---    autre bilan, et on ne devine pas lequel) ; puis les points **en attente** qui portent une action
+--    autre bilan, ou d'un gabarit qui a changé depuis, et on ne devine pas) ; puis les points **en attente** qui portent une action
 --    engagée retrouvée sous le même libellé. Les points déjà répondus ne se rattrapent pas : le trigger
 --    `prevent_answered_checkin_update` les ferme, et le chiffre manquant n'est qu'un minimum plus bas.
 --
@@ -55,6 +64,26 @@
 -- Rejouable : l'attribut et les colonnes se testent avant d'être ajoutés, chaque substitution se
 -- reconnaît déjà faite à la présence de son remplacement, et les rattrapages ne visent que des valeurs
 -- nulles.
+
+-- 0. Ce qu'un « oui » à la question d'un gabarit permet de compter. La colonne naît vraie, les trois
+-- gabarits dont la question ne nomme pas le trajet passent à faux par leur clé naturelle, puis la valeur
+-- par défaut tombe : un `insert` qui ne la dit pas échoue.
+alter table public.action_templates add column if not exists oui_se_compte boolean default true;
+update public.action_templates
+   set oui_se_compte = false
+ where action_text in (
+   'Renoncer à un vol long-courrier cette année',
+   'Renoncer à un vol court ou moyen-courrier cette année',
+   'Remplacer un de tes longs trajets en autocar par le train'
+ )
+   and oui_se_compte;
+alter table public.action_templates alter column oui_se_compte set not null;
+alter table public.action_templates alter column oui_se_compte drop default;
+comment on column public.action_templates.oui_se_compte is
+  'Un « oui » à la question de ce gabarit nomme-t-il ce qu''il compte ? Faux quand la question ne dit pas '
+  'quel trajet (« as-tu eu un déplacement où tu as choisi autre chose que l''avion ? ») : le gain d''une '
+  'fois y est nul, et le « oui » ne dit aucun kilo. Sans valeur par défaut, pour qu''un gabarit ajouté '
+  'choisisse. Étape 6a de v1-35, 24/10/2026.';
 
 -- 1. L'attribut du type, puis l'estimateur.
 do $l_attribut$
@@ -136,56 +165,53 @@ begin
         end;
       end if;$r$),
       (5, 'public.estimate_action_savings(uuid)',
-       $a$      v_base_co2 := least(t.trips, v_count) * (v_base_co2 / v_count);$a$,
-       $r$      v_base_co2 := least(t.trips, v_count) * (v_base_co2 / v_count);
-      v_once_base := v_base_co2;$r$),
-      (6, 'public.estimate_action_savings(uuid)',
        $a$    v_saving := v_base_co2 * v_reduction_ratio;$a$,
        $r$    v_saving := v_base_co2 * v_reduction_ratio;
     v_once := case
-      when t.poste = 'travel' then round(v_saving)
-      when v_once_base > 0 then trunc(v_once_base * v_reduction_ratio, 2)
+      when not t.oui_se_compte then null
+      when t.poste = 'travel' then least(trunc(v_saving, 2), round(v_saving))
+      when v_once_base > 0 then least(trunc(v_once_base * v_reduction_ratio, 2), round(v_saving))
     end;
     if v_once <= 0 then
       v_once := null;
     end if;$r$),
-      (7, 'public.estimate_action_savings(uuid)',
+      (6, 'public.estimate_action_savings(uuid)',
        $a$    v_rows := v_rows || row(t.id, t.poste, t.action_text, v_detail, round(v_saving))::public.action_saving;$a$,
        $r$    v_rows := v_rows || row(t.id, t.poste, t.action_text, v_detail, round(v_saving), v_once)::public.action_saving;$r$),
       -- Le plan le fige, comme le gain annuel.
-      (8, 'public.generate_plan_cycle_for_user(uuid,text)',
+      (7, 'public.generate_plan_cycle_for_user(uuid,text)',
        $a$    plan_cycle_id, action_template_id, saving_kg_year, saving_share_percent, detail_text, rank, first_step$a$,
        $r$    plan_cycle_id, action_template_id, saving_kg_year, saving_share_percent, detail_text, rank, first_step,
     saving_kg_once$r$),
-      (9, 'public.generate_plan_cycle_for_user(uuid,text)',
+      (8, 'public.generate_plan_cycle_for_user(uuid,text)',
        $a$    tpl.first_step$a$,
        $r$    tpl.first_step,
     e.saving_kg_once$r$),
       -- Le point le fige, quand il porte l'action engagée.
-      (10, 'public.generate_commute_checkins()',
+      (9, 'public.generate_commute_checkins()',
        $a$    committed_action_text, committed_intention_days, committed_intention_timing, committed_question$a$,
        $r$    committed_action_text, committed_intention_days, committed_intention_timing, committed_question,
     committed_saving_kg_once$r$),
-      (11, 'public.generate_commute_checkins()',
+      (10, 'public.generate_commute_checkins()',
        $a$eng.question_template, eng.intention_days)$a$,
        $r$eng.question_template, eng.intention_days),
     case when g.genre = 'engagement'
       then (select pa.saving_kg_once from public.plan_actions pa where pa.id = eng.plan_action_id)
     end$r$),
-      (12, 'public.generate_extras_checkins()',
+      (11, 'public.generate_extras_checkins()',
        $a$    committed_action_text, committed_intention_days, committed_intention_timing, committed_question$a$,
        $r$    committed_action_text, committed_intention_days, committed_intention_timing, committed_question,
     committed_saving_kg_once$r$),
-      (13, 'public.generate_extras_checkins()',
+      (12, 'public.generate_extras_checkins()',
        $a$s.question_template, s.intention_days)$a$,
        $r$s.question_template, s.intention_days),
     case when g.genre = 'occasion' then pae.saving_kg_once end$r$),
       -- L'export rend ce que l'écran affiche.
-      (14, 'public.export_my_data()',
+      (13, 'public.export_my_data()',
        $a$'gain_kg_par_an', pa.saving_kg_year,$a$,
        $r$'gain_kg_par_an', pa.saving_kg_year,
             'gain_d_une_fois_kg', pa.saving_kg_once,$r$),
-      (15, 'public.export_my_data()',
+      (14, 'public.export_my_data()',
        $a$'action_suivie', c.committed_action_text,$a$,
        $r$'action_suivie', c.committed_action_text,
         'gain_d_une_fois_kg', c.committed_saving_kg_once,$r$)
@@ -193,7 +219,10 @@ begin
     order by rang
   loop
     src := pg_get_functiondef(s.cible::regprocedure);
-    if position(s.remplacement in src) > 0 then
+    -- Sans les retours chariot : des corps de la production en portent (`20261022201848`), et un rejeu
+    -- par un autre canal que la première application ne reconnaîtrait pas un remplacement à fins de
+    -- ligne différentes — il retrouverait l'ancre, que la plupart des remplacements contiennent.
+    if position(replace(s.remplacement, chr(13), '') in replace(src, chr(13), '')) > 0 then
       continue;
     end if;
     occurrences := (length(src) - length(replace(src, s.ancre, ''))) / length(s.ancre);
@@ -208,8 +237,9 @@ $les_substitutions$;
 
 -- 3. Le rattrapage des actions de plan : à la valeur, depuis le dernier bilan — celui que
 -- `generate_plan_cycle_for_user` lit —, et seulement quand l'estimateur y rend le gain annuel que l'action
--- porte déjà. `least` garde la contrainte quand un gabarit a changé depuis (l'aller-retour, deux vols
--- depuis le 18/10/2026, sur une action générée quand il en comptait un).
+-- porte déjà. Une action d'un autre bilan, ou d'un gabarit qui a changé depuis (l'aller-retour, deux vols
+-- depuis le 18/10/2026, sur une action générée quand il en comptait un), n'a pas le même gain annuel, et
+-- reste sans gain d'une fois.
 with dernier_bilan as (
   select distinct on (a.user_id) a.user_id, a.id as assessment_id
   from public.assessments a
@@ -218,7 +248,7 @@ with dernier_bilan as (
   order by a.user_id, a.submitted_at desc nulls last
 ),
 gains as (
-  select pa.id as plan_action_id, least(e.saving_kg_once, pa.saving_kg_year) as gain
+  select pa.id as plan_action_id, e.saving_kg_once as gain
   from public.plan_actions pa
   join public.plan_cycles pc on pc.id = pa.plan_cycle_id
   join dernier_bilan d on d.user_id = pc.user_id
@@ -261,12 +291,29 @@ begin
     raise exception 'action_saving n''a pas d''attribut saving_kg_once';
   end if;
 
+  -- Trois gabarits seulement ne comptent pas le « oui », et ce sont ceux dont la question ne nomme pas le
+  -- trajet.
+  select count(*) into v_n from public.action_templates
+  where not oui_se_compte
+    and action_text not in (
+      'Renoncer à un vol long-courrier cette année',
+      'Renoncer à un vol court ou moyen-courrier cette année',
+      'Remplacer un de tes longs trajets en autocar par le train'
+    );
+  if v_n > 0 then
+    raise exception '% gabarit(s) inattendu(s) ne comptent pas le « oui »', v_n;
+  end if;
+  select count(*) into v_n from public.action_templates where not oui_se_compte;
+  if v_n <> 3 then
+    raise exception 'Trois gabarits ne doivent pas compter le « oui », % le font', v_n;
+  end if;
+
   v_corps := regexp_replace(pg_get_functiondef('public.estimate_action_savings(uuid)'::regprocedure), '--[^\n]*', '', 'g');
   if position('round(v_saving), v_once)::public.action_saving' in v_corps) = 0
      or position('2 * v_un_aller * v_commute_total_co2' in v_corps) = 0
      or position('2 * v_un_aller * r.leisure_co2_kg_year' in v_corps) = 0
-     or position('v_once_base := v_base_co2;' in v_corps) = 0
-     or position('trunc(v_once_base * v_reduction_ratio, 2)' in v_corps) = 0 then
+     or position('when not t.oui_se_compte then null' in v_corps) = 0
+     or position('least(trunc(v_once_base * v_reduction_ratio, 2), round(v_saving))' in v_corps) = 0 then
     raise exception 'estimate_action_savings ne calcule pas le gain d''une fois';
   end if;
 

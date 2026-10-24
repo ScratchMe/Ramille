@@ -20,6 +20,7 @@ export type Database = {
           max_distance_km: number | null
           min_distance_km: number | null
           operation: string | null
+          oui_se_compte: boolean
           // C4.2 — le mot de la veille (20260928075453)
           phrase_de_la_veille: string | null
           poste: string | null
@@ -44,6 +45,7 @@ export type Database = {
           max_distance_km?: number | null
           min_distance_km?: number | null
           operation?: string | null
+          oui_se_compte: boolean
           // C4.2 — le mot de la veille (20260928075453)
           phrase_de_la_veille?: string | null
           poste?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           max_distance_km?: number | null
           min_distance_km?: number | null
           operation?: string | null
+          oui_se_compte?: boolean
           // C4.2 — le mot de la veille (20260928075453)
           phrase_de_la_veille?: string | null
           poste?: string | null

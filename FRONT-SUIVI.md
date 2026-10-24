@@ -47,8 +47,9 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   huit **en silence** sous un compteur global qui en annonçait davantage.
   **Et chaque groupe dit ce que ses « oui » ont évité, au moins** (24/10/2026, étape 6a de `v1-35`) :
   « Au moins 27 kg CO₂e évités, d’après tes réponses. », sous son en-tête, sur **tous** ses points —
-  repliés compris — et jamais un zéro (`phraseDuGroupe`). Le plan dit le total de la saison en cours ; le
-  suivi le garde une fois la saison passée, sans quoi le progrès s'effacerait à chaque bascule. Ce n'est pas
+  repliés compris — et jamais un zéro (`phraseDuGroupe`). La saison en cours comprise, et c'est surtout pour
+  les saisons passées que le suivi le porte : le plan ne dit que le total de la saison en cours, et sans le
+  suivi le progrès s'effacerait à chaque bascule. Ce n'est pas
   une mesure, c'est la somme des gains figés sur les points (`BOUCLE.md` §2), d'où la provenance dite.
 - **`keepLatestPerDay` regroupe sur le jour LOCAL** (C2.7). Les dix premiers caractères d'un
   `timestamptz` sont son jour **UTC** : un bilan soumis le 10 mars à 23 h 00 UTC et sa correction le

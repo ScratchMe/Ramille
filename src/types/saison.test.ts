@@ -300,6 +300,11 @@ describe('estDansLouverture', () => {
   });
 });
 
+// **Les kilos évités de la période** (étape 6a de `v1-35`, 24/10/2026). Éprouvé en le cassant le même
+// jour, une mutation à la fois sur `src/types/saison.ts` : les kilos comptés hors des bornes de la période
+// → « additionne les gains… de la période » et « nomme la saison du cycle » ; la saison nommée sur un
+// trimestre glissant → « Ces trois mois », seul ; le récapitulatif de l'ouverture sans sa phrase des kilos →
+// « ajoute ce que les oui… », seul ; un zéro dit → « ne dit rien… », seul.
 describe('kilosDeLaPeriodeEnMots', () => {
   const oui = (periodStart: string, gainDUneFois: number | null): PointDeSaison => ({
     periodStart,

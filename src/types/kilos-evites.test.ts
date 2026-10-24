@@ -4,8 +4,8 @@
  * Trois choses gardées ici : **le plancher** (un minimum ne s'arrondit jamais vers le haut, et le
  * calcul passe par les centièmes entiers), **ce qui compte** (le seul « oui », et jamais un zéro dit),
  * et **la règle des gestes** (une réponse donnée sur l'écran vaut tant que la ligne n'a pas été
- * relue — celle de la carte). Le formateur vit dans `src/lib/format.ts` ; il est éprouvé ici, à travers
- * les phrases qui le lisent, et dans `format.test.ts` pour ses formes.
+ * relue — celle de la carte). Le formateur vit dans `src/lib/format.ts`, et ses formes sont éprouvées
+ * ici, avec les phrases qui le lisent.
  *
  * Éprouvé en le cassant, le 24/10/2026 — voir le relevé au pied.
  */

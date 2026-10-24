@@ -398,6 +398,50 @@ describe('Plan — la carte de saison, « Choisir une action »', () => {
     fireEvent.press(await screen.findByRole('button', { name: 'Choisir une autre' }));
     expect(router.push).toHaveBeenCalledWith('/plan/pistes');
   });
+
+  // **Le « oui » du début de saison compte dans le récapitulatif de la saison écoulée** (étape 6a de
+  // `v1-35`, contre-lecture du 24/10/2026). Le dernier point d'une saison se répond dans la suivante,
+  // pendant que la carte d'ouverture est à l'écran : il appartient à la saison qu'elle récapitule, pas à
+  // celle du total du plan. Éprouvé en le cassant, le 24/10/2026 : la carte rendue sur son contenu du
+  // chargement (`ouverture` au lieu de `ouvertureAffichee`) → ce test, seul.
+  it('compte dans la carte d’ouverture un « oui » donné sur le dernier point de la saison écoulée', async () => {
+    lectures({
+      plan_cycles: async () => ({ data: cycles(true), error: null }),
+      engagement_checkins: async () => ({
+        data: [
+          {
+            id: 'p1',
+            loop_type: 'commute',
+            period_label: 'Semaine du dernier lundi',
+            trip_label: CYCLE.trip_label,
+            poste: 'commute',
+            period_start: jour(-2),
+            question_kind: 'engagement',
+            mode: null,
+            committed_question: 'Mardi, as-tu fait ce trajet en train ?',
+            committed_action_text: 'Passer deux trajets sur cinq en train',
+            committed_saving_kg_once: 5.69,
+            status: 'pending',
+            response_kind: null,
+            responded_at: null,
+          },
+        ],
+        error: null,
+      }),
+      'rpc:repondre_au_checkin': async () => ({ data: null, error: null }),
+    });
+    render(<Plan />);
+    await screen.findByRole('button', { name: 'Choisir une autre' });
+    expect(screen.queryByText(/Au moins 5,6 kg CO₂e évités\.$/)).toBeNull();
+
+    fireEvent.press(screen.getByText('Oui'));
+
+    expect(
+      await screen.findByText(/1 point répondu, 1 fois où tu as changé quelque chose\. Au moins 5,6 kg CO₂e évités\.$/)
+    ).toBeTruthy();
+    // Il n'entre pas dans le total de la saison qui commence : sa semaine est dans l'autre.
+    expect(screen.queryByText(/d’après tes réponses/)).toBeNull();
+  });
 });
 
 /**

@@ -34,7 +34,7 @@
  */
 
 import { jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint, STATUT_DU_POINT } from '@/types/checkin';
-import { kilosEvites, kilosEvitesEnMots } from '@/types/kilos-evites';
+import { kilosEvites, kilosEvitesEnMots, phraseDesKilos } from '@/types/kilos-evites';
 
 export const SAISONS = ['hiver', 'printemps', 'ete', 'automne'] as const;
 
@@ -436,7 +436,8 @@ export type ContenuDOuverture = {
   /** « L'hiver commence. » */
   titre: string;
   /**
-   * « Cet automne : 11 points répondus, 8 fois où tu as changé quelque chose. »
+   * « Cet automne : 11 points répondus, 8 fois où tu as changé quelque chose. », suivi depuis le
+   * 24/10/2026 de « Au moins 27 kg CO₂e évités. » quand les « oui » en portent (étape 6a de `v1-35`).
    *
    * `null` quand il n'y a rien à dire : aucun point répondu sur la période écoulée. **Jamais un
    * décompte de manqués** — l'écran `/suivi` n'a aucune mécanique d'échec, et « 0 point répondu »
@@ -504,7 +505,7 @@ export function ouvertureDeSaison(params: {
 }
 
 /**
- * « Cet automne : 11 points répondus, 8 fois où tu as changé quelque chose. »
+ * « Cet automne : 11 points répondus, 8 fois où tu as changé quelque chose. Au moins 27 kg CO₂e évités. »
  *
  * Le sujet de la phrase vient de la cadence **du cycle précédent** et non de celui qui commence :
  * c'est bien cette période-là qu'on récapitule, et rien n'interdit que la cadence ait changé entre
@@ -539,8 +540,8 @@ function recapEnMots(
   // Les kilos évités de la saison qui s'achève (étape 6a de `v1-35`), en seconde phrase : la première
   // compte des réponses, celle-ci un minimum de CO₂e — deux unités dans une phrase se lisaient comme
   // une seule mesure. Elle tombe quand aucun « oui » ne porte de gain, jamais « au moins 0 kg ».
-  const enMots = kilosEvitesEnMots(kilos);
-  return enMots === null ? recap : `${recap} ${enMots.charAt(0).toUpperCase()}${enMots.slice(1)}.`;
+  const phrase = phraseDesKilos(kilos);
+  return phrase === null ? recap : `${recap} ${phrase}`;
 }
 
 /**
@@ -549,7 +550,8 @@ function recapEnMots(
  *
  * La période est celle du **cycle affiché**, bornes lues sur sa ligne, comme le récapitulatif de la
  * carte d'ouverture lit celles du cycle précédent : les deux comptent donc les mêmes points, et la
- * saison qui s'achève dit à son ouverture le total que le plan affichait la veille. Le sujet suit la
+ * saison qui s'achève dit à son ouverture le total que le plan affichait la veille — plus ce qu'auront
+ * ajouté la dernière semaine et le dernier mois, qui se répondent après la bascule. Le sujet suit la
  * cadence — un trimestre glissant n'a pas de saison, et dit « Ces trois mois ».
  *
  * « d’après tes réponses » dit d'où vient le chiffre : il n'est pas mesuré, il est le minimum de ce

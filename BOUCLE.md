@@ -263,8 +263,9 @@ le 1er novembre sur octobre. La carte engagée et le suivi lisent la même date 
 décidée par la personne qui pilote le 24/10/2026, migration `ce_qu_un_oui_a_evite`, test `63`). La boucle ne
 rendait aucun progrès visible : un « oui » ne changeait aucun chiffre. Il se compte désormais **au moins une
 fois** — un aller pour une substitution ou un partage, une journée pour le télétravail, un aller pour une
-sortie faite autrement, une sortie entière pour deux regroupées, l'action entière pour un voyage —, donc le
-chiffre est toujours vrai et un bilan refait ne le dément jamais. Cinq points à ne pas défaire :
+sortie faite autrement, une sortie entière pour deux regroupées, l'action entière pour un voyage que sa
+question nomme —, donc le chiffre est toujours vrai et un bilan refait ne le dément jamais. Six points à ne
+pas défaire :
 
 - **le gain d'une fois vient de l'estimateur, comme le gain annuel** (`estimate_action_savings`,
   `saving_kg_once`, `PLAN.md` §1), et il est **figé deux fois** : sur l'action du plan à la génération, puis
@@ -272,14 +273,26 @@ chiffre est toujours vrai et un bilan refait ne le dément jamais. Cinq points �
   le plan se reconstruit, un point posé ne se réécrit pas ;
 - **seul un point qui porte l'action en a un** : `engagement` ou `occasion`, jamais `maintien` ni
   `generique`, ni une action choisie pour « Le mois prochain » que le point ne retient pas encore (D14). La
-  condition sur `maintien` est défensive — un cycliste n'a aucune action sur son trajet — et aucune mutation
-  ne la voit (relevé au pied de `63`) ;
+  condition sur `maintien` **n'est pas défensive** : la catégorie vélo-marche compte la trottinette et le vélo
+  électrique, qui reçoivent des actions (le vélo, le télétravail) et peuvent s'y engager — leur point reste
+  un point de maintien. Le profil G de `63` la garde (contre-lecture du 24/10/2026 : elle passait pour
+  défensive, et sa mutation passait) ;
+- **un « oui » ne compte que si sa question nomme ce qu'il compte** (`action_templates.oui_se_compte`).
+  Trois gabarits ne le font pas : les deux « Renoncer à un vol … cette année », dont la question est « as-tu
+  eu un déplacement où tu as choisi autre chose que l'avion ? » — ni quel vol, ni même qu'il y en avait un —
+  et qui, posée chaque mois, aurait compté le vol entier à chaque « oui », au-delà de ce que le bilan
+  déclare ; et « Remplacer un de tes longs trajets en autocar par le train », dont la question ne dit pas
+  « long ». Leur « oui » ne dit aucun kilo. La colonne n'a pas de valeur par défaut : un gabarit ajouté
+  choisit, en relisant sa question ;
 - **le client additionne, il ne calcule rien** (`src/types/kilos-evites.ts`) : la somme des gains des seuls
   « oui » répondus, au centième exact, jamais un zéro dit ni un manque. La carte dit celui du « oui » sous la
   réplique, le plan le total du cycle affiché sous son titre (`kilosDeLaPeriodeEnMots`), la carte
   d'ouverture celui de la saison écoulée, et le suivi celui de chaque saison. **Un « oui » donné sur la carte
-  compte dans le total du plan sans attendre la relecture** (`avecLesGestes`, la règle de la carte : le geste
-  vaut tant que la ligne n'a pas été relue) ;
+  compte sans attendre la relecture** (`avecLesGestes`, la règle de la carte : le geste vaut tant que la ligne
+  n'a pas été relue), dans le total du plan **et** dans le récapitulatif de la carte d'ouverture, recomposé au
+  rendu. **La dernière semaine et le dernier mois d'une saison se répondent dans la suivante** : ils comptent
+  dans la saison qu'ils interrogent — la carte d'ouverture —, pas dans le total de celle qui commence. Le
+  total du plan se déplie quand il naît (`Depliage`), au-dessus de la carte qu'on vient de toucher ;
 - **une correction le suit** : « Modifier ma réponse » d'un « oui » en « non » retire la ligne et le compte,
   puisqu'il se dérive à la lecture ;
 - **les points d'avant n'en ont pas** : la migration a rattrapé les actions de plan (quand le dernier bilan
