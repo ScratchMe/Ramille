@@ -3693,6 +3693,12 @@ try {
   // prémisse de la section 12 —, donc le générateur ne lui en pose aucun, et les deux autres profils n'ont
   // pas d'adresse quand leur point arrive. Le reste suit le chemin du cron. Sans boucle, la page ne donne pas
   // rendez-vous : c'est ce qu'elle lit au serveur (`boucle_tourne`).
+  //
+  // Éprouvé en le cassant le 24/10/2026, par `node scripts/rejouer-la-ci.mjs export base parcours` sur la source
+  // mutée : la page qui répond dès sa lecture faite (un appel qui part vraiment — `void` sur la requête de
+  // Supabase n'envoie rien, et la première version de la mutation passait) → le parcours s'arrête ici, « le
+  // point est « answered » avant le geste ». Et `/point` retirée des surfaces sans compte le fait s'arrêter à
+  // l'étape 0, « /point, ouverte à froid, a rangé une session dans le navigateur ».
   etape('point — répondu depuis l’e-mail, sans session');
   {
     const maintenant = new Date();

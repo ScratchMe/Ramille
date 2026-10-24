@@ -223,7 +223,11 @@ sans session. Le parcours relit la base **au repos** (le point toujours en atten
 l'ouverture), vérifie que le jeton a quitté l'adresse, touche « Envoyer ma réponse », puis relit la réponse,
 la marque d'usage sur le message, le pied sans rendez-vous (pas de boucle), et qu'aucun compte ni aucune
 session n'est né. Ce qu'aucune autre suite ne joue ensemble : le message, la page exportée, les privilèges
-d'`anon`, la CSP et la base.
+d'`anon`, la CSP et la base. Éprouvée le même jour par une page qui répond à l'ouverture — et seulement à la
+seconde tentative : la première mutation écrivait `void repondreParLeLien(…)`, qui n'envoie rien (le
+constructeur de requête de Supabase attend qu'on attende son résultat), et toutes les gardes passaient. **Une
+mutation se vérifie elle-même** : qu'elle casse quelque chose d'observable, avant de conclure que la garde
+le voit ou non.
 
 **Depuis le 01/10/2026, le parcours répond aussi aux vols et aux longs trajets** (`v1-33` D1) —
 profil 1 : ses deux vols, puis « Oui » ; cycliste et profil sans boucle : « 0 », puis « Non » — et

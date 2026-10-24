@@ -871,6 +871,13 @@ for (const { chemin, attendu, interdit, lecture = null, attente = ATTENTE } of P
 // vit : la lecture part, et porte le jeton ; rien ne répond au repos ; le jeton quitte l'adresse, et un
 // rechargement le retrouve ; « Envoyer ma réponse » fait partir **ce** jeton avec **cette** réponse ; et
 // le focus suit le geste.
+//
+// Éprouvé en le cassant le 24/10/2026, un export par mutation (`rejouer-la-ci.mjs export base parcours`) :
+// la page qui répond dès sa lecture faite → « /point : la page a répondu sans geste », seule ici (et l'étape
+// 12 ter du parcours réel) ; `router.setParams` retiré → « le jeton est encore dans l'adresse », seule ici.
+// **La première version de la première mutation ne prouvait rien** : `void repondreParLeLien(…)` ne fait
+// partir aucune requête, le constructeur de requête de Supabase n'envoyant qu'à l'attente de son résultat —
+// toutes les gardes passaient. Une mutation qui ne casse rien d'observable est un témoin, pas une mutation.
 {
   const chemin = `/point?jeton=${JETON_DE_FORME_VALIDE}&reponse=oui`;
   const requetes = [];
@@ -2792,6 +2799,9 @@ async function attendreLeTexte(page, texte) {
 // sur un export où `/licences` est retirée de `SURFACES_SANS_COMPTE` (`src/types/session.ts`) : le script sort 1
 // avec une seule ligne, « M : /licences, ouverte à froid, a demandé une session anonyme » — les cinq autres
 // surfaces et le témoin restent verts.
+// **Et `/point` depuis le 24/10/2026** (la réponse au point depuis l'e-mail, sept surfaces). Éprouvé sur un export
+// où elle est retirée de `SURFACES_SANS_COMPTE` : « M : /point, ouverte à froid, a demandé une session anonyme »,
+// seule de la section.
 //
 // **Et la racine du web depuis le 23/10/2026** (étape 5 de `v1-35`) : c'est la page d'accueil, qui n'est pas
 // une surface sans compte (l'écran de reconnexion s'y pose sur un refus) mais n'ouvre pas de session non
