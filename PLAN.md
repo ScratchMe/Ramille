@@ -39,12 +39,12 @@ ensuite figés sur `plan_actions`, comme `assessment_results` fige le bilan.
 
 **L'estimateur rend aussi le gain d'une seule fois** (`saving_kg_once`, 24/10/2026, étape 6a de `v1-35`) :
 ce qu'un « oui » au point veut dire au minimum — un aller, une journée de télétravail, un aller ou une
-sortie entière pour les loisirs, l'action entière pour un voyage. La part d'un aller se lit sur l'instantané
+sortie entière pour les loisirs, l'action entière pour un voyage que sa question nomme. La part d'un aller se lit sur l'instantané
 (`commute_trip_distance_km` sur les kilomètres annuels **des deux jambes**, `leisure_trip_distance_km` sur
 ceux des loisirs), donc ni les 45 semaines ni les fréquences ne sont recopiées, et le facteur de réduction
-est celui du gain annuel. **Tronqué au centième, jamais arrondi vers le haut** — sauf pour les voyages, où il
-vaut le gain annuel arrondi comme lui, pour que la carte et le point disent le même nombre. Une contrainte le
-garde sous le gain annuel — et le gain d'une fois prend le plus petit de sa troncature et de l'arrondi du
+est celui du gain annuel. **Tronqué au centième, jamais arrondi vers le haut**, pour les voyages comme pour le
+reste : le point d'un voyage peut donc dire un kilo de moins que la carte du plan, jamais un de plus. Une
+contrainte le garde sous le gain annuel — et le gain d'une fois prend le plus petit de sa troncature et de l'arrondi du
 gain annuel, sans quoi un voyage (où les deux sont presque égaux) ferait refuser le plan **entier** par
 cette contrainte, en silence, à chaque génération. Le test `63` vérifie, sans recopier la formule, que le
 gain d'une fois multiplié par le nombre de fois de l'année rend le gain annuel. **Il est nul quand la

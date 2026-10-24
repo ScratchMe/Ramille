@@ -1447,9 +1447,10 @@ export default function Plan() {
   });
   // **La carte d'ouverture se recompose au rendu, gestes compris** (contre-lecture du 24/10/2026). Le
   // chargement décide si elle se montre (`ouverture`, la marque locale comprise) ; son récapitulatif, lui,
-  // compte les points tels que l'écran les sait. Elle ne vit que les deux premières semaines du cycle —
-  // celles où la dernière semaine et le dernier mois de la saison écoulée se répondent : sans ceci, un
-  // « oui » donné là s'inscrivait sur la carte du point et nulle part dans le récapitulatif.
+  // compte les points tels que l'écran les sait. Elle ne vit que les deux premières semaines du cycle, où
+  // la dernière semaine de la saison écoulée se répond, et le début de son dernier mois — dont le point
+  // reste ouvert tout le premier mois : sans ceci, un « oui » donné pendant qu'elle est là s'inscrivait sur
+  // la carte du point et nulle part dans le récapitulatif. Après, seul le suivi le compte.
   const ouvertureAffichee =
     ouverture === null || precedente === null
       ? ouverture
@@ -1886,9 +1887,11 @@ export default function Plan() {
               « Aucun changement de mode ne te ferait gagner assez… » (`cartesDuPlan`, `intro`). */}
           {/* **Le principe et le progrès de la saison, sans écart entre eux qui saute** : le total se déplie
               (plus bas), et un enfant direct de l'intro prendrait son `gap` d'un coup, à son montage. Le
-              bloc n'existe que s'il porte l'un des deux — un plan à zéro action n'a pas d'intro. */}
-          {(affichage.intro || kilosDeLaSaison !== null) && (
-            <SansApparitionAuMontage>
+              bloc n'existe que s'il porte l'un des deux — un plan à zéro action n'a pas d'intro —, mais le
+              fournisseur, lui, monte avec l'écran : né plus tard avec le seul total, le bloc le déplie
+              encore (contre-lecture du 24/10/2026). */}
+          <SansApparitionAuMontage>
+            {(affichage.intro || kilosDeLaSaison !== null) && (
               <View>
                 {affichage.intro && (
                   <ThemedText type="body" themeColor="textSecondary">
@@ -1916,8 +1919,8 @@ export default function Plan() {
                   </Depliage>
                 )}
               </View>
-            </SansApparitionAuMontage>
-          )}
+            )}
+          </SansApparitionAuMontage>
         </View>
 
         {/* **Le point de la semaine passe en tête** (v1-11 flux 4) : répondre à un rappel est

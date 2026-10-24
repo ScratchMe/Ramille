@@ -359,5 +359,6 @@ rollback;
 --   - M10, l'export qui tait le gain du point → 13, seule ;
 --   - M11, tout « oui » compté, `oui_se_compte` ignoré → 3, seule ;
 --   - M12, le trajet et les sorties arrondis au centième au lieu d'être tronqués → **rien ne tombe** : la
---     tolérance de 2 (un centième par fois de l'année) couvre cet écart. Ce qui le garde est la lecture du
---     corps par le contrôle de la migration, qui exige la troncature.
+--     tolérance de 2 (un centième par fois de l'année) couvre cet écart. Le contrôle de la migration exige la
+--     troncature dans le corps qu'elle produit, et seulement celui-là : une réécriture postérieure n'est
+--     gardée par rien.

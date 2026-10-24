@@ -26,8 +26,9 @@ export type GesteSurLePoint = { reponse: ReponseDuPoint; ligneAvant: string | nu
  * Le plan lit ses points une fois par visite ; une réponse donnée sur sa carte ne le relit pas. Sans
  * ceci, la carte dirait « Au moins 2,2 kg CO₂e évités. » au-dessus d'un total de la saison qui ne le
  * compte pas encore — ou, en début de saison, sous une carte d'ouverture dont le récapitulatif l'ignore :
- * la dernière semaine et le dernier mois d'une saison se répondent dans la suivante, et c'est la carte
- * d'ouverture qui les compte, pas le total de la saison qui commence. **La règle est celle de la carte** (`checkin-card.tsx`) : le geste vaut tant que
+ * la dernière semaine et le dernier mois d'une saison se répondent dans la suivante, et ils comptent dans
+ * la saison qu'ils interrogent — la carte d'ouverture tant qu'elle est là (quinze jours au plus, refermée
+ * d'un geste), le suivi ensuite —, jamais dans le total de celle qui commence. **La règle est celle de la carte** (`checkin-card.tsx`) : le geste vaut tant que
  * la ligne porte ce qu'elle portait au geste, et la ligne relue l'emporte ensuite — une correction
  * faite sur un autre appareil n'est donc pas masquée par un geste plus ancien.
  */

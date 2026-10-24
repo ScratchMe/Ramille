@@ -68,17 +68,46 @@
 -- 0. Ce qu'un « oui » à la question d'un gabarit permet de compter. La colonne naît vraie, les trois
 -- gabarits dont la question ne nomme pas le trajet passent à faux par leur clé naturelle, puis la valeur
 -- par défaut tombe : un `insert` qui ne la dit pas échoue.
-alter table public.action_templates add column if not exists oui_se_compte boolean default true;
-update public.action_templates
-   set oui_se_compte = false
- where action_text in (
-   'Renoncer à un vol long-courrier cette année',
-   'Renoncer à un vol court ou moyen-courrier cette année',
-   'Remplacer un de tes longs trajets en autocar par le train'
- )
-   and oui_se_compte;
-alter table public.action_templates alter column oui_se_compte set not null;
-alter table public.action_templates alter column oui_se_compte drop default;
+--
+-- **Tout cela seulement quand la colonne naît** (contre-lecture du 24/10/2026) : rejouée après qu'une
+-- migration plus récente aura réécrit une question de vol et passé son gabarit à vrai, une mise à jour
+-- sans condition la remettrait à faux en silence (`SUPABASE.md` §2.3). Et les gains d'une fois que ces
+-- gabarits porteraient déjà — sur une base où une version d'essai de cette migration serait passée —
+-- retombent à nul au même moment, et à ce moment seulement.
+do $la_colonne$
+begin
+  if not exists (
+    select 1 from pg_attribute
+    where attrelid = 'public.action_templates'::regclass and attname = 'oui_se_compte' and not attisdropped
+  ) then
+    alter table public.action_templates add column oui_se_compte boolean default true;
+    update public.action_templates
+       set oui_se_compte = false
+     where action_text in (
+       'Renoncer à un vol long-courrier cette année',
+       'Renoncer à un vol court ou moyen-courrier cette année',
+       'Remplacer un de tes longs trajets en autocar par le train'
+     );
+    alter table public.action_templates alter column oui_se_compte set not null;
+    alter table public.action_templates alter column oui_se_compte drop default;
+
+    if exists (
+      select 1 from pg_attribute
+      where attrelid = 'public.plan_actions'::regclass and attname = 'saving_kg_once' and not attisdropped
+    ) then
+      update public.plan_actions pa
+         set saving_kg_once = null
+        from public.action_templates t
+       where t.id = pa.action_template_id and not t.oui_se_compte and pa.saving_kg_once is not null;
+      update public.engagement_checkins c
+         set committed_saving_kg_once = null
+        from public.action_templates t
+       where t.action_text = c.committed_action_text and not t.oui_se_compte
+         and c.status = 'pending' and c.committed_saving_kg_once is not null;
+    end if;
+  end if;
+end
+$la_colonne$;
 comment on column public.action_templates.oui_se_compte is
   'Un « oui » à la question de ce gabarit nomme-t-il ce qu''il compte ? Faux quand la question ne dit pas '
   'quel trajet (« as-tu eu un déplacement où tu as choisi autre chose que l''avion ? ») : le gain d''une '
@@ -291,21 +320,13 @@ begin
     raise exception 'action_saving n''a pas d''attribut saving_kg_once';
   end if;
 
-  -- Trois gabarits seulement ne comptent pas le « oui », et ce sont ceux dont la question ne nomme pas le
-  -- trajet.
-  select count(*) into v_n from public.action_templates
-  where not oui_se_compte
-    and action_text not in (
-      'Renoncer à un vol long-courrier cette année',
-      'Renoncer à un vol court ou moyen-courrier cette année',
-      'Remplacer un de tes longs trajets en autocar par le train'
-    );
-  if v_n > 0 then
-    raise exception '% gabarit(s) inattendu(s) ne comptent pas le « oui »', v_n;
-  end if;
-  select count(*) into v_n from public.action_templates where not oui_se_compte;
-  if v_n <> 3 then
-    raise exception 'Trois gabarits ne doivent pas compter le « oui », % le font', v_n;
+  -- La liste des gabarits qui ne comptent pas le « oui » n'est pas vérifiée ici : une migration plus récente
+  -- peut la changer, et ce contrôle rejoué la refuserait. Le test pgTAP `63` l'épingle à chaque PR.
+  if not exists (
+    select 1 from pg_attribute
+    where attrelid = 'public.action_templates'::regclass and attname = 'oui_se_compte' and attnotnull
+  ) then
+    raise exception 'action_templates.oui_se_compte manque, ou admet le nul';
   end if;
 
   v_corps := regexp_replace(pg_get_functiondef('public.estimate_action_savings(uuid)'::regprocedure), '--[^\n]*', '', 'g');
@@ -313,8 +334,17 @@ begin
      or position('2 * v_un_aller * v_commute_total_co2' in v_corps) = 0
      or position('2 * v_un_aller * r.leisure_co2_kg_year' in v_corps) = 0
      or position('when not t.oui_se_compte then null' in v_corps) = 0
+     or position('least(trunc(v_saving, 2), round(v_saving))' in v_corps) = 0
      or position('least(trunc(v_once_base * v_reduction_ratio, 2), round(v_saving))' in v_corps) = 0 then
     raise exception 'estimate_action_savings ne calcule pas le gain d''une fois';
+  end if;
+  -- **Ni ce que calculait une version d'essai de cette migration** (contre-lecture du 24/10/2026) : sur une
+  -- base où elle serait passée, l'ancre de la cinquième substitution est aussi la première ligne de l'ancien
+  -- bloc, et le nouveau s'insérerait devant lui sans le remplacer — l'ancien, exécuté après, rendrait les
+  -- voyages au kilo arrondi et ignorerait `oui_se_compte`. On lève plutôt que de deviner.
+  if position('v_once_base := v_base_co2;' in v_corps) > 0
+     or position('when t.poste = ''travel'' then round(v_saving)' in v_corps) > 0 then
+    raise exception 'estimate_action_savings porte encore le calcul d''une version d''essai du gain d''une fois : à retirer à la main avant de rejouer';
   end if;
 
   v_corps := regexp_replace(pg_get_functiondef('public.generate_plan_cycle_for_user(uuid,text)'::regprocedure), '--[^\n]*', '', 'g');

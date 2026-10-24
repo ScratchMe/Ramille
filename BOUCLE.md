@@ -291,8 +291,12 @@ pas défaire :
   compte sans attendre la relecture** (`avecLesGestes`, la règle de la carte : le geste vaut tant que la ligne
   n'a pas été relue), dans le total du plan **et** dans le récapitulatif de la carte d'ouverture, recomposé au
   rendu. **La dernière semaine et le dernier mois d'une saison se répondent dans la suivante** : ils comptent
-  dans la saison qu'ils interrogent — la carte d'ouverture —, pas dans le total de celle qui commence. Le
-  total du plan se déplie quand il naît (`Depliage`), au-dessus de la carte qu'on vient de toucher ;
+  dans la saison qu'ils interrogent, jamais dans le total de celle qui commence — sur la carte d'ouverture
+  tant qu'elle est là (quinze jours au plus, `JOURS_DOUVERTURE`, et refermée d'un geste), dans le suivi
+  ensuite. Le point du dernier mois reste ouvert tout le premier mois : répondu après la carte, son « oui »
+  ne s'inscrit sur aucun total du plan. Le total du plan se déplie quand il naît (`Depliage`), au-dessus de
+  la carte qu'on vient de toucher ; **il part d'un coup** quand une correction le retire — `Depliage` n'a pas
+  de sortie, et le cas est rare ;
 - **une correction le suit** : « Modifier ma réponse » d'un « oui » en « non » retire la ligne et le compte,
   puisqu'il se dérive à la lecture ;
 - **les points d'avant n'en ont pas** : la migration a rattrapé les actions de plan (quand le dernier bilan

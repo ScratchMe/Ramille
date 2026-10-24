@@ -96,6 +96,11 @@
     (contre-lecture du 24/10/2026). **À rouvrir si l'on veut qu'elles comptent** : il faudrait réécrire leurs
     questions pour qu'elles nomment le trajet — une décision de produit, et les points déjà posés gardent
     leur question ;
+  - **le total du plan part d'un coup quand une correction le retire** : il se déplie quand il naît, mais
+    `Depliage` n'a pas de sortie, et « Modifier ma réponse » d'un seul « oui » en « non » est rare ;
+  - **un « oui » donné sur le dernier point d'une saison, après la carte d'ouverture**, ne s'inscrit sur
+    aucun total du plan — il appartient à la saison écoulée — et ne se voit que sur la carte du point et dans
+    le suivi. Le point du dernier mois reste ouvert tout le premier mois, la carte quinze jours au plus ;
   - **le total de la saison vit à trois endroits, et c'est le même** : sous le titre du plan pour la saison
     en cours, dans le récapitulatif de la carte d'ouverture quand elle s'achève, et dans le suivi, saison par
     saison — sans quoi il s'effacerait à chaque bascule ;
