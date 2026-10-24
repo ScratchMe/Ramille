@@ -551,6 +551,45 @@ describe('CheckinCard — la réponse choisie dans l’e-mail', () => {
     expect((focus.mock.calls.at(-1)?.[0] as NoeudDeTest).props.children?.props.ligne).toBe(attendue);
   });
 
+  // **La proposition ne revient jamais après une réponse donnée ici** (seconde contre-lecture du 24/10/2026) :
+  // elle rouvrait « Tu as choisi : oui. » sur le « non » choisi par « Modifier ma réponse », et un toucher de
+  // plus remplaçait ce « non » par le « oui » de l'e-mail.
+  it('après « Envoyer », « Modifier ma réponse » → « Non » garde le « non », sans reproposer celle du lien', async () => {
+    const repondre = jest.fn().mockResolvedValue({ error: null, status: 200 });
+    render(<CheckinCard checkin={point()} emphasize={false} boucleTourne reponseProposee="oui" repondre={repondre} />);
+
+    fireEvent.press(screen.getByText('Envoyer ma réponse'));
+    await waitFor(() => expect(screen.getByText('Modifier ma réponse')).toBeTruthy());
+    fireEvent.press(screen.getByText('Modifier ma réponse'));
+    fireEvent.press(screen.getByText('Non'));
+
+    const attendue = repliqueDuPoint(point(), 'non', true).ligne;
+    await waitFor(() => expect(screen.getByText(attendue)).toBeTruthy());
+    expect(screen.queryByText('Tu as choisi : oui.')).toBeNull();
+    expect(repondre.mock.calls).toEqual([['oui'], ['non']]);
+    expect((focus.mock.calls.at(-1)?.[0] as NoeudDeTest).props.children?.props.ligne).toBe(attendue);
+  });
+
+  it('sur un point répondu comme le lien, « Modifier ma réponse » → « Non » ne repropose pas non plus', async () => {
+    const repondre = jest.fn().mockResolvedValue({ error: null, status: 200 });
+    render(
+      <CheckinCard
+        checkin={point({ status: 'answered', response_kind: 'oui', responded_at: '2026-09-21T08:00:00Z' })}
+        emphasize={false}
+        boucleTourne
+        reponseProposee="oui"
+        repondre={repondre}
+      />
+    );
+
+    fireEvent.press(screen.getByText('Modifier ma réponse'));
+    fireEvent.press(screen.getByText('Non'));
+
+    await waitFor(() => expect(screen.getByText(repliqueDuPoint(point(), 'non', true).ligne)).toBeTruthy());
+    expect(screen.queryByText('Tu as choisi : oui.')).toBeNull();
+    expect(repondre.mock.calls).toEqual([['non']]);
+  });
+
   it('sans boucle qui tourne, le refus d’un point clos ne promet pas la question suivante', async () => {
     const repondre = jest.fn().mockResolvedValue({ error: { code: '22023' }, status: 400 });
     render(<CheckinCard checkin={point()} emphasize={false} boucleTourne={false} reponseProposee="oui" repondre={repondre} />);
@@ -570,3 +609,6 @@ describe('CheckinCard — la réponse choisie dans l’e-mail', () => {
 //   - le focus qui ne suit pas « Choisir une autre réponse » → le troisième, seul ; ni « Garder ma réponse »
 //     → « sur un point répondu autrement… », seul ;
 //   - le refus qui promet toujours la question suivante → « sans boucle qui tourne… », seul.
+//   - la proposition qui revient après une réponse donnée ici (`reponsesDonnees === 0` retiré, l'état de
+//     `8f5ed56`) → « après « Envoyer », « Modifier ma réponse » → « Non »… » et « sur un point répondu comme
+//     le lien… », seuls.

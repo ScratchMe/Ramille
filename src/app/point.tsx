@@ -29,7 +29,7 @@ import {
 
 // Répondre au point depuis l'e-mail — étape 6b de `docs/architecture/v1-35-l-audit-en-chantiers.md`
 // (24/10/2026). L'e-mail du point porte trois liens, « Oui », « Non » et la troisième réponse, vers
-// `/point?reponse=…&jeton=…` ; cette page les reçoit.
+// `/point?jeton=…&reponse=…` ; cette page les reçoit.
 //
 // **Pourquoi une page sans compte.** Le rappel ne menait qu'au plan, et le plan demande la session du
 // compte : sur un autre appareil, un autre navigateur, ou un téléphone sans l'app, répondre voulait dire
@@ -195,6 +195,10 @@ export default function RepondreAuPoint() {
                   boucleTourne={point.boucle_tourne}
                   reponseProposee={reponseProposee}
                   repondre={(r) => repondreParLeLien(jeton, r)}
+                  // Une réponse partie, la réponse du lien a servi : elle quitte l'adresse, sans quoi un
+                  // rechargement reproposerait « oui » à qui vient d'envoyer « non » (seconde contre-lecture du
+                  // 24/10/2026). Le jeton, lui, reste gardé pour l'onglet.
+                  onReponse={() => router.setParams({ reponse: undefined })}
                 />
                 {ouvrirLePlan}
               </>

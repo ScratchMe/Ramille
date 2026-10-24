@@ -569,8 +569,11 @@ export function phraseDeLaReponseChoisie(
   return `Tu as choisi : ${reponseEnMots(point, reponse)}.`;
 }
 
-/** « oui », « non », ou le libellé du lien sans objet en minuscule — les mots des boutons. */
-function reponseEnMots(
+/**
+ * « oui », « non », ou le libellé du lien sans objet en minuscule — les mots des boutons. Exportée pour les
+ * indices de « Envoyer ma réponse » et « Garder ma réponse » (`checkin-card.tsx`), qui nomment la réponse.
+ */
+export function reponseEnMots(
   point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
   reponse: ReponseDuPoint
 ): string {
@@ -595,10 +598,13 @@ function reponseEnMots(
  * au-delà — sinon un compte dont la boucle a cessé d'être générée garderait à l'écran, pour
  * toujours, un « Répondu lundi » et la promesse d'un point qui ne viendra pas.
  *
- * **Et, depuis le 02/10/2026, la correction d'une réponse** (`v1-33` §6) : `repondre_au_checkin`
- * réécrit un point répondu tant que son `period_start` est au moins celui-ci, la même formule écrite
- * une troisième fois. Les trois — les deux générateurs, ce RPC et cette fonction — se touchent
- * ensemble : la carte répondue offre « Modifier ma réponse » exactement tant que le serveur l'accepte.
+ * **Et, depuis le 02/10/2026, la correction d'une réponse** (`v1-33` §6) : le serveur réécrit un point
+ * répondu tant que son `period_start` est au moins celui-ci. **Sa jumelle SQL est
+ * `public.debut_de_la_periode_interrogee`** depuis le 24/10/2026 (étape 6b de `v1-35`), que lisent
+ * l'écrivain des réponses (`ecrire_la_reponse_du_point`, derrière `repondre_au_checkin` et la réponse par
+ * le lien d'un e-mail) et la lecture par ce lien (`le_point_du_lien`, son `ouvert`) ; les deux générateurs
+ * gardent leur formule. Tout cela se touche ensemble : la carte répondue offre « Modifier ma réponse »
+ * exactement tant que le serveur l'accepte.
  */
 export function debutDePeriodeInterrogee(
   loopType: LoopType,

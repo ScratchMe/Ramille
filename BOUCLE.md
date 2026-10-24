@@ -397,10 +397,11 @@ réponse », qui rouvre les trois réponses sous « Ta réponse : oui. » (`phra
 réplique est celle de la nouvelle réponse, et « deux fois de suite » la suit, puisqu'il se dérive à la
 lecture. Ce qu'il faut en savoir :
 
-- **La borne est celle de l'affichage.** `repondre_au_checkin` réécrit un point répondu tant que son
-  `period_start` est celui de la période interrogée — la formule des deux générateurs, et celle de
-  `debutDePeriodeInterrogee` qui borne la carte répondue côté client : **les trois se touchent
-  ensemble**. Elle tombe à minuit UTC le lundi (ou le 1er), et non à l'arrivée du point suivant, à
+- **La borne est celle de l'affichage.** Le serveur réécrit un point répondu tant que son
+  `period_start` est celui de la période interrogée — `debut_de_la_periode_interrogee` depuis le
+  24/10/2026, lue par l'écrivain des réponses et par la lecture du lien d'un e-mail (§3), la formule des
+  deux générateurs, et `debutDePeriodeInterrogee`, sa jumelle côté client, qui borne la carte répondue :
+  **elles se touchent ensemble**. Elle tombe à minuit UTC le lundi (ou le 1er), et non à l'arrivée du point suivant, à
   6 h — qui n'arrive jamais quand la boucle s'est arrêtée. Au-delà, le refus est celui d'un point clos
   (`22023`, « déjà répondu, et sa période est passée »).
 - **C1.12 tient pour tout le reste.** Le trigger n'accepte la réécriture d'une ligne répondue que sur

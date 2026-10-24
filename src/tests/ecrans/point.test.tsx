@@ -20,8 +20,9 @@ const JETON = '3bb3de17-8df3-4910-9e77-1381d9ee90f7';
 
 let mockParams: Record<string, string | undefined> = {};
 const mockPush = jest.fn();
+const mockSetParams = jest.fn();
 jest.mock('expo-router', () => ({
-  router: { push: (...args: unknown[]) => mockPush(...args), setParams: jest.fn() },
+  router: { push: (...args: unknown[]) => mockPush(...args), setParams: (...args: unknown[]) => mockSetParams(...args) },
   useLocalSearchParams: () => mockParams,
 }));
 
@@ -71,6 +72,7 @@ beforeEach(() => {
   mockRepondre.mockReset();
   mockRpc.mockReset();
   mockPush.mockReset();
+  mockSetParams.mockReset();
 });
 
 it('lit le point par le jeton du lien, dit la réponse choisie, et n’écrit rien avant le geste', async () => {
@@ -98,6 +100,8 @@ it('envoie au geste par le jeton, puis dit la réplique de Ramille et ce que le 
   expect(mockRepondre).toHaveBeenCalledWith(JETON, 'oui');
   expect(mockRpc).not.toHaveBeenCalled();
   expect(screen.getByText(repliqueDuPoint(point(), 'oui', true).ligne)).toBeTruthy();
+  // La réponse du lien a servi : elle quitte l'adresse, pour qu'un rechargement ne la repropose pas.
+  expect(mockSetParams).toHaveBeenCalledWith({ reponse: undefined });
 });
 
 // « Pas de trajet » et non « non » : toutes ses variantes donnent rendez-vous, alors que celle du « non »
@@ -211,4 +215,8 @@ it('une panne de lecture se dit, et « Réessayer » relit', async () => {
 //     vert : voir son commentaire) ;
 //   - la lecture lancée sans jeton → « sans jeton… » et la panne, qui relit un jeton nul ;
 //   - « Ouvrir mon plan » sans `?rappel=1` → le jeton inconnu, seul ;
-//   - « Réessayer » sans nouvel essai → la panne, seule.
+//   - « Réessayer » sans nouvel essai → la panne, seule ;
+//   - l'état ouvert sans lire `ouvert` (`etatDeLaPageDuPoint`) → « un point clos garde sa question… », avec
+//     son test pur ;
+//   - la réponse du lien laissée dans l'adresse après l'envoi (`onReponse` retiré) → « envoie au geste… »,
+//     seul (seconde contre-lecture du même soir).

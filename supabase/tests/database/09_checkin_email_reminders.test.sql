@@ -37,7 +37,14 @@ select public.enqueue_checkin_reminders();
 -- ── Qui reçoit ─────────────────────────────────────────────────────────────────────────
 
 select results_eq(
-  $$ select recipient_email from public.notification_outbox order by recipient_email $$,
+  -- **Toutes les lectures de la table sont bornées aux profils du fichier** : une stack qui a servi le
+  -- parcours réel peut garder un point en attente de son troisième profil, que chaque mise en file d'après
+  -- un vidage remet dans la boîte (seconde contre-lecture du 24/10/2026, `TESTING-PGTAP.md` §2.3 — on borne
+  -- l'assertion, on ne prescrit pas une base vierge). Éprouvé le même jour en rejouant le fichier derrière
+  -- un tel point : 23 échecs quand seules les trois premières lectures étaient bornées, aucun une fois
+  -- toutes bornées.
+  $$ select recipient_email from public.notification_outbox where user_id::text like 'ba111111%'
+     order by recipient_email $$,
   $$ values ('pgtap-rattache@test.local'::text) $$,
   'Seul le compte rattaché à un email confirmé, rappels actifs, reçoit un rappel'
 );
@@ -71,7 +78,7 @@ select public.enqueue_checkin_reminders();
 select public.enqueue_checkin_reminders();
 
 select is(
-  (select count(*)::int from public.notification_outbox),
+  (select count(*)::int from public.notification_outbox where user_id::text like 'ba111111%'),
   1,
   'Trois passages de la génération ne produisent qu''un seul rappel'
 );
@@ -83,7 +90,7 @@ select is(
 select public.send_pending_reminders();
 
 select results_eq(
-  $$ select status, attempts::int from public.notification_outbox $$,
+  $$ select status, attempts::int from public.notification_outbox where user_id::text like 'ba111111%' $$,
   $$ values ('pending'::text, 0) $$,
   'Sans clé API, le rappel reste en attente — ni envoyé, ni en échec, ni une tentative gâchée'
 );
@@ -97,7 +104,7 @@ where user_id = 'ba111111-1111-1111-1111-111111111111';
 select public.enqueue_checkin_reminders();
 
 select is(
-  (select count(*)::int from public.notification_outbox),
+  (select count(*)::int from public.notification_outbox where user_id::text like 'ba111111%'),
   0,
   'Un check-in déjà répondu ne déclenche pas de rappel'
 );
@@ -125,12 +132,12 @@ select public.enqueue_checkin_reminders();
 
 select ok(
   (select send_after between now() - interval '1 minute' and now() + interval '5 days'
-   from public.notification_outbox),
+   from public.notification_outbox where user_id::text like 'ba111111%'),
   'Le rappel part dans les cinq jours, jamais au-delà de la semaine qu''il concerne'
 );
 
 select is(
-  (select date_trunc('day', send_after) from public.notification_outbox),
+  (select date_trunc('day', send_after) from public.notification_outbox where user_id::text like 'ba111111%'),
   (select date_trunc('day', now() + make_interval(days =>
      (('x' || substr(md5('ba111111-1111-1111-1111-111111111115'), 1, 7))::bit(28)::int % 5)))),
   'Le décalage est dérivé du user_id, donc stable d''un passage à l''autre'
@@ -188,7 +195,7 @@ where user_id = 'ba111111-1111-1111-1111-111111111115';
 select public.send_pending_reminders();
 
 select results_eq(
-  $$ select status from public.notification_outbox $$,
+  $$ select status from public.notification_outbox where user_id::text like 'ba111111%' $$,
   $$ values ('cancelled'::text) $$,
   'Un rappel dont le check-in est périmé est annulé, et non envoyé — même sans fournisseur configuré'
 );
@@ -253,7 +260,7 @@ select public.send_pending_reminders();
 select public.send_pending_reminders();
 
 select results_eq(
-  $$ select status, attempts::int from public.notification_outbox $$,
+  $$ select status, attempts::int from public.notification_outbox where user_id::text like 'ba111111%' $$,
   $$ values ('sent'::text, 1) $$,
   'Une ligne déjà partie n''est jamais reprise : ni seconde tentative, ni second envoi'
 );

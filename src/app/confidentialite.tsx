@@ -398,7 +398,7 @@ const SECTIONS: LegalSection[] = [
           'ne peuvent pas t’arriver. Tu peux désactiver les rappels à tout moment depuis l’écran « Toi », ou par le ' +
           'lien « ne plus recevoir ces rappels » au bas de chaque email : ce lien agit sans ouvrir l’application, et sans ' +
           'que tu aies à te connecter. Les liens de réponse du même email aussi : tant que la période de sa question ' +
-          'n’est pas finie, ils montrent cette question, la réponse que tu y as donnée et ce qu’elle a évité, et ils ' +
+          'n’est pas finie, ils montrent cette question, la réponse que tu y as donnée, quand, et ce qu’elle a évité, et ils ' +
           'enregistrent ta réponse — une fois que tu l’as confirmée sur la page qu’ils ouvrent. Ensuite, ils ne ' +
           'montrent plus que la question. Comme le lien de désinscription, ils valent pour qui a l’email : si tu le ' +
           'transfères, la personne qui le reçoit peut en faire autant.',

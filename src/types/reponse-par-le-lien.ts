@@ -24,9 +24,9 @@ import type { GenreDEchec } from '@/types/lecture-en-echec';
  *
  * **`ouvert` vient du serveur, et lui seul décide** : le point accepte-t-il encore une réponse — en attente,
  * ou répondu tant que sa période est celle qu'on interroge (`debut_de_la_periode_interrogee`, la borne de
- * l'écrivain). Fermé, la lecture ne rend plus que la question : l'état, la réponse, son heure, ses kilos et
- * la boucle arrivent nuls (contre-lecture du 24/10/2026 : un e-mail gardé six mois, ou transféré, ne doit
- * pas dire ce qui a été répondu). La page n'a donc pas de borne à elle — elle ne pouvait que diverger de
+ * l'écrivain). Fermé, la lecture ne rend plus que la question : l'état, la réponse, son heure et ses kilos
+ * arrivent nuls, la boucle à `false` (contre-lecture du 24/10/2026 : un e-mail gardé six mois, ou
+ * transféré, ne doit pas dire ce qui a été répondu). La page n'a donc pas de borne à elle — elle ne pouvait que diverger de
  * celle du serveur, sur une horloge de téléphone décalée.
  */
 export type PointDuLien = {
@@ -40,7 +40,7 @@ export type PointDuLien = {
   /** La question du message, figée à la génération (ou recomposée par le serveur pour un point d'avant C2.1). */
   question: string;
   ouvert: boolean;
-  /** Les cinq suivants ne viennent que d'un point `ouvert`, et sont nuls sinon. */
+  /** Les quatre suivants ne viennent que d'un point `ouvert`, et sont nuls sinon ; la boucle vaut alors `false`. */
   status: string | null;
   response_kind: string | null;
   responded_at: string | null;

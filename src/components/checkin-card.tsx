@@ -23,6 +23,7 @@ import {
   phraseDeLaReponseEnPlace,
   phraseDeSecondRenforcement,
   piedDuPointRepondu,
+  reponseEnMots,
   questionDuPoint,
   repliqueDuPoint,
   type PointRepondu,
@@ -289,9 +290,14 @@ export function CheckinCard({
   const kilos = phraseDuOui(reponse, checkin.committed_saving_kg_once);
 
   // La réponse de l'e-mail, tant qu'elle n'est pas celle du point et qu'elle n'a pas été écartée — ni en
-  // correction. Un point déjà répondu de la même façon montre sa carte répondue, comme partout.
+  // correction, **ni après une réponse donnée ici** (seconde contre-lecture du 24/10/2026) : sans cette
+  // borne, « Envoyer », puis « Modifier ma réponse » → « Non » rouvrait la proposition du « oui », et un
+  // toucher de plus remplaçait le « non » choisi exprès. Un point déjà répondu de la même façon montre sa
+  // carte répondue, comme partout.
   const proposition =
-    reponseProposee && reponseProposee !== reponse && !correction && !autreReponse ? reponseProposee : null;
+    reponseProposee && reponseProposee !== reponse && reponsesDonnees === 0 && !correction && !autreReponse
+      ? reponseProposee
+      : null;
 
   // La réponse passe par un RPC, jamais par un `update` : `engagement_checkins` porte des
   // libellés snapshotés (`trip_label`, `period_label`) et la clé d'idempotence de la génération
@@ -416,7 +422,11 @@ export function CheckinCard({
                 onPress={() => answer(proposition)}
                 disabled={saving}
                 onPanel
-                accessibilityHint={`Envoyer ta réponse pour ${formeInserable(checkin.poste, checkin.loop_type)}`}
+                accessibilityHint={
+                  reponse === null
+                    ? `Envoyer « ${reponseEnMots(checkin, proposition)} » pour ${formeInserable(checkin.poste, checkin.loop_type)}`
+                    : `Remplacer « ${reponseEnMots(checkin, reponse)} » par « ${reponseEnMots(checkin, proposition)} » pour ${formeInserable(checkin.poste, checkin.loop_type)}`
+                }
               />
               {reponse === null ? (
                 <TextLink
@@ -434,6 +444,7 @@ export function CheckinCard({
                 <TextLink
                   label="Garder ma réponse"
                   apparence="souligne"
+                  hint={`Garder « ${reponseEnMots(checkin, reponse)} »`}
                   onPress={() => {
                     gesteDeProposition.current = 'garder';
                     setAutreReponse(true);

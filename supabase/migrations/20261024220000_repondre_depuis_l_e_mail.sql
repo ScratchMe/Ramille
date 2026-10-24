@@ -213,7 +213,11 @@ begin
 end;
 $function$;
 
--- 4. La lecture et la réponse par le jeton, ouvertes sans session.
+-- 4. La lecture et la réponse par le jeton, ouvertes sans session. La lecture est supprimée d'abord : son type
+-- de retour a changé pendant l'écriture de cette migration (`ouvert`, des colonnes réordonnées), et
+-- `create or replace` refuse de changer un type de retour (42P13) sur une base qui aurait reçu la version
+-- d'avant. Les privilèges sont reposés plus bas.
+drop function if exists public.le_point_du_lien(uuid);
 create or replace function public.le_point_du_lien(p_jeton uuid)
  returns table (
    loop_type text,
@@ -387,10 +391,16 @@ begin
     raise exception 'repondre_au_checkin écrit encore lui-même : un second écrivain des réponses';
   end if;
 
+  -- Les cinq valeurs d'un point ouvert, chacune sous la borne : en chercher une seule laisserait passer un
+  -- corps qui rendrait les autres (seconde contre-lecture du 24/10/2026).
   v_corps := regexp_replace(pg_get_functiondef('public.le_point_du_lien(uuid)'::regprocedure), '--[^\n]*', '', 'g');
-  if position('case when a.ouvert then c.response_kind end' in v_corps) = 0
+  if position('case when a.ouvert then c.status end' in v_corps) = 0
+     or position('case when a.ouvert then c.response_kind end' in v_corps) = 0
+     or position('case when a.ouvert then c.responded_at end' in v_corps) = 0
+     or position('case when a.ouvert then c.committed_saving_kg_once end' in v_corps) = 0
+     or position('a.ouvert and exists' in v_corps) = 0
      or position('public.debut_de_la_periode_interrogee(c.loop_type)' in v_corps) = 0 then
-    raise exception 'le_point_du_lien rend la réponse d''un point dont la période est passée';
+    raise exception 'le_point_du_lien rend ce qu''un point dont la période est passée doit taire';
   end if;
 
   v_corps := pg_get_functiondef('public.export_my_data()'::regprocedure);

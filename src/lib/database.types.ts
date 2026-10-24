@@ -1503,7 +1503,7 @@ export type Database = {
           committed_saving_kg_once: number | null
           loop_type: string
           mode: string | null
-          // Passé la période, la lecture ne rend que la question : les cinq champs du point ouvert sont nuls
+          // Passé la période, la lecture ne rend que la question : l'état, la réponse, son heure et les kilos sont nuls, la boucle à false
           ouvert: boolean
           period_label: string
           period_start: string

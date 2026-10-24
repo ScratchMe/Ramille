@@ -440,7 +440,11 @@ select is_empty(
 select is(
   (select count(*) from public.notification_outbox o
    join public.engagement_checkins c on c.id = o.checkin_id
-   where c.period_label = 'Semaine dernière')::int,
+   where c.period_label = 'Semaine dernière'
+     -- Bornée au fixture : une stack qui a servi le parcours réel garde le point « Semaine dernière » de
+     -- son troisième profil quand il s'arrête avant la fin (seconde contre-lecture du 24/10/2026,
+     -- `TESTING-PGTAP.md` §2.3 — on borne l'assertion, on ne prescrit pas une base vierge).
+     and o.user_id = '90000000-0000-0000-0000-000000000002')::int,
   1,
   'un rappel envoyé la semaine dernière reste — la rétention est de six mois, pas de six jours'
 );

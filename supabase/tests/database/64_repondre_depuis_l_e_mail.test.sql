@@ -60,8 +60,12 @@ select public.enqueue_checkin_reminders();
 -- P3 est clos par le passage suivant, P4 a été répondu dans sa semaine : deux chemins de production, posés
 -- ici sur des lignes encore en attente (le trigger ne garde que les lignes répondues).
 update public.engagement_checkins set status = 'expired' where id = 'f6420000-0000-0000-0000-0000000000a3';
+-- P4 porte une action et son gain, comme un point engagé : sans eux, l'assertion qui veut les kilos tus
+-- passé la période resterait verte sur une lecture qui les rendrait (seconde contre-lecture du 24/10/2026).
 update public.engagement_checkins
-set status = 'answered', response_kind = 'oui', response = true, responded_at = now() - interval '10 days'
+set status = 'answered', response_kind = 'oui', response = true, responded_at = now() - interval '10 days',
+    question_kind = 'engagement', committed_action_text = 'Passer deux trajets sur cinq en train',
+    committed_saving_kg_once = 2.29
 where id = 'f6420000-0000-0000-0000-0000000000a4';
 
 select set_config('test.p' || right(checkin_id::text, 2), jeton_de_reponse::text, true)
