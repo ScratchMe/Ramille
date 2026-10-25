@@ -7,6 +7,8 @@ import {
   JOURS_DOUVERTURE,
   ouvertureDeSaison,
   ouvertureDuPremierPlan,
+  periodeRevolue,
+  pointDeSaison,
   progressionDeLaPeriode,
   recapDeLaPeriode,
   recapDeSaison,
@@ -180,6 +182,39 @@ describe('recapDeSaison', () => {
 
   it('rend zéro sur une saison vide', () => {
     expect(recapDeSaison([], automne)).toEqual({ repondus: 0, changements: 0, kilosEvites: 0 });
+  });
+});
+
+// Sorties de l'écran du plan à l'étape 7b de `v1-35`. Éprouvées le 25/10/2026, trois mutations :
+// `<` remplacé par `<=` → « le dernier jour de la période… » ; la date du jour prise en UTC
+// (`toISOString`) → « juste après minuit à Paris… » ; la réponse convertie en booléen → « pointDeSaison… ».
+describe('periodeRevolue', () => {
+  // `period_end` est le dernier jour inclus : la période n'est révolue que le lendemain.
+  it('le dernier jour de la période, elle court encore ; le lendemain, elle est révolue', () => {
+    expect(periodeRevolue('2026-11-30', new Date(2026, 10, 30, 22, 0))).toBe(false);
+    expect(periodeRevolue('2026-11-30', new Date(2026, 11, 1, 9, 0))).toBe(true);
+  });
+
+  // Le piège que la comparaison en chaînes évite : à 0 h 30 à Paris le 1er décembre, il est encore le
+  // 30 novembre en UTC. C'est le calendrier de la personne qui dit que la saison a tourné.
+  it('juste après minuit à Paris, le jour qui compte est celui de Paris', () => {
+    expect(periodeRevolue('2026-11-30', new Date(2026, 11, 1, 0, 30))).toBe(true);
+  });
+});
+
+describe('pointDeSaison', () => {
+  it('garde le genre de la réponse tel que la base le dit, et le gain figé', () => {
+    expect(
+      pointDeSaison({
+        period_start: '2026-09-14',
+        status: 'answered',
+        response_kind: 'sans_objet',
+        committed_saving_kg_once: 3.2,
+      })
+    ).toEqual({ periodStart: '2026-09-14', status: 'answered', reponse: 'sans_objet', gainDUneFois: 3.2 });
+    expect(
+      pointDeSaison({ period_start: '2026-09-21', status: 'pending', response_kind: null, committed_saving_kg_once: null })
+    ).toEqual({ periodStart: '2026-09-21', status: 'pending', reponse: null, gainDUneFois: null });
   });
 });
 

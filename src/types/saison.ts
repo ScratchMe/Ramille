@@ -33,7 +33,7 @@
  * fabrique aucune de ces phrases et ne compte rien.
  */
 
-import { jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint, STATUT_DU_POINT } from '@/types/checkin';
+import { genreDeReponse, jourDuMois, MOIS_FRANCAIS, type ReponseDuPoint, STATUT_DU_POINT } from '@/types/checkin';
 import { kilosEvites, kilosEvitesEnMots, phraseDesKilos } from '@/types/kilos-evites';
 
 export const SAISONS = ['hiver', 'printemps', 'ete', 'automne'] as const;
@@ -198,6 +198,30 @@ export type PointDeSaison = {
   gainDUneFois: number | null;
 };
 
+/**
+ * Un point lu en base, réduit à ce que le récapitulatif de saison regarde (C2.8).
+ *
+ * `PointDeSaison` parle le vocabulaire de `response_kind` — la seule vérité côté base (C2.4) — donc
+ * la conversion n'est qu'un changement de nom de champ. `genreDeReponse` est la même lecture que
+ * partout ailleurs dans l'écran : la reconvertir en booléen ici rouvrirait l'ambiguïté que C2.4 a
+ * fermée, où `null` voulait dire à la fois « pas répondu » et « répondu sans objet ».
+ *
+ * Sortie de l'écran du plan à l'étape 7b de `v1-35`.
+ */
+export function pointDeSaison(point: {
+  period_start: string;
+  status: string;
+  response_kind: string | null;
+  committed_saving_kg_once: number | null;
+}): PointDeSaison {
+  return {
+    periodStart: point.period_start,
+    status: point.status,
+    reponse: genreDeReponse(point.response_kind),
+    gainDUneFois: point.committed_saving_kg_once,
+  };
+}
+
 export type RecapDeSaison = {
   /** Les points auxquels la personne a répondu, quelle que soit la réponse. */
   repondus: number;
@@ -340,6 +364,23 @@ export function finDePeriodeEnMots(periodEnd: string): string | null {
   const c = composantesDuJour(periodEnd);
   if (!c) return null;
   return `jusqu’au ${jourDuMois(c.jour)} ${MOIS_FRANCAIS[c.mois - 1]}`;
+}
+
+/**
+ * **La période affichée est-elle révolue ?** (C2.2) Le cron nocturne construit le cycle de la saison
+ * courante, mais il peut ne pas être passé — et un cycle périmé présenté comme courant fait croire qu'on
+ * travaille encore sur une période terminée. Le plan le **dit** plutôt que de retomber sur l'écran
+ * d'attente : l'action engagée, les jours choisis et le cap restent à l'écran, parce qu'ils ont eu lieu.
+ *
+ * La comparaison est en chaînes `YYYY-MM-DD` et non en `Date` : `period_end` vient de Postgres en date
+ * nue, et `new Date('2026-11-30')` est minuit UTC — donc la veille, à l'ouest de Greenwich, ce qui ferait
+ * annoncer une saison révolue un jour trop tôt. Le jour comparé est celui du calendrier de la personne
+ * (`isoJour`). `period_end` est le dernier jour **inclus** : la période n'est révolue que le lendemain.
+ *
+ * Sortie de l'écran du plan à l'étape 7b de `v1-35`.
+ */
+export function periodeRevolue(periodEnd: string, maintenant: Date = new Date()): boolean {
+  return periodEnd.slice(0, 10) < isoJour(maintenant);
 }
 
 /**

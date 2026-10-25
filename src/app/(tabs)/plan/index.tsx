@@ -10,44 +10,50 @@ import {
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
-import { Button } from '@/components/button';
 import { CheckinCard, type EngagementCheckin } from '@/components/checkin-card';
-import { EmptyStateIllustration } from '@/components/illustrations/empty-state-illustration';
-import { LigneDAttente } from '@/components/ligne-d-attente';
-import { Mascot } from '@/components/mascot';
-import { MessageInline } from '@/components/message-inline';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { RAMILLE } from '@/constants/mascotte';
 import { donnerLeFocus } from '@/lib/focus';
-import { formatKg, formatTonnes } from '@/lib/format';
 import { useRafraichirAuRetour } from '@/hooks/use-rafraichir-au-retour';
 import { useReprendreLEngagement } from '@/hooks/use-reprendre-l-engagement';
 import { usePassageDEngagement } from './_layout';
 import { useTrackFocus } from '@/hooks/use-track-focus';
 import { track } from '@/lib/analytics';
 import { CarteDePiste, type PisteDuPlan } from '@/components/plan/carte-de-piste';
+import { BanniereDeRelecture } from '@/components/plan/banniere-de-relecture';
 import { CarteDOuverture } from '@/components/plan/carte-douverture';
+import { CarteDuCap } from '@/components/plan/carte-du-cap';
+import {
+  CarteDAttente,
+  CarteDeFelicitation,
+  CarteDuRebilan,
+  EncartDeContexte,
+} from '@/components/plan/cartes-du-plan';
+import {
+  EncartDeLOrphelin,
+  EncartDuCycleRevolu,
+  EncartDuRattachement,
+} from '@/components/plan/encarts-de-fait';
+import { PlanSansPlan, type EtatSansPlan } from '@/components/plan/plan-sans-plan';
 import { FeuilleRappels } from '@/components/plan/feuille-rappels';
-import { TraitDeTemps } from '@/components/plan/trait-de-temps';
 import {
   cadreDuPlan,
+  capDuCycle,
   cartesDuPlan,
   defilementVersLaCarte,
   felicitationDuPlanSansAction,
-  formeInserable,
   motsDuContexte,
   orphelinAAnnoncer,
-  phraseDeLOrphelin,
   phraseDesPistesSuffisantes,
   pistesDuPlan,
   type IntentionTiming,
   type ReponsesDeContexte,
 } from '@/types/plan';
 import { daysSince, regimeDeRebilan, titreDuRebilan } from '@/types/suivi';
-import { estLeResiduelDesSortiesRares, nomDuPoste, type LoopType } from '@/constants/postes';
+import type { LoopType } from '@/constants/postes';
 import {
   aVuLouvertureDeSaison,
   marquerLouvertureDeSaisonVue,
@@ -60,7 +66,6 @@ import {
 } from '@/types/premier-parcours';
 import { usePremierParcours } from '@/app/(tabs)/_layout';
 import {
-  basculeDeSaison,
   cadenceNommeUneSaison,
   estDansLouverture,
   estPremierPlan,
@@ -68,11 +73,12 @@ import {
   kilosDeLaPeriodeEnMots,
   ouvertureDeSaison,
   ouvertureDuPremierPlan,
+  periodeRevolue,
+  pointDeSaison,
   progressionDeLaPeriode,
   SORTIE_COMPRIS,
   sortiesDeLouverture,
   type ContenuDOuverture,
-  type PointDeSaison,
 } from '@/types/saison';
 import {
   aVuEngagementOrphelin,
@@ -97,16 +103,14 @@ import { defilementPourMontrer } from '@/types/mouvement';
 import {
   genreDeLEchec,
   genreDesEchecs,
-  phraseDeLaLectureEnEchec,
   type GenreDEchec,
 } from '@/types/lecture-en-echec';
 import {
   accentDesPoints,
-  estDeLaPeriodeCourante,
-  genreDeReponse,
+  historiqueParBoucle,
+  lePlusRecentParBoucle,
   type PointRepondu,
   type ReponseDuPoint,
-  STATUT_DU_POINT,
 } from '@/types/checkin';
 import { avecLesGestes, type GesteSurLePoint } from '@/types/kilos-evites';
 import {
@@ -164,68 +168,6 @@ type EngagementOrphelin = {
   released_reason: string;
 };
 
-// Une seule carte par boucle, la plus récente. La requête est déjà triée par `period_start`
-// décroissant, donc le premier vu de chaque `loop_type` est le bon.
-//
-// `period_start` n'est plus ajouté ici : il fait partie d'`EngagementCheckin` depuis C2.3, parce
-// que c'est lui qui nomme le mois dans la question de la boucle mensuelle.
-//
-// **Et depuis C2.4, la période borne l'affichage.** La requête ramène aussi les points répondus,
-// pour que le renforcement survive à un changement d'onglet ; il ne doit pas survivre à la période.
-// Un compte dont la boucle a cessé d'être générée — un re-bilan sans trajet régulier, par exemple —
-// garderait sinon à l'écran, pour toujours, un « Répondu lundi » suivi de la promesse d'un point qui
-// ne viendra pas. `estDeLaPeriodeCourante` est la jumelle du `date_trunc` des deux générateurs ; un
-// point **en attente** n'est jamais filtré, lui, parce que seul le serveur décide de le clore.
-function keepLatestPerLoop(checkins: EngagementCheckin[]): EngagementCheckin[] {
-  const seen = new Set<EngagementCheckin['loop_type']>();
-  return checkins.filter((checkin) => {
-    if (seen.has(checkin.loop_type)) return false;
-    if (checkin.status === STATUT_DU_POINT.repondu && !estDeLaPeriodeCourante(checkin)) return false;
-    seen.add(checkin.loop_type);
-    return true;
-  });
-}
-
-// Les points répondus de chaque boucle, hors carte affichée : c'est ce que `estDeuxiemeFoisDeSuite`
-// interroge. Regroupé ici plutôt que dans la carte, qui n'a pas à relire la base pour savoir ce qui
-// s'est passé la période d'avant.
-function historiqueParBoucle(
-  checkins: EngagementCheckin[],
-  affiches: EngagementCheckin[]
-): Record<EngagementCheckin['loop_type'], PointRepondu[]> {
-  const affichesIds = new Set(affiches.map((checkin) => checkin.id));
-  const parBoucle: Record<EngagementCheckin['loop_type'], PointRepondu[]> = {
-    commute: [],
-    extras: [],
-  };
-
-  for (const checkin of checkins) {
-    if (affichesIds.has(checkin.id)) continue;
-    const reponse = genreDeReponse(checkin.response_kind);
-    if (reponse === null) continue;
-    parBoucle[checkin.loop_type].push({ period_start: checkin.period_start, poste: checkin.poste, reponse });
-  }
-
-  return parBoucle;
-}
-
-/**
- * Un point, réduit à ce que le récapitulatif de saison regarde (C2.8).
- *
- * `PointDeSaison` parle le vocabulaire de `response_kind` — la seule vérité côté base (C2.4) — donc
- * la conversion n'est qu'un changement de nom de champ. `genreDeReponse` est la même lecture que
- * partout ailleurs dans l'écran : la reconvertir en booléen ici rouvrirait l'ambiguïté que C2.4 a
- * fermée, où `null` voulait dire à la fois « pas répondu » et « répondu sans objet ».
- */
-function pointDeSaison(checkin: EngagementCheckin): PointDeSaison {
-  return {
-    periodStart: checkin.period_start,
-    status: checkin.status,
-    reponse: genreDeReponse(checkin.response_kind),
-    gainDUneFois: checkin.committed_saving_kg_once,
-  };
-}
-
 /**
  * Par quel chemin ce compte a-t-il été rattaché ? Lu sur les **identités** de la session, jamais
  * déduit de la présence d'une adresse : Google en fournit une aussi, et prendre « email » par
@@ -244,28 +186,9 @@ async function methodeDuRattachement(): Promise<'google' | 'email' | null> {
 }
 
 type LoadState =
-  // `relance` : ce chargement est un « Réessayer » de la personne, et il se dit tout de suite.
-  | { status: 'loading'; relance?: true }
-  // Aucun bilan complété — écran "État vide" de la maquette.
-  | { status: 'no_assessment' }
-  // **Rien n'a pu être lu, et c'est autre chose que « rien à afficher »** (A4-1). L'erreur des
-  // requêtes était purement ignorée : hors ligne, `assessment === null` menait à
-  // `no_assessment`, donc à « Ton bilan n'est pas encore fait » et à un bouton pour le refaire,
-  // à quelqu'un qui en a un. Un état vide est une affirmation sur les données de la personne.
-  //
-  // **Cet état ne s'atteint que depuis `loading`** : les trois autres viennent d'une lecture
-  // qui a réussi, et l'écran d'erreur plein écran ne vaut que quand rien n'a jamais pu être lu.
-  // La relecture en échec se dit à côté (`relectureEnEchec`), sans rien effacer.
-  //
-  // **Le nom date d'avant D19** (`v1-33`, 01/10/2026) : l'état vaut pour toute lecture qui n'a rien
-  // rendu, réseau coupé ou serveur en échec, et `genre` dit lequel — calculé une fois, dans la lecture,
-  // pour que l'écran ne parle de connexion qu'à qui n'en a pas (`phraseDeLaLectureEnEchec`).
-  | { status: 'erreur_reseau'; genre: GenreDEchec }
-  // Bilan complété mais plan_cycles pas encore généré — ne devrait plus arriver en
-  // pratique (compute_assessment_results le génère désormais immédiatement, cf.
-  // migration 20260824190000), gardé comme filet pour les bilans complétés avant elle
-  // et pas encore repris par le cron quotidien.
-  | { status: 'pending'; assessmentId: string }
+  // Les quatre états sans plan à montrer — la lecture qui tourne, pas de bilan, rien de lu, le plan
+  // pas encore généré —, et ce que chacun veut dire : `PlanSansPlan` (étape 7b de `v1-35`).
+  | EtatSansPlan
   | {
       status: 'ok';
       cycle: PlanCycle;
@@ -426,8 +349,8 @@ export default function Plan() {
   const [boucles, setBoucles] = useState<LoopType[] | null>(null);
   // Le total du bilan courant, pour la seule phrase du plan qui l'affirme : la félicitation du
   // résiduel des sorties rares dit « sous le repère 2050 » (`felicitationDuPlanSansAction`). Lu dans
-  // `assessment_results`, dans le lot des lectures du plan ; `null` tant qu'on ne sait pas, et sur un
-  // échec de lecture — la phrase retombe alors sur celle qui n'affirme rien.
+  // `assessment_results`, avec le bilan (étape 7b de `v1-35`) ; `null` tant qu'on ne sait pas, et quand
+  // le bilan n'en a pas — la phrase retombe alors sur celle qui n'affirme rien.
   const [totalDuBilan, setTotalDuBilan] = useState<number | null>(null);
   const [permission, setPermission] = useState<Permission>('fermee');
   /**
@@ -925,8 +848,6 @@ export default function Plan() {
           cyclePrecedent,
           checkins,
           resultat,
-          erreurResultat,
-          statutDuResultat,
           bouclesAVenir,
           erreurBoucle,
           statutDesBoucles,
@@ -949,7 +870,7 @@ export default function Plan() {
         // dernière liste lue, et allume la ligne de relecture plus bas, plutôt que de se taire.
         const bouclesLues = erreurBoucle ? null : lireLesBouclesAVenir(bouclesAVenir);
         if (bouclesLues !== null) setBoucles(bouclesLues);
-        setTotalDuBilan(erreurResultat ? null : (resultat?.total_co2_kg_year ?? null));
+        setTotalDuBilan(resultat?.total_co2_kg_year ?? null);
         // **Une lecture des rappels qui n'a rien rendu ne remplace pas la dernière** (relevé par le
         // chantier B le 01/10/2026, effet de bord de T-6) : `loadReminderPrefs` rend `null` quand il n'a
         // rien lu, et le poser ici effaçait la dernière lecture réussie — la carte d'attente, qui la
@@ -966,7 +887,7 @@ export default function Plan() {
         });
 
         const points = (checkins as EngagementCheckin[] | null) ?? [];
-        const affiches = keepLatestPerLoop(points);
+        const affiches = lePlusRecentParBoucle(points);
 
         // **La carte d'ouverture, trois conditions et une marque locale** (C2.8). Il faut une
         // période écoulée (sinon « On repart » ne veut rien dire), être dans les deux premières
@@ -1074,14 +995,15 @@ export default function Plan() {
           premierPlan,
         });
         planLu = true;
-        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des trois
-        // lectures secondaires ci-dessus a échoué — le total, les boucles, sans lesquelles ni la
-        // carte d'attente ni celle des deux lieux ne se montrent, ou les rappels, sans lesquels la
-        // carte d'attente ne se montre pas. Le genre suit le statut de chacune ; une réponse illisible
-        // et des rappels qui n'ont rien rendu ne disent pas de statut, et ne sont pas une coupure.
+        // Écrit une seule fois, après le `setState` : le plan est à jour, sauf si l'une des deux
+        // lectures secondaires ci-dessus a échoué — les boucles, sans lesquelles ni la carte d'attente
+        // ni celle des deux lieux ne se montrent, ou les rappels, sans lesquels la carte d'attente ne se
+        // montre pas. Le genre suit le statut de chacune ; une réponse illisible et des rappels qui
+        // n'ont rien rendu ne disent pas de statut, et ne sont pas une coupure. (Le total du bilan en
+        // était une troisième jusqu'à l'étape 7b de `v1-35` : il vient désormais avec le bilan, dont
+        // l'échec arrête la lecture.)
         setRelectureEnEchec(
           genreDesEchecs([
-            erreurResultat ? genreDeLEchec(statutDuResultat) : null,
             erreurBoucle ? genreDeLEchec(statutDesBoucles) : bouclesLues === null ? 'serveur' : null,
             prefs === null ? 'serveur' : null,
           ])
@@ -1132,11 +1054,6 @@ export default function Plan() {
         })
       : null;
 
-  // Sortie en variable, et pas lue depuis `attente` dans le rendu : le rappel du `TextLink`
-  // ferme sur elle, et TypeScript ne conserve pas le rétrécissement d'un **accès de propriété**
-  // dans une fermeture — celui d'une `const`, si. Sans ça il faudrait une assertion non-nulle,
-  // c'est-à-dire promettre à la main ce que le compilateur sait déjà.
-  const porteDeLAttente = attente?.action ?? null;
 
   const fermerLaFeuille = (
     canal: CanalPrefere,
@@ -1163,175 +1080,26 @@ export default function Plan() {
     rafraichir();
   };
 
-  // Ce qui est affiché reste vrai, mais date. La ligne vaut au-dessus des trois écrans issus
-  // d'une lecture réussie — le plan, « en préparation » et « pas encore de bilan » — et le lien
-  // relance la même lecture que le retour sur l'onglet.
-  const banniereRelecture = (centree = false) =>
-    relectureEnEchec !== null || refusDeRemplacement ? (
-      <View style={[styles.relecture, centree && styles.relectureCentree]}>
-        {refusDeRemplacement && <MessageInline message={refusDeRemplacement} />}
-        {relectureEnEchec !== null && (
-          <>
-            {/* Le genre décide de la phrase (D19) : la connexion ne se nomme qu'hors ligne. */}
-            <MessageInline message={phraseDeLaLectureEnEchec('relectureDuPlan', relectureEnEchec)} />
-            {/* Inactif, et dit occupé, tant que la relecture qu'il a demandée tourne (audit P-8) : la
-                teinte tertiaire est celle d'un lien qui n'agit pas — un état se dit par le texte,
-                jamais par une opacité (`FRONT.md` §1.4). */}
-            <View aria-busy={relectureDemandee}>
-              <TextLink
-                label="Réessayer"
-                apparence="action"
-                onPress={relire}
-                disabled={relectureDemandee}
-              />
-            </View>
-          </>
-        )}
-      </View>
-    ) : null;
+  const banniereRelecture = (centree = false) => (
+    <BanniereDeRelecture
+      relectureEnEchec={relectureEnEchec}
+      refusDeRemplacement={refusDeRemplacement}
+      relectureDemandee={relectureDemandee}
+      onRelire={relire}
+      centree={centree}
+    />
+  );
 
-  if (state.status === 'loading') {
+  if (state.status !== 'ok') {
     return (
-      <ThemedView style={styles.container}>
-        <View style={styles.centered}>
-          {/* Muette 300 ms, sauf après « Réessayer » : là, c'est la seule réponse au geste (`v1-30` §5.8). */}
-          <LigneDAttente demandee={state.relance === true}>Chargement de ton plan…</LigneDAttente>
-        </View>
-      </ThemedView>
-    );
-  }
-
-  if (state.status === 'no_assessment') {
-    // **Venir d'un rappel et n'avoir aucun bilan ici ne veut pas dire « pas de bilan »** (C2.11,
-    // constat C-2). L'email ne porte que `/plan` : ouvert sur un ordinateur ou un téléphone neuf, il
-    // tombe sur la session anonyme vide que l'app vient de créer, et cet écran répondait « Ton bilan
-    // n'est pas encore fait » — avec pour seul bouton « Faire mon bilan » — à quelqu'un qui a un
-    // bilan, un plan et des points, juste pas sur cet appareil. La consigne de désinscription du
-    // même email (« depuis Toi ») réglait alors la préférence d'une session qui n'est personne.
-    //
-    // Le paramètre ne change pas le **chemin** : `assetlinks.json` ne revendique que `/plan`, et son
-    // périmètre est volontairement étroit (les pages légales et la suppression de compte doivent
-    // rester atteignables sans l'app). Une autre route aurait donc fait ouvrir le lien dans le
-    // navigateur sur Android.
-    if (vientDUnRappel) {
-      return (
-        <ThemedView style={styles.container}>
-          <View style={styles.emptySafeArea}>
-            {banniereRelecture(true)}
-            {/* Aucun chiffre sur cet écran : la mascotte peut l'occuper sans rien commenter
-                (règle de `src/constants/mascotte.ts`). Elle ne parle pas pour autant — les deux
-                phrases sont de la voix produit. */}
-            <View style={styles.rappelMascotte}>
-              <Mascot mood="calm" size={72} tilt={-6} />
-            </View>
-            <ThemedText type="screenTitle">Ce rappel concerne un compte</ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-              Retrouve-le ici. Ton bilan, ton plan et tes points sont rattachés à ce compte, pas à
-              cet appareil.
-            </ThemedText>
-            <Button
-              title="J’ai déjà un compte"
-              // `rappel` est **la** provenance que C2.11 existe pour produire : quelqu'un qui
-              // ouvre le rappel e-mail sur un appareil où il n'est pas connecté. Sans elle, ce
-              // chiffre était indiscernable d'une découverte depuis l'onboarding.
-              onPress={() =>
-                router.push({ pathname: '/connexion/retrouver', params: { source: 'rappel' } })
-              }
-              style={styles.emptyButton}
-            />
-            <TextLink
-              label="Commencer un bilan sur cet appareil"
-              apparence="action"
-              onPress={() => router.push('/bilan')}
-              role="link"
-            />
-          </View>
-        </ThemedView>
-      );
-    }
-
-    return (
-      <ThemedView style={styles.container}>
-        <View style={styles.emptySafeArea}>
-          {banniereRelecture(true)}
-          <EmptyStateIllustration style={styles.emptyIllustration} />
-          <ThemedText type="screenTitle">
-            Ton bilan n’est pas encore fait
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-            Sans bilan, on ne peut pas savoir quel déplacement compte le plus pour toi. Environ 5
-            minutes.
-          </ThemedText>
-          <Button title="Faire mon bilan" onPress={() => router.push('/bilan')} style={styles.emptyButton} />
-          {/* **Le chemin vers un compte existant manquait ici**, et c'est le seul écran qu'un
-              appareil neuf montre : sans ce lien, quelqu'un qui a un compte n'avait que
-              « Faire mon bilan », c'est-à-dire l'invitation à refaire ce qu'il a déjà fait. Même
-              lien que l'accueil de l'onboarding, et même libellé. */}
-          <TextLink
-            label="J’ai déjà un compte"
-            apparence="action"
-            onPress={() =>
-              router.push({ pathname: '/connexion/retrouver', params: { source: 'plan_vide' } })
-            }
-            role="link"
-          />
-        </View>
-      </ThemedView>
-    );
-  }
-
-  // L'écran ne sait rien : il le dit, et il ne propose surtout ni de faire un bilan ni
-  // d'attendre — les deux replis d'avant affirmaient quelque chose sur les données de la
-  // personne. « Réessayer » relance exactement la lecture que le retour sur l'onglet relance.
-  //
-  // **Il ne parle de connexion qu'hors ligne** (D19, 01/10/2026) : sur une réponse 500, « Vérifie ta
-  // connexion » envoyait la personne vérifier ce qui marchait (capture `e-19` de l'audit).
-  if (state.status === 'erreur_reseau') {
-    return (
-      <ThemedView style={styles.container}>
-        <View style={styles.centered}>
-          <MessageInline
-            message={phraseDeLaLectureEnEchec('plan', state.genre)}
-            style={styles.erreurTexte}
-          />
-          <Button title="Réessayer" onPress={reessayerDepuisLErreur} />
-        </View>
-      </ThemedView>
-    );
-  }
-
-  // **Cet état était un cul-de-sac, et c'est là qu'atterrissait le bilan fantôme** (A2-2, A3-5) :
-  // une phrase, aucun bouton, et rien qui en sorte — ni le retour matériel (on est sur l'onglet
-  // racine, il quitte l'app), ni le temps (le cron nocturne ne peut pas générer un plan sans
-  // réponses). La personne voyait un plan « en préparation » pour toujours.
-  //
-  // Deux sorties, et les deux sont vraies maintenant. « Réessayer » a un sens depuis que le plan
-  // peut manquer pour une raison passagère : la garde de C1.1 rend le bilan même quand la
-  // génération du plan échoue, donc relire peut trouver le cycle que le cron a rattrapé depuis.
-  // « Revoir mon bilan » est la sortie qui marche dans tous les cas — le résultat, lui, est bien
-  // là, et c'est ce que la personne est venue chercher.
-  if (state.status === 'pending') {
-    return (
-      <ThemedView style={styles.container}>
-        <View style={styles.centered}>
-          {banniereRelecture(true)}
-          <ThemedText themeColor="textSecondary" style={styles.attenteTexte}>
-            Ton plan est en cours de préparation, reviens dans un instant.
-          </ThemedText>
-          {/* Le bouton prend l'apparence du désactivé le temps de la relecture qu'il a demandée
-              (audit P-8) — sans quoi un second « en préparation » rendait exactement le même
-              écran, et le bouton avait l'air mort. */}
-          <View aria-busy={relectureDemandee} style={styles.attenteBouton}>
-            <Button title="Réessayer" onPress={relire} disabled={relectureDemandee} />
-          </View>
-          <TextLink
-            label="Revoir mon bilan"
-            apparence="action"
-            onPress={() => router.push({ pathname: '/suivi/bilan', params: { id: state.assessmentId } })}
-            role="link"
-          />
-        </View>
-      </ThemedView>
+      <PlanSansPlan
+        etat={state}
+        banniere={banniereRelecture(true)}
+        vientDUnRappel={vientDUnRappel}
+        relectureDemandee={relectureDemandee}
+        onRelire={relire}
+        onReessayer={reessayerDepuisLErreur}
+      />
     );
   }
 
@@ -1409,23 +1177,12 @@ export default function Plan() {
       ? titreDuRebilan(regimeDeRebilan(assessmentDate), daysSince(assessmentDate))
       : null;
 
-  const capKg =
-    baselineKg !== null && baselineKg > 0
-      ? Math.round((baselineKg * cycle.target_reduction_pct) / 100)
-      : null;
+  const capKg = capDuCycle(baselineKg, cycle.target_reduction_pct);
 
-  // **Le cycle affiché peut être révolu, et l'écran le disait à personne** (C2.2). Le cron
-  // nocturne construit le cycle de la saison courante, mais il peut ne pas être passé — et un
-  // cycle périmé présenté comme courant fait croire qu'on travaille encore sur une période
-  // terminée. On le **dit** plutôt que de retomber sur l'écran d'attente : l'action engagée, les
-  // jours choisis et le cap restent à l'écran, parce qu'ils ont eu lieu.
-  //
-  // La comparaison est en chaînes `YYYY-MM-DD` et non en `Date` : `period_end` vient de Postgres
-  // en date nue, et `new Date('2026-11-30')` est minuit UTC — donc la veille, à l'ouest de
-  // Greenwich, ce qui ferait annoncer une saison révolue un jour trop tôt.
+  // **Le cycle affiché peut être révolu, et l'écran le disait à personne** (C2.2) : la règle, et le
+  // piège du fuseau qu'elle évite, sont dans `periodeRevolue`.
   const aujourdhui = new Date();
-  const dateDuJour = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, '0')}-${String(aujourdhui.getDate()).padStart(2, '0')}`;
-  const cyclePerime = cycle.period_end < dateDuJour;
+  const cyclePerime = periodeRevolue(cycle.period_end, aujourdhui);
 
   // La période a-t-elle un nom de saison ? `rolling_quarter` est dormant (aucun écran ne l'écrit,
   // tous les profils valent `season`) mais la chaîne serveur existe et est testée : trois phrases de
@@ -1561,91 +1318,24 @@ export default function Plan() {
     actionEngagee: committedActionId !== null,
   });
 
-  // Le cap de la saison (T10). Affiché en kg parce que c'est l'unité des actions à côté : la
-  // personne doit pouvoir voir d'un coup d'œil qu'une action l'atteint — ou ne l'atteint pas, ce qui
-  // est une information tout aussi utile et jamais présentée comme un échec.
-  //
-  // **Elle porte la période et sa fin depuis C2.8**, et c'est ce qui lui manquait : le cap était
-  // annoncé puis abandonné, `period_end` étant écrit à chaque génération et lu par aucun écran
-  // (constat A8-8). Une échéance sans date n'en est pas une.
-  //
-  // La carte se rend **même sans cap** — `baseline_co2_kg_year` peut valoir zéro, ce qui est le cas
-  // d'un profil sans émission sur son poste dominant — parce qu'elle est devenue l'endroit où la
-  // période se nomme. La puce « Cadence : Automne 2026 » a donc disparu de l'intro : elle disait la
-  // même chose dans un vocabulaire de réglage, et la répéter à deux endroits de l'écran était le plus
-  // sûr moyen de les voir un jour se contredire.
-  //
-  // Le trait de temps **mesure la saison, pas la personne** : `accentMuted` et jamais `accent`, et
-  // la légende le dit en mots. Confondre les deux ferait de chaque semaine écoulée un retard.
+  // Le cap de la saison (T10), sa période et le trait de temps : `CarteDuCap`. À clé, pour que React le
+  // réordonne avec les pistes sans remonter les cartes, qui portent l'engagement.
   const laCarteDuCap = (
-    <ThemedView key="cap" type="backgroundSelected" style={styles.capCard}>
-      {capKg !== null && cadre.chiffreLeCap && (
-        <>
-          <ThemedText type="small" weight={600} themeColor="accentText">
-            Ton cap pour cette {cadenceDeSaison ? 'saison' : 'période'}
-          </ThemedText>
-          <ThemedText type="salient" style={styles.chiffre}>
-            − {formatKg(capKg)} kg
-          </ThemedText>
-          {/* **« par an » d'abord** (24/09/2026, `v1-29`). Le chiffre est annuel — 20 % du poste
-              dominant, sur un an — alors que l'étiquette dit « cette saison » : « − 384 kg » y
-              passait pour l'effort d'un trimestre, juste au-dessus de pistes à « − 619 kg par an ».
-              La saison est le temps qu'on se donne ; la quantité, elle, se compte à l'année. */}
-          <ThemedText type="small" themeColor="textSecondary">
-            {/* Le résiduel des sorties rares y est « tes loisirs occasionnels » (`nomDuPoste`) : ce cap
-                se chiffre dès que le plan porte une action, et depuis C5.1 rien n'oblige cette action
-                à porter sur le poste du cycle — qui peut être ce résiduel. */}
-            par an, soit − {Math.round(cycle.target_reduction_pct)} % sur{' '}
-            {nomDuPoste(cycle.poste, 'insere', estLeResiduelDesSortiesRares(cycle.poste, cycle.trip_label)) ??
-              formeInserable(cycle.poste)}
-            {baselineKg !== null ? ` (${formatTonnes(baselineKg)} aujourd’hui)` : ''}
-          </ThemedText>
-          {/* Le lien entre le cap et les pistes, dit seulement quand il est vrai et tant que rien
-              n'est engagé (`phraseDesPistesSuffisantes`). */}
-          {phraseDuCap !== null && (
-            <ThemedText type="small" themeColor="textSecondary">
-              {phraseDuCap}
-            </ThemedText>
-          )}
-          {/* **La note qui suivait ici a été retirée** (C5.3, écart 7) — « Le cap porte sur tes
-              voyages ; cette action porte ailleurs. » Elle énonçait une règle que rien n'applique :
-              le cap est une quantité à atteindre, et aucun endroit du produit ne vérifie d'où vient
-              la réduction. Elle était rare tant que le poste dominant remplissait les deux
-              premières cartes ; le classement de C5.1 l'aurait réveillée sur la plupart des plans,
-              les meilleurs leviers venant souvent d'ailleurs. */}
-        </>
-      )}
-      <View style={styles.capPeriode}>
-        <ThemedText type="small" themeColor="textSecondary">
-          {cycle.period_label}
-        </ThemedText>
-        {finDeLaPeriode && (
-          <ThemedText type="small" weight={600} themeColor="accentText">
-            {finDeLaPeriode}
-          </ThemedText>
-        )}
-      </View>
-      {/* **Le trait attend qu'il y ait quelque chose à mesurer** (C5.6). Au tout premier plan il
-          annoncerait un temps qui s'écoule sur une action qu'on n'a pas encore choisie —
-          c'est-à-dire un compte à rebours, exactement ce que sa légende jure qu'il n'est pas. La
-          période et sa fin, elles, restent : elles disent le cadre, pas une avance.
-
-          **Sauf sur un plan à zéro action** (audit P-5, 01/10/2026, HANDOFF `v1-17` planche C) : il
-          n'y a rien à choisir, et `estPremierPlan` ne s'y refermait jamais — le trait manquait toute
-          la saison. La condition vit dans `cartesDuPlan` (`traitDeTemps`), sur la table de tous les
-          états ; l'écran n'y ajoute que la mesure, une période sans durée n'ayant pas de trait. La
-          légende disparaît **avec** le trait : seule, elle commenterait quelque chose qui n'est pas
-          là. */}
-      {progression !== null && affichage.traitDeTemps && (
-        <>
-          <TraitDeTemps progression={progression} />
-          <ThemedText themeColor="textTertiary" style={styles.capLegende}>
-            {cadenceDeSaison ? 'La saison avance' : 'La période avance'} ; le trait mesure le temps,
-            pas toi.
-          </ThemedText>
-        </>
-      )}
-    </ThemedView>
+    <CarteDuCap
+      key="cap"
+      capKg={capKg}
+      chiffreLeCap={cadre.chiffreLeCap}
+      cadenceDeSaison={cadenceDeSaison}
+      reductionPct={cycle.target_reduction_pct}
+      poste={cycle.poste}
+      tripLabel={cycle.trip_label}
+      baselineKg={baselineKg}
+      phraseDuCap={phraseDuCap}
+      periodLabel={cycle.period_label}
+      finDeLaPeriode={finDeLaPeriode}
+      progression={progression}
+      traitDeTemps={affichage.traitDeTemps}
+    />
   );
 
   // Les cartes mises en avant, puis la porte vers « Toutes les pistes » — **un seul bloc** (audit
@@ -1719,71 +1409,24 @@ export default function Plan() {
         {/* Sans cette ligne, une question ouverte depuis et un engagement pris ailleurs
             manqueraient à l'écran sans que rien ne le dise. */}
         {banniereRelecture()}
-        {/* Un fait, pas une félicitation : ni mascotte (elle ne commente pas l'état du
-            compte), ni exclamation, ni action à faire. */}
-        {rattachement !== null && (
-          <ThemedView type="backgroundElement" style={styles.encartDeFait}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {rattachement
-                ? `Ton compte est rattaché à ${rattachement}. Ton bilan te suit d’un appareil à l’autre.`
-                : 'Ton compte est rattaché. Ton bilan te suit d’un appareil à l’autre.'}
-            </ThemedText>
-          </ThemedView>
-        )}
-        {/* **Ce qu'un recalcul a emporté, dit une fois** (C2.2, `v1-14` §5 ; étendu par C6.4). Avant, le
-            `delete from plan_actions` de la génération effaçait l'engagement, ses jours et son
-            intention sans un mot — le geste le plus engageant du produit annulé par le second
-            geste le plus encouragé. Il est maintenant archivé, et cet encart est l'endroit où la
-            personne l'apprend.
-
-            Discret, et sans mascotte : c'est un fait sur ses données, pas un commentaire. Le
-            bouton écrit la marque locale, qui porte l'identifiant de la ligne — un second
-            re-bilan pourra donc le dire à son tour. */}
+        {rattachement !== null && <EncartDuRattachement adresse={rattachement} />}
         {orphelin !== null && (
-          <ThemedView type="backgroundElement" style={styles.encartDeFait}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {phraseDeLOrphelin(orphelin.released_reason, orphelin.action_text)}
-            </ThemedText>
-            {/* **Le même « Compris » que celui des cartes d'ouverture** (audit P-12, 01/10/2026) :
-                petit, 600, `accentText`. Il était le `TextLink` par défaut — 16 px, `text`, sans
-                soulignement —, et les deux s'empilaient à 200 px l'un de l'autre sur le même
-                écran : un même geste, deux apparences. */}
-            <TextLink
-              label="Compris"
-              apparence="action"
-              onPress={() => {
-                void marquerEngagementOrphelinVu(orphelin.id);
-                setOrphelin(null);
-              }}
-            />
-          </ThemedView>
+          <EncartDeLOrphelin
+            orphelin={orphelin}
+            onCompris={() => {
+              void marquerEngagementOrphelinVu(orphelin.id);
+              setOrphelin(null);
+            }}
+          />
         )}
 
-        {/* **Une période terminée se dit, elle ne se masque pas** (C2.2). Retomber sur l'écran
-            d'attente ferait disparaître l'action engagée et les jours choisis — ce qui a eu lieu
-            n'a pas à s'effacer parce que le cron n'est pas encore passé.
-
-            **La phrase nomme la saison depuis C2.8**, et celle du **jour** : le cycle suivant peut
-            ne pas exister encore — le cron nocturne ne passe qu'une fois par nuit — alors que le
-            calendrier, lui, a bien tourné. La seconde phrase reste, et elle est ce qui empêche
-            « Voir la saison » d'avoir l'air mort : entre minuit et le passage du cron, relire ne
-            trouve rien de plus, et la personne sait pourquoi. Jamais une carte remplacée sous les
-            yeux — c'est un lien, pas une bascule automatique. */}
         {cyclePerime && (
-          <ThemedView type="backgroundElement" style={styles.encartDeFait}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {basculeDeSaison(cycle.cadence_type, aujourdhui)} Ton prochain plan arrive ; en
-              attendant, voici où tu en étais.
-            </ThemedText>
-            <View aria-busy={relectureDemandee}>
-              <TextLink
-                label="Voir la saison"
-                apparence="action"
-                onPress={relire}
-                disabled={relectureDemandee}
-              />
-            </View>
-          </ThemedView>
+          <EncartDuCycleRevolu
+            cadence={cycle.cadence_type}
+            aujourdhui={aujourdhui}
+            relectureDemandee={relectureDemandee}
+            onRelire={relire}
+          />
         )}
 
         {/* **L'ouverture d'une saison** (C2.8, planches B2 et B3). En tête du plan, au-dessus de
@@ -1947,57 +1590,10 @@ export default function Plan() {
           </View>
         )}
 
-        {/* **Ramille dit l'attente, pas le vide** (v1-12 §6.2). « Rien à rattraper. »
-            vivait ici et se lisait comme une attente déçue la première fois qu'on la
-            voyait — retour d'appareil du 07/09. Elle nomme maintenant le jour où elle
-            revient, ce que le rythme fixe du produit (lundi, premier du mois) lui permet
-            de faire sans jamais compter.
-
-            Le détail sous sa phrase est **du produit, pas d'elle** : une adresse peut
-            porter un chiffre, et elle n'en dit jamais.
-
-            Posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte près
+        {/* Posée **au-dessus** du cap et non à côté : la règle « jamais la mascotte près
             d'un chiffre lourd » vise l'empreinte, mais un cap en kilos juste sous son
             visage donnerait l'impression qu'elle le commente. */}
-        {affichage.carteDAttente && attente && (
-          <ThemedView type="backgroundElement" style={styles.calmeCard}>
-            <View style={styles.calmeRow}>
-              <Mascot mood="resting" size={40} />
-              <View style={styles.calmeTexte}>
-                <ThemedText weight={600}>{RAMILLE[attente.cle]}</ThemedText>
-                {attente.detail && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {attente.detail}
-                  </ThemedText>
-                )}
-
-                {/* **La porte, sous la ligne qui la porte** (13.4, recette web du 16/09/2026).
-                    « Rattache un compte pour recevoir le mot par email. » disait quoi faire et
-                    n'offrait aucun moyen de le faire : le seul chemin était l'icône de compte
-                    en haut à droite, que rien n'explique.
-
-                    Un lien, et non la carte entière rendue `Pressable` : quatre des sept
-                    variantes n'ont rien à offrir — elles deviendraient une cible morte — et un
-                    `Pressable` à trois textes impose un `accessibilityLabel` qui les
-                    recompose, ce que la règle T11 ne tolère qu'en dernier recours. Ici le
-                    libellé annoncé **est** le texte affiché.
-
-                    Même forme que le lien « Ouvrir les réglages du téléphone » des rappels :
-                    rendu sous la ligne qui l'appelle, jamais après le groupe. */}
-                {porteDeLAttente && (
-                  <TextLink
-                    label={porteDeLAttente.libelle}
-                    apparence="action"
-                    onPress={() => router.push(porteDeLAttente.vers)}
-                    role="link"
-                    hint="Ouvre l’écran « Toi »."
-                    containerStyle={styles.calmePorte}
-                  />
-                )}
-              </View>
-            </View>
-          </ThemedView>
-        )}
+        {affichage.carteDAttente && attente && <CarteDAttente attente={attente} />}
 
         {/* **Au tout premier plan, le choix passe avant le cap** (24/09/2026, `v1-29`). Sur un
             téléphone, la carte « Ton premier plan », Ramille, le titre et le cap remplissaient
@@ -2011,62 +1607,10 @@ export default function Plan() {
             qu'à un endroit. */}
         {affichage.pistesAvantLeCap ? [lesPistes, laCarteDuCap] : [laCarteDuCap, lesPistes]}
 
-        {/* **L'encart de contexte, et sa porte** (C5.5, écarts 9 et 10). C'est la moitié « plan »
-            du constat 13.1 : « Parfois » au télétravail coûtait une action, et rien ne le disait.
-            La restriction se dit donc **après**, sur un écran qu'on relit — dite au moment du
-            choix, elle apprend à répondre haut ; dite ici, elle informe sans marchander.
+        {affichage.encartDeContexte && <EncartDeContexte mots={motsDeContexte} />}
 
-            **Il ne nomme jamais l'action écartée ni son gain**, et c'est la contrainte du
-            chantier : ce serait la liste des portes fermées pour qui a répondu juste, et un prix
-            affiché sur une réponse pour les autres. Il dit sur quoi le plan s'appuie, la porte
-            permet de corriger, rien de plus.
-
-            **Jamais sur un plan à zéro action** : il n'a rien à expliquer, et la carte de
-            félicitation juste en dessous serait la dernière chose à nuancer. Et jamais non plus
-            quand il n'y a rien à énumérer — une lecture qui a échoué ne devient pas une phrase
-            vide (C1.4). */}
-        {affichage.encartDeContexte && (
-          <ThemedView type="backgroundElement" style={styles.contexteCard}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Ton plan tient compte de ton contexte :{' '}
-              {motsDeContexte.join(', ')}. Ce qui ne tient pas
-              avec ces réponses n’est pas proposé.
-            </ThemedText>
-            {/* La porte se rend **sous** la phrase qui la porte, comme le lien des réglages du
-                téléphone et celui de la carte d'attente : détachée, elle se lirait comme
-                appartenant à ce qui suit. */}
-            <TextLink
-              label="Modifier ces réponses"
-              apparence="action"
-              onPress={() => router.push('/contexte')}
-              // Elle ouvre `/contexte` : une navigation, donc un lien (24/09/2026, `v1-29`).
-              role="link"
-              containerStyle={styles.contextePorte}
-            />
-          </ThemedView>
-        )}
-
-        {/* Profil qui n'a plus rien à céder sur son poste dominant. Le pire accueil
-            possible serait une liste vide : c'est la personne qui fait déjà le plus
-            d'efforts. Même principe que le T8 de l'audit sur la restitution.
-
-            **Le titre nomme le poste** (24/09/2026, `v1-29`) : « sur ce poste » ne disait lequel
-            à personne, sur un écran où rien d'autre ne le nomme — un plan sans action ne chiffre
-            pas son cap. Et « le check-in » est devenu « le point », le mot que le produit emploie
-            partout ailleurs pour la même chose. */}
         {affichage.felicitation && (
-          <ThemedView type="backgroundElement" style={styles.emptyActionsCard}>
-            <View style={styles.praiseRow}>
-              <Mascot mood="happy" size={36} />
-              <ThemedText type="cardTitle" style={styles.praiseText}>
-                {felicitation.titre}
-              </ThemedText>
-            </View>
-            <ThemedText type="body" themeColor="textSecondary">
-              Aucun changement de mode ne te ferait gagner assez pour valoir la peine d’être
-              proposé.{felicitation.promettreLePoint ? ' Le point reste là si tu veux garder un œil dessus.' : ''}
-            </ThemedText>
-          </ThemedView>
+          <CarteDeFelicitation titre={felicitation.titre} promettreLePoint={felicitation.promettreLePoint} />
         )}
 
         {/* La provenance du chiffre, à l'endroit où il engage le plus. Le produit vise un
@@ -2086,35 +1630,8 @@ export default function Plan() {
         {/* La proposition de re-bilan ferme l'écran (v1-11 flux 2). Elle apparaît au plus
             deux fois par an : la faire passer devant la question de la semaine ou devant
             l'action engagée inverserait l'urgence. « Une proposition, jamais un rappel
-            insistant » — même règle que sur le suivi, même seuil, même lien.
-
-            **Elle disait le fait et non la saison, et la prémisse s'est inversée** (C2.8 point 3,
-            puis contre-lecture du 19/09/2026). Son titre était « Une nouvelle saison a commencé »,
-            ce qui pouvait être faux : la carte se déclenchait alors sur 182 jours d'ancienneté du
-            bilan, pas sur une bascule. **C6.3 a fait exactement l'inverse** — le déclencheur est
-            la bascule — donc c'est l'âge qui est devenu la chose qui peut être fausse, jusqu'à
-            « Ton bilan a moins d'un mois » sous une invitation à en refaire un. Le titre vient
-            maintenant de `titreDuRebilan`, partagé avec le suivi, qui donne à chaque régime ce
-            qu'il peut dire de vrai. La puce « Cadence : Été 2026 » avec laquelle il ne fallait pas
-            coexister a, elle, disparu avec C2.8. Fond `backgroundElement`
-            plutôt que `backgroundSelected` (canvas B1) : une proposition, pas une mise en avant. */}
-        {titreRebilan !== null && (
-          <ThemedView type="backgroundElement" style={styles.rebilanCard}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {titreRebilan} En faire un nouveau prend quelques minutes ; ton plan s’ajuste.
-            </ThemedText>
-            {/* **« Refaire » laissait croire à un écrasement** (C6.1, `v1-19` D1) : un nouveau
-                bilan s'ajoute, il n'efface rien. Le libellé est le même sur les deux écrans qui
-                portent cette porte, et c'est voulu — deux mots différents pour un même geste se
-                liraient comme deux gestes. */}
-            <TextLink
-              label="Faire un nouveau bilan"
-              apparence="action"
-              onPress={() => router.push('/bilan')}
-              role="link"
-            />
-          </ThemedView>
-        )}
+            insistant » — même règle que sur le suivi, même seuil, même lien. */}
+        {titreRebilan !== null && <CarteDuRebilan titre={titreRebilan} />}
 
         {/* « Voir mon suivi » a disparu : la barre le porte, et un lien qui double un onglet
             apprend à ne pas se servir de la barre. Le renvoi vers le bilan reste — ce n'est
@@ -2138,29 +1655,6 @@ export default function Plan() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
-  // La phrase au-dessus des deux sorties : centrée comme le conteneur, mais elle a besoin de
-  // son propre espace sous elle, sinon le bouton la touche.
-  attenteTexte: { textAlign: 'center', paddingHorizontal: Spacing.four, marginBottom: Spacing.four },
-  attenteBouton: { marginBottom: Spacing.three },
-  // Le corps d'un état plein écran, comme les états vides voisins : `MessageInline` rend du
-  // « small » par défaut, ce qui se lit comme une note sous un bouton — pas comme la seule
-  // phrase de l'écran.
-  //
-  // 16/24, c'est la taille du `default` de `ThemedText`, pas `TypeScale.body` (15/22) : deux
-  // valeurs nues, recopiées à l'identique sur l'onglet voisin (`suivi/index.tsx`). L'endroit
-  // où les factoriser est un `type` sur `MessageInline`, qui n'appartient pas à ce chantier —
-  // le prochain passage visuel saura quoi faire de ces deux lignes.
-  erreurTexte: {
-    textAlign: 'center',
-    paddingHorizontal: Spacing.four,
-    marginBottom: Spacing.four,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  relecture: { gap: Spacing.one },
-  // La même ligne au-dessus d'un écran centré : elle a besoin de son propre air sous elle.
-  relectureCentree: { alignItems: 'center', marginBottom: Spacing.four },
   // Largeur maximale du contenu, comme les pages légales et les écrans de compte (A5-21).
   // L'app est déployée sur le web, et sans borne la carte du cap comme les cartes d'action
   // s'étirent sur toute la fenêtre : le titre et le gain se retrouvent aux deux extrémités de
@@ -2176,60 +1670,9 @@ const styles = StyleSheet.create({
   // L'écart du principe au total de la saison, que le `gap` de l'intro donnait : porté par le dépli pour
   // s'ouvrir avec lui (étape 6a de `v1-35`).
   kilosDeLaSaison: { paddingTop: Spacing.two },
-  // **Les trois encarts de fait** — l'engagement qu'un recalcul a emporté, la période révolue (C2.2),
-  // et le rattachement du compte depuis le 01/10/2026 (audit P-12) : le même gabarit discret, parce
-  // qu'ils disent la même sorte de chose — un fait sur l'état du plan, jamais une injonction. Le
-  // rattachement était teinté `backgroundSelected` en `accentText`, l'accent que le système réserve au
-  // dominant et à l'actionnable : il se lisait comme un succès.
-  encartDeFait: {
-    borderRadius: Radius.field,
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.two,
-    alignItems: 'flex-start',
-  },
-  capCard: { borderRadius: Radius.card, padding: 20, gap: 6 },
-  // La période à gauche, sa fin à droite : `baseline` et non `center`, pour que les deux lignes
-  // s'alignent sur leur texte et non sur leur boîte. `flexWrap` parce que le texte suit
-  // l'agrandissement des polices du système, que rien dans le produit ne plafonne (A10-21) : à
-  // 200 %, « Hiver 2026-2027 » et « jusqu'au 28 février » ne tiennent plus sur une ligne, et une
-  // rangée sans retour les tronquerait au lieu de les empiler.
-  capPeriode: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  // 12/16 : la seule occurrence de cette taille dans l'écran, donc elle reste en dur — la nommer
-  // dans `theme.ts` encoderait une équivalence avec les autres légendes qui n'existe pas encore.
-  capLegende: { fontSize: 12, lineHeight: 16 },
-  // **Chiffres à chasse fixe** (24/09/2026, `v1-29`) : le cap change d'une saison à l'autre, et des
-  // chiffres de largeur égale ne font pas bouger la ligne. Spline Sans porte la fonction `tnum`.
-  chiffre: { fontVariant: ['tabular-nums'] },
   // Les deux cartes et le lien vers la liste, au même écart : le lien prolonge les cartes (P-15).
   actions: { gap: Spacing.two + 2 },
   lienPistes: { textAlign: 'center' },
-  contexteCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
-  // `alignSelf` pour que la cible tactile du lien ne s'étende pas sur toute la largeur de la
-  // carte : une zone tactile plus large que son texte se touche par accident.
-  contextePorte: { alignSelf: 'flex-start' },
-  emptyActionsCard: { borderRadius: Radius.card, padding: 20, gap: 8 },
-  praiseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  praiseText: { flex: 1, minWidth: 0 },
   checkins: { gap: Spacing.two + 2 },
-  calmeCard: { borderRadius: Radius.card, padding: 20 },
-  rebilanCard: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
-  calmeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  calmeTexte: { flex: 1, minWidth: 0, gap: 2 },
-  // `alignSelf` pour que la cible tactile du lien ne s'étende pas sur toute la largeur de la
-  // carte : une zone tactile plus large que son texte se touche par accident.
-  calmePorte: { alignSelf: 'flex-start' },
   lienBilan: { textAlign: 'center' },
-  emptySafeArea: { flex: 1, padding: Spacing.four, justifyContent: 'center', gap: Spacing.three },
-  // La mascotte prend la place de l'illustration d'état vide : centrée comme elle l'était.
-  rappelMascotte: { alignItems: 'center' },
-  emptyIllustration: { height: 140 },
-  emptyBody: { fontSize: 16, lineHeight: 24 },
-  emptyButton: { marginTop: 12 },
 });

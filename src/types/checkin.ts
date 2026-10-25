@@ -733,6 +733,69 @@ export function jourDuMois(jour: number): string {
 /** Ce qu'il faut d'un point déjà répondu pour reconstituer une série : sa période, son poste et sa réponse. */
 export type PointRepondu = { period_start: string; poste: string | null; reponse: ReponseDuPoint };
 
+/** Ce que l'écran du plan lit d'un point pour choisir ses cartes : un sous-ensemble de la ligne en base. */
+export type PointDuPlan = {
+  id: string;
+  loop_type: LoopType;
+  period_start: string;
+  poste: string | null;
+  status: string;
+  response_kind: string | null;
+};
+
+/**
+ * **Une seule carte par boucle, la plus récente** — ce que l'écran du plan affiche des points lus.
+ *
+ * La lecture est déjà triée par `period_start` décroissant, donc le premier vu de chaque `loop_type`
+ * est le bon. Le serveur clôt les périodes révolues en `expired`, et ce filtre est une ceinture en plus
+ * de cette bretelle : si un passage de cron était manqué, la table pourrait de nouveau porter deux
+ * périodes en attente pour une même boucle, et une pile de rappels est le contraire de ce que la boucle
+ * promet.
+ *
+ * **Et depuis C2.4, la période borne l'affichage.** La lecture ramène aussi les points répondus, pour que
+ * le renforcement survive à un changement d'onglet ; il ne doit pas survivre à la période. Un compte dont
+ * la boucle a cessé d'être générée — un re-bilan sans trajet régulier, par exemple — garderait sinon à
+ * l'écran, pour toujours, un « Répondu lundi » suivi de la promesse d'un point qui ne viendra pas.
+ * `estDeLaPeriodeCourante` est la jumelle du `date_trunc` des deux générateurs ; un point **en attente**
+ * n'est jamais filtré, lui, parce que seul le serveur décide de le clore.
+ *
+ * Sortie de l'écran du plan, où elle s'appelait `keepLatestPerLoop`, à l'étape 7b de `v1-35`.
+ */
+export function lePlusRecentParBoucle<T extends PointDuPlan>(
+  points: T[],
+  maintenant: Date = new Date()
+): T[] {
+  const vues = new Set<LoopType>();
+  return points.filter((point) => {
+    if (vues.has(point.loop_type)) return false;
+    if (point.status === STATUT_DU_POINT.repondu && !estDeLaPeriodeCourante(point, maintenant)) return false;
+    vues.add(point.loop_type);
+    return true;
+  });
+}
+
+/**
+ * Les points répondus de chaque boucle, hors cartes affichées : c'est ce que `estDeuxiemeFoisDeSuite`
+ * interroge. Regroupés ici plutôt que dans la carte, qui n'a pas à relire la base pour savoir ce qui
+ * s'est passé la période d'avant. Un point sans réponse lisible (`genreDeReponse`) n'y entre pas.
+ */
+export function historiqueParBoucle(
+  points: PointDuPlan[],
+  affiches: Pick<PointDuPlan, 'id'>[]
+): Record<LoopType, PointRepondu[]> {
+  const affichesIds = new Set(affiches.map((point) => point.id));
+  const parBoucle: Record<LoopType, PointRepondu[]> = { commute: [], extras: [] };
+
+  for (const point of points) {
+    if (affichesIds.has(point.id)) continue;
+    const reponse = genreDeReponse(point.response_kind);
+    if (reponse === null) continue;
+    parBoucle[point.loop_type].push({ period_start: point.period_start, poste: point.poste, reponse });
+  }
+
+  return parBoucle;
+}
+
 /**
  * **Le second renforcement, et pourquoi il ne se déclenche qu'une fois** (C2.10, `v1-14` §4.6).
  *

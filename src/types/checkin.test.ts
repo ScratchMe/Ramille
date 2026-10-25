@@ -12,7 +12,9 @@ import {
   estDeLaPeriodeCourante,
   estDeuxiemeFoisDeSuite,
   genreDeReponse,
+  historiqueParBoucle,
   joursDeLaQuestion,
+  lePlusRecentParBoucle,
   libelleSansObjet,
   phraseDeLaReponseChoisie,
   phraseDeLaReponseEnPlace,
@@ -23,6 +25,7 @@ import {
   questionDuPoint,
   repliqueDuPoint,
   variantePourLaPeriode,
+  type PointDuPlan,
   type PointInterrogeable,
   STATUT_DU_POINT,
 } from '@/types/checkin';
@@ -716,6 +719,71 @@ describe('estDeLaPeriodeCourante', () => {
 
   it('un point en avance reste affiché plutôt que de disparaître sans raison', () => {
     expect(estDeLaPeriodeCourante(point({ period_start: '2026-09-28' }), lundi21)).toBe(true);
+  });
+});
+
+// Sorties de l'écran du plan à l'étape 7b de `v1-35`, où elles n'étaient pas testées. Éprouvées le
+// 25/10/2026 en cassant ce qu'elles gardent, quatre mutations :
+//   - la boucle déjà vue plus filtrée → « une seule carte par boucle » ;
+//   - le filtre de période retiré → « un point répondu d'une période révolue… » ;
+//   - un point en attente filtré par la période → « un point en attente reste… » ;
+//   - les cartes affichées gardées dans l'historique → « l'historique laisse les cartes affichées ».
+describe('lePlusRecentParBoucle', () => {
+  const lundi21 = new Date('2026-09-21T08:00:00Z');
+  const lu = (p: Partial<PointDuPlan>): PointDuPlan => ({
+    id: 'p',
+    loop_type: 'commute',
+    period_start: '2026-09-14',
+    poste: 'commute',
+    status: STATUT_DU_POINT.enAttente,
+    response_kind: null,
+    ...p,
+  });
+
+  // La lecture est triée par période décroissante : le premier vu de chaque boucle est le plus récent.
+  it('une seule carte par boucle, la plus récente', () => {
+    const points = [
+      lu({ id: 'c2', period_start: '2026-09-14' }),
+      lu({ id: 'c1', period_start: '2026-09-07' }),
+      lu({ id: 'm1', loop_type: 'extras', poste: 'leisure', period_start: '2026-08-01' }),
+    ];
+    expect(lePlusRecentParBoucle(points, lundi21).map((p) => p.id)).toEqual(['c2', 'm1']);
+  });
+
+  it('un point répondu d’une période révolue n’a plus de carte', () => {
+    const points = [lu({ id: 'c1', period_start: '2026-09-07', status: STATUT_DU_POINT.repondu, response_kind: 'oui' })];
+    expect(lePlusRecentParBoucle(points, lundi21)).toEqual([]);
+  });
+
+  // Seul le serveur clôt un point : en attente, il reste, quelle que soit sa période.
+  it('un point en attente reste, même d’une période révolue', () => {
+    const points = [lu({ id: 'c1', period_start: '2026-09-07' })];
+    expect(lePlusRecentParBoucle(points, lundi21).map((p) => p.id)).toEqual(['c1']);
+  });
+});
+
+describe('historiqueParBoucle', () => {
+  const lu = (p: Partial<PointDuPlan>): PointDuPlan => ({
+    id: 'p',
+    loop_type: 'commute',
+    period_start: '2026-09-14',
+    poste: 'commute',
+    status: STATUT_DU_POINT.repondu,
+    response_kind: 'oui',
+    ...p,
+  });
+
+  it('l’historique laisse les cartes affichées et les points sans réponse, et range le reste par boucle', () => {
+    const points = [
+      lu({ id: 'c3', period_start: '2026-09-14' }),
+      lu({ id: 'c2', period_start: '2026-09-07', response_kind: 'non' }),
+      lu({ id: 'c1', period_start: '2026-08-31', status: STATUT_DU_POINT.enAttente, response_kind: null }),
+      lu({ id: 'm1', loop_type: 'extras', poste: 'travel', period_start: '2026-08-01', response_kind: 'sans_objet' }),
+    ];
+    expect(historiqueParBoucle(points, [{ id: 'c3' }])).toEqual({
+      commute: [{ period_start: '2026-09-07', poste: 'commute', reponse: 'non' }],
+      extras: [{ period_start: '2026-08-01', poste: 'travel', reponse: 'sans_objet' }],
+    });
   });
 });
 

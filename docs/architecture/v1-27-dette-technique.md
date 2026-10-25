@@ -2591,7 +2591,11 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
   25/10/2026** (étape 7 de `v1-35` : l'élagage de Metro, 3,05 → 2,62 Mo bruts — 3,05 et non 2,96, parce que
   les étapes 5 et 6 l'avaient alourdi entre-temps et que la mesure du 25/10 répartit les octets par la carte
   des sources ; le découpage par route, mesuré, est épinglé éteint et se repose au SDK 58, `EXPO.md` §1.13 et
-  §2.1, `v1-35` §3), l'écran du plan à sa suite ;
+  §2.1, `v1-35` §3), **et l'écran du plan réorganisé le même jour** (étape 7b : la lecture en deux
+  allers-retours au lieu de quatre, le total et le contexte venant avec le bilan ; 2 235 → 1 678 lignes,
+  ses états sans plan, ses encarts et ses cartes en composants, et cinq dérivations sorties vers `src/types`
+  avec leurs tests — dont `lePlusRecentParBoucle`, ce que demandait le constat A4-19 de l'audit du
+  09/09/2026) ;
 - ~~les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
   « Réessaie dans un instant »~~ — **faits le 22/10/2026** pour les engagements et les bilans
   (`src/types/refus-de-plafond.ts`, « Réessaie demain »). Celui des jetons d'appareil ne s'affiche nulle

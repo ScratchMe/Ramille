@@ -15,6 +15,15 @@
  *   - `reprendre` ignoré → « un autre passage que le premier relit la base » ;
  *   - la session ignorée → « est jetée quand la session a changé » ;
  *   - le contrôle d'annulation retiré après le premier lot → « une lecture annulée s'arrête… ».
+ *
+ * Et la lecture en une fournée (étape 7b de `v1-35`, 25/10/2026), cinq mutations :
+ *   - les préférences lancées après le bilan → « les boucles, l'archive et les préférences partent avec
+ *     le bilan » ; les boucles et l'archive lancées après lui → le même ;
+ *   - le tableau d'un élément pas déplié pour les réponses de contexte → « le total et les réponses… » ;
+ *   - le contrôle d'annulation retiré du départ des points → « une lecture annulée s'arrête… » ;
+ *   - le `catch` qui rattrape le rejet des préférences quand personne ne l'attend, retiré → **rien ne
+ *     tombe** : un rejet orphelin n'atteint pas le bac à sable de Jest. Il atteindrait, lui, le
+ *     gestionnaire global des promesses rejetées, qui le remonterait comme une panne de l'app.
  */
 import {
   FRAICHEUR_DU_PRECHARGEMENT,
@@ -24,12 +33,16 @@ import {
 } from '@/lib/lecture-du-plan';
 
 // Chaque lecture commence par `assessments` : le compte de ces appels est le compte des lectures. Le
-// bilan rendu dit si la lecture s'arrête là (`sans_bilan`) ou va jusqu'aux points.
+// bilan rendu dit si la lecture s'arrête là (`sans_bilan`) ou va jusqu'aux points. `tables` garde l'ordre
+// des lectures, `bilanRetenu` fait attendre le bilan, et `prefs` dit ce que rendent les préférences.
 const mockBase = {
   lectures: 0,
   points: 0,
+  tables: [] as string[],
   utilisateur: 'u1' as string | null,
   bilan: null as unknown,
+  bilanRetenu: null as Promise<void> | null,
+  prefs: (): Promise<unknown> => Promise.resolve(null),
 };
 
 jest.mock('@/lib/supabase', () => {
@@ -50,9 +63,11 @@ jest.mock('@/lib/supabase', () => {
         }),
       },
       from: (table: string) => {
+        mockBase.tables.push(table);
         if (table === 'assessments') {
           mockBase.lectures += 1;
-          return chaine(Promise.resolve({ data: mockBase.bilan, error: null, status: 200 }));
+          const reponse = { data: mockBase.bilan, error: null, status: 200 };
+          return chaine((mockBase.bilanRetenu ?? Promise.resolve()).then(() => reponse));
         }
         if (table === 'engagement_checkins') mockBase.points += 1;
         if (table === 'plan_cycles') {
@@ -60,20 +75,33 @@ jest.mock('@/lib/supabase', () => {
         }
         return chaine(vide());
       },
-      rpc: vide,
+      rpc: (nom: string) => {
+        mockBase.tables.push(`rpc:${nom}`);
+        return vide();
+      },
     },
   };
 });
-jest.mock('@/lib/notification-prefs', () => ({ loadReminderPrefs: async () => null }));
+jest.mock('@/lib/notification-prefs', () => ({
+  loadReminderPrefs: () => {
+    mockBase.tables.push('preferences');
+    return mockBase.prefs();
+  },
+}));
 jest.mock('@/lib/rappels', () => ({ lirePermission: async () => 'fermee' }));
 
 beforeEach(async () => {
+  // Un bilan retenu par un test qui a échoué avant de le relâcher ferait attendre la suite entière.
+  mockBase.bilanRetenu = null;
   // Un préchargement laissé par le test précédent se consomme ici, puis tout repart de zéro.
   await lectureDuPlan();
   mockBase.lectures = 0;
   mockBase.points = 0;
+  mockBase.tables = [];
   mockBase.utilisateur = 'u1';
   mockBase.bilan = null;
+  mockBase.bilanRetenu = null;
+  mockBase.prefs = () => Promise.resolve(null);
 });
 
 describe('le préchargement de la lecture du plan', () => {
@@ -125,5 +153,56 @@ describe('lireLePlan', () => {
     mockBase.bilan = { id: 'b1', submitted_at: '2026-09-21T10:00:00Z' };
     expect((await lireLePlan(() => true)).genre).toBe('annulee');
     expect(mockBase.points).toBe(0);
+  });
+
+  // Étape 7b de `v1-35` : quatre allers-retours à la file devenus deux. Ce qui part avec le bilan ne
+  // l'attend pas — et les préférences surtout, qui enchaînent l'utilisateur et le profil.
+  it('les boucles, l’archive et les préférences partent avec le bilan, sans l’attendre', async () => {
+    let relacher = () => {};
+    mockBase.bilanRetenu = new Promise<void>((resoudre) => {
+      relacher = resoudre;
+    });
+    mockBase.bilan = { id: 'b1', submitted_at: '2026-09-21T10:00:00Z' };
+    const lecture = lireLePlan();
+    await new Promise((resoudre) => setImmediate(resoudre));
+    expect(mockBase.tables).toEqual([
+      'assessments',
+      'plan_cycles',
+      'rpc:mes_boucles_a_venir',
+      'plan_action_commitments_archive',
+      'plan_action_commitments_archive',
+      'preferences',
+    ]);
+    relacher();
+    expect((await lecture).genre).toBe('lu');
+    // Les points, eux, attendent les cycles : ils en tirent leur fenêtre.
+    expect(mockBase.tables.at(-1)).toBe('engagement_checkins');
+  });
+
+  it('le total et les réponses de contexte viennent avec le bilan, objet ou tableau d’un élément', async () => {
+    mockBase.bilan = {
+      id: 'b1',
+      submitted_at: '2026-09-21T10:00:00Z',
+      assessment_results: { total_co2_kg_year: 1234 },
+      assessment_answers: [{ zone_type: 'rural', tc_access: null, household_vehicles: 1, teletravail: null }],
+    };
+    const lecture = await lireLePlan();
+    expect(lecture.genre).toBe('lu');
+    if (lecture.genre !== 'lu') return;
+    expect(lecture.resultat).toEqual({ total_co2_kg_year: 1234 });
+    expect(lecture.contexte).toEqual({ zone_type: 'rural', tc_access: null, household_vehicles: 1, teletravail: null });
+    expect(mockBase.tables).not.toContain('assessment_results');
+    expect(mockBase.tables).not.toContain('assessment_answers');
+  });
+
+  it('sans bilan, un rejet des préférences ne fait pas une panne', async () => {
+    mockBase.prefs = () => Promise.reject(new Error('module natif'));
+    expect((await lireLePlan()).genre).toBe('sans_bilan');
+  });
+
+  it('sur un plan lu, un rejet des préférences lève, et l’écran le dit', async () => {
+    mockBase.bilan = { id: 'b1', submitted_at: '2026-09-21T10:00:00Z' };
+    mockBase.prefs = () => Promise.reject(new Error('module natif'));
+    await expect(lireLePlan()).rejects.toThrow('module natif');
   });
 });
