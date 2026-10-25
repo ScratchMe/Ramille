@@ -2213,9 +2213,9 @@ feuille du build qui portera cette vague.
 
 **Depuis le 25/10/2026, cette feuille est [`le-build-de-fin-octobre.md`](../recette/le-build-de-fin-octobre.md)**,
 sur le build `09697d72` (commit `26ab38e`) : celle d'octobre n'a été jouée que de ses blocs 00 à 02, et la
-nouvelle reprend le reste sous les mêmes numéros, sur une installation neuve. Elle porte 11.35 à 11.39
-(B10, B12, B12′, B12″, B13 ; pas B9, B11 ni B14, qui demandent un autre build) et ce que les étapes de
-`v1-35` montrent sur un téléphone. La même règle vaut : une ligne citée n'a pas changé d'état.
+nouvelle reprend le reste sous les mêmes numéros, sur une installation neuve. Elle porte 11.36 à 11.39
+(B10, B12, B12′, B13) et ce que les étapes de `v1-35` montrent sur un téléphone ; 11.35 (B9, B11, B14)
+attend un autre build. La même règle vaut : une ligne citée n'a pas changé d'état.
 
 | # | Chantier | Ce qu'il faut faire, et ce qu'on cherche |
 |---|---|---|
