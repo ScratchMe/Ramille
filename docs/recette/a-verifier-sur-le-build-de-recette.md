@@ -28,6 +28,13 @@
 > version lue du module natif, le jeton d'appareil retenté, le démarrage quand le jeton d'accès a expiré hors
 > ligne (`remontee-erreurs.md` §3 ter, `COMPTE.md` §3, `FRONT-SESSION.md`). Elles attendent un build qui porte
 > cette vague, et se versent dans la feuille qui le jouera ; `v1-13` §11.35 à §11.38 les portent.
+>
+> **Versées le 25/10/2026 dans [`le-build-de-fin-octobre.md`](le-build-de-fin-octobre.md)**, avec B1 à B8
+> rejouées sur une installation neuve : B10 en 02.5, B12′ en 03.3 et 03.4, B12 en 03.9 (par la
+> permission rendue dans les réglages après l'avoir retirée — l'invite ne s'ouvre qu'une fois), B13 en
+> 05.6, B12″ en 11.3. **B9, B11 et B14 ne s'y jouent pas** : le build du 25/10 ne porte aucun déclencheur
+> de panne, et un build qui en porte un reste une décision de la personne qui pilote ; B14 demande un
+> build de débogage.
 
 ## 1. Ce que l'agent technique relève seul, sur l'artefact du build
 

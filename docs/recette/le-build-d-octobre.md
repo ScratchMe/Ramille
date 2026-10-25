@@ -1,5 +1,11 @@
 # Recette sur téléphone — le build d'octobre
 
+> **Fermée le 25/10/2026.** Seuls les blocs 00 à 02 ont été joués, les 03 et 04/10/2026 (la base de son
+> artefact les porte) : le bloc 01 a rendu cinq écarts, corrigés le soir même
+> ([#351](https://github.com/ScratchMe/Ramille/pull/351)). Le reste, jamais joué, est repris et mis à jour
+> dans [`le-build-de-fin-octobre.md`](le-build-de-fin-octobre.md), sur le build du 25/10/2026, avec ses
+> lignes R.1 à R.4. Ce document reste tel qu'il a été joué.
+
 > **Écrite le 03/10/2026**, pour la séance sur le premier build Android depuis le 14/09/2026, et
 > contre-lue le même jour avant d'être jouée (`RECETTE.md` §1.5). C'est **la seule feuille
 > ouverte**, et elle réunit tout ce qui attend un téléphone :

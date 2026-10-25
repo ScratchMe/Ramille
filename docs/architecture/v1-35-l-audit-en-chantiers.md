@@ -87,8 +87,9 @@
 ## 4. Ce qui reste ouvert après une étape
 
 - **Étape 3, sur appareil** : `v1-13` §11.39 — les cinq rangées sur Android, la coupure du titre, et le
-  préremplissage de « Presque tous les jours » sur un build d'avant le 22/10/2026. Elle attend le prochain
-  build EAS.
+  préremplissage de « Presque tous les jours » sur un build d'avant le 22/10/2026. Le build du 25/10/2026
+  la porte, et sa feuille la joue (`docs/recette/le-build-de-fin-octobre.md`, 01.6 et 06.3) ; le
+  préremplissage sur un build d'avant ne s'y joue pas, le téléphone repartant d'une installation neuve.
 - **Étape 3, le film** : repris à l'étape 5, le 23/10/2026, avec l'écran du plan
   (`docs/communication/le-fil-de-ramille/README.md`).
 - **Étape 5, ce que la page d'accueil ne fait pas, et pourquoi** :

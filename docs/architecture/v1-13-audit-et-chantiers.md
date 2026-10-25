@@ -2211,6 +2211,12 @@ portent une vague que ce build n'a pas** : leurs gestes sont B9 à B14 de
 [`a-verifier-sur-le-build-de-recette.md`](../recette/a-verifier-sur-le-build-de-recette.md), à verser dans la
 feuille du build qui portera cette vague.
 
+**Depuis le 25/10/2026, cette feuille est [`le-build-de-fin-octobre.md`](../recette/le-build-de-fin-octobre.md)**,
+sur le build `09697d72` (commit `26ab38e`) : celle d'octobre n'a été jouée que de ses blocs 00 à 02, et la
+nouvelle reprend le reste sous les mêmes numéros, sur une installation neuve. Elle porte 11.35 à 11.39
+(B10, B12, B12′, B12″, B13 ; pas B9, B11 ni B14, qui demandent un autre build) et ce que les étapes de
+`v1-35` montrent sur un téléphone. La même règle vaut : une ligne citée n'a pas changé d'état.
+
 | # | Chantier | Ce qu'il faut faire, et ce qu'on cherche |
 |---|---|---|
 | 11.1 | C1.9 (accessibilité) | **Passage fait le 14/09/2026** (bloc 10 de la recette), sans constat : ce qui devait s'annoncer s'annonçait. Il a été fait en **sachant** quelles séries de 11.4 sont encore en `button`, donc il ne les a pas éprouvées — un second passage, après 11.4, reste utile et ne relèvera pas deux fois la même chose. Ce que la ligne demandait : un passage **TalkBack** sur onboarding, questionnaire, plan (prise d'engagement) et retour. On cherche : l'ordre de lecture du pager (les pages hors écran doivent être muettes), l'annonce « sélectionné » sur les puces et les lignes de choix, l'annonce d'en-tête sur les titres, le silence de la mascotte et des illustrations, le déplacement du focus au changement d'étape, et que les cibles tactiles atteignent 44 px sans que le texte bouge. |
