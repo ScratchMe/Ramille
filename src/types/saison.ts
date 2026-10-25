@@ -203,7 +203,7 @@ export type PointDeSaison = {
  *
  * `PointDeSaison` parle le vocabulaire de `response_kind` — la seule vérité côté base (C2.4) — donc
  * la conversion n'est qu'un changement de nom de champ. `genreDeReponse` est la même lecture que
- * partout ailleurs dans l'écran : la reconvertir en booléen ici rouvrirait l'ambiguïté que C2.4 a
+ * partout ailleurs dans l'écran du plan : la reconvertir en booléen ici rouvrirait l'ambiguïté que C2.4 a
  * fermée, où `null` voulait dire à la fois « pas répondu » et « répondu sans objet ».
  *
  * Sortie de l'écran du plan à l'étape 7b de `v1-35`.

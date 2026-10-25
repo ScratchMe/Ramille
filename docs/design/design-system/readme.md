@@ -48,7 +48,7 @@ core/ ThemedText · ThemedView · Button · TextLink · MessageInline · LigneDA
 forms/ GroupeDeChoix · Chip · ChoiceRow · LigneDeCanal · ModeListItem · BoiteDePrecision · PrecisionMode · IntituleDuChamp · NumericField · ChampDuPlafond · TextField · GoogleButton
 mascotte/ Mascot · RamilleDit · CalculEnCours · EcranLancement
 navigation/ CompteBouton · BandeHaute · CadreDOnglet · SortieDuDetour · OngletIcone · BarreOnglets · ProgressHeader · StepShell
-plan/ CheckinCard · ActionCard · ActionCommitment · CarteDePiste · CarteDOuverture · PastilleEngagee · TraitDeTemps · FeuilleRappels
+plan/ CheckinCard · ActionCard · ActionCommitment · CarteDePiste · CarteDOuverture · PastilleEngagee · TraitDeTemps · FeuilleRappels · CarteDuCap · CarteDAttente (+ EncartDeContexte, CarteDeFelicitation, CarteDuRebilan) · EncartDuRattachement (+ EncartDeLOrphelin, EncartDuCycleRevolu) · BanniereDeRelecture · PlanSansPlan
 suivi/ EcartParPoste · BarreContour · BlocMethode
 bilan/ CommuteHasTripStep · CommuteDaysDistanceStep · CommuteModeStep · CommuteExtraStep · LeisureFrequencyStep · LeisureDetailStep · FlightsStep · LongTripsStep · ContextStep · ChampsDeContexte · PrecisionChiffres · MissingModeLink · FeuilleNouveauBilan
 onboarding/ EtapeAccroche · EtapeContexte · EtapeReassurance · EtapeTransition

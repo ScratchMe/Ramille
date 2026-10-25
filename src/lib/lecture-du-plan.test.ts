@@ -15,6 +15,9 @@
  *   - `reprendre` ignoré → « un autre passage que le premier relit la base » ;
  *   - la session ignorée → « est jetée quand la session a changé » ;
  *   - le contrôle d'annulation retiré après le premier lot → « une lecture annulée s'arrête… ».
+ *     Depuis l'étape 7b, ce contrôle suit le bilan et les cycles, et le cas d'origine ne le voit plus — le
+ *     départ des points rend aussi « annulée » ; c'est « une lecture annulée le dit avant toute décision »
+ *     qui tombe, rejoué le 25/10/2026.
  *
  * Et la lecture en une fournée (étape 7b de `v1-35`, 25/10/2026), cinq mutations :
  *   - les préférences lancées après le bilan → « les boucles, l'archive et les préférences partent avec
@@ -153,6 +156,12 @@ describe('lireLePlan', () => {
     mockBase.bilan = { id: 'b1', submitted_at: '2026-09-21T10:00:00Z' };
     expect((await lireLePlan(() => true)).genre).toBe('annulee');
     expect(mockBase.points).toBe(0);
+  });
+
+  // Sans bilan, la lecture s'arrêterait sur « pas de bilan » : seul le contrôle d'annulation qui suit le
+  // bilan et les cycles dit « annulée » ici — le cas d'au-dessus, lui, est rattrapé par celui des points.
+  it('une lecture annulée le dit avant toute décision, même sans bilan', async () => {
+    expect((await lireLePlan(() => true)).genre).toBe('annulee');
   });
 
   // Étape 7b de `v1-35` : quatre allers-retours à la file devenus deux. Ce qui part avec le bilan ne

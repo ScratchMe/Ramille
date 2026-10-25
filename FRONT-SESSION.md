@@ -322,10 +322,13 @@ périmerait en silence au prochain passage :
   coupure —, et le **premier** chargement de l'écran la reprend (`lectureDuPlan`), **pour la même
   session et fraîche** (`FRAICHEUR_DU_PRECHARGEMENT`). Tout autre passage — un retour sur l'onglet, une
   relance, « Je m'y engage » — relit la base et l'oublie ; une lecture que l'écran a remplacée s'arrête
-  dès le bilan et les cycles lus. **Depuis l'étape 7b de `v1-35` (25/10/2026), elle tient en deux
-  allers-retours au lieu de quatre** : tout part ensemble — le total et le contexte avec le bilan —, seuls
-  les points attendent les cycles, et le profil l'utilisateur. Mesuré sur l'export, une latence posée sur chaque requête : de 2,94 à 1,78 s à
-  300 ms, de 2,14 à 1,64 s à 100 ms, entre l'ouverture et le plan qui montre son action. **Une lecture
+  dès le bilan et les cycles lus. Mesuré sur l'export le 03/10/2026 (T-12), une latence posée sur chaque
+  requête : de 2,94 à 1,78 s à 300 ms, de 2,14 à 1,64 s à 100 ms, entre l'ouverture et le plan qui montre
+  son action. **Depuis l'étape 7b de `v1-35` (25/10/2026), la lecture tient en deux allers-retours au
+  lieu de quatre** : tout part ensemble — le total et le contexte avec le bilan —, seuls les points
+  attendent les cycles, et le profil, l'utilisateur. Mesuré sur l'export ce jour-là, `/plan` ouvert
+  directement, sans écran de lancement : de 2,06 à 1,53 s à 300 ms, rien de mesurable à 100 ms, où une
+  autre attente du démarrage domine. **Une lecture
   que l'écran du plan ajoute se place dans `lireLePlan`**, pas dans l'effet de l'écran : sinon elle
   repart après le plancher, et le gain fond (`PLAN.md` §4).
 - **La racine lit la suite dans l'état de la session** (`suiteDuDemarrage`, `src/types/session.ts`,

@@ -60,12 +60,16 @@ function fenetreDesPoints(
  * ou tout ce dont l'écran a besoin.
  *
  * **Une seule fournée, deux allers-retours** (étape 7b de `v1-35`, 25/10/2026). La lecture en faisait
- * quatre à la file — le bilan et les cycles, puis les points, puis cinq lectures, dont les préférences,
- * qui enchaînent l'utilisateur et le profil — et elle se refait à **chaque** retour sur l'écran, donc à
- * chaque notification ouverte. Tout part désormais ensemble ; seuls les points attendent les cycles, dont
- * ils tirent leur fenêtre, et ils partent dès que les cycles arrivent, pendant que les préférences
- * finissent leur second aller-retour. Le total du bilan et ses réponses de contexte viennent **avec** le
- * bilan, par la relation 1:1 : deux requêtes de moins.
+ * quatre à la file — le bilan et les cycles, puis les points, puis cinq lectures, les préférences (qui
+ * enchaînent l'utilisateur et le profil) et la permission — et elle se refait à **chaque** retour sur
+ * l'écran, donc à chaque notification ouverte. Tout part désormais ensemble ; seuls les points attendent
+ * les cycles, dont ils tirent leur fenêtre, et ils partent dès que les cycles arrivent, pendant que les
+ * préférences finissent leur second aller-retour. Le total du bilan et ses réponses de contexte viennent
+ * **avec** le bilan, par la relation 1:1 : deux requêtes de moins. **Ils partagent donc son échec** : un
+ * total illisible allumait la ligne de relecture, des réponses illisibles étaient tues ; une relation
+ * embarquée en échec fait désormais échouer la lecture du bilan entière. Le risque est mince — mêmes
+ * privilèges que `assessments`, une seule clé étrangère chacune, le même embarquement sert le suivi —, et
+ * le prix assumé de la requête en moins.
  *
  * **Les décisions, elles, se prennent dans l'ordre d'avant** (audit P-9) : l'échec du bilan, puis « pas
  * de bilan » — qui gagne sur un cycle illisible, sans quoi quelqu'un sans bilan lirait une panne —, puis
@@ -239,9 +243,9 @@ export async function lireLePlan(annulee: () => boolean = () => false) {
  * clôturées côté serveur en `expired` (migration 20260904180000) : sans ça, un
  * utilisateur absent huit semaines retrouvait huit cartes identiques.
  *
- * Le `lePlusRecentParBoucle` de l'écran est une ceinture en plus de cette bretelle : si un
- * passage de cron était manqué, la table pourrait de nouveau porter deux périodes en
- * attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
+ * `lePlusRecentParBoucle` (`src/types/checkin.ts`), qu'applique l'écran, est une ceinture en plus de
+ * cette bretelle : si un passage de cron était manqué, la table pourrait de nouveau porter deux périodes
+ * en attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
  * la plus récente — une pile de rappels est le contraire de ce que cette boucle promet.
  */
 function lireLesPoints(debutDuCyclePrecedent: string | undefined) {
@@ -318,7 +322,7 @@ export function prechargerLePlan(maintenant: number = Date.now()): void {
 
 /**
  * La lecture du plan : la préchargée quand c'est le premier chargement de l'écran (`reprendre`), qu'elle
- * est fraîche et de la même session ; une lecture neuve sinon, que `annulee` arrête entre deux lots.
+ * est fraîche et de la même session ; une lecture neuve sinon, que `annulee` arrête avant les points.
  */
 export async function lectureDuPlan({
   reprendre = false,
