@@ -35,7 +35,7 @@
 | 5 | **La page d'accueil du web**, avec le film | Quatre, **tranchées le 23/10/2026** : qui revient avec un bilan ou un questionnaire en cours **va directement à son plan** ; « Pas de série » **reste** à côté de « Deuxième semaine de suite… », qui ne se dit qu'une fois et ne compte rien — à rouvrir à l'étape 6a ; **sous le film, une ligne** : « Sur Android, Ramille te fait signe par notification ; sur le web, par email. » ; et, posée en chemin sur la contre-lecture, **depuis la page d'accueil l'onboarding s'ouvre à sa deuxième page** (« 9,5 tonnes en moyenne, 2 tonnes visées en 2050 »), la première redisant la page d'accueil | Racine du web, session ouverte au geste, mesure, onboarding, film (loisirs et écran du plan repris, `public/film/`), confidentialité, recette web (`v1-13` §11.W.11) | **Livrée le 23/10/2026** (#388). Migration `20261023233954` (la porte `accueil`), appliquée en production avant la fusion ; test `62` ; recette web `v1-13` §11.W.11 |
 | 6a | **Le progrès visible : le chiffre** | Oui : un « oui » ne dit pas combien de fois, et `v1-23` §3.2 refuse un second chiffre concurrent du bilan. **Tranchée le 24/10/2026 : des kilos de CO₂ évités, comptés « au moins une fois »** — un « oui » compte la plus petite chose qu'il veut dire, un seul trajet, donc le chiffre est toujours vrai et le prochain bilan ne le dément jamais ; une ligne après chaque « oui », un total pour la saison, séparés du bilan. Deux autres, posées en chemin sur la contre-lecture et **tranchées le même jour** : la ligne du « oui » **reste sous la réplique de Ramille**, exception écrite à la règle de la mascotte (`FRONT-MASCOTTE.md` §2.3) ; et **« Pas de score. Pas de série. » reste dans le film** — la question que la décision 2 de l'étape 5 renvoyait ici | Plan, suivi, carte d'ouverture, export, confidentialité | **Livrée le 24/10/2026** (#389). Migration `20261024194430`, appliquée en production avant la fusion ; test `63` ; recette web `v1-13` §11.W.12. Deux contre-lectures : un bloquant (le vol entier compté à chaque « oui » mensuel) et neuf défauts, tous corrigés |
 | 6b | **Répondre au point depuis l'e-mail** | Non. Trois choix de forme pris en chemin par l'agent, sur les contre-lectures, **à rouvrir si la personne qui pilote le veut** : un second lien du même e-mail **propose de corriger** (« Ta réponse : oui. », « Tu as choisi : non. », « Envoyer ma réponse » ou « Garder ma réponse ») ; **passé la période, le lien ne montre plus que la question** (§4) ; l'e-mail dit « **Pour me répondre :** » et non « en un geste », le lien puis l'envoi en faisant deux | E-mail, page `/point` sans compte (elle lit à l'ouverture et n'écrit qu'au geste : les antivirus de messagerie ouvrent les liens), migration, confidentialité, registre | **Livrée le 25/10/2026** (#390). Migration `20261024220000`, appliquée en production par la personne qui pilote dans le SQL Editor, avant la fusion ; test `64` ; parcours réel, étape 12 ter ; recette web `v1-13` §11.W.13 |
-| 6c | **Répondre au point depuis la notification Android** | Non | Natif : un build EAS | À faire |
+| 6c | **Répondre au point depuis la notification Android** | Non au départ ; une, posée en chemin sur la contre-lecture et **tranchée le 25/10/2026 : mise de côté** (§3) | — | **Mise de côté le 25/10/2026** : rien n'est livré, la notification reste celle d'avant |
 | 7 | **Le ménage**, facultatif : le bundle web d'un seul fichier, l'écran du plan | Oui : le faire ou pas | Refontes | À faire |
 
 ## 3. Ce qui a été écarté en chemin
@@ -58,6 +58,23 @@
   valeur écrite à côté d'elle : WCAG 1.4.11 n'exige 3:1 que d'un graphique **nécessaire** à la
   compréhension, ce que ces barres ne sont pas. Et le jeton est celui du design system entier : le changer
   serait une décision de design, pas un correctif.
+- **Répondre au point depuis la notification Android** (étape 6c, **mise de côté par la personne qui pilote le
+  25/10/2026**). L'étape a été construite — trois boutons sur la notification, une réponse sans ouvrir l'app par
+  le jeton du message (le chemin de l'e-mail), la notification remplacée en silence par « C'est noté : oui. » et
+  les kilos d'un « oui » (une première question, tranchée le même jour) —, puis la contre-lecture a trouvé ce qui
+  la rend inutile en l'état, et la documentation d'Expo l'a confirmé : **une notification envoyée par Expo avec
+  un titre est affichée par Android lui-même, app en arrière-plan ou fermée, et les boutons ne peuvent pas y
+  être posés** — seulement app ouverte (`EXPO.md` §1.12). La seule voie par Expo est un push sans titre, que
+  l'app fabrique en notification à chaque rappel ; mais le rappel dépendrait alors du démarrage du code de l'app
+  en arrière-plan, que certains téléphones empêchent, et il disparaîtrait **sans que rien ne le dise** — le
+  ticket d'Expo répond « ok ». Entre une réponse en un geste de moins et un rappel qui peut se perdre en
+  silence, la personne qui pilote a gardé le rappel fiable : la notification reste celle d'avant, la toucher
+  ouvre le plan sur la carte, et l'e-mail répond sans l'app (étape 6b). Rien n'est parti en production ; aucun
+  build n'a été lancé. **À rouvrir si** Expo permet un jour de poser des boutons sur un message qu'Android
+  affiche lui-même, si Ramille envoie un jour par Firebase en direct (un message de données qui porte titre et
+  catégorie, qu'`expo-notifications` présente sans code JavaScript), ou si une recette sur plusieurs téléphones
+  montre fiable la notification fabriquée par l'app — un essai sur un seul compte était la voie du milieu,
+  écartée avec le reste. Ce que la construction a appris est en `EXPO.md` §1.12, pour ne pas le repayer.
 
 ## 4. Ce qui reste ouvert après une étape
 
@@ -120,5 +137,5 @@
     et c'est voulu — la page marche sans session. Le lien du plan reste dans l'e-mail pour qui veut l'app ;
   - **les rappels déjà en file gardent leur ancien corps**, avec le seul lien du plan : ils partent dans
     quatre jours au plus, et le suivant porte les réponses ;
-  - **la notification Android n'a pas de réponse** : c'est l'étape 6c, qui demande un build EAS. Le mot de la
-    veille non plus, et il n'en aura pas — il ne pose pas de question.
+  - **la notification Android n'a pas de réponse** : c'était l'étape 6c, mise de côté le 25/10/2026 (§3). Le
+    mot de la veille non plus, et il n'en aura pas — il ne pose pas de question.

@@ -11,7 +11,7 @@ déploiements) est dans `VERCEL.md`.
 > toucher à `app.json`, `app.config.js`, `.env`, à l'export ou à un hook natif · avant de toucher à
 > une mise en page — marge, hauteur, barre d'onglets · avant de faire bouger quelque chose sur web ·
 > devant un écran blanc sur web · avant d'ajouter une dépendance native ou de lancer un build EAS ·
-> quand `expo-doctor` rougit en CI.
+> quand `expo-doctor` rougit en CI · avant de vouloir des boutons sur une notification (§1.12).
 
 ---
 
@@ -362,6 +362,40 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   DOM que les gardes relisent. Ce que fait un navigateur de **téléphone** est une autre question :
   Chrome sur Android ne réduit par défaut que la zone visible (`interactive-widget=resizes-visual`),
   pas la mise en page.
+
+### 1.12 Des boutons sur une notification envoyée par Expo : seulement app ouverte
+
+Relevé le 25/10/2026 chez Ramille, sur une étape construite puis mise de côté avant tout build : la
+documentation d'Expo (« What you need to know about notifications ») et le code natif
+d'`expo-notifications` 57 le disent, et rien ne le montre avant un téléphone.
+
+- **Un push d'Expo qui porte `title`, `body` ou `channelId` est un message de notification Firebase**
+  (`AndroidNotification`). App en arrière-plan ou fermée, c'est le système qui l'affiche ; le
+  constructeur d'`expo-notifications` — le seul qui pose les boutons d'une catégorie
+  (`setNotificationCategoryAsync`, `categoryId`) — ne court qu'app au premier plan. Les boutons
+  n'apparaissent donc que si la notification arrive pendant que l'app est à l'écran : en pratique,
+  jamais là où on les attend.
+- **La seule voie par Expo est un push sans titre** (« headless »), qu'une tâche
+  `expo-task-manager` présente elle-même en notification locale, catégorie comprise. Le rappel dépend
+  alors du démarrage du code JavaScript en arrière-plan, qu'Expo ne garantit pas (Doze, économiseurs
+  de batterie des constructeurs) : un échec ne laisse **aucune notification et aucune trace** — le
+  ticket d'Expo répond `ok`. C'est un risque sur le rappel lui-même, pas sur le confort des boutons, et
+  il se pèse comme tel. La voie qui l'éviterait passe hors d'Expo : un message de **données** Firebase
+  qui porte `title`, `message` et `categoryId` à la racine de ses données, qu'`expo-notifications`
+  présente sans JavaScript (`NotificationData`) — le service d'Expo ne sait pas l'envoyer, donc il
+  faut les jetons Firebase natifs et un envoi signé à soi.
+- **Si l'on y va quand même, trois choses ne se voient qu'en lisant le code natif.** La tâche se
+  définit dans un point d'entrée à soi (un fichier à la racine qui importe `expo-router/entry` puis la
+  tâche, nommé en `main` de `package.json`), jamais dans un écran d'Expo Router : app fermée, rien n'est monté. Au premier plan,
+  Android ne lance pas la tâche et seul l'écouteur de l'app entend le toucher — mais il entend aussi
+  ceux de l'arrière-plan, et ceux d'une app fermée lui sont rejoués au lancement suivant tant que le
+  processus a survécu (`NotificationManager`), comme à `useLastNotificationResponse` : un écouteur qui
+  agit doit vérifier l'état de l'app et que la notification est encore affichée, un hook qui navigue,
+  que l'action est l'action par défaut. Enfin, app fermée, la tâche court dans une instance du code à
+  elle : un client de session y rafraîchirait le même jeton que l'app, et le premier usage invalide
+  l'autre — un appel sans session passe par un client à part, qui ne charge pas celui de la session.
+  Un bouton sans `opensAppToForeground` répond aussi **sans déverrouiller** le téléphone : Android ne
+  demande rien, et `expo-notifications` n'expose pas d'option pour l'exiger.
 
 ---
 
