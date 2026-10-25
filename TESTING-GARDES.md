@@ -63,7 +63,7 @@ quatre sous-agents). Ensuite :
 npx supabase@2.117.0 start                      # ~3 min la première fois : les images
 npx supabase@2.117.0 status -o env              # ANON_KEY, SERVICE_ROLE_KEY, API_URL
 EXPO_NO_DOTENV=1 EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 EXPO_PUBLIC_SUPABASE_ANON_KEY=… \
-  npx expo export --platform web --clear
+  npm run export:web -- --clear                  # l'export de vercel-build, élagage compris
 EXPO_PUBLIC_SUPABASE_URL=… EXPO_PUBLIC_SUPABASE_ANON_KEY=… SUPABASE_SERVICE_ROLE_KEY=… \
   CHROMIUM_PATH=/opt/pw-browsers/chromium node scripts/verifier-parcours-reel.mjs
 ```

@@ -413,6 +413,8 @@ lit `ci.yml` **par blocs d'étapes**, quelle que soit la clé qui ouvre une éta
   `npx --yes`, le CLI Supabase épinglé, `--clear`, le fichier de sortie ;
 - que la version du CLI et la configuration factice soient celles de la CI, et que chaque export
   porte `--clear` et son propre cache ;
+- que les deux exports de la CI et les deux du rejeu portent les drapeaux d'élagage de
+  `npm run export:web` — ceux de l'export de `vercel-build` —, ni plus ni moins (`EXPO.md` §1.13) ;
 - que toute variable lue par un script de `scripts/` soit écartée par le rejeu, ou déclarée
   inoffensive avec sa raison ;
 - que le pas que la CI laisse passer rouge (`continue-on-error`) soit le pas non bloquant du rejeu,

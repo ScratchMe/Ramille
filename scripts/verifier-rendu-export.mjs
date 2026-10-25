@@ -495,7 +495,8 @@ if (echecs.length > 0) {
       '\ndans un effet arrive trop tard.' +
       '\n\nSi c’est un écran de panne qui s’affiche, l’exception a été rattrapée : elle n’est pas' +
       '\ndans la liste ci-dessus. Elle est dans la console du navigateur — rejouer l’export en' +
-      '\nlocal (expo export --platform web) et ouvrir la route en cause la fait apparaître.'
+      '\nlocal (npm run export:web, l’export élagué de vercel-build) et ouvrir la route en cause la' +
+      '\nfait apparaître.'
   );
 }
 

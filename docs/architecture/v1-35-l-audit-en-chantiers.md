@@ -75,6 +75,14 @@
   catégorie, qu'`expo-notifications` présente sans code JavaScript), ou si une recette sur plusieurs téléphones
   montre fiable la notification fabriquée par l'app — un essai sur un seul compte était la voie du milieu,
   écartée avec le reste. Ce que la construction a appris est en `EXPO.md` §1.12, pour ne pas le repayer.
+- **Le découpage du bundle web par route** (étape 7a, 25/10/2026). Mesuré : la page d'accueil passerait de
+  2,62 Mo à 2,28 Mo bruts, de 538 à 468 Ko compressés. Écarté pour ses deux prix : la première visite de chaque
+  page attend son morceau, et un onglet resté ouvert pendant un déploiement demande des morceaux que Vercel ne
+  sert plus, ce qu'aucune frontière d'erreur ne rattrape aujourd'hui (`EXPO.md` §1.13). **Épinglé éteint** dans
+  `app.json` (`asyncRoutes: { web: false }`) : le SDK 58 l'allume par défaut sur web, d'après la page « Async
+  routes » de la documentation d'Expo, et la montée l'aurait allumé sans rien dire. **À rouvrir si** la frontière
+  d'erreur du layout racine apprend à recharger la page une fois sur un morceau introuvable, ou à la montée au
+  SDK 58, si sa mesure change la balance.
 
 ## 4. Ce qui reste ouvert après une étape
 

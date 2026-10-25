@@ -2902,7 +2902,7 @@ if (echecs.length > 0) {
       '\npréférence du système, un geste — donc sans réseau et sans rien qui lève. Aucune autre' +
       '\ngarde du dépôt ne les voit : les tests Jest ne montent pas d’écran, et' +
       '\n`verifier-rendu-export.mjs` vérifie que la page s’affiche, pas ce qu’elle affiche.' +
-      '\nRejouer en local : expo export --platform web --clear, puis ce script (sans --clear, un' +
+      '\nRejouer en local : npm run export:web -- --clear, puis ce script (sans --clear, un' +
       '\ncache Metro partagé peut servir un autre arbre — voir l’en-tête).'
   );
   process.exit(1);

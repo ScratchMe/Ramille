@@ -80,8 +80,9 @@ const FACTICE = {
 };
 const EXPORT = ['npx', 'expo', 'export', '--platform', 'web', '--clear'];
 /**
- * L'élagage de Metro, que `vercel-build` et les deux exports de `ci.yml` portent aussi (étape 7 de `v1-35`,
- * `EXPO.md` §1.13) : sans lui, le rejeu vérifierait un bundle que Vercel ne construit pas.
+ * L'élagage de Metro, que `npm run export:web` (l'export de `vercel-build`) et les deux exports de `ci.yml`
+ * portent aussi (étape 7 de `v1-35`, `EXPO.md` §1.13) : sans lui, le rejeu vérifierait un bundle que Vercel
+ * ne construit pas.
  */
 const ELAGAGE = { EXPO_UNSTABLE_TREE_SHAKING: '1', EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH: '1' };
 /** Le plafond d'un pas. Le pire cas modélisé en tête de `ci.yml` est de quatorze minutes. */
@@ -92,9 +93,11 @@ const LIGNES_DE_JOURNAL = 40;
  * L'environnement hérité du shell. Sont retirées les variables qui désignent une cible — une base,
  * une boîte aux lettres, un projet Supabase —, parce qu'un contrôle les préfère à sa cible locale
  * et que la CI n'en pose aucune par défaut. Chaque pas remet explicitement celles que la CI lui donne.
+ * Et les `EXPO_UNSTABLE_*`, qui changent le bundle : un drapeau du shell de plus que la CI ferait
+ * rejouer un autre export que le sien — les exports n'ont que ceux d'`ELAGAGE`.
  */
 const VARIABLES_ECARTEES = {
-  prefixes: ['EXPO_PUBLIC_'],
+  prefixes: ['EXPO_PUBLIC_', 'EXPO_UNSTABLE_'],
   noms: ['DATABASE_URL', 'SUPABASE_INBUCKET_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
 };
 /** Celles qu'un script lit et qu'on laisse passer, chacune avec sa raison — la garde les lit. */

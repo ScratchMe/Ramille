@@ -5,7 +5,8 @@
  * Un script qui recopie la liste des étapes de la CI se périme en silence au premier ajout : le
  * 26/09/2026, `verifier-miroir-du-kit.mjs` est entré dans la CI, et une liste tenue à la main
  * l'aurait ignoré — le rejeu local serait resté vert sur un arbre que la CI refuse. La garde lit
- * donc `ci.yml` et le plan du script (`--a-blanc`, qui ne lance rien), et exige trois choses :
+ * donc `ci.yml` et le plan du script (`--a-blanc`, qui ne lance rien), et exige trois choses — plus,
+ * depuis le 25/10/2026, que les exports de la CI et du rejeu élaguent comme `npm run export:web` :
  * - chaque `run:` de la CI est rejoué par un pas **du même travail**, ou figure dans
  *   `nonRejouees` avec sa raison ; et aucun pas ne prétend rejouer une étape disparue ;
  * - la commande locale est celle de la CI, **à quatre transformations déclarées près** — `npx
@@ -339,25 +340,34 @@ describe('le rejeu local suit ci.yml', () => {
     expect(factice.TMPDIR).toMatch(/^<journal>\//);
   });
 
-  test('chaque export de la CI porte les drapeaux EXPO_UNSTABLE_* de vercel-build, ni plus ni moins', () => {
+  test('chaque export de la CI et du rejeu porte les drapeaux EXPO_UNSTABLE_* de export:web, ni plus ni moins', () => {
     // L'élagage de Metro (étape 7 de `v1-35`, `EXPO.md` §1.13) change le bundle : une CI qui exporterait
     // sans lui vérifierait un autre bundle que celui que Vercel construit, et un rejeu de même. Les
-    // drapeaux se lisent en tête de `vercel-build`, la seule commande que Vercel lance. Éprouvé le
-    // 25/10/2026 : l'export de la stack sans ses drapeaux dans `ci.yml` fait tomber ce test ;
-    // `vercel-build` amputé d'un drapeau, ce test et celui de `vercel-csp.test.ts` ; le rejeu de la stack
-    // sans `ELAGAGE`, le test « un pas porte la configuration que la CI donne à son étape ».
+    // drapeaux se lisent dans `export:web`, que `vercel-build` — la seule commande que Vercel lance —
+    // appelle en premier, et que les recettes citent. Éprouvé le 25/10/2026 : l'export de la stack sans ses
+    // drapeaux dans `ci.yml` fait tomber ce test ; `export:web` amputé d'un drapeau, ce test ; `vercel-build`
+    // qui exporte sans passer par `export:web`, ce test et celui de `vercel-csp.test.ts` ; le rejeu de
+    // la stack sans `ELAGAGE`, ce test et « un pas porte la configuration que la CI donne à son étape » ;
+    // un drapeau de plus dans `ELAGAGE`, ce test seul — la comparaison de la configuration est une
+    // inclusion, elle ne voit pas un drapeau en trop ; le préfixe `EXPO_UNSTABLE_` plus écarté du shell,
+    // ce test seul aussi, par sa dernière ligne.
     const paquet = JSON.parse(fs.readFileSync(path.join(racine, 'package.json'), 'utf8'));
-    const tete = (paquet.scripts['vercel-build'] as string).split(' expo export ')[0];
+    expect(paquet.scripts['vercel-build']).toMatch(/^npm run export:web && /);
+    const tete = (paquet.scripts['export:web'] as string).split(' expo export ')[0];
     const drapeaux = Object.fromEntries(
       [...tete.matchAll(/(EXPO_UNSTABLE_\w+)=(\S+)/g)].map((m) => [m[1], m[2]])
     );
     expect(Object.keys(drapeaux).length).toBeGreaterThan(0);
+    const lesSiens = (env: Record<string, unknown> | undefined) =>
+      Object.fromEntries(Object.entries(env ?? {}).filter(([nom]) => nom.startsWith('EXPO_UNSTABLE_')));
     const exportsDeLaCI = ci.etapes.filter((e) => e.run.includes('expo export'));
     expect(exportsDeLaCI.length).toBe(2);
-    for (const e of exportsDeLaCI) {
-      const lesSiens = Object.fromEntries(Object.entries(e.env).filter(([nom]) => nom.startsWith('EXPO_UNSTABLE_')));
-      expect(lesSiens).toEqual(drapeaux);
-    }
+    for (const e of exportsDeLaCI) expect(lesSiens(e.env)).toEqual(drapeaux);
+    const exportsDuRejeu = plan.etapes.flatMap((e) => e.pas).filter((p) => p.commande.includes('expo export'));
+    expect(exportsDuRejeu.length).toBe(2);
+    for (const p of exportsDuRejeu) expect(lesSiens(p.env as Record<string, unknown>)).toEqual(drapeaux);
+    // Et rien du shell : un `EXPO_UNSTABLE_*` hérité s'ajouterait aux drapeaux de chaque pas.
+    expect(plan.variables.ecartees.prefixes).toContain('EXPO_UNSTABLE_');
   });
 
   test('un pas que la CI tolère rouge est non bloquant dans le rejeu, et lui seul', () => {

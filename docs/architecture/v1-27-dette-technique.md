@@ -2588,8 +2588,10 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
   d'`api/` ne bouge) ;
 - le bundle web d'un seul fichier (2,96 Mo, dont 27 % de Reanimated) et l'écran du plan (2 134 lignes,
   environ neuf requêtes à chaque focus) : des refontes, pas des correctifs — **le bundle allégé le
-  25/10/2026** (étape 7 de `v1-35` : l'élagage de Metro, 3,05 → 2,62 Mo bruts ; le découpage par route,
-  mesuré, attend le SDK 58, `EXPO.md` §1.13 et §2.1), l'écran du plan à sa suite ;
+  25/10/2026** (étape 7 de `v1-35` : l'élagage de Metro, 3,05 → 2,62 Mo bruts — 3,05 et non 2,96, parce que
+  les étapes 5 et 6 l'avaient alourdi entre-temps et que la mesure du 25/10 répartit les octets par la carte
+  des sources ; le découpage par route, mesuré, est épinglé éteint et se repose au SDK 58, `EXPO.md` §1.13 et
+  §2.1, `v1-35` §3), l'écran du plan à sa suite ;
 - ~~les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
   « Réessaie dans un instant »~~ — **faits le 22/10/2026** pour les engagements et les bilans
   (`src/types/refus-de-plafond.ts`, « Réessaie demain »). Celui des jetons d'appareil ne s'affiche nulle
