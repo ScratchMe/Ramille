@@ -323,6 +323,21 @@ export function cadreDuPlan({
 }
 
 /**
+ * Le cap de la période, en kilos par an, ou `null` quand il n'y a rien à chiffrer (T10, C2.8).
+ *
+ * **Une part de la baseline du poste dominant, pas du total** : c'est sur ce poste que le plan porte,
+ * et annoncer −20 % de l'empreinte entière serait une promesse fausse. Une baseline nulle ou à zéro —
+ * un profil sans émission sur son poste dominant — n'a pas de cap : la carte se rend quand même, parce
+ * qu'elle est l'endroit où la période se nomme, mais sans chiffre. Arrondi au kilo, comme `formatKg`
+ * l'affiche et comme `phraseDesPistesSuffisantes` le compare.
+ *
+ * Sortie de l'écran du plan à l'étape 7b de `v1-35`.
+ */
+export function capDuCycle(baselineKg: number | null, reductionPct: number): number | null {
+  return baselineKg !== null && baselineKg > 0 ? Math.round((baselineKg * reductionPct) / 100) : null;
+}
+
+/**
  * Ce que le cap dit des pistes posées à côté de lui, **quand c'est vrai** (24/09/2026, `v1-29`).
  *
  * Le cap est un chiffre **annuel** — 20 % du poste dominant, sur un an — et les pistes annoncent

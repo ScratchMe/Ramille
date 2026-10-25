@@ -429,7 +429,10 @@ voyages dont `trips` dépasse 1 ; un gabarit qu'on écrira avec `trips` à 2 en 
 **Une lecture que l'écran du plan ajoute se place dans `lireLePlan`** (`src/lib/lecture-du-plan.ts`,
 `v1-33` T-12, 03/10/2026), jamais dans l'effet de l'écran : la racine lance cette lecture pendant
 l'écran de lancement, et le premier chargement la reprend. Ajoutée à l'effet, une requête repartirait
-après le plancher, et le plan arriverait d'autant plus tard. Le détail : `FRONT-SESSION.md` §2.9.
+après le plancher, et le plan arriverait d'autant plus tard. **Et elle part dans la fournée, jamais à la
+file** (étape 7b de `v1-35`, 25/10/2026) : tout part ensemble, seuls les points attendent les cycles, et la
+lecture tient en deux allers-retours — une requête qui attend la précédente en ajoute un à chaque retour
+sur le plan. Le détail : `FRONT-SESSION.md` §2.9.
 
 **La saison a une fin et un début, et les deux se disent sur l'écran du plan** (C2.8,
 `src/types/saison.ts`). `plan_cycles.period_end` et `.cadence_type` existaient depuis l'increment 3 et

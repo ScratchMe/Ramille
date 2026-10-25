@@ -8,6 +8,7 @@
     'mascotte/Mascot', 'mascotte/RamilleDit', 'mascotte/CalculEnCours', 'mascotte/EcranLancement',
     'navigation/CompteBouton', 'navigation/BandeHaute', 'navigation/CadreDOnglet', 'navigation/SortieDuDetour', 'navigation/OngletIcone', 'navigation/BarreOnglets', 'navigation/ProgressHeader', 'navigation/StepShell',
     'plan/PastilleEngagee', 'plan/TraitDeTemps', 'plan/CheckinCard', 'plan/ActionCard', 'plan/ActionCommitment', 'plan/CarteDePiste', 'plan/CarteDOuverture', 'plan/FeuilleRappels',
+    'plan/BanniereDeRelecture', 'plan/CarteDuCap', 'plan/EncartDuRattachement', 'plan/CarteDAttente', 'plan/PlanSansPlan',
     'suivi/BarreContour', 'suivi/BlocMethode', 'suivi/EcartParPoste',
     'bilan/PrecisionChiffres', 'bilan/MissingModeLink', 'bilan/ChampsDeContexte',
     'bilan/CommuteHasTripStep', 'bilan/CommuteDaysDistanceStep', 'bilan/CommuteModeStep', 'bilan/CommuteExtraStep',

@@ -25,7 +25,9 @@ import { RAISONS_ANNONCABLES } from '@/types/plan';
  * **Ce qui se lit ici, et ce qui reste à l'écran.** Ici, tout ce qui précédait la première écriture
  * d'état : les requêtes, les préférences de rappel (le réseau, elles aussi) et la permission. L'écran
  * garde les dérivations et les marques « déjà vu », locales. **Une lecture que l'écran du plan ajoute se
- * place dans `lireLePlan`** : dans l'effet de l'écran, elle repartirait après le plancher.
+ * place dans `lireLePlan`** : dans l'effet de l'écran, elle repartirait après le plancher. **Et dans sa
+ * fournée, jamais à la file** (étape 7b) : une lecture qui attend la précédente ajoute un aller-retour à
+ * chaque retour sur le plan.
  */
 // **La borne basse de la lecture des points, et pourquoi elle existe** (C2.4 puis C2.10). La requête
 // ramenait les seuls points `pending` — un ou deux. Depuis qu'elle lit aussi les points répondus, elle
@@ -56,25 +58,42 @@ function fenetreDesPoints(
 /**
  * Ce que la lecture rend : un échec (et son genre, D19), l'absence de bilan, un plan pas encore généré,
  * ou tout ce dont l'écran a besoin.
+ *
+ * **Une seule fournée, deux allers-retours** (étape 7b de `v1-35`, 25/10/2026). La lecture en faisait
+ * quatre à la file — le bilan et les cycles, puis les points, puis cinq lectures, les préférences (qui
+ * enchaînent l'utilisateur et le profil) et la permission — et elle se refait à **chaque** retour sur
+ * l'écran, donc à chaque notification ouverte. Tout part désormais ensemble ; seuls les points attendent
+ * les cycles, dont ils tirent leur fenêtre, et ils partent dès que les cycles arrivent, pendant que les
+ * préférences finissent leur second aller-retour. Le total du bilan et ses réponses de contexte viennent
+ * **avec** le bilan, par la relation 1:1 : deux requêtes de moins. **Ils partagent donc son échec** : un
+ * total illisible allumait la ligne de relecture, des réponses illisibles étaient tues ; une relation
+ * embarquée en échec fait désormais échouer la lecture du bilan entière. Le risque est mince — mêmes
+ * privilèges que `assessments`, une seule clé étrangère chacune, le même embarquement sert le suivi —, et
+ * le prix assumé de la requête en moins.
+ *
+ * **Les décisions, elles, se prennent dans l'ordre d'avant** (audit P-9) : l'échec du bilan, puis « pas
+ * de bilan » — qui gagne sur un cycle illisible, sans quoi quelqu'un sans bilan lirait une panne —, puis
+ * l'échec du cycle, puis « en préparation », puis l'échec des points. Ce qui part pour rien quand l'une
+ * d'elles arrête la lecture — les boucles, l'archive, les préférences — ne coûte qu'une lecture que la RLS
+ * borne à la personne. **Les préférences et la permission ne lèvent qu'au chemin du plan lu**, comme
+ * avant : elles touchent un module natif et peuvent lever au lieu de rendre une erreur, et un rejet
+ * qu'on n'attend pas sur « pas de bilan » ferait d'un écran juste une panne.
  */
 export async function lireLePlan(annulee: () => boolean = () => false) {
-  // **Les deux premières lectures partent ensemble** (audit P-9, 01/10/2026). Elles partaient l'une
-  // après l'autre sans raison : la seconde ne lit rien de la première — aucun filtre sur le bilan, la
-  // RLS borne déjà à la personne —, et cet aller-retour de trop se payait à **chaque** retour au premier
-  // plan, c'est-à-dire à chaque notification ouverte. Les décisions, elles, se prennent dans **l'ordre
-  // d'avant**, un résultat après l'autre : l'échec du bilan, puis « pas de bilan » — qui gagne sur un
-  // cycle illisible, sans quoi quelqu'un sans bilan lirait une panne —, puis l'échec du cycle, puis
-  // « en préparation ».
-  const [
-    { data: assessment, error: erreurBilan, status: statutDuBilan },
-    { data: cycles, error: cycleError, status: statutDuCycle },
-  ] = await Promise.all([
+  const bilanEtCycles = Promise.all([
     // Le lien "Revenir à mon bilan" pointe vers la restitution du dernier bilan
     // complété (elle-même donne accès à "Modifier mes réponses") — il faut donc son
     // id systématiquement, pas seulement dans le cas filet ci-dessous.
+    //
+    // **Son total et ses réponses de contexte viennent avec lui** (étape 7b) : le total sert la
+    // félicitation du résiduel des sorties rares, les réponses l'encart de contexte (C5.5). Deux
+    // relations 1:1, donc un objet ou rien — PostgREST rend parfois un tableau d'un élément, et la
+    // lecture tolère les deux, comme celle du suivi.
     supabase
       .from('assessments')
-      .select('id, submitted_at')
+      .select(
+        'id, submitted_at, assessment_results(total_co2_kg_year), assessment_answers(zone_type, tc_access, household_vehicles, teletravail)'
+      )
       .eq('status', STATUT_DE_BILAN.complete)
       .order('submitted_at', { ascending: false })
       .limit(1)
@@ -104,67 +123,13 @@ export async function lireLePlan(annulee: () => boolean = () => false) {
       .limit(2),
   ]);
 
-  // Une lecture que l'écran a remplacée s'arrête entre deux lots : la suivante relit tout.
-  if (annulee()) return { genre: 'annulee' } as const;
-  if (erreurBilan) return { genre: 'echec', echec: genreDeLEchec(statutDuBilan) } as const;
-  if (!assessment) return { genre: 'sans_bilan' } as const;
-
-  // **Le cycle manquant et le cycle illisible ne sont plus le même état.** Les deux
-  // tombaient sur « Ton plan est en cours de préparation », qui est une affirmation :
-  // elle dit qu'il n'y a rien à montrer *encore*, donc qu'il suffit d'attendre. Hors
-  // ligne, il n'y a rien à attendre. `pending` reste le filet du cas légitime — un bilan
-  // complété avant que le calcul ne génère le plan, que le cron rattrape.
-  if (cycleError) return { genre: 'echec', echec: genreDeLEchec(statutDuCycle) } as const;
-
-  const cycle = cycles?.[0] ?? null;
-  const cyclePrecedent = cycles?.[1] ?? null;
-
-  if (!cycle) return { genre: 'en_preparation', assessmentId: assessment.id } as const;
-
-  // Check-ins en attente (boucle hebdo domicile-travail + boucle mensuelle extras,
-  // cf. generate_commute_checkins/generate_extras_checkins). Les périodes révolues sont
-  // clôturées côté serveur en `expired` (migration 20260904180000) : sans ça, un
-  // utilisateur absent huit semaines retrouvait huit cartes identiques.
-  //
-  // Le `keepLatestPerLoop` de l'écran est une ceinture en plus de cette bretelle : si un
-  // passage de cron était manqué, la table pourrait de nouveau porter deux périodes en
-  // attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
-  // la plus récente — une pile de rappels est le contraire de ce que cette boucle promet.
-  //
-  // Une erreur ici compte autant que les deux autres : sans les points, la carte d'attente
-  // prend leur place et Ramille dit qu'il n'y a rien à rattraper le jour où la question
-  // est justement ouverte.
-  const { data: checkins, error: erreurCheckins, status: statutDesPoints } = await supabase
-    .from('engagement_checkins')
-    // `committed_question` d'abord : c'est la question **figée** à la génération, celle que
-    // le rappel a envoyée (C2.1). La carte l'affiche telle quelle plutôt que de la
-    // recomposer, pour qu'elle ne puisse pas différer d'un caractère de la notification
-    // qu'on vient d'ouvrir. `committed_action_text` sert à dire, le cas échéant, que la
-    // question porte sur une action quittée depuis.
-    //
-    // `committed_intention_days` n'est **pas** rapatrié, et c'est délibéré : il ne remplirait
-    // que la branche à gabarit de `composerQuestionDuPoint`, qu'aucune requête de l'app ne
-    // peut atteindre — le gabarit vit sur `action_templates`. La carte n'a besoin que de la
-    // question figée.
-    //
-    // `committed_saving_kg_once` (étape 6a de `v1-35`) : le gain d'une fois de l'action, figé avec la
-    // question. La carte en dit le minimum après un « oui », le plan en fait le total de la saison.
-    .select(
-      'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_saving_kg_once, status, response_kind, responded_at'
-    )
-    // **`answered` autant que `pending` depuis C2.4.** La carte répondue reste le temps de la
-    // période : sans les lignes répondues, le renforcement vivait dans un `useState` et
-    // disparaissait au premier changement d'onglet — la personne répondait, voyait le mot de
-    // Ramille, revenait, et ne trouvait plus rien du tout. `expired` reste dehors : un point
-    // que la période suivante a clos n'a rien à montrer.
-    .in('status', [STATUT_DU_POINT.enAttente, STATUT_DU_POINT.repondu])
-    // La fenêtre borne une lecture qui grossirait sans fin depuis qu'elle prend les points
-    // répondus : trois périodes mensuelles couvrent ce dont le second renforcement a besoin.
-    .gte('period_start', fenetreDesPoints(new Date(), cyclePrecedent?.period_start))
-    .order('period_start', { ascending: false });
-
-  if (annulee()) return { genre: 'annulee' } as const;
-  if (erreurCheckins) return { genre: 'echec', echec: genreDeLEchec(statutDesPoints) } as const;
+  // Les points partent dès que le bilan et les cycles sont là, et seulement si la lecture ira jusqu'à
+  // eux : une lecture annulée, sans bilan ou sans cycle lisible n'en lit pas.
+  const pointsLus = bilanEtCycles.then(([bilan, cycles]) =>
+    annulee() || bilan.error || !bilan.data || cycles.error || !cycles.data?.[0]
+      ? null
+      : lireLesPoints(cycles.data[1]?.period_start)
+  );
 
   // Quelle boucle concerne cette personne, donc quel jour Ramille peut nommer : le point
   // du lundi n'est généré que si un poste domicile-travail existe (v1-12 §3), celui du mois
@@ -184,57 +149,81 @@ export async function lireLePlan(annulee: () => boolean = () => false) {
   // Élargir le filtre de la première casserait l'encart orphelin — qui n'annonce que l'effet
   // de bord non choisi — et la borner à une ligne ne dirait rien de la seconde question. Un
   // `count` en `head` ne ramène aucune ligne : c'est une existence, pas une donnée.
+  const secondaires = Promise.all([
+    // **Les boucles viennent du serveur** (30/09/2026, `v1-27` §12.22) : elles se déduisaient
+    // ici du seul poste domicile-travail, donc la carte d'attente promettait « au début du
+    // mois prochain » à qui n'a aucune boucle. Le serveur les tire de la même définition que
+    // les générateurs de points, sans rien recopier de leur règle — **une par une** depuis le
+    // soir même (§12.23) : la carte d'un point répondu doit savoir si la sienne tourne.
+    supabase.rpc('mes_boucles_a_venir'),
+    supabase
+      .from('plan_action_commitments_archive')
+      .select('id, action_template_id, plan_cycle_id, action_text, released_reason')
+      .in('released_reason', RAISONS_ANNONCABLES)
+      .order('released_at', { ascending: false })
+      .limit(1),
+    supabase.from('plan_action_commitments_archive').select('id', { count: 'exact', head: true }),
+  ]);
+  const preferences = Promise.all([loadReminderPrefs(), lirePermission()]);
+  // Un rejet que personne n'attend — la lecture s'arrête avant le plan — serait une promesse orpheline :
+  // le chemin du plan lu, lui, l'attend plus bas, et c'est son `catch` qui dira l'échec.
+  preferences.catch(() => {});
+
   const [
-    { data: resultat, error: erreurResultat, status: statutDuResultat },
-    { data: bouclesAVenir, error: erreurBoucle, status: statutDesBoucles },
-    { data: contexte },
-    { data: orphelins },
-    { count: engagementsArchives },
-    prefs,
-    etatPermission,
-  ] = await Promise.all([
-      supabase
-        .from('assessment_results')
-        .select('total_co2_kg_year')
-        .eq('assessment_id', assessment.id)
-        .maybeSingle(),
-      // **Les boucles viennent du serveur** (30/09/2026, `v1-27` §12.22) : elles se déduisaient
-      // ici du seul poste domicile-travail, donc la carte d'attente promettait « au début du
-      // mois prochain » à qui n'a aucune boucle. Le serveur les tire de la même définition que
-      // les générateurs de points, sans rien recopier de leur règle — **une par une** depuis le
-      // soir même (§12.23) : la carte d'un point répondu doit savoir si la sienne tourne.
-      supabase.rpc('mes_boucles_a_venir'),
-      // **Dans le lot existant, jamais en plus** (C5.5, `v1-17` §7.4) : l'écran se recharge à
-      // chaque retour au premier plan — le chemin nominal de la boucle d'engagement, celui
-      // qu'on emprunte en appuyant sur une notification — donc une requête en séquence
-      // additionnerait sa latence à chaque fois au lieu de se fondre dans le maximum.
-      supabase
-        .from('assessment_answers')
-        .select('zone_type, tc_access, household_vehicles, teletravail')
-        .eq('assessment_id', assessment.id)
-        .maybeSingle(),
-      supabase
-        .from('plan_action_commitments_archive')
-        .select('id, action_template_id, plan_cycle_id, action_text, released_reason')
-        .in('released_reason', RAISONS_ANNONCABLES)
-        .order('released_at', { ascending: false })
-        .limit(1),
-      supabase
-        .from('plan_action_commitments_archive')
-        .select('id', { count: 'exact', head: true }),
-      loadReminderPrefs(),
-      lirePermission(),
-    ]);
+    { data: assessment, error: erreurBilan, status: statutDuBilan },
+    { data: cycles, error: cycleError, status: statutDuCycle },
+  ] = await bilanEtCycles;
+
+  // Une lecture que l'écran a remplacée s'arrête là : la suivante relit tout.
+  if (annulee()) return { genre: 'annulee' } as const;
+  if (erreurBilan) return { genre: 'echec', echec: genreDeLEchec(statutDuBilan) } as const;
+  if (!assessment) return { genre: 'sans_bilan' } as const;
+
+  // **Le cycle manquant et le cycle illisible ne sont plus le même état.** Les deux
+  // tombaient sur « Ton plan est en cours de préparation », qui est une affirmation :
+  // elle dit qu'il n'y a rien à montrer *encore*, donc qu'il suffit d'attendre. Hors
+  // ligne, il n'y a rien à attendre. `pending` reste le filet du cas légitime — un bilan
+  // complété avant que le calcul ne génère le plan, que le cron rattrape.
+  if (cycleError) return { genre: 'echec', echec: genreDeLEchec(statutDuCycle) } as const;
+
+  const cycle = cycles?.[0] ?? null;
+  const cyclePrecedent = cycles?.[1] ?? null;
+
+  if (!cycle) return { genre: 'en_preparation', assessmentId: assessment.id } as const;
+
+  // Arrivé ici, les points sont partis : bilan et cycle lisibles, lecture non annulée à leur arrivée.
+  const lecturePoints = await pointsLus;
+  if (annulee() || lecturePoints === null) return { genre: 'annulee' } as const;
+  const { data: checkins, error: erreurCheckins, status: statutDesPoints } = lecturePoints;
+
+  // Une erreur ici compte autant que les deux autres : sans les points, la carte d'attente
+  // prend leur place et Ramille dit qu'il n'y a rien à rattraper le jour où la question
+  // est justement ouverte.
+  if (erreurCheckins) return { genre: 'echec', echec: genreDeLEchec(statutDesPoints) } as const;
+
+  const [
+    [
+      { data: bouclesAVenir, error: erreurBoucle, status: statutDesBoucles },
+      { data: orphelins },
+      { count: engagementsArchives },
+    ],
+    [prefs, etatPermission],
+  ] = await Promise.all([secondaires, preferences]);
+
+  const resultat = Array.isArray(assessment.assessment_results)
+    ? (assessment.assessment_results[0] ?? null)
+    : assessment.assessment_results;
+  const contexte = Array.isArray(assessment.assessment_answers)
+    ? (assessment.assessment_answers[0] ?? null)
+    : assessment.assessment_answers;
 
   return {
     genre: 'lu',
-    assessment,
+    assessment: { id: assessment.id, submitted_at: assessment.submitted_at },
     cycle,
     cyclePrecedent,
     checkins,
     resultat,
-    erreurResultat,
-    statutDuResultat,
     bouclesAVenir,
     erreurBoucle,
     statutDesBoucles,
@@ -244,6 +233,52 @@ export async function lireLePlan(annulee: () => boolean = () => false) {
     prefs,
     etatPermission,
   } as const;
+}
+
+/**
+ * Les points de la fenêtre (`fenetreDesPoints`), en attente ou répondus.
+ *
+ * Check-ins en attente (boucle hebdo domicile-travail + boucle mensuelle extras,
+ * cf. generate_commute_checkins/generate_extras_checkins). Les périodes révolues sont
+ * clôturées côté serveur en `expired` (migration 20260904180000) : sans ça, un
+ * utilisateur absent huit semaines retrouvait huit cartes identiques.
+ *
+ * `lePlusRecentParBoucle` (`src/types/checkin.ts`), qu'applique l'écran, est une ceinture en plus de
+ * cette bretelle : si un passage de cron était manqué, la table pourrait de nouveau porter deux périodes
+ * en attente pour une même boucle. On n'affiche jamais qu'une question vivante par boucle,
+ * la plus récente — une pile de rappels est le contraire de ce que cette boucle promet.
+ */
+function lireLesPoints(debutDuCyclePrecedent: string | undefined) {
+  return (
+    supabase
+      .from('engagement_checkins')
+      // `committed_question` d'abord : c'est la question **figée** à la génération, celle que
+      // le rappel a envoyée (C2.1). La carte l'affiche telle quelle plutôt que de la
+      // recomposer, pour qu'elle ne puisse pas différer d'un caractère de la notification
+      // qu'on vient d'ouvrir. `committed_action_text` sert à dire, le cas échéant, que la
+      // question porte sur une action quittée depuis.
+      //
+      // `committed_intention_days` n'est **pas** rapatrié, et c'est délibéré : il ne remplirait
+      // que la branche à gabarit de `composerQuestionDuPoint`, qu'aucune requête de l'app ne
+      // peut atteindre — le gabarit vit sur `action_templates`. La carte n'a besoin que de la
+      // question figée.
+      //
+      // `committed_saving_kg_once` (étape 6a de `v1-35`) : le gain d'une fois de l'action, figé avec la
+      // question. La carte en dit le minimum après un « oui », le plan en fait le total de la saison.
+      .select(
+        'id, loop_type, period_label, trip_label, poste, period_start, question_kind, mode, committed_question, committed_action_text, committed_saving_kg_once, status, response_kind, responded_at'
+      )
+      // **`answered` autant que `pending` depuis C2.4.** La carte répondue reste le temps de la
+      // période : sans les lignes répondues, le renforcement vivait dans un `useState` et
+      // disparaissait au premier changement d'onglet — la personne répondait, voyait le mot de
+      // Ramille, revenait, et ne trouvait plus rien du tout. `expired` reste dehors : un point
+      // que la période suivante a clos n'a rien à montrer.
+      .in('status', [STATUT_DU_POINT.enAttente, STATUT_DU_POINT.repondu])
+      // La fenêtre borne une lecture qui grossirait sans fin depuis qu'elle prend les points
+      // répondus : trois périodes mensuelles couvrent ce dont le second renforcement a besoin.
+      .gte('period_start', fenetreDesPoints(new Date(), debutDuCyclePrecedent))
+      .order('period_start', { ascending: false })
+  );
 }
 
 export type LectureDuPlan = Awaited<ReturnType<typeof lireLePlan>>;
@@ -287,7 +322,7 @@ export function prechargerLePlan(maintenant: number = Date.now()): void {
 
 /**
  * La lecture du plan : la préchargée quand c'est le premier chargement de l'écran (`reprendre`), qu'elle
- * est fraîche et de la même session ; une lecture neuve sinon, que `annulee` arrête entre deux lots.
+ * est fraîche et de la même session ; une lecture neuve sinon, que `annulee` arrête avant les points.
  */
 export async function lectureDuPlan({
   reprendre = false,

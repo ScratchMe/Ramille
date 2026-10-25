@@ -36,6 +36,9 @@
  *   - les boucles illisibles toujours dites hors ligne → 4, « la relecture en échec du serveur » ;
  *   - `setRappels(prefs)` sans condition (l'état d'avant) → 5 ;
  *   - `prefs === null` retiré de la ligne de relecture → 5.
+ * Le 5 a changé de premier temps à l'étape 7b de `v1-35` (25/10/2026) : le total, qui allumait la ligne en
+ * échouant, vient désormais avec le bilan ; « Voir la saison » relit à sa place. Ses deux mutations,
+ * rejouées ce jour-là, le font toujours tomber, et lui seul.
  *
  * **Et un sixième le 02/10/2026** (`v1-27` §12.28) : 6. **une reconnexion ne se compte pas comme un
  * rattachement** — le plan constate un compte rattaché sans annonce faite et émettait `connexion_success`,
@@ -180,12 +183,19 @@ const CYCLE = {
 /** Un plan lu, sauf ce que `surcharge` change — table par table, RPC par RPC. */
 function lectures(surcharge: Record<string, () => Promise<unknown>> = {}) {
   const base: Record<string, () => Promise<unknown>> = {
-    assessments: async () => ({ data: { id: 'b1', submitted_at: '2026-09-10T10:00:00Z' }, error: null }),
+    // Le total et les réponses de contexte viennent avec le bilan (étape 7b de `v1-35`).
+    assessments: async () => ({
+      data: {
+        id: 'b1',
+        submitted_at: '2026-09-10T10:00:00Z',
+        assessment_results: { total_co2_kg_year: 11 },
+        assessment_answers: null,
+      },
+      error: null,
+    }),
     plan_cycles: async () => ({ data: [CYCLE], error: null }),
     engagement_checkins: async () => ({ data: [], error: null }),
-    assessment_results: async () => ({ data: { total_co2_kg_year: 11 }, error: null }),
     'rpc:mes_boucles_a_venir': async () => ({ data: [], error: null }),
-    assessment_answers: async () => ({ data: null, error: null }),
     plan_action_commitments_archive: async () => ({ data: [], count: 0, error: null }),
     ...surcharge,
   };
@@ -304,20 +314,21 @@ describe('Plan — une erreur du serveur ne parle pas de la connexion (D19)', ()
 
 describe('Plan — des rappels qui n’ont rien rendu ne remplacent pas la dernière lecture', () => {
   it('garde la carte d’attente, et allume la ligne de relecture', async () => {
-    // Première lecture : tout est lu sauf le total — la ligne s'allume, la carte d'attente est là.
-    lectures({ assessment_results: panneDuServeur });
+    // Première lecture : tout est lu, sur une période révolue — la carte d'attente est là, la ligne
+    // éteinte, et « Voir la saison » relit. (Jusqu'à l'étape 7b de `v1-35`, un total en échec allumait
+    // la ligne dès la première lecture, et son « Réessayer » relisait ; le total vient désormais avec le
+    // bilan, et n'a plus d'échec à lui.)
+    lectures({ plan_cycles: async () => ({ data: [{ ...CYCLE, period_end: '2026-08-31' }], error: null }) });
     render(<Plan />);
     await waitFor(() => expect(screen.getByText(/reviens quand tu veux/)).toBeTruthy());
-    expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
+    expect(screen.queryByText(/n’a pas pu être relu à l’instant/)).toBeNull();
 
-    // La relecture lit le total, mais pas les rappels : la carte reste, et la ligne aussi.
-    lectures();
+    // La relecture ne lit pas les rappels : la carte reste, et la ligne s'allume.
     mockPrefs.mockResolvedValue(null);
-    fireEvent.press(screen.getByRole('button', { name: 'Réessayer' }));
+    fireEvent.press(screen.getByText('Voir la saison'));
     await waitFor(() => expect(mockPrefs).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Réessayer' }).props.accessibilityState?.disabled).toBe(false));
+    await waitFor(() => expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy());
     expect(screen.getByText(/reviens quand tu veux/)).toBeTruthy();
-    expect(screen.getByText(/n’a pas pu être relu à l’instant/)).toBeTruthy();
   });
 });
 

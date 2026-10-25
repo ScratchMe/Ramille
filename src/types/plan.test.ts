@@ -5,6 +5,7 @@ import {
   INTENTION_TIMINGS_VOYAGES,
   annonceDeLaPiste,
   cadreDuPlan,
+  capDuCycle,
   ceQuiManqueALIntention,
   echeanceARecocher,
   etatDeLaPiste,
@@ -311,6 +312,21 @@ describe('cadreDuPlan', () => {
  *   - l'engagement ignoré : 1, celui de l'action engagée ;
  *   - les deux phrases à deux cartes interverties : 3, tous ceux qui attendent l'une d'elles.
  */
+// Sortie de l'écran du plan à l'étape 7b de `v1-35`. Éprouvée le 25/10/2026, deux mutations : la garde
+// `> 0` retirée → « sans baseline… » ; l'arrondi retiré → « une part de la baseline… ».
+describe('capDuCycle', () => {
+  it('une part de la baseline du poste, arrondie au kilo comme on la lit', () => {
+    expect(capDuCycle(1918, 20)).toBe(384);
+    expect(capDuCycle(1917.4, 20)).toBe(383);
+  });
+
+  // Un profil sans émission sur son poste dominant : la carte se rend, sans chiffre.
+  it('sans baseline, ou à zéro, pas de cap', () => {
+    expect(capDuCycle(null, 20)).toBeNull();
+    expect(capDuCycle(0, 20)).toBeNull();
+  });
+});
+
 describe('phraseDesPistesSuffisantes', () => {
   const phrase = (capKg: number | null, gainsEnAvant: (number | null)[], actionEngagee = false) =>
     phraseDesPistesSuffisantes({ capKg, gainsEnAvant, actionEngagee });

@@ -1,6 +1,6 @@
 // Démonstration de la carte — exécutée par components/loader.js (RamilleRun) ; le namespace Ramille est en portée.
 
-const { CheckinCard, ActionCard, ActionCommitment, CarteDOuverture, TraitDeTemps, ThemedText, FeuilleRappels } = NS;
+const { CheckinCard, ActionCard, ActionCommitment, CarteDOuverture, TraitDeTemps, ThemedText, FeuilleRappels, CarteDuCap, CarteDAttente, EncartDeContexte, CarteDeFelicitation, CarteDuRebilan, EncartDuRattachement, EncartDeLOrphelin, EncartDuCycleRevolu, BanniereDeRelecture } = NS;
 ReactDOM.createRoot(document.getElementById('root')).render(
   <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:20}}>
     <div style={{display:'flex',flexDirection:'column',gap:12}}>
@@ -27,6 +27,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       </div>
       <TraitDeTemps progression={0.28} />
       <ThemedText themeColor="textTertiary" style={{fontSize:12,lineHeight:'16px'}}>La saison avance ; le trait mesure le temps, pas toi.</ThemedText>
+    </div>
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <BanniereDeRelecture relectureEnEchec="serveur" onRelire={() => {}} />
+      <EncartDuRattachement adresse="camille@exemple.fr" />
+      <EncartDeLOrphelin phrase="Ton plan a changé avec ton nouveau bilan. « Prendre le bus le mardi » n’y est plus ; elle reste dans ton suivi." onCompris={() => {}} />
+      <EncartDuCycleRevolu bascule="L’automne a commencé pendant que tu étais là." onRelire={() => {}} />
+    </div>
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <CarteDAttente ligne="On se retrouve ici lundi." porte={{libelle:'Rattacher un compte',onPress:() => {}}} />
+      <CarteDuCap capKg={384} chiffreLeCap cadenceDeSaison reductionPct={20} posteEnMots="ton trajet domicile-travail" baselineEnMots="1,9 t CO₂e" periodLabel="Automne 2026" finDeLaPeriode="jusqu’au 30 novembre" progression={0.6} traitDeTemps />
+      <EncartDeContexte mots={['zone urbaine dense','bon accès aux transports en commun','un véhicule dans le foyer']} onModifier={() => {}} />
+      <CarteDeFelicitation titre="Tu fais déjà l’essentiel sur tes sorties." promettreLePoint={false} />
+      <CarteDuRebilan titre="Une saison a passé depuis ton dernier bilan." onFaire={() => {}} />
     </div>
   </div>
 );
