@@ -227,7 +227,9 @@ NOT_FOUND »). Chez Ramille, constaté en production à la revue finale du 04/10
 partage ou une adresse mal recopiée sortait du produit, dans une autre langue.
 `scripts/poser-la-page-introuvable.mjs` copie la page dans `vercel-build`, la CI fait de même juste
 après son export, et `verifier-titres-export.mjs` exige `404.html`, identique à `+not-found.html` ;
-`scripts/vercel-csp.test.ts` épingle la commande de `vercel-build`, que la CI ne lance pas.
+`scripts/vercel-csp.test.ts` épingle la commande de `vercel-build`, que la CI ne lance pas — dont
+l'export, `npm run export:web` depuis le 25/10/2026, porte les drapeaux d'élagage de Metro que
+`scripts/rejouer-la-ci.test.ts` compare aux deux exports de la CI et à ceux du rejeu (`EXPO.md` §1.13).
 
 ### 1.6 Une Function en runtime Node.js a une checklist, et l'échec est muet
 
@@ -429,8 +431,9 @@ retarde d'une nuit — est en §1.1.
 ### 2.2 Décisions prises, à ne pas rouvrir sans raison
 
 - **Plus de prévisualisation** depuis le 15/09/2026 (PR #185, `git.deploymentEnabled`) : la
-  vérification visuelle du web se fait par `expo export --platform web` puis Playwright sur
-  `dist/`, ce que font déjà les cinq gardes d'export en CI — aucune n'a jamais interrogé Vercel.
+  vérification visuelle du web se fait par `npm run export:web` (l'export de `vercel-build`,
+  élagage compris) puis Playwright sur `dist/`, ce que font déjà les cinq gardes d'export en CI —
+  aucune n'a jamais interrogé Vercel.
 - **Les fusions « doc seule » ne déploient plus** (`ignoreCommand` →
   `scripts/vercel-ignorer-le-build.sh`). Liste blanche, relevée contre ce que lisent
   `expo export --platform web` et les deux fonctions : `docs/`, `.github/`, `supabase/`,

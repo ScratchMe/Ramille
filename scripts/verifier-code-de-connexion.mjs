@@ -312,7 +312,7 @@ async function taperLeCode(page, code, libelleBouton, { avecEspaces = false } = 
 
 const dist = path.join(import.meta.dirname, '..', 'dist');
 if (!fs.existsSync(dist)) {
-  console.error('`dist/` est absent : lancer `npx expo export --platform web --clear` d’abord.');
+  console.error('`dist/` est absent : lancer `npm run export:web -- --clear` d’abord.');
   process.exit(1);
 }
 

@@ -360,8 +360,9 @@ npm run web                # ou: npm run android / npm run ios
 npx tsc --noEmit           # typecheck — à lancer après tout changement
 npm run lint                # eslint (config Expo)
 npm test                   # tests unitaires Jest (logique pure, cf. Tests ci-dessous)
-expo export --platform web # build statique web (= script vercel-build), utile pour
-                            # vérification visuelle via Playwright sans device
+npm run export:web         # build statique web, celui de vercel-build (élagage de Metro
+                            # compris, EXPO.md §1.13), utile pour vérification visuelle
+                            # via Playwright sans device
 node scripts/rejouer-la-ci.mjs  # les travaux de la CI, en local — Docker pour `base` et
                                 # `parcours` (TESTING.md §2.13)
 ```
@@ -426,13 +427,13 @@ fait partie de l'assertion** : `TESTING-PGTAP.md` §2.4.
 
 **Stack** : Expo (React Native + Expo Router, un seul codebase mobile+web) · Supabase
 (Postgres + Auth + RLS) · Vercel (déploiement web, build via `vercel-build` →
-`expo export --platform web` → `dist/`) · EAS (build/publish Android uniquement).
+`npm run export:web`, l'export élagué → `dist/`) · EAS (build/publish Android uniquement).
 
 **`vercel.json` porte `cleanUrls: true`, et ce n'est pas cosmétique** : sans lui, toute route sans
 enfants (`/suivi`, `/rappels/stop`, la restitution) répond 404 en production pendant que l'export
 local est parfait — `VERCEL.md` §1.5. **Il ne se déploie plus de prévisualisation** (`git.deploymentEnabled`,
 trois pièges dont `"**"` et jamais `"*"` — §1.4), la vérification visuelle du web se fait localement
-par `expo export --platform web` puis Playwright sur `dist/`. **Et chaque fusion sur `main` est un
+par `npm run export:web` puis Playwright sur `dist/`. **Et chaque fusion sur `main` est un
 déploiement qui coûte ≈ 1,8 Mo de Functions Storage pendant trente jours** — §1.1, §2.1 et la
 convention de fusion en §2.3 ; les fusions qui ne touchent que la documentation sont sautées par
 `scripts/vercel-ignorer-le-build.sh` (§1.3), dont la liste blanche dit ce que le build ne lit pas.

@@ -25,8 +25,12 @@
 //      d'`expo-router` (MIT). Le sous-dossier le plus proche du fichier l'emporte. Le graphe n'est pas le même
 //      des deux côtés — `react-native-web` d'un côté, `react-native` de l'autre, `react-native-webview`
 //      et la police Material Symbols seulement sur Android —, d'où les deux exports. Hermès compile le
-//      bundle Android en bytecode, mais sa carte garde les chemins. L'export est celui du build : mêmes
-//      plugins, même configuration, `--clear` et un cache de Metro à soi (EXPO.md §1.1).
+//      bundle Android en bytecode, mais sa carte garde les chemins. L'export est celui du build — mêmes
+//      plugins, même configuration, `--clear` et un cache de Metro à soi (EXPO.md §1.1) —, **à l'élagage
+//      près** : le web de production est élagué (`npm run export:web`, EXPO.md §1.13), cet export ne
+//      l'est jamais, drapeaux forcés à `0` pour qu'un shell qui les porte n'élague pas le bundle Android,
+//      ce qu'aucun build natif ne fait. Il peut donc nommer un paquet que l'élagage a retiré du web, jamais
+//      en oublier un.
 //   2. **Le code natif que l'autolinking compile dans l'APK**, par `expo-modules-autolinking resolve`
 //      et `react-native-config`, les deux commandes qu'appelle Gradle. Un module natif présent est
 //      compilé qu'un écran l'importe ou non (react-native-gesture-handler, expo-keep-awake : aucun
@@ -682,6 +686,8 @@ function exporter(racine) {
       EXPO_NO_TELEMETRY: '1',
       EXPO_PUBLIC_SUPABASE_URL: 'https://exemple.supabase.co',
       EXPO_PUBLIC_SUPABASE_ANON_KEY: 'cle-factice-pour-le-build',
+      EXPO_UNSTABLE_TREE_SHAKING: '0',
+      EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH: '0',
     },
   });
   if (r.status !== 0) {

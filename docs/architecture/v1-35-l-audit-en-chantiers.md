@@ -36,7 +36,7 @@
 | 6a | **Le progrès visible : le chiffre** | Oui : un « oui » ne dit pas combien de fois, et `v1-23` §3.2 refuse un second chiffre concurrent du bilan. **Tranchée le 24/10/2026 : des kilos de CO₂ évités, comptés « au moins une fois »** — un « oui » compte la plus petite chose qu'il veut dire, un seul trajet, donc le chiffre est toujours vrai et le prochain bilan ne le dément jamais ; une ligne après chaque « oui », un total pour la saison, séparés du bilan. Deux autres, posées en chemin sur la contre-lecture et **tranchées le même jour** : la ligne du « oui » **reste sous la réplique de Ramille**, exception écrite à la règle de la mascotte (`FRONT-MASCOTTE.md` §2.3) ; et **« Pas de score. Pas de série. » reste dans le film** — la question que la décision 2 de l'étape 5 renvoyait ici | Plan, suivi, carte d'ouverture, export, confidentialité | **Livrée le 24/10/2026** (#389). Migration `20261024194430`, appliquée en production avant la fusion ; test `63` ; recette web `v1-13` §11.W.12. Deux contre-lectures : un bloquant (le vol entier compté à chaque « oui » mensuel) et neuf défauts, tous corrigés |
 | 6b | **Répondre au point depuis l'e-mail** | Non. Trois choix de forme pris en chemin par l'agent, sur les contre-lectures, **à rouvrir si la personne qui pilote le veut** : un second lien du même e-mail **propose de corriger** (« Ta réponse : oui. », « Tu as choisi : non. », « Envoyer ma réponse » ou « Garder ma réponse ») ; **passé la période, le lien ne montre plus que la question** (§4) ; l'e-mail dit « **Pour me répondre :** » et non « en un geste », le lien puis l'envoi en faisant deux | E-mail, page `/point` sans compte (elle lit à l'ouverture et n'écrit qu'au geste : les antivirus de messagerie ouvrent les liens), migration, confidentialité, registre | **Livrée le 25/10/2026** (#390). Migration `20261024220000`, appliquée en production par la personne qui pilote dans le SQL Editor, avant la fusion ; test `64` ; parcours réel, étape 12 ter ; recette web `v1-13` §11.W.13 |
 | 6c | **Répondre au point depuis la notification Android** | Non au départ ; une, posée en chemin sur la contre-lecture et **tranchée le 25/10/2026 : mise de côté** (§3) | — | **Mise de côté le 25/10/2026** (#391) : rien n'est livré, la notification reste celle d'avant |
-| 7 | **Le ménage**, facultatif : le bundle web d'un seul fichier, l'écran du plan | Oui : le faire ou pas | Refontes | À faire |
+| 7 | **Le ménage**, facultatif : le bundle web d'un seul fichier, l'écran du plan | Oui : le faire ou pas. **Tranchée le 25/10/2026 : les deux**, chacun dans sa PR | Refontes | **7a, le bundle web** : élagué (#392, `EXPO.md` §1.13 et §2.1) — 3,05 → 2,62 Mo bruts, 593 → 538 Ko compressés ; le découpage par route mesuré et reposé au SDK 58. **7b, l'écran du plan** : à faire |
 
 ## 3. Ce qui a été écarté en chemin
 
@@ -75,6 +75,14 @@
   catégorie, qu'`expo-notifications` présente sans code JavaScript), ou si une recette sur plusieurs téléphones
   montre fiable la notification fabriquée par l'app — un essai sur un seul compte était la voie du milieu,
   écartée avec le reste. Ce que la construction a appris est en `EXPO.md` §1.12, pour ne pas le repayer.
+- **Le découpage du bundle web par route** (étape 7a, 25/10/2026). Mesuré : la page d'accueil passerait de
+  2,62 Mo à 2,28 Mo bruts, de 538 à 468 Ko compressés. Écarté pour ses deux prix : la première visite de chaque
+  page attend son morceau, et un onglet resté ouvert pendant un déploiement demande des morceaux que Vercel ne
+  sert plus, ce qu'aucune frontière d'erreur ne rattrape aujourd'hui (`EXPO.md` §1.13). **Épinglé éteint** dans
+  `app.json` (`asyncRoutes: { web: false }`) : le SDK 58 l'allume par défaut sur web, d'après la page « Async
+  routes » de la documentation d'Expo, et la montée l'aurait allumé sans rien dire. **À rouvrir si** la frontière
+  d'erreur du layout racine apprend à recharger la page une fois sur un morceau introuvable, ou à la montée au
+  SDK 58, si sa mesure change la balance.
 
 ## 4. Ce qui reste ouvert après une étape
 
