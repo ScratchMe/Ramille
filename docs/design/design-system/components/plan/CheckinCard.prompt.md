@@ -34,3 +34,9 @@ Dans le texte, c'est **« le point »**, jamais « check-in » : `CheckinCard` e
 ```jsx
 <CheckinCard periodLabel="Semaine du 28/09" question="Mardi ou jeudi, as-tu fait ce trajet en train ?" answered="oui" correction reponseEnPlace="Ta réponse : oui." />
 ```
+
+**Depuis l'e-mail, la carte demande de confirmer** (24/10/2026, `v1-35` étape 6b) : l'e-mail du point porte ses trois réponses, chacune vers la page `/point`, qui ne demande pas de compte. La carte y dit la réponse choisie — « Tu as choisi : oui. », `small` tertiaire, dans les mots des boutons —, puis **« Envoyer ma réponse »**, un bouton plein : il ne désigne pas une bonne réponse, il confirme celle que la personne vient de choisir. « Choisir une autre réponse », souligné et centré comme le troisième choix, rouvre les trois réponses. **Rien ne part sans ce toucher** : une messagerie ouvre les trois liens de l'e-mail pour les inspecter. Ensuite, c'est la carte de toujours : la réplique, les kilos, le pied, « Modifier ma réponse ». **Sur un point déjà répondu autrement** — le second lien du même e-mail, touché pour se corriger —, la réponse en place vient d'abord (« Ta réponse : oui. »), puis « Tu as choisi : non. », et « Garder ma réponse » remplace « Choisir une autre réponse » : la carte répondue seule félicitait le « oui » de qui voulait dire « non ». Passé la période, le lien ne montre plus que la question.
+
+```jsx
+<CheckinCard periodLabel="Semaine du 13/10" question="Mardi ou jeudi, as-tu fait ce trajet en train ?" emphasize={false} reponseChoisie="Tu as choisi : oui." />
+```

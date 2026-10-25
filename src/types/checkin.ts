@@ -515,6 +515,11 @@ function cleDuSansObjet(
  * Le mois est celui de la période **interrogée** et vient de `period_start`, comme la question
  * elle-même (C2.3) : lu sur l'horloge, il dirait le mois courant sur un point ouvert avec un jour
  * de retard, donc un mois différent de celui de la question juste au-dessus.
+ *
+ * **Jumelle de `public.libelle_sans_objet`**, à toucher ensemble (étape 6b de `v1-35`, 24/10/2026) :
+ * l'e-mail du point porte les trois réponses, la troisième dans ces mots-là, et la page `/point` qui
+ * les reçoit les redit sous les boutons — le même raisonnement que `mois_francais` et `MOIS_FRANCAIS`.
+ * Le test `64` épingle les mêmes chaînes côté SQL.
  */
 export function libelleSansObjet(point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>): string {
   // **« la semaine dernière » et non « cette semaine »**, écart au canvas consigné en `v1-14` §10 :
@@ -546,11 +551,35 @@ export function phraseDeLaReponseEnPlace(
   point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
   reponse: ReponseDuPoint
 ): string {
-  if (reponse === 'sans_objet') {
-    const libelle = libelleSansObjet(point);
-    return `Ta réponse : ${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}.`;
-  }
-  return `Ta réponse : ${reponse}.`;
+  return `Ta réponse : ${reponseEnMots(point, reponse)}.`;
+}
+
+/**
+ * La réponse choisie dans l'e-mail, au-dessus d'« Envoyer ma réponse » : « Tu as choisi : oui. »
+ * (étape 6b de `v1-35`, 24/10/2026).
+ *
+ * **Le choix est fait, pas la réponse** : la page `/point` demande le geste avant d'écrire, parce que
+ * l'analyseur de liens d'une messagerie ouvre les trois liens de l'e-mail. « Ta réponse : oui. » dirait
+ * qu'elle est déjà partie. Dans les mots des boutons, comme `phraseDeLaReponseEnPlace`.
+ */
+export function phraseDeLaReponseChoisie(
+  point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
+  reponse: ReponseDuPoint
+): string {
+  return `Tu as choisi : ${reponseEnMots(point, reponse)}.`;
+}
+
+/**
+ * « oui », « non », ou le libellé du lien sans objet en minuscule — les mots des boutons. Exportée pour les
+ * indices de « Envoyer ma réponse » et « Garder ma réponse » (`checkin-card.tsx`), qui nomment la réponse.
+ */
+export function reponseEnMots(
+  point: Pick<PointInterrogeable, 'loop_type' | 'poste' | 'period_start'>,
+  reponse: ReponseDuPoint
+): string {
+  if (reponse !== 'sans_objet') return reponse;
+  const libelle = libelleSansObjet(point);
+  return `${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}`;
 }
 
 /**
@@ -569,10 +598,13 @@ export function phraseDeLaReponseEnPlace(
  * au-delà — sinon un compte dont la boucle a cessé d'être générée garderait à l'écran, pour
  * toujours, un « Répondu lundi » et la promesse d'un point qui ne viendra pas.
  *
- * **Et, depuis le 02/10/2026, la correction d'une réponse** (`v1-33` §6) : `repondre_au_checkin`
- * réécrit un point répondu tant que son `period_start` est au moins celui-ci, la même formule écrite
- * une troisième fois. Les trois — les deux générateurs, ce RPC et cette fonction — se touchent
- * ensemble : la carte répondue offre « Modifier ma réponse » exactement tant que le serveur l'accepte.
+ * **Et, depuis le 02/10/2026, la correction d'une réponse** (`v1-33` §6) : le serveur réécrit un point
+ * répondu tant que son `period_start` est au moins celui-ci. **Sa jumelle SQL est
+ * `public.debut_de_la_periode_interrogee`** depuis le 24/10/2026 (étape 6b de `v1-35`), que lisent
+ * l'écrivain des réponses (`ecrire_la_reponse_du_point`, derrière `repondre_au_checkin` et la réponse par
+ * le lien d'un e-mail) et la lecture par ce lien (`le_point_du_lien`, son `ouvert`) ; les deux générateurs
+ * gardent leur formule. Tout cela se touche ensemble : la carte répondue offre « Modifier ma réponse »
+ * exactement tant que le serveur l'accepte.
  */
 export function debutDePeriodeInterrogee(
   loopType: LoopType,

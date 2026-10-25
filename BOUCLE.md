@@ -371,7 +371,8 @@ boucle, écart consigné en `v1-14` §10 : la boucle mensuelle couvre les voyage
 depuis C2.6, et répondre « Pas de voyage, pas de question. » à quelqu'un qui vient d'appuyer sur
 « Pas de sortie en septembre » serait la fausseté lisible que ce chantier-là a retirée ailleurs.
 
-**La réponse à un point de suivi passe par `repondre_au_checkin`, et `engagement_checkins` n'a
+**La réponse à un point de suivi passe par `repondre_au_checkin` — ou, depuis l'e-mail, par
+`repondre_par_le_lien`, le même écrivain derrière les deux (§3) —, et `engagement_checkins` n'a
 plus aucune écriture client** (11/09/2026, `20260911100000_reponse_checkin_rpc.sql`) : ni policy
 d'écriture, ni privilège `update`. Le raisonnement est mot pour mot celui de `plan_actions`
 (`PLAN.md` §2) — **la RLS filtre des lignes, jamais des colonnes** — et ce qu'une policy UPDATE
@@ -396,10 +397,11 @@ réponse », qui rouvre les trois réponses sous « Ta réponse : oui. » (`phra
 réplique est celle de la nouvelle réponse, et « deux fois de suite » la suit, puisqu'il se dérive à la
 lecture. Ce qu'il faut en savoir :
 
-- **La borne est celle de l'affichage.** `repondre_au_checkin` réécrit un point répondu tant que son
-  `period_start` est celui de la période interrogée — la formule des deux générateurs, et celle de
-  `debutDePeriodeInterrogee` qui borne la carte répondue côté client : **les trois se touchent
-  ensemble**. Elle tombe à minuit UTC le lundi (ou le 1er), et non à l'arrivée du point suivant, à
+- **La borne est celle de l'affichage.** Le serveur réécrit un point répondu tant que son
+  `period_start` est celui de la période interrogée — `debut_de_la_periode_interrogee` depuis le
+  24/10/2026, lue par l'écrivain des réponses et par la lecture du lien d'un e-mail (§3), la formule des
+  deux générateurs, et `debutDePeriodeInterrogee`, sa jumelle côté client, qui borne la carte répondue :
+  **elles se touchent ensemble**. Elle tombe à minuit UTC le lundi (ou le 1er), et non à l'arrivée du point suivant, à
   6 h — qui n'arrive jamais quand la boucle s'est arrêtée. Au-delà, le refus est celui d'un point clos
   (`22023`, « déjà répondu, et sa période est passée »).
 - **C1.12 tient pour tout le reste.** Le trigger n'accepte la réécriture d'une ligne répondue que sur
@@ -555,10 +557,12 @@ calendaire**, tous canaux et toutes boucles confondus ; huit font taire. Ce qu'i
 renvoyait à « Toi » : inutilisable sans l'app, et **pire** sur un appareil neuf, où elle réglait la
 préférence de la session anonyme vide que l'ouverture venait de créer. Le jeton vit sur la ligne
 d'outbox, ne sert qu'une fois, et ne peut rien d'autre que couper les rappels du compte qui a reçu
-ce message-là. C'est **le seul RPC qui écrit et que `anon` peut appeler** — les autres fonctions
-accessibles à ce rôle n'ont jamais été révoquées du `PUBLIC` de leur création, et sont toutes pures
-(`emission_factor`, `resolve_*`, `season_bounds`, les deux `check_*`) ; ici le `grant` est explicite
-et le jeton *est* l'autorisation. Ces pièges, et ces choix :
+ce message-là. C'était **le seul RPC qui écrit et que `anon` peut appeler** jusqu'au 24/10/2026 — la
+réponse par le lien du même e-mail l'a rejoint (`repondre_par_le_lien`, plus bas), avec la lecture qui la
+précède (`le_point_du_lien`, la seule fonction ouverte à ce rôle qui lise des données de compte, le jeton
+autorisant elle aussi) ; les autres sont pures ou des gardes de `check` (`emission_factor`, `resolve_*`,
+`season_bounds`, `rolling_quarter_bounds`, les `check_*`), et la liste blanche du test `54` les nomme toutes. Ici le `grant` est explicite et le jeton *est*
+l'autorisation. Ces pièges, et ces choix :
 - **le jeton est écrit explicitement dans l'`insert`** de la mise en file. Laissé au `default` de la
   colonne, il aurait tiré un second uuid, différent de celui que le corps du message venait
   d'afficher : un lien mort au premier clic, sans qu'aucune des deux moitiés ait l'air fausse. Et la
@@ -611,6 +615,50 @@ et le jeton *est* l'autorisation. Ces pièges, et ces choix :
   d'en-têtes peut redevenir la contrainte restante, et le chantier se rouvre tel qu'il est écrit en §7.
   D'ici là, la sortie que le produit contrôle est le lien imprimé dans le corps, et elle marche —
   vérifiée sur appareil : navigateur, refus calme au second clic, préférence sur « Aucun ».
+
+**Le point se répond aussi depuis l'e-mail, sans session** (étape 6b de `v1-35`, 24/10/2026, migration
+`repondre_depuis_l_e_mail`, test `64`). Le rappel ne portait qu'un lien vers le plan, qui demande la session
+du compte : sur un autre appareil ou sans l'app, répondre voulait dire retrouver son compte par un code reçu
+par e-mail. Le corps porte désormais les trois réponses de la carte — « Oui », « Non » et la troisième, dans
+ses mots (`libelle_sans_objet`, jumelle de `libelleSansObjet`) —, chacune vers
+`/point?jeton=…&reponse=…` — le jeton d'abord, pour qu'un lien coupé à l'esperluette perde la réponse et non
+le jeton —, puis le lien du plan, gardé : c'est lui qu'ouvre l'app sur Android, et `09` l'épingle. Ce qu'il ne
+faut pas défaire :
+
+- **la page demande le geste, comme `/rappels/stop`** : elle lit le point à l'ouverture
+  (`le_point_du_lien`, une lecture sans effet), dit « Tu as choisi : oui. », et n'écrit qu'au toucher
+  d'« Envoyer ma réponse » (`repondre_par_le_lien`). L'analyseur de liens d'une messagerie ouvre les trois
+  liens : une page qui répondait à l'ouverture répondrait à la place de la personne, et la dernière ouverte
+  l'emporterait. La section D de `verifier-etats-export.mjs` garde les deux moitiés, et le parcours réel
+  relit la base au repos (étape 12 ter) ;
+- **un seul écrivain des réponses** : le corps de `repondre_au_checkin` vit dans
+  `ecrire_la_reponse_du_point(user_id, checkin_id, réponse)`, fermée à tout client, que la session appelle
+  avec `auth.uid()` et le lien avec le propriétaire du jeton. Une seule borne de correction —
+  `debut_de_la_periode_interrogee`, jumelle de `debutDePeriodeInterrogee`, que la lecture par le lien lit
+  aussi —, une seule annonce au trigger, et les refus de la carte (`22023`) valent pour les deux ;
+- **le jeton sert jusqu'à la fin de la période**, pas une fois : toucher « Non » dans l'e-mail après avoir
+  envoyé « oui » ouvre la page sur « Ta réponse : oui. », puis « Tu as choisi : non. » et « Envoyer ma
+  réponse » — ou « Garder ma réponse » (`reponseProposee`, `checkin-card.tsx`). Il vit sur la ligne d'outbox
+  (`jeton_de_reponse`, tiré dans la même sous-requête que celui de la désinscription, qui nomme la ligne), un
+  par message, distinct de l'autre — l'un ne peut pas servir à l'autre — et disparaît avec la ligne, six mois
+  après sa mise en file. Le mot de la veille n'en porte pas : il n'a pas de question (contrainte) ;
+- **la lecture ne rend rien qui désigne un compte, et presque rien passé la période** : ni l'identifiant du
+  point, ni celui du compte, ni l'adresse. Tant que le point accepte une réponse (`ouvert`, la borne de
+  l'écrivain), la question du message, l'état du point, sa réponse, son gain d'une fois et si sa boucle
+  tourne (`boucle_tourne`, pour que la réplique et le pied ne donnent pas rendez-vous à tort) ; ensuite, la
+  question seule — un e-mail gardé six mois, ou transféré, ne dit plus ce qui a été répondu, ni qu'un bilan a
+  été retiré (contre-lecture du 24/10/2026). La page n'a pas de borne à elle : elle lit `ouvert`. Elle répond
+  par le jeton, jamais par un identifiant ;
+- **qui a l'e-mail peut répondre**, et c'est le compromis de la désinscription : un e-mail transféré laisse
+  lire et répondre au point de ce message-là, rien de plus, et pas au-delà de sa période. La page de
+  confidentialité le dit. Pas de plafond de débit pour
+  la même raison qu'elle — rien à stocker, une ligne au plus à réécrire ;
+- **l'usage du lien se lit sur son message** (`lien_de_reponse_utilise_le`, l'heure de la dernière réponse
+  par ce lien), jumelle d'`unsubscribe_used_at` : c'est là, et non dans un événement d'usage, que se lit ce
+  que l'e-mail apporte à la boucle (`MESURE.md` §1, `docs/exploitation/README.md` §8.1) ;
+- **`/point` est une surface sans compte, que l'app ne revendique pas** : l'ouvrir ne crée pas de session,
+  et sur Android le lien s'ouvre dans le navigateur, où il marche sans rien d'autre (`COMPTE.md` §1). Les
+  rappels mis en file avant la migration gardent leur corps, avec le seul lien du plan.
 
 **Les reprises de jeton d'appareil laissent une trace** (`push_tokens.reprises`,
 `derniere_reprise_le`, `proprietaire_precedent`). La reprise reste **inconditionnelle** — décision

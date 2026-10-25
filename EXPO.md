@@ -421,7 +421,9 @@ distinct fait voir le passage à React ; `useWindowDimensions` ne le fait pas.
 
 **Le jeton de `/rappels/stop` quitte l'adresse par `router.setParams`** (06/10/2026, §1.4) : capté au
 premier passage de l'effet, gardé dans le `sessionStorage` de l'onglet, et retiré seulement s'il a pu
-être gardé (`src/app/rappels/stop.tsx`, `src/lib/jeton-de-desinscription.ts`).
+être gardé (`src/app/rappels/stop.tsx`, `src/lib/jeton-de-desinscription.ts`). **Celui de `/point` aussi**
+(24/10/2026, la réponse au point depuis l'e-mail), par le même mécanisme et sous sa propre clé
+(`src/lib/jeton-de-l-onglet.ts`).
 
 **Le mode clair est forcé sur web, et ce n'est pas un oubli** (`src/hooks/use-theme.ts`).
 `userInterfaceStyle: light` d'`app.json` ne s'applique qu'au natif : sur web, `useColorScheme`

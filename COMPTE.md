@@ -196,7 +196,7 @@ Garde : le parcours réel (étape 0 bis, aucun compte né, la vue de la porte co
 
 **Les surfaces sans compte n'ouvrent pas de session : elles restaurent celle qui est là** (18/10/2026).
 `/confidentialite`, `/conditions`, `/licences` (depuis le 22/10/2026), `/compte/suppression`,
-`/rappels/stop` et `/status` — la liste de `src/types/session.ts` (`SURFACES_SANS_COMPTE`), la même que celle où l'écran de reconnexion ne se pose pas — ne demandent pas de
+`/rappels/stop`, `/point` (depuis le 24/10/2026) et `/status` — la liste de `src/types/session.ts` (`SURFACES_SANS_COMPTE`), la même que celle où l'écran de reconnexion ne se pose pas — ne demandent pas de
 compte, et le layout racine ouvrait pourtant une session anonyme au montage, sur toute route : un
 navigateur neuf qui lisait la politique de confidentialité, l'examinateur de Play le premier, recevait un
 compte et le captcha qui le précède. Le montage y appelle `restaurerLaSession()` — la session de
@@ -205,7 +205,8 @@ créé sinon — et **ouvre la session dès qu'on en sort pour l'app** : le layo
 changement de route (`laSessionSOuvreSur`), et toute écriture la garantit de toute façon. Ce dont chaque
 page a besoin, vérifié : les pages légales ne lisent rien ; `/status` lit un référentiel public, en
 `anon`, ce qui est justement ce qu'il éprouve ; `/rappels/stop` appelle `desinscrire_des_rappels`, ouvert
-à `anon` (`22` épingle le privilège), le jeton du lien autorisant ; `/compte/suppression` ouvre la
+à `anon` (`22` épingle le privilège), le jeton du lien autorisant — et `/point`, la réponse au point depuis
+l'e-mail, `le_point_du_lien` et `repondre_par_le_lien`, de même (`64`, `BOUCLE.md` §3) ; `/compte/suppression` ouvre la
 session du compte par le code reçu (`demanderLaConnexion` ne demande pas de session), et la session
 anonyme qu'elle créait n'était pas celle de la personne. **`/feedback` n'en est pas** : il écrit. Ni la
 page introuvable, dont `usePathname()` rend l'adresse tapée. La garde est double — la section M de
@@ -231,7 +232,10 @@ nouvelle route à la place du paramètre aurait fait ouvrir le lien dans le navi
 le périmètre Android ne revendique nommément que `/plan`, et il est voulu étroit (Play exige que les
 pages légales et `/compte/suppression` restent atteignables **sans** l'app). Une chaîne de requête ne
 fait pas partie du chemin d'un `intentFilter` ; deux assertions de `09` épinglent les deux moitiés de
-la règle.
+la règle. **Depuis le 24/10/2026, l'e-mail porte aussi trois liens de réponse vers `/point`** (étape 6b de
+`v1-35`, `BOUCLE.md` §3), et ceux-là s'ouvrent dans le navigateur sur Android, **exprès** : la page répond
+par le jeton du message, sans session et sans l'app, et c'est ce qui la rend utile sur un appareil où le
+compte n'est pas ouvert. Le lien du plan reste dans le message, après eux, pour qui veut l'app.
 
 **Ce périmètre tient au `pathPrefix` d'`app.json`, et à lui seul** — `CLAUDE.md` a écrit jusqu'au
 20/09/2026 qu'`assetlinks.json` le portait, et c'est faux : il déclare

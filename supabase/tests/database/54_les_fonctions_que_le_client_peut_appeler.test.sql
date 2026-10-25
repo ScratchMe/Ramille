@@ -60,6 +60,10 @@ insert into liste_blanche values
   ('public.unregister_push_token(text)', false),
   -- Le lien de désinscription d'un e-mail de rappel, ouvert sans session (`/rappels/stop`).
   ('public.desinscrire_des_rappels(uuid)', true),
+  -- Les liens de réponse du même e-mail, ouverts sans session (`/point`, étape 6b de `v1-35`) : le jeton
+  -- est l'autorisation (test `64`).
+  ('public.le_point_du_lien(uuid)', true),
+  ('public.repondre_par_le_lien(uuid, text)', true),
   -- Évaluées par un `check` pendant une écriture du client (`usage_events`, les jours d'intention).
   ('public.check_usage_event_props(jsonb)', true),
   ('public.check_intention_days(smallint[])', true),

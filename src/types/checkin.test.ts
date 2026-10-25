@@ -14,6 +14,7 @@ import {
   genreDeReponse,
   joursDeLaQuestion,
   libelleSansObjet,
+  phraseDeLaReponseChoisie,
   phraseDeLaReponseEnPlace,
   moisFrancais,
   periodePrecedente,
@@ -605,6 +606,22 @@ describe('phraseDeLaReponseEnPlace', () => {
   });
 });
 
+// **La réponse choisie dans l'e-mail** (étape 6b de `v1-35`, 24/10/2026) : la même forme que la réponse en
+// place, mais « Tu as choisi » — rien n'est encore parti. Éprouvé le même jour : la phrase de la réponse en
+// place rendue à sa place → les deux tests, seuls.
+describe('phraseDeLaReponseChoisie', () => {
+  it('dit le choix, pas une réponse donnée', () => {
+    expect(phraseDeLaReponseChoisie(point(), 'oui')).toBe('Tu as choisi : oui.');
+    expect(phraseDeLaReponseChoisie(point(), 'non')).toBe('Tu as choisi : non.');
+  });
+
+  it('dit « sans objet » dans les mots du lien de l’e-mail, sa période comprise', () => {
+    expect(
+      phraseDeLaReponseChoisie(point({ loop_type: 'extras', poste: 'leisure', period_start: '2026-09-01' }), 'sans_objet')
+    ).toBe('Tu as choisi : pas de sortie en septembre.');
+  });
+});
+
 describe('libelleSansObjet', () => {
   /**
    * **La période nommée est celle que le point interroge, donc la semaine ÉCOULÉE** (C2.3). Le canvas
@@ -631,7 +648,8 @@ describe('libelleSansObjet', () => {
   });
 
   // Le mois vient de `period_start`, comme la question juste au-dessus : lu sur l'horloge, il
-  // pourrait nommer un autre mois que celui de la question.
+  // pourrait nommer un autre mois que celui de la question. **Les mêmes mots que
+  // `public.libelle_sans_objet`**, la jumelle qui les écrit dans l'e-mail (test `64`, étape 6b).
   it('la boucle mensuelle nomme le mois interrogé, et le poste décide du mot', () => {
     expect(libelleSansObjet(point({ loop_type: 'extras', poste: 'travel', period_start: '2026-09-01' }))).toBe(
       'Pas de voyage en septembre'

@@ -25,7 +25,12 @@ Où lire chaque vue, et ce qui doit alerter : `docs/exploitation/README.md` §8.
 jamais ce que le schéma enregistre déjà.** Pas d'événement `bilan_submit` (c'est
 `assessments.submitted_at`), `checkin_answer` (c'est `engagement_checkins.response`) ni
 `feedback_submit` — dupliquer un fait garantit deux chiffres divergents le jour où l'un des
-chemins échoue, et un test pgTAP interdit de les réintroduire. Les axes de segmentation
+chemins échoue, et un test pgTAP interdit de les réintroduire. **La réponse donnée depuis l'e-mail
+non plus** (24/10/2026, étape 6b de `v1-35`) : la page `/point` n'a pas de session, donc un
+événement n'aurait personne à qui s'attribuer, et le message porte déjà le fait —
+`notification_outbox.lien_de_reponse_utilise_le`, lu en `docs/exploitation/README.md` §8.1. C'est une
+trace du geste sur son propre message, comme `unsubscribe_used_at`, pas un repère d'usage : elle part
+avec le message, six mois après sa mise en file, et l'export la rend. Les axes de segmentation
 (`zone_type`, `tc_access`, poste dominant, cadence) sont **déjà en base** : c'est ce qui a écarté
 PostHog. La liste des événements vit dans `public.usage_event_types` avec une clé étrangère
 depuis `usage_events` — **ajouter un événement impose une ligne par migration ET une entrée dans
@@ -72,7 +77,8 @@ lancement, dix au plus (`trierLesPannes`) : `count(*)` compte des lancements tou
 occurrences.
 
 **Une surface sans compte ouverte sans session ne compte pas d'ouverture** (18/10/2026, `COMPTE.md` §1) :
-`/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'en créent plus,
+`/confidentialite`, `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'en créent plus — ni,
+depuis le 24/10/2026, `/point`, la réponse au point depuis l'e-mail —,
 donc `app_open` n'a personne à qui s'attribuer tant qu'on n'en sort pas pour l'app — l'ouverture part
 alors, avec la session que le layout ouvre en quittant la page. **Une session qui s'ouvre sur la page
 même ne la rattrape pas** : le code reçu sur `/compte/suppression` ouvre celle du compte qu'on vient

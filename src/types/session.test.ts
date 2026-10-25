@@ -107,7 +107,7 @@ describe('lEcranDeReconnexionSePose', () => {
   });
 
   it('laisse les surfaces publiques et de service, qui ne demandent pas de compte', () => {
-    for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
+    for (const chemin of ['/compte/suppression', '/rappels/stop', '/point', '/confidentialite', '/conditions', '/licences', '/status']) {
       expect({ chemin, pose: lEcranDeReconnexionSePose(chemin) }).toEqual({ chemin, pose: false });
     }
   });
@@ -122,7 +122,8 @@ describe('lEcranDeReconnexionSePose', () => {
  * licences, ajoutée aux trois énumérations de ce fichier) → 2 tombent, « laisse les surfaces publiques et de
  * service… » et « ne crée rien sur les surfaces sans compte… » ; « suit la même liste que l'écran de
  * reconnexion » reste vert, les deux fonctions lisant la même liste — c'est la garde de la cohérence, pas
- * celle du contenu.
+ * celle du contenu. **`/point` y est depuis le 24/10/2026** (la réponse au point depuis l'e-mail, étape 6b de
+ * `v1-35`), dans les quatre énumérations, pour la même raison.
  */
 describe('laSessionSOuvreSur', () => {
   const PLATEFORMES = ['natif', 'web'] as const;
@@ -137,7 +138,7 @@ describe('laSessionSOuvreSur', () => {
 
   it('ne crée rien sur les surfaces sans compte — elles ne font que restaurer', () => {
     for (const plateforme of PLATEFORMES) {
-      for (const chemin of ['/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status']) {
+      for (const chemin of ['/compte/suppression', '/rappels/stop', '/point', '/confidentialite', '/conditions', '/licences', '/status']) {
         expect({ plateforme, chemin, ouvre: laSessionSOuvreSur(chemin, plateforme) }).toEqual({ plateforme, chemin, ouvre: false });
       }
     }
@@ -163,7 +164,7 @@ describe('laSessionSOuvreSur', () => {
   });
 
   it('suit la même liste que l’écran de reconnexion sur natif, hors `/connexion/…`', () => {
-    for (const chemin of ['/', '/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
+    for (const chemin of ['/', '/plan', '/compte/suppression', '/rappels/stop', '/point', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
       expect({ chemin, ouvre: laSessionSOuvreSur(chemin, 'natif') }).toEqual({ chemin, ouvre: lEcranDeReconnexionSePose(chemin) });
     }
   });
@@ -171,7 +172,7 @@ describe('laSessionSOuvreSur', () => {
   // **La racine du web n'est pas une surface sans compte** : elle n'ouvre pas de session, mais qui y revient
   // avec une session refusée y voit l'écran de reconnexion — c'est quelqu'un qui a un compte.
   it('sur le web, s’en écarte à la seule racine, où l’écran de reconnexion se pose encore', () => {
-    for (const chemin of ['/plan', '/compte/suppression', '/rappels/stop', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
+    for (const chemin of ['/plan', '/compte/suppression', '/rappels/stop', '/point', '/confidentialite', '/conditions', '/licences', '/status', '/feedback']) {
       expect({ chemin, ouvre: laSessionSOuvreSur(chemin, 'web') }).toEqual({ chemin, ouvre: lEcranDeReconnexionSePose(chemin) });
     }
     expect(lEcranDeReconnexionSePose('/')).toBe(true);

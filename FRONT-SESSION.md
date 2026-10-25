@@ -66,11 +66,13 @@ Ramille ; ce qui voyage est en `FRONT.md` §1.
   accordée » d'un échec réseau, et la garde n'en a pas besoin : dans les deux cas l'appareil n'est
   pas inscrit au nom de la personne, et le retour suivant retente.
 - **Une surface sans compte ne crée pas de session à l'ouverture** (18/10/2026, `COMPTE.md` §1) :
-  `/confidentialite`, `/conditions`, `/licences`, `/compte/suppression`, `/rappels/stop` et `/status`
-  (`SURFACES_SANS_COMPTE`) restaurent
+  `/confidentialite`, `/conditions`, `/licences`, `/compte/suppression`, `/rappels/stop`, `/point` et
+  `/status` (`SURFACES_SANS_COMPTE`) restaurent
   la session de l'appareil, et le layout ouvre la session dès qu'on en sort pour l'app. Un écran
   ajouté à cette liste ne doit rien lire qui demande une session, ni rien écrire sans
-  `ensureSession()` avant ; un écran qui écrit n'y entre pas (`/feedback`).
+  `ensureSession()` avant ; un écran qui écrit **sous la session** n'y entre pas (`/feedback`). Ceux qui
+  écrivent par le jeton d'un e-mail (`/rappels/stop`, `/point`) appellent un RPC ouvert à `anon`, et n'en ont
+  pas besoin.
 - **La racine du web restaure, elle n'ouvre pas** (23/10/2026, `COMPTE.md` §1) : c'est la page d'accueil,
   pour qui n'a ni bilan ni questionnaire en cours. `src/app/index.tsx` appelle `restaurerLaSession()` sur le
   web et `ensureSession()` sur natif, d'après `laSessionSOuvreSur('/', plateforme)` ; une absence de session

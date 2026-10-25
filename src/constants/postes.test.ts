@@ -21,6 +21,7 @@ import {
   POSTE_EN_PHRASE,
   POSTE_LABEL,
   POSTE_SUBJECT,
+  boucleLue,
   estLeResiduelDesSortiesRares,
   formeInserable,
   loisirsSontLeResiduel,
@@ -327,5 +328,22 @@ describe('posteDeLHistorique', () => {
 
   it('retombe sur le libellé figé pour un poste inconnu', () => {
     expect(posteDeLHistorique('inconnu', 'Autre chose')).toBe('Autre chose');
+  });
+});
+
+/**
+ * La boucle d'une valeur lue en base (24/10/2026, étape 6b de `v1-35`) : la page `/point` en compose sa carte,
+ * et une valeur que `LOOP_TYPES` ne connaît pas s'y dit comme une panne, jamais comme un lien abîmé.
+ * Éprouvé le même jour : `boucleLue` qui accepte tout (`return valeur as LoopType`) → ce test, seul ; et
+ * `LOOP_TYPES` augmentée d'une valeur → `verifier-miroirs-de-check.mjs`, « le produit propose « voyages », que
+ * la base refuse ».
+ */
+describe('boucleLue', () => {
+  it('reconnaît les deux boucles, et rien d’autre', () => {
+    expect(boucleLue('commute')).toBe('commute');
+    expect(boucleLue('extras')).toBe('extras');
+    expect(boucleLue('voyages')).toBeNull();
+    expect(boucleLue(null)).toBeNull();
+    expect(boucleLue(undefined)).toBeNull();
   });
 });

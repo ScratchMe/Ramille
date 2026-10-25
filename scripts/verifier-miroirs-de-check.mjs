@@ -273,10 +273,13 @@ const MIROIRS = [
   // nommé dans `src/constants/postes.ts`, mais six endroits réécrivaient `'commute' | 'extras'` à
   // la main (`src/types/checkin.ts` quatre fois, `src/types/suivi.ts`, `checkin-card.tsx`) — donc
   // garder le type nommé seul n'aurait gardé personne. Les six l'importent désormais, et toute
-  // nouvelle recopie en ligne ressortirait de la même façon : invisible à ce contrôle.
+  // nouvelle recopie en ligne ressortirait de la même façon : invisible à ce contrôle. **Depuis le
+  // 24/10/2026, `LoopType` se dérive de `LOOP_TYPES`**, une liste de valeurs que la page `/point` lit pour
+  // reconnaître la boucle rendue par `le_point_du_lien` — elle la recopiait en ligne, la contre-lecture de
+  // l'étape 6b de `v1-35` l'a relevé. Le miroir déclaré est donc la liste, dont le type suit.
   {
-    genre: 'type',
-    constante: 'LoopType',
+    genre: 'valeurs',
+    constante: 'LOOP_TYPES',
     module: 'src/constants/postes.ts',
     colonne: 'engagement_checkins.loop_type',
   },

@@ -68,6 +68,11 @@ export const PAGE_TITLES: Record<string, string> = {
   // un jeton à usage unique n'aurait aucun sens.
   '/rappels/stop': `Ne plus recevoir de rappels — ${APP_NAME}`,
 
+  // La réponse au point par les liens d'un e-mail (étape 6b de `v1-35`, 24/10/2026). Même régime que la
+  // sortie des rappels : atteignable sans session et sans l'app, sans description, donc en `noindex` — une
+  // page qui ne s'ouvre qu'avec le jeton d'un message n'a rien à offrir à un moteur.
+  '/point': `Ton point — ${APP_NAME}`,
+
   '/status': `Diagnostic — ${APP_NAME}`,
 
   // **La page 404 est une page exportée comme les autres, et c'est à ce titre qu'elle est ici.**

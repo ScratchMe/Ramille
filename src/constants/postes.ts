@@ -51,8 +51,20 @@ export const POSTES = ['commute', 'leisure', 'travel'] as const;
 
 export type Poste = (typeof POSTES)[number];
 
-/** Les deux boucles d'engagement (`engagement_checkins.loop_type`). */
-export type LoopType = 'commute' | 'extras';
+/**
+ * Les deux boucles d'engagement — **miroir du `check` d'`engagement_checkins.loop_type`**, déclaré dans
+ * `MIROIRS` (`scripts/verifier-miroirs-de-check.mjs`) depuis le 24/10/2026 : la page `/point` reçoit la
+ * boucle d'un RPC et doit la reconnaître, et une liste recopiée en ligne y aurait été invisible au contrôle
+ * (contre-lecture de l'étape 6b de `v1-35`).
+ */
+export const LOOP_TYPES = ['commute', 'extras'] as const;
+
+export type LoopType = (typeof LOOP_TYPES)[number];
+
+/** La boucle d'une valeur lue en base, ou `null` si la colonne a changé d'avis. */
+export function boucleLue(valeur: string | null | undefined): LoopType | null {
+  return (LOOP_TYPES as readonly (string | null | undefined)[]).includes(valeur) ? (valeur as LoopType) : null;
+}
 
 /**
  * L'étiquette nue : répartition du bilan, liste du suivi, en-tête du questionnaire, partage.

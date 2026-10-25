@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { gardeDuJetonPourLOnglet } from '@/lib/jeton-de-l-onglet';
 
 /**
  * Le jeton de `/rappels/stop`, retiré de l'adresse dès qu'il est lu (06/10/2026, seconde passe de
@@ -22,43 +22,13 @@ import { Platform } from 'react-native';
  * l'adresse** (`garderLeJeton` le dit) : un stockage refusé laisse la page exactement comme avant
  * ce module, plutôt qu'un rechargement qui dirait « plus valable ».
  *
- * Web seulement : sur Android, `/rappels/stop` n'est pas capturé par l'app (le `pathPrefix` est
- * `/plan`), et il n'y a ni adresse ni `sessionStorage` à nettoyer. Chaque accès au stockage est
- * dans un `try` : une fenêtre privée ou un stockage bloqué le refusent, et la page doit marcher
- * quand même.
+ * Le mécanisme vit dans `src/lib/jeton-de-l-onglet.ts` depuis le 24/10/2026, partagé avec `/point` (la
+ * réponse au point depuis l'e-mail), chacune sous sa clé : web seulement, chaque accès au stockage dans
+ * un `try`.
  */
-const CLE = 'ramille.jeton-de-desinscription';
-
-function surLeWeb(): boolean {
-  return Platform.OS === 'web' && typeof window !== 'undefined';
-}
+const garde = gardeDuJetonPourLOnglet('ramille.jeton-de-desinscription');
 
 /** `true` si le jeton est gardé pour l'onglet — et alors seulement, il peut quitter l'adresse. */
-export function garderLeJeton(jeton: string): boolean {
-  if (!surLeWeb()) return false;
-  try {
-    window.sessionStorage.setItem(CLE, jeton);
-    return window.sessionStorage.getItem(CLE) === jeton;
-  } catch {
-    // Stockage refusé : le jeton reste dans l'adresse, et un rechargement le retrouve là.
-    return false;
-  }
-}
-
-export function relireLeJetonGarde(): string | null {
-  if (!surLeWeb()) return null;
-  try {
-    return window.sessionStorage.getItem(CLE);
-  } catch {
-    return null;
-  }
-}
-
-export function oublierLeJeton(): void {
-  if (!surLeWeb()) return;
-  try {
-    window.sessionStorage.removeItem(CLE);
-  } catch {
-    // Rien à faire : l'onglet l'oubliera en se fermant.
-  }
-}
+export const garderLeJeton = garde.garder;
+export const relireLeJetonGarde = garde.relire;
+export const oublierLeJeton = garde.oublier;
