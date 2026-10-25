@@ -192,10 +192,15 @@ jobs:
       # sans enfants renvoyaient 404 en production faute de `cleanUrls`, et les dix-huit
       # pages sortaient avec un `<title>` vide alors que le titre était bien déclaré (les
       # options du `Stack` n'agissent qu'après hydratation).
+      # L'élagage de Metro (`EXPO_UNSTABLE_*`, étape 7 de `v1-35`, `EXPO.md` §1.13) : les mêmes drapeaux
+      # que `vercel-build`, pour que la CI vérifie le bundle que Vercel construit — `rejouer-la-ci.test.ts`
+      # les compare.
       - run: npx expo export --platform web
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://exemple.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: cle-factice-pour-le-build
+          EXPO_UNSTABLE_TREE_SHAKING: 1
+          EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH: 1
       # La page que Vercel sert pour une adresse inconnue : `vercel-build` la pose après l'export, et
       # la CI fait de même pour vérifier ce que la production sert (04/10/2026, l'en-tête du script).
       - run: node scripts/poser-la-page-introuvable.mjs
@@ -331,6 +336,9 @@ jobs:
       # suit un autre garde l'URL de l'autre (mesuré le 20/09/2026, TESTING-GARDES.md §2.6). Sur un runner
       # neuf le cache est vide, et l'option est là pour que la commande soit la même qu'en local.
       - run: npx expo export --platform web --clear
+        env:
+          EXPO_UNSTABLE_TREE_SHAKING: 1
+          EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH: 1
       - run: npx playwright install --with-deps chromium
       # Le parcours nominal de bout en bout, sur le profil de docs/recette/premier-parcours-web.md,
       # avec la base relue après chaque écriture : l'en-tête du script dit ce qu'il couvre et ce

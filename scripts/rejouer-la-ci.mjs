@@ -79,6 +79,11 @@ const FACTICE = {
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'cle-factice-pour-le-build',
 };
 const EXPORT = ['npx', 'expo', 'export', '--platform', 'web', '--clear'];
+/**
+ * L'élagage de Metro, que `vercel-build` et les deux exports de `ci.yml` portent aussi (étape 7 de `v1-35`,
+ * `EXPO.md` §1.13) : sans lui, le rejeu vérifierait un bundle que Vercel ne construit pas.
+ */
+const ELAGAGE = { EXPO_UNSTABLE_TREE_SHAKING: '1', EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH: '1' };
 /** Le plafond d'un pas. Le pire cas modélisé en tête de `ci.yml` est de quatorze minutes. */
 const DELAI_MS = 20 * 60 * 1000;
 const LIGNES_DE_JOURNAL = 40;
@@ -263,7 +268,7 @@ function plan(ctx) {
           nom: 'export factice',
           ci: 'npx expo export --platform web',
           commande: EXPORT,
-          env: { ...FACTICE, ...cacheDeMetro('metro-factice') },
+          env: { ...FACTICE, ...ELAGAGE, ...cacheDeMetro('metro-factice') },
         },
         ...[
           ['poser-la-page-introuvable', {}],
@@ -332,7 +337,7 @@ function plan(ctx) {
           nom: 'export branché sur la stack',
           ci: 'npx expo export --platform web --clear',
           commande: EXPORT,
-          env: () => ({ ...ctx.stack, ...cacheDeMetro('metro-stack') }),
+          env: () => ({ ...ctx.stack, ...ELAGAGE, ...cacheDeMetro('metro-stack') }),
           dependDe: ['clés de la stack'],
         },
         ...['verifier-parcours-reel', 'verifier-code-de-connexion'].map((s) => ({
@@ -491,7 +496,9 @@ if (aBlanc) {
     commande: pas.commande ? pas.commande.join(' ') : `(${pas.lancer.name})`,
     ...(pas.sortie ? { sortie: pas.sortie } : {}),
     bloquant: estBloquant(pas, ctx),
-    env: typeof pas.env === 'function' ? '(clés de la stack)' : (pas.env ?? {}),
+    // Un environnement calculé au moment du pas se décrit par sa part fixe — l'élagage, le cache de Metro —, et la
+    // clé « (clés de la stack) » dit ce qui s'y ajoutera : la comparaison à `ci.yml` lit la part fixe.
+    env: typeof pas.env === 'function' ? { '(clés de la stack)': 'lues au moment du pas', ...pas.env() } : (pas.env ?? {}),
     dependDe: pas.dependDe ?? [],
   });
   const description = {

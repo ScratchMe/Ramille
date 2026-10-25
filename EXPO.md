@@ -397,11 +397,49 @@ d'`expo-notifications` 57 le disent, et rien ne le montre avant un téléphone.
   Un bouton sans `opensAppToForeground` répond aussi **sans déverrouiller** le téléphone : Android ne
   demande rien, et `expo-notifications` n'expose pas d'option pour l'exiger.
 
+### 1.13 Alléger le bundle web : l'élagage de Metro, et le découpage par route
+
+Relevé le 25/10/2026 chez Ramille (SDK 57), mesures en tête de §2.1.
+
+- **Metro n'élague pas par défaut.** Deux variables d'environnement du CLI l'allument pour un
+  `expo export` de production : `EXPO_UNSTABLE_TREE_SHAKING=1` et `EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH=1`.
+  Les exports inutilisés partent du bundle — chez Ramille, surtout ceux de Reanimated, qui exporte ses
+  animations d'entrée et de sortie par dizaines. Rien d'autre à configurer, pas de fichier de configuration de Metro.
+- **Ce sont des variables d'environnement, donc elles doivent être partout où l'export se lance** : la
+  commande de build de l'hébergeur, **chaque** export de la CI, le rejeu local. Il suffit d'en oublier
+  une pour que la CI vérifie un autre bundle que celui qui part en production, et rien ne le signale. Un
+  test qui lit la commande de l'hébergeur et la compare aux étapes de la CI ferme ce trou. Un build
+  natif ne les porte pas, sauf à les poser dans sa propre configuration.
+- **« Expérimental » est le vrai risque** : un module dont un effet de bord compte, retiré à tort,
+  casse à l'exécution et pas au build. Le filet est ce qui tourne sur l'export lui-même — un rendu de
+  chaque page, un parcours réel joué dans un navigateur —, et non les tests unitaires, qui ne voient
+  pas le bundle.
+- **Le découpage par route** (`asyncRoutes: { web: true }` dans le greffon d'Expo Router, opt-in au
+  SDK 57, par défaut sur web au SDK 58) sert à chaque page le code de ses routes et un tronc commun, et
+  le rendu statique lie dans le HTML les morceaux de la page. Il gagne surtout le code de l'app. Deux
+  prix, à peser avant de l'allumer : **la première visite d'une page attend son morceau** (le repli de
+  Suspense par défaut — un `SuspenseFallback` à soi ne marche pas avec), et **un onglet resté ouvert
+  pendant un déploiement demande des morceaux qui n'existent plus** — leurs noms portent une empreinte,
+  et l'hébergeur ne sert que le dernier déploiement —, d'où une erreur de chargement que la frontière
+  d'erreur doit rattraper, par un rechargement unique.
+- **Mesurer avant de choisir** : un export avec `--source-maps` dans un dossier à part, la carte qui
+  répartit les octets par paquet, et une compression brotli de niveau 11 pour ce que le réseau
+  transporte. Le poids brut compte aussi : c'est ce que le téléphone analyse avant le premier écran.
+
 ---
 
 ## 2. Propre à Ramille
 
 ### 2.1 L'export statique et ses gardes
+
+**Le bundle web est élagué depuis le 25/10/2026** (étape 7 de `v1-35`, §1.13) : `vercel-build`, les deux
+exports de `ci.yml` et le rejeu (`ELAGAGE`, `scripts/rejouer-la-ci.mjs`) portent les deux drapeaux, et
+`rejouer-la-ci.test.ts` compare ceux de la CI à ceux de `vercel-build`. Mesuré le même jour, au même commit :
+**3,05 Mo → 2,62 Mo** bruts (-14 %), **593 → 538 Ko** en brotli (-9 %) ; Reanimated passe de 751 à 430 Ko.
+Le découpage par route aurait mené la page d'accueil à 2,28 Mo et 468 Ko : **il n'est pas allumé**, pour
+ses deux prix (§1.13), et se repose à la montée au SDK 58, qui l'allume par défaut sur web. **Le fichier
+des licences se lit sur un export sans élagage** (`scripts/generer-les-licences.mjs`) : il peut nommer un
+paquet que l'élagage a retiré du web, jamais en oublier un, et c'est le bon sens pour des licences.
 
 **`public/robots.txt` et `public/sitemap.xml` sont la cinquième garde d'export, et ils
 disparaissent exactement comme `assetlinks.json`** — sans erreur de build ni de déploiement.

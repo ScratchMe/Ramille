@@ -339,6 +339,27 @@ describe('le rejeu local suit ci.yml', () => {
     expect(factice.TMPDIR).toMatch(/^<journal>\//);
   });
 
+  test('chaque export de la CI porte les drapeaux EXPO_UNSTABLE_* de vercel-build, ni plus ni moins', () => {
+    // L'élagage de Metro (étape 7 de `v1-35`, `EXPO.md` §1.13) change le bundle : une CI qui exporterait
+    // sans lui vérifierait un autre bundle que celui que Vercel construit, et un rejeu de même. Les
+    // drapeaux se lisent en tête de `vercel-build`, la seule commande que Vercel lance. Éprouvé le
+    // 25/10/2026 : l'export de la stack sans ses drapeaux dans `ci.yml` fait tomber ce test ;
+    // `vercel-build` amputé d'un drapeau, ce test et celui de `vercel-csp.test.ts` ; le rejeu de la stack
+    // sans `ELAGAGE`, le test « un pas porte la configuration que la CI donne à son étape ».
+    const paquet = JSON.parse(fs.readFileSync(path.join(racine, 'package.json'), 'utf8'));
+    const tete = (paquet.scripts['vercel-build'] as string).split(' expo export ')[0];
+    const drapeaux = Object.fromEntries(
+      [...tete.matchAll(/(EXPO_UNSTABLE_\w+)=(\S+)/g)].map((m) => [m[1], m[2]])
+    );
+    expect(Object.keys(drapeaux).length).toBeGreaterThan(0);
+    const exportsDeLaCI = ci.etapes.filter((e) => e.run.includes('expo export'));
+    expect(exportsDeLaCI.length).toBe(2);
+    for (const e of exportsDeLaCI) {
+      const lesSiens = Object.fromEntries(Object.entries(e.env).filter(([nom]) => nom.startsWith('EXPO_UNSTABLE_')));
+      expect(lesSiens).toEqual(drapeaux);
+    }
+  });
+
   test('un pas que la CI tolère rouge est non bloquant dans le rejeu, et lui seul', () => {
     const toleres = ci.etapes.filter((e) => e.continueOnError !== null).map((e) => normaliser(e.run));
     const nonBloquants = plan.etapes

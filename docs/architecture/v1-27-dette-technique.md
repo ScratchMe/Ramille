@@ -2587,7 +2587,9 @@ de travail, intégrés sur une branche, quatre migrations (`20261018110000` à `
   `expo-router` 57.0.28 et quatre autres ; `expo-doctor` passe ses 21 contrôles, aucune dépendance
   d'`api/` ne bouge) ;
 - le bundle web d'un seul fichier (2,96 Mo, dont 27 % de Reanimated) et l'écran du plan (2 134 lignes,
-  environ neuf requêtes à chaque focus) : des refontes, pas des correctifs ;
+  environ neuf requêtes à chaque focus) : des refontes, pas des correctifs — **le bundle allégé le
+  25/10/2026** (étape 7 de `v1-35` : l'élagage de Metro, 3,05 → 2,62 Mo bruts ; le découpage par route,
+  mesuré, attend le SDK 58, `EXPO.md` §1.13 et §2.1), l'écran du plan à sa suite ;
 - ~~les autres refus `RM002` (engagements, bilans, jetons d'appareil) que leurs écrans lisent encore
   « Réessaie dans un instant »~~ — **faits le 22/10/2026** pour les engagements et les bilans
   (`src/types/refus-de-plafond.ts`, « Réessaie demain »). Celui des jetons d'appareil ne s'affiche nulle

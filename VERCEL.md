@@ -227,7 +227,9 @@ NOT_FOUND »). Chez Ramille, constaté en production à la revue finale du 04/10
 partage ou une adresse mal recopiée sortait du produit, dans une autre langue.
 `scripts/poser-la-page-introuvable.mjs` copie la page dans `vercel-build`, la CI fait de même juste
 après son export, et `verifier-titres-export.mjs` exige `404.html`, identique à `+not-found.html` ;
-`scripts/vercel-csp.test.ts` épingle la commande de `vercel-build`, que la CI ne lance pas.
+`scripts/vercel-csp.test.ts` épingle la commande de `vercel-build`, que la CI ne lance pas — drapeaux
+d'élagage de Metro compris depuis le 25/10/2026, que `scripts/rejouer-la-ci.test.ts` compare aux deux
+exports de la CI (`EXPO.md` §1.13).
 
 ### 1.6 Une Function en runtime Node.js a une checklist, et l'échec est muet
 
