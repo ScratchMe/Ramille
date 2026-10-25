@@ -23,11 +23,21 @@
 > « Supprimer mon compte », dans « Toi », ouvre la confirmation —, elle s'ouvre dans Chrome. Ce
 > document reste la liste d'origine, et ce qu'un écart y déclenche (§3) vaut toujours.
 >
-> **B9 à B14, ajoutées le 18/10/2026, ne sont versées dans aucune feuille.** Elles vérifient ce que la vague
+> **B9 à B14, ajoutées le 18/10/2026, n'ont été versées dans aucune feuille jusqu'au 25/10 (plus bas).** Elles vérifient ce que la vague
 > d'audit du jour a écrit et qu'un appareil seul peut montrer : les pannes que le rendu ne voit pas, la
 > version lue du module natif, le jeton d'appareil retenté, le démarrage quand le jeton d'accès a expiré hors
 > ligne (`remontee-erreurs.md` §3 ter, `COMPTE.md` §3, `FRONT-SESSION.md`). Elles attendent un build qui porte
 > cette vague, et se versent dans la feuille qui le jouera ; `v1-13` §11.35 à §11.38 les portent.
+>
+> **Versées le 25/10/2026 dans [`le-build-de-fin-octobre.md`](le-build-de-fin-octobre.md)**, avec B1 à B8
+> rejouées sur une installation neuve à de nouvelles places : A1 à A3 en 00.4 à 00.6, B1 et B1′ en 02.4
+> et 02.5, B5 en 02.8, B3 en 03.8, B4 en 03.9, B2 en 04.1, B7 en 04.2 et 04.3, B8 en 11.4, B3b et B6 en
+> 12.4 et 12.5. Et B10 en 02.5, B12′ en 03.3 et 03.4, B12 en 03.9 (par la permission rendue dans les
+> réglages après l'avoir retirée — l'invite ne s'ouvre qu'une fois), B13 en 05.6. **B12″ ne s'y prouve
+> pas** : sur Android, une session anonyme passe toujours entre la déconnexion et la reconnexion, et la
+> garde d'avant aurait réinscrit le jeton elle aussi — 11.3 n'en garde qu'un contrôle de non-régression.
+> **B9, B11 et B14 ne s'y jouent pas** : le build du 25/10 ne porte aucun déclencheur de panne, et un
+> build qui en porte un reste une décision de la personne qui pilote ; B14 demande un build de débogage.
 
 ## 1. Ce que l'agent technique relève seul, sur l'artefact du build
 

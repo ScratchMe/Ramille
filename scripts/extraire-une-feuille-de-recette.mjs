@@ -51,6 +51,13 @@ const TABLEAUX_PAR_FEUILLE = {
     profil: '### Le profil',
     pistes: "**Ce qu'il rend**",
   },
+  // Écrite le 25/10/2026 : la même forme, et ses pistes disent en plus ce qu'un « oui » évite.
+  'le-build-de-fin-octobre.md': {
+    sujets: '## Pourquoi cette séance',
+    calendrier: '## Le calendrier',
+    profil: '### Le profil',
+    pistes: "**Ce qu'il rend**",
+  },
 };
 
 /** Facultatif, par feuille : `cle: ['liste' | 'paragraphe', ancre]`. */
@@ -66,6 +73,25 @@ const TEXTES_PAR_FEUILLE = {
     // puce insérée au-dessus d'elle sortirait de la page sans erreur — l'ancre suit la première puce.
     buildSuivant: ['paragraphe', '## Le build suivant'],
     buildSuivantListe: ['liste', '**01.3, 01.4 et 01.6 à 01.8 se rejouent'],
+  },
+  // Tous ses textes, et pas seulement ses listes (contre-lecture du 25/10/2026) : une page faite d'après
+  // celle d'octobre et qui recopierait ses paragraphes dirait les heures d'été et le profil d'alors.
+  'le-build-de-fin-octobre.md': {
+    precautions: ['liste', '## Sept précautions'],
+    rend: ['paragraphe', "**Ce qu'il rend**"],
+    pasIci: ['liste', '## Ce qui ne se joue pas ici'],
+    pasProuve: ['liste', '## Ce que cette séance ne prouve pas'],
+    atterrissent: ['paragraphe', '## Où atterrissent les constats'],
+    sujetsNote: ['paragraphe', '**Elle ne rejoue pas ce qui est revenu conforme au navigateur**'],
+    lundi: ['paragraphe', '**Si J0 tombe un lundi**'],
+    brouillon: ['paragraphe', '**Un brouillon vit de 07.2 à 10.1'],
+    heures: ['paragraphe', '**Les heures du lundi'],
+    apk: ['paragraphe', "**L'APK se télécharge"],
+    quiJoue: ['paragraphe', '## Qui la joue'],
+    quiJoueListe: ['liste', '- il relève A1 à A3'],
+    consigner: ['paragraphe', '## Comment consigner'],
+    oui: ['paragraphe', 'Les deux pistes en gras'],
+    tient: ['liste', '### Ce qui tient, et ce qui peut bouger'],
   },
 };
 
