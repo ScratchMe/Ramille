@@ -660,6 +660,12 @@ faut pas défaire :
   et sur Android le lien s'ouvre dans le navigateur, où il marche sans rien d'autre (`COMPTE.md` §1). Les
   rappels mis en file avant la migration gardent leur corps, avec le seul lien du plan.
 
+**La notification, elle, n'a pas de boutons de réponse, et c'est voulu** (étape 6c de `v1-35`, mise de côté
+le 25/10/2026, §3 de ce document-là). Une notification envoyée par Expo avec un titre est affichée par Android
+lui-même dès que l'app n'est pas à l'écran, et ses boutons n'y apparaissent pas ; les avoir aurait demandé que
+l'app fabrique chaque rappel, au risque qu'il se perde en silence sur certains téléphones (`EXPO.md` §1.12).
+Le toucher ouvre le plan, sur la carte.
+
 **Les reprises de jeton d'appareil laissent une trace** (`push_tokens.reprises`,
 `derniere_reprise_le`, `proprietaire_precedent`). La reprise reste **inconditionnelle** — décision
 de `v1-10` §3.4, inchangée : sans elle, les rappels partiraient au nom d'un utilisateur fantôme au
