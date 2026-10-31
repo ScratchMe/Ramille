@@ -108,7 +108,7 @@ d'une session — une visite qui s'arrêtait à la page ne se mesurait pas, et l
 (`MESURE.md` §2). Refaire une page pour convertir sans savoir combien la lisent, ni jusqu'où, ni quel bouton sert,
 c'était la refaire à l'aveugle.
 
-**Un compteur par jour, sans rien qui désigne personne** (`20261031120000_les_visites_de_l_accueil.sql`) : la table
+**Un compteur par jour, sans rien qui désigne personne** (`20261031143323_les_visites_de_l_accueil.sql`) : la table
 `visites_de_l_accueil` porte un jour (heure de Paris), un événement et un nombre — ni identifiant, ni adresse IP, ni
 appareil, ni heure, ni cookie. Une fonction, `compter_sur_l_accueil`, ouverte à `anon` — et à `authenticated`, pour qui revient avec une session sans bilan —, ajoute un. Ce n'est ni un
 outil tiers ni une donnée personnelle ; la page de confidentialité le dit depuis le 31/10/2026, et le registre
@@ -116,6 +116,11 @@ outil tiers ni une donnée personnelle ; la page de confidentialité le dit depu
 fausses trois phrases publiques (« aucun outil de mesure d'audience tierce ») et rouvrait l'analyse d'impact
 (`registre-des-traitements.md` §8). **En échange**, quiconque a la clé publishable peut gonfler un compteur : la
 table reste bornée, et rien d'autre ne s'en trouve faussé.
+
+**Appliquée en production le 31/10/2026, avant la fusion** — sans quoi la page déployée aurait appelé une fonction
+absente, en silence (le compteur avale ses erreurs). Le fichier, écrit sous `20261031120000`, a pris la version
+enregistrée ; relue après application : privilèges conformes, empreinte de la fonction égale à la stack locale,
+alertes de la base attendues (registre d'exploitation, journal des migrations et §8.7).
 
 **Ce qui se compte** (`EVENEMENTS_DE_L_ACCUEIL`, `src/types/analytics.ts`, miroir du `check`) : `vue` — la page s'est
 affichée ; `lu_ete`, `lu_echelle`, `lu_trajets`, `lu_agir`, `lu_comment`, `lu_fin` — la section a paru à l'écran,

@@ -72,7 +72,7 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     demande, d'où le nom et la photo dans `auth.identities.identity_data` ;
 //   - la page d'accueil du site, comptée sans session (31/10/2026) -> `visites_de_l_accueil` : un jour, un
 //     événement de la liste fermée `EVENEMENTS_DE_L_ACCUEIL` et un nombre, rien d'autre, écrits par
-//     `compter_sur_l_accueil` (`20261031120000`, `v1-36` §5).
+//     `compter_sur_l_accueil` (`20261031143323`, `v1-36` §5).
 //
 // **Deux sorties de données qu'il ne faut pas reperdre de vue, parce qu'aucune n'est visible
 // depuis cette page** — les deux ont été écrites comme inexistantes ici avant d'être

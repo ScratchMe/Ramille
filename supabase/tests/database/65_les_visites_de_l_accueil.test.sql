@@ -1,5 +1,5 @@
 -- Tests pgTAP : la page d'accueil du web se compte sans session, et sans rien qui désigne personne
--- (`docs/architecture/v1-36-la-page-d-accueil.md` §5, migration `20261031120000_les_visites_de_l_accueil.sql`).
+-- (`docs/architecture/v1-36-la-page-d-accueil.md` §5, migration `20261031143323_les_visites_de_l_accueil.sql`).
 --
 -- **Ce que ce fichier garde.** Trois promesses de la page de confidentialité, et une condition de la mesure :
 --
