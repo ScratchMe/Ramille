@@ -11,7 +11,6 @@
 // **Le mouvement dit la donnée** : la bande se remplit dans l'ordre de l'été, le trait de l'échelle descend
 // d'aujourd'hui à +4 °C, la barre se remplit poste par poste, le transport d'abord. Une fois, quand la figure
 // paraît (`vu`, décidé par la page), et posé sous « réduire les animations » (`styleDuRecit`).
-import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -21,20 +20,27 @@ import {
   CONSUMPTION_POSTES_TOTAL_T,
   formatTonnesShort,
 } from '@/constants/carbon-reference';
-import { ETE_2026, FAITS_DE_L_ETE, VAGUES_DE_CHALEUR_2026 } from '@/constants/climat';
+import { ETE_2026, VAGUES_DE_CHALEUR_2026 } from '@/constants/climat';
 import { RECIT } from '@/constants/accueil';
 import { Mouvement, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { styleDuRecit } from '@/lib/mouvement';
-import { calendrierDeLaSaison } from '@/types/ete';
+import { compteDeLaSaison, moisDeLaSaison, periodeEnMots } from '@/types/ete';
 import { delaiEchelonne } from '@/types/mouvement';
 
 type Lecture = { vu: boolean; reduit: boolean };
 
-/** Ce que le lecteur d'écran entend à la place de la bande : les trois vagues, dates comprises. */
+/**
+ * Ce que le lecteur d'écran entend à la place de la bande : le compte et les trois vagues, dérivés des mêmes
+ * bornes que le dessin — jamais recopiés.
+ */
+const SAISON = moisDeLaSaison(ETE_2026, VAGUES_DE_CHALEUR_2026);
+const COMPTE = compteDeLaSaison(SAISON);
 const BANDE_EN_MOTS =
-  `L’été 2026, du 1er juin au 31 août : ${FAITS_DE_L_ETE.joursDeVagueDeChaleur} jours de vague de chaleur sur ` +
-  '92, du 17 au 30 juin, du 4 au 19 juillet et du 28 juillet au 19 août.';
+  `L’été 2026, ${periodeEnMots(ETE_2026.debut, ETE_2026.fin)} : ${COMPTE.enVague} jours de vague de chaleur sur ` +
+  `${COMPTE.jours}, ${VAGUES_DE_CHALEUR_2026.map((v) => periodeEnMots(v.debut, v.fin))
+    .join(', ')
+    .replace(/, ([^,]*)$/, ' et $1')}.`;
 
 /**
  * **L'été 2026, un trait par jour** : 92 traits, du 1er juin au 31 août, pleins les jours de vague de
@@ -43,8 +49,7 @@ const BANDE_EN_MOTS =
  */
 export function BandeDeLEte({ vu, reduit, grande = false }: Lecture & { grande?: boolean }) {
   const theme = useTheme();
-  const mois = useMemo(() => calendrierDeLaSaison(ETE_2026, VAGUES_DE_CHALEUR_2026), []);
-  const jours = useMemo(() => mois.flatMap((m) => m.cases).filter((c) => c !== null), [mois]);
+  const jours = SAISON.flatMap((m) => m.jours);
 
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={BANDE_EN_MOTS} style={styles.bande}>
@@ -63,7 +68,7 @@ export function BandeDeLEte({ vu, reduit, grande = false }: Lecture & { grande?:
                       duree: Mouvement.fondu,
                       delai: delaiEchelonne(
                         jour.rangDansLesVagues ?? 0,
-                        FAITS_DE_L_ETE.joursDeVagueDeChaleur,
+                        COMPTE.enVague,
                         Mouvement.recit,
                         Mouvement.fondu
                       ),
@@ -77,13 +82,13 @@ export function BandeDeLEte({ vu, reduit, grande = false }: Lecture & { grande?:
       </View>
       {/* Les mois, chacun à la largeur de ses jours. */}
       <View style={styles.mois} aria-hidden>
-        {mois.map((m) => (
+        {SAISON.map((m) => (
           <View
             key={m.nom}
             style={[
               styles.unMois,
               {
-                flex: m.cases.filter((c) => c !== null).length,
+                flex: m.jours.length,
                 borderColor: theme.border,
               },
             ]}

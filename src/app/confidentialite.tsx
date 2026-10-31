@@ -69,7 +69,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 //     `auth.sessions`, posées par Supabase Auth (110 sessions sur 110, mesuré le 02/10/2026), et
 //     effacées après 90 jours sans renouvellement par `menage_des_jetons_d_auth()` (22/10/2026) ;
 //   - ce que la connexion Google transmet -> le droit `userinfo.profile` que Supabase Auth
-//     demande, d'où le nom et la photo dans `auth.identities.identity_data`.
+//     demande, d'où le nom et la photo dans `auth.identities.identity_data` ;
+//   - la page d'accueil du site, comptée sans session (31/10/2026) -> `visites_de_l_accueil` : un jour, un
+//     événement de la liste fermée `EVENEMENTS_DE_L_ACCUEIL` et un nombre, rien d'autre, écrits par
+//     `compter_sur_l_accueil` (`20261031120000`, `v1-36` §5).
 //
 // **Deux sorties de données qu'il ne faut pas reperdre de vue, parce qu'aucune n'est visible
 // depuis cette page** — les deux ont été écrites comme inexistantes ici avant d'être
@@ -278,6 +281,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // leur portée — la question de cet e-mail, sa réponse pendant sa période, rien après —, qu'un e-mail transféré
 // laisse en faire autant, la page de réponse parmi celles qui n'ouvrent pas de session, et l'heure d'usage du
 // lien dans la trace d'un rappel. Même date.
+//
+// **31/10/2026 : la page d'accueil du site se compte** (`v1-36` §5, `les_visites_de_l_accueil`) : un paragraphe,
+// ce qui est compté — des totaux par jour, sans identifiant ni cookie — et à quoi ça sert. Rien n'est demandé à
+// la personne, et rien ne la désigne.
 const UPDATED_AT = '31 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
@@ -394,8 +401,8 @@ const SECTIONS: LegalSection[] = [
         // la date de mise à jour en tient lieu d'annonce (CLAUDE.md, « Ce que la personne qui pilote a demandé »).
         text:
           'La page d’accueil du site se compte aussi, sans session : chaque jour, combien de fois elle s’est affichée, ' +
-          'combien de fois chacune de ses parties est apparue à l’écran, quel bouton a été touché et combien de fois le ' +
-          'film a été lancé. Ce sont des totaux, et rien d’autre : ni identifiant, ni adresse IP, ni appareil, ni heure, ' +
+          'combien de fois ses principales parties sont apparues à l’écran, quel bouton a été touché et combien de ' +
+          'fois le film a été lancé. Ce sont des totaux, et rien d’autre : ni identifiant, ni adresse IP, ni appareil, ni heure, ' +
           'ni cookie — rien qui permette de savoir qui a lu la page, ni de relier deux visites, ni de les relier à un ' +
           'compte. Ils servent à savoir si la page se lit jusqu’au bout et donne envie de commencer.',
       },

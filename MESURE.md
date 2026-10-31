@@ -170,7 +170,8 @@ le second demanderait un effectif passé que le régime ne sait pas reconstruire
 **Une seconde rupture, au déploiement de la page d'accueil du web** (23/10/2026, étape 5 de `v1-35`) : la
 racine du site n'ouvre plus de session, donc une visite qui s'arrête à la page d'accueil ne crée plus de compte
 anonyme et ne compte plus d'ouverture (`app_open`) ; l'entonnoir web commence désormais à « Découvrir mon
-impact », qui ouvre la session avant de mener à l'onboarding (`allerVers`) — l'onboarding et la retrouvaille
+impact » — le bouton s'appelle « Voir ce que pèsent mes trajets » depuis le 31/10/2026, et la page se compte
+au-dessus de lui (plus bas), qui ouvre la session avant de mener à l'onboarding (`allerVers`) — l'onboarding et la retrouvaille
 arrivent donc avec elle, et leurs vues se comptent. Les arrivées du web baissent à cette date sans que personne
 ne soit parti. **Et l'onboarding du web s'ouvre à sa deuxième page** (décidé le 23/10/2026) : `accroche` n'y est
 plus vue, et l'entonnoir du web commence à `contexte` — une `accroche` qui manque n'y est pas un abandon.
@@ -178,7 +179,7 @@ plus vue, et l'entonnoir du web commence à `contexte` — une `accroche` qui ma
 **Le haut de l'entonnoir du web se compte depuis le 31/10/2026, mais pas dans `usage_events`**
 ([`v1-36`](docs/architecture/v1-36-la-page-d-accueil.md) §5) : la page d'accueil n'ouvre toujours pas de session,
 donc elle compte dans **`visites_de_l_accueil`**, un nombre par jour et par événement, sans identifiant
-(`compter_sur_l_accueil`, ouverte à `anon`, `src/lib/visites-de-l-accueil.ts`). Ses événements sont une liste à
+(`compter_sur_l_accueil`, ouverte à `anon` et à `authenticated`, `src/lib/visites-de-l-accueil.ts`). Ses événements sont une liste à
 part, `EVENEMENTS_DE_L_ACCUEIL`, miroir d'un `check` et non du référentiel `usage_event_types` : ce ne sont pas des
 événements d'usage, et rien ne s'y rattache à une session. **Ajouter un événement de la page** impose une ligne au
 `check` par migration, l'entrée dans `EVENEMENTS_DE_L_ACCUEIL` — le contrôle des miroirs les compare —, et une ligne

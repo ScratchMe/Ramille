@@ -136,7 +136,7 @@ export function lEcranDeReconnexionSePose(chemin: string): boolean {
  *
  * **Ni sur la racine du web, depuis qu'elle est une page d'accueil** (23/10/2026, étape 5 de
  * `docs/architecture/v1-35-l-audit-en-chantiers.md`). Un navigateur neuf y lit la présentation du
- * produit, et la session s'ouvre au premier pas dans l'app — « Découvrir mon impact » mène à
+ * produit, et la session s'ouvre au premier pas dans l'app — son bouton (« Voir ce que pèsent mes trajets ») mène à
  * l'onboarding, où ce montage l'ouvre. Sans quoi chaque visite de ramille.fr, robots compris, créait un
  * compte anonyme et passait par le captcha. **Elle n'est pas pour autant une surface sans compte** : qui
  * revient avec une session refusée y voit l'écran de reconnexion, comme avant, parce que c'est une

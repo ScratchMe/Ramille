@@ -39,8 +39,14 @@ export const FAITS_DE_L_ETE = {
   deficitDePluiePct: 40,
   /** P. 15 : « 1 possibilité sur 100 de se produire » dans le climat actuel. */
   uneChanceSur: 100,
-  /** P. 16 : « un été ordinaire dans une France à +4 °C ». */
+  /**
+   * P. 16 : « Ses températures moyennes élevées correspondraient à un été ordinaire dans une France à +4 °C. »
+   * **Les températures seulement** : pour la pluie, l'été 2026 « correspondrait à un été peu arrosé » dans cette
+   * France-là. La page le dit de la chaleur, et de rien d'autre.
+   */
   ordinaireDansUneFranceAC: 4,
   /** P. 15 : l'horizon 2050 de la TRACC, « France à +2,7 °C ». */
   franceA2050C: 2.7,
+  /** P. 15 : l'horizon 2100 de la TRACC, « France à +4 °C » — le même nombre que la ligne d'au-dessus, une autre notion. */
+  franceA2100C: 4,
 } as const;

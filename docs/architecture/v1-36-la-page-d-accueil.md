@@ -36,23 +36,26 @@ qui suit le titre dit déjà « la suite dépend de ce que nous émettons », et
 écran ; et la chaleur qui se lit à la durée, pas à la couleur. Le handoff est figé et ne se réécrit pas ; l'écart vit
 ici.
 
-**Le reste a été décidé sans elle, parce que c'est technique ou de l'ordre du métier** — l'ordre des bandes, les
-figures, le mouvement, les libellés, la mesure — et chaque choix est écrit ci-dessous pour pouvoir être rouvert.
-Deux choses, en particulier, sont à rouvrir si elle le veut : le libellé du bouton (« Voir ce que pèsent mes
-trajets » remplace « Découvrir mon impact » sur cette page, §3) et la barre d'appel en bas de l'écran (§3).
+**Le reste a été construit sans elle, puis montré** — l'ordre des bandes, les figures, le mouvement, les libellés,
+la barre d'appel, la mesure. Une vidéo de la page sur téléphone, son haut sur ordinateur et la page entière lui
+ont été envoyés le 31/10/2026 ; sa réponse : « Ah, là je crois que ça marche mieux, oui ». Chaque choix est écrit
+ci-dessous pour pouvoir être rouvert, en particulier le libellé du bouton (§3), la barre d'appel (§3) et l'échelle
+des étés, qui ajoute aux faits vécus une projection vers 2050 et 2100 (§3).
 
 ## 3. La page, bande par bande
 
-Des bandes pleine largeur, une colonne de 560 de large (800 pour le haut sur un grand écran, et pour le film). Au
-téléphone, le titre, la bande de l'été, le chapeau et le premier bouton tiennent dans le premier écran.
+Des bandes pleine largeur, une colonne de 560 de large (800 pour le haut sur un grand écran, et pour le film). Sur un
+téléphone de 390 × 844, le titre, la bande de l'été, le chapeau et le premier bouton tiennent dans le premier écran
+(mesuré sur l'export le 31/10/2026) ; sur un 360 × 640, le bouton passe sous le pli, et la barre d'appel n'y paraît
+qu'une fois le haut dépassé.
 
 | Bande | Ce qu'elle dit | D'où ça vient |
 |---|---|---|
-| **Le haut** | Ramille et son nom ; « Été 2026, d'après Météo-France » ; **« Que l'été 2026 reste une exception. »** ; la bande de l'été ; « Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que nous émettons — et en France, le transport est le premier poste de notre empreinte carbone. » ; le bouton, « Ton bilan prend 5 minutes environ. Pas de compte à créer pour commencer. », « J'ai déjà un compte » | Météo-France p. 4 et 5 ; SDES 2017 |
-| **L'été en nombres** | « 53 jours de vague de chaleur » ; trois vagues, plus d'un jour sur deux, loin devant 2022 et ses 33 jours ; trois faits — 72 départements en vigilance rouge en juin, près de 40 % de pluie en moins, la saison des feux la plus sévère jamais enregistrée ; la source, en lien | Météo-France p. 4 et 11 |
-| **L'échelle des étés** | « Aujourd'hui, un été sur 100. À +4 °C, un été ordinaire. » ; quasi impossible sans le changement climatique ; aujourd'hui, +2,7 °C vers 2050, +4 °C vers 2100 ; « Arriver à +4 °C, ou s'arrêter avant : c'est ce que décident nos émissions. » | Météo-France p. 15 à 17, la trajectoire de réchauffement de référence pour l'adaptation (TRACC) qu'il cite |
+| **Le haut** | Le nom de Ramille, **sans son visage** (la bande de l'été est un chiffre lourd, `FRONT-MASCOTTE.md`) ; « Été 2026, d'après Météo-France » ; **« Que l'été 2026 reste une exception. »** ; la bande de l'été et sa légende, « Un trait par jour… » ; « Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que le monde émet, nous compris — et en France, le transport est le premier poste de notre empreinte carbone. » ; le bouton, « Ton bilan prend 5 minutes environ. Pas de compte à créer pour commencer. », « J'ai déjà un compte » | Météo-France p. 4 et 5 ; SDES 2017 |
+| **L'été en nombres** | « 53 jours de vague de chaleur » ; trois vagues, plus d'un jour sur deux, loin devant 2022 et ses 33 jours ; trois faits — jusqu'à 72 départements en vigilance rouge le même jour, en juin (un maximum, p. 7), près de 40 % de pluie en moins, la saison des feux la plus sévère jamais enregistrée ; la source, en lien | Météo-France p. 4 et 11 |
+| **L'échelle des étés** | « Aujourd'hui, un été sur 100. À +4 °C, une chaleur ordinaire. » ; quasi impossible sans le changement climatique ; aujourd'hui, +2,7 °C vers 2050, +4 °C vers 2100, où **ses températures** seraient celles d'un été ordinaire — Météo-France le dit de la chaleur, pas de la pluie, et la page ne dit pas plus ; « Arriver à +4 °C, ou s'arrêter avant : c'est ce que décident les émissions de la planète, les nôtres comprises. » — le bilan parle d'émissions « au niveau planétaire » | Météo-France p. 15 à 17, la trajectoire de réchauffement de référence pour l'adaptation (TRACC) qu'il cite |
 | **Nos trajets** | « Et nos trajets ? » ; le transport, premier poste : 2,8 t sur 9,5 t ; la barre des cinq postes | `carbon-reference.ts` (SDES 2017) |
-| **Ce qui est à notre portée** | **« Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »** ; ce que fait Ramille, en une phrase ; Ramille dit sa présentation ; un bouton | La seule bande sans chiffre : Ramille ne se tient jamais près d'un chiffre lourd (`FRONT-MASCOTTE.md`) |
+| **Ce qui est à notre portée** | **« Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »** ; ce que fait Ramille, en une phrase ; Ramille dit sa présentation ; un bouton, sans la durée | La seule bande sans chiffre, et la seule où paraît le visage de Ramille : elle ne se tient jamais près d'un chiffre lourd (`FRONT-MASCOTTE.md`) |
 | **Comment ça marche** | La description courte de la fiche Play ; ses trois temps, numérotés et reliés par un trait ; son premier paragraphe | La fiche Play, mot pour mot (§6) |
 | **Sans compte, sans publicité** et **Ce que Ramille n'est pas** | Les garanties et les limites de la fiche | La fiche Play |
 | **Le film** | « Le fil de Ramille », sa ligne et sa version texte | Inchangés (`v1-35` étape 5) |
@@ -68,21 +71,28 @@ les mots du titre de la bande des trajets. Sous lui, la durée — « 5 minutes 
 et « Pas de compte à créer pour commencer. ». « Découvrir mon impact » reste sur la première page de l'onboarding,
 que la page d'accueil saute.
 
-**Une barre d'appel en bas de l'écran**, entre le moment où le premier bouton sort de l'écran et celui où le dernier
-y entre : un bouton toujours à portée, sans remonter. Elle ne prend jamais le focus, et se rejoint au clavier après
-le contenu.
+**Une barre d'appel en bas de l'écran**, entre le moment où la bande du haut sort de l'écran et celui où la bande de
+la fin y entre : un bouton toujours à portée, sans remonter. Elle ne prend jamais le focus ; au clavier, la tabulation
+qui va au bout de la page amène la bande de la fin, dont le bouton est le même. Le défilement garde sous lui une
+marge (`scrollPaddingBottom`), pour qu'un élément focalisé ne s'arrête pas dessous.
+
+**Le film finit encore sur « Découvrir mon impact »**, l'ancien libellé : il ne se réexporte qu'à la publication sur
+Play, avec son badge (`docs/communication/le-fil-de-ramille/README.md`), et le libellé du bouton suivra ce jour-là
+(§7).
 
 ## 4. Le mouvement
 
 **Une exception écrite à « un enchaînement tient sous 300 ms »** (le skill `mouvement`), autorisée par la personne
 qui pilote (« Tu as aussi le droit d'intégrer directement le motion design sur le site web ») et bornée : **seules
-les trois figures bougent, et leur mouvement dit la donnée** — la bande se remplit dans l'ordre de l'été
-(`Mouvement.recit`, 1,2 s en tout), le trait de l'échelle descend d'un repère à l'autre et la barre se remplit poste
-par poste (`Mouvement.trace`, 600 ms), les trois temps de Ramille se relient. Le texte ne bouge pas.
+les trois figures et le trait des trois temps bougent, et leur mouvement dit la donnée** — la bande se remplit dans
+l'ordre de l'été (`Mouvement.recit`, 1,2 s en tout), le trait de l'échelle descend d'un repère à l'autre et la barre
+se remplit poste par poste (`Mouvement.trace`, 600 ms), les trois temps de Ramille se relient. **Le texte ne bouge
+pas**, les trois faits de l'été compris.
 
-Les règles qui tiennent : **une fois, quand la figure paraît** (`useVuUneFois`, un `IntersectionObserver`), et non
-au chargement, où elle se jouerait hors de l'écran ; **posé dès la première image sous « réduire les animations »**
-(`styleDuRecit`, décidé au rendu) ; jamais un compteur qui défile ; rien ne retient le focus ; rien ne boucle. La
+Les règles qui tiennent : **une fois, quand la figure paraît** — l'observateur est posé sur la figure, pas sur son
+titre, et il attend qu'un tiers en soit à l'écran (`useVuUneFois`, `intersectionRatio`) —, et non au chargement, où
+elle se jouerait hors de l'écran ; **posé dès la première image sous « réduire les animations »** (`styleDuRecit`,
+décidé au rendu par `etatDuRecit`, testée) ; jamais un compteur qui défile ; rien ne retient le focus ; rien ne boucle. La
 barre d'appel entre comme la barre d'onglets et s'en va d'un coup. Les jetons sont dans `theme.ts` et recopiés dans
 `docs/design/design-system/tokens/mouvement.css` (`FRONT-MOUVEMENT.md` §2.12).
 
@@ -100,7 +110,7 @@ c'était la refaire à l'aveugle.
 
 **Un compteur par jour, sans rien qui désigne personne** (`20261031120000_les_visites_de_l_accueil.sql`) : la table
 `visites_de_l_accueil` porte un jour (heure de Paris), un événement et un nombre — ni identifiant, ni adresse IP, ni
-appareil, ni heure, ni cookie. Une fonction, `compter_sur_l_accueil`, ouverte à `anon`, ajoute un. Ce n'est ni un
+appareil, ni heure, ni cookie. Une fonction, `compter_sur_l_accueil`, ouverte à `anon` — et à `authenticated`, pour qui revient avec une session sans bilan —, ajoute un. Ce n'est ni un
 outil tiers ni une donnée personnelle ; la page de confidentialité le dit depuis le 31/10/2026, et le registre
 (fiche 5) aussi. **Choisi plutôt qu'un outil d'audience** (Vercel Web Analytics, ou un tiers) : un tiers rendait
 fausses trois phrases publiques (« aucun outil de mesure d'audience tierce ») et rouvrait l'analyse d'impact
@@ -136,5 +146,9 @@ plus.
   récit est une décision de la personne qui pilote, à prendre avant la publication.
 - **Aucun essai A/B** : au volume d'avant le lancement, il ne départagerait rien. La table porte de quoi l'ajouter
   (un événement de plus par variante) le jour où le trafic le permet.
-- **La page n'a pas encore été vue par la personne qui pilote sur son téléphone** : une recette web l'attend
-  (`v1-13` §11.W.14).
+- **La page n'a été vue que filmée** : une recette web l'attend, sur un téléphone et sur un ordinateur
+  (`v1-13` §11.W.14). Le relevé image par image du mouvement (`TESTING-GARDES.md` §2.14) ne la couvre pas encore ;
+  la décision de l'état de chaque figure est testée (`etatDuRecit`), le dessin, non.
+- **Le film finit sur « Découvrir mon impact »** : le libellé suivra à sa réexportation, à la publication sur Play.
+- **Ce qui compte une section, l'observateur, ne se compte pas lui-même** : un navigateur sans
+  `IntersectionObserver` compte toutes les sections d'emblée (registre d'exploitation §8.5 quinquies).

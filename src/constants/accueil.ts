@@ -26,7 +26,8 @@ import {
 import { FAITS_DE_L_ETE } from '@/constants/climat';
 import { APP_NAME } from '@/constants/produit';
 
-const enDegres = (valeur: number) => `+${String(valeur).replace('.', ',')} °C`;
+/** Un réchauffement en degrés, signé et à la française : `2.7` → « +2,7 °C ». Exporté pour son test. */
+export const enDegres = (valeur: number) => `+${String(valeur).replace('.', ',')} °C`;
 
 /**
  * **Le récit**, dans l'ordre de la page. Chaque phrase sur l'été reprend le bilan de Météo-France
@@ -37,8 +38,8 @@ export const RECIT = {
   surtitre: 'Été 2026, d’après Météo-France',
   titre: 'Que l’été 2026 reste une exception.',
   chapeau:
-    'Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que nous émettons — et en ' +
-    'France, le transport est le premier poste de notre empreinte carbone.',
+    'Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que le monde émet, nous ' +
+    'compris — et en France, le transport est le premier poste de notre empreinte carbone.',
   bouton: 'Voir ce que pèsent mes trajets',
   duree: 'Ton bilan prend 5 minutes environ.',
   ete: {
@@ -46,31 +47,39 @@ export const RECIT = {
     texte:
       'Trois vagues, de la mi-juin à la mi-août : plus d’un jour sur deux. Loin devant l’été 2022 et ses ' +
       `${FAITS_DE_L_ETE.joursDeVagueDeChaleur2022} jours.`,
-    legende: 'Un carré par jour, du 1er juin au 31 août. En plein, les jours de vague de chaleur.',
+    /** Sous la bande de l'été, dans le haut de la page : elle dit ce que la figure dessine. */
+    legende: 'Un trait par jour, du 1er juin au 31 août. En plein, les jours de vague de chaleur.',
     faits: [
-      `${FAITS_DE_L_ETE.departementsEnVigilanceRouge} départements en vigilance rouge canicule, en juin.`,
+      // « Jusqu'à » : un maximum sur une journée (p. 7, au pic du 24 juin), pas un total sur le mois.
+      `Jusqu’à ${FAITS_DE_L_ETE.departementsEnVigilanceRouge} départements en vigilance rouge canicule le même jour, en juin.`,
       `Près de ${FAITS_DE_L_ETE.deficitDePluiePct} % de pluie en moins qu’un été normal.`,
       'La saison des feux de forêt la plus sévère jamais enregistrée.',
     ],
   },
+  // **La chaleur seulement** : Météo-France dit que les **températures** de l'été 2026 seraient celles d'un
+  // été ordinaire à +4 °C (p. 16) ; pour la pluie, il resterait un été peu arrosé. La page ne dit pas plus.
   echelle: {
-    titre: `Aujourd’hui, un été sur ${FAITS_DE_L_ETE.uneChanceSur}. À ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, un été ordinaire.`,
+    titre: `Aujourd’hui, un été sur ${FAITS_DE_L_ETE.uneChanceSur}. À ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, une chaleur ordinaire.`,
     texte:
       'Selon Météo-France, l’été 2026 aurait été quasi impossible sans le changement climatique. Dans le ' +
       `climat actuel, un tel été a une chance sur ${FAITS_DE_L_ETE.uneChanceSur} de se produire. Dans une ` +
-      `France à ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, il serait ordinaire.`,
+      `France à ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, ses températures seraient celles d’un été ordinaire.`,
     reperes: [
       { libelle: 'Aujourd’hui', detail: `Un été comme 2026 : une chance sur ${FAITS_DE_L_ETE.uneChanceSur}.` },
       { libelle: enDegres(FAITS_DE_L_ETE.franceA2050C), detail: 'La France vers 2050.' },
       {
-        libelle: enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC),
-        detail: 'La France vers 2100. Un été comme 2026 y serait ordinaire.',
+        libelle: enDegres(FAITS_DE_L_ETE.franceA2100C),
+        detail: 'La France vers 2100. Les températures de l’été 2026 y seraient ordinaires.',
       },
     ],
     note:
-      `${enDegres(FAITS_DE_L_ETE.franceA2050C)} et ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)} : la ` +
+      `${enDegres(FAITS_DE_L_ETE.franceA2050C)} et ${enDegres(FAITS_DE_L_ETE.franceA2100C)} : la ` +
       'trajectoire de réchauffement sur laquelle la France prépare son adaptation.',
-    suite: `Arriver à ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, ou s’arrêter avant : c’est ce que décident nos émissions.`,
+    // « La planète, nous compris » : Météo-France parle d'émissions « au niveau planétaire » (p. 17), et les
+    // émissions françaises ne décident pas seules du réchauffement de la France.
+    suite:
+      `Arriver à ${enDegres(FAITS_DE_L_ETE.franceA2100C)}, ou s’arrêter avant : c’est ce que décident les ` +
+      'émissions de la planète, les nôtres comprises.',
   },
   trajets: {
     titre: 'Et nos trajets ?',
@@ -88,7 +97,7 @@ export const RECIT = {
   comment: { titre: 'Comment ça marche' },
   fin: {
     titre: 'Commence par tes trajets.',
-    texte: 'Cinq minutes pour voir ce qu’ils pèsent. Puis une action, celle que tu choisis, quand tu veux.',
+    texte: 'Vois ce qu’ils pèsent, puis choisis une action, celle qui tient avec ta vie, à ton rythme.',
   },
 } as const;
 

@@ -12,12 +12,16 @@
 //
 // Éprouvé le 23/10/2026 : un mot changé dans « Ton suivi » côté page (« chaque semaine » → « chaque
 // jour ») → « chaque section… » tombe, seul ; le même mot changé dans la fiche → le même test tombe, seul ;
-// une puce retirée de la fiche → « chaque garantie… » tombe, seul ; l'accroche changée dans
-// `etape-accroche.tsx` → « le titre et la ligne… » tombe, seul.
+// une puce retirée de la fiche → « chaque garantie… » tombe, seul. Et le 31/10/2026, depuis que le titre et
+// le bouton de la page ne sont plus ceux de l'onboarding (`v1-36`) : « Pas de compte à créer pour commencer »
+// changé dans `etape-accroche.tsx` → « la ligne sous le bouton… » tombe, seul.
+
+// Le récit, lui, n'est pas dans la fiche : il est écrit pour la page (`RECIT`), ses chiffres viennent de
+// `climat.ts` et de `carbon-reference.ts`, et ce fichier ne le compare à rien.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { ACCUEIL } from '@/constants/accueil';
+import { ACCUEIL, enDegres } from '@/constants/accueil';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 
 const RACINE = join(__dirname, '..', '..');
@@ -69,5 +73,14 @@ describe('la page d’accueil dit ce que dit la fiche Play', () => {
   it('la ligne sous le bouton est celle de la première page de l’onboarding', () => {
     const accroche = readFileSync(join(RACINE, 'src/components/onboarding/etape-accroche.tsx'), 'utf8');
     expect(accroche.includes(ACCUEIL.sansCompte)).toBe(true);
+  });
+});
+
+// Le formateur des degrés du récit (`v1-36`). Éprouvé en le cassant, le 31/10/2026 : le point laissé tel quel,
+// puis le signe retiré, font chacun tomber ce test.
+describe('enDegres', () => {
+  it('signé, à la virgule française, l’unité après une espace', () => {
+    expect(enDegres(2.7)).toBe('+2,7 °C');
+    expect(enDegres(4)).toBe('+4 °C');
   });
 });

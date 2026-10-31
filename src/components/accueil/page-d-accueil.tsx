@@ -33,6 +33,7 @@ import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type ViewStyle,
 } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,7 +41,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FilmDePresentation } from '@/components/accueil/film-de-presentation';
 import { BandeDeLEte, EchelleDesEtes, PartDuTransport } from '@/components/accueil/recit-de-l-ete';
 import { Button } from '@/components/button';
-import { Mascot } from '@/components/mascot';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
 import { ThemedText } from '@/components/themed-text';
@@ -110,23 +110,24 @@ export function PageDAccueil({
     allerVers(VERS_L_ONBOARDING);
   };
 
-  const { attacher: attacherEte, vu: vuEte } = useVuUneFois(() => compterSurLAccueil('lu_ete'));
+  const { attacher: attacherEte } = useVuUneFois(() => compterSurLAccueil('lu_ete'));
   const { attacher: attacherEchelle, vu: vuEchelle } = useVuUneFois(() => compterSurLAccueil('lu_echelle'));
   const { attacher: attacherTrajets, vu: vuTrajets } = useVuUneFois(() => compterSurLAccueil('lu_trajets'));
   const { attacher: attacherAgir } = useVuUneFois(() => compterSurLAccueil('lu_agir'));
   const { attacher: attacherComment, vu: vuComment } = useVuUneFois(() => compterSurLAccueil('lu_comment'));
   const { attacher: attacherFin } = useVuUneFois(() => compterSurLAccueil('lu_fin'));
 
-  // La barre d'appel : visible une fois le bouton du haut sorti de l'écran, jusqu'à ce que celui de la fin
-  // y entre. Les deux bornes sont mesurées sur la page, le défilement est lu à chaque pas.
+  // La barre d'appel : visible une fois la bande du haut — et son bouton — sortie de l'écran, jusqu'à ce que
+  // la bande de la fin y entre. Les deux bornes sont mesurées sur la page ; la position du défilement est
+  // gardée, pour qu'un redimensionnement ou un dépli (le film en texte) la recalcule sans attendre le pas suivant.
   const [bornes, setBornes] = useState({
     apresLeHaut: Infinity,
     avantLaFin: Infinity,
   });
-  const [barreVisible, setBarreVisible] = useState(false);
+  const [defilement, setDefilement] = useState(0);
+  const barreVisible = defilement > bornes.apresLeHaut && defilement + height < bornes.avantLaFin;
   const surDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const haut = e.nativeEvent.contentOffset.y;
-    setBarreVisible(haut > bornes.apresLeHaut && haut + height < bornes.avantLaFin);
+    setDefilement(e.nativeEvent.contentOffset.y);
   };
   const finDuHaut = (e: LayoutChangeEvent) => {
     const { y, height: h } = e.nativeEvent.layout;
@@ -145,6 +146,8 @@ export function PageDAccueil({
         <ScrollView
           testID="accueil-defilement"
           contentContainerStyle={{ paddingBottom: HAUTEUR_DE_LA_BARRE }}
+          // Un élément qui prend le focus au clavier s'arrête au-dessus de la barre, pas dessous (WCAG 2.4.11).
+          style={styles.defilement}
           onScroll={surDefilement}
           scrollEventThrottle={100}
         >
@@ -155,12 +158,11 @@ export function PageDAccueil({
             largeur={large ? MaxContentWidth : MESURE_DE_LECTURE}
             testID="accueil-haut"
           >
-            <View style={styles.marque}>
-              <Mascot mood="calm" size={40} tilt={-7} />
-              <ThemedText weight={600} style={styles.nom}>
-                {APP_NAME}
-              </ThemedText>
-            </View>
+            {/* **Le nom, pas le visage** : la bande de l'été est un chiffre lourd, et Ramille ne se tient jamais
+                à côté (`FRONT-MASCOTTE.md`). Elle paraît plus bas, là où elle parle — la bande sans chiffre. */}
+            <ThemedText weight={600} style={styles.nom}>
+              {APP_NAME}
+            </ThemedText>
             <View style={styles.tete}>
               <ThemedText type="small" weight={600} themeColor="accentText" style={styles.surtitre}>
                 {RECIT.surtitre}
@@ -169,7 +171,12 @@ export function PageDAccueil({
                 {RECIT.titre}
               </ThemedText>
             </View>
-            <BandeDeLEte vu reduit={reduit} grande={large} />
+            <View style={styles.figureDuHaut}>
+              <BandeDeLEte vu reduit={reduit} grande={large} />
+              <ThemedText type="small" themeColor="textTertiary">
+                {RECIT.ete.legende}
+              </ThemedText>
+            </View>
             <ThemedText themeColor="textSecondary" style={[styles.chapeau, large && styles.chapeauLarge]}>
               {RECIT.chapeau}
             </ThemedText>
@@ -193,30 +200,20 @@ export function PageDAccueil({
               <ThemedText themeColor="textSecondary" style={styles.corps}>
                 {RECIT.ete.texte}
               </ThemedText>
-              <ThemedText type="small" themeColor="textTertiary">
-                {RECIT.ete.legende}
-              </ThemedText>
             </View>
             <View style={[styles.faits, large && styles.faitsLarges]}>
-              {RECIT.ete.faits.map((fait, i) => (
-                <Animated.View
+              {/* Du texte : il ne bouge pas (`v1-36` §4), seules les figures se dessinent. */}
+              {RECIT.ete.faits.map((fait) => (
+                <View
                   key={fait}
                   style={[
                     styles.fait,
                     large && styles.faitLarge,
-                    {
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                    styleDuRecit(
-                      'fondu',
-                      { vu: vuEte, reduit },
-                      { duree: Mouvement.entree, delai: i * 120 }
-                    ),
+                    { borderColor: theme.border, backgroundColor: theme.background },
                   ]}
                 >
                   <ThemedText style={styles.corps}>{fait}</ThemedText>
-                </Animated.View>
+                </View>
               ))}
             </View>
             <Source libelle={SOURCE_DE_L_ETE.libelle} url={SOURCE_DE_L_ETE.url} />
@@ -224,7 +221,7 @@ export function PageDAccueil({
 
           {/* ── L'échelle des étés ───────────────────────────────────────────────────────── */}
           <Bande large={large}>
-            <View ref={attacherEchelle} style={styles.section}>
+            <View style={styles.section}>
               <ThemedText type="subtitle" style={titreDeSection}>
                 {RECIT.echelle.titre}
               </ThemedText>
@@ -232,7 +229,10 @@ export function PageDAccueil({
                 {RECIT.echelle.texte}
               </ThemedText>
             </View>
-            <EchelleDesEtes vu={vuEchelle} reduit={reduit} />
+            {/* La figure paraît, et non son titre : c'est elle qui se dessine sous les yeux. */}
+            <View ref={attacherEchelle}>
+              <EchelleDesEtes vu={vuEchelle} reduit={reduit} />
+            </View>
             <ThemedText type="small" themeColor="textTertiary">
               {RECIT.echelle.note}
             </ThemedText>
@@ -243,7 +243,7 @@ export function PageDAccueil({
 
           {/* ── Nos trajets ──────────────────────────────────────────────────────────────── */}
           <Bande fond="backgroundElement2" large={large}>
-            <View ref={attacherTrajets} style={styles.section}>
+            <View style={styles.section}>
               <ThemedText type="subtitle" style={titreDeSection}>
                 {RECIT.trajets.titre}
               </ThemedText>
@@ -254,7 +254,9 @@ export function PageDAccueil({
                 )}
               </ThemedText>
             </View>
-            <PartDuTransport vu={vuTrajets} reduit={reduit} />
+            <View ref={attacherTrajets}>
+              <PartDuTransport vu={vuTrajets} reduit={reduit} />
+            </View>
             <Source libelle={SOURCE_DES_POSTES} />
           </Bande>
 
@@ -272,12 +274,13 @@ export function PageDAccueil({
               </ThemedText>
             </View>
             <RamilleDit ligne={RAMILLE.presentation} mood="encouraging" size={48} tilt={-6} />
-            <AppelAuBilan onPress={() => commencer('agir')} large={large} />
+            {/* Sans la durée : la bande où Ramille parle ne porte aucun chiffre. */}
+            <AppelAuBilan onPress={() => commencer('agir')} large={large} sansDuree />
           </Bande>
 
           {/* ── Comment ça marche : la fiche Play, mot pour mot ──────────────────────────── */}
           <Bande large={large}>
-            <View ref={attacherComment} style={styles.section}>
+            <View style={styles.section}>
               <ThemedText type="subtitle" style={titreDeSection}>
                 {RECIT.comment.titre}
               </ThemedText>
@@ -285,7 +288,9 @@ export function PageDAccueil({
                 {ACCUEIL.chapeau}
               </ThemedText>
             </View>
-            <EtapesDeRamille vu={vuComment} reduit={reduit} />
+            <View ref={attacherComment}>
+              <EtapesDeRamille vu={vuComment} reduit={reduit} />
+            </View>
             <ThemedText themeColor="textSecondary" style={styles.corps}>
               {ACCUEIL.introduction}
             </ThemedText>
@@ -437,17 +442,19 @@ function Bande({
 function AppelAuBilan({
   onPress,
   large,
+  sansDuree = false,
   children,
 }: {
   onPress: () => void;
   large: boolean;
+  sansDuree?: boolean;
   children?: ReactNode;
 }) {
   return (
     <View style={styles.appel}>
       <Button title={RECIT.bouton} onPress={onPress} style={large ? styles.boutonLarge : undefined} />
       <ThemedText type="small" themeColor="textTertiary" style={large ? undefined : styles.centre}>
-        {`${RECIT.duree} ${ACCUEIL.sansCompte}`}
+        {sansDuree ? ACCUEIL.sansCompte : `${RECIT.duree} ${ACCUEIL.sansCompte}`}
       </ThemedText>
       {children}
     </View>
@@ -502,9 +509,10 @@ function EtapesDeRamille({ vu, reduit }: { vu: boolean; reduit: boolean }) {
 }
 
 /**
- * La barre d'appel du bas de l'écran. Elle entre comme la barre d'onglets (`Mouvement.entreeDeBarre`), en
- * fondu, et s'en va d'un coup : une sortie ne s'anime pas plus que nécessaire. Elle ne prend jamais le
- * focus : elle se rejoint au clavier, à sa place, après le contenu.
+ * La barre d'appel du bas de l'écran. Elle entre en fondu, à la durée de la barre d'onglets
+ * (`Mouvement.entreeDeBarre`), et s'en va d'un coup : une sortie ne s'anime pas plus que nécessaire. Elle ne prend
+ * jamais le focus ; au clavier, la tabulation qui va au bout de la page amène la bande de la fin, dont le bouton
+ * est le même — la barre s'efface alors, comme au doigt.
  */
 function BarreDAppel({ onPress, reduit }: { onPress: () => void; reduit: boolean }) {
   const theme = useTheme();
@@ -538,6 +546,8 @@ function Source({ libelle, url }: { libelle: string; url?: string }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // `scrollPaddingBottom` n'est pas dans les types de React Native : une propriété CSS que le web lit.
+  defilement: { scrollPaddingBottom: HAUTEUR_DE_LA_BARRE } as ViewStyle,
   safeArea: { flex: 1 },
 
   bande: {
@@ -548,7 +558,7 @@ const styles = StyleSheet.create({
   colonne: { width: '100%', alignSelf: 'center', gap: Spacing.four },
   section: { gap: Spacing.three },
 
-  marque: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  figureDuHaut: { gap: Spacing.two },
   nom: { fontSize: 18, lineHeight: 24 },
   tete: { gap: Spacing.three },
   // L'étiquette en capitales d'une carte (`TypeScale.label`), en tête de la page.

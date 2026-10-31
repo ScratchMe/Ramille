@@ -43,6 +43,8 @@ republier sa collection, et ils ne valent que pour le web.
 | `fondu` | 200 ms | ce qui apparaît en place |
 | `sortie` | 200 ms | ce qui redescend ou rétrécit |
 | `deplacement` | 8 px | ce qu'un contenu parcourt |
+| `recit` | 1 200 ms | **la page d'accueil du web seulement** : un remplissage échelonné, en tout (`v1-36` §4) |
+| `trace` | 600 ms | **la page d'accueil du web seulement** : un trait qui se tend (`v1-36` §4) |
 | `courbe` | `[0.22, 1, 0.36, 1]` | la « sortie douce », partout |
 
 La courbe est quatre nombres : `Easing.bezier(...Mouvement.courbe)` pour reanimated comme pour

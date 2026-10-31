@@ -5,6 +5,7 @@ import {
   decalageDEntree,
   defilementPourMontrer,
   delaiEchelonne,
+  etatDuRecit,
   dureeSelonLaPreference,
   hauteurSAnime,
   sensDuPassage,
@@ -181,5 +182,20 @@ describe('delaiEchelonne', () => {
   it('un seul élément, ou une durée plus longue que le total, part sans délai', () => {
     expect(delaiEchelonne(0, 1, 1200, 200)).toBe(0);
     expect(delaiEchelonne(5, 10, 100, 200)).toBe(0);
+  });
+});
+
+// L'état d'une figure du récit (`v1-36` §4). Éprouvé en le cassant, le 31/10/2026 : la préférence lue après
+// `vu` (`if (etat.vu) return 'animee'` d'abord) fait tomber « sous la préférence, posée » ; l'état de départ
+// remplacé par `posee` fait tomber « avant de paraître ».
+describe('etatDuRecit', () => {
+  it('sous la préférence, posée, que la figure ait paru ou non', () => {
+    expect(etatDuRecit({ vu: false, reduit: true })).toBe('posee');
+    expect(etatDuRecit({ vu: true, reduit: true })).toBe('posee');
+  });
+
+  it('avant de paraître, l’état de départ ; une fois parue, l’animation', () => {
+    expect(etatDuRecit({ vu: false, reduit: false })).toBe('depart');
+    expect(etatDuRecit({ vu: true, reduit: false })).toBe('animee');
   });
 });

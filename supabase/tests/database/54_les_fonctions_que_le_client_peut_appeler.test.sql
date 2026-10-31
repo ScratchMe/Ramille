@@ -64,6 +64,8 @@ insert into liste_blanche values
   -- est l'autorisation (test `64`).
   ('public.le_point_du_lien(uuid)', true),
   ('public.repondre_par_le_lien(uuid, text)', true),
+  -- La page d'accueil du web, qui se compte sans session et sans identifiant (`v1-36` §5, test `65`).
+  ('public.compter_sur_l_accueil(text)', true),
   -- Évaluées par un `check` pendant une écriture du client (`usage_events`, les jours d'intention).
   ('public.check_usage_event_props(jsonb)', true),
   ('public.check_intention_days(smallint[])', true),

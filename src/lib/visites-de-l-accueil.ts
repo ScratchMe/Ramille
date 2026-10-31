@@ -6,9 +6,11 @@
 // que pas de mesure.
 //
 // **Une fois par affichage** : une section qui sort de l'écran puis y revient ne compte qu'une fois, et un
-// bouton touché deux fois aussi. L'ensemble vit dans le module, donc il dure le temps de l'onglet ; la page
-// d'accueil ne se rend qu'une fois par chargement, et un retour sur elle (« Retour » depuis une page
-// publique, une déconnexion) recompte, ce qui est juste : c'est un nouvel affichage.
+// bouton touché deux fois aussi. L'ensemble vit dans le module, et la page le vide en montant
+// (`nouvelAffichageDeLAccueil`) : un rechargement, ou un retour à la racine qui remonte la page — après une
+// déconnexion, après le retrait de son seul bilan —, recompte. **Un retour par « Retour »** depuis une page du
+// pied, ou depuis l'onboarding, ne recompte pas : la navigation garde la page montée dessous, et c'est le même
+// affichage qui reprend.
 import { supabase } from '@/lib/supabase';
 import type { EvenementDeLAccueil } from '@/types/analytics';
 

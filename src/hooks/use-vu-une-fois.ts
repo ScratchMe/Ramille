@@ -47,7 +47,10 @@ export function useVuUneFois(quandVu?: () => void): {
       const noeud = vue as unknown as Element;
       const o = new IntersectionObserver(
         (entrees) => {
-          if (!entrees.some((entree) => entree.isIntersecting)) return;
+          // La part, et non `isIntersecting` : celui-ci vaut vrai dès un pixel au premier rappel, quel que soit
+          // le seuil demandé (relevé à la contre-lecture du 31/10/2026).
+          if (!entrees.some((entree) => entree.isIntersecting && entree.intersectionRatio >= PART_VISIBLE))
+            return;
           o.disconnect();
           signaler();
         },

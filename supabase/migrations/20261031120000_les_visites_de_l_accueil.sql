@@ -58,8 +58,9 @@ begin
 end;
 $$;
 
--- Appelée sans session (`anon`) : la page d'accueil n'en ouvre pas. Et par une session, pour qui la lit
--- après s'être déconnecté sans fermer l'onglet.
+-- Appelée sans session (`anon`) : la page d'accueil n'en ouvre pas. **Et par une session** (`authenticated`) :
+-- la racine du web restaure une session existante sans en ouvrir (`laSessionSOuvreSur`), et qui revient avec
+-- une session mais sans bilan ni questionnaire en cours voit la page d'accueil avec elle.
 revoke execute on function public.compter_sur_l_accueil(text) from public, anon, authenticated;
 grant execute on function public.compter_sur_l_accueil(text) to anon, authenticated;
 

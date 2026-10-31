@@ -181,7 +181,7 @@ compte quitté**, comme une déconnexion : ce sont celles d'un autre propriétai
 racine du site présente le produit à qui n'a ni bilan ni questionnaire en cours (`destinationSurLaPlateforme`,
 `src/types/demarrage.ts`) ; elle restaure la session de l'appareil, décide d'après elle qu'on revient — et
 envoie alors au plan ou au questionnaire comme avant —, et n'en crée aucune. **La session s'ouvre au geste** :
-« Découvrir mon impact » et « J'ai déjà un compte » appellent `allerVers` (`src/app/index.tsx`), qui ouvre la
+Ses boutons — « Voir ce que pèsent mes trajets » depuis le 31/10/2026 (`v1-36`), « Découvrir mon impact » avant — et « J'ai déjà un compte » appellent `allerVers` (`src/app/index.tsx`), qui ouvre la
 session **puis** navigue, comme la racine native l'ouvre avant de router. C'est ce qui garde au refus du
 captcha son écran (« La vérification n'a pas abouti », et « Réessayer » reprend le geste) — la contre-lecture
 du 23/10/2026 l'a vu se perdre dans le layout quand la session s'ouvrait en arrivant dans l'onboarding —, et ce

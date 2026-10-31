@@ -102,7 +102,7 @@ La confirmation dit donc que le plan repart du précédent **et** nomme l'action
 le statut `withdrawn`, un plan revenu à zéro action et l'action archivée en `retrait` ; et l'adresse dit « Ce bilan a été
 retiré. » **après un rechargement** — c'est là que parle la lecture par identifiant, et plus l'état
 posé par le geste. Puis le seul qui reste : la confirmation ne parle plus de plan, l'écran rejoint
-la racine — sur le web, la page d'accueil depuis le 23/10/2026, d'où « Découvrir mon impact » rouvre
+la racine — sur le web, la page d'accueil depuis le 23/10/2026, d'où son bouton (« Voir ce que pèsent mes trajets » depuis le 31/10/2026) rouvre
 l'onboarding à sa deuxième page —, et la marque `traceverte.a_un_bilan.v1` est **lue posée avant**, effacée après — sans la
 première moitié, une clé mal nommée rendrait la seconde vraie par accident. Le troisième cas (retirer
 un bilan qui ne porte pas le plan) n'est pas joué ici : `34_retirer_un_bilan.test.sql` le tient.

@@ -4,7 +4,8 @@
 -- **Ce que ce fichier garde.** Trois promesses de la page de confidentialité, et une condition de la mesure :
 --
 --   1. **`anon` compte, sans session** : la page d'accueil n'en ouvre pas, et c'est par `anon` qu'elle appelle.
---      Le compteur du jour monte d'un, puis de deux ; un autre événement a sa ligne.
+--      **Et `authenticated` aussi** : qui revient avec une session restaurée sans bilan voit la page avec elle.
+--      Le compteur du jour monte d'autant qu'on a compté, quel que soit ce qu'il portait avant.
 --   2. **Un événement inconnu est refusé** par le `check`, seule liste en base — la fonction ne la recopie pas.
 --   3. **Le client ne lit rien** : ni `anon` ni `authenticated` n'ont un privilège sur la table, et la fonction
 --      n'écrit que par elle-même (`security definer`). La table n'a que trois colonnes, et aucune ne désigne
@@ -16,9 +17,17 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(10);
 
--- ── 1. anon compte ─────────────────────────────────────────────────────────────────────────
+-- **Relatif à ce qu'il y avait avant** : la table garde ses compteurs d'un jour à l'autre — sur la production
+-- dès la première visite, en local après un parcours réel —, donc l'assertion porte sur la hausse, jamais sur
+-- un total (`TESTING-PGTAP.md` §2.3).
+create temporary table avant as
+  select evenement, nombre from public.visites_de_l_accueil
+  where jour = (now() at time zone 'Europe/Paris')::date;
+grant select on avant to anon, authenticated;
+
+-- ── 1. anon compte, et une session aussi ──────────────────────────────────────────────────
 
 set local role anon;
 select lives_ok($$ select public.compter_sur_l_accueil('vue') $$, 'anon compte une vue, sans session');
@@ -26,11 +35,26 @@ select lives_ok($$ select public.compter_sur_l_accueil('vue') $$, 'anon compte u
 select lives_ok($$ select public.compter_sur_l_accueil('clic_haut') $$, 'anon compte un toucher du bouton du haut');
 reset role;
 
+-- Qui revient avec une session mais sans bilan voit la page avec elle : la racine restaure sans ouvrir.
+set local role authenticated;
+select lives_ok($$ select public.compter_sur_l_accueil('lu_ete') $$, 'une session compte aussi');
+reset role;
+
 select results_eq(
-  $$ select evenement, nombre from public.visites_de_l_accueil
-     where jour = (now() at time zone 'Europe/Paris')::date order by evenement $$,
-  $$ values ('clic_haut'::text, 1), ('vue', 2) $$,
-  'une ligne par événement et par jour, et un nombre qui monte'
+  $$ select e.evenement, v.nombre - coalesce(a.nombre, 0)
+     from (values ('clic_haut'::text), ('lu_ete'), ('vue')) e(evenement)
+     join public.visites_de_l_accueil v
+       on v.evenement = e.evenement and v.jour = (now() at time zone 'Europe/Paris')::date
+     left join avant a on a.evenement = e.evenement
+     order by e.evenement $$,
+  $$ values ('clic_haut'::text, 1), ('lu_ete', 1), ('vue', 2) $$,
+  'une ligne par événement et par jour, et un nombre qui monte d''autant qu''on a compté'
+);
+
+select ok(
+  has_function_privilege('anon', 'public.compter_sur_l_accueil(text)', 'execute')
+    and has_function_privilege('authenticated', 'public.compter_sur_l_accueil(text)', 'execute'),
+  'anon et authenticated exécutent le compteur'
 );
 
 -- ── 2. Un événement inconnu ────────────────────────────────────────────────────────────────
@@ -76,8 +100,9 @@ rollback;
 --
 --   | Ce qu'on casse | Ce qui tombe |
 --   |---|---|
---   | `grant execute … to anon` retiré | les trois `lives_ok` de 1, et « un nombre qui monte » (aucune ligne) |
---   | `on conflict … do update` remplacé par `do nothing` | « un nombre qui monte » (1 au lieu de 2) |
+--   | `grant execute … to anon` retiré | les trois `lives_ok` d'anon, « un nombre qui monte » et « anon et authenticated exécutent » |
+--   | `grant execute … to authenticated` retiré | « une session compte aussi », « un nombre qui monte » et « anon et authenticated exécutent » |
+--   | `on conflict … do update` remplacé par `do nothing` | « un nombre qui monte » |
 --   | le `check` des événements retiré | « un événement que le check ne connaît pas » |
 --   | `grant select … to authenticated` ajouté | « ni anon ni authenticated » |
 --   | une colonne `session uuid` ajoutée | « trois colonnes » |

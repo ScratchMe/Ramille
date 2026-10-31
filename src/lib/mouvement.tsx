@@ -21,7 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Mouvement } from '@/constants/theme';
-import { decalageDEntree, hauteurSAnime, type Sens } from '@/types/mouvement';
+import { decalageDEntree, etatDuRecit, hauteurSAnime, type Sens } from '@/types/mouvement';
 
 /**
  * Ce qui entre, ce qui s'ouvre et ce qui change de hauteur, écrit une fois (27/09/2026, `v1-30`
@@ -111,8 +111,9 @@ export function styleDuRecit(
   etat: { vu: boolean; reduit: boolean },
   minutage: { duree: number; delai?: number }
 ) {
-  if (etat.reduit) return undefined;
-  if (!etat.vu) return DEPART_DU_RECIT[geste];
+  const decision = etatDuRecit(etat);
+  if (decision === 'posee') return undefined;
+  if (decision === 'depart') return DEPART_DU_RECIT[geste];
   return {
     animationName: geste === 'fondu' ? FONDU : geste === 'traceHorizontal' ? TRACE_HORIZONTAL : TRACE_VERTICAL,
     animationDuration: minutage.duree,

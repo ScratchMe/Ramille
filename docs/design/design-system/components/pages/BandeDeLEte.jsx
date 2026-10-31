@@ -6,6 +6,7 @@ import { ThemedText } from '../core/ThemedText.jsx';
 // (les cinq postes de l'empreinte moyenne en une barre, le transport en tête et dans l'accent, SDES 2017). Des données,
 // pas des illustrations : chaque figure porte sa phrase entière pour le lecteur d'écran. L'encre pour la chaleur, ni
 // rouge ni orange. Dans l'app, chacune se dessine quand elle paraît (`--motion-recit`, `--motion-trace`) ; ici, posée.
+// Les valeurs sont recopiées ici pour dessiner la fiche : la source reste `climat.ts` et `carbon-reference.ts`.
 const VAGUES = [['2026-06-17', '2026-06-30'], ['2026-07-04', '2026-07-19'], ['2026-07-28', '2026-08-19']];
 function joursDeLEte() {
   const jours = [];
@@ -37,7 +38,7 @@ export function BandeDeLEte({ grande = false }) {
 export function EchelleDesEtes({ reperes = [
   { libelle: 'Aujourd’hui', detail: 'Un été comme 2026 : une chance sur 100.' },
   { libelle: '+2,7 °C', detail: 'La France vers 2050.' },
-  { libelle: '+4 °C', detail: 'La France vers 2100. Un été comme 2026 y serait ordinaire.' },
+  { libelle: '+4 °C', detail: 'La France vers 2100. Les températures de l’été 2026 y seraient ordinaires.' },
 ] }) {
   return (
     <div>

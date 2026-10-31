@@ -38,8 +38,8 @@ import { laSessionSOuvreSur, suiteDuDemarrage } from '@/types/session';
 //
 // **Sur le web, c'est aussi la page d'accueil du site** (23/10/2026, étape 5 de
 // `docs/architecture/v1-35-l-audit-en-chantiers.md`) : qui n'a ni bilan ni questionnaire en cours
-// la voit ici, à l'adresse du site, au lieu d'être envoyé à l'onboarding — l'équivalent de la fiche
-// Play, avec le film (`PageDAccueil`). La racine n'y ouvre pas de session ; elle restaure celle qui
+// la voit ici, à l'adresse du site, au lieu d'être envoyé à l'onboarding — le récit de l'été 2026, puis
+// ce que fait Ramille (`PageDAccueil`, `v1-36`). La racine n'y ouvre pas de session ; elle restaure celle qui
 // est là, et c'est elle qui décide qu'on revient (`laSessionSOuvreSur`, `src/types/session.ts`). Le
 // HTML exporté reste l'écran de lancement : la page d'accueil ne s'affiche qu'une fois la session
 // restaurée, sans quoi quelqu'un qui revient verrait la présentation le temps de charger l'app,

@@ -1305,8 +1305,8 @@ export type Database = {
           },
         ]
       }
-      // `v1-36` §5 : la page d'accueil du web, comptée sans identifiant. Personne ne la lit ni ne l'écrit
-      // directement (aucun privilège) : `compter_sur_l_accueil` écrit, l'analyse lit en `postgres`.
+      // `v1-36` §5 : la page d'accueil du web, comptée sans identifiant. Le client ne la lit ni ne l'écrit
+      // directement : `compter_sur_l_accueil` écrit ; le rôle de service et l'analyse (`postgres`) la lisent.
       visites_de_l_accueil: {
         Row: {
           evenement: string
