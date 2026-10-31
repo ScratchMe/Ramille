@@ -64,10 +64,10 @@ describe('la page d’accueil dit ce que dit la fiche Play', () => {
     expect(PARAGRAPHES.at(-1)).toBe(`${ACCUEIL.editeur}${CONTACT_EMAIL}`);
   });
 
-  it('le titre et la ligne sous le bouton sont ceux de la première page de l’onboarding', () => {
+  // Le titre et le bouton ne sont plus ceux de l'onboarding depuis le 31/10/2026 (`v1-36`) : la page part de
+  // l'été 2026, l'onboarding de Ramille. La ligne sous le bouton reste la même phrase, pour la même question.
+  it('la ligne sous le bouton est celle de la première page de l’onboarding', () => {
     const accroche = readFileSync(join(RACINE, 'src/components/onboarding/etape-accroche.tsx'), 'utf8');
-    for (const texte of [ACCUEIL.titre, ACCUEIL.sansCompte, ACCUEIL.bouton]) {
-      expect({ texte, dansLOnboarding: accroche.includes(texte) }).toEqual({ texte, dansLOnboarding: true });
-    }
+    expect(accroche.includes(ACCUEIL.sansCompte)).toBe(true);
   });
 });

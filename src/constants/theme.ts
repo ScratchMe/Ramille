@@ -298,6 +298,14 @@ export const Mouvement = {
   sortie: 200,
   /** Ce qu'un contenu parcourt en entrant. */
   deplacement: 8,
+  /**
+   * **Le récit de la page d'accueil du web** (`v1-36` §4, 31/10/2026), la seule surface où une donnée se
+   * dessine : l'été qui se remplit jour après jour, un trait qui se tend. `recit` est la durée **totale**
+   * d'un remplissage échelonné, `trace` celle d'un trait. Plus longs que l'interface, parce qu'ils
+   * racontent une durée ; joués une fois, quand la section paraît, et posés sous la préférence.
+   */
+  recit: 1200,
+  trace: 600,
   /** La « sortie douce », pour tout ce qui entre, sort, glisse ou se replie. */
   courbe: [0.22, 1, 0.36, 1],
 } as const;

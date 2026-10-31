@@ -1305,6 +1305,26 @@ export type Database = {
           },
         ]
       }
+      // `v1-36` §5 : la page d'accueil du web, comptée sans identifiant. Personne ne la lit ni ne l'écrit
+      // directement (aucun privilège) : `compter_sur_l_accueil` écrit, l'analyse lit en `postgres`.
+      visites_de_l_accueil: {
+        Row: {
+          evenement: string
+          jour: string
+          nombre: number
+        }
+        Insert: {
+          evenement: string
+          jour: string
+          nombre?: number
+        }
+        Update: {
+          evenement?: string
+          jour?: string
+          nombre?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1401,6 +1421,7 @@ export type Database = {
         }[]
       }
       collect_push_receipts: { Args: never; Returns: undefined }
+      compter_sur_l_accueil: { Args: { p_evenement: string }; Returns: undefined }
       commit_plan_action: {
         Args: {
           p_days?: number[]

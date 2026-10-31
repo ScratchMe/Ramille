@@ -10,12 +10,16 @@
 //
 // **Le format se choisit une fois, à l'arrivée** : le 4:5 sur un écran étroit, le 16:9 au-delà. Tourner le
 // téléphone ensuite ne change pas de source, ce qui couperait la lecture en cours.
+//
+// **Son lancement se compte** (`compterSurLAccueil`, `v1-36` §5) : une fois par affichage de la page,
+// sans rien qui désigne personne.
 import { useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 
 import { FILM, LARGEUR_DU_FILM_ETROIT } from '@/constants/accueil';
 import { Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { compterSurLAccueil } from '@/lib/visites-de-l-accueil';
 
 export function FilmDePresentation() {
   const theme = useTheme();
@@ -31,6 +35,7 @@ export function FilmDePresentation() {
         preload="none"
         poster={source.affiche}
         aria-label={FILM.titre}
+        onPlay={() => compterSurLAccueil('film_lance')}
         style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', borderRadius: Radius.card }}
       >
         <source src={source.video} type="video/mp4" />

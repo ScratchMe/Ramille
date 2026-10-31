@@ -1,13 +1,17 @@
-// Les textes de la page d'accueil du web (`src/components/accueil/page-d-accueil.tsx`, étape 5 de
-// `docs/architecture/v1-35-l-audit-en-chantiers.md`, 23/10/2026).
+// Les textes de la page d'accueil du web (`src/components/accueil/page-d-accueil.tsx`).
 //
-// **Rien n'y est écrit pour l'occasion.** La personne qui pilote a demandé « l'équivalent de la fiche
-// Play, qui donne envie, avec le film » : le corps de la page est la description de la fiche
-// (`docs/exploitation/fiche-google-play.md` §2.1), mot pour mot, et chaque phrase y a sa ligne dans la
-// table « Ce que chaque phrase engage » — ce qui la rend vraie aujourd'hui, et ce qu'il faut revoir
-// quand le produit change. `accueil.test.ts` compare les deux : une phrase changée ici sans la fiche, ou
-// dans la fiche sans ici, fait rougir la suite. L'accroche et la ligne sous le bouton sont celles de
-// l'onboarding (`src/components/onboarding/etape-accroche.tsx`), la description courte celle de Play.
+// **Deux parties, et deux règles** (`docs/architecture/v1-36-la-page-d-accueil.md`, 31/10/2026) :
+//
+// - **le récit** (`RECIT`), écrit pour la page : il part de l'été 2026 tel que Météo-France l'a mesuré,
+//   montre la part du transport dans notre empreinte, puis ce qu'on peut faire — décidé avec la personne
+//   qui pilote le 31/10/2026, « Que l'été 2026 reste une exception », un mélange de deux promesses
+//   proposées : les faits de l'été, puis « Tu ne peux pas arrêter une canicule. Tu peux changer un
+//   trajet. ». Ses chiffres viennent de `climat.ts` et de `carbon-reference.ts`, jamais d'ici ;
+// - **ce que fait Ramille** (`ACCUEIL`), qui reste la description de la fiche Play, mot pour mot
+//   (`docs/exploitation/fiche-google-play.md` §2.1) : chaque phrase y a sa ligne dans la table « Ce que
+//   chaque phrase engage », et `accueil.test.ts` compare les deux. La page d'avant l'était tout entière
+//   (étape 5 de `v1-35`, 23/10/2026) ; elle allait trop vite à la mesure de l'empreinte, et ne parlait
+//   qu'à qui était déjà sensibilisé.
 //
 // **Deux phrases n'ont pas de jumelle dans la fiche** : la ligne sous le film, décidée par la personne qui
 // pilote le 23/10/2026 (le film montre la notification d'Android, et sur le web le rappel n'arrive que par
@@ -19,17 +23,81 @@ import {
   formatTonnesShort,
   TARGET_2050_TRANSPORT_T,
 } from '@/constants/carbon-reference';
+import { FAITS_DE_L_ETE } from '@/constants/climat';
 import { APP_NAME } from '@/constants/produit';
+
+const enDegres = (valeur: number) => `+${String(valeur).replace('.', ',')} °C`;
+
+/**
+ * **Le récit**, dans l'ordre de la page. Chaque phrase sur l'été reprend le bilan de Météo-France
+ * (`SOURCE_DE_L_ETE`), page citée dans `climat.ts` ; la page cite la source sous les chiffres. Aucun
+ * vocabulaire de catastrophe, aucune injonction : des faits datés, puis ce qui est à notre portée.
+ */
+export const RECIT = {
+  surtitre: 'Été 2026, d’après Météo-France',
+  titre: 'Que l’été 2026 reste une exception.',
+  chapeau:
+    'Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que nous émettons — et en ' +
+    'France, le transport est le premier poste de notre empreinte carbone.',
+  bouton: 'Voir ce que pèsent mes trajets',
+  duree: 'Ton bilan prend 5 minutes environ.',
+  ete: {
+    titre: `${FAITS_DE_L_ETE.joursDeVagueDeChaleur} jours de vague de chaleur`,
+    texte:
+      'Trois vagues, de la mi-juin à la mi-août : plus d’un jour sur deux. Loin devant l’été 2022 et ses ' +
+      `${FAITS_DE_L_ETE.joursDeVagueDeChaleur2022} jours.`,
+    legende: 'Un carré par jour, du 1er juin au 31 août. En plein, les jours de vague de chaleur.',
+    faits: [
+      `${FAITS_DE_L_ETE.departementsEnVigilanceRouge} départements en vigilance rouge canicule, en juin.`,
+      `Près de ${FAITS_DE_L_ETE.deficitDePluiePct} % de pluie en moins qu’un été normal.`,
+      'La saison des feux de forêt la plus sévère jamais enregistrée.',
+    ],
+  },
+  echelle: {
+    titre: `Aujourd’hui, un été sur ${FAITS_DE_L_ETE.uneChanceSur}. À ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, un été ordinaire.`,
+    texte:
+      'Selon Météo-France, l’été 2026 aurait été quasi impossible sans le changement climatique. Dans le ' +
+      `climat actuel, un tel été a une chance sur ${FAITS_DE_L_ETE.uneChanceSur} de se produire. Dans une ` +
+      `France à ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, il serait ordinaire.`,
+    reperes: [
+      { libelle: 'Aujourd’hui', detail: `Un été comme 2026 : une chance sur ${FAITS_DE_L_ETE.uneChanceSur}.` },
+      { libelle: enDegres(FAITS_DE_L_ETE.franceA2050C), detail: 'La France vers 2050.' },
+      {
+        libelle: enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC),
+        detail: 'La France vers 2100. Un été comme 2026 y serait ordinaire.',
+      },
+    ],
+    note:
+      `${enDegres(FAITS_DE_L_ETE.franceA2050C)} et ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)} : la ` +
+      'trajectoire de réchauffement sur laquelle la France prépare son adaptation.',
+    suite: `Arriver à ${enDegres(FAITS_DE_L_ETE.ordinaireDansUneFranceAC)}, ou s’arrêter avant : c’est ce que décident nos émissions.`,
+  },
+  trajets: {
+    titre: 'Et nos trajets ?',
+    /** Les repères viennent de `carbon-reference.ts`, mis en mots par la page (`FRONT.md` §2.1). */
+    texte: (transport: string, total: string) =>
+      `En France, le transport est le premier poste de notre empreinte carbone : ${transport} CO₂e par ` +
+      `personne et par an, sur ${total}.`,
+  },
+  agir: {
+    titre: 'Tu ne peux pas arrêter une canicule. Tu peux changer un trajet.',
+    texte:
+      `${APP_NAME} t’aide à voir ce que pèsent tes trajets, puis à en changer un, à ton rythme. Une habitude ` +
+      'à la fois, sans te juger.',
+  },
+  comment: { titre: 'Comment ça marche' },
+  fin: {
+    titre: 'Commence par tes trajets.',
+    texte: 'Cinq minutes pour voir ce qu’ils pèsent. Puis une action, celle que tu choisis, quand tu veux.',
+  },
+} as const;
 
 /** Ce que la fiche Play dit, découpé comme la page le montre. */
 export const ACCUEIL = {
-  /** L'accroche de l'onboarding, le titre de la page. */
-  titre: 'Comprendre tes trajets, sans te juger.',
   /** La description courte de la fiche Play. */
   chapeau: 'Calcule l’empreinte carbone de tes trajets et change une habitude à la fois.',
   /** La phrase de l'onboarding qui répond à « J'ai déjà un compte », posée au-dessus de lui. */
   sansCompte: 'Pas de compte à créer pour commencer.',
-  bouton: 'Découvrir mon impact',
   dejaUnCompte: 'J’ai déjà un compte',
   /** Le premier paragraphe de la description complète. */
   introduction:

@@ -44,6 +44,13 @@
 export const CARBON_SOURCE_LABEL = 'SDES, données 2017 · cible 2050 : ADEME';
 
 /**
+ * La source de la ventilation par poste seule, sans la cible 2050 : pour une surface qui montre les postes
+ * et pas la cible — la page d'accueil du web (`v1-36`). La première moitié de `CARBON_SOURCE_LABEL`, qui
+ * la reprend : les deux ne peuvent pas se contredire.
+ */
+export const SOURCE_DES_POSTES = CARBON_SOURCE_LABEL.split(' · ')[0];
+
+/**
  * Décomposition de l'empreinte carbone par poste de consommation.
  * SDES (service statistique du ministère de la Transition écologique), « La décomposition de
  * l'empreinte carbone de la demande finale de la France par postes de consommation »,

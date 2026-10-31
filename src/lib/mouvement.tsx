@@ -78,6 +78,52 @@ export function styleDEntree(sens: Sens | null, reduit: boolean) {
 }
 
 /**
+ * **Le récit de la page d'accueil du web** (`v1-36` §4, 31/10/2026) : la seule surface où une donnée se
+ * dessine. Trois gestes — un fondu (un jour de l'été qui se remplit), un trait qui se tend de gauche à
+ * droite, un trait qui descend —, joués **une fois, quand leur section paraît** (`useVuUneFois`), et non
+ * au chargement, où ils se joueraient hors de l'écran.
+ *
+ * **Trois états, décidés au rendu** : sous « réduire les animations », rien — l'élément est posé, comme
+ * partout ; avant que la section paraisse, l'état de départ (transparent, ou trait à zéro), pour que
+ * l'élément entre sous les yeux ; dès qu'elle paraît, l'animation, qui part de ce même état
+ * (`animationFillMode: 'backwards'` le tient pendant le délai). Un délai ne retient jamais le focus :
+ * ce qui se dessine ici ne se focalise pas.
+ */
+type GesteDuRecit = 'fondu' | 'traceHorizontal' | 'traceVertical';
+
+const TRACE_HORIZONTAL = css.keyframes({
+  from: { transform: [{ scaleX: 0 }] },
+  to: { transform: [{ scaleX: 1 }] },
+});
+const TRACE_VERTICAL = css.keyframes({
+  from: { transform: [{ scaleY: 0 }] },
+  to: { transform: [{ scaleY: 1 }] },
+});
+
+const DEPART_DU_RECIT: Record<GesteDuRecit, ViewStyle> = {
+  fondu: { opacity: 0 },
+  traceHorizontal: { transform: [{ scaleX: 0 }], transformOrigin: 'left' },
+  traceVertical: { transform: [{ scaleY: 0 }], transformOrigin: 'top' },
+};
+
+export function styleDuRecit(
+  geste: GesteDuRecit,
+  etat: { vu: boolean; reduit: boolean },
+  minutage: { duree: number; delai?: number }
+) {
+  if (etat.reduit) return undefined;
+  if (!etat.vu) return DEPART_DU_RECIT[geste];
+  return {
+    animationName: geste === 'fondu' ? FONDU : geste === 'traceHorizontal' ? TRACE_HORIZONTAL : TRACE_VERTICAL,
+    animationDuration: minutage.duree,
+    animationDelay: minutage.delai ?? 0,
+    animationTimingFunction: courbeCSS,
+    animationFillMode: 'backwards' as const,
+    transformOrigin: geste === 'traceVertical' ? 'top' : 'left',
+  };
+}
+
+/**
  * « Cet écran vient de monter » : ce qui est déjà là à l'arrivée ne s'ouvre pas sous les yeux — une
  * précision ouverte par un brouillon entre avec son étape, un point déjà répondu est simplement là.
  * Seul ce qui monte ensuite s'anime.
