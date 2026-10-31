@@ -89,9 +89,34 @@ export function delaiEchelonne(rang: number, nombre: number, total: number, dure
  */
 export type EtatDuRecit = 'posee' | 'depart' | 'animee';
 
-export function etatDuRecit(etat: { vu: boolean; reduit: boolean }): EtatDuRecit {
+/** Ce qu'une figure du récit sait pour décider de son état : a-t-elle paru, la préférence est-elle réduite. */
+export type LectureDuRecit = { vu: boolean; reduit: boolean };
+
+export function etatDuRecit(etat: LectureDuRecit): EtatDuRecit {
   if (etat.reduit) return 'posee';
   return etat.vu ? 'animee' : 'depart';
+}
+
+/**
+ * **Un geste de la scène de l'été** (`scene-de-l-ete.web.tsx`, `v1-36` §4) : l'élément qui bouge, ses images
+ * clés, sa durée et son départ en millisecondes, et combien de fois il se joue — un nombre, jamais « sans fin ».
+ */
+export type GesteDeScene = {
+  element: string;
+  images: string;
+  duree: number;
+  delai: number;
+  fois: number;
+  courbe: 'douce' | 'balancier' | 'chute';
+};
+
+/**
+ * **Quand une scène s'arrête**, en millisecondes : la fin du dernier geste. Un mouvement qui part seul et dure plus
+ * de cinq secondes doit pouvoir s'arrêter (WCAG 2.2.2) ; la scène de l'été tient en dessous, sans bouton. Un geste
+ * sans fin rend l'infini, que la borne refuse.
+ */
+export function finDuMouvement(gestes: readonly GesteDeScene[]): number {
+  return gestes.reduce((fin, g) => Math.max(fin, g.delai + g.duree * g.fois), 0);
 }
 
 /**

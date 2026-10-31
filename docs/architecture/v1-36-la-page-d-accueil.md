@@ -32,8 +32,8 @@ mobiliser », et « pas de mise en scène de l'urgence climatique, pas de vocabu
 désormais par l'été 2026 — c'est la décision de la personne qui pilote. Elle la tient **sans la peur pure** que la
 spécification refusait : des faits datés et sourcés, dits sans qualificatif (« le plus chaud jamais mesuré »,
 « 53 jours », jamais « catastrophique » ni « alarmant ») ; un visiteur jamais laissé sur le constat — la phrase
-qui suit le titre dit déjà « la suite dépend de ce que nous émettons », et le premier bouton est dans le même
-écran ; et la chaleur qui se lit à la durée, pas à la couleur. Le handoff est figé et ne se réécrit pas ; l'écart vit
+qui suit le titre propose déjà d'y contribuer, pas à pas, et le premier bouton est dans le même écran ; et, dans les figures, la chaleur qui se lit à la durée, pas à la couleur — la scène du haut la peint, elle, du
+seul ton chaud du kit, sans rouge ni orange. Le handoff est figé et ne se réécrit pas ; l'écart vit
 ici.
 
 **Le reste a été construit sans elle, puis montré** — l'ordre des bandes, les figures, le mouvement, les libellés,
@@ -42,17 +42,37 @@ ont été envoyés le 31/10/2026 ; sa réponse : « Ah, là je crois que ça mar
 ci-dessous pour pouvoir être rouvert, en particulier le libellé du bouton (§3), la barre d'appel (§3) et l'échelle
 des étés, qui ajoute aux faits vécus une projection vers 2050 et 2100 (§3).
 
+**Le même soir, la scène de l'été** (demande de la personne qui pilote, une fois la page en ligne) : « C'est peut-être
+un peu anxiogène, mais franchement le ton change vite, donc ça va. Juste je pense qu'une représentation visuelle, une
+petite animation de deux personnages humains (homme et femme) qui ont trop chaud avec un soleil qui chauffe, pour
+faciliter la remémoration de ce que cet été a été pour nous tous. Un petit peu : vous vous souvenez de comment vous
+l'avez vécu ? Vous voulez contribuer à améliorer les choses ? On est là pour vous accompagner pas à pas. » D'où, en
+tête : la scène (`SceneDeLEte`), puis « Tu te souviens de cette chaleur ? », le titre, et un chapeau qui propose d'y
+contribuer et dit que Ramille accompagne, pas à pas. Trois choix faits en l'écrivant, à rouvrir s'il le faut :
+**le tutoiement**, celui de tout le produit ; **« cette chaleur », et non « cet été »**, que `FRONT.md` interdit
+parce que la page sera encore lue l'été prochain — la question montre la scène, et le titre la date ; **la bande des
+92 jours descend sous « 53 jours de vague de chaleur »**, où elle illustre le chiffre qu'elle dessine, pour que le
+haut tienne encore dans le premier écran d'un téléphone. Une vidéo de l'arrivée sur téléphone et le haut sur
+téléphone et sur ordinateur — la scène à droite du texte, le titre ramené de 64 à 52 pour tenir sur sa colonne —
+lui ont été envoyés avec ces trois choix ; sa réponse : « C'est parfait comme ça ».
+
+**La scène est annoncée au lecteur d'écran, par exception** : une image nommée (« Une femme et un homme accablés
+par la chaleur, sous un soleil qui chauffe, sur une terre sèche. »), là où `FRONT.md` §1.4 masque les
+illustrations, qui accompagnent un texte qui dit déjà tout. Celle-ci, la question qui suit la désigne : masquée,
+« Tu te souviens de cette chaleur ? » resterait sans objet pour qui ne la voit pas. L'exception est écrite dans
+`FRONT.md` §1.4 et §2.4.
+
 ## 3. La page, bande par bande
 
-Des bandes pleine largeur, une colonne de 560 de large (800 pour le haut sur un grand écran, et pour le film). Sur un
-téléphone de 390 × 844, le titre, la bande de l'été, le chapeau et le premier bouton tiennent dans le premier écran
-(mesuré sur l'export le 31/10/2026) ; sur un 360 × 640, le bouton passe sous le pli, et la barre d'appel n'y paraît
+Des bandes pleine largeur, une colonne de 560 de large (1 040 pour le haut sur un grand écran, la scène à droite du
+texte ; 800 pour le film). Sur un téléphone de 390 × 844, la scène, la question, le titre, le chapeau et le premier
+bouton tiennent dans le premier écran (mesuré sur l'export le 31/10/2026, le bouton à 640 du haut) ; sur un 360 × 640, le bouton passe sous le pli, et la barre d'appel n'y paraît
 qu'une fois le haut dépassé.
 
 | Bande | Ce qu'elle dit | D'où ça vient |
 |---|---|---|
-| **Le haut** | Le nom de Ramille, **sans son visage** (la bande de l'été est un chiffre lourd, `FRONT-MASCOTTE.md`) ; « Été 2026, d'après Météo-France » ; **« Que l'été 2026 reste une exception. »** ; la bande de l'été et sa légende, « Un trait par jour… » ; « Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que le monde émet, nous compris — et en France, le transport est le premier poste de notre empreinte carbone. » ; le bouton, « Ton bilan prend 5 minutes environ. Pas de compte à créer pour commencer. », « J'ai déjà un compte » | Météo-France p. 4 et 5 ; SDES 2017 |
-| **L'été en nombres** | « 53 jours de vague de chaleur » ; trois vagues, plus d'un jour sur deux, loin devant 2022 et ses 33 jours ; trois faits — jusqu'à 72 départements en vigilance rouge le même jour, en juin (un maximum, p. 7), près de 40 % de pluie en moins, la saison des feux la plus sévère jamais enregistrée ; la source, en lien | Météo-France p. 4 et 11 |
+| **Le haut** | Le nom de Ramille, **sans son visage** (en haut, la scène est celle des gens ; Ramille parle plus bas, `FRONT-MASCOTTE.md`) ; **la scène de l'été** — une femme et un homme qui ont trop chaud, un soleil qui chauffe, une terre sèche — ; « Tu te souviens de cette chaleur ? » ; **« Que l'été 2026 reste une exception. »** ; « Le plus chaud jamais mesuré en France depuis 1900, d'après Météo-France. Tu veux contribuer à ce que ça change ? Ramille t'accompagne, pas à pas, en commençant par tes trajets : en France, le premier poste de notre empreinte carbone. » ; le bouton, « Ton bilan prend 5 minutes environ. Pas de compte à créer pour commencer. », « J'ai déjà un compte » | Météo-France p. 4 et 5 ; SDES 2017 ; la scène, la demande du 31/10/2026 (§2) |
+| **L'été en nombres** | « 53 jours de vague de chaleur » ; trois vagues, plus d'un jour sur deux, loin devant 2022 et ses 33 jours ; la bande de l'été et sa légende, « Un trait par jour… » ; trois faits — jusqu'à 72 départements en vigilance rouge le même jour, en juin (un maximum, p. 7), près de 40 % de pluie en moins, la saison des feux la plus sévère jamais enregistrée ; la source, en lien | Météo-France p. 4 et 11 |
 | **L'échelle des étés** | « Aujourd'hui, un été sur 100. À +4 °C, une chaleur ordinaire. » ; quasi impossible sans le changement climatique ; aujourd'hui, +2,7 °C vers 2050, +4 °C vers 2100, où **ses températures** seraient celles d'un été ordinaire — Météo-France le dit de la chaleur, pas de la pluie, et la page ne dit pas plus ; « Arriver à +4 °C, ou s'arrêter avant : c'est ce que décident les émissions de la planète, les nôtres comprises. » — le bilan parle d'émissions « au niveau planétaire » | Météo-France p. 15 à 17, la trajectoire de réchauffement de référence pour l'adaptation (TRACC) qu'il cite |
 | **Nos trajets** | « Et nos trajets ? » ; le transport, premier poste : 2,8 t sur 9,5 t ; la barre des cinq postes | `carbon-reference.ts` (SDES 2017) |
 | **Ce qui est à notre portée** | **« Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »** ; ce que fait Ramille, en une phrase ; Ramille dit sa présentation ; un bouton, sans la durée | La seule bande sans chiffre, et la seule où paraît le visage de Ramille : elle ne se tient jamais près d'un chiffre lourd (`FRONT-MASCOTTE.md`) |
@@ -84,10 +104,20 @@ Play, avec son badge (`docs/communication/le-fil-de-ramille/README.md`), et le l
 
 **Une exception écrite à « un enchaînement tient sous 300 ms »** (le skill `mouvement`), autorisée par la personne
 qui pilote (« Tu as aussi le droit d'intégrer directement le motion design sur le site web ») et bornée : **seules
-les trois figures et le trait des trois temps bougent, et leur mouvement dit la donnée** — la bande se remplit dans
+les trois figures, le trait des trois temps et la scène de l'été bougent, et leur mouvement dit ce qui se passe** —
+la chaleur arrive sur la scène (le soleil grandit, l'air tremble, elle s'évente, il s'éponge, la sueur perle, une
+goutte tombe : 3,1 s en tout, sous les cinq secondes de WCAG 2.2.2 au-delà desquelles il faudrait un bouton
+d'arrêt, `finDuMouvement`, testée), la bande se remplit dans
 l'ordre de l'été (`Mouvement.recit`, 1,2 s en tout), le trait de l'échelle descend d'un repère à l'autre et la barre
 se remplit poste par poste (`Mouvement.trace`, 600 ms), les trois temps de Ramille se relient. **Le texte ne bouge
 pas**, les trois faits de l'été compris.
+
+**La scène est la seule à ne pas passer par reanimated** : un dessin SVG du navigateur et ses images clés en CSS
+(`scene-de-l-ete.web.tsx`), comme le film est une balise `<video>` — la page n'existe que sur le web, et un dessin de
+cette finesse en vues React Native coûterait plus qu'il ne rapporte. Elle suit les mêmes règles par le même chemin :
+son état vient d'`etatDuRecit`, décidé au rendu, et la feuille de style ne fait que le lire ; chaque animation finit
+sur l'image posée, comparée image par image à la scène posée le 31/10/2026 (aucun écart visible, quelques pixels
+d'anticrénelage).
 
 Les règles qui tiennent : **une fois, quand la figure paraît** — l'observateur est posé sur la figure, pas sur son
 titre, et il attend qu'un tiers en soit à l'écran (`useVuUneFois`, `intersectionRatio`) —, et non au chargement, où

@@ -7,6 +7,7 @@ import {
   delaiEchelonne,
   etatDuRecit,
   dureeSelonLaPreference,
+  finDuMouvement,
   hauteurSAnime,
   sensDuPassage,
 } from '@/types/mouvement';
@@ -197,5 +198,30 @@ describe('etatDuRecit', () => {
   it('avant de paraître, l’état de départ ; une fois parue, l’animation', () => {
     expect(etatDuRecit({ vu: false, reduit: false })).toBe('depart');
     expect(etatDuRecit({ vu: true, reduit: false })).toBe('animee');
+  });
+});
+
+// Quand une scène s'arrête (`v1-36` §4, la scène de l'été). Éprouvé en le cassant, le 31/10/2026 : la répétition
+// oubliée (`g.delai + g.duree`) fait tomber « un geste qui se répète » et « un geste sans fin » ; le départ oublié
+// (`g.duree * g.fois`) fait tomber « la fin du dernier geste » et « un geste qui se répète ».
+describe('finDuMouvement', () => {
+  const geste = { element: 'e', images: 'i', courbe: 'douce' } as const;
+
+  it('la fin du dernier geste, pas du plus long', () => {
+    expect(
+      finDuMouvement([
+        { ...geste, duree: 1400, delai: 0, fois: 1 },
+        { ...geste, duree: 1000, delai: 2100, fois: 1 },
+      ])
+    ).toBe(3100);
+  });
+
+  it('un geste qui se répète compte chacune de ses fois', () => {
+    expect(finDuMouvement([{ ...geste, duree: 550, delai: 600, fois: 4 }])).toBe(2800);
+  });
+
+  it('un geste sans fin rend l’infini, et une scène vide s’arrête tout de suite', () => {
+    expect(finDuMouvement([{ ...geste, duree: 500, delai: 0, fois: Infinity }])).toBe(Infinity);
+    expect(finDuMouvement([])).toBe(0);
   });
 });

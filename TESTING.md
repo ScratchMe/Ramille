@@ -356,7 +356,8 @@ qu'on prétend garder demande donc sa moitié négative.
 - **Un client réel sous minuteries fictives ne se débloque pas** (`src/lib/supabase.test.ts`) : la
   chaîne d'attente de la session d'`auth-js` y reste pendante. Temps réels, borne de 1,5 s.
 - **Un défaut propre au web se teste en rendant par react-native-web**
-  (`src/tests/ecrans/feuille-du-bas-sur-web.test.tsx`, seul de la suite) : `@jest-environment jsdom`,
+  (`src/tests/ecrans/feuille-du-bas-sur-web.test.tsx`, la première ; depuis, `film-de-presentation-sur-web` et
+  `scene-de-l-ete-sur-web`, les deux pendants web de la page d'accueil) : `@jest-environment jsdom`,
   `jest.mock('react-native', () => jest.requireActual('react-native-web'))`, un rendu par
   `react-dom/client` ; reanimated réduit à ce que le composant appelle, `@/lib/mouvement` à son
   `reglage` ; et `fetch` fixé à `undefined`, sans quoi « Cannot log after tests are done » sort quand

@@ -128,7 +128,9 @@ sur web, le natif est en `v1-13` §11.25).
   haut, « Aucun » ne dit rien. C'est ce qu'un libellé accessible ajoute, et c'est la chose qu'on
   oublie en écrivant les libellés visibles ;
 - **les illustrations et les mascottes sont masquées** : elles accompagnent un texte qui dit déjà
-  tout ;
+  tout — **une exception** : la scène de l'été, en tête de la page d'accueil du web, est une image
+  nommée (`RECIT.scene`), parce que la question qui la suit la désigne (« Tu te souviens de cette
+  chaleur ? ») et resterait sans objet pour qui ne la voit pas (31/10/2026, `v1-36` §3) ;
 - **les titres s'annoncent en en-tête par leur type**, pas écran par écran — **et avec leur
   niveau** : sans lui, react-native-web rend chaque en-tête en `<h1>`, et une page parcourue titre
   par titre ne distingue plus l'écran de ses sections ;
@@ -390,7 +392,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   [`v1-36`](docs/architecture/v1-36-la-page-d-accueil.md) ; la page d'avant, étape 5 de `v1-35`, n'était que la fiche).
   **Son récit** est écrit pour elle (`RECIT`), et ses chiffres viennent de `src/constants/climat.ts` — le bilan
   climatique de l'été 2026 de Météo-France, chaque valeur avec sa page — et de `carbon-reference.ts` ; la page
-  cite ses sources sous les chiffres, et écrit « l'été 2026 », jamais « cet été ». **Ce que fait Ramille**
+  cite ses sources sous les chiffres, et écrit « l'été 2026 », jamais « cet été » — la page sera encore lue l'été
+  prochain ; la question du haut dit donc « Tu te souviens de cette chaleur ? », qui montre la scène dessinée
+  avec elle (`scene-de-l-ete.web.tsx`, deux personnes qui ont trop chaud), et le titre qui suit la date. **Ce que fait Ramille**
   (`ACCUEIL`) reste la fiche. La racine du site la rend à qui n'a ni bilan ni questionnaire en cours
   (`src/components/accueil/`) ; ses textes vivent dans `src/constants/accueil.ts`, et `accueil.test.ts` compare
   `ACCUEIL` à la description de `docs/exploitation/fiche-google-play.md` §2.1 — une phrase changée d'un côté sans
@@ -442,7 +446,7 @@ exactement ce qui avait laissé passer le mauvais caractère.
   répond —, et un choix multiple (les jours d'une intention) est une série de `checkbox` ; et la
   mascotte comme les illustrations sont masquées
   (`aria-hidden`, `accessibilityElementsHidden`) — elles accompagnent un texte qui dit déjà
-  tout. Un `Pressable` nu reste légitime quand la cible porte plusieurs textes (la bannière de
+  tout ; la scène de l'été de la page d'accueil fait exception, et §1.4 dit pourquoi. Un `Pressable` nu reste légitime quand la cible porte plusieurs textes (la bannière de
   `src/app/(tabs)/suivi/bilan.tsx`), à condition de lui donner un `accessibilityLabel` qui les
   recompose.
 - **Un lien a trois apparences, et le composant seul sait ce qu'elles veulent dire** (`apparence`,
