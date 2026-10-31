@@ -362,6 +362,31 @@ export const ORIGINES_DES_PANNES = ['rendu', 'globale', 'fatale', 'promesse'] as
 
 export type OrigineDUnePanne = (typeof ORIGINES_DES_PANNES)[number];
 
+// ## Ce que la page d'accueil du web compte, sans session (`v1-36` §5, 31/10/2026)
+//
+// **Pas des événements d'usage** : la page d'accueil n'ouvre pas de session, et `usage_events` n'en
+// accepte que d'une session. Ces noms vont à un compteur par jour, sans identifiant
+// (`visites_de_l_accueil`, `src/lib/visites-de-l-accueil.ts`). Miroir du `check` de sa colonne
+// `evenement`, comparé à la base par `scripts/verifier-miroirs-de-check.mjs` : `vue`, une section parue
+// à l'écran (`lu_*`, dans l'ordre de la page), un bouton vers l'onboarding touché (`clic_*`, par
+// emplacement), et le film lancé.
+export const EVENEMENTS_DE_L_ACCUEIL = [
+  'vue',
+  'lu_ete',
+  'lu_echelle',
+  'lu_trajets',
+  'lu_agir',
+  'lu_comment',
+  'lu_fin',
+  'clic_haut',
+  'clic_agir',
+  'clic_fin',
+  'clic_collant',
+  'film_lance',
+] as const;
+
+export type EvenementDeLAccueil = (typeof EVENEMENTS_DE_L_ACCUEIL)[number];
+
 // `name` plutôt qu'`instanceof` : les constructeurs natifs portent leur nom dans le prototype,
 // que la minification ne touche pas, alors qu'`instanceof` se trompe dès qu'une exception
 // traverse deux contextes (un iframe, un worker) — et le repli `autre` serait silencieux.

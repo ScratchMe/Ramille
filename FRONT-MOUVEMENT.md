@@ -31,6 +31,17 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   la barre d'onglets qui arrive au sortir du premier parcours, l'étape du questionnaire et son rail,
   ce qui s'ouvre sous un choix, ce qui change de hauteur, le passage d'un onglet à l'autre. Et ce
   qui bougeait déjà : la mascotte, l'écran de lancement, l'entrée d'une carte d'ouverture.
+- **Et, sur le web seulement, les figures du récit de la page d'accueil** (31/10/2026,
+  [`v1-36`](docs/architecture/v1-36-la-page-d-accueil.md) §4) : la seule surface où **une donnée se dessine**.
+  La bande de l'été se remplit dans l'ordre des jours (`Mouvement.recit`, 1,2 s en tout), un trait descend
+  d'un repère à l'autre et entre les trois temps de Ramille, la barre des postes se remplit (`Mouvement.trace`,
+  600 ms) — plus longs que « un
+  enchaînement tient sous 300 ms », parce qu'ils racontent une durée ; l'exception a été autorisée par la
+  personne qui pilote et ne s'étend à rien d'autre. Ce qui ne change pas : une fois, **quand la figure paraît**
+  (`useVuUneFois`, un tiers de la figure à l'écran), jamais au chargement hors de l'écran ; **posé dès la première
+  image** sous la préférence (`styleDuRecit`, `src/lib/mouvement.tsx`, qui lit `etatDuRecit`, testée) ; jamais un compteur qui défile, jamais une boucle ; le texte ne bouge
+  pas, et rien ne retient le focus. La barre d'appel de la page entre en fondu, à la durée de la barre d'onglets
+  (`entreeDeBarre`), et s'en va d'un coup.
 - **Un défilement est celui de la plateforme** (`scrollTo({ animated })`, `v1-31`) : ni durée ni
   courbe à régler, et **posé sous la préférence** (`animated: !animationsReduites`) — le défilement
   compte parmi ce qui s'anime. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5),

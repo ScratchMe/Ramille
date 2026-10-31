@@ -4,6 +4,8 @@ import {
   barreArrive,
   decalageDEntree,
   defilementPourMontrer,
+  delaiEchelonne,
+  etatDuRecit,
   dureeSelonLaPreference,
   hauteurSAnime,
   sensDuPassage,
@@ -156,5 +158,44 @@ describe('defilementPourMontrer', () => {
   test('ne remonte jamais la page, et ne descend pas quand le haut est déjà au bord', () => {
     expect(defilementPourMontrer({ ...fenetre, haut: 10, bas: 900 })).toBe(0);
     expect(defilementPourMontrer({ ...fenetre, haut: -40, bas: 900 })).toBe(0);
+  });
+});
+
+// Le remplissage échelonné du récit de la page d'accueil (`v1-36` §4). Éprouvé en le cassant, le
+// 31/10/2026 : l'étendue prise sans retrancher la durée de chacun (`total` au lieu de `total - duree`) fait
+// tomber les quatre ; la borne retirée fait tomber « un rang hors de la série », seul.
+describe('delaiEchelonne', () => {
+  it('le premier part tout de suite, et le dernier finit à l’heure, sa durée comprise', () => {
+    expect(delaiEchelonne(0, 53, 1200, 200)).toBe(0);
+    expect(delaiEchelonne(52, 53, 1200, 200) + 200).toBe(1200);
+  });
+
+  it('les rangs se répartissent également', () => {
+    expect(delaiEchelonne(26, 53, 1200, 200)).toBe(500);
+  });
+
+  it('un rang hors de la série est borné, jamais négatif ni au-delà du dernier', () => {
+    expect(delaiEchelonne(-3, 53, 1200, 200)).toBe(0);
+    expect(delaiEchelonne(80, 53, 1200, 200)).toBe(1000);
+  });
+
+  it('un seul élément, ou une durée plus longue que le total, part sans délai', () => {
+    expect(delaiEchelonne(0, 1, 1200, 200)).toBe(0);
+    expect(delaiEchelonne(5, 10, 100, 200)).toBe(0);
+  });
+});
+
+// L'état d'une figure du récit (`v1-36` §4). Éprouvé en le cassant, le 31/10/2026 : la préférence lue après
+// `vu` (`if (etat.vu) return 'animee'` d'abord) fait tomber « sous la préférence, posée » ; l'état de départ
+// remplacé par `posee` fait tomber « avant de paraître ».
+describe('etatDuRecit', () => {
+  it('sous la préférence, posée, que la figure ait paru ou non', () => {
+    expect(etatDuRecit({ vu: false, reduit: true })).toBe('posee');
+    expect(etatDuRecit({ vu: true, reduit: true })).toBe('posee');
+  });
+
+  it('avant de paraître, l’état de départ ; une fois parue, l’animation', () => {
+    expect(etatDuRecit({ vu: false, reduit: false })).toBe('depart');
+    expect(etatDuRecit({ vu: true, reduit: false })).toBe('animee');
   });
 });

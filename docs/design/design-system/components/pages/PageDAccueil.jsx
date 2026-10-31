@@ -2,59 +2,80 @@ import React from 'react';
 import { ThemedText } from '../core/ThemedText.jsx';
 import { Button } from '../core/Button.jsx';
 import { TextLink } from '../core/TextLink.jsx';
-import { Mascot } from '../mascotte/Mascot.jsx';
+import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 import { FilmDePresentation } from './FilmDePresentation.jsx';
+import { BandeDeLEte, EchelleDesEtes, PartDuTransport } from './BandeDeLEte.jsx';
 // Source : src/components/accueil/page-d-accueil.tsx — la page d'accueil du web, à la racine du site, pour qui n'a ni
-// bilan ni questionnaire en cours (23/10/2026, étape 5 de `v1-35`). L'équivalent de la fiche Play, avec le film : ses
-// textes sont ceux de la fiche, mot pour mot (`src/constants/accueil.ts`, comparés par un test). Mascotte et nom en tête,
-// l'accroche de l'onboarding en titre, « Découvrir mon impact », « Pas de compte à créer pour commencer. » puis « J'ai déjà
-// un compte » ; le film, sa ligne et sa version texte repliée ; les sections de la fiche ; un second bouton ; le pied
-// (l'éditeur, le contact, les trois pages publiques, en vrais liens). Une colonne de 480 pour le texte, de 800 pour le
-// film. Aucun chiffre sur la page. « Découvrir mon impact » ouvre la session au geste, puis l'onboarding à sa deuxième
-// page : la première redirait cette page (décidé le 23/10/2026).
-const corps = { fontSize: 15, lineHeight: '23px' };
-const titreDeSection = { fontSize: 18, lineHeight: '26px' };
-const colonne = { width: '100%', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 };
-export function PageDAccueil({ sections = [], filmEnTexte = [], onCommencer, onDejaUnCompte }) {
-  const [ouvert, setOuvert] = React.useState(false);
+// bilan ni questionnaire en cours (31/10/2026, `v1-36`). Un récit, puis ce que fait Ramille : l'été 2026 d'après
+// Météo-France (le nom seul en haut, le titre « Que l'été 2026 reste une exception. », la bande de l'été et sa
+// légende, le premier bouton), ses chiffres et sa
+// source, l'échelle des étés, la part du transport, « Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »
+// avec Ramille — la seule bande sans chiffre —, comment ça marche (la fiche Play, mot pour mot, les trois temps reliés
+// par un trait), les garanties et les limites, le film, le dernier bouton, le pied. Des bandes pleine largeur, une
+// colonne de 560 (800 pour le haut sur un grand écran, et pour le film). Une barre d'appel en bas de l'écran entre le
+// premier bouton et le dernier. Chaque bouton ouvre la session au geste, puis l'onboarding à sa deuxième page.
+const corps = { fontSize: 16, lineHeight: '25px' };
+const titreDeSection = { fontSize: 24, lineHeight: '30px', letterSpacing: '-0.3px' };
+const Bande = ({ fond, children, largeur = 560 }) => (
+  <div style={{ background: fond ? `var(--color-${fond})` : 'var(--color-background)', padding: '48px 16px' }}>
+    <div style={{ width: '100%', maxWidth: largeur, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>{children}</div>
+  </div>
+);
+const Appel = ({ onPress, sansDuree = false }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <Button title="Voir ce que pèsent mes trajets" onPress={onPress} />
+    <ThemedText type="small" themeColor="textTertiary" style={{ textAlign: 'center' }}>{sansDuree ? '' : 'Ton bilan prend 5 minutes environ. '}Pas de compte à créer pour commencer.</ThemedText>
+  </div>
+);
+export function PageDAccueil({ sections = [], onCommencer, onDejaUnCompte }) {
   return (
-    <div style={{ padding: '32px 16px', background: 'var(--color-background)', display: 'flex', flexDirection: 'column', gap: 32 }}>
-      <div style={colonne}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Mascot mood="calm" size={40} tilt={-7} />
-          <ThemedText weight={600} style={{ fontSize: 18, lineHeight: '24px' }}>Ramille</ThemedText>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <ThemedText type="title" weight={600} style={{ fontSize: 32, lineHeight: '38px', letterSpacing: '-0.3px' }}>Comprendre tes trajets, sans te juger.</ThemedText>
-          <ThemedText themeColor="textSecondary" style={{ fontSize: 17, lineHeight: '25px' }}>Calcule l’empreinte carbone de tes trajets et change une habitude à la fois.</ThemedText>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <Bande>
+        <ThemedText weight={600} style={{ fontSize: 18, lineHeight: '24px' }}>Ramille</ThemedText>
+        <ThemedText type="small" weight={600} themeColor="accentText" style={{ textTransform: 'uppercase', letterSpacing: 1 }}>Été 2026, d’après Météo-France</ThemedText>
+        <ThemedText type="title" weight={700} style={{ fontSize: 36, lineHeight: '42px', letterSpacing: '-0.8px' }}>Que l’été 2026 reste une exception.</ThemedText>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Button title="Découvrir mon impact" onPress={onCommencer} />
-          <ThemedText type="small" themeColor="textTertiary" style={{ textAlign: 'center' }}>Pas de compte à créer pour commencer.</ThemedText>
-          <TextLink label="J’ai déjà un compte" apparence="souligne" role="link" align="center" onPress={onDejaUnCompte} />
+          <BandeDeLEte />
+          <ThemedText type="small" themeColor="textTertiary">Un trait par jour, du 1er juin au 31 août. En plein, les jours de vague de chaleur.</ThemedText>
         </div>
-      </div>
-      <div style={{ ...colonne, maxWidth: 800, gap: 16 }}>
-        <ThemedText weight={600} accessibilityRole="header" style={titreDeSection}>Le fil de Ramille</ThemedText>
-        <FilmDePresentation />
-        <ThemedText themeColor="textSecondary" style={corps}>Sur Android, Ramille te fait signe par notification ; sur le web, par email.</ThemedText>
-        <TextLink label="Le film en texte" apparence="souligne" expanded={ouvert} onPress={() => setOuvert(!ouvert)} />
-        {ouvert ? filmEnTexte.map((p) => (
-          <div key={p.chapitre} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <ThemedText type="small" weight={600}>{p.chapitre}</ThemedText>
-            <ThemedText themeColor="textSecondary" style={corps}>{p.texte}</ThemedText>
-          </div>
-        )) : null}
-      </div>
-      <div style={colonne}>
+        <ThemedText themeColor="textSecondary" style={{ fontSize: 17, lineHeight: '26px' }}>Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que le monde émet, nous compris — et en France, le transport est le premier poste de notre empreinte carbone.</ThemedText>
+        <Appel onPress={onCommencer} />
+        <TextLink label="J’ai déjà un compte" apparence="souligne" role="link" align="center" onPress={onDejaUnCompte} />
+      </Bande>
+      <Bande fond="background-element-2">
+        <ThemedText type="subtitle" style={titreDeSection}>53 jours de vague de chaleur</ThemedText>
+        <ThemedText themeColor="textSecondary" style={corps}>Trois vagues, de la mi-juin à la mi-août : plus d’un jour sur deux. Loin devant l’été 2022 et ses 33 jours.</ThemedText>
+      </Bande>
+      <Bande>
+        <ThemedText type="subtitle" style={titreDeSection}>Aujourd’hui, un été sur 100. À +4 °C, une chaleur ordinaire.</ThemedText>
+        <EchelleDesEtes />
+      </Bande>
+      <Bande fond="background-element-2">
+        <ThemedText type="subtitle" style={titreDeSection}>Et nos trajets ?</ThemedText>
+        <PartDuTransport />
+      </Bande>
+      <Bande fond="background-tinted">
+        <ThemedText type="subtitle" style={{ fontSize: 28, lineHeight: '34px', letterSpacing: '-0.5px' }}>Tu ne peux pas arrêter une canicule. Tu peux changer un trajet.</ThemedText>
+        <RamilleDit ligne="Moi, c’est Ramille. Je serai là à chaque saison, à ton rythme." mood="encouraging" size={48} tilt={-6} />
+        <Appel onPress={onCommencer} sansDuree />
+      </Bande>
+      <Bande>
+        <ThemedText type="subtitle" style={titreDeSection}>Comment ça marche</ThemedText>
         {sections.map((s) => (
-          <div key={s.titre} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <ThemedText weight={600} accessibilityRole="header" style={titreDeSection}>{s.titre}</ThemedText>
+          <div key={s.titre} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <ThemedText weight={600} accessibilityRole="header" style={{ fontSize: 18, lineHeight: '26px' }}>{s.titre}</ThemedText>
             <ThemedText themeColor="textSecondary" style={corps}>{s.texte}</ThemedText>
           </div>
         ))}
-        <Button title="Découvrir mon impact" onPress={onCommencer} />
-      </div>
+      </Bande>
+      <Bande largeur={800}>
+        <ThemedText type="subtitle" style={titreDeSection}>Le fil de Ramille</ThemedText>
+        <FilmDePresentation />
+      </Bande>
+      <Bande fond="background-tinted">
+        <ThemedText type="subtitle" style={titreDeSection}>Commence par tes trajets.</ThemedText>
+        <Appel onPress={onCommencer} />
+      </Bande>
     </div>
   );
 }

@@ -56,7 +56,8 @@ const APRES_LE_SIGNE = /(^|[\s(])([+−]) (?=\d)/g;
 // est une heure. Pas de `\p{L}` ni de lookbehind : le fichier s'en tient à ce que ses trois premiers
 // motifs emploient déjà sur l'appareil (un lookahead, des classes écrites), et Hermes ne s'éprouve pas
 // sous Jest.
-const UNITES = 'km|kg|tonnes?|min(?:utes?)?|t|h';
+// `°C` depuis le 31/10/2026 (`v1-36`) : « À +4 °C » coupait « +4 » de son unité, au titre de la page d'accueil.
+const UNITES = 'km|kg|tonnes?|min(?:utes?)?|t|h|°C';
 const LETTRE_DU_LATIN = 'A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u024F';
 const NOMBRE_ET_SON_UNITE = new RegExp(`(\\d) (?=(?:${UNITES})(?![${LETTRE_DU_LATIN}]))`, 'g');
 // « t CO₂e » et « kg CO₂e » : l'unité de masse, déjà collée à son nombre par le motif d'avant, garde son

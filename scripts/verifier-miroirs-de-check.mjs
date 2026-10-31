@@ -138,6 +138,14 @@ register(pathToFileURL(path.join(import.meta.dirname, 'resolveur-alias.mjs')).hr
  * le reste se lit dans la base et dans le module.
  */
 const MIROIRS = [
+  // --- Ce que la page d'accueil du web compte sans session (`v1-36` §5, 31/10/2026) ---
+  {
+    genre: 'valeurs',
+    constante: 'EVENEMENTS_DE_L_ACCUEIL',
+    module: 'src/types/analytics.ts',
+    colonne: 'visites_de_l_accueil.evenement',
+  },
+
   // --- Les statuts, écrits en clair dans les requêtes (C3.12 §12.2, 20/09/2026) ---
   {
     genre: 'valeurs',

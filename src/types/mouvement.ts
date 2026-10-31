@@ -71,6 +71,30 @@ export function hauteurSAnime(plateforme: string): boolean {
 }
 
 /**
+ * Le délai d'un élément dans un remplissage échelonné (`v1-36` §4) : le rang `rang` sur `nombre`, répartis
+ * sur `total` millisecondes **en comptant la durée de chacun**, pour que le dernier finisse à `total` et
+ * pas après. Un rang hors de la série est borné, jamais négatif.
+ */
+export function delaiEchelonne(rang: number, nombre: number, total: number, dureeDeChacun: number): number {
+  if (nombre <= 1) return 0;
+  const borne = Math.min(Math.max(rang, 0), nombre - 1);
+  const etendue = Math.max(total - dureeDeChacun, 0);
+  return Math.round((borne * etendue) / (nombre - 1));
+}
+
+/**
+ * **L'état d'une figure du récit** de la page d'accueil (`styleDuRecit`, `v1-36` §4), décidé au rendu :
+ * `posee` sous « réduire les animations » — dès la première image, quoi qu'il arrive ensuite ; `depart`
+ * tant que la figure n'a pas paru, pour qu'elle entre sous les yeux ; `animee` dès qu'elle paraît.
+ */
+export type EtatDuRecit = 'posee' | 'depart' | 'animee';
+
+export function etatDuRecit(etat: { vu: boolean; reduit: boolean }): EtatDuRecit {
+  if (etat.reduit) return 'posee';
+  return etat.vu ? 'animee' : 'depart';
+}
+
+/**
  * La durée d'une CSS transition de reanimated sous « réduire les animations », qu'elle ignore : zéro
  * pose tout de suite l'état final (le rail du questionnaire). Ce qui ne passe pas par une durée ne se
  * lance simplement pas sous la préférence (`src/lib/mouvement.tsx`, la barre d'onglets).

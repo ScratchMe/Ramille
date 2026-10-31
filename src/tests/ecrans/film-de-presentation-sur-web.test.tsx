@@ -22,12 +22,15 @@ import { Dimensions } from 'react-native';
 
 import { FilmDePresentation } from '@/components/accueil/film-de-presentation.web';
 import { FILM } from '@/constants/accueil';
+import { compterSurLAccueil } from '@/lib/visites-de-l-accueil';
 
 type Root = { render: (contenu: ReactNode) => void; unmount: () => void };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createRoot } = require('react-dom/client') as { createRoot: (hote: Element) => Root };
 
 jest.mock('react-native', () => jest.requireActual('react-native-web'));
+// Le lancement du film se compte (`v1-36` §5) : le compteur part chez Supabase, que ce test ne monte pas.
+jest.mock('@/lib/visites-de-l-accueil', () => ({ compterSurLAccueil: jest.fn() }));
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 Object.defineProperty(globalThis, 'fetch', { value: undefined, configurable: true, writable: true });
@@ -68,6 +71,15 @@ describe('le film de la page d’accueil, sur web', () => {
     const video = await monterALaLargeur(1280);
     expect(video.getAttribute('poster')).toBe(FILM.sources.large.affiche);
     expect(video.querySelector('source')?.getAttribute('src')).toBe(FILM.sources.large.video);
+  });
+
+  it('se compte quand il démarre, et pas avant', async () => {
+    const video = await monterALaLargeur(1280);
+    expect(compterSurLAccueil).not.toHaveBeenCalled();
+    await act(async () => {
+      video.dispatchEvent(new Event('play'));
+    });
+    expect(compterSurLAccueil).toHaveBeenCalledWith('film_lance');
   });
 
   it('sous 600 px, le 4:5 et son affiche', async () => {

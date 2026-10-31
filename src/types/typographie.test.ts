@@ -111,6 +111,8 @@ describe('espacesInsecables', () => {
 describe('un nombre ne se sépare pas de son unité', () => {
   it("rend insécable l'espace entre un nombre et chacune de ses unités", () => {
     expect(espacesInsecables('plus de 300 km')).toBe(`plus de 300${NBSP}km`);
+    // Éprouvé en le cassant, le 31/10/2026 : `°C` retiré de `UNITES` fait tomber cette ligne.
+    expect(espacesInsecables('Dans une France à +4 °C, ordinaire')).toContain(`+4${NBSP}°C,`);
     expect(espacesInsecables('soit 40 kg')).toBe(`soit 40${NBSP}kg`);
     expect(espacesInsecables('2 t visées')).toBe(`2${NBSP}t visées`);
     expect(espacesInsecables('2 tonnes visées')).toBe(`2${NBSP}tonnes visées`);
