@@ -57,13 +57,6 @@ export const EDITOR_NAME = 'Antoine Berthaud';
 export const CONTACT_EMAIL = 'contact@ramille.fr';
 
 /**
- * Où lire le code source, que `/conditions` annonce sous licence AGPL-3.0-or-later. Le dépôt est public
- * depuis le 17/09/2026 (`docs/exploitation/depot-public.md` §6) et s'appelle `ScratchMe/Ramille` (son
- * ancien nom, `ScratchMe/TraceVerte`, redirige : n'écrire que le nouveau).
- */
-export const URL_DU_CODE = 'https://github.com/ScratchMe/Ramille';
-
-/**
  * Les deux hébergeurs que `/conditions` nomme au titre de l'article 1er-1, II, de la LCEN (plus haut).
  * **L'entité qui contracte, avec l'adresse que son contrat donne** — pas la marque : « Supabase » seul
  * ne dit ni quelle société, ni dans quel pays, et c'est ce que l'audit du 18/10/2026 a reproché à la

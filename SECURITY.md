@@ -6,11 +6,9 @@ utile, et il est bienvenu.
 
 ## Comment
 
-**Ne pas ouvrir d'issue publique.** Deux chemins privés :
-
-1. **Private vulnerability reporting** de GitHub, onglet *Security* de ce dépôt — c'est le chemin
-   à préférer, il garde l'échange et son historique au même endroit ;
-2. à défaut, par email : **contact@ramille.fr**.
+Par email : **contact@ramille.fr**. Le *Private vulnerability reporting* de GitHub, qui était le
+chemin à préférer, n'existe que sur un dépôt public, et celui-ci est privé depuis le 31/10/2026
+(`docs/exploitation/depot-public.md` §9).
 
 Ce qui aide, dans l'ordre : ce que la faille permet d'obtenir, comment la reproduire, et l'URL ou
 la requête exacte. Une preuve de concept minimale vaut mieux qu'une description.

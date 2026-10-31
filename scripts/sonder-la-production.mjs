@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Interroge la production de l'extérieur, comme le ferait un visiteur sans JavaScript, et sort en 1
-// si un point ne répond pas comme attendu. `.github/workflows/sonde.yml` la lance toutes les heures :
+// si un point ne répond pas comme attendu. `.github/workflows/sonde.yml` la lance toutes les trois heures :
 // un échec fait prévenir GitHub, ce que rien d'autre ne fait.
 //
 //   node scripts/sonder-la-production.mjs [--annotations] [--tentatives 3] [--pause-ms 8000]
@@ -27,7 +27,7 @@
 // plus appelée. Le total (de 1,000 à 190,999 t, sous la borne de 200 t des Functions) suit donc la
 // minute : chaque passage rend une carte neuve par satori et resvg — le chemin qui a déjà coûté un
 // `FUNCTION_INVOCATION_FAILED` muet (`VERCEL.md` §1.6). Un coût d'environ une seconde de calcul par
-// passage, soit vingt-quatre par jour ; l'espacer, c'est espacer le `cron` de `sonde.yml`.
+// passage, soit huit par jour ; l'espacer, c'est espacer le `cron` de `sonde.yml`.
 //
 // **Un passage retente avant d'échouer** (trois essais, huit secondes entre eux) : un à-coup du
 // réseau ne doit pas réveiller quelqu'un, une panne qui dure, si. La décision (« cette réponse

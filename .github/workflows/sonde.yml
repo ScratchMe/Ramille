@@ -1,7 +1,7 @@
 name: Sonde de la production
 
 # La seule alerte du produit vit dans la base qu'elle surveille. Cette sonde regarde de l'extérieur,
-# toutes les heures : le site, ses pages légales, le fichier des liens Android, la page et la carte de
+# toutes les trois heures : le site, ses pages légales, le fichier des liens Android, la page et la carte de
 # partage, et l'Auth de Supabase. Un point qui ne répond pas fait échouer le travail, et GitHub prévient
 # alors **la personne qui a modifié la ligne `cron` en dernier** (pas l'équipe, pas le dépôt) : ce qui
 # se lit dans ses réglages de notification, Actions comprises. Ce que fait chaque point, et pourquoi la
@@ -12,7 +12,10 @@ name: Sonde de la production
 # sur le dépôt (registre d'exploitation, §3.8 et §8.13).
 on:
   schedule:
-    - cron: '17 * * * *'
+    # **Toutes les trois heures depuis le 31/10/2026**, et non plus chaque heure : le dépôt repasse en
+    # privé, où chaque passage coûte au moins une minute sur les 2 000 du mois
+    # (`docs/exploitation/depot-public.md` §9). Une panne se voit donc en trois heures au plus.
+    - cron: '17 */3 * * *'
   workflow_dispatch:
 
 permissions:

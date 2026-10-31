@@ -2,9 +2,11 @@
 
 **Lecture bienvenue, pull requests non attendues.**
 
-Le dépôt est public **pour être lu**. Le passage en public a été fait pour lever le plafond de
-minutes de CI, pas pour ouvrir le développement — et il n'y a pas d'équipe derrière : une personne
-et un agent. Une pull request qui arrive peut donc rester sans réponse, ou être refusée pour une
+**Le dépôt est privé depuis le 31/10/2026**, après avoir été public pour être lu du 17/09 au
+31/10/2026 (`docs/exploitation/depot-public.md` §9) ; le code source est disponible sur demande, à
+contact@ramille.fr. Ce qui suit vaut pour qui le reçoit. Le passage en public avait été fait pour
+lever le plafond de minutes de CI, pas pour ouvrir le développement — et il n'y a pas d'équipe
+derrière : une personne et un agent. Une pull request qui arrive peut donc rester sans réponse, ou être refusée pour une
 raison qui n'a rien à voir avec sa qualité. Le dire est plus utile que de laisser espérer.
 
 **Ce que ça ne retire pas** : la licence, la **GNU Affero General Public License v3.0 ou

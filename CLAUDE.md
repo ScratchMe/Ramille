@@ -105,6 +105,14 @@ désormais dans l'un d'eux : cette table dit lequel.
   (plus bas), verte sur sa tête, sans fil ouvert et sans conflit, elle se marque prête et se
   fusionne en squash, comme ses devancières. Ce qui se pose à la personne qui pilote reste ce qui
   touche au produit, et ça se pose avant d'écrire, pas au moment de fusionner.
+- **Le dépôt est privé depuis le 31/10/2026, sur le plan gratuit de GitHub** (l'activité du dépôt
+  n'a plus à être publique ; `docs/exploitation/depot-public.md` §9). Deux conséquences sur la façon
+  de travailler. **Plus rien côté GitHub n'empêche une fusion rouge** : la protection de `main` ne
+  s'applique pas à un dépôt privé gratuit, donc « verte sur sa tête » se vérifie travail par
+  travail avant de fusionner, et c'est la seule garde. **Et la CI se compte** : 2 000 minutes par
+  mois, ≈ 19 par passage — pousser une PR commit par commit coûte un passage par poussée. Si GitHub
+  prévient que le quota est atteint, on passe à GitHub Pro (décidé le 31/10/2026), on ne retire
+  pas de travail de la CI.
 
 ### La branche de travail
 
@@ -252,7 +260,8 @@ sûre d'emporter : un plug-in arrive donc en `.zip` et s'installe par
 archive plus récente, et le retire par `--retirer <plug-in>` — exactement ce qu'il avait posé, jamais
 tout ce qui porte son préfixe. Ce qui est installé, et ce qui ne l'est pas, se lit dans
 l'`installation.json` de chaque plug-in, sous `.claude/plugins-importes/`, à côté de sa licence.
-**Le dépôt est public, donc installer un plug-in, c'est le redistribuer** : sa licence voyage avec
+**Le code se transmet — public du 17/09 au 31/10/2026, sur demande depuis —, donc installer un
+plug-in, c'est le redistribuer** : sa licence voyage avec
 la provenance, et quand l'archive n'en porte pas, `--licence <fichier>` la joint — c'est le cas de
 Design, dont la licence (Apache 2.0) est à la racine du dépôt d'amont et non dans son dossier.
 Trois règles, dont les deux premières sont détaillées en tête du script et gardées par son test :

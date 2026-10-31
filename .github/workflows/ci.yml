@@ -2,8 +2,11 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  # **Plus de `push` sur `main` depuis le 31/10/2026** : le dépôt repasse en privé, où le plan
+  # gratuit ne donne que 2 000 minutes par mois, chaque travail arrondi à la minute. Relancer les cinq
+  # travaux après chaque fusion coûtait ≈ 1 550 minutes par mois pour revérifier un état que la PR
+  # venait de prouver. Ce qu'on perd : deux PR fusionnées coup sur coup qui ne cassent qu'ensemble —
+  # la PR suivante et le passage du lundi le voient (`docs/exploitation/depot-public.md` §9).
   # Le lundi, sur le seul travail « Typecheck & lint » : expo-doctor y compare nos paquets à ce
   # qu'Expo recommande ce jour-là, et cette dérive vient d'Expo, pas d'un commit. Ce passage-là bloque.
   schedule:
@@ -11,7 +14,7 @@ on:
   workflow_dispatch:
 
 # Un nouveau passage d'une PR annule le précédent, devenu périmé. Les autres événements ont chacun
-# leur groupe (l'identifiant d'exécution) : un push sur `main` ni une exécution planifiée ne sont
+# leur groupe (l'identifiant d'exécution) : ni une exécution planifiée ni un lancement à la main ne sont
 # jamais annulés ni mis en file derrière une autre.
 concurrency:
   group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
