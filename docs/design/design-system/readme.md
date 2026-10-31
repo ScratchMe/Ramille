@@ -39,7 +39,7 @@ Ramille est une app Android-first (web = surface publique) de sensibilisation à
 
 ## Iconographie
 - **Pas de bibliothèque d'icônes** : trois tracés seulement, dessinés dans le dépôt — onglet Plan (coche + ligne), onglet Suivi (courbe + point), compte (buste). Grille 24, trait 1,9, arrondi. La coche de l'action engagée (trait 3, blanc sur pastille accent 20 px) est le quatrième. Le chevron de `SortieDuDetour` (rendu à 18 px, trait 1,9, `textTertiary`) est le cinquième, décidé le 03/10/2026 avec la place des sorties (`v1-33` T-10).
-- Aucun SVG d'illustration final : trois emplacements sont des placeholders à produire (onboarding 1 et 3, état vide). Le dépôt contient des illustrations vectorielles génériques (`src/components/illustrations/*`) non copiées ici.
+- Un seul SVG d'illustration final, la scène de l'été de la page d'accueil du web (`pages/SceneDeLEte`, 31/10/2026) : deux personnes qui ont trop chaud, l'encre, le papier, les deux verts doux et le seul ton chaud (`--color-mascot-warm`). Trois emplacements restent des placeholders à produire (onboarding 1 et 3, état vide). Le dépôt contient des illustrations vectorielles génériques (`src/components/illustrations/*`) non copiées ici.
 - Pas d'emoji, pas de caractères unicode utilisés comme icônes (sauf « − » typographique pour les kilos évités et « · » séparateur).
 - Marques copiées : `assets/images/logo-mark.svg`, `mascot-mark.svg`, `favicon-mark.svg`, `icon.png`, `splash-icon.png`, `google-oauth-logo.png` (le logo de **Ramille** téléversé sur l'écran de consentement de Google — pas une référence du « G », que `GoogleButton` dessine en SVG et qui ne se redessine jamais).
 
@@ -54,7 +54,7 @@ bilan/ CommuteHasTripStep · CommuteDaysDistanceStep · CommuteModeStep · Commu
 onboarding/ EtapeAccroche · EtapeContexte · EtapeReassurance · EtapeTransition
 illustrations/ OnboardingHeroIllustration · ReassuranceIllustration · EmptyStateIllustration
 connexion/ ChampDeCode · SaisieDuCode
-pages/ LegalPage · ConfigurationManquante · ErreurInattendue · SessionRefusee
+pages/ LegalPage · ConfigurationManquante · ErreurInattendue · SessionRefusee · FilmDePresentation · BandeDeLEte · SceneDeLEte · PageDAccueil
 compte/ ChoixDeRappel · MonCompte
 
 Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) et `RetourDeNotification` (rend `null`).
@@ -67,7 +67,8 @@ Sans interface, donc sans fiche : `TitreDePage` (les métadonnées du document) 
 - `styles.css` → `assets/fonts/fonts.css`, `tokens/colors.css`, `typography.css`, `spacing.css`, `mouvement.css`, `base.css`
 - `base.css` — la seule feuille du kit : police, fond et encre de la page, `box-sizing`, anneau
   de focus, état appuyé (`data-appui`, la teinte nommée par le composant), motif des placeholders.
-  Les composants portent tout le reste en styles en ligne ;
+  Les composants portent tout le reste en styles en ligne — sauf `SceneDeLEte`, dont les images clés
+  vivent dans une `<style>` du dessin, comme dans le dépôt ;
   chaque carte réécrivait ces déclarations à la main dans un `<style>` local.
 - `guidelines/*.html` — 14 cartes de fondations (Colors, Type, Spacing, Brand)
 - `components/<groupe>/` — .jsx + .d.ts + .prompt.md + une carte par groupe ; `components/loader.js` = repli quand `_ds_bundle.js` n'est pas compilé

@@ -6,7 +6,7 @@ La scène de l'été, en tête de la page d'accueil du web (`PageDAccueil`, 31/1
 
 **Ce ne sont ni des personnes réelles, ni Ramille.** La mascotte ne se tient jamais à côté d'un chiffre lourd ; la scène n'en porte aucun, et le visage de Ramille reste plus bas, dans la bande où elle parle. Des visages las, pas effrayés : des yeux mi-clos, des sourcils inquiets, les joues chaudes, la bouche qui souffle.
 
-**Son mouvement dit ce qui se passe** : la chaleur arrive — le soleil grandit, l'air tremble —, elle s'évente, il s'éponge, la sueur perle, une goutte tombe. **Une fois**, quand la scène paraît, et en un peu plus de trois secondes : sous les cinq secondes au bout desquelles un mouvement qui part seul doit pouvoir s'arrêter (WCAG 2.2.2), et rien ne boucle. Chaque animation finit sur l'image posée. **Sous « réduire les animations », elle est posée dès la première image** et rien ne se lance.
+**Son mouvement dit ce qui se passe** : la chaleur arrive — le soleil grandit, l'air tremble —, elle s'évente, il s'éponge, la sueur perle, une goutte tombe. **Une fois**, quand la scène paraît, et en quelques secondes : sous les cinq secondes au bout desquelles un mouvement qui part seul doit pouvoir s'arrêter (WCAG 2.2.2), et rien ne boucle. Chaque animation finit sur l'image posée. **Sous « réduire les animations », elle est posée dès la première image** et rien ne se lance.
 
 **Les couleurs du kit, pas une de plus** : l'encre et le papier pour les traits et les visages, les deux verts doux (`accentMuted`, `backgroundSelected`) pour les vêtements, et le seul ton chaud, `mascotWarm`, pour le soleil, l'air chaud, l'herbe sèche et les joues. Ni rouge, ni orange, ni l'accent plein — il marque ce qui s'actionne.
 

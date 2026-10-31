@@ -2,7 +2,7 @@
 export interface SceneDeLEteProps {
   /**
    * `posee` sous « réduire les animations » (rien ne se lance), `depart` tant que la scène n'a pas paru, `animee` une
-   * fois parue : le mouvement se joue une fois et s'arrête de lui-même en un peu plus de trois secondes.
+   * fois parue : le mouvement se joue une fois et s'arrête de lui-même avant cinq secondes.
    */
   etat?: 'posee' | 'depart' | 'animee';
 }

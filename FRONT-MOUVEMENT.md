@@ -37,16 +37,18 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   d'un repère à l'autre et entre les trois temps de Ramille, la barre des postes se remplit (`Mouvement.trace`,
   600 ms) — plus longs que « un
   enchaînement tient sous 300 ms », parce qu'ils racontent une durée ; l'exception a été autorisée par la
-  personne qui pilote et ne s'étend à rien d'autre. Ce qui ne change pas : une fois, **quand la figure paraît**
+  personne qui pilote et ne s'étend à rien d'autre **que la scène de l'été, plus bas dans cette puce**. Ce qui ne change pas : une fois, **quand la figure paraît**
   (`useVuUneFois`, un tiers de la figure à l'écran), jamais au chargement hors de l'écran ; **posé dès la première
   image** sous la préférence (`styleDuRecit`, `src/lib/mouvement.tsx`, qui lit `etatDuRecit`, testée) ; jamais un compteur qui défile, jamais une boucle ; le texte ne bouge
   pas, et rien ne retient le focus. La barre d'appel de la page entre en fondu, à la durée de la barre d'onglets
   (`entreeDeBarre`), et s'en va d'un coup. **Et, en tête de la même page, la scène de l'été** (31/10/2026,
-  `v1-36` §4) : la chaleur arrive sur deux personnes — le soleil grandit, l'air tremble, elle s'évente, il
-  s'éponge. Mêmes règles, une fois quand elle paraît et posée sous la préférence ; un dessin SVG et des images
-  clés CSS, la page n'existant que sur le web ; **3,1 s en tout, sous les cinq secondes de WCAG 2.2.2** au-delà
-  desquelles un mouvement qui part seul doit pouvoir s'arrêter — `finDuMouvement` la borne, testée, et aucun
-  geste ne se joue sans fin.
+  `v1-36` §4), demandée par la personne qui pilote : elle ne raconte pas une durée, elle **dit ce qui se passe** —
+  la chaleur arrive sur deux personnes, le soleil grandit, l'air tremble, elle s'évente, il s'éponge. Mêmes
+  règles, une fois quand elle paraît et posée sous la préférence ; un dessin SVG et des images clés CSS, la page
+  n'existant que sur le web ; **sous les cinq secondes de WCAG 2.2.2** au-delà desquelles un mouvement qui part
+  seul doit pouvoir s'arrêter — `finDuMouvement` la borne, testée, et aucun geste ne se joue sans fin. Ses
+  durées et ses deux courbes hors du jeton (`ease-in-out` pour ce qui va et vient, `ease-in` pour une chute)
+  vivent dans sa table, `GESTES_DE_LA_SCENE` — une exception à la puce suivante, la seule.
 - **Un défilement est celui de la plateforme** (`scrollTo({ animated })`, `v1-31`) : ni durée ni
   courbe à régler, et **posé sous la préférence** (`animated: !animationsReduites`) — le défilement
   compte parmi ce qui s'anime. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5),
@@ -68,7 +70,8 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   entre, la parade touche l'entrée, pas le moment du focus (`v1-13` §11.24).
 - **Tout passe par `src/lib/mouvement.tsx`** — `styleDEntree`, `Apparition`, `Depliage`,
   `HauteurSuivie`, `SansApparitionAuMontage` — et par les jetons `Mouvement` de
-  `src/constants/theme.ts`. Une durée écrite en dur dans un écran est un réglage de plus à tenir
+  `src/constants/theme.ts` (sauf la scène de l'été, puce précédente : ses gestes ne sont des réglages de rien
+  d'autre). Une durée écrite en dur dans un écran est un réglage de plus à tenir
   d'accord ; ce qui décide d'une animation (un sens, une arrivée) est une dérivation de
   `src/types/mouvement.ts`, testée.
 - **Jamais `entering`, `exiting` ni `LinearTransition` de reanimated** : sur web, le premier masque

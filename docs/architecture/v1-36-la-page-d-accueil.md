@@ -32,7 +32,8 @@ mobiliser », et « pas de mise en scène de l'urgence climatique, pas de vocabu
 désormais par l'été 2026 — c'est la décision de la personne qui pilote. Elle la tient **sans la peur pure** que la
 spécification refusait : des faits datés et sourcés, dits sans qualificatif (« le plus chaud jamais mesuré »,
 « 53 jours », jamais « catastrophique » ni « alarmant ») ; un visiteur jamais laissé sur le constat — la phrase
-qui suit le titre propose déjà d'y contribuer, pas à pas, et le premier bouton est dans le même écran ; et la chaleur qui se lit à la durée, pas à la couleur. Le handoff est figé et ne se réécrit pas ; l'écart vit
+qui suit le titre propose déjà d'y contribuer, pas à pas, et le premier bouton est dans le même écran ; et, dans les figures, la chaleur qui se lit à la durée, pas à la couleur — la scène du haut la peint, elle, du
+seul ton chaud du kit, sans rouge ni orange. Le handoff est figé et ne se réécrit pas ; l'écart vit
 ici.
 
 **Le reste a été construit sans elle, puis montré** — l'ordre des bandes, les figures, le mouvement, les libellés,
@@ -51,7 +52,15 @@ contribuer et dit que Ramille accompagne, pas à pas. Trois choix faits en l'éc
 **le tutoiement**, celui de tout le produit ; **« cette chaleur », et non « cet été »**, que `FRONT.md` interdit
 parce que la page sera encore lue l'été prochain — la question montre la scène, et le titre la date ; **la bande des
 92 jours descend sous « 53 jours de vague de chaleur »**, où elle illustre le chiffre qu'elle dessine, pour que le
-haut tienne encore dans le premier écran d'un téléphone.
+haut tienne encore dans le premier écran d'un téléphone. Une vidéo de l'arrivée sur téléphone et le haut sur
+téléphone et sur ordinateur — la scène à droite du texte, le titre ramené de 64 à 52 pour tenir sur sa colonne —
+lui ont été envoyés avec ces trois choix ; sa réponse : « C'est parfait comme ça ».
+
+**La scène est annoncée au lecteur d'écran, par exception** : une image nommée (« Une femme et un homme accablés
+par la chaleur, sous un soleil qui chauffe, sur une terre sèche. »), là où `FRONT.md` §1.4 masque les
+illustrations, qui accompagnent un texte qui dit déjà tout. Celle-ci, la question qui suit la désigne : masquée,
+« Tu te souviens de cette chaleur ? » resterait sans objet pour qui ne la voit pas. L'exception est écrite dans
+`FRONT.md` §1.4 et §2.4.
 
 ## 3. La page, bande par bande
 

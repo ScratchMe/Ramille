@@ -1,14 +1,14 @@
 // La scène de l'été, en tête de la page d'accueil du web — un dessin SVG du navigateur, qu'aucun composant React
 // Native ne rend. Le pendant natif, `scene-de-l-ete.tsx`, ne rend rien : la page n'existe que sur le web.
 //
-// **Pourquoi elle est là** (31/10/2026, demande de la personne qui pilote, `v1-36` §3) : avant tout chiffre, se
+// **Pourquoi elle est là** (31/10/2026, demande de la personne qui pilote, `v1-36` §2) : avant tout chiffre, se
 // souvenir de ce qu'on a vécu. Une femme et un homme qui ont trop chaud, un soleil qui chauffe, une terre sèche ;
 // puis la question « Tu te souviens de cette chaleur ? ». Ce ne sont pas des personnes réelles, ni Ramille : la mascotte
 // ne se tient jamais à côté d'un chiffre lourd, et la scène n'en porte aucun.
 //
 // **Son mouvement dit ce qui se passe** (`FRONT-MOUVEMENT.md` §2.12, `v1-36` §4) : la chaleur arrive — le soleil
 // grandit, l'air tremble —, elle s'évente, il s'éponge, la sueur perle, une goutte tombe. **Une fois**, quand la
-// scène paraît (`useVuUneFois`, dans la page), **et en un peu plus de trois secondes** : sous les cinq secondes au
+// scène paraît (`useVuUneFois`, dans la page), **et en quelques secondes** : sous les cinq secondes au
 // bout desquelles un mouvement qui part seul doit pouvoir s'arrêter (WCAG 2.2.2), et rien ne boucle. Chaque
 // animation finit sur l'image posée, donc rien ne saute à la fin. **Sous « réduire les animations »**, la scène est
 // posée dès la première image et rien ne se lance (`etatDuRecit`, décidé au rendu).
@@ -21,7 +21,7 @@ import { StyleSheet, View } from 'react-native';
 import { RECIT } from '@/constants/accueil';
 import { Mouvement, Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { etatDuRecit, type GesteDeScene } from '@/types/mouvement';
+import { etatDuRecit, type GesteDeScene, type LectureDuRecit } from '@/types/mouvement';
 
 /**
  * Chaque geste de la scène, dans l'ordre où il part. La table écrit les règles CSS ; `finDuMouvement` dit quand
@@ -72,7 +72,7 @@ ${GESTES_DE_LA_SCENE.map(
 
 const CLASSE_DE_L_ETAT = { posee: '', depart: ' scene-depart', animee: ' scene-anime' } as const;
 
-export function SceneDeLEte({ vu, reduit }: { vu: boolean; reduit: boolean }) {
+export function SceneDeLEte({ vu, reduit }: LectureDuRecit) {
   const theme = useTheme();
   const encre = theme.text;
   const papier = theme.background;
@@ -81,6 +81,9 @@ export function SceneDeLEte({ vu, reduit }: { vu: boolean; reduit: boolean }) {
   const visage = { fill: 'none', stroke: encre, strokeWidth: 1.8, strokeLinecap: 'round' } as const;
   const goutte = 'q3.5 5 0 7 q-3.5 -2 0 -7 Z';
 
+  // **Une image annoncée, par exception** : les illustrations sont masquées au lecteur d'écran, parce qu'elles
+  // accompagnent un texte qui dit déjà tout (`FRONT.md` §1.4). Celle-ci, non : la question qui la suit, « Tu te
+  // souviens de cette chaleur ? », la désigne, et masquée, elle laisserait la question sans objet.
   return (
     <View style={[styles.cadre, { backgroundColor: theme.backgroundElement2 }]}>
       <svg

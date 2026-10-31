@@ -4,8 +4,8 @@ import React from 'react';
 // se souvenir de ce qu'on a vécu avant tout chiffre. Un dessin SVG du navigateur ; sur natif, le composant ne rend
 // rien — la page n'existe que sur le web.
 //
-// Le mouvement se joue **une fois**, quand la scène paraît, et s'arrête de lui-même en un peu plus de trois secondes
-// (sous les cinq de WCAG 2.2.2) : le soleil grandit, l'air tremble, elle s'évente, il s'éponge, la sueur perle, une
+// Le mouvement se joue **une fois**, quand la scène paraît, et s'arrête de lui-même avant cinq secondes
+// (WCAG 2.2.2) : le soleil grandit, l'air tremble, elle s'évente, il s'éponge, la sueur perle, une
 // goutte tombe. Chaque animation finit sur l'image posée. `etat` : `posee` sous « réduire les animations » — rien ne se
 // lance —, `depart` tant que la scène n'a pas paru, `animee` une fois parue. Les couleurs sont celles du kit : l'encre,
 // le papier, les deux verts doux et le seul ton chaud, `--color-mascot-warm` — ni rouge, ni orange.

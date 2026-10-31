@@ -89,7 +89,10 @@ export function delaiEchelonne(rang: number, nombre: number, total: number, dure
  */
 export type EtatDuRecit = 'posee' | 'depart' | 'animee';
 
-export function etatDuRecit(etat: { vu: boolean; reduit: boolean }): EtatDuRecit {
+/** Ce qu'une figure du récit sait pour décider de son état : a-t-elle paru, la préférence est-elle réduite. */
+export type LectureDuRecit = { vu: boolean; reduit: boolean };
+
+export function etatDuRecit(etat: LectureDuRecit): EtatDuRecit {
   if (etat.reduit) return 'posee';
   return etat.vu ? 'animee' : 'depart';
 }
