@@ -113,7 +113,10 @@ lien du rappel ouvrant l'app et non le navigateur, réponse refermant le point (
 [`v1-35`](v1-35-l-audit-en-chantiers.md)** : une étape à la fois, et certaines commencent par une
 question à la personne qui pilote — la table du document dit lesquelles. **Depuis l'étape 5 (23/10/2026), le site
 web s'ouvre sur une page d'accueil** — la fiche Play et le film, pour qui n'a ni bilan ni questionnaire en
-cours ; qui revient va à son plan comme avant. **Depuis l'étape 6a (24/10/2026), un « oui » au point dit ce
+cours ; qui revient va à son plan comme avant. **Depuis le 31/10/2026, elle part de l'été 2026**
+([`v1-36`](v1-36-la-page-d-accueil.md)) — le plus chaud jamais mesuré en France, d'après Météo-France —, montre la
+part du transport, puis « Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. » ; la fiche Play y
+devient « comment ça marche », et la page se compte sans session. **Depuis l'étape 6a (24/10/2026), un « oui » au point dit ce
 qu'il a évité, au moins** — compté une fois, la plus petite chose qu'il affirme —, sous la réplique, et le plan
 en fait le total de la saison, le suivi celui de chaque saison (`BOUCLE.md` §2). **Depuis l'étape 6b (24/10/2026),
 l'e-mail du point porte ses trois réponses**, chacune vers une page sans compte qui demande de confirmer

@@ -815,11 +815,13 @@ async function boutonDuPager(nom, indexDePage) {
  * profil le vérifie en passant. Elle n'ouvre pas de session à la lecture — l'étape 0 le mesure à froid — ;
  * son geste l'ouvre avant de naviguer.
  */
-const TITRE_DE_L_ACCUEIL = 'Comprendre tes trajets, sans te juger.';
+// Le titre et le bouton de la page d'accueil depuis le 31/10/2026 (`v1-36`) : la page part de l'été 2026.
+const TITRE_DE_L_ACCUEIL = 'Que l’été 2026 reste une exception.';
+const BOUTON_DE_L_ACCUEIL = 'Voir ce que pèsent mes trajets';
 async function entrerParLaPageDAccueil(onglet = page) {
   await onglet.getByRole('heading', { name: TITRE_DE_L_ACCUEIL, exact: true }).first().waitFor({ state: 'visible', timeout: ATTENTE });
   assurer(new URL(onglet.url()).pathname === '/', `la page d’accueil ne s’affiche pas à la racine du site (${onglet.url()})`);
-  await onglet.getByRole('button', { name: 'Découvrir mon impact', exact: true }).first().click({ timeout: ATTENTE });
+  await onglet.getByRole('button', { name: BOUTON_DE_L_ACCUEIL, exact: true }).first().click({ timeout: ATTENTE });
   await onglet.waitForURL(/\/onboarding/, { timeout: ATTENTE });
 }
 /**
@@ -1534,6 +1536,27 @@ async function compterLesComptes() {
   return ((await reponse.json()).users ?? []).length;
 }
 
+/**
+ * Les compteurs de la page d'accueil pour le jour, à Paris (`visites_de_l_accueil`, `v1-36` §5) : `{ vue: 3, … }`.
+ * Lus par le rôle de service, le seul qui les lise. Le compte part de la page sans être attendu : on relit
+ * jusqu'à ce que la vue y soit, ou que l'attente s'épuise.
+ */
+async function lireLesVisitesDuJour(onglet) {
+  const jour = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const limite = Date.now() + ATTENTE;
+  let compteurs = {};
+  while (Date.now() < limite) {
+    const reponse = await fetch(`${API}/rest/v1/visites_de_l_accueil?select=evenement,nombre&jour=eq.${jour}`, {
+      headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}` },
+    });
+    if (!reponse.ok) throw new Ecart(`visites de l’accueil : HTTP ${reponse.status} ${await reponse.text()}`);
+    compteurs = Object.fromEntries((await reponse.json()).map((l) => [l.evenement, l.nombre]));
+    if ((compteurs.vue ?? 0) >= 1 && (compteurs.lu_ete ?? 0) >= 1) break;
+    await onglet.waitForTimeout(250);
+  }
+  return compteurs;
+}
+
 /** La session que le SDK a rangée dans cet onglet, ou `null` — sans l'exiger, contrairement à `session()`. */
 async function sessionRangee(onglet) {
   return onglet.evaluate(() =>
@@ -1634,6 +1657,18 @@ try {
     assurer(!(await sessionRangee(onglet)), 'la page d’accueil, ouverte à froid, a rangé une session dans le navigateur');
     assurer(demandes.length === 0, `la page d’accueil a demandé ${demandes.length} session(s) anonyme(s)`);
     assurer((await compterLesComptes()) === avant, 'un compte est né d’une visite de la page d’accueil');
+    // **La page s'est comptée, sans session** (`v1-36` §5) : le compteur du jour porte au moins cette vue et,
+    // une fois la page descendue, la section de l'été, la première sous le haut. Au moins, et non exactement :
+    // d'autres profils sont passés par la page avant celui-ci, et la stack locale garde les compteurs d'une
+    // exécution à l'autre.
+    const taille = onglet.viewportSize() ?? { width: 390, height: 844 };
+    await onglet.mouse.move(taille.width / 2, taille.height / 2);
+    await onglet.mouse.wheel(0, Math.round(taille.height * 0.8));
+    const compteurs = await lireLesVisitesDuJour(onglet);
+    assurer(
+      (compteurs.vue ?? 0) >= 1 && (compteurs.lu_ete ?? 0) >= 1,
+      `la page d’accueil ne s’est pas comptée sans session : ${JSON.stringify(compteurs)}`
+    );
     // Le film et sa phrase : la vidéo ne se lance pas seule, et son affiche est servie.
     const film = await onglet.evaluate(async () => {
       const video = document.querySelector('video');

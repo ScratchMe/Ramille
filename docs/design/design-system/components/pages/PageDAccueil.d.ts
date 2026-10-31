@@ -1,10 +1,8 @@
-/** La page d'accueil du web — la fiche Play et le film, à la racine du site, pour qui n'a ni bilan ni questionnaire en cours. */
+/** La page d'accueil du web — un récit de l'été 2026, puis ce que fait Ramille, à la racine du site. */
 export interface PageDAccueilProps {
-  /** Les sections de la fiche Play (« Ton bilan », « Ton plan », « Ton suivi »…), mot pour mot. */
+  /** Les trois temps de la fiche Play (« Ton bilan », « Ton plan », « Ton suivi »), mot pour mot. */
   sections?: { titre: string; texte: string }[];
-  /** La version texte du film, chapitre par chapitre, repliée sous lui. */
-  filmEnTexte?: { chapitre: string; texte: string }[];
-  /** « Découvrir mon impact » : l'onboarding, où la session s'ouvre. */
+  /** « Voir ce que pèsent mes trajets » : l'onboarding, où la session s'ouvre. Chaque bouton compte son emplacement. */
   onCommencer?: () => void;
   /** « J'ai déjà un compte » : la retrouvaille, provenance `accueil`. */
   onDejaUnCompte?: () => void;

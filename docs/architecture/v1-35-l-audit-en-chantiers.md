@@ -100,7 +100,8 @@
     le HTML : il faudrait un script en tête qui reconnaisse une session avant la première image, et son
     empreinte dans la CSP ;
   - **une visite qui reste sur la page d'accueil ne se mesure pas** : elle n'ouvre pas de session, et la
-    mesure en demande une. L'entonnoir du web commence à « Découvrir mon impact » (`MESURE.md`) ;
+    mesure en demande une. L'entonnoir du web commence à « Découvrir mon impact » (`MESURE.md`). **Rouvert et
+    fermé le 31/10/2026** : la page se compte sans session, un nombre par jour (`v1-36` §5) ;
   - **le film n'a pas le badge de Google Play** : il viendra à la publication, et le film se réexporte vers
     `public/film/` ce jour-là (`docs/exploitation/README.md` §4) ;
   - **les écrans du questionnaire du film gardent des écarts d'avant le 03/10/2026** — des titres en 22 au lieu

@@ -132,7 +132,7 @@ export const PAGES_ALIAS = new Set(['/bilan/resultat']);
  * `og:image` par `api/partage.ts`, qui sert son propre HTML hors de cet export.
  */
 export const PAGE_DESCRIPTIONS: Record<string, string> = {
-  '/': 'Mesure l’empreinte carbone de tes trajets en quelques minutes, puis choisis ce que tu veux changer en premier.',
+  '/': 'L’été 2026 a été le plus chaud jamais mesuré en France. Vois ce que pèsent tes trajets, puis changes-en un, à ton rythme.',
 
   '/onboarding':
     'Comment Ramille fonctionne : un bilan transport, un repère pour le situer, et un plan de réduction à ta main.',

@@ -1,0 +1,140 @@
+# v1-36 — La page d'accueil du web : partir de l'été 2026
+
+> **Décidée et construite le 31/10/2026.** Remplace la page d'accueil de l'étape 5 de
+> [`v1-35`](v1-35-l-audit-en-chantiers.md) (23/10/2026), qui disait la fiche Play et le film. Ce document dit
+> pourquoi, ce qui a été décidé avec la personne qui pilote, et ce qui a été décidé sans elle parce que c'était
+> technique. La page vit dans `src/components/accueil/`, ses textes dans `src/constants/accueil.ts`, ses faits
+> dans `src/constants/climat.ts`.
+
+## 1. La demande
+
+La personne qui pilote, le 31/10/2026, après être retournée voir la page : « c'est quand même tristounet ». Deux
+reproches. **L'interface** : on doit pouvoir faire mieux et plus fluide. **Le marketing**, surtout : la page allait
+tout de suite à la mesure de l'empreinte carbone des transports, donc seuls des gens déjà sensibilisés
+comprenaient et se lançaient — alors que Ramille veut faire prendre conscience autant que faire changer. Sa
+direction : **se raccrocher à ce qu'on commence à vivre du réchauffement** — la canicule de l'été, la sécheresse,
+les incendies —, puis « tu veux agir ? Tu le peux », puis l'empreinte des trajets, pas à pas. Mesurer la page, et
+toute liberté sur le motion design, dans la page ou en refaisant les films.
+
+## 2. Ce qui a été décidé, et avec qui
+
+**La promesse — avec la personne qui pilote, le 31/10/2026.** Trois formulations lui ont été proposées : « Ta part,
+un trajet à la fois » (recommandée), « Sauver la planète, pas à pas » (la sienne) et « Protéger nos étés ». Le piège
+de la deuxième a été dit avant le choix : un public peu sensibilisé sait qu'un trajet ne sauve pas la planète, et
+une page qui promet plus que ce qu'elle tient perd ce public-là, précisément — et Ramille promet toujours ce qui
+est vrai (le « au moins » des kilos évités, `v1-35` étape 6a). **Réponse : un mélange de la première et de la
+troisième.** D'où le titre, « Que l'été 2026 reste une exception. », les faits de Météo-France, et la bascule :
+« Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »
+
+**Un écart assumé avec le handoff de design.** `docs/design/spec-fonctionnelle-app-carbone-transport-v1.md` §4
+écrit : « Éviter une entrée par la peur pure […] le registre anxiogène climatique tend à paralyser plutôt qu'à
+mobiliser », et « pas de mise en scène de l'urgence climatique, pas de vocabulaire catastrophiste ». La page entre
+désormais par l'été 2026 — c'est la décision de la personne qui pilote. Elle la tient **sans la peur pure** que la
+spécification refusait : des faits datés et sourcés, dits sans qualificatif (« le plus chaud jamais mesuré »,
+« 53 jours », jamais « catastrophique » ni « alarmant ») ; un visiteur jamais laissé sur le constat — la phrase
+qui suit le titre dit déjà « la suite dépend de ce que nous émettons », et le premier bouton est dans le même
+écran ; et la chaleur qui se lit à la durée, pas à la couleur. Le handoff est figé et ne se réécrit pas ; l'écart vit
+ici.
+
+**Le reste a été décidé sans elle, parce que c'est technique ou de l'ordre du métier** — l'ordre des bandes, les
+figures, le mouvement, les libellés, la mesure — et chaque choix est écrit ci-dessous pour pouvoir être rouvert.
+Deux choses, en particulier, sont à rouvrir si elle le veut : le libellé du bouton (« Voir ce que pèsent mes
+trajets » remplace « Découvrir mon impact » sur cette page, §3) et la barre d'appel en bas de l'écran (§3).
+
+## 3. La page, bande par bande
+
+Des bandes pleine largeur, une colonne de 560 de large (800 pour le haut sur un grand écran, et pour le film). Au
+téléphone, le titre, la bande de l'été, le chapeau et le premier bouton tiennent dans le premier écran.
+
+| Bande | Ce qu'elle dit | D'où ça vient |
+|---|---|---|
+| **Le haut** | Ramille et son nom ; « Été 2026, d'après Météo-France » ; **« Que l'été 2026 reste une exception. »** ; la bande de l'été ; « Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que nous émettons — et en France, le transport est le premier poste de notre empreinte carbone. » ; le bouton, « Ton bilan prend 5 minutes environ. Pas de compte à créer pour commencer. », « J'ai déjà un compte » | Météo-France p. 4 et 5 ; SDES 2017 |
+| **L'été en nombres** | « 53 jours de vague de chaleur » ; trois vagues, plus d'un jour sur deux, loin devant 2022 et ses 33 jours ; trois faits — 72 départements en vigilance rouge en juin, près de 40 % de pluie en moins, la saison des feux la plus sévère jamais enregistrée ; la source, en lien | Météo-France p. 4 et 11 |
+| **L'échelle des étés** | « Aujourd'hui, un été sur 100. À +4 °C, un été ordinaire. » ; quasi impossible sans le changement climatique ; aujourd'hui, +2,7 °C vers 2050, +4 °C vers 2100 ; « Arriver à +4 °C, ou s'arrêter avant : c'est ce que décident nos émissions. » | Météo-France p. 15 à 17, la trajectoire de réchauffement de référence pour l'adaptation (TRACC) qu'il cite |
+| **Nos trajets** | « Et nos trajets ? » ; le transport, premier poste : 2,8 t sur 9,5 t ; la barre des cinq postes | `carbon-reference.ts` (SDES 2017) |
+| **Ce qui est à notre portée** | **« Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »** ; ce que fait Ramille, en une phrase ; Ramille dit sa présentation ; un bouton | La seule bande sans chiffre : Ramille ne se tient jamais près d'un chiffre lourd (`FRONT-MASCOTTE.md`) |
+| **Comment ça marche** | La description courte de la fiche Play ; ses trois temps, numérotés et reliés par un trait ; son premier paragraphe | La fiche Play, mot pour mot (§6) |
+| **Sans compte, sans publicité** et **Ce que Ramille n'est pas** | Les garanties et les limites de la fiche | La fiche Play |
+| **Le film** | « Le fil de Ramille », sa ligne et sa version texte | Inchangés (`v1-35` étape 5) |
+| **La fin** | « Commence par tes trajets. » ; un bouton | — |
+| **Le pied** | L'éditeur, le contact, les trois pages publiques, en vrais liens | Inchangé |
+
+**La date se garde** : la page écrit « l'été 2026 », jamais « cet été » — un fait daté ne se périme pas. Au bilan
+de l'été 2027, la question se repose : garder 2026, ou raconter le suivant (`climat.ts` le rappelle).
+
+**Le bouton : « Voir ce que pèsent mes trajets »**, et non plus « Découvrir mon impact » sur cette page : après un
+récit qui parle de chaleur et d'émissions, « mon impact » restait abstrait ; le libellé dit ce qu'on obtient, avec
+les mots du titre de la bande des trajets. Sous lui, la durée — « 5 minutes environ », celle que le film annonce —
+et « Pas de compte à créer pour commencer. ». « Découvrir mon impact » reste sur la première page de l'onboarding,
+que la page d'accueil saute.
+
+**Une barre d'appel en bas de l'écran**, entre le moment où le premier bouton sort de l'écran et celui où le dernier
+y entre : un bouton toujours à portée, sans remonter. Elle ne prend jamais le focus, et se rejoint au clavier après
+le contenu.
+
+## 4. Le mouvement
+
+**Une exception écrite à « un enchaînement tient sous 300 ms »** (le skill `mouvement`), autorisée par la personne
+qui pilote (« Tu as aussi le droit d'intégrer directement le motion design sur le site web ») et bornée : **seules
+les trois figures bougent, et leur mouvement dit la donnée** — la bande se remplit dans l'ordre de l'été
+(`Mouvement.recit`, 1,2 s en tout), le trait de l'échelle descend d'un repère à l'autre et la barre se remplit poste
+par poste (`Mouvement.trace`, 600 ms), les trois temps de Ramille se relient. Le texte ne bouge pas.
+
+Les règles qui tiennent : **une fois, quand la figure paraît** (`useVuUneFois`, un `IntersectionObserver`), et non
+au chargement, où elle se jouerait hors de l'écran ; **posé dès la première image sous « réduire les animations »**
+(`styleDuRecit`, décidé au rendu) ; jamais un compteur qui défile ; rien ne retient le focus ; rien ne boucle. La
+barre d'appel entre comme la barre d'onglets et s'en va d'un coup. Les jetons sont dans `theme.ts` et recopiés dans
+`docs/design/design-system/tokens/mouvement.css` (`FRONT-MOUVEMENT.md` §2.12).
+
+**Les films ne sont pas refaits.** Le motion design est dans la page — il se joue sans qu'on lance rien, il se lit
+au lecteur d'écran, il ne pèse que quelques kilo-octets et il se mesure. Le film reste plus bas, pour qui veut voir
+l'app. Refaire un film qui ouvre sur l'été 2026 reste possible (`docs/communication/le-fil-de-ramille/`, une
+fonction du temps) : une décision à part.
+
+## 5. La mesure
+
+**Le trou** : depuis le 23/10/2026, la page d'accueil n'ouvre pas de session, et `usage_events` n'en accepte que
+d'une session — une visite qui s'arrêtait à la page ne se mesurait pas, et l'entonnoir du web commençait au bouton
+(`MESURE.md` §2). Refaire une page pour convertir sans savoir combien la lisent, ni jusqu'où, ni quel bouton sert,
+c'était la refaire à l'aveugle.
+
+**Un compteur par jour, sans rien qui désigne personne** (`20261031120000_les_visites_de_l_accueil.sql`) : la table
+`visites_de_l_accueil` porte un jour (heure de Paris), un événement et un nombre — ni identifiant, ni adresse IP, ni
+appareil, ni heure, ni cookie. Une fonction, `compter_sur_l_accueil`, ouverte à `anon`, ajoute un. Ce n'est ni un
+outil tiers ni une donnée personnelle ; la page de confidentialité le dit depuis le 31/10/2026, et le registre
+(fiche 5) aussi. **Choisi plutôt qu'un outil d'audience** (Vercel Web Analytics, ou un tiers) : un tiers rendait
+fausses trois phrases publiques (« aucun outil de mesure d'audience tierce ») et rouvrait l'analyse d'impact
+(`registre-des-traitements.md` §8). **En échange**, quiconque a la clé publishable peut gonfler un compteur : la
+table reste bornée, et rien d'autre ne s'en trouve faussé.
+
+**Ce qui se compte** (`EVENEMENTS_DE_L_ACCUEIL`, `src/types/analytics.ts`, miroir du `check`) : `vue` — la page s'est
+affichée ; `lu_ete`, `lu_echelle`, `lu_trajets`, `lu_agir`, `lu_comment`, `lu_fin` — la section a paru à l'écran,
+une fois par affichage ; `clic_haut`, `clic_agir`, `clic_fin`, `clic_collant` — un bouton vers l'onboarding, par
+emplacement ; `film_lance`. « J'ai déjà un compte » ne se compte pas ici : `retrouver_view` le compte déjà, avec sa
+porte `accueil` (`MESURE.md` §1 : on n'instrumente jamais ce que le schéma enregistre déjà).
+
+**Comment la lire** : `analytics.accueil_par_jour` (registre d'exploitation §8.5 quinquies). Le **taux de clic** est
+`clics / vues` ; la **profondeur de lecture**, `lu_* / vues`, section par section ; l'emplacement qui convertit,
+`clic_*`. La suite de l'entonnoir est dans `usage_events`, à partir de `onboarding_step_view` `contexte`. Ce ne sont
+pas des visites suivies : une visite qui touche deux boutons compte deux clics, et un rechargement compte une vue de
+plus.
+
+## 6. Ce qui ne change pas
+
+- **Ce que fait Ramille reste la fiche Play, mot pour mot** : la description courte, le premier paragraphe, les trois
+  temps, les garanties et les limites, que `accueil.test.ts` compare à `docs/exploitation/fiche-google-play.md` §2.1.
+  Le récit, lui, est écrit pour la page, et ses chiffres viennent de `climat.ts` et de `carbon-reference.ts`.
+- **La lire n'ouvre pas de session** ; chaque bouton l'ouvre au geste (`allerVers`), puis mène à la deuxième page de
+  l'onboarding ; un refus du captcha garde son écran.
+- **Le film** ne se lance jamais seul ; **le pied** porte de vrais liens ; **la page n'existe que sur le web**.
+
+## 7. Ce qui reste ouvert
+
+- **Le HTML exporté reste l'écran de lancement** (`v1-35` §4) : un robot qui n'exécute pas de JavaScript ne lit que
+  le titre et la description de la page, que `page-titles.ts` réécrit le 31/10/2026 dans le sens du récit.
+- **La fiche Play garde sa description** : elle présente l'app à qui l'a déjà trouvée. La reprendre dans le sens du
+  récit est une décision de la personne qui pilote, à prendre avant la publication.
+- **Aucun essai A/B** : au volume d'avant le lancement, il ne départagerait rien. La table porte de quoi l'ajouter
+  (un événement de plus par variante) le jour où le trafic le permet.
+- **La page n'a pas encore été vue par la personne qui pilote sur son téléphone** : une recette web l'attend
+  (`v1-13` §11.W.14).

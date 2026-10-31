@@ -175,6 +175,17 @@ arrivent donc avec elle, et leurs vues se comptent. Les arrivées du web baissen
 ne soit parti. **Et l'onboarding du web s'ouvre à sa deuxième page** (décidé le 23/10/2026) : `accroche` n'y est
 plus vue, et l'entonnoir du web commence à `contexte` — une `accroche` qui manque n'y est pas un abandon.
 
+**Le haut de l'entonnoir du web se compte depuis le 31/10/2026, mais pas dans `usage_events`**
+([`v1-36`](docs/architecture/v1-36-la-page-d-accueil.md) §5) : la page d'accueil n'ouvre toujours pas de session,
+donc elle compte dans **`visites_de_l_accueil`**, un nombre par jour et par événement, sans identifiant
+(`compter_sur_l_accueil`, ouverte à `anon`, `src/lib/visites-de-l-accueil.ts`). Ses événements sont une liste à
+part, `EVENEMENTS_DE_L_ACCUEIL`, miroir d'un `check` et non du référentiel `usage_event_types` : ce ne sont pas des
+événements d'usage, et rien ne s'y rattache à une session. **Ajouter un événement de la page** impose une ligne au
+`check` par migration, l'entrée dans `EVENEMENTS_DE_L_ACCUEIL` — le contrôle des miroirs les compare —, et une ligne
+dans `analytics.accueil_par_jour`. On ne relie jamais un compteur à une visite : ce sont des totaux, une visite qui
+touche deux boutons compte deux clics. Le taux de clic se lit `clics / vues`, puis l'entonnoir reprend dans
+`usage_events` à `contexte`.
+
 **Une rupture de série, au déploiement des surfaces sans compte** (18/10/2026) : `/confidentialite`,
 `/conditions`, `/compte/suppression`, `/rappels/stop` et `/status` n'ouvrent plus de session, donc
 l'entonnoir, la rétention et `purges_par_cohorte` perdent les arrivées qu'une lecture de ces pages

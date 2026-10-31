@@ -386,10 +386,15 @@ exactement ce qui avait laissé passer le mauvais caractère.
   responsable de traitement, regroupés dans `src/constants/editeur.ts` — un seul endroit à
   remplir, jamais de mention en dur dans un écran. Ce régime tomberait si le projet devenait
   une activité professionnelle.
-- **La page d'accueil du web dit ce que dit la fiche Play, mot pour mot** (23/10/2026, étape 5 de `v1-35`).
-  La racine du site la rend à qui n'a ni bilan ni questionnaire en cours (`src/components/accueil/`) ; ses
-  textes vivent dans `src/constants/accueil.ts`, et `accueil.test.ts` les compare à la description de
-  `docs/exploitation/fiche-google-play.md` §2.1 — une phrase changée d'un côté sans l'autre rougit. La fiche
+- **La page d'accueil du web raconte l'été 2026, puis dit ce que dit la fiche Play, mot pour mot** (31/10/2026,
+  [`v1-36`](docs/architecture/v1-36-la-page-d-accueil.md) ; la page d'avant, étape 5 de `v1-35`, n'était que la fiche).
+  **Son récit** est écrit pour elle (`RECIT`), et ses chiffres viennent de `src/constants/climat.ts` — le bilan
+  climatique de l'été 2026 de Météo-France, chaque valeur avec sa page — et de `carbon-reference.ts` ; la page
+  cite ses sources sous les chiffres, et écrit « l'été 2026 », jamais « cet été ». **Ce que fait Ramille**
+  (`ACCUEIL`) reste la fiche. La racine du site la rend à qui n'a ni bilan ni questionnaire en cours
+  (`src/components/accueil/`) ; ses textes vivent dans `src/constants/accueil.ts`, et `accueil.test.ts` compare
+  `ACCUEIL` à la description de `docs/exploitation/fiche-google-play.md` §2.1 — une phrase changée d'un côté sans
+  l'autre rougit. La fiche
   dit, phrase par phrase, ce qui la rend vraie : c'est là qu'une promesse de la page se vérifie, et qu'une
   évolution du produit qui la rend fausse se voit. Deux phrases n'ont pas de jumelle : la ligne sous le film
   (« Sur Android, … par notification ; sur le web, par email. »), décidée le 23/10/2026, et le titre du film,
