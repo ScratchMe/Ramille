@@ -119,7 +119,7 @@ export function avisDuPaquet(paquet: Pick<PaquetLicencie, 'copyright' | 'avisRep
  */
 export function introDesLicences(nomDuProduit: string): string {
   return (
-    `Le code de ${nomDuProduit} est publié sous licence AGPL-3.0-or-later, comme le disent les conditions d’utilisation. ` +
+    `Le code de ${nomDuProduit} est distribué sous licence AGPL-3.0-or-later, comme le disent les conditions d’utilisation. ` +
     'Cette page liste, sans prétendre être complète, les polices et les bibliothèques d’autres auteurs que l’application embarque, ' +
     'relevées dans ce qu’elle contient, chacune avec sa licence. ' +
     'Sa dernière section dit ce qu’elle ne liste pas.'

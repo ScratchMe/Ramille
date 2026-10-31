@@ -2670,9 +2670,11 @@ Le dépôt repasse en privé, sur le plan gratuit (`docs/exploitation/depot-publ
 GitHub n'offre qu'aux dépôts publics : **la protection de `main`** (le ruleset du 17/09/2026 ne
 s'applique plus — une PR rouge se fusionnerait, une poussée forcée passerait), **la détection de
 secrets** et sa protection à la poussée, **CodeQL**, et le signalement privé de vulnérabilité. Pour tenir
-les 2 000 minutes du mois, la CI ne repart plus sur `push` vers `main` et la sonde passe toutes les trois
-heures. Ce qui tient lieu de garde : la règle « verte sur sa tête » de `CLAUDE.md`, vérifiée à la main.
-**La sortie est écrite** : GitHub Pro (≈ 4 $ par mois) rend les rulesets et porte le quota à 3 000
-minutes, au premier mois où le quota est atteint ou au premier incident qu'un ruleset aurait bloqué. La
+les 2 000 minutes du mois, la CI ne repart plus sur `push` vers `main` et la sonde est planifiée toutes les
+trois heures — donc une poussée directe sur `main` ne déclenche plus aucun contrôle, et un quota épuisé
+arrêterait aussi la sauvegarde et la sonde. Ce qui tient lieu de garde : la règle « verte sur sa tête »
+de `CLAUDE.md`, vérifiée à la main, et l'interdiction d'y pousser directement. **La sortie est écrite** :
+GitHub Pro (≈ 4 $ par mois) rend les rulesets et porte le quota à 3 000 minutes, au mail de GitHub à
+90 % du quota ou au premier incident qu'un ruleset aurait bloqué. La
 détection de secrets ne revient pas avec lui ; un scan dans la CI (gitleaks ou équivalent) la
 remplacerait, à peser contre les minutes qu'il coûte.

@@ -421,7 +421,10 @@ lit `ci.yml` **par blocs d'étapes**, quelle que soit la clé qui ouvre une éta
   et lui seul, et que l'expression se comporte comme annoncée — tolérée sur une PR et un push,
   jamais sur le passage du lundi ni à la main — en l'évaluant au lieu de la recopier ;
 - que le passage du lundi ne joue que « Typecheck & lint », et que la concurrence annule une PR
-  sans jamais annuler ni mettre en file un push sur `main`.
+  sans jamais annuler ni mettre en file un push sur `main` ;
+- et, depuis le 31/10/2026, que la CI **ne part plus** sur `push` : le dépôt privé compte ses minutes
+  (`docs/exploitation/depot-public.md` §9). Les expressions restent évaluées pour un `push`
+  hypothétique, ce qui garde leur forme si le déclencheur revient un jour.
 
 La première version lisait les seules étapes écrites `- run:`, ne comparait pas les commandes et
 consignait une mutation qui ne faisait pas ce qu'elle disait ; la contre-lecture du 27/09/2026 a

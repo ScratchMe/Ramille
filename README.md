@@ -109,7 +109,7 @@ Impact CO2 (`impactco2.fr`, incubateur ADEME) : tous portent l'ACV complète (us
 et chaque version enregistrée garde sa source dans `emission_factors.source`. Les conditions de
 réutilisation de ces données relèvent de l'ADEME, pas de la licence de ce dépôt — voir `NOTICE`.
 
-**Le dépôt est privé depuis le 31/10/2026** (il a été public du 17/09 au 31/10/2026 —
+**Le dépôt est privé à partir du 31/10/2026** (il a été public du 17/09/2026 jusque-là —
 `docs/exploitation/depot-public.md` §9) : le code source est disponible sur demande, à
 contact@ramille.fr, et la licence ne change pas. Il n'y a pas d'équipe derrière, et les conventions
 internes (tout en français, une décision par document daté, contre-lecture avant fusion) rendent

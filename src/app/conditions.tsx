@@ -179,7 +179,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          `Le code source de ${APP_NAME}, textes et interface compris, est publié sous licence libre : la GNU Affero ` +
+          `Le code source de ${APP_NAME}, textes et interface compris, est distribué sous licence libre : la GNU Affero ` +
           'General Public License version 3 ou ultérieure (AGPL-3.0-or-later). Tu peux le lire, l’utiliser, le modifier ' +
           'et le redistribuer dans les conditions de cette licence, y compris pour un usage commercial. Elle impose ' +
           'notamment de conserver la mention de l’auteur et de redistribuer sous la même licence toute version modifiée, ' +

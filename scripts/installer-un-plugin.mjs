@@ -34,8 +34,9 @@
 // documentation de Claude Code dit que ce champ l'ôte à la personne, et `disable-model-invocation`
 // à l'agent : en `--manuel`, il devient appelable par son nom comme le reste du plug-in.
 //
-// **`--licence <fichier>` joint un texte de licence quand l'archive n'en porte pas.** Le dépôt est
-// public : y installer un plug-in, c'est le redistribuer. Design d'Anthropic en est l'exemple — sa
+// **`--licence <fichier>` joint un texte de licence quand l'archive n'en porte pas.** Le code se
+// transmet (public du 17/09 au 31/10/2026, sur demande depuis) : y installer un plug-in, c'est le
+// redistribuer. Design d'Anthropic en est l'exemple — sa
 // licence (Apache 2.0) est à la racine du dépôt d'amont et non dans le dossier du plug-in, donc
 // l'archive ne l'emporte pas. Le texte fourni est gardé avec la provenance et repris à chaque mise
 // à jour, sans quoi la première l'effacerait sans un mot ; un plug-in qui n'en a aucune est signalé.
@@ -794,7 +795,7 @@ function rendreCompte(inventaire, plan, remarques, ecritures) {
   if (plan.licence) {
     lignes.push('  Licence : fournie à l’installation, l’archive n’en portant pas (gardée pour les mises à jour).', '');
   } else if (!inventaire.gardes.some((nom) => LICENCE.test(nom))) {
-    lignes.push('  Aucune licence : l’archive n’en porte pas, et le dépôt est public — --licence <fichier> en joint une.', '');
+    lignes.push('  Aucune licence : l’archive n’en porte pas, et le code du dépôt se transmet — --licence <fichier> en joint une.', '');
   }
   const rendus = [...inventaire.skills, ...inventaire.commandes].filter((element) => element.reserveALAgent);
   if (inventaire.manuel && rendus.length > 0) {

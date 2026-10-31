@@ -4,9 +4,11 @@ on:
   pull_request:
   # **Plus de `push` sur `main` depuis le 31/10/2026** : le dépôt repasse en privé, où le plan
   # gratuit ne donne que 2 000 minutes par mois, chaque travail arrondi à la minute. Relancer les cinq
-  # travaux après chaque fusion coûtait ≈ 1 550 minutes par mois pour revérifier un état que la PR
-  # venait de prouver. Ce qu'on perd : deux PR fusionnées coup sur coup qui ne cassent qu'ensemble —
-  # la PR suivante et le passage du lundi le voient (`docs/exploitation/depot-public.md` §9).
+  # travaux après chaque fusion coûtait ≈ 450 minutes par mois (29 % des ≈ 1 550 de la CI, relevé
+  # d'octobre) pour revérifier un état que la PR venait de prouver. Ce qu'on perd : deux PR fusionnées
+  # coup sur coup qui ne cassent qu'ensemble — la PR suivante le voit ; le passage du lundi, seulement
+  # si c'est le typecheck ou le lint, seul travail qu'il joue. Et une poussée directe sur `main` ne
+  # déclenche plus aucun contrôle (`docs/exploitation/depot-public.md` §9).
   # Le lundi, sur le seul travail « Typecheck & lint » : expo-doctor y compare nos paquets à ce
   # qu'Expo recommande ce jour-là, et cette dérive vient d'Expo, pas d'un commit. Ce passage-là bloque.
   schedule:
@@ -140,7 +142,7 @@ jobs:
       # autre contrôle ne voit se paie à la prochaine construction d'AAB.
       #
       # Il compare nos versions à celles qu'Expo recommande **au moment du passage** : il rougit donc sans
-      # qu'une ligne du dépôt ait bougé, dès qu'Expo publie un patch. Sur une PR ou un push il avertit
+      # qu'une ligne du dépôt ait bougé, dès qu'Expo publie un patch. Sur une PR il avertit
       # sans bloquer (une annotation sur le passage) ; le passage du lundi et un lancement à la main
       # bloquent, pour que la dérive se lise avant la construction et pas en travers d'une PR qui n'y est
       # pour rien. Conduite : `npx expo install --fix`, puis typecheck, lint, tests et export.
@@ -351,7 +353,7 @@ jobs:
       # **La capture d'un échec sort de la CI, et elle seule** (décision de la personne qui pilote,
       # 01/10/2026, `v1-27` §12.26). Le 30/09, l'étape de la suppression du compte a rougi, et il a
       # fallu cinq parcours complets pour trouver ce qu'une image aurait peut-être montré d'un coup —
-      # le lien 412 px plus bas que le clic. Le dépôt est public, donc l'artefact l'est aussi : il ne
+      # le lien 412 px plus bas que le clic. Le dépôt a été public, et l'artefact avec lui : il ne
       # montre qu'une page de test sur une stack locale aux clés de démonstration, et il disparaît
       # après sept jours. Le chemin est relevé, pas supposé : le journal de l'échec du 30/09 imprime
       # « Capture : /tmp/ramille-parcours-reel-echec.png ». `warn` et non `ignore`, pour qu'un chemin

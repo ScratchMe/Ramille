@@ -7,7 +7,7 @@ utile, et il est bienvenu.
 ## Comment
 
 Par email : **contact@ramille.fr**. Le *Private vulnerability reporting* de GitHub, qui était le
-chemin à préférer, n'existe que sur un dépôt public, et celui-ci est privé depuis le 31/10/2026
+chemin à préférer, n'existe que sur un dépôt public, et celui-ci est privé à partir du 31/10/2026
 (`docs/exploitation/depot-public.md` §9).
 
 Ce qui aide, dans l'ordre : ce que la faille permet d'obtenir, comment la reproduire, et l'URL ou
