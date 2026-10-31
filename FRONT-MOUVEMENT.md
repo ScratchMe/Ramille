@@ -41,7 +41,12 @@ toucher une animation. Ce qui suit est ce qu'un écran doit savoir.
   (`useVuUneFois`, un tiers de la figure à l'écran), jamais au chargement hors de l'écran ; **posé dès la première
   image** sous la préférence (`styleDuRecit`, `src/lib/mouvement.tsx`, qui lit `etatDuRecit`, testée) ; jamais un compteur qui défile, jamais une boucle ; le texte ne bouge
   pas, et rien ne retient le focus. La barre d'appel de la page entre en fondu, à la durée de la barre d'onglets
-  (`entreeDeBarre`), et s'en va d'un coup.
+  (`entreeDeBarre`), et s'en va d'un coup. **Et, en tête de la même page, la scène de l'été** (31/10/2026,
+  `v1-36` §4) : la chaleur arrive sur deux personnes — le soleil grandit, l'air tremble, elle s'évente, il
+  s'éponge. Mêmes règles, une fois quand elle paraît et posée sous la préférence ; un dessin SVG et des images
+  clés CSS, la page n'existant que sur le web ; **3,1 s en tout, sous les cinq secondes de WCAG 2.2.2** au-delà
+  desquelles un mouvement qui part seul doit pouvoir s'arrêter — `finDuMouvement` la borne, testée, et aucun
+  geste ne se joue sans fin.
 - **Un défilement est celui de la plateforme** (`scrollTo({ animated })`, `v1-31`) : ni durée ni
   courbe à régler, et **posé sous la préférence** (`animated: !animationsReduites`) — le défilement
   compte parmi ce qui s'anime. Rien n'attend sa fin, qui ne s'annonce pas sur web (`EXPO.md` §1.5),

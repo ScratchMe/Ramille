@@ -390,7 +390,9 @@ exactement ce qui avait laissé passer le mauvais caractère.
   [`v1-36`](docs/architecture/v1-36-la-page-d-accueil.md) ; la page d'avant, étape 5 de `v1-35`, n'était que la fiche).
   **Son récit** est écrit pour elle (`RECIT`), et ses chiffres viennent de `src/constants/climat.ts` — le bilan
   climatique de l'été 2026 de Météo-France, chaque valeur avec sa page — et de `carbon-reference.ts` ; la page
-  cite ses sources sous les chiffres, et écrit « l'été 2026 », jamais « cet été ». **Ce que fait Ramille**
+  cite ses sources sous les chiffres, et écrit « l'été 2026 », jamais « cet été » — la page sera encore lue l'été
+  prochain ; la question du haut dit donc « Tu te souviens de cette chaleur ? », qui montre la scène dessinée
+  au-dessus (`scene-de-l-ete.web.tsx`, deux personnes qui ont trop chaud), et le titre qui suit la date. **Ce que fait Ramille**
   (`ACCUEIL`) reste la fiche. La racine du site la rend à qui n'a ni bilan ni questionnaire en cours
   (`src/components/accueil/`) ; ses textes vivent dans `src/constants/accueil.ts`, et `accueil.test.ts` compare
   `ACCUEIL` à la description de `docs/exploitation/fiche-google-play.md` §2.1 — une phrase changée d'un côté sans

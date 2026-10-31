@@ -35,11 +35,21 @@ export const enDegres = (valeur: number) => `+${String(valeur).replace('.', ',')
  * vocabulaire de catastrophe, aucune injonction : des faits datés, puis ce qui est à notre portée.
  */
 export const RECIT = {
-  surtitre: 'Été 2026, d’après Météo-France',
+  /**
+   * **Se souvenir avant de compter** (31/10/2026, demande de la personne qui pilote) : la scène de l'été — deux
+   * personnes qui ont trop chaud, un soleil qui chauffe —, puis cette question, puis le titre. Le chapeau dit
+   * ensuite qu'on peut y contribuer, et que Ramille accompagne, pas à pas. **« Cette chaleur », et non « cet
+   * été »** : la page sera encore lue l'été prochain, où « cet été » en désignerait un autre (`FRONT.md`) ; la
+   * question montre la scène, et le titre qui suit la date.
+   */
+  question: 'Tu te souviens de cette chaleur ?',
   titre: 'Que l’été 2026 reste une exception.',
   chapeau:
-    'Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que le monde émet, nous ' +
-    'compris — et en France, le transport est le premier poste de notre empreinte carbone.',
+    'Le plus chaud jamais mesuré en France depuis 1900, d’après Météo-France. Tu veux contribuer à ce que ' +
+    `ça change ? ${APP_NAME} t’accompagne, pas à pas, en commençant par tes trajets : en France, le premier ` +
+    'poste de notre empreinte carbone.',
+  /** Ce que le lecteur d'écran dit de la scène de l'été (`scene-de-l-ete.web.tsx`). */
+  scene: 'Une femme et un homme accablés par la chaleur, sous un soleil qui chauffe, sur une terre sèche.',
   bouton: 'Voir ce que pèsent mes trajets',
   duree: 'Ton bilan prend 5 minutes environ.',
   ete: {
@@ -47,7 +57,7 @@ export const RECIT = {
     texte:
       'Trois vagues, de la mi-juin à la mi-août : plus d’un jour sur deux. Loin devant l’été 2022 et ses ' +
       `${FAITS_DE_L_ETE.joursDeVagueDeChaleur2022} jours.`,
-    /** Sous la bande de l'été, dans le haut de la page : elle dit ce que la figure dessine. */
+    /** Sous la bande de l'été : elle dit ce que la figure dessine. */
     legende: 'Un trait par jour, du 1er juin au 31 août. En plein, les jours de vague de chaleur.',
     faits: [
       // « Jusqu'à » : un maximum sur une journée (p. 7, au pic du 24 juin), pas un total sur le mois.

@@ -95,6 +95,28 @@ export function etatDuRecit(etat: { vu: boolean; reduit: boolean }): EtatDuRecit
 }
 
 /**
+ * **Un geste de la scène de l'été** (`scene-de-l-ete.web.tsx`, `v1-36` §4) : l'élément qui bouge, ses images
+ * clés, sa durée et son départ en millisecondes, et combien de fois il se joue — un nombre, jamais « sans fin ».
+ */
+export type GesteDeScene = {
+  element: string;
+  images: string;
+  duree: number;
+  delai: number;
+  fois: number;
+  courbe: 'douce' | 'balancier' | 'chute';
+};
+
+/**
+ * **Quand une scène s'arrête**, en millisecondes : la fin du dernier geste. Un mouvement qui part seul et dure plus
+ * de cinq secondes doit pouvoir s'arrêter (WCAG 2.2.2) ; la scène de l'été tient en dessous, sans bouton. Un geste
+ * sans fin rend l'infini, que la borne refuse.
+ */
+export function finDuMouvement(gestes: readonly GesteDeScene[]): number {
+  return gestes.reduce((fin, g) => Math.max(fin, g.delai + g.duree * g.fois), 0);
+}
+
+/**
  * La durée d'une CSS transition de reanimated sous « réduire les animations », qu'elle ignore : zéro
  * pose tout de suite l'état final (le rail du questionnaire). Ce qui ne passe pas par une durée ne se
  * lance simplement pas sous la préférence (`src/lib/mouvement.tsx`, la barre d'onglets).

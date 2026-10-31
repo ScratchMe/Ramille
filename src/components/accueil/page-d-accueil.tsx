@@ -14,15 +14,18 @@
 // deuxième page ; le pied porte de vrais liens ; le film ne se lance jamais seul.
 //
 // **Ce qui est neuf** :
-// - **trois figures qui se dessinent** quand elles paraissent (`recit-de-l-ete.tsx`), posées sous « réduire
-//   les animations » (`FRONT-MOUVEMENT.md` §2.12) ;
+// - **la scène de l'été en tête** (`scene-de-l-ete.web.tsx`, 31/10/2026) : deux personnes qui ont trop chaud
+//   sous un soleil qui chauffe, puis « Tu te souviens de cette chaleur ? » — se souvenir avant de compter ;
+// - **trois figures qui se dessinent** quand elles paraissent (`recit-de-l-ete.tsx`) — la scène comme elles,
+//   une fois —, posées sous « réduire les animations » (`FRONT-MOUVEMENT.md` §2.12) ;
 // - **une mesure sans session** (`compterSurLAccueil`) : la page affichée, les sections parues, le bouton
 //   touché et son emplacement, le film lancé — un nombre par jour, sans rien qui désigne personne ;
 // - **une barre d'appel en bas de l'écran**, entre le premier bouton et le dernier : un bouton toujours à
 //   portée, sans revenir en haut.
 //
-// **La mascotte loin de tout chiffre** : elle signe la page en haut, et elle parle dans la bande « Tu peux
-// changer un trajet », la seule qui n'en porte aucun (`FRONT-MASCOTTE.md`).
+// **La mascotte loin de tout chiffre** : son nom signe la page en haut, et elle parle dans la bande « Tu peux
+// changer un trajet », la seule qui n'en porte aucun (`FRONT-MASCOTTE.md`). Les deux personnes de la scène ne
+// sont pas elle.
 import { Link, type Href } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
@@ -40,6 +43,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FilmDePresentation } from '@/components/accueil/film-de-presentation';
 import { BandeDeLEte, EchelleDesEtes, PartDuTransport } from '@/components/accueil/recit-de-l-ete';
+import { SceneDeLEte } from '@/components/accueil/scene-de-l-ete';
 import { Button } from '@/components/button';
 import { RamilleDit } from '@/components/ramille-dit';
 import { TextLink } from '@/components/text-link';
@@ -56,7 +60,7 @@ import { SOURCE_DE_L_ETE } from '@/constants/climat';
 import { CONTACT_EMAIL } from '@/constants/editeur';
 import { RAMILLE } from '@/constants/mascotte';
 import { APP_NAME } from '@/constants/produit';
-import { MaxContentWidth, Mouvement, Radius, Spacing, TypeScale, type ThemeColor } from '@/constants/theme';
+import { MaxContentWidth, Mouvement, Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useVuUneFois } from '@/hooks/use-vu-une-fois';
 import { styleDuRecit } from '@/lib/mouvement';
@@ -66,6 +70,8 @@ import { compterSurLAccueil, nouvelAffichageDeLAccueil } from '@/lib/visites-de-
 const MESURE_DE_LECTURE = 560;
 /** Au-delà, le titre prend sa grande taille et la page respire davantage. */
 const LARGEUR_D_ECRAN_LARGE = 720;
+/** Le haut, sur un grand écran : le texte et la scène côte à côte, plus large que la mesure d'une section. */
+const LARGEUR_DU_HAUT = 1040;
 /** La hauteur réservée sous le contenu, pour que la barre d'appel ne cache jamais le pied. */
 const HAUTEUR_DE_LA_BARRE = 104;
 
@@ -110,7 +116,8 @@ export function PageDAccueil({
     allerVers(VERS_L_ONBOARDING);
   };
 
-  const { attacher: attacherEte } = useVuUneFois(() => compterSurLAccueil('lu_ete'));
+  const { attacher: attacherScene, vu: vuScene } = useVuUneFois();
+  const { attacher: attacherEte, vu: vuEte } = useVuUneFois(() => compterSurLAccueil('lu_ete'));
   const { attacher: attacherEchelle, vu: vuEchelle } = useVuUneFois(() => compterSurLAccueil('lu_echelle'));
   const { attacher: attacherTrajets, vu: vuTrajets } = useVuUneFois(() => compterSurLAccueil('lu_trajets'));
   const { attacher: attacherAgir } = useVuUneFois(() => compterSurLAccueil('lu_agir'));
@@ -151,54 +158,64 @@ export function PageDAccueil({
           onScroll={surDefilement}
           scrollEventThrottle={100}
         >
-          {/* ── Le haut : l'été 2026, et le premier bouton ───────────────────────────────── */}
+          {/* ── Le haut : se souvenir de l'été, et le premier bouton ───────────────────────── */}
           <Bande
             onLayout={finDuHaut}
             large={large}
-            largeur={large ? MaxContentWidth : MESURE_DE_LECTURE}
+            largeur={large ? LARGEUR_DU_HAUT : MESURE_DE_LECTURE}
             testID="accueil-haut"
           >
-            {/* **Le nom, pas le visage** : la bande de l'été est un chiffre lourd, et Ramille ne se tient jamais
-                à côté (`FRONT-MASCOTTE.md`). Elle paraît plus bas, là où elle parle — la bande sans chiffre. */}
+            {/* **Le nom, pas le visage** : en haut, la scène est celle des gens et de leur été, pas celle de
+                Ramille. Elle paraît plus bas, là où elle parle — la bande sans chiffre (`FRONT-MASCOTTE.md`). */}
             <ThemedText weight={600} style={styles.nom}>
               {APP_NAME}
             </ThemedText>
-            <View style={styles.tete}>
-              <ThemedText type="small" weight={600} themeColor="accentText" style={styles.surtitre}>
-                {RECIT.surtitre}
-              </ThemedText>
-              <ThemedText type="title" weight={700} style={[styles.titre, large && styles.titreLarge]}>
-                {RECIT.titre}
-              </ThemedText>
+            {/* La scène d'abord, dans l'ordre de lecture aussi : le lecteur d'écran la décrit avant la question.
+                Sur un grand écran, elle passe à droite du texte. */}
+            <View style={[styles.haut, large && styles.hautLarge]}>
+              <View ref={attacherScene} style={large && styles.sceneLarge}>
+                <SceneDeLEte vu={vuScene} reduit={reduit} />
+              </View>
+              <View style={[styles.texteDuHaut, large && styles.texteDuHautLarge]}>
+                <View style={styles.tete}>
+                  <ThemedText weight={600} themeColor="accentText" style={styles.question}>
+                    {RECIT.question}
+                  </ThemedText>
+                  <ThemedText type="title" weight={700} style={[styles.titre, large && styles.titreLarge]}>
+                    {RECIT.titre}
+                  </ThemedText>
+                </View>
+                <ThemedText themeColor="textSecondary" style={[styles.chapeau, large && styles.chapeauLarge]}>
+                  {RECIT.chapeau}
+                </ThemedText>
+                <AppelAuBilan onPress={() => commencer('haut')} large={large}>
+                  <TextLink
+                    label={ACCUEIL.dejaUnCompte}
+                    apparence="souligne"
+                    role="link"
+                    onPress={() => allerVers(VERS_LA_RETROUVAILLE)}
+                    containerStyle={large ? styles.lienAGauche : styles.lienCentre}
+                  />
+                </AppelAuBilan>
+              </View>
             </View>
-            <View style={styles.figureDuHaut}>
-              <BandeDeLEte vu reduit={reduit} grande={large} />
-              <ThemedText type="small" themeColor="textTertiary">
-                {RECIT.ete.legende}
-              </ThemedText>
-            </View>
-            <ThemedText themeColor="textSecondary" style={[styles.chapeau, large && styles.chapeauLarge]}>
-              {RECIT.chapeau}
-            </ThemedText>
-            <AppelAuBilan onPress={() => commencer('haut')} large={large}>
-              <TextLink
-                label={ACCUEIL.dejaUnCompte}
-                apparence="souligne"
-                role="link"
-                onPress={() => allerVers(VERS_LA_RETROUVAILLE)}
-                containerStyle={large ? styles.lienAGauche : styles.lienCentre}
-              />
-            </AppelAuBilan>
           </Bande>
 
           {/* ── L'été en nombres ─────────────────────────────────────────────────────────── */}
           <Bande fond="backgroundElement2" large={large}>
-            <View ref={attacherEte} style={styles.section}>
+            <View style={styles.section}>
               <ThemedText type="subtitle" style={titreDeSection}>
                 {RECIT.ete.titre}
               </ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.corps}>
                 {RECIT.ete.texte}
+              </ThemedText>
+            </View>
+            {/* La figure paraît, et non son titre : c'est elle qui se dessine sous les yeux. */}
+            <View ref={attacherEte} style={styles.figureDeLEte}>
+              <BandeDeLEte vu={vuEte} reduit={reduit} grande={large} />
+              <ThemedText type="small" themeColor="textTertiary">
+                {RECIT.ete.legende}
               </ThemedText>
             </View>
             <View style={[styles.faits, large && styles.faitsLarges]}>
@@ -558,18 +575,20 @@ const styles = StyleSheet.create({
   colonne: { width: '100%', alignSelf: 'center', gap: Spacing.four },
   section: { gap: Spacing.three },
 
-  figureDuHaut: { gap: Spacing.two },
+  figureDeLEte: { gap: Spacing.two },
   nom: { fontSize: 18, lineHeight: 24 },
-  tete: { gap: Spacing.three },
-  // L'étiquette en capitales d'une carte (`TypeScale.label`), en tête de la page.
-  surtitre: {
-    ...TypeScale.label,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
+  haut: { gap: Spacing.four },
+  // Sur un grand écran, la scène à droite du texte — elle reste la première dans l'ordre de lecture.
+  hautLarge: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.six },
+  sceneLarge: { flex: 1 },
+  texteDuHaut: { gap: Spacing.four },
+  texteDuHautLarge: { flex: 1.15 },
+  tete: { gap: Spacing.two },
+  // La question, en phrase et non en capitales : on la pose, on ne l'affiche pas.
+  question: { fontSize: 20, lineHeight: 26 },
   // Le titre de la page, à la taille d'une affiche : une taille unique, qui vit ici (`FRONT.md`).
   titre: { fontSize: 36, lineHeight: 42, letterSpacing: -0.8 },
-  titreLarge: { fontSize: 64, lineHeight: 68, letterSpacing: -1.8 },
+  titreLarge: { fontSize: 52, lineHeight: 58, letterSpacing: -1.4 },
   chapeau: { fontSize: 17, lineHeight: 26 },
   chapeauLarge: { fontSize: 20, lineHeight: 30, maxWidth: 640 },
 

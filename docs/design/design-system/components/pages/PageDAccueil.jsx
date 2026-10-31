@@ -5,14 +5,15 @@ import { TextLink } from '../core/TextLink.jsx';
 import { RamilleDit } from '../mascotte/RamilleDit.jsx';
 import { FilmDePresentation } from './FilmDePresentation.jsx';
 import { BandeDeLEte, EchelleDesEtes, PartDuTransport } from './BandeDeLEte.jsx';
+import { SceneDeLEte } from './SceneDeLEte.jsx';
 // Source : src/components/accueil/page-d-accueil.tsx — la page d'accueil du web, à la racine du site, pour qui n'a ni
-// bilan ni questionnaire en cours (31/10/2026, `v1-36`). Un récit, puis ce que fait Ramille : l'été 2026 d'après
-// Météo-France (le nom seul en haut, le titre « Que l'été 2026 reste une exception. », la bande de l'été et sa
-// légende, le premier bouton), ses chiffres et sa
-// source, l'échelle des étés, la part du transport, « Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »
+// bilan ni questionnaire en cours (31/10/2026, `v1-36`). Un récit, puis ce que fait Ramille : se souvenir de l'été
+// 2026 (le nom seul en haut, la scène de l'été — deux personnes qui ont trop chaud —, « Tu te souviens de cette chaleur ? »,
+// le titre « Que l'été 2026 reste une exception. », le chapeau qui dit que Ramille accompagne pas à pas, le premier
+// bouton), ses 53 jours dessinés par la bande de l'été, ses chiffres et sa source, l'échelle des étés, la part du transport, « Tu ne peux pas arrêter une canicule. Tu peux changer un trajet. »
 // avec Ramille — la seule bande sans chiffre —, comment ça marche (la fiche Play, mot pour mot, les trois temps reliés
 // par un trait), les garanties et les limites, le film, le dernier bouton, le pied. Des bandes pleine largeur, une
-// colonne de 560 (800 pour le haut sur un grand écran, et pour le film). Une barre d'appel en bas de l'écran entre le
+// colonne de 560 (1 040 pour le haut sur un grand écran, la scène à droite du texte ; 800 pour le film). Une barre d'appel en bas de l'écran entre le
 // premier bouton et le dernier. Chaque bouton ouvre la session au geste, puis l'onboarding à sa deuxième page.
 const corps = { fontSize: 16, lineHeight: '25px' };
 const titreDeSection = { fontSize: 24, lineHeight: '30px', letterSpacing: '-0.3px' };
@@ -32,19 +33,20 @@ export function PageDAccueil({ sections = [], onCommencer, onDejaUnCompte }) {
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <Bande>
         <ThemedText weight={600} style={{ fontSize: 18, lineHeight: '24px' }}>Ramille</ThemedText>
-        <ThemedText type="small" weight={600} themeColor="accentText" style={{ textTransform: 'uppercase', letterSpacing: 1 }}>Été 2026, d’après Météo-France</ThemedText>
+        <SceneDeLEte />
+        <ThemedText weight={600} themeColor="accentText" style={{ fontSize: 20, lineHeight: '26px' }}>Tu te souviens de cette chaleur ?</ThemedText>
         <ThemedText type="title" weight={700} style={{ fontSize: 36, lineHeight: '42px', letterSpacing: '-0.8px' }}>Que l’été 2026 reste une exception.</ThemedText>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <BandeDeLEte />
-          <ThemedText type="small" themeColor="textTertiary">Un trait par jour, du 1er juin au 31 août. En plein, les jours de vague de chaleur.</ThemedText>
-        </div>
-        <ThemedText themeColor="textSecondary" style={{ fontSize: 17, lineHeight: '26px' }}>Le plus chaud jamais mesuré en France, depuis 1900. La suite dépend de ce que le monde émet, nous compris — et en France, le transport est le premier poste de notre empreinte carbone.</ThemedText>
+        <ThemedText themeColor="textSecondary" style={{ fontSize: 17, lineHeight: '26px' }}>Le plus chaud jamais mesuré en France depuis 1900, d’après Météo-France. Tu veux contribuer à ce que ça change ? Ramille t’accompagne, pas à pas, en commençant par tes trajets : en France, le premier poste de notre empreinte carbone.</ThemedText>
         <Appel onPress={onCommencer} />
         <TextLink label="J’ai déjà un compte" apparence="souligne" role="link" align="center" onPress={onDejaUnCompte} />
       </Bande>
       <Bande fond="background-element-2">
         <ThemedText type="subtitle" style={titreDeSection}>53 jours de vague de chaleur</ThemedText>
         <ThemedText themeColor="textSecondary" style={corps}>Trois vagues, de la mi-juin à la mi-août : plus d’un jour sur deux. Loin devant l’été 2022 et ses 33 jours.</ThemedText>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <BandeDeLEte />
+          <ThemedText type="small" themeColor="textTertiary">Un trait par jour, du 1er juin au 31 août. En plein, les jours de vague de chaleur.</ThemedText>
+        </div>
       </Bande>
       <Bande>
         <ThemedText type="subtitle" style={titreDeSection}>Aujourd’hui, un été sur 100. À +4 °C, une chaleur ordinaire.</ThemedText>

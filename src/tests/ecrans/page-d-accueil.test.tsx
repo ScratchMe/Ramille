@@ -80,13 +80,22 @@ function defilerJusqua(y: number) {
 }
 
 describe('la page d’accueil du web', () => {
-  it('part de l’été 2026 avant de rien demander : le titre, la bande de l’été, le chapeau, le bouton', () => {
+  it('part de l’été 2026 avant de rien demander : la question, le titre, le chapeau, le bouton', () => {
     render(<PageDAccueil allerVers={allerVers} />);
+    expect(screen.getByText(RECIT.question)).toBeTruthy();
     expect(screen.getByRole('header', { name: RECIT.titre })).toBeTruthy();
-    expect(screen.getByText(RECIT.surtitre)).toBeTruthy();
-    expect(screen.getByLabelText(/53 jours de vague de chaleur sur 92/)).toBeTruthy();
     expect(screen.getByText(RECIT.chapeau)).toBeTruthy();
     expect(screen.getAllByRole('button', { name: RECIT.bouton })).toHaveLength(3);
+  });
+
+  // La scène de l'été, en tête, ne se rend que sur le web (`scene-de-l-ete-sur-web.test.tsx`) ; la bande des
+  // 92 jours, elle, est descendue sous son titre.
+  it('dessine la bande de l’été sous « 53 jours de vague de chaleur », et non dans le haut', () => {
+    render(<PageDAccueil allerVers={allerVers} />);
+    const haut = screen.getByTestId('accueil-haut');
+    const bande = screen.getByLabelText(/53 jours de vague de chaleur sur 92/);
+    expect(screen.getByText(RECIT.ete.legende)).toBeTruthy();
+    expect(haut).not.toContainElement(bande);
   });
 
   it('chacun des trois boutons mène à l’onboarding, à sa deuxième page, et se compte à son emplacement', () => {
@@ -198,6 +207,7 @@ describe('la page d’accueil du web', () => {
 // Relevé des mutations, le 31/10/2026, chacune posée dans `page-d-accueil.tsx` (ou `film-de-presentation.web.tsx`)
 // puis ce fichier rejoué seul, la page restaurée ensuite :
 //   - le bouton de la bande « agir » compté `haut` → « chacun des trois boutons… », seul ;
+//   - la bande de l'été remise dans le haut → « dessine la bande de l'été sous… », seul ;
 //   - la section de l'échelle comptée `lu_ete` → « se compte à l'affichage, puis chaque section… », seul ;
 //   - la barre d'appel sans la borne du haut → « la barre d'appel paraît… », seul ;
 //   - `nouvelAffichageDeLAccueil` appelé après la vue → « se compte à l'affichage… », seul ;
