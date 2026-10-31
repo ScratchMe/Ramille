@@ -22,9 +22,9 @@
 //
 // **En CI**, le travail `checks` fait un `checkout` à `fetch-depth: 0` pour que `origin/main` existe.
 // Sur une PR, `HEAD` est le commit de fusion que GitHub prépare, donc la base de fusion est la
-// pointe de `main` qu'elle fusionne : la garde voit exactement ce que la PR change. Sur un push sur
-// `main`, `HEAD` est `origin/main`, il n'y a rien à comparer, et la garde le dit — ce qu'elle garde
-// est la PR, qui a déjà tourné. **Une référence illisible fait sortir en 1, jamais en 0** : sans
+// pointe de `main` qu'elle fusionne : la garde voit exactement ce que la PR change. Sur `main` (le
+// passage du lundi, un lancement à la main ; la CI ne part plus sur `push` depuis le 31/10/2026),
+// `HEAD` est `origin/main`, il n'y a rien à comparer, et la garde le dit — ce qu'elle garde est la PR. **Une référence illisible fait sortir en 1, jamais en 0** : sans
 // elle on ne sait pas ce qui est livré, et un `fetch-depth` retiré du `checkout` doit rougir, pas
 // passer.
 //

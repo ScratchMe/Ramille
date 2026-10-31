@@ -1,18 +1,23 @@
 name: Sonde de la production
 
 # La seule alerte du produit vit dans la base qu'elle surveille. Cette sonde regarde de l'extérieur,
-# toutes les heures : le site, ses pages légales, le fichier des liens Android, la page et la carte de
+# toutes les trois heures : le site, ses pages légales, le fichier des liens Android, la page et la carte de
 # partage, et l'Auth de Supabase. Un point qui ne répond pas fait échouer le travail, et GitHub prévient
 # alors **la personne qui a modifié la ligne `cron` en dernier** (pas l'équipe, pas le dépôt) : ce qui
 # se lit dans ses réglages de notification, Actions comprises. Ce que fait chaque point, et pourquoi la
-# carte change d'adresse à chaque heure : l'en-tête de `scripts/sonder-la-production.mjs`.
+# carte change d'adresse à chaque passage : l'en-tête de `scripts/sonder-la-production.mjs`.
 #
 # Minute 17 : GitHub retarde ou abandonne des exécutions planifiées au début de chaque heure. Seule la
 # branche par défaut est planifiée, et GitHub désactive un workflow planifié après 60 jours sans activité
 # sur le dépôt (registre d'exploitation, §3.8 et §8.13).
 on:
   schedule:
-    - cron: '17 * * * *'
+    # **Toutes les trois heures depuis le 31/10/2026**, et non plus chaque heure : le dépôt repasse en
+    # privé, où chaque passage coûte au moins une minute sur les 2 000 du mois
+    # (`docs/exploitation/depot-public.md` §9) : au pire 240 minutes au lieu de 720. **Ce n'est pas un
+    # délai garanti** : planifiée chaque heure, la sonde n'est partie qu'environ cinq fois par jour en
+    # octobre, à quatre à sept heures d'écart — GitHub abandonne une partie des passages planifiés.
+    - cron: '17 */3 * * *'
   workflow_dispatch:
 
 permissions:

@@ -289,7 +289,7 @@ l'ouest de Greenwich : lire les **caractères** d'une date-jour, jamais un `Date
   22/10/2026), donc à attendre plutôt qu'à diagnostiquer). Épingler la version de l'outil
   n'épingle pas ce qu'il attend. **Le bloquer sur chaque PR punit celles qui n'y sont pour rien ;
   le retirer perd l'alerte avant un build.** La forme retenue : un **avertissement** (annotation)
-  sur une PR et un push, **bloquant** sur un passage planifié hebdomadaire et sur un lancement à la
+  sur une PR (et sur un push, tant que la CI en avait un — retiré le 31/10/2026), **bloquant** sur un passage planifié hebdomadaire et sur un lancement à la
   main — un `continue-on-error` qui dépend de l'événement, et une annotation qui lit
   `steps.<id>.outcome` : c'est `outcome`, et non `conclusion`, qui garde l'échec que
   `continue-on-error` masque. Quand le passage du lundi rougit, la conduite est

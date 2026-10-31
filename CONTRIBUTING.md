@@ -2,15 +2,17 @@
 
 **Lecture bienvenue, pull requests non attendues.**
 
-Le dépôt est public **pour être lu**. Le passage en public a été fait pour lever le plafond de
-minutes de CI, pas pour ouvrir le développement — et il n'y a pas d'équipe derrière : une personne
-et un agent. Une pull request qui arrive peut donc rester sans réponse, ou être refusée pour une
+**Le dépôt est privé à partir du 31/10/2026**, après avoir été public pour être lu depuis le
+17/09/2026 (`docs/exploitation/depot-public.md` §9) ; le code source est disponible sur demande, à
+contact@ramille.fr. Ce qui suit vaut pour qui le reçoit. Le passage en public avait été fait pour
+lever le plafond de minutes de CI, pas pour ouvrir le développement — et il n'y a pas d'équipe
+derrière : une personne et un agent. Une pull request qui arrive peut donc rester sans réponse, ou être refusée pour une
 raison qui n'a rien à voir avec sa qualité. Le dire est plus utile que de laisser espérer.
 
 **Ce que ça ne retire pas** : la licence, la **GNU Affero General Public License v3.0 ou
 ultérieure** ([`LICENSE`](LICENSE)), donne le droit d'utiliser ce code, de le modifier et de le
-redistribuer, sous la même licence et en conservant les mentions de paternité. **Forker est le
-chemin normal**, et il ne demande la permission de personne. Ce qui n'est pas promis ici, c'est du
+redistribuer, sous la même licence et en conservant les mentions de paternité. **Partir de sa copie
+est le chemin normal**, et il ne demande la permission de personne. Ce qui n'est pas promis ici, c'est du
 temps de relecture — pas un droit.
 
 Deux nuances qui ne sont pas dans la licence et qui valent d'être sues : **le nom « Ramille » et la
@@ -22,9 +24,10 @@ d'émission vient de l'ADEME, avec ses propres conditions.
 Un **rapport**. Le produit affiche des nombres qu'une personne va croire, et un écart entre ce
 qu'un écran explique et ce que la base calcule est le défaut qui coûte le plus cher ici. Donc :
 une incohérence, une phrase fausse à l'écran, un chiffre qui ne correspond pas au calcul —
-une issue, et c'est précieux.
+un e-mail à contact@ramille.fr, et c'est précieux. Le dépôt étant privé, ni issue ni pull request
+ne s'ouvrent de l'extérieur.
 
-Pour une **faille de sécurité**, ne pas ouvrir d'issue : [`SECURITY.md`](SECURITY.md) dit où écrire.
+Pour une **faille de sécurité** : [`SECURITY.md`](SECURITY.md) dit où écrire.
 
 ## Ce qu'il faut savoir pour lire, et qui explique le reste
 

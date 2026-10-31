@@ -743,8 +743,9 @@ modifiée, supprimée ou renommée. Trois choses à savoir avant d'y toucher :
 
 - **la base de fusion, pas la pointe** : une migration livrée sur `main` après le départ de la
   branche se lirait sinon « supprimée » par elle. Sur une PR, `HEAD` est la fusion que GitHub
-  prépare, donc la base de fusion est la pointe de `main` qu'elle fusionne ; sur un push sur `main`,
-  il n'y a rien à comparer, et la sortie le dit ;
+  prépare, donc la base de fusion est la pointe de `main` qu'elle fusionne ; sur `main` (le passage
+  du lundi, un lancement à la main — la CI ne part plus sur `push` depuis le 31/10/2026), il n'y a
+  rien à comparer, et la sortie le dit ;
 - **`fetch-depth: 0` sur le `checkout` de `checks`**, sans quoi `origin/main` n'existe pas — et la
   garde sort alors en 1, jamais en 0 : on ne sait plus ce qui est livré ;
 - **l'exception est une retouche, pas un fichier** : `supabase/retouches-de-migrations-livrees.json`

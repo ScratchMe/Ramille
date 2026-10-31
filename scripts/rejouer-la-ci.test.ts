@@ -52,6 +52,8 @@
  * - le `if` du parcours réel retiré → 1 tombe, « le passage du lundi ne joue que le travail… » ;
  * - le `printf` d'`expo-env.d.ts` remis → 2 tombent, l'étape orpheline et « l'étape qui écrivait… » ;
  * - le cron à la minute 0 → 1 tombe ; l'`id` du pas expo-doctor renommé → 1 tombe, l'annotation ;
+ * - (31/10/2026) `push: branches: [main]` remis dans `on:` → 1 tombe, « la CI ne part pas sur un push… », et
+ *   lui seul ; les autres tests évaluent les expressions pour un `push` hypothétique et restent justes ;
  * - dans le rejeu : tout pas bloquant → 2 tombent ; `--planifie` sans effet → 1 tombe, « --planifie rend
  *   bloquant… » ; `nonBloquant` retiré d'expo-doctor → 2 tombent.
  */
@@ -426,6 +428,16 @@ describe('les déclencheurs de ci.yml', () => {
     expect(travaux.get('checks')?.join('\n')).toContain('npx expo-doctor@');
     expect(texte).toMatch(/^ {2}schedule:\n {4}- cron: '(\d+) (\d+) \* \* 1'$/m);
     expect(texte).toMatch(/^ {2}workflow_dispatch:$/m);
+  });
+
+  test('la CI ne part pas sur un push : le dépôt privé compte ses minutes', () => {
+    // Retiré le 31/10/2026 (`docs/exploitation/depot-public.md` §9) : ≈ 450 minutes par mois sur 2 000
+    // pour revérifier ce que la PR venait de prouver. Le remettre est une décision, pas un oubli.
+    // Le bloc `on:` va jusqu'à la clé suivante au premier niveau ; ses lignes sont indentées ou commentaires.
+    const bloc = texte.match(/^on:\n(?:(?: .*|#.*|)\n)*/m)?.[0] ?? '';
+    expect(bloc).toMatch(/^ {2}pull_request:$/m);
+    expect(bloc).toMatch(/^ {2}schedule:$/m);
+    expect(bloc).not.toMatch(/^ {2}push:/m);
   });
 
   test('la minute du passage planifié n’est pas une heure ronde', () => {

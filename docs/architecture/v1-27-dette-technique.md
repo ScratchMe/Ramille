@@ -2663,3 +2663,18 @@ Restent deux pistes, aucune faite : une tournure sans « week-end », qui touche
 `white-space: nowrap` sur le seul mot côté web, qui ne vaut pas sur Android. Détail dans
 `FRONT-QUESTIONNAIRE.md`, et la vérification sur appareil en `v1-13` §11.39.
 
+
+### 12.43 Le dépôt privé n'a plus de garde côté GitHub (31/10/2026)
+
+Le dépôt repasse en privé, sur le plan gratuit (`docs/exploitation/depot-public.md` §9), et perd ce que
+GitHub n'offre qu'aux dépôts publics : **la protection de `main`** (le ruleset du 17/09/2026 ne
+s'applique plus — une PR rouge se fusionnerait, une poussée forcée passerait), **la détection de
+secrets** et sa protection à la poussée, **CodeQL**, et le signalement privé de vulnérabilité. Pour tenir
+les 2 000 minutes du mois, la CI ne repart plus sur `push` vers `main` et la sonde est planifiée toutes les
+trois heures — donc une poussée directe sur `main` ne déclenche plus aucun contrôle, et un quota épuisé
+arrêterait aussi la sauvegarde et la sonde. Ce qui tient lieu de garde : la règle « verte sur sa tête »
+de `CLAUDE.md`, vérifiée à la main, et l'interdiction d'y pousser directement. **La sortie est écrite** :
+GitHub Pro (≈ 4 $ par mois) rend les rulesets et porte le quota à 3 000 minutes, au mail de GitHub à
+90 % du quota ou au premier incident qu'un ruleset aurait bloqué. La
+détection de secrets ne revient pas avec lui ; un scan dans la CI (gitleaks ou équivalent) la
+remplacerait, à peser contre les minutes qu'il coûte.

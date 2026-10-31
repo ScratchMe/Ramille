@@ -4,7 +4,6 @@ import {
   EDITOR_NAME,
   HEBERGEUR_DES_DONNEES,
   HEBERGEUR_DU_SITE,
-  URL_DU_CODE,
 } from '@/constants/editeur';
 // **`ORIGINE_CANONIQUE` et non `APP_URL`, et ce n'est pas interchangeable ici.** `APP_URL`
 // vaut l'origine réelle côté client et le domaine canonique au rendu statique : écrite dans
@@ -49,7 +48,8 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // ultérieure, `LICENSE`, `NOTICE`, `README.md`), qui autorise l'usage commercial du code. Seuls le nom,
 // le logo, la mascotte et l'identité visuelle sont réservés (`NOTICE`) ; la clause le dit, avec l'adresse
 // du dépôt (`docs/exploitation/depot-public.md` §4 : le §13 de l'AGPL ne crée aucune obligation sur
-// l'éditeur lui-même, ce lien n'est donc pas une obligation, seulement l'endroit où on cherchera le code).
+// l'éditeur lui-même, ce lien n'est donc pas une obligation, seulement l'endroit où on cherchera le code —
+// remplacé le 31/10/2026 par « sur demande », plus bas).
 // (2) « Ramille ne saurait être tenu responsable » : un nom de produit n'est pas une personne, la
 // responsabilité est celle de l'éditeur. (3) L'hébergeur des données était « Supabase, serveurs situés dans
 // l'Union européenne », sans l'entité ni l'adresse : c'est Supabase Pte. Ltd. (Singapour) selon ses conditions
@@ -61,7 +61,10 @@ import { APP_NAME, ORIGINE_CANONIQUE } from '@/constants/produit';
 // un service dont aucun traitement ne repose sur le consentement.
 // **23/10/2026** : la session sans compte attend 120 jours sans utilisation avant d'être supprimée, et non
 // plus 90 (`v1-35` étape 4) — une phrase.
-const UPDATED_AT = '23 octobre 2026';
+// **31/10/2026** : le dépôt repasse en privé (`docs/exploitation/depot-public.md` §9), donc son adresse
+// mènerait à une page introuvable. Le code source est désormais « disponible sur demande », à l'adresse de
+// contact ; la licence ne change pas, et le §13 de l'AGPL ne lie toujours pas l'éditeur lui-même.
+const UPDATED_AT = '31 octobre 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -176,12 +179,12 @@ const SECTIONS: LegalSection[] = [
       {
         kind: 'paragraph',
         text:
-          `Le code source de ${APP_NAME}, textes et interface compris, est publié sous licence libre : la GNU Affero ` +
+          `Le code source de ${APP_NAME}, textes et interface compris, est distribué sous licence libre : la GNU Affero ` +
           'General Public License version 3 ou ultérieure (AGPL-3.0-or-later). Tu peux le lire, l’utiliser, le modifier ' +
           'et le redistribuer dans les conditions de cette licence, y compris pour un usage commercial. Elle impose ' +
           'notamment de conserver la mention de l’auteur et de redistribuer sous la même licence toute version modifiée, ' +
           'en offrant son code source aux utilisateurs d’une version modifiée exploitée comme service en ligne. Le ' +
-          `code se trouve sur ${URL_DU_CODE}.`,
+          `code source est disponible sur demande, à ${CONTACT_EMAIL}.`,
       },
       {
         kind: 'paragraph',
